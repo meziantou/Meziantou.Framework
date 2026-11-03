@@ -36,6 +36,11 @@ internal sealed class CollationBuilder
     private int[] _caseCodePoints = new int[16];
     private CollationTable _table = null!;
 
+    // The NFD of the texts of a rule (reset or relation, prefix, extension), reused for every rule
+    private int[] _nfdText = new int[16];
+    private int[] _nfdPrefix = new int[16];
+    private int[] _nfdExtension = new int[16];
+
     [StructLayout(LayoutKind.Auto)]
     private struct Node
     {
@@ -66,6 +71,15 @@ internal sealed class CollationBuilder
         }
 
         _table = new CollationTable(_map, _suppressedContractions);
+
+        // A relation inserts a node, and a reset inserts a few root nodes at most
+        var relationCount = 0;
+        foreach (var chain in tailoring.Chains)
+        {
+            relationCount += chain.Relations.Count;
+        }
+
+        _nodes.Capacity = relationCount + (tailoring.Chains.Count * 4) + 1;
         _nodes.Add(new Node { Weight = 0, Strength = PrimaryLevel });
         _rootPrimaries.Add(0);
         _rootPrimaryIndexes.Add(0);
@@ -117,11 +131,16 @@ internal sealed class CollationBuilder
         return ce != 0 ? TertiaryLevel : IdenticalLevel;
     }
 
-    private int[] Decompose(string text) => _root.Decompose(text);
-
-    private int GetCEs(int[] nfd, int start)
+    private Span<int> Decompose(string text, ref int[] buffer)
     {
-        var count = _table.GetElements(nfd.AsSpan(), ref _buffer, 0, numeric: false);
+        // The buffer may be replaced by a larger one
+        var count = _root.Decompose(text, ref buffer);
+        return buffer.AsSpan(0, count);
+    }
+
+    private int GetCEs(Span<int> nfd, int start)
+    {
+        var count = _table.GetElements(nfd, ref _buffer, 0, numeric: false);
         if (start + count > MaxExpansionLength)
             throw new FormatException("Too many collation elements for a tailored string");
 
@@ -138,7 +157,7 @@ internal sealed class CollationBuilder
         }
         else
         {
-            var nfd = Decompose(text);
+            var nfd = Decompose(text, ref _nfdText);
             if (nfd.Length == 2 && nfd[0] == 0xFDD1)
             {
                 // ICU: U+FDD1 followed by a character is the first primary of the script group of the character
@@ -425,8 +444,8 @@ internal sealed class CollationBuilder
 
     private void AddRelation(int strength, string prefix, string text, string extension)
     {
-        var nfdPrefix = prefix.Length > 0 ? Decompose(prefix) : [];
-        var nfdString = Decompose(text);
+        ReadOnlySpan<int> nfdPrefix = prefix.Length > 0 ? Decompose(prefix, ref _nfdPrefix) : [];
+        ReadOnlySpan<int> nfdString = Decompose(text, ref _nfdText);
         if (strength != IdenticalLevel)
         {
             // Find the node index after which we insert the new tailored node
@@ -449,7 +468,7 @@ internal sealed class CollationBuilder
         var cesLengthBeforeExtension = _cesLength;
         if (extension.Length > 0)
         {
-            _cesLength = GetCEs(Decompose(extension), _cesLength);
+            _cesLength = GetCEs(Decompose(extension, ref _nfdExtension), _cesLength);
         }
 
         var elements = _ces.AsSpan(0, _cesLength);
@@ -469,7 +488,7 @@ internal sealed class CollationBuilder
         _cesLength = cesLengthBeforeExtension;
     }
 
-    private void SetCaseBits(int[] nfdString)
+    private void SetCaseBits(ReadOnlySpan<int> nfdString)
     {
         var numTailoredPrimaries = 0;
         for (var i = 0; i < _cesLength; i++)

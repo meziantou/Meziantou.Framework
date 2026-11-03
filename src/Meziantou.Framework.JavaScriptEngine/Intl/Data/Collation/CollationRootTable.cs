@@ -26,7 +26,12 @@ internal sealed class CollationRootTable
     private readonly Dictionary<string, (int Offset, int Count)>.AlternateLookup<ReadOnlySpan<char>> _contractionLookup;
     private readonly (int Start, int End, int Base, int FirstSecondWeight)[] _siniformRanges;
     private readonly (int Start, int End)[] _unifiedIdeographRanges;
-    private readonly List<(int[] Key, int Offset, int Count)> _entries;
+
+    // The mappings in the order of their key: the code points of the keys one after the other, and where the key and
+    // the elements of each mapping start (one more item for the end of the last mapping)
+    private readonly int[] _keys;
+    private readonly int[] _keyStarts;
+    private readonly int[] _elementStarts;
 
     internal CollationRootTable(byte[] data)
     {
@@ -37,13 +42,16 @@ internal sealed class CollationRootTable
         var singles = new Dictionary<int, int>(entryCount);
         var contractionStarts = new HashSet<int>();
         _contractions = new Dictionary<string, (int, int)>(StringComparer.Ordinal);
-        _entries = new List<(int[], int, int)>(entryCount);
+        var keys = new List<int>(entryCount + (entryCount / 8));
+        _keyStarts = new int[entryCount + 1];
+        _elementStarts = new int[entryCount + 1];
         for (var i = 0; i < entryCount; i++)
         {
-            var key = new int[reader.ReadVarInt32()];
-            for (var j = 0; j < key.Length; j++)
+            var keyStart = keys.Count;
+            var keyLength = reader.ReadVarInt32();
+            for (var j = 0; j < keyLength; j++)
             {
-                key[j] = reader.ReadVarInt32();
+                keys.Add(reader.ReadVarInt32());
             }
 
             var count = reader.ReadVarInt32();
@@ -56,7 +64,9 @@ internal sealed class CollationRootTable
             if (count is 0 or > CountMask)
                 throw new InvalidDataException("Invalid collation element count");
 
-            _entries.Add((key, offset, count));
+            _keyStarts[i] = keyStart;
+            _elementStarts[i] = offset;
+            var key = CollectionsMarshal.AsSpan(keys).Slice(keyStart, keyLength);
             if (key.Length == 1)
             {
                 singles[key[0]] = (offset << 6) | count;
@@ -69,6 +79,9 @@ internal sealed class CollationRootTable
             }
         }
 
+        _keyStarts[entryCount] = keys.Count;
+        _elementStarts[entryCount] = elements.Count;
+        _keys = [.. keys];
         _elements = [.. elements];
         _contractionLookup = _contractions.GetAlternateLookup<ReadOnlySpan<char>>();
 
@@ -117,16 +130,13 @@ internal sealed class CollationRootTable
     public int MaxContractionLength { get; } = 1;
 
     /// <summary>Gets the number of mappings (single code points and contractions).</summary>
-    public int Count => _entries.Count;
+    public int Count => _keyStarts.Length - 1;
 
-    /// <summary>Enumerates the mappings in the order of their key (code points).</summary>
-    public IEnumerable<(int[] CodePoints, CollationElement[] Elements)> GetMappings()
-    {
-        foreach (var (key, offset, count) in _entries)
-        {
-            yield return (key, _elements.AsSpan(offset, count).ToArray());
-        }
-    }
+    /// <summary>Gets the code points of a mapping (from 0 to <see cref="Count"/> - 1, in the order of the keys).</summary>
+    public ReadOnlySpan<int> GetCodePoints(int index) => _keys.AsSpan(_keyStarts[index], _keyStarts[index + 1] - _keyStarts[index]);
+
+    /// <summary>Gets the collation elements of a mapping (from 0 to <see cref="Count"/> - 1, in the order of the keys).</summary>
+    public ReadOnlySpan<CollationElement> GetElements(int index) => _elements.AsSpan(_elementStarts[index], _elementStarts[index + 1] - _elementStarts[index]);
 
     /// <summary>Gets the collation elements of a single code point listed in the table (not the implicit weights).</summary>
     public bool TryGetMapping(int codePoint, out ReadOnlySpan<CollationElement> elements)
@@ -354,7 +364,7 @@ internal sealed class CollationRootTable
         return page < 0 ? 0 : _pages[(page * PageSize) + (codePoint & (PageSize - 1))];
     }
 
-    private static string ToString(int[] codePoints)
+    private static string ToString(ReadOnlySpan<int> codePoints)
     {
         var builder = new StringBuilder(codePoints.Length * 2);
         foreach (var codePoint in codePoints)

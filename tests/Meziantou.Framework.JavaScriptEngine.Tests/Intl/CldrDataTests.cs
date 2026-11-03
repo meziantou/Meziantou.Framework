@@ -850,6 +850,67 @@ public sealed class CldrDataTests
     }
 
     [Fact]
+    public void CollationReorderTable_MatchesPermutation()
+    {
+        // Two runs swapped: [0x3000, 0x3480) moves after [0x3480, 0x5000), which do not start on a block boundary
+        var leads = new ushort[0x10000];
+        for (var i = 0; i < leads.Length; i++)
+        {
+            leads[i] = (ushort)i;
+        }
+
+        for (var lead = 0x3000; lead < 0x3480; lead++)
+        {
+            leads[lead] = (ushort)(lead + (0x5000 - 0x3480));
+        }
+
+        for (var lead = 0x3480; lead < 0x5000; lead++)
+        {
+            leads[lead] = (ushort)(lead - 0x480);
+        }
+
+        var table = new CollationReorderTable(leads);
+        for (var lead = 0u; lead < 0x10000; lead++)
+        {
+            Assert.Equal(leads[lead], table[lead]);
+        }
+    }
+
+    [Fact]
+    public void CollationMap_Entries()
+    {
+        var map = new CollationMap();
+        map.SetMapping('a', [1]);
+        Assert.Equal(1, map.GetEntry('a') & CollationMap.CountMask);
+        Assert.Equal(0, map.GetEntry(0x20000));
+        Assert.False(map.IsContinuation('b'));
+
+        // A supplementary code point extends the table
+        map.SetMapping(0x2A6D6, [2, 3]);
+        Assert.Equal([2UL, 3UL], map.GetElements(map.GetEntry(0x2A6D6)).ToArray());
+        Assert.Equal(1, map.GetEntry('a') & CollationMap.CountMask);
+        Assert.Equal(0, map.GetEntry(0x10FFFF));
+        Assert.Equal(0, map.GetEntry(0x110000));
+        Assert.Equal(0, map.GetEntry(-1));
+
+        map.SetContraction(['a', 'b'], [4]);
+        Assert.True(map.IsContinuation('b'));
+        Assert.False(map.IsContinuation('c'));
+
+        // The prefix mappings: the longest prefixes first, a mapping of the same context replaces the previous one
+        map.SetPrefixMapping(['x'], ['a'], [5]);
+        map.SetPrefixMapping(['x', 'y'], ['a'], [6]);
+        map.SetPrefixMapping(['y'], ['a', 'b'], [7]);
+        map.SetPrefixMapping(['x'], ['a'], [8]);
+        map.Trim();
+        var mappings = map.GetPrefixMappings('a').ToArray();
+        Assert.Equal([2, 1, 1], mappings.Select(mapping => mapping.Prefix.Length));
+        Assert.Equal([1, 0], mappings.Skip(1).Select(mapping => mapping.Suffix.Length));
+        Assert.Equal([8UL], map.GetElements(mappings[2].Offset, mappings[2].Count).ToArray());
+        Assert.True(map.GetPrefixMappings('b').IsEmpty);
+    }
+
+    [Fact]
     public void CollationRuleParser()
     {
         var tailoring = CollationTailoring.Parse("[backwards 2][caseFirst upper]&N<\u00F1<<<\u00D1 &a<*b-df &[before 1]c<'#'|x/y &[last regular]<z [reorder Grek Latn] # comment");

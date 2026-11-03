@@ -131,3 +131,36 @@ The engine does not use the globalization of .NET or of the operating system: it
 So the results are the same on Windows, Linux and macOS, and in an application that runs in invariant globalization
 mode. They change only when the data of the library is updated. See
 [Data versions and output differences](11-DataAndOutputDifferences.md) for the versions of the data.
+
+## The cost of the data
+
+The engine reads the data when a script first needs it, and only the parts it uses: a script that does not use `Intl`
+or the locale-sensitive methods pays nothing. What it reads is kept for the life of the process and shared by every
+engine, so only the first use of a locale in the process pays for it.
+
+- The first collator of a locale costs the most: `Intl.Collator` and `localeCompare` build the collation of the locale
+  from the rules of CLDR. The Chinese collations are the largest, and the first one takes on the order of 100 ms.
+- Using the formatters, the plural rules, the display names and the collator in about 80 locales keeps about 25 MB.
+
+To keep this cost out of the first request of a server, create the collators and the formatters of the locales you
+expect when the application starts:
+
+<!-- ref:../../tests/Meziantou.Framework.JavaScriptEngine.Tests/JsEngineTests.cs;region=JavaScriptEngine_IntlWarmUp;format=md-fenced-code-block;dedent=true -->
+```csharp
+// At startup: load the data of the locales that the scripts will use, for every engine of the process
+using (var warmUp = new JsEngine())
+{
+    warmUp.CreateRealm().Execute("""
+        for (const locale of ['en', 'fr', 'zh']) {
+          new Intl.Collator(locale).compare('a', 'b');
+          new Intl.NumberFormat(locale).format(1);
+          new Intl.DateTimeFormat(locale).format(0);
+        }
+        """);
+}
+
+// Later: the engines of the requests reuse the data
+using var engine = new JsEngine();
+Assert.Equal("a,b,c", engine.CreateRealm().Execute("['c', 'a', 'b'].sort(new Intl.Collator('fr').compare).join()").AsString());
+```
+<!-- endref -->

@@ -70,6 +70,8 @@ internal sealed class CollationRuleParser(string rules)
     private const int RangeMarker = 0x10FFFF + 1;
 
     private readonly string _rules = rules;
+    private readonly List<int> _codePoints = [];
+    private readonly StringBuilder _text = new();
     private int _position;
 
     public CollationTailoring Parse()
@@ -134,11 +136,7 @@ internal sealed class CollationRuleParser(string rules)
                 SkipWhitespaceAndComments();
                 if (isStar)
                 {
-                    foreach (var item in ReadStarText())
-                    {
-                        relations.Add(new CollationRelation(relationStrength, item));
-                    }
-
+                    ReadStarText(relationStrength, relations);
                     continue;
                 }
 
@@ -298,11 +296,14 @@ internal sealed class CollationRuleParser(string rules)
     }
 
     // The text of a star relation: each code point is a relation; "a-d" (an unquoted '-') is a range
-    private List<string> ReadStarText()
+    private void ReadStarText(CollationStrength strength, List<CollationRelation> relations)
     {
-        var codePoints = new List<int>();
+        var codePoints = _codePoints;
+        codePoints.Clear();
         ReadText(codePoints, allowRangeDash: true);
-        var result = new List<string>();
+
+        // A star relation can list thousands of characters (pinyin): grow the list once
+        relations.EnsureCapacity(relations.Count + codePoints.Count);
         for (var i = 0; i < codePoints.Count; i++)
         {
             if (codePoints[i] == RangeMarker)
@@ -312,27 +313,27 @@ internal sealed class CollationRuleParser(string rules)
             {
                 for (var codePoint = codePoints[i]; codePoint <= codePoints[i + 2]; codePoint++)
                 {
-                    result.Add(char.ConvertFromUtf32(codePoint));
+                    relations.Add(new CollationRelation(strength, char.ConvertFromUtf32(codePoint)));
                 }
 
                 i += 2;
                 continue;
             }
 
-            result.Add(char.ConvertFromUtf32(codePoints[i]));
+            relations.Add(new CollationRelation(strength, char.ConvertFromUtf32(codePoints[i])));
         }
-
-        return result;
     }
 
     private string ReadText()
     {
-        var codePoints = new List<int>();
+        var codePoints = _codePoints;
+        codePoints.Clear();
         ReadText(codePoints, allowRangeDash: false);
-        var builder = new StringBuilder(codePoints.Count);
+        var builder = _text;
+        builder.Clear();
         foreach (var codePoint in codePoints)
         {
-            builder.Append(char.ConvertFromUtf32(codePoint));
+            builder.Append(new Rune(codePoint));
         }
 
         return builder.ToString();

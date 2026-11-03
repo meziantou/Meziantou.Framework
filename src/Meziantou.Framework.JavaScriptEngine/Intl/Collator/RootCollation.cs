@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Globalization;
 using Meziantou.Framework.JavaScriptEngine.Intl.Data;
@@ -19,7 +20,7 @@ internal sealed class RootCollation
     private const int FirstFixedHighLead = 0xFBC0;
 
     private static RootCollation? s_instance;
-    private static readonly ConcurrentDictionary<string, ushort[]?> ReorderTables = new(StringComparer.Ordinal);
+    private static readonly ConcurrentDictionary<string, CollationReorderTable?> ReorderTables = new(StringComparer.Ordinal);
 
     private readonly int _firstVariableLead;
     private readonly int _maxVariableLead;
@@ -38,8 +39,10 @@ internal sealed class RootCollation
         var maxVariable = 0;
         var firstVariable = int.MaxValue;
         var buffer = new List<ulong>();
-        foreach (var (codePoints, elements) in root.GetMappings())
+        for (var index = 0; index < root.Count; index++)
         {
+            var codePoints = root.GetCodePoints(index);
+            var elements = root.GetElements(index);
             buffer.Clear();
             for (var i = 0; i < elements.Length; i++)
             {
@@ -150,9 +153,11 @@ internal sealed class RootCollation
         // The script groups: each lead of the reorderable range belongs to the group of its first character; the
         // implicit weights belong to their scripts (Han, Tangut, Nushu, Khitan)
         var leadGroups = new SortedDictionary<int, string?>();
-        foreach (var (codePoints, elements) in Table.GetMappings())
+        var table = Table;
+        for (var index = 0; index < table.Count; index++)
         {
-            var first = elements[0];
+            var codePoints = table.GetCodePoints(index);
+            var first = table.GetElements(index)[0];
             if (codePoints.Length == 1 && first.Primary != 0 && first.Primary < 0xFB00 && !leadGroups.ContainsKey(first.Primary))
             {
                 leadGroups[first.Primary] = GetGroup(codePoints[0], first.IsVariable);
@@ -421,7 +426,7 @@ internal sealed class RootCollation
     /// Gets the permutation of the primary leads (high 16 bits) of a <c>[reorder]</c> list of script codes and the
     /// special groups (space, punct, symbol, currency, digit, others), as ICU does; null when it changes nothing.
     /// </summary>
-    public ushort[]? GetReorderTable(IReadOnlyList<string> codes)
+    public CollationReorderTable? GetReorderTable(IReadOnlyList<string> codes)
     {
         if (codes.Count == 0)
             return null;
@@ -429,7 +434,7 @@ internal sealed class RootCollation
         return ReorderTables.GetOrAdd(string.Join(' ', codes), _ => ComputeReorderTable(codes));
     }
 
-    private ushort[]? ComputeReorderTable(IReadOnlyList<string> codes)
+    private CollationReorderTable? ComputeReorderTable(IReadOnlyList<string> codes)
     {
         // The groups in their default order
         var runs = Runs;
@@ -488,7 +493,8 @@ internal sealed class RootCollation
         }
 
         order.AddRange(high);
-        var table = new ushort[0x10000];
+        var buffer = ArrayPool<ushort>.Shared.Rent(0x10000);
+        var table = buffer.AsSpan(0, 0x10000);
         for (var i = 0; i < table.Length; i++)
         {
             table[i] = (ushort)i;
@@ -513,7 +519,9 @@ internal sealed class RootCollation
             }
         }
 
-        return changed ? table : null;
+        var result = changed ? new CollationReorderTable(table) : null;
+        ArrayPool<ushort>.Shared.Return(buffer);
+        return result;
     }
 
     private int FindRun(int lead)

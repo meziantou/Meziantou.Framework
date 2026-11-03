@@ -30,20 +30,21 @@ internal sealed class CollationMap
     private const int PageShift = 8;
     private const int PageSize = 1 << PageShift;
 
-    private readonly int[] _pageIndexes;
+    // The page of each block of 256 code points; it covers the BMP and grows when a supplementary code point is mapped
+    private int[] _pageIndexes;
     private int[] _pages = new int[PageSize * 8];
     private int _pageCount;
     private ulong[] _ces = new ulong[1024];
     private int _cesCount;
     private readonly Dictionary<string, (int Offset, int Count)> _contractions = new(StringComparer.Ordinal);
     private readonly Dictionary<string, (int Offset, int Count)>.AlternateLookup<ReadOnlySpan<char>> _contractionLookup;
-    private readonly Dictionary<int, CollationPrefixMapping[]> _prefixes = [];
-    private readonly ulong[] _continuations = new ulong[0x10000 / 64];
+    private readonly Dictionary<int, List<CollationPrefixMapping>> _prefixes = [];
+    private ulong[]? _continuations;
     private bool _hasSupplementaryContinuations;
 
     public CollationMap()
     {
-        _pageIndexes = new int[(0x10FFFF >> PageShift) + 1];
+        _pageIndexes = new int[0x10000 >> PageShift];
         _pageIndexes.AsSpan().Fill(-1);
         _contractionLookup = _contractions.GetAlternateLookup<ReadOnlySpan<char>>();
     }
@@ -63,10 +64,12 @@ internal sealed class CollationMap
     /// <summary>Gets the entry of a code point: <c>offset &lt;&lt; 7 | flags | count</c>, 0 when the map has nothing for it.</summary>
     public int GetEntry(int codePoint)
     {
-        if ((uint)codePoint > 0x10FFFF)
+        var pageIndexes = _pageIndexes;
+        var block = codePoint >> PageShift;
+        if ((uint)block >= (uint)pageIndexes.Length)
             return 0;
 
-        var page = _pageIndexes[codePoint >> PageShift];
+        var page = pageIndexes[block];
         return page < 0 ? 0 : _pages[(page << PageShift) | (codePoint & (PageSize - 1))];
     }
 
@@ -110,11 +113,11 @@ internal sealed class CollationMap
         if (codePoint > 0xFFFF)
             return _hasSupplementaryContinuations;
 
-        return (_continuations[codePoint >> 6] & (1UL << (codePoint & 63))) != 0;
+        return _continuations is { } continuations && (continuations[codePoint >> 6] & (1UL << (codePoint & 63))) != 0;
     }
 
     /// <summary>Gets the prefix mappings of a code point, the longest prefixes first.</summary>
-    public CollationPrefixMapping[]? GetPrefixMappings(int codePoint) => _prefixes.TryGetValue(codePoint, out var value) ? value : null;
+    public ReadOnlySpan<CollationPrefixMapping> GetPrefixMappings(int codePoint) => _prefixes.TryGetValue(codePoint, out var value) ? CollectionsMarshal.AsSpan(value) : [];
 
     /// <summary>Enumerates the contractions (code points, elements).</summary>
     public IEnumerable<(string Key, int Offset, int Count)> GetContractions()
@@ -150,6 +153,7 @@ internal sealed class CollationMap
             }
             else
             {
+                _continuations ??= new ulong[0x10000 / 64];
                 _continuations[codePoint >> 6] |= 1UL << (codePoint & 63);
             }
         }
@@ -163,11 +167,27 @@ internal sealed class CollationMap
         var offset = AddElements(elements);
         var mapping = new CollationPrefixMapping(prefix.ToArray(), codePoints[1..].ToArray(), offset, elements.Length);
         var codePoint = codePoints[0];
-        var list = _prefixes.TryGetValue(codePoint, out var existing) ? new List<CollationPrefixMapping>(existing) : [];
-        list.RemoveAll(item => item.Prefix.AsSpan().SequenceEqual(mapping.Prefix) && item.Suffix.AsSpan().SequenceEqual(mapping.Suffix));
-        list.Add(mapping);
-        list.Sort((a, b) => a.Prefix.Length != b.Prefix.Length ? b.Prefix.Length.CompareTo(a.Prefix.Length) : b.Suffix.Length.CompareTo(a.Suffix.Length));
-        _prefixes[codePoint] = [.. list];
+        ref var list = ref CollectionsMarshal.GetValueRefOrAddDefault(_prefixes, codePoint, out _);
+        list ??= [];
+
+        // Replace the mapping of the same context, and keep the longest prefixes (then the longest suffixes) first. Two
+        // mappings of the same lengths cannot both match, so their relative order does not matter.
+        for (var i = 0; i < list.Count; i++)
+        {
+            if (list[i].Prefix.AsSpan().SequenceEqual(mapping.Prefix) && list[i].Suffix.AsSpan().SequenceEqual(mapping.Suffix))
+            {
+                list.RemoveAt(i);
+                break;
+            }
+        }
+
+        var position = 0;
+        while (position < list.Count && Compare(list[position], mapping) <= 0)
+        {
+            position++;
+        }
+
+        list.Insert(position, mapping);
         GetOrCreateEntry(codePoint) |= PrefixFlag;
         MaxPrefixLength = Math.Max(MaxPrefixLength, prefix.Length);
     }
@@ -186,6 +206,10 @@ internal sealed class CollationMap
     {
         Array.Resize(ref _ces, _cesCount);
         Array.Resize(ref _pages, _pageCount * PageSize);
+        foreach (var list in _prefixes.Values)
+        {
+            list.TrimExcess();
+        }
     }
 
     internal static string ToKey(ReadOnlySpan<int> codePoints)
@@ -215,9 +239,20 @@ internal sealed class CollationMap
         return offset;
     }
 
+    // The order of the prefix mappings of a code point: the longest prefixes first, then the longest suffixes
+    private static int Compare(CollationPrefixMapping x, CollationPrefixMapping y) => x.Prefix.Length != y.Prefix.Length ? y.Prefix.Length.CompareTo(x.Prefix.Length) : y.Suffix.Length.CompareTo(x.Suffix.Length);
+
     private ref int GetOrCreateEntry(int codePoint)
     {
-        ref var pageIndex = ref _pageIndexes[codePoint >> PageShift];
+        var block = codePoint >> PageShift;
+        if (block >= _pageIndexes.Length)
+        {
+            var oldLength = _pageIndexes.Length;
+            Array.Resize(ref _pageIndexes, (0x10FFFF >> PageShift) + 1);
+            _pageIndexes.AsSpan(oldLength).Fill(-1);
+        }
+
+        ref var pageIndex = ref _pageIndexes[block];
         if (pageIndex < 0)
         {
             if ((_pageCount + 1) * PageSize > _pages.Length)

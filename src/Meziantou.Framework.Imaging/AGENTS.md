@@ -550,24 +550,40 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
       at least;
     - the field is computed from the image once: the encoder does not decode the frame to measure it and refine
       the field.
-- **WebP lossless encoder** (`Vp8LEncoder` and its partial files). The transforms of a frame are chosen by measurement
-  (`RankConfigurations`: each candidate is encoded at effort 2 into `LsbBitWriter.CreateCounter`), the main image is
-  parsed a second time against a cost model from effort 5 (`Vp8LEncoder.CostModel.cs`), and an entropy image splits the
-  prefix codes from effort 3 (`Vp8LEncoder.EntropyImage.cs`). `cwebp -lossless -exact -z <effort> -metadata none` (in the
-  prebuilt tools, not used by the tests) is the yardstick, and `cwebp -v` prints the transforms it chose. Measured on
-  screenshots, UI icons, photographs, smooth graphics, gradients and synthetic images (2026-10, against the encoder with
-  one group and fixed transforms): effort 3 -8.7 %, effort 5 -11.4 % (0.99 x the size of `cwebp -z 5`), effort 9
-  -10.1 %, for 1.3x, 2.3x and 7x the CPU time. What decided the design:
+- **WebP lossless encoder** (`Vp8LEncoder` and its partial files). What each effort does is in `Vp8LEncoderTools`
+  (one table for the main image, one for the alpha plane of a lossy frame, which keeps its earlier tools: lossy output
+  must not change with a lossless tuning). The transforms of a frame are chosen by measurement (`RankConfigurations`:
+  each candidate is encoded at effort 2 into `LsbBitWriter.CreateCounter`; from effort 8 the two best are encoded
+  fully), the predictor modes and color transform multipliers by the cost of their residuals under the statistics of the
+  tiles chosen before (`Vp8LEncoder.TransformSearch.cs`), the backward references of flat images by a cost model from
+  effort 4 and those of other images from effort 6 (`Vp8LEncoder.CostModel.cs`), and an entropy image splits the prefix
+  codes from effort 3 (`Vp8LEncoder.EntropyImage.cs`). `cwebp -lossless -exact -z <effort> -metadata none` (in the
+  prebuilt tools, not used by the tests) is the yardstick, and `cwebp -v` prints the transforms it chose. Retuned
+  2026-11 on 12 images (three photographs of 0.2 to 3 megapixels, a 1600x1600 text screenshot, UI screenshots, emoji and
+  glyph renders with alpha, gradients): at effort 5, photographs -4 to -13 % (from 1.7 % smaller to 0.6 % larger than
+  `cwebp -lossless`) in a third of the CPU time, the other images from -7 % to +1.4 %; from effort 1, every effort makes
+  the photographs smaller than before (effort 0: from -10 % to +0.7 %). What decided the design:
+  - Photographs: the transforms make the size. Subtract green only when it makes the gradient residuals of red and blue
+    cheaper (`IsSubtractGreenCheaper`: -9 % on the small photograph at every effort, -10 % on the large one below effort
+    3, where there is no color transform, 0.1 % above; it costs up to 4 % on some graphics below effort 3), the 14
+    predictor modes by their cost on tiles of 8 pixels (0.2 to 2 % smaller
+    than tiles of 16), the color transform on tiles of 16 (its least-squares candidates: 0.1 to 0.3 % smaller than the
+    entropy search of each multiplier, and several times faster).
+  - Photographs: a greedy hash chain search makes them 4 to 17 % larger (short matches replace cheaper literals), and the
+    parse with a cost model does not make them smaller even with its literal prices seeded by an all-literal parse (it
+    gains 1 % on a small photograph). Images where fewer than half the pixels repeat a neighbor (`IsFlat`) only try the
+    left and top neighbors below effort 6, without building hash chains. A parse with a cost model is kept by the
+    estimated size of its prefix codes, not by the entropy of its symbols, which kept parses that were larger.
   - Screenshots and flat graphics are 30 % smaller without the predictor (subtract green alone): their repetitions are
-    exact and backward references find them. Images where fewer than half the pixels repeat a neighbor always lose
-    without it, so the candidate is skipped there (`IsFlat`).
+    exact and backward references find them. Their size comes from the parse with a cost model (text, against effort 3:
+    -10 % at effort 4 with 16 chain entries, -20 % at effort 5 with 64, -26 % at effort 8).
   - A color table loses to the predictor (on the colors or on the indexes) on smooth ramps of up to 256 colors, by 2 to
     4 times; with 16 colors or fewer the bundled indexes win below effort 7.
-  - Predictor tiles of 16 and 64 pixels differ by 2 % at most, so effort 5 tries one size.
-  - The second parse is most of the CPU time: committing references of 128 pixels or more (below effort 9) and not
-    searching the hash chains while a match of 16 pixels is known removed 40 % of it for 0.4 % of size.
-  - Ranking without the second parse can misrank text images, where the cost model gains more with a color table:
-    effort 9 encodes the two best candidates fully. Rank on a sample (bands of 64 rows, a quarter of a large image):
+  - Predictor tiles of 4 pixels win or lose 0.6 % depending on the image: from effort 8 both 4 and 8 are encoded.
+  - The second parse is most of the CPU time of flat images: committing references of 128 pixels or more (below effort
+    9) and not searching the hash chains while a match of 16 pixels is known removed 40 % of it for 0.4 % of size.
+  - Ranking without the second parse can misrank text images, where the cost model gains more with a color table: from
+    effort 8 the two best candidates are encoded fully. Rank on a sample (bands of 64 rows, a quarter of a large image):
     whole-image ranking gained 0.3 %.
   Measure CPU time per thread (`clock_gettime(CLOCK_THREAD_CPUTIME_ID)`), not wall time: other sessions load this
   machine and wall times varied 3x between identical runs.

@@ -25,16 +25,6 @@ internal sealed partial class Vp8LEncoder
 {
     private const int MaxEntropyImageBits = 7;
 
-    /// <summary>Gets the most groups of the first clustering (the bins of the tiles): 3, 4 or 5 levels per feature.</summary>
-    private int MaxInitialGroups => _effort switch
-    {
-        < 5 => 27,
-        < 9 => 64,
-        _ => 125,
-    };
-
-    private bool EntropyImageEnabled => _effort >= 3 && !Ranking;
-
     /// <summary>Chooses the meta prefix codes of the main image.</summary>
     /// <returns>The plan, or <see langword="null"/> when a single group is estimated smaller.</returns>
     private EntropyImagePlan? PlanEntropyImage(ReadOnlySpan<uint> pixels, int width, int height, ReadOnlySpan<uint> tokens, int cacheBits, ReadOnlySpan<uint> total)
@@ -42,12 +32,7 @@ internal sealed partial class Vp8LEncoder
         var size = HistogramSize(cacheBits);
         var greenSize = GreenAlphabetSize(cacheBits);
         var bestBits = EstimateGroupBits(total, greenSize);
-        int[] candidates = _effort switch
-        {
-            < 5 => [5],
-            < 9 => [4, 5],
-            _ => [3, 4, 5, 6],
-        };
+        var candidates = _tools.EntropyImageBits;
 
         var budget = Math.Max(1L << 20, 8L * pixels.Length);
         EntropyImagePlan? best = null;
@@ -249,7 +234,7 @@ internal sealed partial class Vp8LEncoder
     /// <returns>The number of groups.</returns>
     private int AssignInitialGroups(ReadOnlySpan<ushort> tiles, int tileCount, int size, int greenSize, Span<int> groups, Span<float> features)
     {
-        var maxGroups = MaxInitialGroups;
+        var maxGroups = _tools.MaxInitialGroups;
 
         var nonEmpty = 0;
         for (var tile = 0; tile < tileCount; tile++)
@@ -484,12 +469,7 @@ internal sealed partial class Vp8LEncoder
     /// <returns>The number of groups (empty groups are removed).</returns>
     private int RefineGroups(ReadOnlySpan<ushort> tiles, int tileCount, int size, int greenSize, Span<int> groups, Span<uint> histograms, int groupCount, Span<float> costs, Span<int> previous, Span<int> symbols)
     {
-        var passes = _effort switch
-        {
-            < 5 => 1,
-            < 9 => 2,
-            _ => 4,
-        };
+        var passes = _tools.RefinePasses;
 
         var currentBits = EstimateAllGroups(histograms, groupCount);
         for (var pass = 0; pass < passes && groupCount > 1; pass++)

@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -143,23 +144,21 @@ internal static class WebPYuvConverter
     /// <c>2 * nearRow.Length</c> or <c>2 * nearRow.Length - 1</c> samples.
     /// </summary>
     /// <remarks>
-    /// With 128-bit hardware vectors, 8 chroma samples that have both neighbors give 16 output samples at a time, in 16-bit
+    /// With 128-bit hardware vectors, 16 chroma samples that have both neighbors give 32 output samples at a time, in 16-bit
     /// lanes (the largest sum, 16 * 255 + 8, fits 12 bits); the result is the one of <see cref="UpsampleSamplesScalar"/>.
     /// </remarks>
     internal static void UpsampleSamples(ReadOnlySpan<byte> nearRow, ReadOnlySpan<byte> farRow, Span<byte> destination)
     {
-        var first = 0;
-        var count = 0;
-        if (UseVectors && nearRow.Length >= 10 && farRow.Length >= nearRow.Length && destination.Length >= (2 * nearRow.Length) - 1)
+        if (UseVectors && nearRow.Length >= 18 && farRow.Length >= nearRow.Length && destination.Length >= (2 * nearRow.Length) - 1)
         {
-            // Samples 1 to Length - 2 have both neighbors; the vectors read one sample before and after their 8 samples
-            first = 1;
-            count = (nearRow.Length - 2) & ~7;
-            UpsampleSamplesVector(nearRow, farRow, destination, first, count);
+            // Samples 1 to Length - 2 have both neighbors; the vectors read one sample before and after their 16 samples
+            UpsampleSamplesVector(nearRow, farRow, destination);
+            UpsampleSamplesScalar(nearRow, farRow, destination, 0, 1);
+            UpsampleSamplesScalar(nearRow, farRow, destination, nearRow.Length - 1, 1);
+            return;
         }
 
-        UpsampleSamplesScalar(nearRow, farRow, destination, 0, first);
-        UpsampleSamplesScalar(nearRow, farRow, destination, first + count, nearRow.Length - first - count);
+        UpsampleSamplesScalar(nearRow, farRow, destination, 0, nearRow.Length);
     }
 
     /// <summary>The scalar reference of <see cref="UpsampleSamples"/>, for the chroma samples <paramref name="first"/> to <paramref name="first"/> + <paramref name="count"/> - 1.</summary>
@@ -183,31 +182,63 @@ internal static class WebPYuvConverter
 
     private static bool UseVectors => Vector128.IsHardwareAccelerated && BitConverter.IsLittleEndian && (AdvSimd.Arm64.IsSupported || Ssse3.IsSupported);
 
-    private static void UpsampleSamplesVector(ReadOnlySpan<byte> nearRow, ReadOnlySpan<byte> farRow, Span<byte> destination, int first, int count)
+    /// <summary>Upsamples the chroma samples 1 to <c>nearRow.Length - 2</c> (at least 16), 16 at a time: the last group overlaps the previous one.</summary>
+    private static void UpsampleSamplesVector(ReadOnlySpan<byte> nearRow, ReadOnlySpan<byte> farRow, Span<byte> destination)
     {
         ref var near = ref unsafe(MemoryMarshal.GetReference(nearRow));
         ref var far = ref unsafe(MemoryMarshal.GetReference(farRow));
         ref var output = ref unsafe(MemoryMarshal.GetReference(destination));
         var three = Vector128.Create((ushort)3);
         var eight = Vector128.Create((ushort)8);
-        for (var i = first; i < first + count; i += 8)
-        {
-            var center = Blend(ref near, ref far, i, three);
-            var weighted = (center * three) + eight;
-            var even = (weighted + Blend(ref near, ref far, i - 1, three)) >> 4;
-            var odd = (weighted + Blend(ref near, ref far, i + 1, three)) >> 4;
 
-            // The even and the odd samples, interleaved: each lane holds an even sample in its low byte and the next odd one
-            unsafe { (even | (odd << 8)).AsByte().StoreUnsafe(ref output, (nuint)(2 * i)); }
+        // The group of samples i to i + 15 reads the samples i - 1 to i + 16 and writes the output samples 2 i to 2 i + 31
+        var last = nearRow.Length - 17;
+        for (var i = 1; ; i += 16)
+        {
+            i = Math.Min(i, last);
+
+            // 3 near + far of the samples i - 1 to i + 14 (before) and i + 1 to i + 16 (after), in 16-bit lanes
+            var (beforeLow, beforeHigh) = Blend(ref near, ref far, i - 1, three);
+            var (afterLow, afterHigh) = Blend(ref near, ref far, i + 1, three);
+            var center = ShiftLanes(beforeLow, beforeHigh, 1);
+            var weighted = (center * three) + eight;
+            var pairs = Interleave((weighted + beforeLow) >> 4, (weighted + afterLow) >> 4);
+            unsafe { pairs.StoreUnsafe(ref output, (nuint)(2 * i)); }
+            center = ShiftLanes(afterLow, afterHigh, 7);
+            weighted = (center * three) + eight;
+            pairs = Interleave((weighted + beforeHigh) >> 4, (weighted + afterHigh) >> 4);
+            unsafe { pairs.StoreUnsafe(ref output, (nuint)((2 * i) + 16)); }
+            if (i == last)
+                break;
         }
 
-        // 3 near + far for 8 samples, in 16-bit lanes
+        // 3 near + far for 16 samples, in two vectors of 16-bit lanes
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static Vector128<ushort> Blend(ref byte near, ref byte far, int index, Vector128<ushort> three)
+        static (Vector128<ushort> Low, Vector128<ushort> High) Blend(ref byte near, ref byte far, int index, Vector128<ushort> three)
         {
-            var nearSamples = Vector128.WidenLower(Vector128.CreateScalar(unsafe(Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref near, index)))).AsByte());
-            var farSamples = Vector128.WidenLower(Vector128.CreateScalar(unsafe(Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref far, index)))).AsByte());
-            return (nearSamples * three) + farSamples;
+            var nearSamples = unsafe(Vector128.LoadUnsafe(ref near, (nuint)index));
+            var farSamples = unsafe(Vector128.LoadUnsafe(ref far, (nuint)index));
+            return ((Vector128.WidenLower(nearSamples) * three) + Vector128.WidenLower(farSamples), (Vector128.WidenUpper(nearSamples) * three) + Vector128.WidenUpper(farSamples));
+        }
+
+        // Lanes count to count + 7 of the 16 lanes of low and high (count is 1 or 7)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static Vector128<ushort> ShiftLanes(Vector128<ushort> low, Vector128<ushort> high, [ConstantExpected(Min = 1, Max = 7)] byte count)
+        {
+            if (AdvSimd.IsSupported)
+                return AdvSimd.ExtractVector128(low, high, count);
+
+            return (count == 1 ? Ssse3.AlignRight(high.AsByte(), low.AsByte(), 2) : Ssse3.AlignRight(high.AsByte(), low.AsByte(), 14)).AsUInt16();
+        }
+
+        // The even samples in the low bytes of the lanes, the odd samples in the high bytes (both below 256)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static Vector128<byte> Interleave(Vector128<ushort> even, Vector128<ushort> odd)
+        {
+            if (AdvSimd.IsSupported)
+                return AdvSimd.ShiftLeftAndInsert(even, odd, 8).AsByte();
+
+            return (even | (odd << 8)).AsByte();
         }
     }
 
@@ -233,6 +264,12 @@ internal static class WebPYuvConverter
         ref var alphaStart = ref unsafe(MemoryMarshal.GetReference(alpha));
         ref var output = ref unsafe(MemoryMarshal.GetReference(destination));
         var opaque = Vector128.Create(byte.MaxValue);
+
+        // The constants of Convert16AdvSimd, created once
+        var coefficients = Vector128.Create((ushort)LumaRest, RedFromCrRest, GreenFromCb, GreenFromCr, BlueFromCbRest, 0, 0, 0);
+        var redOffset = Vector128.Create(unchecked((uint)RedOffset));
+        var greenOffset = Vector128.Create((uint)GreenOffset);
+        var blueOffset = Vector128.Create(unchecked((uint)BlueOffset));
         var x = 0;
         for (; x + 16 <= length; x += 16)
         {
@@ -244,7 +281,11 @@ internal static class WebPYuvConverter
             Vector128<byte> b;
             if (Vector256.IsHardwareAccelerated && Avx2.IsSupported)
             {
-                (r, g, b) = Convert16Avx2(lumaValues, blueValues, redValues);
+                (r, g, b) = Convert16MultiplyAdd(lumaValues, blueValues, redValues);
+            }
+            else if (AdvSimd.Arm64.IsSupported)
+            {
+                (r, g, b) = Convert16AdvSimd(lumaValues, blueValues, redValues, coefficients, redOffset, greenOffset, blueOffset);
             }
             else
             {
@@ -293,30 +334,100 @@ internal static class WebPYuvConverter
         }
     }
 
-    /// <summary>The red, green and blue values of 16 pixels, in 2 groups of 32-bit lanes of 256-bit vectors.</summary>
-    private static (Vector128<byte> Red, Vector128<byte> Green, Vector128<byte> Blue) Convert16Avx2(Vector128<byte> luma, Vector128<byte> blue, Vector128<byte> red)
+    // The coefficients split into multiples of 65536 and a 16-bit rest: 76309 = 65536 + 10773, 104597 = 65536 + 39061 and
+    // 132201 = 2 * 65536 + 1129
+    private const int LumaRest = LumaScale - 65536;
+    private const int RedFromCrRest = RedFromCr - 65536;
+    private const int BlueFromCbRest = BlueFromCb - (2 * 65536);
+
+    /// <summary>The red, green and blue values of 16 pixels, with 16-bit multiplications that accumulate in 32-bit lanes.</summary>
+    /// <remarks>
+    /// The multiples of 65536 of the coefficients add whole values after the shift, which are added in 16-bit lanes:
+    /// <c>R = Y + Cr + ((10773 Y + 39061 Cr + RedOffset) &gt;&gt; 16)</c>,
+    /// <c>G = Y + ((10773 Y - 25675 Cb - 53279 Cr + GreenOffset) &gt;&gt; 16)</c> and
+    /// <c>B = Y + 2 Cb + ((10773 Y + 1129 Cb + BlueOffset) &gt;&gt; 16)</c>, the exact results of <see cref="ConvertSamplesScalar"/>.
+    /// The sums fit 32-bit lanes (they wrap as unsigned values, their signed values are below 2^24), the shifted sums are
+    /// between -277 and 178 and the results between -277 and 534: the high halves of the 32-bit lanes (UZP2) are the shifted
+    /// sums, and the 16-bit sums are exact before the narrowing with unsigned saturation, which is the clamp.
+    /// </remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static (Vector128<byte> Red, Vector128<byte> Green, Vector128<byte> Blue) Convert16AdvSimd(Vector128<byte> luma, Vector128<byte> blue, Vector128<byte> red, Vector128<ushort> coefficients, Vector128<uint> redOffset, Vector128<uint> greenOffset, Vector128<uint> blueOffset)
     {
-        var (red0, green0, blue0) = Convert8(Avx2.ConvertToVector256Int32(luma), Avx2.ConvertToVector256Int32(blue), Avx2.ConvertToVector256Int32(red));
-        var (red1, green1, blue1) = Convert8(Avx2.ConvertToVector256Int32(Sse2.ShiftRightLogical128BitLane(luma, 8)), Avx2.ConvertToVector256Int32(Sse2.ShiftRightLogical128BitLane(blue, 8)), Avx2.ConvertToVector256Int32(Sse2.ShiftRightLogical128BitLane(red, 8)));
-        return (Pack(red0, red1), Pack(green0, green1), Pack(blue0, blue1));
+        // The coefficients: lane 0 LumaRest, 1 RedFromCrRest, 2 GreenFromCb, 3 GreenFromCr, 4 BlueFromCbRest
+        var (red0, green0, blue0) = Convert8(Vector128.WidenLower(luma), Vector128.WidenLower(blue), Vector128.WidenLower(red), coefficients, redOffset, greenOffset, blueOffset);
+        var (red1, green1, blue1) = Convert8(Vector128.WidenUpper(luma), Vector128.WidenUpper(blue), Vector128.WidenUpper(red), coefficients, redOffset, greenOffset, blueOffset);
+        return (PackUnsignedSaturate(red0, red1), PackUnsignedSaturate(green0, green1), PackUnsignedSaturate(blue0, blue1));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static (Vector256<int> Red, Vector256<int> Green, Vector256<int> Blue) Convert8(Vector256<int> lumaValues, Vector256<int> blueValues, Vector256<int> redValues)
+        static (Vector128<short> Red, Vector128<short> Green, Vector128<short> Blue) Convert8(Vector128<ushort> y, Vector128<ushort> cb, Vector128<ushort> cr, Vector128<ushort> k, Vector128<uint> redOffset, Vector128<uint> greenOffset, Vector128<uint> blueOffset)
         {
-            var c = lumaValues * Vector256.Create(LumaScale);
-            var r = (c + ((redValues * Vector256.Create(RedFromCr)) + Vector256.Create(RedOffset))) >> 16;
-            var g = (c - (blueValues * Vector256.Create(GreenFromCb)) - (redValues * Vector256.Create(GreenFromCr)) + Vector256.Create(GreenOffset)) >> 16;
-            var b = (c + ((blueValues * Vector256.Create(BlueFromCb)) + Vector256.Create(BlueOffset))) >> 16;
+            var redLow = AdvSimd.MultiplyBySelectedScalarWideningLowerAndAdd(AdvSimd.MultiplyBySelectedScalarWideningLowerAndAdd(redOffset, y.GetLower(), k, 0), cr.GetLower(), k, 1);
+            var redHigh = AdvSimd.MultiplyBySelectedScalarWideningUpperAndAdd(AdvSimd.MultiplyBySelectedScalarWideningUpperAndAdd(redOffset, y, k, 0), cr, k, 1);
+            var greenLow = AdvSimd.MultiplyBySelectedScalarWideningLowerAndSubtract(AdvSimd.MultiplyBySelectedScalarWideningLowerAndSubtract(AdvSimd.MultiplyBySelectedScalarWideningLowerAndAdd(greenOffset, y.GetLower(), k, 0), cb.GetLower(), k, 2), cr.GetLower(), k, 3);
+            var greenHigh = AdvSimd.MultiplyBySelectedScalarWideningUpperAndSubtract(AdvSimd.MultiplyBySelectedScalarWideningUpperAndSubtract(AdvSimd.MultiplyBySelectedScalarWideningUpperAndAdd(greenOffset, y, k, 0), cb, k, 2), cr, k, 3);
+            var blueLow = AdvSimd.MultiplyBySelectedScalarWideningLowerAndAdd(AdvSimd.MultiplyBySelectedScalarWideningLowerAndAdd(blueOffset, y.GetLower(), k, 0), cb.GetLower(), k, 4);
+            var blueHigh = AdvSimd.MultiplyBySelectedScalarWideningUpperAndAdd(AdvSimd.MultiplyBySelectedScalarWideningUpperAndAdd(blueOffset, y, k, 0), cb, k, 4);
+            var signedY = y.AsInt16();
+            var r = signedY + cr.AsInt16() + AdvSimd.Arm64.UnzipOdd(redLow.AsInt16(), redHigh.AsInt16());
+            var g = signedY + AdvSimd.Arm64.UnzipOdd(greenLow.AsInt16(), greenHigh.AsInt16());
+            var b = signedY + cb.AsInt16() + cb.AsInt16() + AdvSimd.Arm64.UnzipOdd(blueLow.AsInt16(), blueHigh.AsInt16());
             return (r, g, b);
         }
+    }
 
-        // 16 values to bytes: the 16-bit pack works per 128-bit lane, its 64-bit groups hold the values 0-3, 8-11, 4-7, 12-15
+    // The coefficients split for 16-bit multiply-adds (PMADDWD): 104597 = 2 * 65536 - 26475, -53279 = -65536 + 12257
+    private const int RedFromCrSignedRest = RedFromCr - (2 * 65536);
+    private const int GreenFromCrSignedRest = 65536 - GreenFromCr;
+
+    /// <summary>The red, green and blue values of 16 pixels, with 16-bit multiply-adds into 32-bit lanes of 256-bit vectors (AVX2).</summary>
+    /// <remarks>
+    /// The multiples of 65536 of the coefficients add whole values after the shift, which are added in 16-bit lanes:
+    /// <c>R = Y + 2 Cr + ((10773 Y - 26475 Cr + RedOffset) &gt;&gt; 16)</c>,
+    /// <c>G = Y - Cr + ((10773 Y - 25675 Cb + 12257 Cr + GreenOffset) &gt;&gt; 16)</c> and
+    /// <c>B = Y + 2 Cb + ((10773 Y + 1129 Cb + BlueOffset) &gt;&gt; 16)</c>, the exact results of <see cref="ConvertSamplesScalar"/>:
+    /// the products of 16-bit pairs (PMADDWD of (Y, Cr) and (Y, Cb) interleaved) and their sums fit 32-bit lanes, the shifted
+    /// sums are between -326 and 225 and the results between -326 and 584, so that the 16-bit packing (PACKSSDW, which
+    /// also restores the pixel order of the interleave in each 128-bit lane) and the 16-bit sums are exact before the narrowing
+    /// with unsigned saturation, which is the clamp.
+    /// </remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static (Vector128<byte> Red, Vector128<byte> Green, Vector128<byte> Blue) Convert16MultiplyAdd(Vector128<byte> luma, Vector128<byte> blue, Vector128<byte> red)
+    {
+        var y = Avx2.ConvertToVector256Int16(luma);
+        var cb = Avx2.ConvertToVector256Int16(blue);
+        var cr = Avx2.ConvertToVector256Int16(red);
+
+        // Pixels 0-3 and 8-11 (low), 4-7 and 12-15 (high) as (Y, Cr) and (Y, Cb) pairs
+        var lumaRedLow = Avx2.UnpackLow(y, cr);
+        var lumaRedHigh = Avx2.UnpackHigh(y, cr);
+        var lumaBlueLow = Avx2.UnpackLow(y, cb);
+        var lumaBlueHigh = Avx2.UnpackHigh(y, cb);
+        var redFactors = Vector256.Create((ushort)LumaRest | (unchecked((uint)RedFromCrSignedRest) << 16)).AsInt16();
+        var greenFactors = Vector256.Create((ushort)LumaRest | (unchecked((uint)-GreenFromCb) << 16)).AsInt16();
+        var greenRedFactors = Vector256.Create(GreenFromCrSignedRest << 16).AsInt16();
+        var blueFactors = Vector256.Create((ushort)LumaRest | ((uint)BlueFromCbRest << 16)).AsInt16();
+        var redOffset = Vector256.Create(RedOffset);
+        var greenOffset = Vector256.Create(GreenOffset);
+        var blueOffset = Vector256.Create(BlueOffset);
+        var redRest = High(Avx2.MultiplyAddAdjacent(lumaRedLow, redFactors) + redOffset, Avx2.MultiplyAddAdjacent(lumaRedHigh, redFactors) + redOffset);
+        var greenRest = High(
+            Avx2.MultiplyAddAdjacent(lumaBlueLow, greenFactors) + Avx2.MultiplyAddAdjacent(lumaRedLow, greenRedFactors) + greenOffset,
+            Avx2.MultiplyAddAdjacent(lumaBlueHigh, greenFactors) + Avx2.MultiplyAddAdjacent(lumaRedHigh, greenRedFactors) + greenOffset);
+        var blueRest = High(Avx2.MultiplyAddAdjacent(lumaBlueLow, blueFactors) + blueOffset, Avx2.MultiplyAddAdjacent(lumaBlueHigh, blueFactors) + blueOffset);
+        var r = y + cr + cr + redRest;
+        var g = y - cr + greenRest;
+        var b = y + cb + cb + blueRest;
+
+        // 16 values to bytes: the pack works per 128-bit lane, its 64-bit groups hold the values 0-7 of the first vector, 0-7 of
+        // the second one, 8-15 of the first one and 8-15 of the second one
+        var redGreen = Avx2.Permute4x64(Avx2.PackUnsignedSaturate(r, g).AsInt64(), 0b11_01_10_00).AsByte();
+        var blueBlue = Avx2.Permute4x64(Avx2.PackUnsignedSaturate(b, b).AsInt64(), 0b11_01_10_00).AsByte();
+        return (redGreen.GetLower(), redGreen.GetUpper(), blueBlue.GetLower());
+
+        // The high halves of the 32-bit sums (arithmetic shift), packed to 16 bits in the pixel order
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static Vector128<byte> Pack(Vector256<int> low, Vector256<int> high)
-        {
-            var words = Avx2.Permute4x64(Avx2.PackSignedSaturate(low, high).AsInt64(), 0b11_01_10_00).AsInt16();
-            return Sse2.PackUnsignedSaturate(words.GetLower(), words.GetUpper());
-        }
+        static Vector256<short> High(Vector256<int> low, Vector256<int> high)
+            => Avx2.PackSignedSaturate(Avx2.ShiftRightArithmetic(low, 16), Avx2.ShiftRightArithmetic(high, 16));
     }
 
     /// <summary>Narrows signed 16-bit values to bytes with unsigned saturation (0 to 255).</summary>

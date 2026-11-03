@@ -4153,7 +4153,7 @@ public sealed class VectorizedKernelTests
             }
         }
 
-        // Every (luma, chroma) pair with the other chroma sample at its extremes and at its center
+        // Every (luma, Cb, Cr) triple
         var lumas = new byte[256 * 256];
         var chromas = new byte[256 * 256];
         for (var i = 0; i < lumas.Length; i++)
@@ -4162,10 +4162,10 @@ public sealed class VectorizedKernelTests
             chromas[i] = (byte)i;
         }
 
-        foreach (var other in new byte[] { 0, 128, 255 })
+        for (var other = 0; other < 256; other++)
         {
             var constant = new byte[lumas.Length];
-            Array.Fill(constant, other);
+            Array.Fill(constant, (byte)other);
             foreach (var (blue, red) in new[] { (chromas, constant), (constant, chromas) })
             {
                 var expected = new byte[lumas.Length * 4];
@@ -4251,7 +4251,16 @@ public sealed class VectorizedKernelTests
                     };
                     var expected = reference.ReadBool(probability);
                     bool value;
-                    if (useLocals)
+                    if (useLocals && probability == 128 && i % 2 == 0)
+                    {
+                        // A sign: the magnitude negated when the bit is set
+                        actual.Load(out var window, out var range, out var bits);
+                        var signed = Vp8BoolDecoder.ReadSigned(ref actual, ref window, ref range, ref bits, 1 + (i % 2047));
+                        actual.Store(window, range, bits);
+                        Assert.Equal(1 + (i % 2047), Math.Abs(signed));
+                        value = signed < 0;
+                    }
+                    else if (useLocals)
                     {
                         actual.Load(out var window, out var range, out var bits);
                         value = Vp8BoolDecoder.ReadBool(ref actual, ref window, ref range, ref bits, probability);
@@ -6063,6 +6072,147 @@ public sealed class VectorizedKernelTests
                     Vp8Reconstruction.PredictBlockScalar(expected, Stride, offset, size, mbX, mbY, mode);
                     Vp8Reconstruction.PredictBlock(actual, Stride, offset, size, mbX, mbY, mode);
                     Assert.True(expected.AsSpan().SequenceEqual(actual), $"Mode {mode} of a {size}x{size} block at ({mbX}, {mbY}), round {round}.");
+                }
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void WebPMacroblockReconstructionMatchesTheScalarReference()
+    {
+        // Macroblocks of every luma mode (sub-block modes included) and chroma mode, with blocks without coefficient, with a
+        // DC only and with AC coefficients: the vector paths (whole-block prediction written with the DC residuals, sub-block
+        // prediction written with its residual) give the scalar predictions followed by the scalar inverse transforms, at the
+        // frame edges too, with every clamp
+        var random = new Random(6387);
+        var scope = new AllocationScope(ImageResourceLimits.Default);
+        using var expected = Vp8Planes.Create(scope, 48, 48);
+        using var actual = Vp8Planes.Create(scope, 48, 48);
+        var coefficients = new short[25 * 16];
+        var subModes = new byte[16];
+        var edge = new byte[Vp8Reconstruction.SubBlockEdgeLength];
+        var prediction = new byte[16];
+        var aboveRight = new byte[4];
+        for (var round = 0; round < 1500; round++)
+        {
+            for (var plane = 0; plane < 3; plane++)
+            {
+                var samples = plane switch
+                {
+                    0 => expected.Y,
+                    1 => expected.U,
+                    _ => expected.V,
+                };
+                random.NextBytes(samples);
+                if (round % 3 == 1)
+                {
+                    for (var i = 0; i < samples.Length; i++)
+                    {
+                        samples[i] = (byte)(random.Next(2) * 255);
+                    }
+                }
+            }
+
+            expected.Y.CopyTo(actual.Y);
+            expected.U.CopyTo(actual.U);
+            expected.V.CopyTo(actual.V);
+            Array.Clear(coefficients);
+            var blocksWithCoefficients = 0u;
+            var blocksWithAc = 0u;
+            var acBlocks = round % 5 < 2 ? 0 : 3; // no AC coefficient at all in 2 rounds of 5
+            for (var block = 0; block < 24; block++)
+            {
+                var kind = random.Next(3 + acBlocks);
+                if (kind == 0)
+                    continue;
+
+                coefficients[block * 16] = (short)(round % 4 == 2 ? random.Next(-32768, 32768) : random.Next(-2100, 2100));
+                blocksWithCoefficients |= 1u << block;
+                if (kind >= 3)
+                {
+                    for (var i = 1; i < 16; i++)
+                    {
+                        coefficients[(block * 16) + i] = (short)(random.Next(2) == 0 ? 0 : random.Next(-600, 600));
+                    }
+
+                    blocksWithAc |= 1u << block;
+                }
+            }
+
+            var mbX = random.Next(3);
+            var mbY = random.Next(3);
+            var yMode = random.Next(5);
+            var uvMode = random.Next(4);
+            for (var i = 0; i < 16; i++)
+            {
+                subModes[i] = (byte)random.Next(10);
+            }
+
+            Vp8Reconstruction.ReconstructMacroblock(actual, mbX, mbY, 3, yMode, subModes, uvMode, coefficients, blocksWithCoefficients, blocksWithAc, lumaOrigin: 0);
+            var yStride = expected.YStride;
+            var lumaOffset = (mbY * 16 * yStride) + (mbX * 16);
+            if (yMode == Vp8Tables.BPred)
+            {
+                Vp8Reconstruction.GetMacroblockAboveRight(expected.Y, yStride, mbX, mbY, 3, aboveRight);
+                for (var block = 0; block < 16; block++)
+                {
+                    var offset = lumaOffset + ((block >> 2) * 4 * yStride) + ((block & 3) * 4);
+                    Vp8Reconstruction.GetSubBlockEdge(expected.Y, yStride, offset, (mbX * 16) + ((block & 3) * 4), (mbY * 16) + ((block >> 2) * 4), (block & 3) == 3 ? aboveRight : default, edge);
+                    Vp8Reconstruction.PredictSubBlockScalar(edge, subModes[block], prediction);
+                    for (var row = 0; row < 4; row++)
+                    {
+                        prediction.AsSpan(row * 4, 4).CopyTo(expected.Y[(offset + (row * yStride))..]);
+                    }
+
+                    AddResidual(block, expected.Y[offset..], yStride);
+                }
+            }
+            else
+            {
+                Vp8Reconstruction.PredictBlockScalar(expected.Y, yStride, lumaOffset, 16, mbX, mbY, yMode);
+                for (var block = 0; block < 16; block++)
+                {
+                    AddResidual(block, expected.Y[(lumaOffset + ((block >> 2) * 4 * yStride) + ((block & 3) * 4))..], yStride);
+                }
+            }
+
+            for (var plane = 0; plane < 2; plane++)
+            {
+                var samples = plane == 0 ? expected.U : expected.V;
+                var chromaOffset = (mbY * 8 * expected.UVStride) + (mbX * 8);
+                Vp8Reconstruction.PredictBlockScalar(samples, expected.UVStride, chromaOffset, 8, mbX, mbY, uvMode);
+                for (var block = 0; block < 4; block++)
+                {
+                    AddResidual(16 + (plane * 4) + block, samples[(chromaOffset + ((block >> 1) * 4 * expected.UVStride) + ((block & 1) * 4))..], expected.UVStride);
+                }
+            }
+
+            Assert.True(expected.Y.SequenceEqual(actual.Y), $"Luma mode {yMode} at ({mbX}, {mbY}), round {round}.");
+            Assert.True(expected.U.SequenceEqual(actual.U), $"Cb mode {uvMode} at ({mbX}, {mbY}), round {round}.");
+            Assert.True(expected.V.SequenceEqual(actual.V), $"Cr mode {uvMode} at ({mbX}, {mbY}), round {round}.");
+
+            void AddResidual(int block, Span<byte> destination, int stride)
+            {
+                if ((blocksWithAc & (1u << block)) != 0)
+                {
+                    Vp8Transforms.InverseDctAddFullScalar(coefficients.AsSpan(block * 16, 16), destination, stride);
+                }
+                else if ((blocksWithCoefficients & (1u << block)) != 0)
+                {
+                    AddDc(coefficients[block * 16], destination, stride);
+                }
+            }
+        }
+
+        // The inverse DCT of a block whose only coefficient is the DC, added with clamping
+        static void AddDc(short dc, Span<byte> destination, int stride)
+        {
+            for (var y = 0; y < 4; y++)
+            {
+                for (var x = 0; x < 4; x++)
+                {
+                    destination[(y * stride) + x] = (byte)Math.Clamp(destination[(y * stride) + x] + ((dc + 4) >> 3), 0, 255);
                 }
             }
         }

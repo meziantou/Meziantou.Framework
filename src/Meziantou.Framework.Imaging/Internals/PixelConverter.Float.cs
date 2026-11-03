@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -296,6 +297,22 @@ internal static partial class PixelConverter
                 unsafe { Unsafe.As<TDestination, RgbaHalf>(ref Unsafe.Add(ref dst, i)) = new RgbaHalf((Half)(r / (double)maxR), (Half)(g / (double)maxG), (Half)(b / (double)maxB), (Half)(a / (double)maxA)); }
             }
         }
+    }
+
+    /// <summary>
+    /// Converts finite halves (zero-extended bit patterns) to floats exactly: a normal half has its exponent rebased and
+    /// its fraction moved, a subnormal half is its fraction times 2^-24, and the sign is copied. An infinity or a value
+    /// that is not a number gives a finite float of at least 65,536 in magnitude.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static Vector128<float> HalfToSingle(Vector128<uint> half)
+    {
+        var magnitude = half & Vector128.Create(0x7FFFu);
+        var sign = Vector128.ShiftLeft(half & Vector128.Create(0x8000u), 16);
+        var normal = Vector128.ShiftLeft(magnitude, 13) + Vector128.Create((127u - 15u) << 23);
+        var subnormal = Vector128.ConvertToSingle(magnitude.AsInt32()) * Vector128.Create(1f / (1 << 24));
+        var isSubnormal = Vector128.LessThan(magnitude, Vector128.Create(0x0400u));
+        return Vector128.ConditionalSelect(isSubnormal.AsSingle(), subnormal, normal.AsSingle()) | sign.AsSingle();
     }
 
     /// <summary>Brings the components of a floating-point pixel into [0, 1]: tone mapping, then clipping when the policy allows it.</summary>

@@ -15,6 +15,12 @@ internal sealed class JpegXlWeightedPredictor : IDisposable
     private const long Rounding = ((1 << ExtraBits) >> 1) - 1;
     private const int SubPredictorCount = 4;
 
+    /// <summary>The number of sums of errors whose weight is read from a table.</summary>
+    private const int WeightTableLength = 1024;
+
+    // The weight tables of each weight of the header, computed when a predictor first uses them
+    private static readonly uint[]?[] WeightTables = new uint[]?[16];
+
     private readonly int _width;
     private readonly int _rowLength;
 
@@ -419,10 +425,15 @@ internal sealed class JpegXlWeightedPredictor : IDisposable
         out long prediction2,
         out long prediction3)
     {
-        var weight0 = GetErrorWeight(sum0, parameters.Weight0);
-        var weight1 = GetErrorWeight(sum1, parameters.Weight1);
-        var weight2 = GetErrorWeight(sum2, parameters.Weight2);
-        var weight3 = GetErrorWeight(sum3, parameters.Weight3);
+        // The weights of the small sums come from tables, which take a load off the latency of the samples
+        var table0 = parameters.WeightTable0;
+        var table1 = parameters.WeightTable1;
+        var table2 = parameters.WeightTable2;
+        var table3 = parameters.WeightTable3;
+        var weight0 = sum0 < (uint)table0.Length ? table0[(int)sum0] : GetErrorWeight(sum0, parameters.Weight0);
+        var weight1 = sum1 < (uint)table1.Length ? table1[(int)sum1] : GetErrorWeight(sum1, parameters.Weight1);
+        var weight2 = sum2 < (uint)table2.Length ? table2[(int)sum2] : GetErrorWeight(sum2, parameters.Weight2);
+        var weight3 = sum3 < (uint)table3.Length ? table3[(int)sum3] : GetErrorWeight(sum3, parameters.Weight3);
 
         north <<= ExtraBits;
         west <<= ExtraBits;
@@ -449,27 +460,25 @@ internal sealed class JpegXlWeightedPredictor : IDisposable
         var prediction = (total * Reciprocals[((int)weightSum - 1) & 63]) >> 24;
 
         // When the errors of the neighbors do not all have the same sign, the prediction is kept; otherwise it is clamped to the
-        // neighbors. The condition and the comparisons are not predictable: they select with masks (the errors are 32-bit
-        // values: the condition is that their combination minus one is negative)
-        if (((errorN ^ errorW) | (errorN ^ errorNW)) <= 0)
-        {
-            var max = Max(west, Max(northEast, north));
-            var min = Min(west, Min(northEast, north));
-            prediction = Max(min, Min(max, prediction));
-        }
-
-        return prediction;
+        // neighbors: Math.Max(min, Math.Min(max, prediction)) is the largest neighbor from it on, otherwise the smallest one up
+        // to it. The condition and the comparisons are not predictable, and the prediction is the last value known: they
+        // select with masks (the errors are 32-bit values: the condition is that their combination minus one is negative)
+        var max = Max(west, Max(northEast, north));
+        var min = Min(west, Min(northEast, north));
+        var isClamped = (((errorN ^ errorW) | (errorN ^ errorNW)) - 1) >> 63;
+        var isMax = ~LessThan(prediction, max) & isClamped;
+        var isMin = ~LessThan(min, prediction) & isClamped & ~isMax;
+        return (max & isMax) | (min & isMin) | (prediction & ~(isMax | isMin));
     }
 
-    /// <summary>Returns -1 when <paramref name="value"/> is less than <paramref name="other"/>, 0 otherwise, for any values.</summary>
+    /// <summary>Returns -1 when <paramref name="value"/> is less than <paramref name="other"/>, 0 otherwise.</summary>
+    /// <remarks>
+    /// The operands are below 2^62 in magnitude, so their difference does not overflow: the samples and the errors are 32-bit
+    /// values, the samples are compared with three more bits of precision, and a prediction is a 64-bit value shifted right by
+    /// 24 bits.
+    /// </remarks>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static long LessThan(long value, long other)
-    {
-        // The sign of the difference, corrected when it overflows (the operands have different signs and the difference has
-        // the sign of the subtrahend)
-        var difference = value - other;
-        return (difference ^ ((value ^ other) & (difference ^ value))) >> 63;
-    }
+    private static long LessThan(long value, long other) => (value - other) >> 63;
 
     /// <summary>Returns <paramref name="ifSet"/> when <paramref name="mask"/> is -1, <paramref name="otherwise"/> when it is 0.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -566,6 +575,10 @@ internal sealed class JpegXlWeightedPredictor : IDisposable
         public readonly uint Weight1;
         public readonly uint Weight2;
         public readonly uint Weight3;
+        public readonly uint[] WeightTable0;
+        public readonly uint[] WeightTable1;
+        public readonly uint[] WeightTable2;
+        public readonly uint[] WeightTable3;
 
         public Parameters(JpegXlWeightedPredictor predictor)
         {
@@ -580,7 +593,36 @@ internal sealed class JpegXlWeightedPredictor : IDisposable
             Weight1 = predictor._weight1;
             Weight2 = predictor._weight2;
             Weight3 = predictor._weight3;
+            WeightTable0 = GetWeightTable(Weight0);
+            WeightTable1 = GetWeightTable(Weight1);
+            WeightTable2 = GetWeightTable(Weight2);
+            WeightTable3 = GetWeightTable(Weight3);
         }
+    }
+
+    /// <summary>
+    /// Returns the weights of the sums of errors below <see cref="WeightTableLength"/> for a weight of the header (4 bits),
+    /// computed once (an empty table for a larger weight).
+    /// </summary>
+    private static uint[] GetWeightTable(uint maxWeight)
+    {
+        if (maxWeight >= (uint)WeightTables.Length)
+            return [];
+
+        // Two threads may compute the same table: either one is kept
+        var table = Volatile.Read(ref WeightTables[maxWeight]);
+        if (table is null)
+        {
+            table = new uint[WeightTableLength];
+            for (var error = 0u; error < WeightTableLength; error++)
+            {
+                table[error] = GetErrorWeight(error, maxWeight);
+            }
+
+            Volatile.Write(ref WeightTables[maxWeight], table);
+        }
+
+        return table;
     }
 
     /// <summary>Records the errors of the last prediction once the sample is known.</summary>

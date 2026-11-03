@@ -147,7 +147,9 @@ internal sealed class JpegXlEntropyDecoder : IDisposable
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         public uint Read(int cluster, ref uint state, ref ulong bits, ref int bitCount, ref int position)
         {
-            // The operations of ReadAnsToken and of JpegXlHybridUintConfig.ReadValue
+            // The operations of ReadAnsToken and of JpegXlHybridUintConfig.ReadValue. The bits are refilled first: a value
+            // reads at most 16 bits for the state and 31 raw bits, fewer than the 48 bits a refill leaves
+            Refill(ref bits, ref bitCount, ref position);
             var index = state & (JpegXlAnsDistribution.TableSize - 1);
             var bucket = (int)(index >> _logBucketSize);
             var offsetInBucket = index & ((1u << _logBucketSize) - 1);
@@ -171,7 +173,7 @@ internal sealed class JpegXlEntropyDecoder : IDisposable
             state = (frequency * (state >> JpegXlAnsDistribution.LogTableSize)) + offset;
             if (state < 1u << 16)
             {
-                state = (state << 16) | ReadBits(16, ref bits, ref bitCount, ref position);
+                state = (state << 16) | Take(16, ref bits, ref bitCount);
             }
 
             var config = _configs[cluster];
@@ -183,37 +185,39 @@ internal sealed class JpegXlEntropyDecoder : IDisposable
             var count = (int)(((uint)(config.SplitExponent - bitsInToken) + ((token - split) >> bitsInToken)) & 31);
             var low = token & ((1u << config.LsbInToken) - 1);
             token >>= config.LsbInToken;
-            var raw = ReadBits(count, ref bits, ref bitCount, ref position);
+            var raw = Take(count, ref bits, ref bitCount);
             return (((((1u << config.MsbInToken) | (token & ((1u << config.MsbInToken) - 1))) << count) | raw) << config.LsbInToken) | low;
         }
 
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-        private uint ReadBits(int count, ref ulong bits, ref int bitCount, ref int position)
+        private static uint Take(int count, ref ulong bits, ref int bitCount)
         {
-            if (bitCount < count)
-            {
-                // The operations of JpegXlBitReader.Refill; the bytes near the end are read by the bit reader itself
-                if (position <= _data.Length - 8)
-                {
-                    bits |= System.Buffers.Binary.BinaryPrimitives.ReadUInt64LittleEndian(_data.Slice(position, 8)) << bitCount;
-                    var whole = (63 - bitCount) >> 3;
-                    position += whole;
-                    bitCount += whole << 3;
-                }
-                else
-                {
-                    // The state goes through values: a reference to the locals of the loop would keep them in memory
-                    var refilled = RefillNearEnd(_reader, bits, bitCount, position);
-                    bits = refilled.Bits;
-                    bitCount = refilled.BitCount;
-                    position = refilled.Position;
-                }
-            }
-
             var value = (uint)(bits & ((1UL << count) - 1));
             bits >>= count;
             bitCount -= count;
             return value;
+        }
+
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+        private void Refill(ref ulong bits, ref int bitCount, ref int position)
+        {
+            // The operations of JpegXlBitReader.Refill, whatever the number of bits left: the bits above the count are those
+            // of the next bytes, which are set again with the same values. The bytes near the end are read by the bit reader
+            if (position <= _data.Length - 8)
+            {
+                bits |= System.Buffers.Binary.BinaryPrimitives.ReadUInt64LittleEndian(_data.Slice(position, 8)) << bitCount;
+                var whole = (63 - bitCount) >> 3;
+                position += whole;
+                bitCount += whole << 3;
+            }
+            else if (bitCount < 48)
+            {
+                // The state goes through values: a reference to the locals of the loop would keep them in memory
+                var refilled = RefillNearEnd(_reader, bits, bitCount, position);
+                bits = refilled.Bits;
+                bitCount = refilled.BitCount;
+                position = refilled.Position;
+            }
         }
 
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]

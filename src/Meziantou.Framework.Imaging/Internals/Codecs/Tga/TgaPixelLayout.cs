@@ -57,6 +57,9 @@ internal sealed class TgaPixelLayout
     /// <summary>Gets the number of bytes of one expanded row.</summary>
     public int SourceRowLength => Header.Width * PixelFormats.GetBytesPerPixel(SourcePixelFormat);
 
+    /// <summary>Gets a value indicating whether <see cref="ExpandRowToOpaqueRgba"/> can expand the rows (24-bit true-color pixels).</summary>
+    public bool ExpandsToOpaqueRgba => !Header.IsColorMapped && !Header.IsGrayscale && Header.PixelDepth == 24 && !HasAlpha;
+
     /// <summary>Gets the number of bytes of one stored row.</summary>
     public int StoredRowLength => Header.Width * Header.BytesPerStoredPixel;
 
@@ -176,6 +179,21 @@ internal sealed class TgaPixelLayout
         if (Header.IsRightToLeft)
         {
             ReverseRow(destination, width, PixelFormats.GetBytesPerPixel(SourcePixelFormat));
+        }
+    }
+
+    /// <summary>
+    /// Expands one stored row of 24-bit pixels (<see cref="ExpandsToOpaqueRgba"/>) to opaque <see cref="PixelFormat.Rgba32"/>
+    /// pixels, the pixels of <see cref="ExpandRow"/> with an opaque alpha, resolving right-to-left storage.
+    /// </summary>
+    /// <param name="stored">Exactly <see cref="StoredRowLength"/> bytes.</param>
+    /// <param name="destination">Exactly 4 bytes per pixel.</param>
+    public void ExpandRowToOpaqueRgba(ReadOnlySpan<byte> stored, Span<byte> destination)
+    {
+        PixelConverter.SwapRedAndBlue24ToOpaque32(stored[..(Header.Width * 3)], destination);
+        if (Header.IsRightToLeft)
+        {
+            ReverseRow(destination, Header.Width, bytesPerPixel: 4);
         }
     }
 

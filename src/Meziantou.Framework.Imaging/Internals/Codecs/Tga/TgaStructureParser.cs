@@ -124,7 +124,7 @@ internal sealed class TgaStructureParser : ImageParser<ImageInfo>
                         _context.Sequential?.OnHeader(CreateInfo(ImageIdentifyMode.Header));
                         _decoder!.OnHeaderComplete(this);
                         _storedRow = _context.Scope.Rent(Layout.StoredRowLength, AllocationKind.DecoderState, clear: false);
-                        _sourceRow = _context.Scope.Rent(Layout.SourceRowLength, AllocationKind.DecoderState, clear: false);
+                        _sourceRow = _context.Scope.Rent(GetExpandedRowLength(), AllocationKind.DecoderState, clear: false);
                         if (Layout.ColorMapStorageLength > 0)
                         {
                             // Every entry is stored before the first pixel is expanded
@@ -449,19 +449,32 @@ internal sealed class TgaStructureParser : ImageParser<ImageInfo>
             var destination = decoder.GetDirectRow(lease, y);
             if (!destination.IsEmpty)
             {
-                Layout.ExpandRow(stored, destination);
+                ExpandRow(stored, destination);
                 return;
             }
         }
 
-        var source = _sourceRow!.Span[..Layout.SourceRowLength];
-        Layout.ExpandRow(stored, source);
+        var source = _sourceRow!.Span[..GetExpandedRowLength()];
+        ExpandRow(stored, source);
         if (!lease.IsActive)
         {
             lease = decoder.LeaseRows();
         }
 
         decoder.WriteRow(lease, y, source);
+    }
+
+    private int GetExpandedRowLength() => _decoder!.OpaqueRgbaRows ? Header.Width * 4 : Layout.SourceRowLength;
+
+    private void ExpandRow(ReadOnlySpan<byte> stored, Span<byte> destination)
+    {
+        if (_decoder!.OpaqueRgbaRows)
+        {
+            Layout.ExpandRowToOpaqueRgba(stored, destination);
+            return;
+        }
+
+        Layout.ExpandRow(stored, destination);
     }
 
     private ImageInfo CreateInfo(ImageIdentifyMode mode)

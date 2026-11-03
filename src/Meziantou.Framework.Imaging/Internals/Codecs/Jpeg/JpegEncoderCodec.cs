@@ -1498,26 +1498,27 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         /// <summary>Transforms and quantizes a block of an MCU of the loaded row of a worker, and stores its coefficients (zig-zag order).</summary>
         private void TransformBlock(TransformWorker worker, int mcuX, int block, Span<short> destination)
         {
-            // The samples are copied first: reading them from the plane rows, as the baseline coding does, measured slower here
+            // The AVX-512 and Arm64 transforms read the rows of the plane; for the others the samples are copied first, which
+            // measured faster than reading them from the plane rows
             var coefficients = worker.Coefficients.AsSpan();
             var samples = GetBlockSamples(worker, mcuX, block, out var stride);
-            if (stride != 8)
-            {
-                CopyBlock(samples, stride, worker.Block);
-                samples = worker.Block;
-            }
-
             var divisors = block < _h * _v ? _luminanceDivisors : _chrominanceDivisors;
             if (JpegForwardDct.UsesAvx512)
             {
-                JpegForwardDct.TransformAndQuantizeAvx512(samples, 8, divisors, destination);
+                JpegForwardDct.TransformAndQuantizeAvx512(samples, stride, divisors, destination);
                 return;
             }
 
             if (AdvSimd.Arm64.IsSupported)
             {
-                JpegForwardDct.TransformAndQuantizeArm64(samples, 8, divisors, worker.Scratch, destination);
+                JpegForwardDct.TransformAndQuantizeArm64(samples, stride, divisors, worker.Scratch, destination);
                 return;
+            }
+
+            if (stride != 8)
+            {
+                CopyBlock(samples, stride, worker.Block);
+                samples = worker.Block;
             }
 
             JpegForwardDct.TransformAndQuantize(samples, 8, divisors, worker.Scratch, coefficients);

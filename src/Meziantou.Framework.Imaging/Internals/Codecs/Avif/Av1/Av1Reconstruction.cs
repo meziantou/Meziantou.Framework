@@ -129,7 +129,17 @@ internal static class Av1Reconstruction
         }
 
         var residual = scratch.Slice(1024, w * h);
-        Av1InverseTransform.Transform(dequant[..(Math.Min(32, w) * Math.Min(32, h))], residual, txSz, txType, lossless, bitDepth, rows, columns);
+        dequant = dequant[..(Math.Min(32, w) * Math.Min(32, h))];
+        var flipLR = txType is Av1Constants.DctFlipadst or Av1Constants.AdstFlipadst or Av1Constants.HFlipadst or Av1Constants.FlipadstFlipadst;
+        if (!lossless && !flipLR)
+        {
+            // The transform adds its residual to the samples as it computes it
+            var flipUD = txType is Av1Constants.FlipadstDct or Av1Constants.FlipadstAdst or Av1Constants.VFlipadst or Av1Constants.FlipadstFlipadst;
+            if (Av1InverseTransform.TryTransformAdd(dequant, residual, txSz, txType, bitDepth, rows, columns, plane[((y * stride) + x)..], stride, flipUD))
+                return;
+        }
+
+        Av1InverseTransform.Transform(dequant, residual, txSz, txType, lossless, bitDepth, rows, columns);
         AddResidualBlock(plane, stride, x, y, residual, w, h, txType, maxSample);
     }
 

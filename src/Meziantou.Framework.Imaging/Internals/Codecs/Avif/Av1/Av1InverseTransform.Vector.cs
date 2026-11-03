@@ -23,19 +23,22 @@ internal static partial class Av1InverseTransform
     // of NarrowLanes128 and NarrowLanes256 when no product of the kernels can exceed 32 bits (IsNarrowExact, for inputs of
     // the dequantization range: inRange for the rows), the 64-bit products of Lanes128 and Lanes256 otherwise. The inputs of
     // the columns are clamped to the column range, which is 16 bits for a bit depth of at most 10
-    private static void TransformVector(ReadOnlySpan<int> dequant, Span<int> residual, int txSz, int txType, int bitDepth, int rows, int columns, bool inRange)
+    // destination: when not empty, the predicted samples (from the top left sample of the block, destinationStride per row)
+    // that the residual is added to, clamped to the samples of the bit depth, with the rows in reverse order for flipUD;
+    // residual is then a scratch that is left with values of no use
+    private static void TransformVector(ReadOnlySpan<int> dequant, Span<int> residual, int txSz, int txType, int bitDepth, int rows, int columns, bool inRange, Span<ushort> destination, int destinationStride, bool flipUD)
     {
         if (bitDepth > 10)
         {
-            TransformVector<Lanes128, Lanes128, Lanes256>(dequant, residual, txSz, txType, bitDepth, rows, columns);
+            TransformVector<Lanes128, Lanes128, Lanes256>(dequant, residual, txSz, txType, bitDepth, rows, columns, destination, destinationStride, flipUD);
         }
         else if (inRange && IsNarrowExact(bitDepth + 8, GetRowKind(txType), Av1Tables.TxWidthLog2[txSz]))
         {
-            TransformVector<NarrowLanes128, NarrowLanes128, NarrowLanes256>(dequant, residual, txSz, txType, bitDepth, rows, columns);
+            TransformVector<NarrowLanes128, NarrowLanes128, NarrowLanes256>(dequant, residual, txSz, txType, bitDepth, rows, columns, destination, destinationStride, flipUD);
         }
         else
         {
-            TransformVector<Lanes128, NarrowLanes128, NarrowLanes256>(dequant, residual, txSz, txType, bitDepth, rows, columns);
+            TransformVector<Lanes128, NarrowLanes128, NarrowLanes256>(dequant, residual, txSz, txType, bitDepth, rows, columns, destination, destinationStride, flipUD);
         }
     }
 
@@ -55,7 +58,7 @@ internal static partial class Av1InverseTransform
     // rows rows and columns columns of coefficients may not be zero: the other rows transform to zeros, and the DCT of rows
     // or columns whose last inputs are zero is InverseDctSparse, which does not read them
     [SkipLocalsInit]
-    private static void TransformVector<TRows, TColumns, TColumns256>(ReadOnlySpan<int> dequant, Span<int> residual, int txSz, int txType, int bitDepth, int rows, int columns)
+    private static void TransformVector<TRows, TColumns, TColumns256>(ReadOnlySpan<int> dequant, Span<int> residual, int txSz, int txType, int bitDepth, int rows, int columns, Span<ushort> destination, int destinationStride, bool flipUD)
         where TRows : struct, ILanes<Vector128<int>>
         where TColumns : struct, ILanes<Vector128<int>>
         where TColumns256 : struct, ILanes<Vector256<int>>
@@ -155,15 +158,28 @@ internal static partial class Av1InverseTransform
             }
         }
 
+        var add = !destination.IsEmpty;
         if (lastRow < 0)
         {
-            residual[(rowGroups * w)..].Clear();
+            // A residual of zeros changes no sample
+            if (!add)
+                residual[(rowGroups * w)..].Clear();
+
             return;
         }
 
         if (lastRow is 0 && !residual[..w].ContainsAnyExcept(residual[0]))
         {
             TransformConstantRows(residual, w, h, log2H, colKind, colClampRange, lossless: false, ColumnShift);
+            if (add)
+            {
+                var maxSample = (1 << bitDepth) - 1;
+                for (var i = 0; i < h; i++)
+                {
+                    Av1Reconstruction.AddConstant(destination, destinationStride, 0, flipUD ? h - 1 - i : i, w, 1, residual[i * w], maxSample);
+                }
+            }
+
             return;
         }
 
@@ -174,9 +190,11 @@ internal static partial class Av1InverseTransform
 
         if (Avx2.IsSupported && w >= 8)
         {
-            TransformColumns256<TColumns256>(residual, w, h, log2H, colKind, colClampRange, sparseColumnInputs);
+            TransformColumns256<TColumns256>(residual, w, h, log2H, colKind, colClampRange, sparseColumnInputs, destination, destinationStride, flipUD, (1 << bitDepth) - 1);
             return;
         }
+
+        var maxSamples = Vector128.Create((1 << bitDepth) - 1);
 
         var columnLength = sparseColumnInputs is 0 ? h : sparseColumnInputs;
         for (var j = 0; j < w; j += 4)
@@ -196,6 +214,16 @@ internal static partial class Av1InverseTransform
                 Apply<TColumns, Vector128<int>>(colKind, column, log2H, colClampRange);
             }
 
+            if (add)
+            {
+                for (var i = 0; i < h; i++)
+                {
+                    AddResidual4(destination, ((flipUD ? h - 1 - i : i) * destinationStride) + j, Av1Simd.ShiftRightArithmeticRounded(column[i], ColumnShift), maxSamples);
+                }
+
+                continue;
+            }
+
             for (var i = 0; i < h; i++)
             {
                 Av1Simd.ShiftRightArithmeticRounded(column[i], ColumnShift).CopyTo(residual.Slice((i * w) + j, 4));
@@ -213,9 +241,10 @@ internal static partial class Av1InverseTransform
 
     // The columns of TransformVector by groups of 8, for a block at least 8 samples wide
     [SkipLocalsInit]
-    private static void TransformColumns256<TLanes>(Span<int> residual, int w, int h, int log2H, Kind colKind, int colClampRange, int sparseInputs)
+    private static void TransformColumns256<TLanes>(Span<int> residual, int w, int h, int log2H, Kind colKind, int colClampRange, int sparseInputs, Span<ushort> destination, int destinationStride, bool flipUD, int maxSample)
         where TLanes : struct, ILanes<Vector256<int>>
     {
+        var maxSamples = Vector256.Create(maxSample);
         // Every element is written before it is read
         Span<Vector256<int>> column = unsafe(stackalloc Vector256<int>[64])[..h];
         var columnLength = sparseInputs is 0 ? h : sparseInputs;
@@ -235,10 +264,37 @@ internal static partial class Av1InverseTransform
                 Apply<TLanes, Vector256<int>>(colKind, column, log2H, colClampRange);
             }
 
+            if (!destination.IsEmpty)
+            {
+                for (var i = 0; i < h; i++)
+                {
+                    var samples = destination.Slice(((flipUD ? h - 1 - i : i) * destinationStride) + j, 8);
+                    var predicted = Avx2.ConvertToVector256Int32(Vector128.Create(samples));
+                    var sum = Vector256.Min(Vector256.Max(predicted + Lanes256.ShiftRightArithmeticRounded(column[i], ColumnShift), Vector256<int>.Zero), maxSamples);
+                    Vector256.Narrow(sum, sum).GetLower().AsUInt16().CopyTo(samples);
+                }
+
+                continue;
+            }
+
             for (var i = 0; i < h; i++)
             {
                 Lanes256.ShiftRightArithmeticRounded(column[i], ColumnShift).CopyTo(residual.Slice((i * w) + j, 8));
             }
+        }
+    }
+
+    // Adds 4 residual samples to the 4 predicted samples at destination[index], clamped to 0 to the lanes of maxSamples
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void AddResidual4(Span<ushort> destination, int index, Vector128<int> residual, Vector128<int> maxSamples)
+    {
+        ref var samples = ref unsafe(Unsafe.As<ushort, byte>(ref destination.Slice(index, 4)[0]));
+        var predicted = Vector128.WidenLower(Vector128.CreateScalar(unsafe(Unsafe.ReadUnaligned<ulong>(ref samples))).AsUInt16()).AsInt32();
+        var sum = Vector128.Min(Vector128.Max(predicted + residual, Vector128<int>.Zero), maxSamples);
+        var narrowed = Vector128.Narrow(sum, sum).AsUInt64().ToScalar();
+        unsafe
+        {
+            Unsafe.WriteUnaligned(ref samples, narrowed);
         }
     }
 

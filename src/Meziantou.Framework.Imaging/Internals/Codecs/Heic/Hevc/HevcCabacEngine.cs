@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -28,7 +29,11 @@ internal struct HevcCabacEngine
     /// <summary>The number of bits of <see cref="Offset"/> that the specification has not read yet.</summary>
     public int ExtraBits;
 
-    /// <summary>Decodes a bin with a context variable (clause 9.3.4.3.2 "Arithmetic decoding process for a binary decision").</summary>
+    /// <summary>
+    /// Decodes a bin with a context variable (clause 9.3.4.3.2 "Arithmetic decoding process for a binary decision"), with
+    /// masks instead of branches: the value of many bins, such as <c>sig_coeff_flag</c>, is hard to predict, and a
+    /// mispredicted branch costs more than the work of both paths.
+    /// </summary>
     /// <param name="contexts">The context variables, in the layout of <see cref="HevcContextLayout"/>.</param>
     /// <param name="ctxIdx">The index of the context variable.</param>
     /// <param name="source">The decoder that reads the data.</param>
@@ -36,50 +41,32 @@ internal struct HevcCabacEngine
     public int DecodeDecision(Span<byte> contexts, int ctxIdx, HevcCabacDecoder source)
     {
         ref var context = ref contexts[ctxIdx];
-        var state = (int)context;
-        var pStateIdx = state >> 1;
-        var valMps = state & 1;
-        var qRangeIdx = (int)(Range >> 6) & 3;
-        var ivlLpsRange = (uint)HevcCabacTables.RangeTabLps[(pStateIdx << 2) + qRangeIdx];
-        Range -= ivlLpsRange;
-        var scaledRange = (ulong)Range << ExtraBits;
-        int binVal;
-        if (Offset < scaledRange)
-        {
-            // Clause 9.3.4.3.2.2 "State transition process", then the renormalization: the range is at least 256 - 2 = 254
-            context = (byte)((HevcCabacTables.TransIdxMps[pStateIdx] << 1) | valMps);
-            if (Range >= 256)
-                return valMps;
+        var state = (uint)context;
 
-            binVal = valMps;
-            Range <<= 1;
-            ExtraBits--;
-        }
-        else
-        {
-            Offset -= scaledRange;
-            Range = ivlLpsRange;
-            binVal = 1 - valMps;
-            if (pStateIdx is 0)
-            {
-                valMps = 1 - valMps;
-            }
+        // rangeTabLps[ pStateIdx ][ qRangeIdx ]: pStateIdx is in the bits 1 to 6 of the context variable
+        var ivlLpsRange = (uint)HevcCabacTables.RangeTabLps[(byte)(((state & 0x7E) << 1) | ((Range >> 6) & 3))];
+        var range = Range - ivlLpsRange;
+        var scaledRange = (ulong)range << ExtraBits;
 
-            context = (byte)((HevcCabacTables.TransIdxLps[pStateIdx] << 1) | valMps);
+        // All the bits are set when the bin is the least probable symbol: ivlOffset >= ivlCurrRange. Both values are less
+        // than 2^50, so that the difference does not overflow
+        var lps = (long)(scaledRange - Offset - 1) >> 63;
+        Offset -= scaledRange & (ulong)lps;
+        range ^= (range ^ ivlLpsRange) & (uint)lps;
 
-            // Clause 9.3.4.3.3 "Renormalization process in the arithmetic decoding engine": the range is at least 2
-            var shift = int.LeadingZeroCount((int)Range) - 23;
-            Range <<= shift;
-            ExtraBits -= shift;
-        }
+        // Clause 9.3.4.3.2.2 "State transition process"
+        context = HevcCabacTables.NextContextState[(byte)(state | (uint)(lps & 128))];
 
-        // A single call, which keeps the method small where it is inlined
+        // Clause 9.3.4.3.3 "Renormalization process in the arithmetic decoding engine": the range is at least 2
+        var shift = BitOperations.LeadingZeroCount(range) - 23;
+        Range = range << shift;
+        ExtraBits -= shift;
         if (ExtraBits < 0)
         {
             (Offset, ExtraBits) = source.Refill(Offset, ExtraBits);
         }
 
-        return binVal;
+        return (int)((state ^ (uint)lps) & 1);
     }
 
     /// <summary>Decodes a bin without context (clause 9.3.4.3.4 "Bypass decoding process for binary decisions").</summary>
@@ -100,6 +87,66 @@ internal struct HevcCabacEngine
         }
 
         return 0;
+    }
+
+    /// <summary>
+    /// Decodes <c>coeff_abs_level_remaining</c> (clause 9.3.3.11): a prefix of at most 4 bins and a suffix of
+    /// <paramref name="cRiceParam"/> bins, or a prefix of 4 bins and an Exp-Golomb code of order <paramref name="cRiceParam"/> + 1.
+    /// </summary>
+    /// <param name="cRiceParam"><c>cRiceParam</c>.</param>
+    /// <param name="source">The decoder that reads the data.</param>
+    /// <exception cref="InvalidImageContentException">The value is larger than the levels of transform coefficients.</exception>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public int DecodeCoeffAbsLevelRemaining(int cRiceParam, HevcCabacDecoder source)
+    {
+        // The prefix is a unary code: the next bins are the binary digits of a quotient (DecodeBypassBits), and the prefix is
+        // their number of leading ones, without a branch on each bin. The bins after the first 0 are not read
+        if (ExtraBits < 16)
+        {
+            (Offset, ExtraBits) = source.ReadAhead(Offset, ExtraBits);
+        }
+
+        var prefix = 0;
+        var ended = false;
+        var peek = Math.Min(ExtraBits, 16);
+        if (peek > 0)
+        {
+            var shift = ExtraBits - peek;
+            var bins = (uint)((Offset >> shift) / Range);
+            var ones = BitOperations.LeadingZeroCount(~(bins << (32 - peek)));
+            ended = ones < peek;
+
+            // The ones and the 0 that ends them, or all the bins when they are ones
+            var unread = ended ? peek - ones - 1 : 0;
+            Offset -= ((bins >> unread) * (ulong)Range) << (shift + unread);
+            ExtraBits = shift + unread;
+            prefix = ones;
+        }
+
+        while (!ended && DecodeBypass(source) is not 0)
+        {
+            // The longest codes are those of the largest transform coefficient levels: a longer prefix is not a value
+            if (++prefix > 32)
+                throw HevcErrors.Invalid("a transform coefficient level is out of range.");
+        }
+
+        long value;
+        if (prefix <= 3)
+        {
+            value = (prefix << cRiceParam) + DecodeBypassBits(cRiceParam, source);
+        }
+        else
+        {
+            var length = prefix - 3 + cRiceParam;
+            if (length > 30)
+                throw HevcErrors.Invalid("a transform coefficient level is out of range.");
+
+            value = (((1L << (prefix - 3)) + 3 - 1) << cRiceParam) + DecodeBypassBits(length, source);
+            if (value > 2 * -(long)HevcInverseTransform.CoeffMin)
+                throw HevcErrors.Invalid("a transform coefficient level is out of range.");
+        }
+
+        return (int)value;
     }
 
     /// <summary>Decodes <paramref name="count"/> bypass bins, the first one being the most significant bit of the result.</summary>

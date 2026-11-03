@@ -6026,6 +6026,63 @@ public sealed class VectorizedKernelTests
     }
 
     [Theory]
+    [InlineData(1, 1, true)]
+    [InlineData(1, 1, false)]
+    [InlineData(1, 0, true)]
+    [InlineData(0, 0, false)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void HeifRgbaConversionMatchesTheReference(int subsamplingX, int subsamplingY, bool cositedColumns)
+    {
+        // The matrices, ranges and bit depths of the fast path for 8-bit RGBA pixels, with transparent pixels, the extremes
+        // of the samples, and widths and heights that are odd
+        var random = new Random((subsamplingX * 4) + (subsamplingY * 2) + (cositedColumns ? 1 : 0));
+        foreach (var matrix in new[] { Av1Constants.McBt601, Av1Constants.McBt709, Av1Constants.McFcc, Av1Constants.McSmpte240, Av1Constants.McBt2020Ncl })
+        {
+            foreach (var bitDepth in new[] { 8, 10, 12 })
+            {
+                foreach (var fullRange in new[] { true, false })
+                {
+                    var converter = new HeifRgbConverter(PixelFormat.Rgba32, bitDepth, subsamplingX, subsamplingY, matrix, fullRange, clearTransparentColors: random.Next(2) is 0, cositedColumns);
+                    foreach (var width in new[] { 1, 2, 3, 16, 17 })
+                    {
+                        var chromaWidth = (width + subsamplingX) >> subsamplingX;
+                        for (var round = 0; round < 8; round++)
+                        {
+                            var rows = new byte[2][];
+                            for (var i = 0; i < 2; i++)
+                            {
+                                rows[i] = new byte[width * 4];
+                                for (var j = 0; j < rows[i].Length; j++)
+                                {
+                                    rows[i][j] = (byte)(round % 3 is 0 ? (random.Next(2) is 0 ? 0 : 255) : random.Next(256));
+                                }
+                            }
+
+                            var hasSecondRow = subsamplingY is 1 && round % 4 is not 3;
+                            var row1 = hasSecondRow ? rows[1] : rows[0];
+                            var expected = new ushort[6][];
+                            var actual = new ushort[6][];
+                            for (var i = 0; i < 6; i++)
+                            {
+                                expected[i] = new ushort[i is 2 or 3 ? chromaWidth : width];
+                                actual[i] = new ushort[i is 2 or 3 ? chromaWidth : width];
+                            }
+
+                            var expectedTransparent = converter.ConvertRowsReference(rows[0], row1, expected[0], expected[1], expected[2], expected[3], expected[4], expected[5], hasSecondRow);
+                            var actualTransparent = converter.ConvertRows(rows[0], row1, actual[0], actual[1], actual[2], actual[3], actual[4], actual[5], hasSecondRow);
+                            Assert.Equal(expectedTransparent, actualTransparent);
+                            for (var i = 0; i < 6; i++)
+                            {
+                                Assert.Equal(expected[i], actual[i]);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    [Theory]
     [InlineData(8)]
     [InlineData(10)]
     [InlineData(11)]

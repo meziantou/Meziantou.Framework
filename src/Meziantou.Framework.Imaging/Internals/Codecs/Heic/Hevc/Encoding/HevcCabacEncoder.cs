@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -122,26 +123,20 @@ internal sealed class HevcCabacEncoder
         var valMps = context & 1;
         var qRangeIdx = (int)(_range >> 6) & 3;
         var ivlLpsRange = (uint)HevcCabacTables.RangeTabLps[(pStateIdx << 2) + qRangeIdx];
-        _range -= ivlLpsRange;
+        var range = _range - ivlLpsRange;
         BinCountsInNalUnits++;
         UpdateContext(ref context, binVal);
-        if (binVal == valMps)
-        {
-            // The range is at least 256 - 2: at most one bit
-            if (_range < 256)
-            {
-                Renormalize(1);
-            }
 
-            return;
-        }
-
-        _low += _range;
-        _range = ivlLpsRange;
+        // The bins of many syntax elements are hard to predict: the interval of the least probable symbol is selected with
+        // a mask instead of a branch. All the bits of lps are set for it
+        var lps = (uint)-(binVal ^ valMps);
+        _low += range & lps;
+        range ^= (range ^ ivlLpsRange) & lps;
+        _range = range;
         PropagateCarry();
 
-        // Clause 9.3.5.4: the range is at least 6 and less than 256
-        Renormalize(int.LeadingZeroCount((int)_range) - 23);
+        // Clause 9.3.5.4: the range is at least 6, and at least 256 - 2 for the most probable symbol
+        Renormalize(BitOperations.LeadingZeroCount(range) - 23);
     }
 
     /// <summary>Encodes a bin without context (clause 9.3.5.5 "Bypass encoding process for binary decisions").</summary>

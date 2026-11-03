@@ -374,6 +374,21 @@ internal ref partial struct HevcSliceCoder
     /// <summary>The sum of the absolute differences between two blocks of samples of at most 64x64 samples: 8 samples at a time.</summary>
     internal static long GetSad(ReadOnlySpan<ushort> first, int firstStride, ReadOnlySpan<ushort> second, int secondStride, int width, int height)
     {
+        if (Vector128.IsHardwareAccelerated && width is 4 && (height & 1) is 0 && height <= 64)
+        {
+            // The 4x4 blocks of the intra mode search: two rows at a time
+            var sum4 = Vector128<uint>.Zero;
+            for (var y = 0; y < height; y += 2)
+            {
+                var a = Vector128.Create(Vector64.Create(first.Slice(y * firstStride, 4)), Vector64.Create(first.Slice((y + 1) * firstStride, 4)));
+                var b = Vector128.Create(Vector64.Create(second.Slice(y * secondStride, 4)), Vector64.Create(second.Slice((y + 1) * secondStride, 4)));
+                var (low, high) = Vector128.Widen(Vector128.Max(a, b) - Vector128.Min(a, b));
+                sum4 += low + high;
+            }
+
+            return Vector128.Sum(sum4);
+        }
+
         if (!Vector128.IsHardwareAccelerated || width < 8 || width * height > 64 * 64)
             return GetSadScalar(first, firstStride, second, secondStride, width, height);
 

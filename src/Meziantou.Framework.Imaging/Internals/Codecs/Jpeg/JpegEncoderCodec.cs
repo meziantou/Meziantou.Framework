@@ -602,6 +602,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
 
     /// <summary>Gets a mask of the non-zero values among 64 stored (16-bit) coefficients: bit <c>k</c> is set when <c>coefficients[k]</c> is not zero.</summary>
     /// <param name="coefficients">The 64 coefficients.</param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static ulong GetNonZeroMask(ReadOnlySpan<short> coefficients)
     {
         coefficients = coefficients[..64];

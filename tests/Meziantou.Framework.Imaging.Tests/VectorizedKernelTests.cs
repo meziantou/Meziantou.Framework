@@ -2040,8 +2040,9 @@ public sealed class VectorizedKernelTests
             for (var i = 0; i < length; i++)
             {
                 // Linear samples of both segments and of both signs, with zeros, the limit of the segments, values far out
-                // of range, infinities and subnormal values
-                samples[i] = (round % 6) switch
+                // of range, infinities, subnormal values, and every exponent around the table of the vector paths (2^-9
+                // to 2^6), in runs that leave it
+                samples[i] = (round % 7) switch
                 {
                     0 => random.Next(4) switch
                     {
@@ -2054,6 +2055,7 @@ public sealed class VectorizedKernelTests
                     2 => (float)random.NextDouble() * 1e-40f,
                     3 => BitConverter.Int32BitsToSingle(BitConverter.SingleToInt32Bits(0.0031308f) + random.Next(-3, 4)),
                     4 => (float)((random.NextDouble() - 0.5) * 0.01),
+                    5 => MathF.ScaleB(1 + (float)random.NextDouble(), random.Next(-12, 9)) * (random.Next(2) == 0 ? 1 : -1),
                     _ => (float)((random.NextDouble() * 1.4) - 0.2),
                 };
             }

@@ -3,6 +3,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 using Meziantou.Framework.Imaging.Formats;
 
@@ -19,12 +20,31 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
 
     public static JpegEncoderCodec Instance { get; } = new();
 
+    /// <summary>
+    /// For a value <c>v</c> from -2048 to 2047, at the index <c>v + 2048</c>: its size category SSSS (the number of bits of
+    /// its magnitude, T.81 F.1.2.1.1) in the high 16 bits, and its SSSS additional bits (<c>v</c>, or <c>v - 1</c> for a
+    /// negative value) in the low 16 bits.
+    /// </summary>
+    private static readonly uint[] ValueBits = CreateValueBits();
+
     public override ImageFormat Format => ImageFormat.Jpeg;
 
     public override ImageEncoderSession CreateSession(ImageEncoderSessionOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
         return new Session(options);
+    }
+
+    private static uint[] CreateValueBits()
+    {
+        var table = new uint[4096];
+        for (var value = -2048; value < 2048; value++)
+        {
+            var size = 32 - BitOperations.LeadingZeroCount((uint)Math.Abs(value));
+            table[value + 2048] = ((uint)size << 16) | ((uint)(value < 0 ? value - 1 : value) & ((1u << size) - 1));
+        }
+
+        return table;
     }
 
     /// <summary>Gets the luma sampling factors of an output (chroma components are always 1x1), or (1, 1) for grayscale output.</summary>
@@ -63,13 +83,15 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
     /// <param name="blue">The Cb samples minus 128.</param>
     /// <param name="red">The Cr samples minus 128.</param>
     /// <remarks>
-    /// With 128-bit hardware vectors, 16 pixels are deinterleaved by byte shuffles and converted two at a time with the same
+    /// With 128-bit hardware vectors, 16 pixels are deinterleaved by byte shuffles (one LD3 load on Arm64) and converted two
+    /// at a time (from exact single-precision conversions of the samples on Arm64) with the same
     /// operations in the same order (separate multiplications and additions), so the samples are identical;
-    /// with AVX2, four at a time.
+    /// with AVX2, four at a time, and with AVX-512, eight at a time.
     /// </remarks>
     internal static void ConvertRgbToYCbCr(ReadOnlySpan<byte> source, Span<float> luma, Span<float> blue, Span<float> red)
     {
-        var done = Avx2.IsSupported ? ConvertRgbToYCbCrAvx2(source, luma, blue, red)
+        var done = Vector512.IsHardwareAccelerated && Avx512F.IsSupported ? ConvertRgbToYCbCrAvx512(source, luma, blue, red)
+            : Avx2.IsSupported ? ConvertRgbToYCbCrAvx2(source, luma, blue, red)
             : Vector128.IsHardwareAccelerated && BitConverter.IsLittleEndian ? ConvertRgbToYCbCrVector(source, luma, blue, red)
             : 0;
         ConvertRgbToYCbCrScalar(source[(3 * done)..], luma[done..], blue[done..], red[done..]);
@@ -100,17 +122,41 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         ref var blueStart = ref unsafe(MemoryMarshal.GetReference(blue));
         ref var redStart = ref unsafe(MemoryMarshal.GetReference(red));
         var x = 0;
+        if (AdvSimd.Arm64.IsSupported)
+        {
+            // LD3 loads and deinterleaves 16 pixels
+            unsafe
+            {
+                fixed (byte* pixels = source)
+                {
+                    for (; x + 16 <= count; x += 16)
+                    {
+                        var (r, g, b) = AdvSimd.Arm64.Load3xVector128AndUnzip(pixels + (3 * x));
+                        Convert16(r, g, b, ref Unsafe.Add(ref lumaStart, x), ref Unsafe.Add(ref blueStart, x), ref Unsafe.Add(ref redStart, x));
+                    }
+                }
+            }
+
+            return x;
+        }
+
         for (; x + 16 <= count; x += 16)
         {
             var (r, g, b) = Deinterleave(ref unsafe(Unsafe.Add(ref sourceStart, 3 * x)));
-            var (r0, r1) = Vector128.Widen(r);
-            var (g0, g1) = Vector128.Widen(g);
-            var (b0, b1) = Vector128.Widen(b);
-            Convert8(r0, g0, b0, ref unsafe(Unsafe.Add(ref lumaStart, x)), ref unsafe(Unsafe.Add(ref blueStart, x)), ref unsafe(Unsafe.Add(ref redStart, x)));
-            Convert8(r1, g1, b1, ref unsafe(Unsafe.Add(ref lumaStart, x + 8)), ref unsafe(Unsafe.Add(ref blueStart, x + 8)), ref unsafe(Unsafe.Add(ref redStart, x + 8)));
+            Convert16(r, g, b, ref unsafe(Unsafe.Add(ref lumaStart, x)), ref unsafe(Unsafe.Add(ref blueStart, x)), ref unsafe(Unsafe.Add(ref redStart, x)));
         }
 
         return x;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static void Convert16(Vector128<byte> r, Vector128<byte> g, Vector128<byte> b, ref float luma, ref float blue, ref float red)
+        {
+            var (r0, r1) = Vector128.Widen(r);
+            var (g0, g1) = Vector128.Widen(g);
+            var (b0, b1) = Vector128.Widen(b);
+            Convert8(r0, g0, b0, ref luma, ref blue, ref red);
+            Convert8(r1, g1, b1, ref unsafe(Unsafe.Add(ref luma, 8)), ref unsafe(Unsafe.Add(ref blue, 8)), ref unsafe(Unsafe.Add(ref red, 8)));
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static void Convert8(Vector128<ushort> r, Vector128<ushort> g, Vector128<ushort> b, ref float luma, ref float blue, ref float red)
@@ -136,11 +182,12 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
                 return;
             }
 
-            var (r0, r1) = Vector128.Widen(r);
-            var (g0, g1) = Vector128.Widen(g);
-            var (b0, b1) = Vector128.Widen(b);
-            Convert2(Vector128.ConvertToDouble(r0), Vector128.ConvertToDouble(g0), Vector128.ConvertToDouble(b0), out var y0, out var cb0, out var cr0);
-            Convert2(Vector128.ConvertToDouble(r1), Vector128.ConvertToDouble(g1), Vector128.ConvertToDouble(b1), out var y1, out var cb1, out var cr1);
+            // The samples (below 2^24) are converted exactly to single precision, then widened exactly to double precision
+            var rs = Vector128.ConvertToSingle(r);
+            var gs = Vector128.ConvertToSingle(g);
+            var bs = Vector128.ConvertToSingle(b);
+            Convert2(Vector128.WidenLower(rs), Vector128.WidenLower(gs), Vector128.WidenLower(bs), out var y0, out var cb0, out var cr0);
+            Convert2(Vector128.WidenUpper(rs), Vector128.WidenUpper(gs), Vector128.WidenUpper(bs), out var y1, out var cb1, out var cr1);
             unsafe { Vector128.Narrow(y0, y1).StoreUnsafe(ref luma); }
             unsafe { Vector128.Narrow(cb0, cb1).StoreUnsafe(ref blue); }
             unsafe { Vector128.Narrow(cr0, cr1).StoreUnsafe(ref red); }
@@ -207,6 +254,41 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         }
     }
 
+    /// <summary>Converts the pixels of whole 16-pixel groups with AVX-512, eight at a time.</summary>
+    /// <returns>The number of pixels converted.</returns>
+    internal static int ConvertRgbToYCbCrAvx512(ReadOnlySpan<byte> source, Span<float> luma, Span<float> blue, Span<float> red)
+    {
+        var count = Math.Min(Math.Min(luma.Length, Math.Min(blue.Length, red.Length)), source.Length / 3);
+        ref var sourceStart = ref unsafe(MemoryMarshal.GetReference(source));
+        ref var lumaStart = ref unsafe(MemoryMarshal.GetReference(luma));
+        ref var blueStart = ref unsafe(MemoryMarshal.GetReference(blue));
+        ref var redStart = ref unsafe(MemoryMarshal.GetReference(red));
+        var x = 0;
+        for (; x + 16 <= count; x += 16)
+        {
+            var (r, g, b) = Deinterleave(ref unsafe(Unsafe.Add(ref sourceStart, 3 * x)));
+            var r32 = Avx512F.ConvertToVector512Int32(r);
+            var g32 = Avx512F.ConvertToVector512Int32(g);
+            var b32 = Avx512F.ConvertToVector512Int32(b);
+            Convert8(r32.GetLower(), g32.GetLower(), b32.GetLower(), ref unsafe(Unsafe.Add(ref lumaStart, x)), ref unsafe(Unsafe.Add(ref blueStart, x)), ref unsafe(Unsafe.Add(ref redStart, x)));
+            Convert8(r32.GetUpper(), g32.GetUpper(), b32.GetUpper(), ref unsafe(Unsafe.Add(ref lumaStart, x + 8)), ref unsafe(Unsafe.Add(ref blueStart, x + 8)), ref unsafe(Unsafe.Add(ref redStart, x + 8)));
+        }
+
+        return x;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static void Convert8(Vector256<int> red8, Vector256<int> green8, Vector256<int> blue8, ref float luma, ref float blue, ref float red)
+        {
+            var r = Avx512F.ConvertToVector512Double(red8);
+            var g = Avx512F.ConvertToVector512Double(green8);
+            var b = Avx512F.ConvertToVector512Double(blue8);
+            var y = (0.299 * r) + (0.587 * g) + (0.114 * b);
+            unsafe { Avx512F.ConvertToVector256Single(y - Vector512.Create(128.0)).StoreUnsafe(ref luma); }
+            unsafe { Avx512F.ConvertToVector256Single((b - y) * Vector512.Create(BlueScale)).StoreUnsafe(ref blue); }
+            unsafe { Avx512F.ConvertToVector256Single((r - y) * Vector512.Create(RedScale)).StoreUnsafe(ref red); }
+        }
+    }
+
     /// <summary>Deinterleaves 16 RGB pixels: each byte comes from one of three vectors (an index of 0xFF selects zero).</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static (Vector128<byte> R, Vector128<byte> G, Vector128<byte> B) Deinterleave(ref byte source)
@@ -251,31 +333,6 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         }
     }
 
-    /// <summary>Loads 64 stored coefficients as 32-bit values.</summary>
-    internal static void WidenCoefficients(ReadOnlySpan<short> stored, Span<int> coefficients)
-    {
-        stored = stored[..64];
-        coefficients = coefficients[..64];
-        if (!Vector128.IsHardwareAccelerated)
-        {
-            for (var k = 0; k < 64; k++)
-            {
-                coefficients[k] = stored[k];
-            }
-
-            return;
-        }
-
-        ref var source = ref unsafe(MemoryMarshal.GetReference(stored));
-        ref var target = ref unsafe(MemoryMarshal.GetReference(coefficients));
-        for (var k = 0; k < 64; k += 8)
-        {
-            var (low, high) = Vector128.Widen(unsafe(Vector128.LoadUnsafe(ref source, (nuint)k)));
-            unsafe { low.StoreUnsafe(ref target, (nuint)k); }
-            unsafe { high.StoreUnsafe(ref target, (nuint)(k + 4)); }
-        }
-    }
-
     /// <summary>Gets a mask of the non-zero values among 64 coefficients: bit <c>k</c> is set when <c>coefficients[k]</c> is not zero.</summary>
     /// <param name="coefficients">The 64 coefficients.</param>
     internal static ulong GetNonZeroMask(ReadOnlySpan<int> coefficients)
@@ -284,22 +341,107 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         if (!Vector128.IsHardwareAccelerated)
             return GetNonZeroMaskScalar(coefficients);
 
-        // The comparison results (all ones or zero) of 16 coefficients narrowed to 16 bytes, one mask bit each
         ref var start = ref unsafe(MemoryMarshal.GetReference(coefficients));
         var zeros = 0UL;
+        if (Vector512.IsHardwareAccelerated)
+        {
+            // One mask bit per comparison of 16 coefficients
+            for (var i = 0; i < 64; i += 16)
+            {
+                zeros |= (ulong)Vector512.Equals(unsafe(Vector512.LoadUnsafe(ref start, (nuint)i)), Vector512<int>.Zero).ExtractMostSignificantBits() << i;
+            }
+
+            return ~zeros;
+        }
+
+        if (AdvSimd.Arm64.IsSupported)
+        {
+            // The comparison results narrowed to 64 bytes, each one weighted by its bit (1 to 128) and summed by groups of 8
+            // with three pairwise additions: the 8 bytes of the mask
+            var weights = Vector128.Create((byte)1, 2, 4, 8, 16, 32, 64, 128, 1, 2, 4, 8, 16, 32, 64, 128);
+            var low = AdvSimd.Arm64.AddPairwise(EqualsZero(ref start, 0) & weights, EqualsZero(ref start, 16) & weights);
+            var high = AdvSimd.Arm64.AddPairwise(EqualsZero(ref start, 32) & weights, EqualsZero(ref start, 48) & weights);
+            var quarters = AdvSimd.Arm64.AddPairwise(low, high);
+            return ~AdvSimd.Arm64.AddPairwise(quarters, quarters).AsUInt64().ToScalar();
+        }
+
+        // The comparison results (all ones or zero) of 16 coefficients narrowed to 16 bytes, one mask bit each
         for (var i = 0; i < 64; i += 16)
         {
-            var first = Vector128.Narrow(Vector128.Equals(Load(ref start, i), Vector128<int>.Zero), Vector128.Equals(Load(ref start, i + 4), Vector128<int>.Zero));
-            var second = Vector128.Narrow(Vector128.Equals(Load(ref start, i + 8), Vector128<int>.Zero), Vector128.Equals(Load(ref start, i + 12), Vector128<int>.Zero));
-            zeros |= (ulong)Vector128.Narrow(first, second).ExtractMostSignificantBits() << i;
+            zeros |= (ulong)EqualsZero(ref start, i).ExtractMostSignificantBits() << i;
         }
 
         return ~zeros;
 
+        // The comparison results (all ones or zero) of 16 coefficients narrowed to 16 bytes
+        static Vector128<byte> EqualsZero(ref int start, int index)
+        {
+            var first = Vector128.Narrow(Vector128.Equals(Load(ref start, index), Vector128<int>.Zero), Vector128.Equals(Load(ref start, index + 4), Vector128<int>.Zero));
+            var second = Vector128.Narrow(Vector128.Equals(Load(ref start, index + 8), Vector128<int>.Zero), Vector128.Equals(Load(ref start, index + 12), Vector128<int>.Zero));
+            return Vector128.Narrow(first, second).AsByte();
+        }
+
         static Vector128<int> Load(ref int start, int index) => unsafe(Vector128.LoadUnsafe(ref start, (nuint)index));
     }
 
-    /// <summary>The scalar reference of <see cref="GetNonZeroMask"/>.</summary>
+    /// <summary>Gets a mask of the non-zero values among 64 stored (16-bit) coefficients: bit <c>k</c> is set when <c>coefficients[k]</c> is not zero.</summary>
+    /// <param name="coefficients">The 64 coefficients.</param>
+    internal static ulong GetNonZeroMask(ReadOnlySpan<short> coefficients)
+    {
+        coefficients = coefficients[..64];
+        if (!Vector128.IsHardwareAccelerated)
+            return GetNonZeroMaskScalar(coefficients);
+
+        ref var start = ref unsafe(MemoryMarshal.GetReference(coefficients));
+        if (Vector512.IsHardwareAccelerated)
+        {
+            // One mask bit per comparison of 32 coefficients
+            var lower = Vector512.Equals(unsafe(Vector512.LoadUnsafe(ref start)), Vector512<short>.Zero).ExtractMostSignificantBits();
+            var upper = Vector512.Equals(unsafe(Vector512.LoadUnsafe(ref start, 32)), Vector512<short>.Zero).ExtractMostSignificantBits();
+            return ~(lower | (upper << 32));
+        }
+
+        if (AdvSimd.Arm64.IsSupported)
+        {
+            // As for 32-bit coefficients: the comparison results weighted by their bit and summed by groups of 8
+            var weights = Vector128.Create((byte)1, 2, 4, 8, 16, 32, 64, 128, 1, 2, 4, 8, 16, 32, 64, 128);
+            var low = AdvSimd.Arm64.AddPairwise(EqualsZero(ref start, 0) & weights, EqualsZero(ref start, 16) & weights);
+            var high = AdvSimd.Arm64.AddPairwise(EqualsZero(ref start, 32) & weights, EqualsZero(ref start, 48) & weights);
+            var quarters = AdvSimd.Arm64.AddPairwise(low, high);
+            return ~AdvSimd.Arm64.AddPairwise(quarters, quarters).AsUInt64().ToScalar();
+        }
+
+        var zeros = 0UL;
+        for (var i = 0; i < 64; i += 16)
+        {
+            zeros |= (ulong)EqualsZero(ref start, i).ExtractMostSignificantBits() << i;
+        }
+
+        return ~zeros;
+
+        // The comparison results (all ones or zero) of 16 coefficients narrowed to 16 bytes
+        static Vector128<byte> EqualsZero(ref short start, int index) =>
+            Vector128.Narrow(Vector128.Equals(Load(ref start, index), Vector128<short>.Zero), Vector128.Equals(Load(ref start, index + 8), Vector128<short>.Zero)).AsByte();
+
+        static Vector128<short> Load(ref short start, int index) => unsafe(Vector128.LoadUnsafe(ref start, (nuint)index));
+    }
+
+    /// <summary>The scalar reference of <see cref="GetNonZeroMask(ReadOnlySpan{short})"/>.</summary>
+    internal static ulong GetNonZeroMaskScalar(ReadOnlySpan<short> coefficients)
+    {
+        var mask = 0UL;
+        for (var k = 0; k < 64; k++)
+        {
+            if (coefficients[k] != 0)
+            {
+                mask |= 1UL << k;
+            }
+        }
+
+        return mask;
+    }
+
+    /// <summary>The scalar reference of <see cref="GetNonZeroMask(ReadOnlySpan{int})"/>.</summary>
     internal static ulong GetNonZeroMaskScalar(ReadOnlySpan<int> coefficients)
     {
         var mask = 0UL;
@@ -314,104 +456,99 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         return mask;
     }
 
-    /// <summary>
-    /// Copies an 8x8 block of samples starting at (<paramref name="x0"/>, <paramref name="y0"/>) of an MCU-row plane. With
-    /// subsampling factors above 1, each block sample is the mean of the <c>factorX x factorY</c> full-resolution samples
-    /// it covers (box filter: the subsampled sample sits at the center of those samples, the JFIF chroma siting), summed in
-    /// double precision from zero, row by row, then multiplied by <c>1 / (factorX factorY)</c>.
-    /// </summary>
-    /// <param name="plane">The plane.</param>
-    /// <param name="planeWidth">The distance between two rows of the plane.</param>
-    /// <param name="x0">The first column.</param>
-    /// <param name="y0">The first row.</param>
-    /// <param name="factorX">The horizontal subsampling factor.</param>
-    /// <param name="factorY">The vertical subsampling factor.</param>
+    /// <summary>Copies the 8x8 block of samples that starts at <c>plane[0]</c>, whose rows are <paramref name="stride"/> samples apart.</summary>
+    /// <param name="plane">The samples, from the first one of the block.</param>
+    /// <param name="stride">The distance between two rows of the plane.</param>
     /// <param name="block">The 64 samples of the block.</param>
-    /// <remarks>
-    /// With 128-bit hardware vectors, a horizontal factor of 2 (with a vertical factor of 1 or 2) computes two block samples
-    /// at once with the same additions in the same order, and a factor of 1 copies 4 samples at a time.
-    /// </remarks>
-    internal static void ExtractBlock(ReadOnlySpan<float> plane, int planeWidth, int x0, int y0, int factorX, int factorY, Span<float> block)
+    internal static void CopyBlock(ReadOnlySpan<float> plane, int stride, Span<float> block)
     {
-        if (Vector128.IsHardwareAccelerated && ((factorX == 1 && factorY == 1) || (factorX == 2 && factorY is 1 or 2)))
-        {
-            ExtractBlockVector(plane, planeWidth, x0, y0, factorX, factorY, block);
-        }
-        else
-        {
-            ExtractBlockScalar(plane, planeWidth, x0, y0, factorX, factorY, block);
-        }
-    }
-
-    /// <summary>The scalar reference of <see cref="ExtractBlock"/>.</summary>
-    internal static void ExtractBlockScalar(ReadOnlySpan<float> plane, int planeWidth, int x0, int y0, int factorX, int factorY, Span<float> block)
-    {
-        if (factorX == 1 && factorY == 1)
-        {
-            for (var y = 0; y < 8; y++)
-            {
-                plane.Slice(((y0 + y) * planeWidth) + x0, 8).CopyTo(block.Slice(y * 8, 8));
-            }
-
-            return;
-        }
-
-        var scale = 1d / (factorX * factorY);
-        for (var y = 0; y < 8; y++)
-        {
-            for (var x = 0; x < 8; x++)
-            {
-                var sum = 0d;
-                for (var dy = 0; dy < factorY; dy++)
-                {
-                    var line = plane.Slice(((y0 + (y * factorY) + dy) * planeWidth) + x0 + (x * factorX), factorX);
-                    foreach (var sample in line)
-                    {
-                        sum += sample;
-                    }
-                }
-
-                block[(y * 8) + x] = (float)(sum * scale);
-            }
-        }
-    }
-
-    private static void ExtractBlockVector(ReadOnlySpan<float> plane, int planeWidth, int x0, int y0, int factorX, int factorY, Span<float> block)
-    {
-        // Bounds are checked once here; the loops below use unchecked references
-        var lastRow = ((y0 + (8 * factorY) - 1) * planeWidth) + x0;
-        _ = plane.Slice(lastRow, 8 * factorX);
-        _ = plane.Slice((y0 * planeWidth) + x0, 8 * factorX);
-        ArgumentOutOfRangeException.ThrowIfLessThan(block.Length, 64);
+        // Bounds are checked once here; the loop below uses unchecked references
+        _ = plane[..((7 * stride) + 8)];
+        _ = block[..64];
         ref var source = ref unsafe(MemoryMarshal.GetReference(plane));
         ref var destination = ref unsafe(MemoryMarshal.GetReference(block));
-        if (factorX == 1)
+        for (var y = 0; y < 8; y++)
         {
-            for (var y = 0; y < 8; y++)
+            ref var row = ref unsafe(Unsafe.Add(ref source, y * stride));
+            if (Vector256.IsHardwareAccelerated)
             {
-                ref var row = ref unsafe(Unsafe.Add(ref source, ((y0 + y) * planeWidth) + x0));
+                unsafe { Vector256.LoadUnsafe(ref row).StoreUnsafe(ref destination, (nuint)(y * 8)); }
+            }
+            else if (Vector128.IsHardwareAccelerated)
+            {
                 unsafe { Vector128.LoadUnsafe(ref row).StoreUnsafe(ref destination, (nuint)(y * 8)); }
                 unsafe { Vector128.LoadUnsafe(ref row, 4).StoreUnsafe(ref destination, (nuint)((y * 8) + 4)); }
             }
-
-            return;
-        }
-
-        var scale = Vector128.Create(1d / (factorX * factorY));
-        for (var y = 0; y < 8; y++)
-        {
-            ref var first = ref unsafe(Unsafe.Add(ref source, ((y0 + (y * factorY)) * planeWidth) + x0));
-            ref var second = ref unsafe(Unsafe.Add(ref first, factorY == 2 ? planeWidth : 0));
-            for (var x = 0; x < 8; x += 4)
+            else
             {
-                // Block samples x to x + 3 cover the plane samples 2x to 2x + 7: two at a time, (2x, 2x + 2) then (2x + 1, 2x + 3)
-                var low = Mean(ref first, ref second, 2 * x, factorY == 2, scale);
-                var high = Mean(ref first, ref second, (2 * x) + 4, factorY == 2, scale);
-                unsafe { Vector128.Narrow(low, high).StoreUnsafe(ref destination, (nuint)((y * 8) + x)); }
+                plane.Slice(y * stride, 8).CopyTo(block.Slice(y * 8, 8));
             }
         }
+    }
 
-        // The mean of the samples (2i, 2i + 1) of one or two rows, for the block samples i and i + 1 (i = start / 2)
+    /// <summary>
+    /// Subsamples a row of chroma samples horizontally by 2, and vertically by 2 when <paramref name="second"/> is not empty:
+    /// each sample is the mean of the 2 or 4 full-resolution samples it covers (box filter: the subsampled sample sits at
+    /// the center of those samples, the JFIF chroma siting), summed in double precision from zero, row by row, then
+    /// multiplied by <c>1 / 2</c> or <c>1 / 4</c>.
+    /// </summary>
+    /// <param name="first">The first full-resolution row, two samples per subsampled sample.</param>
+    /// <param name="second">The second full-resolution row (as long as <paramref name="first"/>), or an empty span for a vertical factor of 1.</param>
+    /// <param name="destination">The subsampled samples.</param>
+    /// <remarks>
+    /// With hardware vectors, two (128-bit), four (AVX2) or eight (AVX-512) samples are computed at once with the same
+    /// additions in the same order: the even and odd samples of a row come from interleaving operations, and with AVX2 and
+    /// AVX-512 a permutation restores the order of the lanes at the end.
+    /// </remarks>
+    internal static void DownsampleRow(ReadOnlySpan<float> first, ReadOnlySpan<float> second, Span<float> destination)
+    {
+        var done = Vector512.IsHardwareAccelerated && Avx512F.IsSupported ? DownsampleRowAvx512(first, second, destination)
+            : Avx2.IsSupported ? DownsampleRowAvx2(first, second, destination)
+            : Vector128.IsHardwareAccelerated ? DownsampleRowVector(first, second, destination)
+            : 0;
+        DownsampleRowScalar(first[(2 * done)..], second.IsEmpty ? second : second[(2 * done)..], destination[done..]);
+    }
+
+    /// <summary>The scalar reference of <see cref="DownsampleRow"/>.</summary>
+    internal static void DownsampleRowScalar(ReadOnlySpan<float> first, ReadOnlySpan<float> second, Span<float> destination)
+    {
+        var scale = second.IsEmpty ? 1d / 2 : 1d / 4;
+        for (var x = 0; x < destination.Length; x++)
+        {
+            var sum = 0d;
+            sum += first[2 * x];
+            sum += first[(2 * x) + 1];
+            if (!second.IsEmpty)
+            {
+                sum += second[2 * x];
+                sum += second[(2 * x) + 1];
+            }
+
+            destination[x] = (float)(sum * scale);
+        }
+    }
+
+    /// <summary>Subsamples the whole pairs of samples with 128-bit vectors, two at a time.</summary>
+    /// <returns>The number of subsampled samples.</returns>
+    internal static int DownsampleRowVector(ReadOnlySpan<float> first, ReadOnlySpan<float> second, Span<float> destination)
+    {
+        var twoRows = !second.IsEmpty;
+        var count = GetDownsampledCount(first, second, destination) & ~3;
+        ref var firstStart = ref unsafe(MemoryMarshal.GetReference(first));
+        ref var secondStart = ref unsafe(MemoryMarshal.GetReference(twoRows ? second : first));
+        ref var output = ref unsafe(MemoryMarshal.GetReference(destination));
+        var scale = Vector128.Create(twoRows ? 1d / 4 : 1d / 2);
+        for (var x = 0; x < count; x += 4)
+        {
+            // Samples x to x + 3 cover the samples 2x to 2x + 7: two at a time, (2x, 2x + 2) then (2x + 1, 2x + 3)
+            var low = Mean(ref firstStart, ref secondStart, 2 * x, twoRows, scale);
+            var high = Mean(ref firstStart, ref secondStart, (2 * x) + 4, twoRows, scale);
+            unsafe { Vector128.Narrow(low, high).StoreUnsafe(ref output, (nuint)x); }
+        }
+
+        return count;
+
+        // The mean of the samples (2i, 2i + 1) of one or two rows, for the samples i and i + 1 (i = start / 2)
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static Vector128<double> Mean(ref float first, ref float second, int start, bool twoRows, Vector128<double> scale)
         {
@@ -432,6 +569,78 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             return sum * scale;
         }
     }
+
+    /// <summary>
+    /// Subsamples the whole groups of four samples with AVX2: the even and odd samples of a row come from two unpacks, in
+    /// the lane order 0, 2, 1, 3, restored by one permutation at the end.
+    /// </summary>
+    /// <returns>The number of subsampled samples.</returns>
+    internal static int DownsampleRowAvx2(ReadOnlySpan<float> first, ReadOnlySpan<float> second, Span<float> destination)
+    {
+        var twoRows = !second.IsEmpty;
+        var count = GetDownsampledCount(first, second, destination) & ~3;
+        ref var firstStart = ref unsafe(MemoryMarshal.GetReference(first));
+        ref var secondStart = ref unsafe(MemoryMarshal.GetReference(twoRows ? second : first));
+        ref var output = ref unsafe(MemoryMarshal.GetReference(destination));
+        var scale = Vector256.Create(twoRows ? 1d / 4 : 1d / 2);
+        for (var x = 0; x < count; x += 4)
+        {
+            // Samples 2x to 2x + 7: (0, 1, 2, 3) and (4, 5, 6, 7) give the pairs of the samples (x, x + 2, x + 1, x + 3)
+            var lower = Avx.ConvertToVector256Double(unsafe(Vector128.LoadUnsafe(ref firstStart, (nuint)(2 * x))));
+            var upper = Avx.ConvertToVector256Double(unsafe(Vector128.LoadUnsafe(ref firstStart, (nuint)((2 * x) + 4))));
+            var sum = Vector256<double>.Zero + Avx.UnpackLow(lower, upper);
+            sum += Avx.UnpackHigh(lower, upper);
+            if (twoRows)
+            {
+                lower = Avx.ConvertToVector256Double(unsafe(Vector128.LoadUnsafe(ref secondStart, (nuint)(2 * x))));
+                upper = Avx.ConvertToVector256Double(unsafe(Vector128.LoadUnsafe(ref secondStart, (nuint)((2 * x) + 4))));
+                sum += Avx.UnpackLow(lower, upper);
+                sum += Avx.UnpackHigh(lower, upper);
+            }
+
+            unsafe { Avx.ConvertToVector128Single(Avx2.Permute4x64(sum * scale, 0b11_01_10_00)).StoreUnsafe(ref output, (nuint)x); }
+        }
+
+        return count;
+    }
+
+    /// <summary>
+    /// Subsamples the whole groups of eight samples with AVX-512: the even and odd samples of a row come from two unpacks,
+    /// in the lane order 0, 4, 1, 5, 2, 6, 3, 7, restored by one permutation at the end.
+    /// </summary>
+    /// <returns>The number of subsampled samples.</returns>
+    internal static int DownsampleRowAvx512(ReadOnlySpan<float> first, ReadOnlySpan<float> second, Span<float> destination)
+    {
+        var twoRows = !second.IsEmpty;
+        var count = GetDownsampledCount(first, second, destination) & ~7;
+        ref var firstStart = ref unsafe(MemoryMarshal.GetReference(first));
+        ref var secondStart = ref unsafe(MemoryMarshal.GetReference(twoRows ? second : first));
+        ref var output = ref unsafe(MemoryMarshal.GetReference(destination));
+        var scale = Vector512.Create(twoRows ? 1d / 4 : 1d / 2);
+        var order = Vector512.Create(0L, 2, 4, 6, 1, 3, 5, 7);
+        for (var x = 0; x < count; x += 8)
+        {
+            var lower = Avx512F.ConvertToVector512Double(unsafe(Vector256.LoadUnsafe(ref firstStart, (nuint)(2 * x))));
+            var upper = Avx512F.ConvertToVector512Double(unsafe(Vector256.LoadUnsafe(ref firstStart, (nuint)((2 * x) + 8))));
+            var sum = Vector512<double>.Zero + Avx512F.UnpackLow(lower, upper);
+            sum += Avx512F.UnpackHigh(lower, upper);
+            if (twoRows)
+            {
+                lower = Avx512F.ConvertToVector512Double(unsafe(Vector256.LoadUnsafe(ref secondStart, (nuint)(2 * x))));
+                upper = Avx512F.ConvertToVector512Double(unsafe(Vector256.LoadUnsafe(ref secondStart, (nuint)((2 * x) + 8))));
+                sum += Avx512F.UnpackLow(lower, upper);
+                sum += Avx512F.UnpackHigh(lower, upper);
+            }
+
+            unsafe { Avx512F.ConvertToVector256Single(Avx512F.PermuteVar8x64(sum * scale, order)).StoreUnsafe(ref output, (nuint)x); }
+        }
+
+        return count;
+    }
+
+    /// <summary>Gets the number of samples that the rows can give: the destination length, at most half of each row.</summary>
+    private static int GetDownsampledCount(ReadOnlySpan<float> first, ReadOnlySpan<float> second, Span<float> destination) =>
+        Math.Min(destination.Length, Math.Min(first.Length, second.IsEmpty ? first.Length : second.Length) / 2);
 
     /// <summary>
     /// The encoding state of one JPEG. The frame operation writes SOI and the JFIF APP0
@@ -498,6 +707,14 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         private readonly int _mcusX;
         private readonly int _mcusY;
         private readonly int _planeWidth;
+
+        // The distance between two rows of a plane: an odd number of 64-byte cache lines, so that the rows of a block do not
+        // fall in the same sets of the data cache (plane widths are often a multiple of 4 KB)
+        private readonly int _planeStride;
+
+        // The width of the rows of the (subsampled) chroma planes, and the distance between two of their rows
+        private readonly int _chromaWidth;
+        private readonly int _chromaStride;
         private readonly ushort[] _luminanceQuantization = new ushort[64];
         private readonly ushort[] _chrominanceQuantization = new ushort[64];
         private readonly double[] _luminanceDivisors = new double[64];
@@ -506,13 +723,18 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
 
         // With optimized tables, the symbol counts of the luminance DC and AC tables, then of the chrominance ones
         private readonly uint[][] _histograms = [];
-        private readonly int[] _blockCoefficients = new int[64];
         private JpegHuffmanEncoder _luminanceDc;
         private JpegHuffmanEncoder _luminanceAc;
         private JpegHuffmanEncoder? _chrominanceDc;
         private JpegHuffmanEncoder? _chrominanceAc;
         // The number of MCU rows that each worker transforms in a batch
         private const int RowsPerWorker = 4;
+
+        // The worst-case output of the MCUs of a baseline scan coded through one block writer
+        private const int BaselineRunBytes = 16 * 1024;
+
+        // The worst-case output of the blocks of a progressive scan coded by one call
+        private const int ProgressiveRunBytes = 32 * 1024;
 
         private readonly JpegMetadataWriter _metadata;
         private readonly int[] _predictions = new int[3];
@@ -555,6 +777,9 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             _mcusX = (_width + (8 * _h) - 1) / (8 * _h);
             _mcusY = (_height + (8 * _v) - 1) / (8 * _v);
             _planeWidth = _mcusX * 8 * _h;
+            _planeStride = GetPlaneStride(_planeWidth);
+            _chromaWidth = _planeWidth / _h;
+            _chromaStride = GetPlaneStride(_chromaWidth);
             _blocksPerMcu = _grayscale ? 1 : (_h * _v) + 2;
             _restartInterval = _encoder.RestartInterval;
 
@@ -581,10 +806,13 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
 
             _metadata = new JpegMetadataWriter(options.Metadata);
 
-            // One MCU row of samples per component, at full resolution (chroma is box-filtered when blocks are extracted)
-            var planeBytes = (long)_planeWidth * 8 * _v * sizeof(float);
+            // One MCU row of samples per component, the chroma subsampled row by row from two full-resolution rows per
+            // component (one row per row of chroma blocks)
+            var planeBytes = (long)_planeStride * 8 * _v * sizeof(float);
+            var chromaBytes = (long)_chromaStride * 8 * sizeof(float);
+            var chromaRowBytes = _h > 1 ? (long)_planeWidth * 4 * sizeof(float) : 0;
             var rowBytes = (long)_width * PixelFormats.GetBytesPerPixel(_workFormat);
-            if (planeBytes > CheckedSizes.MaxBufferLength || rowBytes > CheckedSizes.MaxBufferLength)
+            if (planeBytes > CheckedSizes.MaxBufferLength || chromaRowBytes > CheckedSizes.MaxBufferLength || rowBytes > CheckedSizes.MaxBufferLength)
                 throw CheckedSizes.CreateOverflowException(options.Scope.Limits);
 
             var scope = options.Scope;
@@ -596,7 +824,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
                 _transformWorkers = new TransformWorker[workerCount];
                 for (var i = 0; i < workerCount; i++)
                 {
-                    _transformWorkers[i] = new TransformWorker(scope, _sourceFormat != _workFormat ? (int)rowBytes : 0, (int)planeBytes, _grayscale);
+                    _transformWorkers[i] = new TransformWorker(scope, _sourceFormat != _workFormat ? (int)rowBytes : 0, (int)planeBytes, _grayscale ? 0 : (int)chromaBytes, (int)chromaRowBytes);
                 }
 
                 if (workerCount > 1 && !keepCoefficients)
@@ -1013,25 +1241,42 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         /// <summary>Transforms and quantizes a block of an MCU of the loaded row of a worker, and stores its coefficients (zig-zag order).</summary>
         private void TransformBlock(TransformWorker worker, int mcuX, int block, Span<short> destination)
         {
+            // The samples are copied first: reading them from the plane rows, as the baseline coding does, measured slower here
             var coefficients = worker.Coefficients.AsSpan();
-            LoadBlock(worker, mcuX, block);
-            JpegForwardDct.TransformAndQuantize(worker.Block, block < _h * _v ? _luminanceDivisors : _chrominanceDivisors, worker.Scratch, coefficients);
+            var samples = GetBlockSamples(worker, mcuX, block, out var stride);
+            if (stride != 8)
+            {
+                CopyBlock(samples, stride, worker.Block);
+                samples = worker.Block;
+            }
+
+            var divisors = block < _h * _v ? _luminanceDivisors : _chrominanceDivisors;
+            if (JpegForwardDct.UsesAvx512)
+            {
+                JpegForwardDct.TransformAndQuantizeAvx512(samples, 8, divisors, destination);
+                return;
+            }
+
+            JpegForwardDct.TransformAndQuantize(samples, 8, divisors, worker.Scratch, coefficients);
             NarrowCoefficients(coefficients, destination);
         }
 
-        /// <summary>Copies the samples of a block of an MCU of the loaded row of a worker: the luma blocks in raster order, then the box-filtered Cb and Cr blocks.</summary>
-        private void LoadBlock(TransformWorker worker, int mcuX, int block)
+        /// <summary>Gets the samples of a block of an MCU of the loaded row of a worker (the luma blocks in raster order, then the Cb and Cr blocks): the rows of its plane.</summary>
+        /// <param name="worker">The worker.</param>
+        /// <param name="mcuX">The MCU.</param>
+        /// <param name="block">The block of the MCU.</param>
+        /// <param name="stride">The distance between two rows of the samples.</param>
+        private ReadOnlySpan<float> GetBlockSamples(TransformWorker worker, int mcuX, int block, out int stride)
         {
-            var x0 = mcuX * 8 * _h;
             var lumaBlocks = _h * _v;
             if (block < lumaBlocks)
             {
-                ExtractBlock(worker.PlaneY, _planeWidth, x0 + (block % _h * 8), block / _h * 8, factorX: 1, factorY: 1, worker.Block);
+                stride = _planeStride;
+                return worker.PlaneY[((block / _h * 8 * _planeStride) + (mcuX * 8 * _h) + (block % _h * 8))..];
             }
-            else
-            {
-                ExtractBlock(block == lumaBlocks ? worker.PlaneCb : worker.PlaneCr, _planeWidth, x0, 0, _h, _v, worker.Block);
-            }
+
+            stride = _chromaStride;
+            return (block == lumaBlocks ? worker.PlaneCb : worker.PlaneCr)[(mcuX * 8)..];
         }
 
         /// <returns><see langword="true"/> when the last scan is written.</returns>
@@ -1051,11 +1296,12 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             var interleaved = scan.ComponentCount > 1;
             var rows = interleaved ? _mcusY : _coefficientPlanes[scan.FirstComponent]!.ScanBlockRows;
             var columns = interleaved ? _mcusX : _coefficientPlanes[scan.FirstComponent]!.ScanBlocksPerLine;
+            var blocksPerMcu = interleaved ? (_h * _v) + 2 : 1;
             var position = 0;
             switch (_scanPass)
             {
                 case ScanPass.Count:
-                    for (var x = 0; x < columns; x++)
+                    for (var x = 0; x < columns;)
                     {
                         var index = (_mcuRow * columns) + x;
                         if (IsRestartDue(index))
@@ -1063,7 +1309,9 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
                             scanEncoder.Restart(GetRestartNumber(index), default, ref position);
                         }
 
-                        CodeProgressiveMcu(scan, _mcuRow, x, default, ref position);
+                        var count = GetProgressiveRunLength(scan, index, columns - x, blocksPerMcu);
+                        CodeProgressiveMcus(scan, _mcuRow, x, count, default, ref position);
+                        x += count;
                     }
 
                     if (++_mcuRow < rows)
@@ -1086,7 +1334,6 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
                     return false;
             }
 
-            var blocksPerMcu = interleaved ? (_h * _v) + 2 : 1;
             var coded = 0;
             while (_mcuRow < rows)
             {
@@ -1099,17 +1346,18 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
                     // A restart first writes the pending run of blocks, which is bounded like the one a block can write
                     var index = (_mcuRow * columns) + _mcuX;
                     var restart = IsRestartDue(index);
-                    var span = output.GetSpan((blocksPerMcu + (restart ? 1 : 0)) * JpegProgressiveScanEncoder.MaxBlockBytes);
+                    var count = GetProgressiveRunLength(scan, index, columns - _mcuX, blocksPerMcu);
+                    var span = output.GetSpan(JpegProgressiveScanEncoder.GetMaxBytes(scan, count * blocksPerMcu) + (restart ? JpegProgressiveScanEncoder.MaxBlockBytes : 0));
                     position = 0;
                     if (restart)
                     {
                         scanEncoder.Restart(GetRestartNumber(index), span, ref position);
                     }
 
-                    CodeProgressiveMcu(scan, _mcuRow, _mcuX, span, ref position);
+                    CodeProgressiveMcus(scan, _mcuRow, _mcuX, count, span, ref position);
                     output.Advance(position);
-                    _mcuX++;
-                    coded++;
+                    _mcuX += count;
+                    coded += count;
                 }
 
                 _mcuX = 0;
@@ -1127,27 +1375,43 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             return _scanIndex == JpegProgressiveScanEncoder.GetScript(_grayscale).Length;
         }
 
-        /// <summary>Codes one MCU of a progressive scan: the blocks of every component for an interleaved scan, else one block (T.81 A.2).</summary>
-        private void CodeProgressiveMcu(JpegProgressiveScan scan, int row, int column, Span<byte> destination, ref int position)
+        /// <summary>
+        /// Gets the number of MCUs of a progressive scan coded by one call from the MCU <paramref name="index"/>: at most
+        /// <paramref name="remaining"/> (the rest of the line), the MCUs whose worst-case output fits in
+        /// <see cref="ProgressiveRunBytes"/>, and the MCUs before the next restart marker.
+        /// </summary>
+        private int GetProgressiveRunLength(JpegProgressiveScan scan, int index, int remaining, int blocksPerMcu)
+        {
+            var count = Math.Min(remaining, Math.Max(1, ProgressiveRunBytes / (blocksPerMcu * JpegProgressiveScanEncoder.GetMaxBlockBytes(scan))));
+            if (_restartInterval > 0)
+            {
+                count = Math.Min(count, _restartInterval - (index % _restartInterval));
+            }
+
+            return count;
+        }
+
+        /// <summary>Codes consecutive MCUs of a line of a progressive scan: the blocks of every component for an interleaved scan, else one block each (T.81 A.2).</summary>
+        private void CodeProgressiveMcus(JpegProgressiveScan scan, int row, int column, int count, Span<byte> destination, ref int position)
         {
             var scanEncoder = _scanEncoder!;
             if (scan.ComponentCount == 1)
             {
-                scanEncoder.CodeBlock(scan.FirstComponent, _coefficientPlanes[scan.FirstComponent]!.GetBlock(row, column), destination, ref position);
+                scanEncoder.CodeBlocks(scan.FirstComponent, _coefficientPlanes[scan.FirstComponent]!.GetBlocks(row, column, count), destination, ref position);
                 return;
             }
 
             var luminance = _coefficientPlanes[0]!;
-            for (var by = 0; by < _v; by++)
-            {
-                for (var bx = 0; bx < _h; bx++)
-                {
-                    scanEncoder.CodeBlock(0, luminance.GetBlock((row * _v) + by, (column * _h) + bx), destination, ref position);
-                }
-            }
-
-            scanEncoder.CodeBlock(1, _coefficientPlanes[1]!.GetBlock(row, column), destination, ref position);
-            scanEncoder.CodeBlock(2, _coefficientPlanes[2]!.GetBlock(row, column), destination, ref position);
+            scanEncoder.CodeInterleavedDcBlocks(
+                luminance.GetBlocks(row * _v, column * _h, count * _h),
+                _v == 2 ? luminance.GetBlocks((row * _v) + 1, column * _h, count * _h) : default,
+                _coefficientPlanes[1]!.GetBlocks(row, column, count),
+                _coefficientPlanes[2]!.GetBlocks(row, column, count),
+                _h,
+                _v,
+                count,
+                destination,
+                ref position);
         }
 
         /// <summary>Writes the DHT segment of the tables of a progressive scan: DC tables for a DC first scan, the AC table of the component otherwise.</summary>
@@ -1201,13 +1465,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
                         if (coded > 0 && output.ShouldFlush)
                             return false;
 
-                        var span = output.GetSpan((blocksPerMcu * MaxBlockBytes) + (_restartInterval > 0 ? MaxRestartBytes : 0) + JpegBlockBitWriter.SpeculativeBytes);
-                        var length = 0;
-                        WriteRestartIfDue((_mcuRow * _mcusX) + _mcuX, span, ref length);
-                        length += batched ? EncodeStoredMcu(_mcuRow, _mcuX, span[length..]) : EncodeMcu(_mcuX, span[length..]);
-                        output.Advance(length);
-                        _mcuX++;
-                        coded++;
+                        coded += EncodeMcuRun(output, stored: batched);
                     }
 
                     _mcuX = 0;
@@ -1228,7 +1486,8 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         /// <summary>
         /// Loads the rows of one MCU row: each source row (the last row replicated below the image) is converted to 8-bit RGB
         /// or gray (alpha flattened onto the background and 16-bit samples reduced, by the shared converter), then to
-        /// level-shifted Y, Cb, Cr samples, the last column replicated to the padded width.
+        /// level-shifted Y, Cb, Cr samples, the last column replicated to the padded width. With subsampling, the Cb and Cr
+        /// samples of the rows of a row of chroma blocks are box-filtered (<see cref="DownsampleRow"/>) once they are all converted.
         /// </summary>
         private void LoadMcuRow(TransformWorker worker, PixelStorage storage, int mcuRow)
         {
@@ -1247,17 +1506,31 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
                     source = converted;
                 }
 
-                var offset = r * _planeWidth;
+                var offset = r * _planeStride;
                 if (_grayscale)
                 {
                     ConvertGrayRow(source, planeY.Slice(offset, _planeWidth));
                 }
-                else
+                else if (_h == 1)
                 {
                     ConvertColorRow(source, planeY.Slice(offset, _planeWidth), planeCb.Slice(offset, _planeWidth), planeCr.Slice(offset, _planeWidth));
                 }
+                else
+                {
+                    var pair = r % _v;
+                    ConvertColorRow(source, planeY.Slice(offset, _planeWidth), worker.GetChromaRow(0, pair, _planeWidth), worker.GetChromaRow(1, pair, _planeWidth));
+                    if (pair == _v - 1)
+                    {
+                        var chromaOffset = r / _v * _chromaStride;
+                        DownsampleRow(worker.GetChromaRow(0, 0, _planeWidth), _v == 2 ? worker.GetChromaRow(0, 1, _planeWidth) : default, planeCb.Slice(chromaOffset, _chromaWidth));
+                        DownsampleRow(worker.GetChromaRow(1, 0, _planeWidth), _v == 2 ? worker.GetChromaRow(1, 1, _planeWidth) : default, planeCr.Slice(chromaOffset, _chromaWidth));
+                    }
+                }
             }
         }
+
+        /// <summary>Gets the distance between two rows of a plane: an odd number of 16 samples (64-byte cache lines).</summary>
+        private static int GetPlaneStride(int width) => (((width + 15) / 16) | 1) * 16;
 
         private void ConvertGrayRow(ReadOnlySpan<byte> source, Span<float> luma)
         {
@@ -1283,62 +1556,82 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             red[_width..].Fill(red[_width - 1]);
         }
 
-        /// <summary>Transforms and codes an MCU of the loaded row of the only worker.</summary>
-        private int EncodeMcu(int mcuX, Span<byte> destination)
+        /// <summary>
+        /// Codes consecutive MCUs of the current row from <see cref="_mcuX"/>, through one <see cref="JpegBlockBitWriter"/>
+        /// (one byte stuffing pass): at most the MCUs whose worst-case output fits in <see cref="BaselineRunBytes"/>, and the
+        /// MCUs before the next restart marker, which is written first when it is due.
+        /// </summary>
+        /// <param name="output">The output.</param>
+        /// <param name="stored"><see langword="true"/> to code stored coefficients; <see langword="false"/> to transform the loaded row of the only worker.</param>
+        /// <returns>The number of MCUs coded.</returns>
+        private int EncodeMcuRun(ImageOutputBuffer output, bool stored)
         {
-            var position = 0;
-            var worker = _transformWorkers[0];
-            var planeY = worker.PlaneY;
-            var x0 = mcuX * 8 * _h;
-            for (var by = 0; by < _v; by++)
+            var index = (_mcuRow * _mcusX) + _mcuX;
+            var count = Math.Min(_mcusX - _mcuX, Math.Max(1, BaselineRunBytes / (_blocksPerMcu * MaxBlockBytes)));
+            if (_restartInterval > 0)
             {
-                for (var bx = 0; bx < _h; bx++)
+                count = Math.Min(count, _restartInterval - (index % _restartInterval));
+            }
+
+            var span = output.GetSpan((count * _blocksPerMcu * MaxBlockBytes) + MaxRestartBytes + JpegBlockBitWriter.SpeculativeBytes);
+            var position = 0;
+            WriteRestartIfDue(index, span, ref position);
+            var writer = new JpegBlockBitWriter(span, position, _bits);
+            for (var mcuX = _mcuX; mcuX < _mcuX + count; mcuX++)
+            {
+                if (stored)
                 {
-                    ExtractBlock(planeY, _planeWidth, x0 + (bx * 8), by * 8, factorX: 1, factorY: 1, worker.Block);
-                    TransformAndEncodeBlock(worker, destination, ref position, component: 0, _luminanceDivisors, _luminanceDc, _luminanceAc);
+                    EncodeStoredMcu(_mcuRow, mcuX, ref writer);
+                }
+                else
+                {
+                    EncodeMcu(mcuX, ref writer);
                 }
             }
 
-            if (!_grayscale)
-            {
-                ExtractBlock(worker.PlaneCb, _planeWidth, x0, 0, _h, _v, worker.Block);
-                TransformAndEncodeBlock(worker, destination, ref position, component: 1, _chrominanceDivisors, _chrominanceDc!, _chrominanceAc!);
-                ExtractBlock(worker.PlaneCr, _planeWidth, x0, 0, _h, _v, worker.Block);
-                TransformAndEncodeBlock(worker, destination, ref position, component: 2, _chrominanceDivisors, _chrominanceDc!, _chrominanceAc!);
-            }
-
-            return position;
+            output.Advance(writer.Complete(ref _bits));
+            _mcuX += count;
+            return count;
         }
 
-        private void TransformAndEncodeBlock(TransformWorker worker, Span<byte> destination, ref int position, int component, ReadOnlySpan<double> divisors, JpegHuffmanEncoder dc, JpegHuffmanEncoder ac)
+        /// <summary>Transforms and codes an MCU of the loaded row of the only worker.</summary>
+        private void EncodeMcu(int mcuX, ref JpegBlockBitWriter writer)
+        {
+            var worker = _transformWorkers[0];
+            var lumaBlocks = _h * _v;
+            for (var block = 0; block < _blocksPerMcu; block++)
+            {
+                var samples = GetBlockSamples(worker, mcuX, block, out var stride);
+                if (block < lumaBlocks)
+                {
+                    TransformAndEncodeBlock(worker, samples, stride, ref writer, component: 0, _luminanceDivisors, _luminanceDc, _luminanceAc);
+                }
+                else
+                {
+                    TransformAndEncodeBlock(worker, samples, stride, ref writer, component: block - lumaBlocks + 1, _chrominanceDivisors, _chrominanceDc!, _chrominanceAc!);
+                }
+            }
+        }
+
+        private void TransformAndEncodeBlock(TransformWorker worker, ReadOnlySpan<float> samples, int stride, ref JpegBlockBitWriter writer, int component, ReadOnlySpan<double> divisors, JpegHuffmanEncoder dc, JpegHuffmanEncoder ac)
         {
             var coefficients = worker.Coefficients.AsSpan();
-            JpegForwardDct.TransformAndQuantize(worker.Block, divisors, worker.Scratch, coefficients);
-            EncodeBlock(destination, ref position, coefficients, component, dc, ac);
+            JpegForwardDct.TransformAndQuantize(samples, stride, divisors, worker.Scratch, coefficients);
+            EncodeBlock<int>(ref writer, coefficients, component, dc, ac);
         }
 
         /// <summary>Codes an MCU from its stored coefficients: those of the baseline batch, or of the whole image with optimized tables.</summary>
-        private int EncodeStoredMcu(int row, int mcuX, Span<byte> destination)
+        private void EncodeStoredMcu(int row, int mcuX, ref JpegBlockBitWriter writer)
         {
-            var position = 0;
-            var coefficients = _blockCoefficients.AsSpan();
             for (var block = 0; block < _blocksPerMcu; block++)
             {
-                LoadStoredBlock(row, mcuX, block, coefficients);
-
                 var component = block < _h * _v ? 0 : block - (_h * _v) + 1;
-                EncodeBlock(destination, ref position, coefficients, component, component == 0 ? _luminanceDc : _chrominanceDc!, component == 0 ? _luminanceAc : _chrominanceAc!);
+                EncodeBlock<short>(ref writer, GetStoredBlock(row, mcuX, block), component, component == 0 ? _luminanceDc : _chrominanceDc!, component == 0 ? _luminanceAc : _chrominanceAc!);
             }
-
-            return position;
         }
 
-        /// <summary>Copies the stored coefficients of a block of an MCU: those of the baseline batch, or of the whole image with optimized tables.</summary>
-        private void LoadStoredBlock(int row, int mcuX, int block, Span<int> coefficients)
-        {
-            var stored = _batch is not null ? GetBatchBlock(row, mcuX, block) : GetPlaneBlock(row, mcuX, block);
-            WidenCoefficients(stored, coefficients);
-        }
+        /// <summary>Gets the stored coefficients of a block of an MCU: those of the baseline batch, or of the whole image with optimized tables.</summary>
+        private Span<short> GetStoredBlock(int row, int mcuX, int block) => _batch is not null ? GetBatchBlock(row, mcuX, block) : GetPlaneBlock(row, mcuX, block);
 
         /// <summary>
         /// Codes the baseline scan with tables computed from the image (<see cref="JpegEncoder.OptimizeHuffmanTables"/>):
@@ -1357,7 +1650,6 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
                     goto case ScanPass.Count;
 
                 case ScanPass.Count:
-                    var coefficients = _blockCoefficients.AsSpan();
                     for (var mcuX = 0; mcuX < _mcusX; mcuX++)
                     {
                         if (IsRestartDue((_mcuRow * _mcusX) + mcuX))
@@ -1367,8 +1659,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
 
                         for (var block = 0; block < _blocksPerMcu; block++)
                         {
-                            LoadStoredBlock(_mcuRow, mcuX, block, coefficients);
-                            CountBlock(coefficients, block < _h * _v ? 0 : block - (_h * _v) + 1);
+                            CountBlock(GetStoredBlock(_mcuRow, mcuX, block), block < _h * _v ? 0 : block - (_h * _v) + 1);
                         }
                     }
 
@@ -1406,13 +1697,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
                     if (coded > 0 && output.ShouldFlush)
                         return false;
 
-                    var span = output.GetSpan((_blocksPerMcu * MaxBlockBytes) + MaxRestartBytes + JpegBlockBitWriter.SpeculativeBytes);
-                    var length = 0;
-                    WriteRestartIfDue((_mcuRow * _mcusX) + _mcuX, span, ref length);
-                    length += EncodeStoredMcu(_mcuRow, _mcuX, span[length..]);
-                    output.Advance(length);
-                    _mcuX++;
-                    coded++;
+                    coded += EncodeMcuRun(output, stored: true);
                 }
 
                 _mcuX = 0;
@@ -1429,7 +1714,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         }
 
         /// <summary>Counts the symbols that <see cref="EncodeBlock"/> codes for a block of a component, in the tables of the component.</summary>
-        private void CountBlock(ReadOnlySpan<int> coefficients, int component)
+        private void CountBlock(ReadOnlySpan<short> coefficients, int component)
         {
             var dc = _histograms[component == 0 ? 0 : 2];
             var ac = _histograms[component == 0 ? 1 : 3];
@@ -1459,30 +1744,28 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             }
         }
 
-        /// <summary>Gets the size category SSSS of a value: the number of bits of its magnitude (T.81 F.1.2.1.1).</summary>
-        private static int GetSizeCategory(int value)
-        {
-            var magnitude = (uint)Math.Abs(value);
-            return magnitude == 0 ? 0 : 32 - BitOperations.LeadingZeroCount(magnitude);
-        }
+        /// <summary>Gets the size category SSSS of a value, -2047 to 2047: the number of bits of its magnitude (T.81 F.1.2.1.1).</summary>
+        private static int GetSizeCategory(int value) => (int)(ValueBits[value + 2048] >> 16);
 
         /// <summary>Codes the quantized coefficients (zig-zag order) of a block of a component.</summary>
         /// <remarks>
-        /// The bits go through a <see cref="JpegBlockBitWriter"/>, which stuffs the block once it is coded: the destination
-        /// has <see cref="MaxBlockBytes"/> and <see cref="JpegBlockBitWriter.SpeculativeBytes"/> bytes.
+        /// The bits go through a <see cref="JpegBlockBitWriter"/>, which stuffs the run of MCUs once it is coded: the
+        /// destination has <see cref="MaxBlockBytes"/> per block and <see cref="JpegBlockBitWriter.SpeculativeBytes"/> bytes.
         /// </remarks>
-        private void EncodeBlock(Span<byte> destination, ref int position, Span<int> coefficients, int component, JpegHuffmanEncoder dc, JpegHuffmanEncoder ac)
+        /// <typeparam name="T">The type of the coefficients: <see cref="int"/> when they come from the forward DCT, <see cref="short"/> when they are stored.</typeparam>
+        private void EncodeBlock<T>(ref JpegBlockBitWriter bits, ReadOnlySpan<T> coefficients, int component, JpegHuffmanEncoder dc, JpegHuffmanEncoder ac)
+            where T : unmanaged, IBinaryInteger<T>
         {
-            var bits = new JpegBlockBitWriter(destination, position, _bits);
-
             // DC: difference with the previous block of the component, size category then the additional bits (T.81 F.1.2.1)
-            var difference = coefficients[0] - _predictions[component];
-            _predictions[component] = coefficients[0];
+            var first = int.CreateTruncating(coefficients[0]);
+            var difference = first - _predictions[component];
+            _predictions[component] = first;
             WriteValue(ref bits, dc, symbolHigh: 0, difference);
 
             // AC: run lengths of zeros (ZRL for 16), EOB after the last nonzero coefficient (T.81 F.1.2.2); the nonzero
             // coefficients are visited through a bit mask
-            var mask = GetNonZeroMask(coefficients) & ~1UL;
+            var nonZero = typeof(T) == typeof(short) ? GetNonZeroMask(unsafe(MemoryMarshal.Cast<T, short>(coefficients))) : GetNonZeroMask(unsafe(MemoryMarshal.Cast<T, int>(coefficients)));
+            var mask = nonZero & ~1UL;
             var previous = 0;
             while (mask != 0)
             {
@@ -1495,7 +1778,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
                     run -= 16;
                 }
 
-                WriteValue(ref bits, ac, run, coefficients[k]);
+                WriteValue(ref bits, ac, run, int.CreateTruncating(coefficients[k]));
                 previous = k;
             }
 
@@ -1503,34 +1786,38 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             {
                 WriteSymbol(ref bits, ac, 0x00);
             }
-
-            position = bits.Complete(ref _bits);
         }
 
-        /// <summary>Writes the symbol <c>(symbolHigh &lt;&lt; 4) | SSSS</c> for a value, then its SSSS additional bits (negative values as <c>value - 1</c>), as one write.</summary>
+        /// <summary>
+        /// Writes the symbol <c>(symbolHigh &lt;&lt; 4) | SSSS</c> for a value, then its SSSS additional bits (negative values as
+        /// <c>value - 1</c>), as one write: the size category and the additional bits come from <see cref="ValueBits"/>.
+        /// </summary>
+        /// <param name="writer">The writer.</param>
+        /// <param name="table">The table.</param>
+        /// <param name="symbolHigh">The high 4 bits of the symbol.</param>
+        /// <param name="value">The value, -2047 to 2047.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void WriteValue(ref JpegBlockBitWriter writer, JpegHuffmanEncoder table, int symbolHigh, int value)
         {
-            var magnitude = (uint)Math.Abs(value);
-            var size = 32 - BitOperations.LeadingZeroCount(magnitude);
-            var bits = (uint)(value - (value >>> 31)) & ((1u << size) - 1);
+            var valueBits = ValueBits[value + 2048];
+            var size = (int)(valueBits >> 16);
             var symbol = (symbolHigh << 4) | size;
-            var length = table.GetLength(symbol);
-            if (length == 0)
+            var code = table.GetPackedCode(symbol);
+            if (code == 0)
                 ThrowMissingCode(symbol);
 
             // At most 16 + 16 bits
-            writer.Write((table.GetCode(symbol) << size) | bits, length + size);
+            writer.Write(((code >> 5) << size) | (valueBits & 0xFFFF), (int)(code & 31) + size);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void WriteSymbol(ref JpegBlockBitWriter writer, JpegHuffmanEncoder table, int symbol)
         {
-            var length = table.GetLength(symbol);
-            if (length == 0)
+            var code = table.GetPackedCode(symbol);
+            if (code == 0)
                 ThrowMissingCode(symbol);
 
-            writer.Write(table.GetCode(symbol), length);
+            writer.Write(code >> 5, (int)(code & 31));
         }
 
         private static void ThrowMissingCode(int symbol) => throw new InvalidOperationException(string.Create(CultureInfo.InvariantCulture, $"The Huffman table has no code for the symbol 0x{symbol:X2}."));
@@ -1545,12 +1832,14 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             private PooledBuffer? _planeY;
             private PooledBuffer? _planeCb;
             private PooledBuffer? _planeCr;
+            private PooledBuffer? _chromaRows;
 
             /// <param name="scope">The scope the buffers are rented from.</param>
             /// <param name="rowBytes">The size of the converted source row, or 0 when the source rows are used as they are.</param>
-            /// <param name="planeBytes">The size of an MCU row of samples of a component.</param>
-            /// <param name="grayscale">Whether there is only the luma plane.</param>
-            public TransformWorker(AllocationScope scope, int rowBytes, int planeBytes, bool grayscale)
+            /// <param name="planeBytes">The size of an MCU row of luma samples.</param>
+            /// <param name="chromaBytes">The size of an MCU row of samples of a chroma component, or 0 for grayscale output.</param>
+            /// <param name="chromaRowBytes">The size of the full-resolution chroma rows to subsample, or 0 without subsampling.</param>
+            public TransformWorker(AllocationScope scope, int rowBytes, int planeBytes, int chromaBytes, int chromaRowBytes)
             {
                 try
                 {
@@ -1560,10 +1849,15 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
                     }
 
                     _planeY = scope.Rent(planeBytes, AllocationKind.Temporary, clear: false);
-                    if (!grayscale)
+                    if (chromaBytes > 0)
                     {
-                        _planeCb = scope.Rent(planeBytes, AllocationKind.Temporary, clear: false);
-                        _planeCr = scope.Rent(planeBytes, AllocationKind.Temporary, clear: false);
+                        _planeCb = scope.Rent(chromaBytes, AllocationKind.Temporary, clear: false);
+                        _planeCr = scope.Rent(chromaBytes, AllocationKind.Temporary, clear: false);
+                    }
+
+                    if (chromaRowBytes > 0)
+                    {
+                        _chromaRows = scope.Rent(chromaRowBytes, AllocationKind.Temporary, clear: false);
                     }
                 }
                 catch
@@ -1582,6 +1876,12 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
 
             public Span<float> PlaneCr => _planeCr is null ? default : unsafe(MemoryMarshal.Cast<byte, float>(_planeCr.Span));
 
+            /// <summary>Gets a full-resolution row of chroma samples to subsample.</summary>
+            /// <param name="component">0 for Cb, 1 for Cr.</param>
+            /// <param name="index">The row of the pair, 0 or 1.</param>
+            /// <param name="width">The width of the rows.</param>
+            public Span<float> GetChromaRow(int component, int index, int width) => unsafe(MemoryMarshal.Cast<byte, float>(_chromaRows!.Span)).Slice(((2 * component) + index) * width, width);
+
             public float[] Block { get; } = new float[64];
 
             public double[] Scratch { get; } = new double[64];
@@ -1598,6 +1898,8 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
                 _planeCb = null;
                 _planeCr?.Dispose();
                 _planeCr = null;
+                _chromaRows?.Dispose();
+                _chromaRows = null;
             }
         }
 

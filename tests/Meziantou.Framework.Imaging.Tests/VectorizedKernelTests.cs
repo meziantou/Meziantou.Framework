@@ -1176,6 +1176,10 @@ public sealed class VectorizedKernelTests
         var scratch = new double[64];
         var expected = new int[64];
         var actual = new int[64];
+
+        // The same block as rows of a plane (a stride above 8, the rows not contiguous)
+        const int Stride = 11;
+        var plane = new float[(7 * Stride) + 8];
         for (var round = 0; round < 20_000; round++)
         {
             for (var i = 0; i < 64; i++)
@@ -1186,25 +1190,49 @@ public sealed class VectorizedKernelTests
                 quantization[i] = (ushort)(round % 3 == 0 ? 1 : random.Next(1, 256));
             }
 
+            plane.AsSpan().Fill(float.NaN);
+            for (var y = 0; y < 8; y++)
+            {
+                samples.AsSpan(y * 8, 8).CopyTo(plane.AsSpan(y * Stride));
+            }
+
             JpegForwardDct.CreateDivisors(quantization, divisors);
-            JpegForwardDct.TransformAndQuantizeScalar(samples, divisors, scratch, expected);
-            JpegForwardDct.TransformAndQuantize(samples, divisors, scratch, actual);
-            Assert.Equal(expected, actual);
+            JpegForwardDct.TransformAndQuantizeScalar(samples, 8, divisors, scratch, expected);
+            AssertPath((samples, stride, coefficients) => JpegForwardDct.TransformAndQuantize(samples, stride, divisors, scratch, coefficients));
+            AssertPath((samples, stride, coefficients) => JpegForwardDct.TransformAndQuantizeScalar(samples, stride, divisors, scratch, coefficients));
             if (System.Runtime.Intrinsics.Vector128.IsHardwareAccelerated)
             {
-                Array.Clear(actual);
-                JpegForwardDct.TransformAndQuantizeVector128(samples, divisors, scratch, actual);
-                Assert.Equal(expected, actual);
+                AssertPath((samples, stride, coefficients) => JpegForwardDct.TransformAndQuantizeVector128(samples, stride, divisors, scratch, coefficients));
             }
 
             if (Avx2.IsSupported)
             {
-                Array.Clear(actual);
-                JpegForwardDct.TransformAndQuantizeAvx2(samples, divisors, scratch, actual);
-                Assert.Equal(expected, actual);
+                AssertPath((samples, stride, coefficients) => JpegForwardDct.TransformAndQuantizeAvx2(samples, stride, divisors, scratch, coefficients));
+            }
+
+            if (Avx512F.IsSupported)
+            {
+                AssertPath((samples, stride, coefficients) => JpegForwardDct.TransformAndQuantizeAvx512(samples, stride, divisors, coefficients));
+
+                // The 16-bit coefficients stored directly
+                var stored = new short[64];
+                JpegForwardDct.TransformAndQuantizeAvx512<short>(plane, Stride, divisors, stored);
+                Assert.Equal(expected, Array.ConvertAll(stored, value => (int)value));
             }
         }
+
+        void AssertPath(ForwardDct transform)
+        {
+            Array.Clear(actual);
+            transform(samples, 8, actual);
+            Assert.Equal(expected, actual);
+            Array.Clear(actual);
+            transform(plane, Stride, actual);
+            Assert.Equal(expected, actual);
+        }
     }
+
+    private delegate void ForwardDct(ReadOnlySpan<float> samples, int stride, Span<int> coefficients);
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
@@ -1276,6 +1304,11 @@ public sealed class VectorizedKernelTests
             {
                 AssertPath(source, expected, (source, luma, blue, red) => Complete(source, luma, blue, red, JpegEncoderCodec.ConvertRgbToYCbCrAvx2(source, luma, blue, red)));
             }
+
+            if (Avx512F.IsSupported)
+            {
+                AssertPath(source, expected, (source, luma, blue, red) => Complete(source, luma, blue, red, JpegEncoderCodec.ConvertRgbToYCbCrAvx512(source, luma, blue, red)));
+            }
         }
 
         static void AssertPath(byte[] source, float[][] expected, ConvertRgbToYCbCr convert)
@@ -1321,36 +1354,116 @@ public sealed class VectorizedKernelTests
             }
 
             Assert.Equal(JpegEncoderCodec.GetNonZeroMaskScalar(coefficients), JpegEncoderCodec.GetNonZeroMask(coefficients));
+
+            // The same values stored as 16-bit coefficients (truncated)
+            var stored = Array.ConvertAll(coefficients, value => (short)value);
+            Assert.Equal(JpegEncoderCodec.GetNonZeroMaskScalar(stored), JpegEncoderCodec.GetNonZeroMask(stored));
         }
     }
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
-    public void JpegEncoderBlockExtractionMatchesTheScalarReference()
+    public void JpegProgressiveSignificantMaskMatchesTheScalarReference()
     {
-        var random = new Random(602);
-        const int PlaneWidth = 40;
-        var plane = new float[PlaneWidth * 17];
-        foreach (var (factorX, factorY) in new[] { (1, 1), (2, 1), (2, 2), (1, 2) })
+        var random = new Random(604);
+        var block = new short[64];
+        for (var round = 0; round < 5_000; round++)
         {
-            for (var round = 0; round < 200; round++)
+            // Sparse and dense blocks of every magnitude, the 16-bit extremes, and single coefficients
+            var density = random.NextDouble();
+            for (var i = 0; i < 64; i++)
             {
-                // Level-shifted luma and chroma values (any float), including the extremes of the range
-                for (var i = 0; i < plane.Length; i++)
-                {
-                    plane[i] = round % 4 == 0 ? (random.Next(2) == 0 ? -128f : 127f) : (float)((random.NextDouble() * 256) - 128);
-                }
+                block[i] = random.NextDouble() < density ? (short)(round % 4 == 0 ? random.Next(short.MinValue, short.MaxValue + 1) : random.Next(-1024, 1024)) : (short)0;
+            }
 
-                var x0 = random.Next(0, PlaneWidth - (8 * factorX) + 1);
-                var y0 = random.Next(0, 17 - (8 * factorY) + 1);
-                var expected = new float[64];
-                var actual = new float[64];
-                JpegEncoderCodec.ExtractBlockScalar(plane, PlaneWidth, x0, y0, factorX, factorY, expected);
-                JpegEncoderCodec.ExtractBlock(plane, PlaneWidth, x0, y0, factorX, factorY, actual);
-                Assert.Equal(expected, actual);
+            if (round < 64)
+            {
+                Array.Clear(block);
+                block[round] = round % 3 == 0 ? short.MinValue : round % 3 == 1 ? short.MaxValue : (short)(1 << (round % 11));
+            }
+
+            for (var shift = 0; shift < 16; shift++)
+            {
+                Assert.Equal(JpegProgressiveScanEncoder.GetSignificantMaskScalar(block, shift), JpegProgressiveScanEncoder.GetSignificantMask(block, shift));
+                if (shift < 15)
+                {
+                    Assert.Equal((JpegProgressiveScanEncoder.GetSignificantMaskScalar(block, shift), JpegProgressiveScanEncoder.GetSignificantMaskScalar(block, shift + 1)), JpegProgressiveScanEncoder.GetSignificantMasks(block, shift));
+                }
             }
         }
     }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void JpegEncoderChromaSubsamplingMatchesTheScalarReference()
+    {
+        var random = new Random(602);
+        for (var length = 0; length < 40; length++)
+        {
+            foreach (var twoRows in new[] { false, true })
+            {
+                for (var round = 0; round < 20; round++)
+                {
+                    // Level-shifted chroma values (any float), including the extremes of the range
+                    var first = new float[2 * length];
+                    var second = new float[twoRows ? 2 * length : 0];
+                    for (var i = 0; i < first.Length; i++)
+                    {
+                        first[i] = round % 4 == 0 ? (random.Next(2) == 0 ? -128f : 127f) : (float)((random.NextDouble() * 256) - 128);
+                        if (twoRows)
+                        {
+                            second[i] = (float)((random.NextDouble() * 256) - 128);
+                        }
+                    }
+
+                    var expected = new float[length];
+                    JpegEncoderCodec.DownsampleRowScalar(first, second, expected);
+                    AssertPath(first, second, expected, JpegEncoderCodec.DownsampleRow);
+                    if (Vector128.IsHardwareAccelerated)
+                    {
+                        AssertPath(first, second, expected, (first, second, destination) => Complete(first, second, destination, JpegEncoderCodec.DownsampleRowVector(first, second, destination)));
+                    }
+
+                    if (Avx2.IsSupported)
+                    {
+                        AssertPath(first, second, expected, (first, second, destination) => Complete(first, second, destination, JpegEncoderCodec.DownsampleRowAvx2(first, second, destination)));
+                    }
+
+                    if (Avx512F.IsSupported)
+                    {
+                        AssertPath(first, second, expected, (first, second, destination) => Complete(first, second, destination, JpegEncoderCodec.DownsampleRowAvx512(first, second, destination)));
+                    }
+                }
+            }
+        }
+
+        // A block copied from the rows of a plane
+        const int Stride = 21;
+        var plane = new float[(7 * Stride) + 8];
+        for (var i = 0; i < plane.Length; i++)
+        {
+            plane[i] = i;
+        }
+
+        var block = new float[64];
+        JpegEncoderCodec.CopyBlock(plane, Stride, block);
+        for (var i = 0; i < 64; i++)
+        {
+            Assert.Equal(plane[(i / 8 * Stride) + (i % 8)], block[i]);
+        }
+
+        static void AssertPath(float[] first, float[] second, float[] expected, DownsampleRow downsample)
+        {
+            var actual = new float[expected.Length];
+            downsample(first, second, actual);
+            Assert.Equal(expected, actual);
+        }
+
+        static void Complete(ReadOnlySpan<float> first, ReadOnlySpan<float> second, Span<float> destination, int done) =>
+            JpegEncoderCodec.DownsampleRowScalar(first[(2 * done)..], second.IsEmpty ? second : second[(2 * done)..], destination[done..]);
+    }
+
+    private delegate void DownsampleRow(ReadOnlySpan<float> first, ReadOnlySpan<float> second, Span<float> destination);
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]

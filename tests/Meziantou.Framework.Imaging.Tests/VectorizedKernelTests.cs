@@ -577,6 +577,52 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void ExrPredictorMatchesTheScalarReference()
+    {
+        var random = new Random(4127);
+        var lengths = Enumerable.Range(0, 100).Concat([255, 256, 257, 1023, 4096, 4099, 65537]);
+        foreach (var length in lengths)
+        {
+            for (var round = 0; round < 3; round++)
+            {
+                // Random bytes, and runs of extremes whose sums wrap around
+                var data = new byte[length];
+                random.NextBytes(data);
+                if (round == 1)
+                {
+                    data.AsSpan().Fill(0xFF);
+                }
+                else if (round == 2)
+                {
+                    for (var i = 0; i < data.Length; i++)
+                    {
+                        data[i] = (i & 4) == 0 ? (byte)0xFF : (byte)0x00;
+                    }
+                }
+
+                var expectedEncoded = new byte[length];
+                var actualEncoded = new byte[length];
+                ExrPredictor.EncodeScalar(data, expectedEncoded);
+                ExrPredictor.Encode(data, actualEncoded);
+                Assert.Equal(expectedEncoded, actualEncoded);
+
+                var expectedSource = (byte[])data.Clone();
+                var actualSource = (byte[])data.Clone();
+                var expectedDecoded = new byte[length];
+                var actualDecoded = new byte[length];
+                ExrPredictor.DecodeScalar(expectedSource, expectedDecoded);
+                ExrPredictor.Decode(actualSource, actualDecoded);
+                Assert.Equal(expectedSource, actualSource);
+                Assert.Equal(expectedDecoded, actualDecoded);
+
+                ExrPredictor.Decode(actualEncoded, actualDecoded);
+                Assert.Equal(data, actualDecoded);
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void JpegInverseDctMatchesTheScalarReferenceBitForBit()
     {
         var random = new Random(20);

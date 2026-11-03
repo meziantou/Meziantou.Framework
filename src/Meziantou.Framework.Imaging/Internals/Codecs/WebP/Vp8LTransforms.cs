@@ -1,5 +1,8 @@
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -49,6 +52,7 @@ internal static class Vp8LTransforms
             return;
 
         var useVectors = Vector128.IsHardwareAccelerated;
+        var useLeftVectors = useVectors && BitConverter.IsLittleEndian && (AdvSimd.Arm64.IsSupported || Sse2.IsSupported);
 
         // First row: the top-left pixel predicts black, the others their left neighbor
         pixels[0] = Vp8LDecoder.AddPixels(pixels[0], Black);
@@ -72,6 +76,12 @@ internal static class Vp8LTransforms
                     continue;
 
                 var mode = (int)((modeRow[tile] >> 8) & 0xF);
+                if (useLeftVectors && mode is 5 or 6 or 7 or 10 or 11 or 12 or 13)
+                {
+                    PredictFromLeftVector(row, above, start, end, mode);
+                    continue;
+                }
+
                 switch (mode)
                 {
                     case 1:
@@ -267,6 +277,144 @@ internal static class Vp8LTransforms
             left = Vp8LDecoder.AddPixels(row[x], ClampAddSubtractHalfUnrolled(Average2(left, above[x]), above[x - 1]));
             row[x] = left;
         }
+    }
+
+    /// <summary>
+    /// The modes that read the left pixel, which was just reconstructed: a chain of one pixel per step, whose pixel is the 4
+    /// byte lanes of a vector, so that the left pixel stays in a register. Average2 is a halving addition, the clamps go
+    /// through 16-bit lanes and a saturating narrowing, and Select compares sums of absolute differences: every lane
+    /// computes the result of the scalar code.
+    /// </summary>
+    private static void PredictFromLeftVector(Span<uint> row, ReadOnlySpan<uint> above, int start, int end, int mode)
+    {
+        // The pixels read: the row from start - 1 to end - 1, the row above from start - 1 to end (one past the last
+        // column: the first pixel of the current row)
+        _ = row[start - 1];
+        _ = row[end - 1];
+        _ = above[start - 1];
+        _ = above[end];
+        ref var current = ref unsafe(MemoryMarshal.GetReference(row));
+        ref var top = ref unsafe(MemoryMarshal.GetReference(above));
+        var left = Load(ref current, start - 1);
+        switch (mode)
+        {
+            case 5:
+                for (var x = start; x < end; x++)
+                {
+                    left = Load(ref current, x) + Average(Average(left, Load(ref top, x + 1)), Load(ref top, x));
+                    Store(ref current, x, left);
+                }
+
+                break;
+
+            case 6:
+                for (var x = start; x < end; x++)
+                {
+                    left = Load(ref current, x) + Average(left, Load(ref top, x - 1));
+                    Store(ref current, x, left);
+                }
+
+                break;
+
+            case 7:
+                for (var x = start; x < end; x++)
+                {
+                    left = Load(ref current, x) + Average(left, Load(ref top, x));
+                    Store(ref current, x, left);
+                }
+
+                break;
+
+            case 10:
+                for (var x = start; x < end; x++)
+                {
+                    var right = Average(Load(ref top, x), Load(ref top, x + 1));
+                    left = Load(ref current, x) + Average(Average(left, Load(ref top, x - 1)), right);
+                    Store(ref current, x, left);
+                }
+
+                break;
+
+            case 11:
+                for (var x = start; x < end; x++)
+                {
+                    // Lane 0 holds each distance (the other bytes are zero)
+                    var upper = Load(ref top, x);
+                    var upperLeft = Load(ref top, x - 1);
+                    var distanceToLeft = SumOfAbsoluteDifferences(upper, upperLeft);
+                    var distanceToTop = SumOfAbsoluteDifferences(left, upperLeft);
+                    var useLeft = Vector128.LessThan(distanceToLeft, distanceToTop).AsByte();
+                    left = Load(ref current, x) + Vector128.ConditionalSelect(useLeft, left, upper);
+                    Store(ref current, x, left);
+                }
+
+                break;
+
+            case 12:
+                for (var x = start; x < end; x++)
+                {
+                    var gradient = Widen(Load(ref top, x)) - Widen(Load(ref top, x - 1));
+                    left = Load(ref current, x) + NarrowSaturate(Widen(left) + gradient);
+                    Store(ref current, x, left);
+                }
+
+                break;
+
+            default:
+                for (var x = start; x < end; x++)
+                {
+                    // a + (a - b) / 2, the division truncating toward zero
+                    var average = Widen(Average(left, Load(ref top, x)));
+                    var difference = average - Widen(Load(ref top, x - 1));
+                    var half = Vector128.ShiftRightArithmetic(difference - Vector128.ShiftRightArithmetic(difference, 15), 1);
+                    left = Load(ref current, x) + NarrowSaturate(average + half);
+                    Store(ref current, x, left);
+                }
+
+                break;
+        }
+
+        // The other bytes are zero: the sums of absolute differences read 8 bytes
+        static Vector128<byte> Load(ref uint pixels, int x) => Vector128.CreateScalar(unsafe(Unsafe.Add(ref pixels, x))).AsByte();
+
+        static void Store(ref uint pixels, int x, Vector128<byte> pixel)
+        {
+            unsafe { Unsafe.Add(ref pixels, x) = pixel.AsUInt32().ToScalar(); }
+        }
+
+        // The 4 bytes as 16-bit lanes
+        static Vector128<short> Widen(Vector128<byte> pixel) => Vector128.WidenLower(pixel).AsInt16();
+    }
+
+    /// <summary>The floor of the mean of each byte.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<byte> Average(Vector128<byte> a, Vector128<byte> b)
+    {
+        if (AdvSimd.IsSupported)
+            return AdvSimd.FusedAddHalving(a, b);
+
+        // PAVGB rounds up: one less when the sum is odd
+        return Sse2.Average(a, b) - ((a ^ b) & Vector128<byte>.One);
+    }
+
+    /// <summary>The 16-bit values of lanes 0 to 3 clamped to bytes 0 to 3.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<byte> NarrowSaturate(Vector128<short> value)
+    {
+        if (AdvSimd.IsSupported)
+            return unsafe(AdvSimd.ExtractNarrowingSaturateUnsignedLower(value).ToVector128Unsafe());
+
+        return Sse2.PackUnsignedSaturate(value, value);
+    }
+
+    /// <summary>The sum of the absolute differences of the 4 bytes of two pixels (the other bytes are zero), in lane 0.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<int> SumOfAbsoluteDifferences(Vector128<byte> a, Vector128<byte> b)
+    {
+        if (AdvSimd.Arm64.IsSupported)
+            return unsafe(AdvSimd.Arm64.AddAcrossWidening(AdvSimd.AbsoluteDifference(a.GetLower(), b.GetLower())).ToVector128Unsafe()).AsInt32() & Vector128.CreateScalar(0xFFFF);
+
+        return Sse2.SumAbsoluteDifferences(a, b).AsInt32();
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

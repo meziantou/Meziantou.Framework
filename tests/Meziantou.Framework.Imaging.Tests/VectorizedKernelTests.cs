@@ -884,6 +884,13 @@ public sealed class VectorizedKernelTests
                 JpegForwardDct.TransformAndQuantizeAvx2(samples, divisors, scratch, actual);
                 Assert.Equal(expected, actual);
             }
+
+            if (Avx512F.IsSupported)
+            {
+                Array.Clear(actual);
+                JpegForwardDct.TransformAndQuantizeAvx512(samples, divisors, actual);
+                Assert.Equal(expected, actual);
+            }
         }
     }
 

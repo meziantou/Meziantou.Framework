@@ -21,7 +21,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <remarks>
 /// With hardware vector support, each lane of <see cref="Vector128{T}"/> (two lanes) or of AVX2 (four lanes) transforms a
 /// column, then a row, with the operations of the scalar reference (<see cref="TransformAndQuantizeScalar"/>) in the same
-/// order and without fused multiply-adds; the quantization divides and rounds exactly like
+/// order and without fused multiply-adds (with AVX-512, the eight columns then the eight rows at once, transposed in
+/// registers, and the zig-zag reordering done by permutations); the quantization divides and rounds exactly like
 /// <see cref="Math.Round(double, MidpointRounding)"/> (the fraction <c>x - trunc(x)</c> is exact, or the conversion of Arm64
 /// that rounds ties away from zero), so the coefficients are identical. The columns are stored transposed, so that the row
 /// pass reads its lanes contiguously too, and the divisors are in the transposed order of <see cref="CreateDivisors"/>.
@@ -59,6 +60,19 @@ internal static class JpegForwardDct
         28, 42, 43, 53, 54, 60, 61, 63,
     ];
 
+    /// <summary>Gets the transposed index (<c>u * 8 + v</c>) of the coefficient at each zig-zag position: the inverse of <see cref="TransposedZigZagPositions"/>.</summary>
+    private static ReadOnlySpan<int> ZigZagTransposedIndexes =>
+    [
+        0, 8, 1, 2, 9, 16, 24, 17,
+        10, 3, 4, 11, 18, 25, 32, 40,
+        33, 26, 19, 12, 5, 6, 13, 20,
+        27, 34, 41, 48, 56, 49, 42, 35,
+        28, 21, 14, 7, 15, 22, 29, 36,
+        43, 50, 57, 58, 51, 44, 37, 30,
+        23, 31, 38, 45, 52, 59, 60, 53,
+        46, 39, 47, 54, 61, 62, 55, 63,
+    ];
+
     /// <summary>Converts a quantization table to the divisors of <see cref="TransformAndQuantize"/>.</summary>
     /// <param name="quantization">64 quantization values (natural order: <c>Q[v * 8 + u]</c>).</param>
     /// <param name="divisors">64 doubles, in the transposed order: <c>divisors[u * 8 + v] = Q[v * 8 + u]</c>.</param>
@@ -82,7 +96,11 @@ internal static class JpegForwardDct
     /// <param name="coefficients">The 64 quantized coefficients, in zig-zag order.</param>
     public static void TransformAndQuantize(ReadOnlySpan<float> samples, ReadOnlySpan<double> divisors, Span<double> scratch, Span<int> coefficients)
     {
-        if (Avx2.IsSupported)
+        if (Vector512.IsHardwareAccelerated && Avx512F.IsSupported)
+        {
+            TransformAndQuantizeAvx512(samples, divisors, coefficients);
+        }
+        else if (Avx2.IsSupported)
         {
             TransformAndQuantizeAvx2(samples, divisors, scratch, coefficients);
         }
@@ -437,5 +455,110 @@ internal static class JpegForwardDct
         unsafe { Unsafe.Add(ref destination, Unsafe.Add(ref positions, 1)) = integers.GetElement(1); }
         unsafe { Unsafe.Add(ref destination, Unsafe.Add(ref positions, 2)) = integers.GetElement(2); }
         unsafe { Unsafe.Add(ref destination, Unsafe.Add(ref positions, 3)) = integers.GetElement(3); }
+    }
+
+    /// <summary>
+    /// The transform with AVX-512: the eight columns at once, an 8 x 8 transposition in registers, then the eight rows
+    /// at once. The quantized values of the transposed order are reordered to the zig-zag order by two-source
+    /// permutations of 16 values each (<see cref="ZigZagTransposedIndexes"/>).
+    /// </summary>
+    internal static void TransformAndQuantizeAvx512(ReadOnlySpan<float> samples, ReadOnlySpan<double> divisors, Span<int> coefficients)
+    {
+        samples = samples[..64];
+        divisors = divisors[..64];
+        coefficients = coefficients[..64];
+        ref var source = ref unsafe(MemoryMarshal.GetReference(samples));
+        Transform(
+            LoadRow(ref source, 0), LoadRow(ref source, 8), LoadRow(ref source, 16), LoadRow(ref source, 24),
+            LoadRow(ref source, 32), LoadRow(ref source, 40), LoadRow(ref source, 48), LoadRow(ref source, 56),
+            out var c0, out var c1, out var c2, out var c3, out var c4, out var c5, out var c6, out var c7);
+
+        // Lane x of c_v is the output v of the column x; after the transposition, lane v of x_k is the output v of the column k
+        var t0 = Avx512F.UnpackLow(c0, c1);
+        var t1 = Avx512F.UnpackHigh(c0, c1);
+        var t2 = Avx512F.UnpackLow(c2, c3);
+        var t3 = Avx512F.UnpackHigh(c2, c3);
+        var t4 = Avx512F.UnpackLow(c4, c5);
+        var t5 = Avx512F.UnpackHigh(c4, c5);
+        var t6 = Avx512F.UnpackLow(c6, c7);
+        var t7 = Avx512F.UnpackHigh(c6, c7);
+        var even = Vector512.Create(0L, 1, 8, 9, 4, 5, 12, 13);
+        var odd = Vector512.Create(2L, 3, 10, 11, 6, 7, 14, 15);
+        var u0 = Avx512F.PermuteVar8x64x2(t0, even, t2);
+        var u1 = Avx512F.PermuteVar8x64x2(t0, odd, t2);
+        var u2 = Avx512F.PermuteVar8x64x2(t1, even, t3);
+        var u3 = Avx512F.PermuteVar8x64x2(t1, odd, t3);
+        var u4 = Avx512F.PermuteVar8x64x2(t4, even, t6);
+        var u5 = Avx512F.PermuteVar8x64x2(t4, odd, t6);
+        var u6 = Avx512F.PermuteVar8x64x2(t5, even, t7);
+        var u7 = Avx512F.PermuteVar8x64x2(t5, odd, t7);
+        Transform(
+            Avx512F.Shuffle4x128(u0, u4, 0x44), Avx512F.Shuffle4x128(u2, u6, 0x44), Avx512F.Shuffle4x128(u1, u5, 0x44), Avx512F.Shuffle4x128(u3, u7, 0x44),
+            Avx512F.Shuffle4x128(u0, u4, 0xEE), Avx512F.Shuffle4x128(u2, u6, 0xEE), Avx512F.Shuffle4x128(u1, u5, 0xEE), Avx512F.Shuffle4x128(u3, u7, 0xEE),
+            out var f0, out var f1, out var f2, out var f3, out var f4, out var f5, out var f6, out var f7);
+
+        // Lane v of f_u is the transposed index u * 8 + v
+        ref var divisor = ref unsafe(MemoryMarshal.GetReference(divisors));
+        var first = Vector512.Create(QuantizeAvx512(f0, ref divisor, 0), QuantizeAvx512(f1, ref divisor, 8));
+        var second = Vector512.Create(QuantizeAvx512(f2, ref divisor, 16), QuantizeAvx512(f3, ref divisor, 24));
+        var third = Vector512.Create(QuantizeAvx512(f4, ref divisor, 32), QuantizeAvx512(f5, ref divisor, 40));
+        var fourth = Vector512.Create(QuantizeAvx512(f6, ref divisor, 48), QuantizeAvx512(f7, ref divisor, 56));
+        ref var indexes = ref unsafe(MemoryMarshal.GetReference(ZigZagTransposedIndexes));
+        ref var output = ref unsafe(MemoryMarshal.GetReference(coefficients));
+        for (var i = 0; i < 64; i += 16)
+        {
+            // The permutations read bits 0 to 4 of each index: the values of the first or the second half
+            var index = unsafe(Vector512.LoadUnsafe(ref indexes, (nuint)i));
+            var low = Avx512F.PermuteVar16x32x2(first, index, second);
+            var high = Avx512F.PermuteVar16x32x2(third, index, fourth);
+            unsafe { Vector512.ConditionalSelect(Vector512.GreaterThan(index, Vector512.Create(31)), high, low).StoreUnsafe(ref output, (nuint)i); }
+        }
+
+        static Vector512<double> LoadRow(ref float source, int index) => Avx512F.ConvertToVector512Double(unsafe(Vector256.LoadUnsafe(ref source, (nuint)index)));
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void Transform(Vector512<double> x0, Vector512<double> x1, Vector512<double> x2, Vector512<double> x3, Vector512<double> x4, Vector512<double> x5, Vector512<double> x6, Vector512<double> x7,
+        out Vector512<double> y0, out Vector512<double> y1, out Vector512<double> y2, out Vector512<double> y3, out Vector512<double> y4, out Vector512<double> y5, out Vector512<double> y6, out Vector512<double> y7)
+    {
+        var s07 = x0 + x7;
+        var s16 = x1 + x6;
+        var s25 = x2 + x5;
+        var s34 = x3 + x4;
+        var d07 = x0 - x7;
+        var d16 = x1 - x6;
+        var d25 = x2 - x5;
+        var d34 = x3 - x4;
+        var a0 = s07 + s34;
+        var a1 = s16 + s25;
+        var a2 = s07 - s34;
+        var a3 = s16 - s25;
+        y0 = (a0 + a1) * C4;
+        y4 = (a0 - a1) * C4;
+        y2 = (a2 * C2) + (a3 * C6);
+        y6 = (a2 * C6) - (a3 * C2);
+        y1 = (d07 * C1) + (d16 * C3) + (d25 * C5) + (d34 * C7);
+        y3 = (d07 * C3) - (d16 * C7) - (d25 * C1) - (d34 * C5);
+        y5 = (d07 * C5) - (d16 * C1) + (d25 * C7) + (d34 * C3);
+        y7 = (d07 * C7) - (d16 * C5) + (d25 * C3) - (d34 * C1);
+    }
+
+    /// <summary>Quantizes the coefficients of the transposed indexes <paramref name="index"/> to <paramref name="index"/> + 7, like <see cref="QuantizeAvx2"/>.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector256<int> QuantizeAvx512(Vector512<double> coefficient, ref double divisors, int index)
+    {
+        var quotient = coefficient / unsafe(Vector512.LoadUnsafe(ref divisors, (nuint)index));
+        var minimum = index == 0 ? Vector512.Create((double)MinDc, -MaxAcMagnitude, -MaxAcMagnitude, -MaxAcMagnitude, -MaxAcMagnitude, -MaxAcMagnitude, -MaxAcMagnitude, -MaxAcMagnitude) : Vector512.Create((double)-MaxAcMagnitude);
+        var maximum = index == 0 ? Vector512.Create((double)MaxDc, MaxAcMagnitude, MaxAcMagnitude, MaxAcMagnitude, MaxAcMagnitude, MaxAcMagnitude, MaxAcMagnitude, MaxAcMagnitude) : Vector512.Create((double)MaxAcMagnitude);
+        var clamped = Vector512.Min(Vector512.Max(quotient, minimum), maximum);
+
+        // trunc(q) plus or minus 1 when the exact fraction reaches one half (VRNDSCALEPD with the truncation mode, no exception)
+        var half = Vector512.Create(0.5);
+        var truncated = Avx512F.RoundScale(clamped, 0x0B);
+        var fraction = clamped - truncated;
+        var rounded = truncated
+            + (Vector512.GreaterThanOrEqual(fraction, half) & Vector512<double>.One)
+            - (Vector512.LessThanOrEqual(fraction, -half) & Vector512<double>.One);
+        return Avx512F.ConvertToVector256Int32WithTruncation(rounded);
     }
 }

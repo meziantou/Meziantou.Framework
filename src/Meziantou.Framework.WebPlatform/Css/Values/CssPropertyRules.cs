@@ -242,6 +242,8 @@ internal static partial class CssPropertyRules
 
         // https://drafts.csswg.org/css-sizing-4/#sizing-values: the height is the width when it is omitted
         ["size"] = (ExpandPlace, SerializePair),
+        ["min-size"] = (ExpandPlace, SerializePair),
+        ["max-size"] = (ExpandPlace, SerializePair),
         ["white-space"] = (ExpandWhiteSpace, SerializeWhiteSpace),
         ["text-box"] = (ExpandTextBox, SerializeTextBox),
         ["vertical-align"] = (ExpandVerticalAlign, SerializeVerticalAlign),

@@ -1101,9 +1101,9 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
             {
                 foreach (var shorthandName in CssPropertyRegistry.GetShorthands(property))
                 {
-                    // The size shorthand of css-sizing-4 (width and height) is not used by the browsers to serialize the
+                    // The size, min-size and max-size shorthands of css-sizing-4 are not used by the browsers to serialize the
                     // declarations: "width: 1px; height: 2px" is not serialized as "size: 1px 2px"
-                    if (shorthandName == "size" || CssPropertyRules.IsLegacyShorthand(shorthandName) || CssPropertyRegistry.Get(shorthandName) is not { } shorthand)
+                    if (shorthandName is "size" or "min-size" or "max-size" || CssPropertyRules.IsLegacyShorthand(shorthandName) || CssPropertyRegistry.Get(shorthandName) is not { } shorthand)
                         continue;
 
                     // All the longhands must be declared (e.g. the ~600 longhands of all are rarely declared)

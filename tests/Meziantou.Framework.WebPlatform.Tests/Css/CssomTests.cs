@@ -41,6 +41,8 @@ public sealed class CssomTests
     [InlineData("margin: 10px; margin-inline: 10px; margin-block: 10px; margin-inline-end: 10px; margin-bottom: 10px", "margin-top: 10px; margin-right: 10px; margin-left: 10px; margin-inline-start: 10px; margin-block: 10px; margin-inline-end: 10px; margin-bottom: 10px;")]
     [InlineData("border: 1px; border-top: 1px !important", "border-right: 1px; border-bottom: 1px; border-left: 1px; border-image: none; border-top: 1px !important;")]
     [InlineData("width: 1px; height: 2px", "width: 1px; height: 2px;")]
+    [InlineData("min-size: 1px 2px", "min-width: 1px; min-height: 2px;")]
+    [InlineData("max-width: 1px; max-height: 1px", "max-width: 1px; max-height: 1px;")]
     [InlineData("width: var({--x})", "width: var({--x});")]
     [InlineData("width: var(--x", "width: var(--x);")]
     [InlineData("width: calc(var(--x)", "width: calc(var(--x));")]

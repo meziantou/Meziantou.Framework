@@ -466,9 +466,10 @@ internal static partial class CssValueComputer
 
     /// <summary>
     /// Computes the lengths, angles, times, colors, URLs and math functions of a value. The font-relative lengths refer to the font
-    /// of the parent in the font properties, or when <c>fontSizeContext</c> is true.
+    /// of the parent in the font properties, or when <c>fontSizeContext</c> is true. Without a property, the percentages of the
+    /// math functions are resolved, unless <c>percentageUnit</c> is the unit they stand for when they are resolved at used time.
     /// </summary>
-    public static string ComputeGeneric(ComputedStyle style, CssPropertyDefinition? property, string value, string? baseUrl, bool? hasColors = null, bool fontSizeContext = false)
+    public static string ComputeGeneric(ComputedStyle style, CssPropertyDefinition? property, string value, string? baseUrl, bool? hasColors = null, bool fontSizeContext = false, string? percentageUnit = null)
     {
         // Most values are a keyword (e.g. block, none, auto): an identifier in lowercase is its own computed value, unless it
         // is a color, or a family name of font-family (serialized as a family name)
@@ -477,11 +478,9 @@ internal static partial class CssValueComputer
 
         var values = CssParser.ParseListOfComponentValues(value);
         // The font-relative lengths of the font properties refer to the font of the parent (https://drafts.csswg.org/css-values-4/#font-relative-lengths)
-        // The percentages of border-image-slice refer to the size of the image (https://drafts.csswg.org/css-backgrounds-3/#border-image-slice):
-        // like a <length-percentage>, they are resolved at used-value time
         var context = new ComputationContext(style, hasColors ?? (property is not null && HasColorType(property)), baseUrl)
         {
-            PercentageUnit = property is null ? null : GetPercentageUnit(property) ?? (property.Name is "border-image-slice" or "mask-border-slice" ? "px" : null),
+            PercentageUnit = property is null ? percentageUnit : GetPercentageUnit(property),
             FontSizeContext = fontSizeContext || (property is not null && property.Name.StartsWith("font-", StringComparison.Ordinal)),
         };
         var transformed = Transform(values, context);
@@ -662,28 +661,32 @@ internal static partial class CssValueComputer
 
     /// <summary>
     /// Computes the arguments of a radial or conic gradient: the percentages of the size and position of the gradient (its first
-    /// argument, before the color stops) are resolved against the gradient box at used-value time, like a &lt;length-percentage&gt;
-    /// (e.g. random(33%, 1%) is kept with a fixed base value: WPT css/css-values/random-computed.tentative.html).
+    /// argument, before the color stops) are resolved against the gradient box at used-value time, like a &lt;length-percentage&gt;,
+    /// and the percentages of the color stops against the gradient line (a &lt;length-percentage&gt;) or a full turn (an
+    /// &lt;angle-percentage&gt; of a conic gradient). E.g. random(33%, 1%) is kept with a fixed base value: WPT
+    /// css/css-values/random-computed.tentative.html.
     /// </summary>
     private static CssFunction ComputeGradientFunction(CssFunction function, ComputationContext context)
     {
         var copy = new CssFunction(function.Name);
+        var stopContext = CreatePercentageContext(context, function.Name.Contains("conic", StringComparison.OrdinalIgnoreCase) ? "deg" : "px");
         var preludeLength = function.Value.FindIndex(value => value is CssPreservedToken { Type: CssTokenType.Comma });
         if (preludeLength < 0 || !IsGradientPrelude(function.Value.GetRange(0, preludeLength)))
         {
-            copy.Value.AddRange(Transform(function.Value, context));
+            copy.Value.AddRange(Transform(function.Value, stopContext));
             return copy;
         }
 
-        var preludeContext = new ComputationContext(context.UntrackedStyle, context.HasColors, context.BaseUrl)
+        copy.Value.AddRange(Transform(function.Value.GetRange(0, preludeLength), CreatePercentageContext(context, "px")));
+        copy.Value.AddRange(Transform(function.Value.GetRange(preludeLength, function.Value.Count - preludeLength), stopContext));
+        return copy;
+
+        static ComputationContext CreatePercentageContext(ComputationContext context, string percentageUnit) => new(context.UntrackedStyle, context.HasColors, context.BaseUrl)
         {
             FontSizeContext = context.FontSizeContext,
             LineHeightContext = context.LineHeightContext,
-            PercentageUnit = "px",
+            PercentageUnit = percentageUnit,
         };
-        copy.Value.AddRange(Transform(function.Value.GetRange(0, preludeLength), preludeContext));
-        copy.Value.AddRange(Transform(function.Value.GetRange(preludeLength, function.Value.Count - preludeLength), context));
-        return copy;
     }
 
     /// <summary>Returns whether the first argument of a radial or conic gradient is its shape, size, position or color space, not a color stop.</summary>

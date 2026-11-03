@@ -1798,9 +1798,12 @@ public sealed class ComputedStyleTests : IDisposable
     [InlineData("background: border-area", "background-origin", "border-box", "border-box")]
     [InlineData("background-image: conic-gradient(from 2rad, red, blue)", "background-image", "conic-gradient(from 2rad, red, blue)", "conic-gradient(from 114.592deg, rgb(255, 0, 0), rgb(0, 0, 255))")]
     [InlineData("background-image: cross-fade(1% red, green)", "background-image", "cross-fade(red 1%, green)", "cross-fade(rgb(255, 0, 0) 1%, rgb(0, 128, 0))")]
-    [InlineData("border-image-slice: random(fixed 0.5, 10%, 30%)", "border-image-slice", "random(fixed 0.5, 10%, 30%)", "random(fixed 0.5, 10%, 30%)")]
+    [InlineData("border-image-slice: random(fixed 0.5, 10%, 30%)", "border-image-slice", "random(fixed 0.5, 10%, 30%)", "20%")]
     [InlineData("border-image-slice: calc(10% + 20%)", "border-image-slice", "calc(30%)", "30%")]
-    [InlineData("background-image: radial-gradient(at 30% random(fixed 0.5, 33%, 1%), silver random(fixed 0.5, 30%, 10%, 1%), gold random(fixed 0.5, 70%, 10%, 1%))", "background-image", "radial-gradient(at 30% random(fixed 0.5, 33%, 1%), silver random(fixed 0.5, 30%, 10%, 1%), gold random(fixed 0.5, 70%, 10%, 1%))", "radial-gradient(at 30% random(fixed 0.5, 33%, 1%), rgb(192, 192, 192) 30%, rgb(255, 215, 0) 70%)")]
+    [InlineData("background-image: radial-gradient(at 30% random(fixed 0.5, 33%, 1%), silver random(fixed 0.5, 30%, 10%, 1%), gold random(fixed 0.5, 70%, 10%, 1%))", "background-image", "radial-gradient(at 30% random(fixed 0.5, 33%, 1%), silver random(fixed 0.5, 30%, 10%, 1%), gold random(fixed 0.5, 70%, 10%, 1%))", "radial-gradient(at 30% random(fixed 0.5, 33%, 1%), rgb(192, 192, 192) random(fixed 0.5, 30%, 10%, 1%), rgb(255, 215, 0) random(fixed 0.5, 70%, 10%, 1%))")]
+    [InlineData("background-size: 100% calc(100% / round(up, 100% / 110px))", "background-size", "100% calc(100% / round(up, 100% / 110px, 1))", "100% calc(100% / round(up, 100% / 110px, 1))")]
+    [InlineData("min-size: 10px 10px", "min-size", "10px", "10px")]
+    [InlineData("max-size: 10px 20px", "max-size", "10px 20px", "10px 20px")]
     public void SpecifiedAndComputedValues(string style, string property, string specified, string computed)
     {
         var document = Parse("<div id=target style='" + style + "'></div>");
@@ -1815,6 +1818,9 @@ public sealed class ComputedStyleTests : IDisposable
     [InlineData("background: border-area border-box", "border-area")]
     [InlineData("background: border-area padding-box", "padding-box border-area")]
     [InlineData("background: text border-area", "border-area text")]
+    [InlineData("background: none; background-position-x: right 10px", "right 10px top 0%")]
+    [InlineData("background: none; background-position-y: bottom 20px", "left 0% bottom 20px")]
+    [InlineData("background: none; background-position-x: calc(10px + 5%)", "calc(5% + 10px) 0%")]
     public void SpecifiedBackground(string style, string expected)
     {
         var document = Parse("<div id=target style='" + style + "'></div>");

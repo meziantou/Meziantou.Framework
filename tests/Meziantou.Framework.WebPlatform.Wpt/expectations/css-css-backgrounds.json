@@ -2482,12 +2482,7 @@
     "total": 4
   },
   "css/css-backgrounds/parsing/background-shorthand-serialization.html": {
-    "total": 24,
-    "failures": {
-      "horizontal offset from an edge with the initial vertical offset": "FAIL",
-      "the serialized shorthand parses back to itself": "FAIL",
-      "vertical offset from an edge with the initial horizontal offset": "FAIL"
-    }
+    "total": 24
   },
   "css/css-backgrounds/parsing/background-size-computed.html": {
     "total": 16

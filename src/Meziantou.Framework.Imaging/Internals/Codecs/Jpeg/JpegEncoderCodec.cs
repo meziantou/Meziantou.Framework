@@ -70,6 +70,11 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
     private const double BlueScale = 1 / 1.772;
     private const double RedScale = 1 / 1.402;
 
+    // The denominators of the exact fractions of the luma, Cb and Cr (see ConvertRgbToYCbCr)
+    private const float LumaDenominator = 1000;
+    private const float BlueDenominator = 1772;
+    private const float RedDenominator = 1402;
+
     /// <summary>
     /// Converts 8-bit RGB pixels to level-shifted JFIF 1.02 full-range YCbCr samples (ITU-R BT.601 luma weights):
     /// <c>Y = 0.299 R + 0.587 G + 0.114 B</c>, <c>Cb = (B - Y) / 1.772</c>, <c>Cr = (R - Y) / 1.402</c>, computed in double
@@ -83,18 +88,217 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
     /// <param name="blue">The Cb samples minus 128.</param>
     /// <param name="red">The Cr samples minus 128.</param>
     /// <remarks>
+    /// <para>
     /// With 128-bit hardware vectors, 16 pixels are deinterleaved by byte shuffles (one LD3 load on Arm64) and converted two
     /// at a time (from exact single-precision conversions of the samples on Arm64) with the same
     /// operations in the same order (separate multiplications and additions), so the samples are identical;
     /// with AVX2, four at a time, and with AVX-512, eight at a time.
+    /// </para>
+    /// <para>
+    /// With Arm64, AVX2 and AVX-512, the 16-pixel groups are converted faster from the exact values, which are fractions with
+    /// integer numerators: <c>Y - 128 = (t - 128000) / 1000</c> with <c>t = 299 R + 587 G + 114 B</c>,
+    /// <c>Cb = (1000 B - t) / 1772</c> and <c>Cr = (1000 R - t) / 1402</c>. The numerators are exact in single precision
+    /// (their magnitudes are below 2^24) and a single-precision division is correctly rounded, so each sample is its exact
+    /// value rounded once, four (Arm64), eight (AVX2) or sixteen (AVX-512) at a time. For each of the 2^24 colors this is
+    /// the single-precision result of the double-precision formula (checked exhaustively), except where a numerator is zero
+    /// and the double-precision luma has a rounding error that the formula keeps: some colors whose luma is exactly 128
+    /// (<c>t = 128000</c>), and some gray levels (<c>R = G = B</c>, whose Cb and Cr numerators are zero). The groups with such
+    /// a pixel, a luma of 128 or a gray pixel, are converted by the double-precision path.
+    /// </para>
     /// </remarks>
     internal static void ConvertRgbToYCbCr(ReadOnlySpan<byte> source, Span<float> luma, Span<float> blue, Span<float> red)
     {
-        var done = Vector512.IsHardwareAccelerated && Avx512F.IsSupported ? ConvertRgbToYCbCrAvx512(source, luma, blue, red)
-            : Avx2.IsSupported ? ConvertRgbToYCbCrAvx2(source, luma, blue, red)
+        var done = Vector512.IsHardwareAccelerated && Avx512F.IsSupported ? ConvertRgbToYCbCrRationalAvx512(source, luma, blue, red)
+            : Avx2.IsSupported ? ConvertRgbToYCbCrRationalAvx2(source, luma, blue, red)
+            : AdvSimd.Arm64.IsSupported ? ConvertRgbToYCbCrRationalArm64(source, luma, blue, red)
             : Vector128.IsHardwareAccelerated && BitConverter.IsLittleEndian ? ConvertRgbToYCbCrVector(source, luma, blue, red)
             : 0;
         ConvertRgbToYCbCrScalar(source[(3 * done)..], luma[done..], blue[done..], red[done..]);
+    }
+
+    /// <summary>
+    /// Converts the pixels of whole 16-pixel groups with Arm64 from the exact fractions (see <see cref="ConvertRgbToYCbCr"/>):
+    /// the numerators from widening multiply-adds of the 16-bit samples into 32-bit integers, then single-precision
+    /// divisions; the groups with a luma of 128 or a gray pixel are converted by <see cref="ConvertRgbToYCbCrVector"/>.
+    /// </summary>
+    /// <returns>The number of pixels converted.</returns>
+    internal static int ConvertRgbToYCbCrRationalArm64(ReadOnlySpan<byte> source, Span<float> luma, Span<float> blue, Span<float> red)
+    {
+        var count = Math.Min(Math.Min(luma.Length, Math.Min(blue.Length, red.Length)), source.Length / 3);
+        ref var lumaStart = ref unsafe(MemoryMarshal.GetReference(luma));
+        ref var blueStart = ref unsafe(MemoryMarshal.GetReference(blue));
+        ref var redStart = ref unsafe(MemoryMarshal.GetReference(red));
+        var x = 0;
+        unsafe
+        {
+            fixed (byte* pixels = source)
+            {
+                for (; x + 16 <= count; x += 16)
+                {
+                    var (r, g, b) = AdvSimd.Arm64.Load3xVector128AndUnzip(pixels + (3 * x));
+                    ref var lumaGroup = ref Unsafe.Add(ref lumaStart, x);
+                    ref var blueGroup = ref Unsafe.Add(ref blueStart, x);
+                    ref var redGroup = ref Unsafe.Add(ref redStart, x);
+                    if ((Vector128.Equals(r, g) & Vector128.Equals(g, b)) != Vector128<byte>.Zero)
+                    {
+                        ConvertGroupVector(r, g, b, ref lumaGroup, ref blueGroup, ref redGroup);
+                        continue;
+                    }
+
+                    var r0 = AdvSimd.ZeroExtendWideningLower(r.GetLower());
+                    var r1 = AdvSimd.ZeroExtendWideningUpper(r);
+                    var g0 = AdvSimd.ZeroExtendWideningLower(g.GetLower());
+                    var g1 = AdvSimd.ZeroExtendWideningUpper(g);
+                    var b0 = AdvSimd.ZeroExtendWideningLower(b.GetLower());
+                    var b1 = AdvSimd.ZeroExtendWideningUpper(b);
+
+                    // t = 299 R + 587 G + 114 B for the pixels 0-3, 4-7, 8-11 and 12-15
+                    var t0 = AdvSimd.MultiplyWideningLowerAndAdd(AdvSimd.MultiplyWideningLowerAndAdd(AdvSimd.MultiplyWideningLower(r0.GetLower(), Vector64.Create((ushort)299)), g0.GetLower(), Vector64.Create((ushort)587)), b0.GetLower(), Vector64.Create((ushort)114)).AsInt32();
+                    var t1 = AdvSimd.MultiplyWideningUpperAndAdd(AdvSimd.MultiplyWideningUpperAndAdd(AdvSimd.MultiplyWideningUpper(r0, Vector128.Create((ushort)299)), g0, Vector128.Create((ushort)587)), b0, Vector128.Create((ushort)114)).AsInt32();
+                    var t2 = AdvSimd.MultiplyWideningLowerAndAdd(AdvSimd.MultiplyWideningLowerAndAdd(AdvSimd.MultiplyWideningLower(r1.GetLower(), Vector64.Create((ushort)299)), g1.GetLower(), Vector64.Create((ushort)587)), b1.GetLower(), Vector64.Create((ushort)114)).AsInt32();
+                    var t3 = AdvSimd.MultiplyWideningUpperAndAdd(AdvSimd.MultiplyWideningUpperAndAdd(AdvSimd.MultiplyWideningUpper(r1, Vector128.Create((ushort)299)), g1, Vector128.Create((ushort)587)), b1, Vector128.Create((ushort)114)).AsInt32();
+                    var y0 = t0 - Vector128.Create(128000);
+                    var y1 = t1 - Vector128.Create(128000);
+                    var y2 = t2 - Vector128.Create(128000);
+                    var y3 = t3 - Vector128.Create(128000);
+                    if ((Vector128.Equals(y0, Vector128<int>.Zero) | Vector128.Equals(y1, Vector128<int>.Zero) | Vector128.Equals(y2, Vector128<int>.Zero) | Vector128.Equals(y3, Vector128<int>.Zero)) != Vector128<int>.Zero)
+                    {
+                        ConvertGroupVector(r, g, b, ref lumaGroup, ref blueGroup, ref redGroup);
+                        continue;
+                    }
+
+                    Store(y0, LumaDenominator, ref lumaGroup, 0);
+                    Store(y1, LumaDenominator, ref lumaGroup, 4);
+                    Store(y2, LumaDenominator, ref lumaGroup, 8);
+                    Store(y3, LumaDenominator, ref lumaGroup, 12);
+                    Store(AdvSimd.MultiplyWideningLower(b0.GetLower(), Vector64.Create((ushort)1000)).AsInt32() - t0, BlueDenominator, ref blueGroup, 0);
+                    Store(AdvSimd.MultiplyWideningUpper(b0, Vector128.Create((ushort)1000)).AsInt32() - t1, BlueDenominator, ref blueGroup, 4);
+                    Store(AdvSimd.MultiplyWideningLower(b1.GetLower(), Vector64.Create((ushort)1000)).AsInt32() - t2, BlueDenominator, ref blueGroup, 8);
+                    Store(AdvSimd.MultiplyWideningUpper(b1, Vector128.Create((ushort)1000)).AsInt32() - t3, BlueDenominator, ref blueGroup, 12);
+                    Store(AdvSimd.MultiplyWideningLower(r0.GetLower(), Vector64.Create((ushort)1000)).AsInt32() - t0, RedDenominator, ref redGroup, 0);
+                    Store(AdvSimd.MultiplyWideningUpper(r0, Vector128.Create((ushort)1000)).AsInt32() - t1, RedDenominator, ref redGroup, 4);
+                    Store(AdvSimd.MultiplyWideningLower(r1.GetLower(), Vector64.Create((ushort)1000)).AsInt32() - t2, RedDenominator, ref redGroup, 8);
+                    Store(AdvSimd.MultiplyWideningUpper(r1, Vector128.Create((ushort)1000)).AsInt32() - t3, RedDenominator, ref redGroup, 12);
+                }
+            }
+        }
+
+        return x;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static void Store(Vector128<int> numerator, float denominator, ref float destination, int index)
+        {
+            unsafe { (Vector128.ConvertToSingle(numerator) / Vector128.Create(denominator)).StoreUnsafe(ref destination, (nuint)index); }
+        }
+    }
+
+    /// <summary>
+    /// Converts the pixels of whole 16-pixel groups with AVX2 from the exact fractions (see <see cref="ConvertRgbToYCbCr"/>),
+    /// eight at a time: the numerators are computed in single precision, where they are exact integers; the groups with a
+    /// luma of 128 or a gray pixel are converted by <see cref="ConvertRgbToYCbCrAvx2"/>.
+    /// </summary>
+    /// <returns>The number of pixels converted.</returns>
+    internal static int ConvertRgbToYCbCrRationalAvx2(ReadOnlySpan<byte> source, Span<float> luma, Span<float> blue, Span<float> red)
+    {
+        var count = Math.Min(Math.Min(luma.Length, Math.Min(blue.Length, red.Length)), source.Length / 3);
+        ref var sourceStart = ref unsafe(MemoryMarshal.GetReference(source));
+        ref var lumaStart = ref unsafe(MemoryMarshal.GetReference(luma));
+        ref var blueStart = ref unsafe(MemoryMarshal.GetReference(blue));
+        ref var redStart = ref unsafe(MemoryMarshal.GetReference(red));
+        var x = 0;
+        for (; x + 16 <= count; x += 16)
+        {
+            var (r, g, b) = Deinterleave(ref unsafe(Unsafe.Add(ref sourceStart, 3 * x)));
+            ref var lumaGroup = ref unsafe(Unsafe.Add(ref lumaStart, x));
+            ref var blueGroup = ref unsafe(Unsafe.Add(ref blueStart, x));
+            ref var redGroup = ref unsafe(Unsafe.Add(ref redStart, x));
+            if ((Vector128.Equals(r, g) & Vector128.Equals(g, b)) != Vector128<byte>.Zero)
+            {
+                ConvertGroupAvx2(r, g, b, ref lumaGroup, ref blueGroup, ref redGroup);
+                continue;
+            }
+
+            var r0 = Avx.ConvertToVector256Single(Avx2.ConvertToVector256Int32(r));
+            var g0 = Avx.ConvertToVector256Single(Avx2.ConvertToVector256Int32(g));
+            var b0 = Avx.ConvertToVector256Single(Avx2.ConvertToVector256Int32(b));
+            var r1 = Avx.ConvertToVector256Single(Avx2.ConvertToVector256Int32(Sse2.ShiftRightLogical128BitLane(r, 8)));
+            var g1 = Avx.ConvertToVector256Single(Avx2.ConvertToVector256Int32(Sse2.ShiftRightLogical128BitLane(g, 8)));
+            var b1 = Avx.ConvertToVector256Single(Avx2.ConvertToVector256Int32(Sse2.ShiftRightLogical128BitLane(b, 8)));
+            var t0 = (r0 * 299f) + (g0 * 587f) + (b0 * 114f);
+            var t1 = (r1 * 299f) + (g1 * 587f) + (b1 * 114f);
+            var y0 = t0 - Vector256.Create(128000f);
+            var y1 = t1 - Vector256.Create(128000f);
+            if ((Vector256.Equals(y0, Vector256<float>.Zero) | Vector256.Equals(y1, Vector256<float>.Zero)) != Vector256<float>.Zero)
+            {
+                ConvertGroupAvx2(r, g, b, ref lumaGroup, ref blueGroup, ref redGroup);
+                continue;
+            }
+
+            unsafe { (y0 / Vector256.Create(LumaDenominator)).StoreUnsafe(ref lumaGroup); }
+            unsafe { (y1 / Vector256.Create(LumaDenominator)).StoreUnsafe(ref lumaGroup, 8); }
+            unsafe { (((b0 * 1000f) - t0) / Vector256.Create(BlueDenominator)).StoreUnsafe(ref blueGroup); }
+            unsafe { (((b1 * 1000f) - t1) / Vector256.Create(BlueDenominator)).StoreUnsafe(ref blueGroup, 8); }
+            unsafe { (((r0 * 1000f) - t0) / Vector256.Create(RedDenominator)).StoreUnsafe(ref redGroup); }
+            unsafe { (((r1 * 1000f) - t1) / Vector256.Create(RedDenominator)).StoreUnsafe(ref redGroup, 8); }
+        }
+
+        return x;
+    }
+
+    /// <summary>
+    /// Converts the pixels of whole 16-pixel groups with AVX-512 from the exact fractions (see <see cref="ConvertRgbToYCbCr"/>),
+    /// sixteen at a time: the samples are deinterleaved by byte permutations of the 48 bytes with AVX-512 VBMI (while 64 bytes
+    /// can be loaded), or by byte shuffles; the groups with a luma of 128 or a gray pixel are converted by
+    /// <see cref="ConvertRgbToYCbCrAvx512"/>.
+    /// </summary>
+    /// <returns>The number of pixels converted.</returns>
+    internal static int ConvertRgbToYCbCrRationalAvx512(ReadOnlySpan<byte> source, Span<float> luma, Span<float> blue, Span<float> red)
+    {
+        var count = Math.Min(Math.Min(luma.Length, Math.Min(blue.Length, red.Length)), source.Length / 3);
+        ref var sourceStart = ref unsafe(MemoryMarshal.GetReference(source));
+        ref var lumaStart = ref unsafe(MemoryMarshal.GetReference(luma));
+        ref var blueStart = ref unsafe(MemoryMarshal.GetReference(blue));
+        ref var redStart = ref unsafe(MemoryMarshal.GetReference(red));
+        var x = 0;
+        for (; x + 16 <= count; x += 16)
+        {
+            Vector512<int> r;
+            Vector512<int> g;
+            Vector512<int> b;
+            if (Avx512Vbmi.IsSupported && (3 * x) + 64 <= source.Length)
+            {
+                // The byte 3 k + c of the pixels in the low byte of the 32-bit lane k
+                var pixels = unsafe(Vector512.LoadUnsafe(ref sourceStart, (nuint)(3 * x)));
+                var low = Vector512.Create(0xFF);
+                r = Avx512Vbmi.PermuteVar64x8(pixels, Vector512.Create(0, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39, 42, 45).AsByte()).AsInt32() & low;
+                g = Avx512Vbmi.PermuteVar64x8(pixels, Vector512.Create(1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34, 37, 40, 43, 46).AsByte()).AsInt32() & low;
+                b = Avx512Vbmi.PermuteVar64x8(pixels, Vector512.Create(2, 5, 8, 11, 14, 17, 20, 23, 26, 29, 32, 35, 38, 41, 44, 47).AsByte()).AsInt32() & low;
+            }
+            else
+            {
+                var (r8, g8, b8) = Deinterleave(ref unsafe(Unsafe.Add(ref sourceStart, 3 * x)));
+                r = Avx512F.ConvertToVector512Int32(r8);
+                g = Avx512F.ConvertToVector512Int32(g8);
+                b = Avx512F.ConvertToVector512Int32(b8);
+            }
+
+            var rs = Avx512F.ConvertToVector512Single(r);
+            var gs = Avx512F.ConvertToVector512Single(g);
+            var bs = Avx512F.ConvertToVector512Single(b);
+            var t = (rs * 299f) + (gs * 587f) + (bs * 114f);
+            var y = t - Vector512.Create(128000f);
+            if (Vector512.EqualsAny(y, Vector512<float>.Zero) || (Vector512.Equals(r, g) & Vector512.Equals(g, b)) != Vector512<int>.Zero)
+            {
+                ConvertGroupAvx512(r, g, b, ref unsafe(Unsafe.Add(ref lumaStart, x)), ref unsafe(Unsafe.Add(ref blueStart, x)), ref unsafe(Unsafe.Add(ref redStart, x)));
+                continue;
+            }
+
+            unsafe { (y / Vector512.Create(LumaDenominator)).StoreUnsafe(ref lumaStart, (nuint)x); }
+            unsafe { (((bs * 1000f) - t) / Vector512.Create(BlueDenominator)).StoreUnsafe(ref blueStart, (nuint)x); }
+            unsafe { (((rs * 1000f) - t) / Vector512.Create(RedDenominator)).StoreUnsafe(ref redStart, (nuint)x); }
+        }
+
+        return x;
     }
 
     /// <summary>The scalar reference of <see cref="ConvertRgbToYCbCr"/>.</summary>
@@ -132,7 +336,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
                     for (; x + 16 <= count; x += 16)
                     {
                         var (r, g, b) = AdvSimd.Arm64.Load3xVector128AndUnzip(pixels + (3 * x));
-                        Convert16(r, g, b, ref Unsafe.Add(ref lumaStart, x), ref Unsafe.Add(ref blueStart, x), ref Unsafe.Add(ref redStart, x));
+                        ConvertGroupVector(r, g, b, ref Unsafe.Add(ref lumaStart, x), ref Unsafe.Add(ref blueStart, x), ref Unsafe.Add(ref redStart, x));
                     }
                 }
             }
@@ -143,20 +347,21 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         for (; x + 16 <= count; x += 16)
         {
             var (r, g, b) = Deinterleave(ref unsafe(Unsafe.Add(ref sourceStart, 3 * x)));
-            Convert16(r, g, b, ref unsafe(Unsafe.Add(ref lumaStart, x)), ref unsafe(Unsafe.Add(ref blueStart, x)), ref unsafe(Unsafe.Add(ref redStart, x)));
+            ConvertGroupVector(r, g, b, ref unsafe(Unsafe.Add(ref lumaStart, x)), ref unsafe(Unsafe.Add(ref blueStart, x)), ref unsafe(Unsafe.Add(ref redStart, x)));
         }
 
         return x;
+    }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static void Convert16(Vector128<byte> r, Vector128<byte> g, Vector128<byte> b, ref float luma, ref float blue, ref float red)
-        {
-            var (r0, r1) = Vector128.Widen(r);
-            var (g0, g1) = Vector128.Widen(g);
-            var (b0, b1) = Vector128.Widen(b);
-            Convert8(r0, g0, b0, ref luma, ref blue, ref red);
-            Convert8(r1, g1, b1, ref unsafe(Unsafe.Add(ref luma, 8)), ref unsafe(Unsafe.Add(ref blue, 8)), ref unsafe(Unsafe.Add(ref red, 8)));
-        }
+    /// <summary>Converts 16 deinterleaved pixels like <see cref="ConvertRgbToYCbCrVector"/>.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void ConvertGroupVector(Vector128<byte> r, Vector128<byte> g, Vector128<byte> b, ref float luma, ref float blue, ref float red)
+    {
+        var (r0, r1) = Vector128.Widen(r);
+        var (g0, g1) = Vector128.Widen(g);
+        var (b0, b1) = Vector128.Widen(b);
+        Convert8(r0, g0, b0, ref luma, ref blue, ref red);
+        Convert8(r1, g1, b1, ref unsafe(Unsafe.Add(ref luma, 8)), ref unsafe(Unsafe.Add(ref blue, 8)), ref unsafe(Unsafe.Add(ref red, 8)));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static void Convert8(Vector128<ushort> r, Vector128<ushort> g, Vector128<ushort> b, ref float luma, ref float blue, ref float red)
@@ -224,15 +429,22 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         for (; x + 16 <= count; x += 16)
         {
             var (r, g, b) = Deinterleave(ref unsafe(Unsafe.Add(ref sourceStart, 3 * x)));
-            Convert8(Avx2.ConvertToVector256Int32(r), Avx2.ConvertToVector256Int32(g), Avx2.ConvertToVector256Int32(b), ref unsafe(Unsafe.Add(ref lumaStart, x)), ref unsafe(Unsafe.Add(ref blueStart, x)), ref unsafe(Unsafe.Add(ref redStart, x)));
-            Convert8(
-                Avx2.ConvertToVector256Int32(Sse2.ShiftRightLogical128BitLane(r, 8)),
-                Avx2.ConvertToVector256Int32(Sse2.ShiftRightLogical128BitLane(g, 8)),
-                Avx2.ConvertToVector256Int32(Sse2.ShiftRightLogical128BitLane(b, 8)),
-                ref unsafe(Unsafe.Add(ref lumaStart, x + 8)), ref unsafe(Unsafe.Add(ref blueStart, x + 8)), ref unsafe(Unsafe.Add(ref redStart, x + 8)));
+            ConvertGroupAvx2(r, g, b, ref unsafe(Unsafe.Add(ref lumaStart, x)), ref unsafe(Unsafe.Add(ref blueStart, x)), ref unsafe(Unsafe.Add(ref redStart, x)));
         }
 
         return x;
+    }
+
+    /// <summary>Converts 16 deinterleaved pixels like <see cref="ConvertRgbToYCbCrAvx2"/>.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void ConvertGroupAvx2(Vector128<byte> r, Vector128<byte> g, Vector128<byte> b, ref float luma, ref float blue, ref float red)
+    {
+        Convert8(Avx2.ConvertToVector256Int32(r), Avx2.ConvertToVector256Int32(g), Avx2.ConvertToVector256Int32(b), ref luma, ref blue, ref red);
+        Convert8(
+            Avx2.ConvertToVector256Int32(Sse2.ShiftRightLogical128BitLane(r, 8)),
+            Avx2.ConvertToVector256Int32(Sse2.ShiftRightLogical128BitLane(g, 8)),
+            Avx2.ConvertToVector256Int32(Sse2.ShiftRightLogical128BitLane(b, 8)),
+            ref unsafe(Unsafe.Add(ref luma, 8)), ref unsafe(Unsafe.Add(ref blue, 8)), ref unsafe(Unsafe.Add(ref red, 8)));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static void Convert8(Vector256<int> r, Vector256<int> g, Vector256<int> b, ref float luma, ref float blue, ref float red)
@@ -267,14 +479,18 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         for (; x + 16 <= count; x += 16)
         {
             var (r, g, b) = Deinterleave(ref unsafe(Unsafe.Add(ref sourceStart, 3 * x)));
-            var r32 = Avx512F.ConvertToVector512Int32(r);
-            var g32 = Avx512F.ConvertToVector512Int32(g);
-            var b32 = Avx512F.ConvertToVector512Int32(b);
-            Convert8(r32.GetLower(), g32.GetLower(), b32.GetLower(), ref unsafe(Unsafe.Add(ref lumaStart, x)), ref unsafe(Unsafe.Add(ref blueStart, x)), ref unsafe(Unsafe.Add(ref redStart, x)));
-            Convert8(r32.GetUpper(), g32.GetUpper(), b32.GetUpper(), ref unsafe(Unsafe.Add(ref lumaStart, x + 8)), ref unsafe(Unsafe.Add(ref blueStart, x + 8)), ref unsafe(Unsafe.Add(ref redStart, x + 8)));
+            ConvertGroupAvx512(Avx512F.ConvertToVector512Int32(r), Avx512F.ConvertToVector512Int32(g), Avx512F.ConvertToVector512Int32(b), ref unsafe(Unsafe.Add(ref lumaStart, x)), ref unsafe(Unsafe.Add(ref blueStart, x)), ref unsafe(Unsafe.Add(ref redStart, x)));
         }
 
         return x;
+    }
+
+    /// <summary>Converts 16 pixels (their samples in 32-bit lanes) like <see cref="ConvertRgbToYCbCrAvx512"/>.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void ConvertGroupAvx512(Vector512<int> r32, Vector512<int> g32, Vector512<int> b32, ref float luma, ref float blue, ref float red)
+    {
+        Convert8(r32.GetLower(), g32.GetLower(), b32.GetLower(), ref luma, ref blue, ref red);
+        Convert8(r32.GetUpper(), g32.GetUpper(), b32.GetUpper(), ref unsafe(Unsafe.Add(ref luma, 8)), ref unsafe(Unsafe.Add(ref blue, 8)), ref unsafe(Unsafe.Add(ref red, 8)));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static void Convert8(Vector256<int> red8, Vector256<int> green8, Vector256<int> blue8, ref float luma, ref float blue, ref float red)

@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -9,8 +10,11 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </summary>
 internal static class Av1IntraPredictor
 {
-    // AboveRow and LeftCol are indexed from -16: the edge upsampling process writes entry -2 and reads entry -1
-    private const int EdgeOrigin = 16;
+    /// <summary>
+    /// The position of the entry 0 of an edge in its storage: <c>AboveRow</c> and <c>LeftCol</c> are indexed from -16 (the edge
+    /// upsampling process writes entry -2 and reads entry -1).
+    /// </summary>
+    public const int EdgeOrigin = 16;
 
     // The taps of the recursive intra prediction, for each mode and each of the 7 neighbors: the weights of the 8 samples of
     // a 4x2 unit
@@ -49,19 +53,53 @@ internal static class Av1IntraPredictor
     internal static void PredictScalar(Span<ushort> plane, int stride, int x, int y, bool haveLeft, bool haveAbove, bool haveAboveRight, bool haveBelowLeft, int log2W, int log2H, int maxX, int maxY, in Parameters parameters)
         => Predict(plane, stride, x, y, haveLeft, haveAbove, haveAboveRight, haveBelowLeft, log2W, log2H, maxX, maxY, parameters, vectorized: false);
 
+    /// <summary>
+    /// Returns the number of entries of the storage of an edge of a block for <see cref="PrepareEdges"/>: the edge holds w + h
+    /// entries, or twice as many once a short edge is upsampled, from the entry -16, and the vector kernels read past them.
+    /// </summary>
+    /// <param name="log2W">The base 2 logarithm of the width of the block.</param>
+    /// <param name="log2H">The base 2 logarithm of the height of the block.</param>
+    public static int GetEdgeStorageLength(int log2W, int log2H) => EdgeOrigin + Math.Max((1 << log2W) + (1 << log2H), 32) + 16;
+
+    // The entries of the edges are not cleared: the kernels read the entries that the steps of the specification write, and
+    // the vector lanes that read other entries are discarded
+    [SkipLocalsInit]
     private static void Predict(Span<ushort> plane, int stride, int x, int y, bool haveLeft, bool haveAbove, bool haveAboveRight, bool haveBelowLeft, int log2W, int log2H, int maxX, int maxY, in Parameters parameters, bool vectorized)
+    {
+        var edgeLength = GetEdgeStorageLength(log2W, log2H);
+        Span<int> aboveStorage = unsafe(stackalloc int[edgeLength]);
+        Span<int> leftStorage = unsafe(stackalloc int[edgeLength]);
+        PrepareEdges(plane, stride, x, y, haveLeft, haveAbove, haveAboveRight, haveBelowLeft, log2W, log2H, maxX, maxY, parameters.BitDepth, aboveStorage, leftStorage);
+        PredictFromEdges(plane, stride, x, y, haveLeft, haveAbove, log2W, log2H, maxX, maxY, parameters, aboveStorage, leftStorage, vectorized);
+    }
+
+    /// <summary>
+    /// Writes the edges of the block that <see cref="PredictFromEdges(Span{ushort}, int, int, int, bool, bool, int, int, int, int, in Parameters, Span{int}, Span{int})"/>
+    /// predicts the block from (<c>AboveRow</c> and <c>LeftCol</c> before the edge filter), whatever the mode: the first steps of
+    /// <c>predict_intra</c>. The parameters are the ones of <see cref="Predict(Span{ushort}, int, int, int, bool, bool, bool, bool, int, int, int, int, in Parameters)"/>.
+    /// </summary>
+    /// <param name="plane">The samples of the plane.</param>
+    /// <param name="stride">The number of samples of a row of <paramref name="plane"/>.</param>
+    /// <param name="x">The column of the top left sample of the block.</param>
+    /// <param name="y">The row of the top left sample of the block.</param>
+    /// <param name="haveLeft">Whether the samples to the left of the block are available.</param>
+    /// <param name="haveAbove">Whether the samples above the block are available.</param>
+    /// <param name="haveAboveRight">Whether the samples above and to the right of the block are available.</param>
+    /// <param name="haveBelowLeft">Whether the samples to the left and below the block are available.</param>
+    /// <param name="log2W">The base 2 logarithm of the width of the block.</param>
+    /// <param name="log2H">The base 2 logarithm of the height of the block.</param>
+    /// <param name="maxX">The largest valid column of the plane.</param>
+    /// <param name="maxY">The largest valid row of the plane.</param>
+    /// <param name="bitDepth">The bit depth of the samples.</param>
+    /// <param name="aboveStorage">The storage of the edge above: <see cref="GetEdgeStorageLength"/> entries.</param>
+    /// <param name="leftStorage">The storage of the edge to the left: <see cref="GetEdgeStorageLength"/> entries.</param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void PrepareEdges(ReadOnlySpan<ushort> plane, int stride, int x, int y, bool haveLeft, bool haveAbove, bool haveAboveRight, bool haveBelowLeft, int log2W, int log2H, int maxX, int maxY, int bitDepth, Span<int> aboveStorage, Span<int> leftStorage)
     {
         var w = 1 << log2W;
         var h = 1 << log2H;
-        var bitDepth = parameters.BitDepth;
-
-        // The edges hold w + h samples, or twice as many once a short edge is upsampled, and the entries from -16
-        var edgeLength = EdgeOrigin + Math.Max(w + h, 32) + 16;
-        Span<int> aboveStorage = stackalloc int[edgeLength];
-        Span<int> leftStorage = stackalloc int[edgeLength];
         var above = new Edge(aboveStorage);
         var left = new Edge(leftStorage);
-
         if (haveAbove)
         {
             // The samples up to the limit, then the sample at the limit
@@ -75,10 +113,7 @@ internal static class Av1IntraPredictor
         else
         {
             var value = haveLeft ? plane[(y * stride) + x - 1] : (1 << (bitDepth - 1)) - 1;
-            for (var i = 0; i < w + h; i++)
-            {
-                above[i] = value;
-            }
+            above.Slice(0, w + h).Fill(value);
         }
 
         if (haveLeft)
@@ -86,20 +121,22 @@ internal static class Av1IntraPredictor
             var leftLimit = Math.Min(maxY, y + (haveBelowLeft ? 2 * h : h) - 1);
             var count = Math.Clamp(leftLimit - y + 1, 0, w + h);
             var column = plane[(x - 1)..];
-            for (var i = 0; i < count; i++)
+            var samples = left.Slice(0, w + h);
+            if (count > 0)
             {
-                left[i] = column[(y + i) * stride];
+                var rows = column.Slice(y * stride, ((count - 1) * stride) + 1);
+                for (var i = 0; i < count; i++)
+                {
+                    samples[i] = rows[i * stride];
+                }
             }
 
-            left.Slice(count, w + h - count).Fill(column[leftLimit * stride]);
+            samples[count..].Fill(column[leftLimit * stride]);
         }
         else
         {
             var value = haveAbove ? plane[((y - 1) * stride) + x] : (1 << (bitDepth - 1)) + 1;
-            for (var i = 0; i < w + h; i++)
-            {
-                left[i] = value;
-            }
+            left.Slice(0, w + h).Fill(value);
         }
 
         if (haveAbove && haveLeft)
@@ -120,7 +157,37 @@ internal static class Av1IntraPredictor
         }
 
         left[-1] = above[-1];
+    }
 
+    /// <summary>
+    /// Predicts the block from the edges that <see cref="PrepareEdges"/> wrote: the last steps of <c>predict_intra</c>. The
+    /// edges of a directional mode are filtered in place; the other modes leave them as they are. The parameters are the ones
+    /// of <see cref="Predict(Span{ushort}, int, int, int, bool, bool, bool, bool, int, int, int, int, in Parameters)"/>.
+    /// </summary>
+    /// <param name="plane">The samples of the plane.</param>
+    /// <param name="stride">The number of samples of a row of <paramref name="plane"/>.</param>
+    /// <param name="x">The column of the top left sample of the block.</param>
+    /// <param name="y">The row of the top left sample of the block.</param>
+    /// <param name="haveLeft">Whether the samples to the left of the block are available.</param>
+    /// <param name="haveAbove">Whether the samples above the block are available.</param>
+    /// <param name="log2W">The base 2 logarithm of the width of the block.</param>
+    /// <param name="log2H">The base 2 logarithm of the height of the block.</param>
+    /// <param name="maxX">The largest valid column of the plane.</param>
+    /// <param name="maxY">The largest valid row of the plane.</param>
+    /// <param name="parameters">The prediction mode and its parameters.</param>
+    /// <param name="aboveStorage">The storage of the edge above.</param>
+    /// <param name="leftStorage">The storage of the edge to the left.</param>
+    public static void PredictFromEdges(Span<ushort> plane, int stride, int x, int y, bool haveLeft, bool haveAbove, int log2W, int log2H, int maxX, int maxY, in Parameters parameters, Span<int> aboveStorage, Span<int> leftStorage)
+        => PredictFromEdges(plane, stride, x, y, haveLeft, haveAbove, log2W, log2H, maxX, maxY, parameters, aboveStorage, leftStorage, Vector128.IsHardwareAccelerated);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void PredictFromEdges(Span<ushort> plane, int stride, int x, int y, bool haveLeft, bool haveAbove, int log2W, int log2H, int maxX, int maxY, in Parameters parameters, Span<int> aboveStorage, Span<int> leftStorage, bool vectorized)
+    {
+        var w = 1 << log2W;
+        var h = 1 << log2H;
+        var bitDepth = parameters.BitDepth;
+        var above = new Edge(aboveStorage);
+        var left = new Edge(leftStorage);
         var destination = plane[((y * stride) + x)..];
         var mode = parameters.Mode;
         if (parameters.FilterIntraMode >= 0)
@@ -180,27 +247,6 @@ internal static class Av1IntraPredictor
         for (; i < samples.Length; i++)
         {
             values[i] = samples[i];
-        }
-    }
-
-    // Writes Round2( edge[ start + j ] * ( 32 - shift ) + edge[ start + j + 1 ] * shift, 5 ) for each sample j of output,
-    // the interpolation of the directional prediction between consecutive entries of an edge
-    private static void Interpolate(ReadOnlySpan<int> edge, int start, int shift, Span<ushort> output)
-    {
-        var j = 0;
-        var weight0 = Vector128.Create(32 - shift);
-        var weight1 = Vector128.Create(shift);
-        var rounding = Vector128.Create(16);
-        for (; j <= output.Length - Vector128<ushort>.Count; j += Vector128<ushort>.Count)
-        {
-            var low = ((Vector128.Create(edge[(start + j)..]) * weight0) + (Vector128.Create(edge[(start + j + 1)..]) * weight1) + rounding) >> 5;
-            var high = ((Vector128.Create(edge[(start + j + 4)..]) * weight0) + (Vector128.Create(edge[(start + j + 5)..]) * weight1) + rounding) >> 5;
-            Vector128.Narrow(low.AsUInt32(), high.AsUInt32()).CopyTo(output[j..]);
-        }
-
-        for (; j < output.Length; j++)
-        {
-            output[j] = (ushort)Round2((edge[start + j] * (32 - shift)) + (edge[start + j + 1] * shift), 5);
         }
     }
 
@@ -424,22 +470,9 @@ internal static class Av1IntraPredictor
             }
         }
 
-        if (pAngle < 90 && vectorized && upsampleAbove is 0)
+        if (vectorized && Av1Simd.IsSupported && pAngle is not 90 and not 180)
         {
-            // The entries of a row are consecutive entries of the edge, up to the last one
-            var dx = Av1Tables.DrIntraDerivative[pAngle];
-            var maxBaseX = w + h - 1;
-            var edge = above.From(0);
-            for (var i = 0; i < h; i++)
-            {
-                var row = destination.Slice(i * stride, w);
-                var idx = (i + 1) * dx;
-                var shift = (idx >> 1) & 0x1F;
-                var start = idx >> 6;
-                var count = Math.Clamp(maxBaseX - start, 0, w);
-                Interpolate(edge, start, shift, row[..count]);
-                row[count..].Fill((ushort)above[maxBaseX]);
-            }
+            PredictDirectionalVector(destination, stride, w, h, pAngle, upsampleAbove, upsampleLeft, above, left);
         }
         else if (pAngle < 90)
         {
@@ -455,31 +488,6 @@ internal static class Av1IntraPredictor
                     var b = (idx >> (6 - upsampleAbove)) + (j << upsampleAbove);
                     row[j] = (ushort)(b < maxBaseX ? Round2((above[b] * (32 - shift)) + (above[b + 1] * shift), 5) : above[maxBaseX]);
                 }
-            }
-        }
-        else if (pAngle > 90 && pAngle < 180 && vectorized && upsampleAbove is 0)
-        {
-            // In a row, the samples from the first one that is predicted from the edge above are predicted from consecutive
-            // entries of the edge, with the same weights: (j << 6) - (i + 1) * dx is j * 64 plus a constant
-            var dx = Av1Tables.DrIntraDerivative[180 - pAngle];
-            var dy = Av1Tables.DrIntraDerivative[pAngle - 90];
-            var edge = above.From(-1);
-            for (var i = 0; i < h; i++)
-            {
-                var row = destination.Slice(i * stride, w);
-                var offset = -((i + 1) * dx);
-                var start = offset >> 6;
-                var shift = (offset >> 1) & 0x1F;
-                var first = Math.Clamp(-1 - start, 0, w);
-                for (var j = 0; j < first; j++)
-                {
-                    var idx = (i << 6) - ((j + 1) * dy);
-                    var b = idx >> (6 - upsampleLeft);
-                    var leftShift = ((idx << upsampleLeft) >> 1) & 0x1F;
-                    row[j] = (ushort)Round2((left[b] * (32 - leftShift)) + (left[b + 1] * leftShift), 5);
-                }
-
-                Interpolate(edge, first + start + 1, shift, row[first..]);
             }
         }
         else if (pAngle > 90 && pAngle < 180)
@@ -508,23 +516,6 @@ internal static class Av1IntraPredictor
                 }
             }
         }
-        else if (pAngle > 180 && vectorized && upsampleLeft is 0)
-        {
-            // The samples of a column are predicted from consecutive entries of the left edge, with the same weights
-            var dy = Av1Tables.DrIntraDerivative[270 - pAngle];
-            var edge = left.From(0);
-            Span<ushort> column = stackalloc ushort[64];
-            column = column[..h];
-            for (var j = 0; j < w; j++)
-            {
-                var idx = (j + 1) * dy;
-                Interpolate(edge, idx >> 6, (idx >> 1) & 0x1F, column);
-                for (var i = 0; i < h; i++)
-                {
-                    destination[(i * stride) + j] = column[i];
-                }
-            }
-        }
         else if (pAngle > 180)
         {
             var dy = Av1Tables.DrIntraDerivative[270 - pAngle];
@@ -539,6 +530,10 @@ internal static class Av1IntraPredictor
                     row[j] = (ushort)Round2((left[b] * (32 - shift)) + (left[b + 1] * shift), 5);
                 }
             }
+        }
+        else if (pAngle is 90 && vectorized)
+        {
+            PredictVerticalVector(destination, stride, w, h, above);
         }
         else if (pAngle is 90)
         {
@@ -558,6 +553,212 @@ internal static class Av1IntraPredictor
                 destination.Slice(i * stride, w).Fill((ushort)left[i]);
             }
         }
+    }
+
+    // The vertical prediction (an angle of 90) with the row above narrowed once
+    private static void PredictVerticalVector(Span<ushort> destination, int stride, int w, int h, Edge above)
+    {
+        if (w is 4)
+        {
+            var samples = Vector128.Create(above.Slice(0, 4));
+            var row = Vector128.Narrow(samples.AsUInt32(), samples.AsUInt32()).GetLower();
+            for (var i = 0; i < h; i++)
+            {
+                row.CopyTo(destination[(i * stride)..]);
+            }
+
+            return;
+        }
+
+        Span<ushort> top = stackalloc ushort[64];
+        top = top[..w];
+        for (var j = 0; j < w; j += 8)
+        {
+            Vector128.Narrow(Vector128.Create(above.Slice(j, 4)).AsUInt32(), Vector128.Create(above.Slice(j + 4, 4)).AsUInt32()).CopyTo(top[j..]);
+        }
+
+        for (var i = 0; i < h; i++)
+        {
+            top.CopyTo(destination.Slice(i * stride, w));
+        }
+    }
+
+    // PredictDirectional for the angles other than 90 and 180, by tiles of 4x4 samples. In a row, the samples that are
+    // predicted from the edge above read entries of the edge whose positions step by 1 (2 for an upsampled edge), with the
+    // same weights: ( j << 6 ) - ( i + 1 ) * dx is j * 64 plus a constant. In a column, the samples that are predicted from
+    // the edge to the left do the same with the entries of that edge: their vectors are the columns of a tile, which are
+    // transposed into its rows. A sample is predicted from the edge to the left when its position on the edge above is
+    // before the first entry: the first samples of a row, as many as Firsts gives for the row
+    private static void PredictDirectionalVector(Span<ushort> destination, int stride, int w, int h, int pAngle, int upsampleAbove, int upsampleLeft, Edge above, Edge left)
+    {
+        var aboveEntries = above.From(-EdgeOrigin);
+        var leftEntries = left.From(-EdgeOrigin);
+        var lanes = Vector128.Create(0, 1, 2, 3);
+        if (pAngle < 90)
+        {
+            // A sample whose position is at or after the last entry of the edge is that entry
+            var dx = Av1Tables.DrIntraDerivative[pAngle];
+            var maxBaseX = (w + h - 1) << upsampleAbove;
+            var last = Vector128.Create(above[maxBaseX]);
+            var limit = Vector128.Create(maxBaseX);
+            for (var i = 0; i < h; i++)
+            {
+                var idx = (i + 1) * dx;
+                var start = idx >> (6 - upsampleAbove);
+                var shift = ((idx << upsampleAbove) >> 1) & 0x1F;
+                var weight0 = Vector128.Create(32 - shift);
+                var weight1 = Vector128.Create(shift);
+                var row = destination.Slice(i * stride, w);
+                for (var j = 0; j < w; j += 4)
+                {
+                    var b = start + (j << upsampleAbove);
+                    Vector128<int> value;
+                    if (b >= maxBaseX)
+                    {
+                        value = last;
+                    }
+                    else
+                    {
+                        value = InterpolateLanes(aboveEntries, b, upsampleAbove, weight0, weight1);
+                        if (b + (3 << upsampleAbove) >= maxBaseX)
+                            value = Vector128.ConditionalSelect(Vector128.LessThan(Vector128.Create(b) + (lanes << upsampleAbove), limit), value, last);
+                    }
+
+                    StoreLanes(value, row[j..]);
+                }
+            }
+        }
+        else if (pAngle < 180)
+        {
+            var dx = Av1Tables.DrIntraDerivative[180 - pAngle];
+            var dy = Av1Tables.DrIntraDerivative[pAngle - 90];
+            Span<int> firsts = stackalloc int[h];
+            for (var i = 0; i < h; i++)
+            {
+                // The sample j is predicted from the edge above when ( ( j << 6 ) - ( i + 1 ) * dx ) >> ( 6 - upsampleAbove ),
+                // which is ( j << upsampleAbove ) + start, is at least -( 1 << upsampleAbove )
+                var start = -((i + 1) * dx) >> (6 - upsampleAbove);
+                firsts[i] = Math.Clamp((-1 - start) >> upsampleAbove, 0, w);
+            }
+
+            for (var i0 = 0; i0 < h; i0 += 4)
+            {
+                for (var j0 = 0; j0 < w; j0 += 4)
+                {
+                    // The columns of the samples that are predicted from the edge to the left. A column whose samples are all
+                    // predicted from the edge above is not read: its positions on the edge to the left may be before its start
+                    var maxFirst = firsts[i0 + 3];
+                    Vector128<int> left0 = default, left1 = default, left2 = default, left3 = default;
+                    if (maxFirst > j0)
+                    {
+                        var column0 = PredictLeftColumn(leftEntries, i0, j0, dy, upsampleLeft);
+                        var column1 = maxFirst > j0 + 1 ? PredictLeftColumn(leftEntries, i0, j0 + 1, dy, upsampleLeft) : default;
+                        var column2 = maxFirst > j0 + 2 ? PredictLeftColumn(leftEntries, i0, j0 + 2, dy, upsampleLeft) : default;
+                        var column3 = maxFirst > j0 + 3 ? PredictLeftColumn(leftEntries, i0, j0 + 3, dy, upsampleLeft) : default;
+                        Av1Simd.Transpose(column0, column1, column2, column3, out left0, out left1, out left2, out left3);
+                    }
+
+                    var row0 = SelectDirectionalRow(aboveEntries, firsts[i0], i0, j0, dx, upsampleAbove, left0, lanes);
+                    var row1 = SelectDirectionalRow(aboveEntries, firsts[i0 + 1], i0 + 1, j0, dx, upsampleAbove, left1, lanes);
+                    var row2 = SelectDirectionalRow(aboveEntries, firsts[i0 + 2], i0 + 2, j0, dx, upsampleAbove, left2, lanes);
+                    var row3 = SelectDirectionalRow(aboveEntries, maxFirst, i0 + 3, j0, dx, upsampleAbove, left3, lanes);
+                    StoreLanes(row0, row1, destination[((i0 * stride) + j0)..], destination[(((i0 + 1) * stride) + j0)..]);
+                    StoreLanes(row2, row3, destination[(((i0 + 2) * stride) + j0)..], destination[(((i0 + 3) * stride) + j0)..]);
+                }
+            }
+        }
+        else
+        {
+            var dy = Av1Tables.DrIntraDerivative[270 - pAngle];
+            for (var j0 = 0; j0 < w; j0 += 4)
+            {
+                // The position on the edge to the left of the sample ( i, j ) is ( ( ( j + 1 ) * dy ) >> ( 6 - upsampleLeft ) ) +
+                // ( i << upsampleLeft )
+                var idx0 = (j0 + 1) * dy;
+                var idx1 = (j0 + 2) * dy;
+                var idx2 = (j0 + 3) * dy;
+                var idx3 = (j0 + 4) * dy;
+                var shift0 = ((idx0 << upsampleLeft) >> 1) & 0x1F;
+                var shift1 = ((idx1 << upsampleLeft) >> 1) & 0x1F;
+                var shift2 = ((idx2 << upsampleLeft) >> 1) & 0x1F;
+                var shift3 = ((idx3 << upsampleLeft) >> 1) & 0x1F;
+                for (var i0 = 0; i0 < h; i0 += 4)
+                {
+                    var offset = i0 << upsampleLeft;
+                    var column0 = InterpolateLanes(leftEntries, (idx0 >> (6 - upsampleLeft)) + offset, upsampleLeft, Vector128.Create(32 - shift0), Vector128.Create(shift0));
+                    var column1 = InterpolateLanes(leftEntries, (idx1 >> (6 - upsampleLeft)) + offset, upsampleLeft, Vector128.Create(32 - shift1), Vector128.Create(shift1));
+                    var column2 = InterpolateLanes(leftEntries, (idx2 >> (6 - upsampleLeft)) + offset, upsampleLeft, Vector128.Create(32 - shift2), Vector128.Create(shift2));
+                    var column3 = InterpolateLanes(leftEntries, (idx3 >> (6 - upsampleLeft)) + offset, upsampleLeft, Vector128.Create(32 - shift3), Vector128.Create(shift3));
+                    Av1Simd.Transpose(column0, column1, column2, column3, out var row0, out var row1, out var row2, out var row3);
+                    StoreLanes(row0, row1, destination[((i0 * stride) + j0)..], destination[(((i0 + 1) * stride) + j0)..]);
+                    StoreLanes(row2, row3, destination[(((i0 + 2) * stride) + j0)..], destination[(((i0 + 3) * stride) + j0)..]);
+                }
+            }
+        }
+    }
+
+    // The 4 samples j0 to j0 + 3 of the row i of a directional prediction between 90 and 180: the ones before first are
+    // the lanes of fromLeft, the others are predicted from the edge above, which is only read when one is
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<int> SelectDirectionalRow(ReadOnlySpan<int> aboveEntries, int first, int i, int j0, int dx, int upsampleAbove, Vector128<int> fromLeft, Vector128<int> lanes)
+    {
+        if (first >= j0 + 4)
+            return fromLeft;
+
+        var idx = -((i + 1) * dx);
+        var shift = ((idx << upsampleAbove) >> 1) & 0x1F;
+        var fromAbove = InterpolateLanes(aboveEntries, (idx >> (6 - upsampleAbove)) + (j0 << upsampleAbove), upsampleAbove, Vector128.Create(32 - shift), Vector128.Create(shift));
+        if (first <= j0)
+            return fromAbove;
+
+        return Vector128.ConditionalSelect(Vector128.LessThan(lanes, Vector128.Create(first - j0)), fromLeft, fromAbove);
+    }
+
+    // The samples i0 to i0 + 3 of the column j of a directional prediction between 90 and 180, predicted from the edge to
+    // the left: the position of the sample i is ( ( i << 6 ) - ( j + 1 ) * dy ) >> ( 6 - upsampleLeft )
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<int> PredictLeftColumn(ReadOnlySpan<int> leftEntries, int i0, int j, int dy, int upsampleLeft)
+    {
+        var idx = (i0 << 6) - ((j + 1) * dy);
+        var shift = ((idx << upsampleLeft) >> 1) & 0x1F;
+        return InterpolateLanes(leftEntries, idx >> (6 - upsampleLeft), upsampleLeft, Vector128.Create(32 - shift), Vector128.Create(shift));
+    }
+
+    // Round2( edge[ b + k * step ] * ( 32 - shift ) + edge[ b + k * step + 1 ] * shift, 5 ) for the lanes k = 0 to 3, step being
+    // 2 for an upsampled edge and 1 otherwise: weight0 is 32 - shift, weight1 is shift, entries is the storage of the edge
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<int> InterpolateLanes(ReadOnlySpan<int> entries, int b, int upsample, Vector128<int> weight0, Vector128<int> weight1)
+    {
+        var index = b + EdgeOrigin;
+        Vector128<int> low;
+        Vector128<int> high;
+        if (upsample is 0)
+        {
+            low = Vector128.Create(entries[index..]);
+            high = Vector128.Create(entries[(index + 1)..]);
+        }
+        else
+        {
+            var first = Vector128.Create(entries[index..]);
+            var second = Vector128.Create(entries[(index + 4)..]);
+            low = Av1Simd.UnzipEven(first, second);
+            high = Av1Simd.UnzipOdd(first, second);
+        }
+
+        return ((low * weight0) + (high * weight1) + Vector128.Create(16)) >> 5;
+    }
+
+    // Writes the 4 lanes of the samples of a row
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void StoreLanes(Vector128<int> value, Span<ushort> row) => Vector128.Narrow(value.AsUInt32(), value.AsUInt32()).GetLower().CopyTo(row);
+
+    // Writes the 4 lanes of the samples of two rows
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void StoreLanes(Vector128<int> first, Vector128<int> second, Span<ushort> firstRow, Span<ushort> secondRow)
+    {
+        var samples = Vector128.Narrow(first.AsUInt32(), second.AsUInt32());
+        samples.GetLower().CopyTo(firstRow);
+        samples.GetUpper().CopyTo(secondRow);
     }
 
     // Section 7.11.2.5 "DC intra prediction process"
@@ -646,7 +847,9 @@ internal static class Av1IntraPredictor
         }
     }
 
-    // PredictSmooth with 8 samples of a row in vector lanes (4 for a block of width 4)
+    // PredictSmooth with 4 samples of a row in vector lanes: the terms of the columns, which do not depend on the row, are
+    // computed once
+    [SkipLocalsInit]
     private static void PredictSmoothVector(Span<ushort> destination, int stride, int mode, int log2W, int log2H, Edge above, Edge left)
     {
         var w = 1 << log2W;
@@ -655,25 +858,38 @@ internal static class Av1IntraPredictor
         var weightsY = GetSmoothWeights(log2H);
         var bottomLeft = left[h - 1];
         var topRight = above[w - 1];
-        var tops = above.Slice(0, w);
+        var chunks = w >> 2;
+
+        // The samples above and, for the horizontal terms, the weights of the columns and the term of the sample above and to
+        // the right: every element is written before it is read
+        Span<Vector128<int>> tops = unsafe(stackalloc Vector128<int>[16]);
+        Span<Vector128<int>> weights = unsafe(stackalloc Vector128<int>[16]);
+        Span<Vector128<int>> rights = unsafe(stackalloc Vector128<int>[16]);
         var all = Vector128.Create(256);
+        for (var c = 0; c < chunks; c++)
+        {
+            var j = 4 * c;
+            tops[c] = Vector128.Create(above.Slice(j, 4));
+            var weightX = Vector128.Create((int)weightsX[j], weightsX[j + 1], weightsX[j + 2], weightsX[j + 3]);
+            weights[c] = weightX;
+            rights[c] = (all - weightX) * topRight;
+        }
+
         for (var i = 0; i < h; i++)
         {
             var row = destination.Slice(i * stride, w);
             var weightY = weightsY[i];
             var vertical = Vector128.Create((256 - weightY) * bottomLeft);
             var horizontal = Vector128.Create(left[i]);
-            for (var j = 0; j < w; j += 4)
+            for (var c = 0; c < chunks; c++)
             {
-                var weightX = Vector128.Create((int)weightsX[j], weightsX[j + 1], weightsX[j + 2], weightsX[j + 3]);
-                var top = Vector128.Create(tops[j..]);
                 var value = mode switch
                 {
-                    Av1Constants.SmoothPred => ((top * weightY) + vertical + (weightX * horizontal) + ((all - weightX) * topRight) + Vector128.Create(256)) >> 9,
-                    Av1Constants.SmoothVPred => ((top * weightY) + vertical + Vector128.Create(128)) >> 8,
-                    _ => ((weightX * horizontal) + ((all - weightX) * topRight) + Vector128.Create(128)) >> 8,
+                    Av1Constants.SmoothPred => ((tops[c] * weightY) + vertical + (weights[c] * horizontal) + rights[c] + Vector128.Create(256)) >> 9,
+                    Av1Constants.SmoothVPred => ((tops[c] * weightY) + vertical + Vector128.Create(128)) >> 8,
+                    _ => ((weights[c] * horizontal) + rights[c] + Vector128.Create(128)) >> 8,
                 };
-                Vector128.Narrow(value.AsUInt32(), value.AsUInt32()).GetLower().CopyTo(row[j..]);
+                StoreLanes(value, row[(4 * c)..]);
             }
         }
     }
@@ -815,40 +1031,55 @@ internal static class Av1IntraPredictor
         if (strength is 0)
             return;
 
+        var kernel = Av1Tables.IntraEdgeKernel.Slice((strength - 1) * Av1Constants.IntraEdgeTaps, Av1Constants.IntraEdgeTaps);
+        if (vectorized)
+        {
+            FilterEdgeVector(buffer, size, kernel);
+            return;
+        }
+
         Span<int> edge = stackalloc int[size];
         for (var i = 0; i < size; i++)
         {
             edge[i] = buffer[i - 1];
         }
 
-        var kernel = Av1Tables.IntraEdgeKernel.Slice((strength - 1) * Av1Constants.IntraEdgeTaps, Av1Constants.IntraEdgeTaps);
-        var i0 = 1;
-        if (vectorized && size >= 8)
-        {
-            // The outputs 2 to size - 3 read the entries i - 2 to i + 2, which need no clamping: 4 outputs at a time
-            var k0 = Vector128.Create((int)kernel[0]);
-            var k1 = Vector128.Create((int)kernel[1]);
-            var k2 = Vector128.Create((int)kernel[2]);
-            var k3 = Vector128.Create((int)kernel[3]);
-            var k4 = Vector128.Create((int)kernel[4]);
-            var rounding = Vector128.Create(8);
-            var output = buffer.From(0);
-            buffer[0] = FilterEdgeSample(edge, kernel, 1);
-            var i = 2;
-            for (; i + 4 <= size - 2; i += 4)
-            {
-                var sum = (k0 * Vector128.Create(edge[(i - 2)..])) + (k1 * Vector128.Create(edge[(i - 1)..])) + (k2 * Vector128.Create(edge[i..]))
-                    + (k3 * Vector128.Create(edge[(i + 1)..])) + (k4 * Vector128.Create(edge[(i + 2)..]));
-                ((sum + rounding) >> 4).CopyTo(output[(i - 1)..]);
-            }
-
-            i0 = i;
-        }
-
-        for (var i = i0; i < size; i++)
+        for (var i = 1; i < size; i++)
         {
             buffer[i - 1] = FilterEdgeSample(edge, kernel, i);
         }
+    }
+
+    // FilterEdge with 4 outputs at a time. The entries are copied with 2 copies of the first and of the last one on each
+    // side, which replace the clamping of the positions: the output i is the sum of the copies i to i + 4 times the taps. The
+    // lanes after the last output read copies that are not written, and are not stored
+    [SkipLocalsInit]
+    private static void FilterEdgeVector(Edge buffer, int size, ReadOnlySpan<byte> kernel)
+    {
+        var chunks = (size + 2) >> 2;
+        Span<int> padded = unsafe(stackalloc int[(4 * chunks) + 8]);
+        Span<int> filtered = unsafe(stackalloc int[4 * chunks]);
+        buffer.Slice(-1, size).CopyTo(padded[2..]);
+        padded[0] = padded[2];
+        padded[1] = padded[2];
+        padded[size + 2] = padded[size + 1];
+        padded[size + 3] = padded[size + 1];
+        var k0 = Vector128.Create((int)kernel[0]);
+        var k1 = Vector128.Create((int)kernel[1]);
+        var k2 = Vector128.Create((int)kernel[2]);
+        var k3 = Vector128.Create((int)kernel[3]);
+        var k4 = Vector128.Create((int)kernel[4]);
+        var rounding = Vector128.Create(8);
+        for (var c = 0; c < chunks; c++)
+        {
+            // The outputs 4c + 1 to 4c + 4
+            var i = (4 * c) + 1;
+            var sum = (k0 * Vector128.Create(padded[i..])) + (k1 * Vector128.Create(padded[(i + 1)..])) + (k2 * Vector128.Create(padded[(i + 2)..]))
+                + (k3 * Vector128.Create(padded[(i + 3)..])) + (k4 * Vector128.Create(padded[(i + 4)..]));
+            ((sum + rounding) >> 4).CopyTo(filtered[(4 * c)..]);
+        }
+
+        filtered[..(size - 1)].CopyTo(buffer.Slice(0, size - 1));
     }
 
     // The output i of the intra edge filter, from the unfiltered entries

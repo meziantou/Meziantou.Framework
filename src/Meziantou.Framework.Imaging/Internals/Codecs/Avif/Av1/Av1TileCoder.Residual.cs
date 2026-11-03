@@ -11,6 +11,7 @@ internal ref partial struct Av1TileCoder
     {
         Decode,
         Search,
+        Estimate,
         Replay,
     }
 
@@ -65,6 +66,9 @@ internal ref partial struct Av1TileCoder
                                     break;
                                 case ResidualOperation.Search:
                                     SearchTransformBlock(plane, baseXBlock, baseYBlock, txSz, blockX, blockY);
+                                    break;
+                                case ResidualOperation.Estimate:
+                                    EstimateTransformBlock(plane, baseXBlock, baseYBlock, txSz, blockX, blockY);
                                     break;
                                 default:
                                     ReplayTransformBlock(plane, baseXBlock, baseYBlock, txSz, blockX, blockY);

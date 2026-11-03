@@ -150,6 +150,11 @@ internal ref partial struct Av1TileCoder
     private bool _estimating;
     private long _estimate;
 
+    // The candidates that EstimateCandidates estimates in one pass (see PackCandidate), and their estimates
+    private InlineArray16<int> _estimateCandidates;
+    private InlineArray16<long> _estimates;
+    private int _estimateCount;
+
     // The capture of the estimate of a chroma plane with the chroma from luma prediction (see SearchCflAlphas): the number
     // of samples captured, or -1 when the estimate cannot be captured
     private bool _capturesCfl;

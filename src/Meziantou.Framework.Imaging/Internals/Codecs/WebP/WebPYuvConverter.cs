@@ -281,7 +281,7 @@ internal static class WebPYuvConverter
             Vector128<byte> b;
             if (Vector256.IsHardwareAccelerated && Avx2.IsSupported)
             {
-                (r, g, b) = Convert16Avx2(lumaValues, blueValues, redValues);
+                (r, g, b) = Convert16MultiplyAdd(lumaValues, blueValues, redValues);
             }
             else if (AdvSimd.Arm64.IsSupported)
             {
@@ -375,30 +375,59 @@ internal static class WebPYuvConverter
         }
     }
 
-    /// <summary>The red, green and blue values of 16 pixels, in 2 groups of 32-bit lanes of 256-bit vectors.</summary>
-    private static (Vector128<byte> Red, Vector128<byte> Green, Vector128<byte> Blue) Convert16Avx2(Vector128<byte> luma, Vector128<byte> blue, Vector128<byte> red)
+    // The coefficients split for 16-bit multiply-adds (PMADDWD): 104597 = 2 * 65536 - 26475, -53279 = -65536 + 12257
+    private const int RedFromCrSignedRest = RedFromCr - (2 * 65536);
+    private const int GreenFromCrSignedRest = 65536 - GreenFromCr;
+
+    /// <summary>The red, green and blue values of 16 pixels, with 16-bit multiply-adds into 32-bit lanes of 256-bit vectors (AVX2).</summary>
+    /// <remarks>
+    /// The multiples of 65536 of the coefficients add whole values after the shift, which are added in 16-bit lanes:
+    /// <c>R = Y + 2 Cr + ((10773 Y - 26475 Cr + RedOffset) &gt;&gt; 16)</c>,
+    /// <c>G = Y - Cr + ((10773 Y - 25675 Cb + 12257 Cr + GreenOffset) &gt;&gt; 16)</c> and
+    /// <c>B = Y + 2 Cb + ((10773 Y + 1129 Cb + BlueOffset) &gt;&gt; 16)</c>, the exact results of <see cref="ConvertSamplesScalar"/>:
+    /// the products of 16-bit pairs (PMADDWD of (Y, Cr) and (Y, Cb) interleaved) and their sums fit 32-bit lanes, the shifted
+    /// sums are between -326 and 225 and the results between -326 and 584, so that the 16-bit packing (PACKSSDW, which
+    /// also restores the pixel order of the interleave in each 128-bit lane) and the 16-bit sums are exact before the narrowing
+    /// with unsigned saturation, which is the clamp.
+    /// </remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static (Vector128<byte> Red, Vector128<byte> Green, Vector128<byte> Blue) Convert16MultiplyAdd(Vector128<byte> luma, Vector128<byte> blue, Vector128<byte> red)
     {
-        var (red0, green0, blue0) = Convert8(Avx2.ConvertToVector256Int32(luma), Avx2.ConvertToVector256Int32(blue), Avx2.ConvertToVector256Int32(red));
-        var (red1, green1, blue1) = Convert8(Avx2.ConvertToVector256Int32(Sse2.ShiftRightLogical128BitLane(luma, 8)), Avx2.ConvertToVector256Int32(Sse2.ShiftRightLogical128BitLane(blue, 8)), Avx2.ConvertToVector256Int32(Sse2.ShiftRightLogical128BitLane(red, 8)));
-        return (Pack(red0, red1), Pack(green0, green1), Pack(blue0, blue1));
+        var y = Avx2.ConvertToVector256Int16(luma);
+        var cb = Avx2.ConvertToVector256Int16(blue);
+        var cr = Avx2.ConvertToVector256Int16(red);
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static (Vector256<int> Red, Vector256<int> Green, Vector256<int> Blue) Convert8(Vector256<int> lumaValues, Vector256<int> blueValues, Vector256<int> redValues)
-        {
-            var c = lumaValues * Vector256.Create(LumaScale);
-            var r = (c + ((redValues * Vector256.Create(RedFromCr)) + Vector256.Create(RedOffset))) >> 16;
-            var g = (c - (blueValues * Vector256.Create(GreenFromCb)) - (redValues * Vector256.Create(GreenFromCr)) + Vector256.Create(GreenOffset)) >> 16;
-            var b = (c + ((blueValues * Vector256.Create(BlueFromCb)) + Vector256.Create(BlueOffset))) >> 16;
-            return (r, g, b);
-        }
+        // Pixels 0-3 and 8-11 (low), 4-7 and 12-15 (high) as (Y, Cr) and (Y, Cb) pairs
+        var lumaRedLow = Avx2.UnpackLow(y, cr);
+        var lumaRedHigh = Avx2.UnpackHigh(y, cr);
+        var lumaBlueLow = Avx2.UnpackLow(y, cb);
+        var lumaBlueHigh = Avx2.UnpackHigh(y, cb);
+        var redFactors = Vector256.Create((ushort)LumaRest | (unchecked((uint)RedFromCrSignedRest) << 16)).AsInt16();
+        var greenFactors = Vector256.Create((ushort)LumaRest | (unchecked((uint)-GreenFromCb) << 16)).AsInt16();
+        var greenRedFactors = Vector256.Create(GreenFromCrSignedRest << 16).AsInt16();
+        var blueFactors = Vector256.Create((ushort)LumaRest | ((uint)BlueFromCbRest << 16)).AsInt16();
+        var redOffset = Vector256.Create(RedOffset);
+        var greenOffset = Vector256.Create(GreenOffset);
+        var blueOffset = Vector256.Create(BlueOffset);
+        var redRest = High(Avx2.MultiplyAddAdjacent(lumaRedLow, redFactors) + redOffset, Avx2.MultiplyAddAdjacent(lumaRedHigh, redFactors) + redOffset);
+        var greenRest = High(
+            Avx2.MultiplyAddAdjacent(lumaBlueLow, greenFactors) + Avx2.MultiplyAddAdjacent(lumaRedLow, greenRedFactors) + greenOffset,
+            Avx2.MultiplyAddAdjacent(lumaBlueHigh, greenFactors) + Avx2.MultiplyAddAdjacent(lumaRedHigh, greenRedFactors) + greenOffset);
+        var blueRest = High(Avx2.MultiplyAddAdjacent(lumaBlueLow, blueFactors) + blueOffset, Avx2.MultiplyAddAdjacent(lumaBlueHigh, blueFactors) + blueOffset);
+        var r = y + cr + cr + redRest;
+        var g = y - cr + greenRest;
+        var b = y + cb + cb + blueRest;
 
-        // 16 values to bytes: the 16-bit pack works per 128-bit lane, its 64-bit groups hold the values 0-3, 8-11, 4-7, 12-15
+        // 16 values to bytes: the pack works per 128-bit lane, its 64-bit groups hold the values 0-7 of the first vector, 0-7 of
+        // the second one, 8-15 of the first one and 8-15 of the second one
+        var redGreen = Avx2.Permute4x64(Avx2.PackUnsignedSaturate(r, g).AsInt64(), 0b11_01_10_00).AsByte();
+        var blueBlue = Avx2.Permute4x64(Avx2.PackUnsignedSaturate(b, b).AsInt64(), 0b11_01_10_00).AsByte();
+        return (redGreen.GetLower(), redGreen.GetUpper(), blueBlue.GetLower());
+
+        // The high halves of the 32-bit sums (arithmetic shift), packed to 16 bits in the pixel order
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static Vector128<byte> Pack(Vector256<int> low, Vector256<int> high)
-        {
-            var words = Avx2.Permute4x64(Avx2.PackSignedSaturate(low, high).AsInt64(), 0b11_01_10_00).AsInt16();
-            return Sse2.PackUnsignedSaturate(words.GetLower(), words.GetUpper());
-        }
+        static Vector256<short> High(Vector256<int> low, Vector256<int> high)
+            => Avx2.PackSignedSaturate(Avx2.ShiftRightArithmetic(low, 16), Avx2.ShiftRightArithmetic(high, 16));
     }
 
     /// <summary>Narrows signed 16-bit values to bytes with unsigned saturation (0 to 255).</summary>

@@ -643,14 +643,21 @@ internal sealed class ExrHuffman : IDisposable
         private readonly Span<byte> _destination = destination;
         private long _position;
 
+        // The last bits written, the bits of the current byte (_position & 7 of them) the lowest
+        private ulong _bits;
+
         public readonly int ByteStart => byteStart;
 
         public readonly long BitLength => _position;
 
         public readonly int ByteLength => byteStart + (int)((_position + 7) / 8);
 
-        /// <summary>Writes the <paramref name="count"/> (0 to 64) low bits of a value, the most significant first.</summary>
-        /// <returns><see langword="false"/> when the bits do not fit the destination (some of them may be written).</returns>
+        /// <summary>Writes the <paramref name="count"/> (0 to 57) low bits of a value, the most significant first.</summary>
+        /// <returns><see langword="false"/> when the bits do not fit the destination (nothing is written).</returns>
+        /// <remarks>
+        /// The bytes completed are stored, and the current byte too, its bits after those written zero: the destination
+        /// always holds the bits written so far, padded.
+        /// </remarks>
         public bool TryWrite(ulong value, int count)
         {
             if (count == 0)
@@ -659,26 +666,21 @@ internal sealed class ExrHuffman : IDisposable
             if (byteStart + ((_position + count - 1) >> 3) >= _destination.Length)
                 return false;
 
-            // The bits are written byte by byte: a byte gets its bits from the most significant, cleared by its first one
-            while (count > 0)
+            var pending = (int)(_position & 7) + count;
+            _bits = (_bits << count) | (value & (ulong.MaxValue >> (64 - count)));
+            var byteIndex = byteStart + (int)(_position >> 3);
+            while (pending >= 8)
             {
-                var byteIndex = byteStart + (int)(_position >> 3);
-                var bit = (int)(_position & 7);
-                var take = Math.Min(8 - bit, count);
-                var bits = (byte)((value >> (count - take)) & ((1u << take) - 1));
-                if (bit == 0)
-                {
-                    _destination[byteIndex] = (byte)(bits << (8 - take));
-                }
-                else
-                {
-                    _destination[byteIndex] |= (byte)(bits << (8 - bit - take));
-                }
-
-                count -= take;
-                _position += take;
+                pending -= 8;
+                _destination[byteIndex++] = (byte)(_bits >> pending);
             }
 
+            if (pending > 0)
+            {
+                _destination[byteIndex] = (byte)(_bits << (8 - pending));
+            }
+
+            _position += count;
             return true;
         }
 

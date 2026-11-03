@@ -195,7 +195,7 @@
     "reftest": "PASS"
   },
   "css/css-values/calc-background-size-round-percentage.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-values/calc-border-radius-1.html": {
     "reftest": "PASS"
@@ -980,12 +980,7 @@
     "total": 1
   },
   "css/css-values/random-computed.tentative.html": {
-    "total": 172,
-    "failures": {
-      "Custom property with random() inside transform() should have 'fixed'": "FAIL",
-      "Property border-image-slice value 'random(10%, 30%)'": "FAIL",
-      "random() with percentages inside multiple nested functions should have 'fixed'": "FAIL"
-    }
+    "total": 172
   },
   "css/css-values/random-in-animations.tentative.html": {
     "total": 37

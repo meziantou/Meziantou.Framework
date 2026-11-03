@@ -324,8 +324,10 @@ internal sealed class CustomPropertySyntax
         if (!component!.IsDataType || component.Name is "custom-ident" or "string")
             return JoinItems(significant, component, item => CssSerializer.SerializeValue([item], property: null));
 
+        // The percentages of the translations are resolved against the reference box at used-value time (e.g. a random() of
+        // percentages is kept with its base value)
         if (component.Name == "transform-list")
-            return RestoreTransformFunctionNames(CssValueComputer.ComputeGeneric(style, property: null, value, baseUrl, hasColors: false));
+            return RestoreTransformFunctionNames(CssValueComputer.ComputeGeneric(style, property: null, value, baseUrl, hasColors: false, percentageUnit: "px"));
 
         return JoinItems(significant, component, item => ComputeItem(style, component.Name, item, baseUrl));
     }
@@ -347,7 +349,7 @@ internal sealed class CustomPropertySyntax
             text = CssValueComputer.ReplaceCurrentColor(text, style.CurrentColor);
         }
 
-        var computed = CssValueComputer.ComputeGeneric(style, property: null, text, baseUrl, hasColors: type == "color");
+        var computed = CssValueComputer.ComputeGeneric(style, property: null, text, baseUrl, hasColors: type == "color", percentageUnit: type == "transform-function" ? "px" : null);
         switch (type)
         {
             // The math functions of an <integer> are rounded to the nearest integer (https://drafts.csswg.org/css-values-4/#calc-type-checking)

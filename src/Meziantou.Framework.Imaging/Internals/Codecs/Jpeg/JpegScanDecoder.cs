@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -60,6 +61,10 @@ internal abstract class JpegScanDecoder
     private readonly Action<int>? _mcuRowDecoded;
     private readonly CancellationToken _cancellationToken;
     private int _mcu;
+
+    // The position of _mcu in the MCU grid of the scan
+    private int _mcuX;
+    private int _mcuY;
     private int _intervalRemaining;
     private int _expectedRestart;
     private bool _pendingMarkerByte;
@@ -413,23 +418,22 @@ internal abstract class JpegScanDecoder
                 return;
 
             Debug.Assert(!UncheckedReads || _reader.BufferedBytes >= _uncheckedBytes);
-            DecodeMcu(_mcu);
+            DecodeMcu(_mcuX, _mcuY);
             _mcu++;
             _intervalRemaining--;
-            if (_mcu % _mcusPerLine == 0)
+            if (++_mcuX == _mcusPerLine)
             {
+                _mcuX = 0;
+                var row = _mcuY++;
                 _cancellationToken.ThrowIfCancellationRequested();
-                var row = (_mcu / _mcusPerLine) - 1;
                 OnMcuRowDecoded(row);
                 _mcuRowDecoded?.Invoke(row);
             }
         }
     }
 
-    private void DecodeMcu(int mcu)
+    private void DecodeMcu(int mcuX, int mcuY)
     {
-        var mcuX = mcu % _mcusPerLine;
-        var mcuY = mcu / _mcusPerLine;
         if (!_interleaved)
         {
             DecodeBlock(_components[0], mcuY, mcuX);
@@ -474,6 +478,22 @@ internal abstract class JpegScanDecoder
         public int[] ZigZagQuantization { get; } = quantization.Length == 64 ? CreateZigZagQuantization(quantization) : [];
 
         public int Predictor { get; set; }
+
+        /// <summary>
+        /// Gets the coefficients of a block of the coefficient grid, like <see cref="JpegFrameComponent.GetCoefficients"/>
+        /// with the buffer of the grid read once: it is not reallocated while a scan decodes.
+        /// </summary>
+        /// <param name="blockRow">The block row in the coefficient grid.</param>
+        /// <param name="blockColumn">The block column in the coefficient grid.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Span<short> GetCoefficients(int blockRow, int blockColumn)
+        {
+            var buffer = _coefficientBuffer ??= Component.CoefficientBuffer;
+            var offset = ((blockRow * Component.CoefficientBlocksPerLine) + blockColumn) * 64 * sizeof(short);
+            return unsafe(MemoryMarshal.Cast<byte, short>(buffer.AsSpan(offset, 64 * sizeof(short))));
+        }
+
+        private byte[]? _coefficientBuffer;
 
         // The first block row of the band whose offset is cached (none at first), and the offset of that row
         private int _bandFirstBlockRow = int.MinValue / 2;

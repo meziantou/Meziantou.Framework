@@ -80,7 +80,14 @@ internal sealed class JpegProgressiveScanDecoder : JpegScanDecoder
 
     protected override void DecodeBlock(ScanComponent scanComponent, int blockRow, int blockColumn)
     {
-        var block = scanComponent.Component.GetCoefficients(blockRow, blockColumn);
+        if (_endOfBandRun > 0 && !_refinement)
+        {
+            // An AC first scan: the block is in an EOB run (T.81 G.1.2.2), it codes nothing
+            _endOfBandRun--;
+            return;
+        }
+
+        var block = scanComponent.GetCoefficients(blockRow, blockColumn);
         if (_start == 0)
         {
             if (_refinement)

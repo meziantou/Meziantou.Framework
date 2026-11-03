@@ -235,10 +235,15 @@ internal sealed class JpegFrameComponent : IDisposable
     /// <param name="blockColumn">The block column.</param>
     public Span<short> GetCoefficients(int blockRow, int blockColumn)
     {
-        var buffer = (_coefficients ?? throw new InvalidOperationException("The JPEG component coefficients are not allocated.")).RawBuffer;
+        var buffer = CoefficientBuffer;
         var offset = ((blockRow * _coefficientBlocksPerLine) + blockColumn) * 64 * sizeof(short);
         return unsafe(MemoryMarshal.Cast<byte, short>(buffer.AsSpan(offset, 64 * sizeof(short))));
     }
+
+    /// <summary>Gets the buffer of the coefficient grid (<see cref="GetCoefficients"/>): 64 coefficients per block, row by row.</summary>
+    public byte[] CoefficientBuffer => (_coefficients ?? ThrowCoefficientsNotAllocated()).RawBuffer;
+
+    private static PooledBuffer ThrowCoefficientsNotAllocated() => throw new InvalidOperationException("The JPEG component coefficients are not allocated.");
 
     /// <summary>Releases the coefficients of a progressive frame.</summary>
     public void ReleaseCoefficients()

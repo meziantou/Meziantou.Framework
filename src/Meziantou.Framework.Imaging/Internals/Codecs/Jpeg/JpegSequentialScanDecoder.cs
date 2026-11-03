@@ -251,7 +251,7 @@ internal sealed class JpegSequentialScanDecoder : JpegScanDecoder
     private void DecodeCoefficients(ScanComponent scanComponent, int blockRow, int blockColumn)
     {
         var component = scanComponent.Component;
-        var coefficients = component.GetCoefficients(blockRow % component.CoefficientBlockRows, blockColumn);
+        var coefficients = scanComponent.GetCoefficients(blockRow % component.CoefficientBlockRows, blockColumn);
         coefficients.Clear();
         ref var block = ref unsafe(MemoryMarshal.GetReference(coefficients));
         var reader = Reader.GetCursor();

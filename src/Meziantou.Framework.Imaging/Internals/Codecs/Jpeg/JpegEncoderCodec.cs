@@ -3,6 +3,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 using Meziantou.Framework.Imaging.Formats;
 
@@ -82,7 +83,8 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
     /// <param name="blue">The Cb samples minus 128.</param>
     /// <param name="red">The Cr samples minus 128.</param>
     /// <remarks>
-    /// With 128-bit hardware vectors, 16 pixels are deinterleaved by byte shuffles and converted two at a time with the same
+    /// With 128-bit hardware vectors, 16 pixels are deinterleaved by byte shuffles (one LD3 load on Arm64) and converted two
+    /// at a time (from exact single-precision conversions of the samples on Arm64) with the same
     /// operations in the same order (separate multiplications and additions), so the samples are identical;
     /// with AVX2, four at a time, and with AVX-512, eight at a time.
     /// </remarks>
@@ -120,17 +122,41 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         ref var blueStart = ref unsafe(MemoryMarshal.GetReference(blue));
         ref var redStart = ref unsafe(MemoryMarshal.GetReference(red));
         var x = 0;
+        if (AdvSimd.Arm64.IsSupported)
+        {
+            // LD3 loads and deinterleaves 16 pixels
+            unsafe
+            {
+                fixed (byte* pixels = source)
+                {
+                    for (; x + 16 <= count; x += 16)
+                    {
+                        var (r, g, b) = AdvSimd.Arm64.Load3xVector128AndUnzip(pixels + (3 * x));
+                        Convert16(r, g, b, ref Unsafe.Add(ref lumaStart, x), ref Unsafe.Add(ref blueStart, x), ref Unsafe.Add(ref redStart, x));
+                    }
+                }
+            }
+
+            return x;
+        }
+
         for (; x + 16 <= count; x += 16)
         {
             var (r, g, b) = Deinterleave(ref unsafe(Unsafe.Add(ref sourceStart, 3 * x)));
-            var (r0, r1) = Vector128.Widen(r);
-            var (g0, g1) = Vector128.Widen(g);
-            var (b0, b1) = Vector128.Widen(b);
-            Convert8(r0, g0, b0, ref unsafe(Unsafe.Add(ref lumaStart, x)), ref unsafe(Unsafe.Add(ref blueStart, x)), ref unsafe(Unsafe.Add(ref redStart, x)));
-            Convert8(r1, g1, b1, ref unsafe(Unsafe.Add(ref lumaStart, x + 8)), ref unsafe(Unsafe.Add(ref blueStart, x + 8)), ref unsafe(Unsafe.Add(ref redStart, x + 8)));
+            Convert16(r, g, b, ref unsafe(Unsafe.Add(ref lumaStart, x)), ref unsafe(Unsafe.Add(ref blueStart, x)), ref unsafe(Unsafe.Add(ref redStart, x)));
         }
 
         return x;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static void Convert16(Vector128<byte> r, Vector128<byte> g, Vector128<byte> b, ref float luma, ref float blue, ref float red)
+        {
+            var (r0, r1) = Vector128.Widen(r);
+            var (g0, g1) = Vector128.Widen(g);
+            var (b0, b1) = Vector128.Widen(b);
+            Convert8(r0, g0, b0, ref luma, ref blue, ref red);
+            Convert8(r1, g1, b1, ref unsafe(Unsafe.Add(ref luma, 8)), ref unsafe(Unsafe.Add(ref blue, 8)), ref unsafe(Unsafe.Add(ref red, 8)));
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static void Convert8(Vector128<ushort> r, Vector128<ushort> g, Vector128<ushort> b, ref float luma, ref float blue, ref float red)
@@ -156,11 +182,12 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
                 return;
             }
 
-            var (r0, r1) = Vector128.Widen(r);
-            var (g0, g1) = Vector128.Widen(g);
-            var (b0, b1) = Vector128.Widen(b);
-            Convert2(Vector128.ConvertToDouble(r0), Vector128.ConvertToDouble(g0), Vector128.ConvertToDouble(b0), out var y0, out var cb0, out var cr0);
-            Convert2(Vector128.ConvertToDouble(r1), Vector128.ConvertToDouble(g1), Vector128.ConvertToDouble(b1), out var y1, out var cb1, out var cr1);
+            // The samples (below 2^24) are converted exactly to single precision, then widened exactly to double precision
+            var rs = Vector128.ConvertToSingle(r);
+            var gs = Vector128.ConvertToSingle(g);
+            var bs = Vector128.ConvertToSingle(b);
+            Convert2(Vector128.WidenLower(rs), Vector128.WidenLower(gs), Vector128.WidenLower(bs), out var y0, out var cb0, out var cr0);
+            Convert2(Vector128.WidenUpper(rs), Vector128.WidenUpper(gs), Vector128.WidenUpper(bs), out var y1, out var cb1, out var cr1);
             unsafe { Vector128.Narrow(y0, y1).StoreUnsafe(ref luma); }
             unsafe { Vector128.Narrow(cb0, cb1).StoreUnsafe(ref blue); }
             unsafe { Vector128.Narrow(cr0, cr1).StoreUnsafe(ref red); }

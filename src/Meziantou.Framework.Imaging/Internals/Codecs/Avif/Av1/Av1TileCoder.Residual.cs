@@ -218,17 +218,15 @@ internal ref partial struct Av1TileCoder
         var loopFilterTxSizes = _state.GetLoopFilterTxSizes(plane);
         var planeMiCols = _miCols >> subX;
         var planeMiRows = _miRows >> subY;
+        var planeCol = col >> subX;
+        var columns = Math.Clamp(planeMiCols - planeCol, 0, stepX);
         for (var i = 0; i < stepY; i++)
         {
             var planeRow = (row >> subY) + i;
-            for (var j = 0; j < stepX; j++)
-            {
-                var planeCol = (col >> subX) + j;
-                if (planeRow < planeMiRows && planeCol < planeMiCols)
-                    loopFilterTxSizes[(planeRow * _miCols) + planeCol] = (byte)txSz;
+            if (planeRow < planeMiRows && columns > 0)
+                loopFilterTxSizes.Slice((planeRow * _miCols) + planeCol, columns).Fill((byte)txSz);
 
-                blockDecoded[BlockDecodedIndex((subBlockMiRow >> subY) + i, (subBlockMiCol >> subX) + j)] = 1;
-            }
+            blockDecoded.Slice(BlockDecodedIndex((subBlockMiRow >> subY) + i, subBlockMiCol >> subX), stepX).Fill(1);
         }
     }
 

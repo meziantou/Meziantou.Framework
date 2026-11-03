@@ -57,6 +57,10 @@ internal sealed class JpegXlLosslessFrameEncoder
     private JpegXlMaTreeNode[] _tree = [];
     private int _leafCount;
 
+    // The copies found in each stream (the global data, then the groups) when the values are counted, which are written
+    // without parsing the stream again; null for a stream that has too many of them
+    private Lz77Copy[]?[]? _copies;
+
     /// <param name="width">The width of the frame.</param>
     /// <param name="height">The height of the frame.</param>
     /// <param name="colorChannelCount">The number of color channels: 1 or 3.</param>
@@ -113,8 +117,16 @@ internal sealed class JpegXlLosslessFrameEncoder
             if (_settings.UseLz77)
             {
                 tokenCosts = literalCode.GetTokenCosts();
-                lz77Code = new JpegXlModularEntropyCode(_leafCount, _settings.MaxClusters, _settings.SearchConfigs, useLz77: true, _scope);
-                CountStreams(lz77Code, global, tokenCosts);
+                if (IsLz77Worthwhile(tokenCosts))
+                {
+                    lz77Code = new JpegXlModularEntropyCode(_leafCount, _settings.MaxClusters, _settings.SearchConfigs, useLz77: true, _scope);
+                    _copies = new Lz77Copy[]?[GroupCount + 1];
+                    CountStreams(lz77Code, global, tokenCosts);
+                }
+                else
+                {
+                    tokenCosts = null;
+                }
             }
 
             literalCode.Build();
@@ -129,9 +141,9 @@ internal sealed class JpegXlLosslessFrameEncoder
                 else
                 {
                     tokenCosts = null;
+                    _copies = null;
                 }
             }
-
 
             // LfGlobal: the tree and its code, then the global Modular data: its header, then its samples
             writer.WriteBool(true);
@@ -143,7 +155,7 @@ internal sealed class JpegXlLosslessFrameEncoder
             if (global is not null)
             {
                 using var worker = new StreamWorker(code, tokenCosts, _settings.Lz77Chain, counting: false, _scope);
-                ProcessStream(global, 0, worker);
+                ProcessStream(global, 0, worker, copySlot: 0);
                 code.WriteStream(worker.Stream!, writer);
             }
             else if (code.UsesAns)
@@ -170,6 +182,7 @@ internal sealed class JpegXlLosslessFrameEncoder
         finally
         {
             lz77Code?.Dispose();
+            _copies = null;
         }
     }
 
@@ -182,7 +195,7 @@ internal sealed class JpegXlLosslessFrameEncoder
         if (global is not null)
         {
             using var worker = new StreamWorker(code, tokenCosts, _settings.Lz77Chain, counting: true, _scope);
-            ProcessStream(global, 0, worker);
+            ProcessStream(global, 0, worker, copySlot: 0);
         }
 
         if (IsSingleGroup)
@@ -198,15 +211,80 @@ internal sealed class JpegXlLosslessFrameEncoder
             {
                 _cancellationToken.ThrowIfCancellationRequested();
                 using var image = LoadGroup(group, includeMeta: false);
-                ProcessStream(image, GetStreamIndex(group, lfGroupCount), worker);
+                ProcessStream(image, GetStreamIndex(group, lfGroupCount), worker, copySlot: group + 1);
             });
     }
 
     /// <summary>
-    /// Computes the values of a sub-bitstream, every channel in order, and counts them or adds them to the stream of the
-    /// worker, after finding the copies when the worker has a parser.
+    /// Whether copies are likely to make the frame smaller: the groups of a trial (one in <see cref="Lz77TrialStep"/>, on
+    /// diagonals) are counted with and without copies, the copies found with the token costs of the whole frame and a short
+    /// search (<see cref="Lz77TrialChain"/>), and the two codes are compared. A frame of one group is always parsed.
     /// </summary>
-    private void ProcessStream(JpegXlModularImage image, int streamIndex, StreamWorker worker)
+    /// <remarks>
+    /// The parse was 44 % of the time of an encoding at the effort 5, and on photographs the code with copies was always the
+    /// larger one (1.5 to 9 %); the trial (group 0 is always one of its groups) costs a tenth of a parse. Its estimate of the
+    /// ratio of the sizes with and without copies was 1.009 to 1.013 on photographs (1.03 to 1.09 written), 0.65 on a
+    /// screenshot (0.62) and 0.98 on rendered code (0.94 to 0.99).
+    /// </remarks>
+    private bool IsLz77Worthwhile(float[] tokenCosts)
+    {
+        if (IsSingleGroup)
+            return true;
+
+        var groups = new List<int>();
+        long trialPixels = 0;
+        for (var group = 0; group < GroupCount; group++)
+        {
+            if (group % Lz77TrialStep == group / _columns % Lz77TrialStep)
+            {
+                groups.Add(group);
+                trialPixels += (long)Math.Min(GroupDimension, _width - (group % _columns * GroupDimension)) * Math.Min(GroupDimension, _height - (group / _columns * GroupDimension));
+            }
+        }
+
+        var lfGroupCount = GetLfGroupCount();
+        using var literal = new JpegXlModularEntropyCode(_leafCount, _settings.MaxClusters, _settings.SearchConfigs, useLz77: false, _scope);
+        using var lz77 = new JpegXlModularEntropyCode(_leafCount, _settings.MaxClusters, _settings.SearchConfigs, useLz77: true, _scope);
+        var workers = JpegXlGroupWorkers.GetWorkerCount(_maxDegreeOfParallelism, groups.Count, (long)_width * _height * groups.Count / GroupCount);
+        JpegXlGroupWorkers.Run(
+            workers,
+            groups.Count,
+            () => TrialWorker.Create(() => new StreamWorker(literal, tokenCosts: null, 0, counting: true, _scope), () => new StreamWorker(lz77, tokenCosts, Math.Min(Lz77TrialChain, _settings.Lz77Chain), counting: true, _scope)),
+            (worker, index) =>
+            {
+                _cancellationToken.ThrowIfCancellationRequested();
+                var group = groups[index];
+                using var image = LoadGroup(group, includeMeta: false);
+                ProcessStream(image, GetStreamIndex(group, lfGroupCount), worker.Lz77, worker.Literal);
+            });
+
+        literal.Build();
+        lz77.Build();
+
+        // The values of the frame are those of the trial scaled to its pixels; the distributions are described once (the code
+        // with copies has more tokens, and a larger description)
+        var scale = (double)_width * _height / trialPixels;
+        return Extrapolate(lz77) < Extrapolate(literal);
+
+        double Extrapolate(JpegXlModularEntropyCode code) => ((code.EstimatedBits - code.EstimatedDescriptionBits) * scale) + code.EstimatedDescriptionBits;
+    }
+
+    /// <summary>The groups of the trial of copies: one in this many.</summary>
+    private const int Lz77TrialStep = 8;
+
+    /// <summary>
+    /// The largest number of previous positions the trial of copies tries at each value: the long copies that make a frame
+    /// smaller are found at the first ones, and the parse costs the latency of each position it tries.
+    /// </summary>
+    private const int Lz77TrialChain = 2;
+
+    /// <summary>
+    /// Computes the values of a sub-bitstream, every channel in order, and counts them or adds them to the stream of the
+    /// worker, after finding the copies when the worker has a parser. <paramref name="literalWorker"/>, when set, also
+    /// receives the values, without copies. The copies of the stream <paramref name="copySlot"/> (0 for the global data,
+    /// then the groups from 1) are kept when they are counted, and written without a second parse: it would find the same.
+    /// </summary>
+    private void ProcessStream(JpegXlModularImage image, int streamIndex, StreamWorker worker, StreamWorker? literalWorker = null, int copySlot = -1)
     {
         long length = 0;
         var distanceMultiplier = 0;
@@ -243,18 +321,48 @@ internal sealed class JpegXlLosslessFrameEncoder
         }
 
         var span = values.Span[..offset];
+        literalWorker?.AddValues(span);
         if (worker.Parser is null)
         {
-            foreach (var value in span)
-            {
-                worker.AddValue((int)(value >> 32), (uint)value);
-            }
-
+            worker.AddValues(span);
             return;
         }
 
-        worker.Parser.Parse(span, distanceMultiplier, ref worker.Sink);
+        var copies = copySlot >= 0 ? _copies : null;
+        if (copies is null)
+        {
+            worker.Parser.Parse(span, distanceMultiplier, ref worker.Sink);
+            return;
+        }
+
+        if (worker.Stream is not null && copies[copySlot] is { } found)
+        {
+            var position = 0;
+            foreach (var copy in found)
+            {
+                worker.AddValues(span[position..copy.Position]);
+                worker.Sink.AddCopy((int)(span[copy.Position] >> 32), copy.Length, copy.Distance);
+                position = copy.Position + copy.Length;
+            }
+
+            worker.AddValues(span[position..]);
+            return;
+        }
+
+        var recorder = new RecordingSink(worker.Sink, worker.Copies);
+        worker.Parser.Parse(span, distanceMultiplier, ref recorder);
+
+        // A copy takes 12 bytes: a stream with many short ones is parsed again rather than kept
+        if (worker.Stream is null && worker.Copies.Count <= span.Length / ValuesPerKeptCopy)
+        {
+            copies[copySlot] = [.. worker.Copies];
+        }
+
+        worker.Copies.Clear();
     }
+
+    /// <summary>The fewest values per copy of a stream whose copies are kept.</summary>
+    private const int ValuesPerKeptCopy = 16;
 
     /// <summary>Gets the stream index of a group of the first pass.</summary>
     private static int GetStreamIndex(int group, int lfGroupCount) => 1 + (3 * lfGroupCount) + JpegXlVarDctTables.QuantTableCount + group;
@@ -351,10 +459,18 @@ internal sealed class JpegXlLosslessFrameEncoder
         {
             _cancellationToken.ThrowIfCancellationRequested();
             using var image = LoadRaw(group);
+            var colorReader = new ColorReader(image, _channelCount);
             var length = image.Channels[0].Samples.Length;
+            var previous = 0UL;
             for (var i = 0; i < length && colors.Count <= limit; i++)
             {
-                colors.Add(GetColor(image, i));
+                // A color is often the one of the previous pixel, already in the set
+                var color = colorReader.Get(i);
+                if (i == 0 || color != previous)
+                {
+                    colors.Add(color);
+                    previous = color;
+                }
             }
         }
 
@@ -430,15 +546,44 @@ internal sealed class JpegXlLosslessFrameEncoder
         _colorTransform = candidates[best];
     }
 
-    private ulong GetColor(JpegXlModularImage image, int index)
+    /// <summary>Reads the color of a pixel of the channels of a group: each sample, 16 bits, in the order of the channels.</summary>
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Auto)]
+    private readonly ref struct ColorReader
     {
-        ulong color = 0;
-        for (var c = 0; c < _channelCount; c++)
+        private readonly int _channelCount;
+        private readonly Span<int> _channel0;
+        private readonly Span<int> _channel1;
+        private readonly Span<int> _channel2;
+        private readonly Span<int> _channel3;
+
+        public ColorReader(JpegXlModularImage image, int channelCount)
         {
-            color |= (ulong)(uint)image.Channels[c].Samples[index] << (16 * c);
+            _channelCount = channelCount;
+            _channel0 = image.Channels[0].Samples;
+            _channel1 = channelCount > 1 ? image.Channels[1].Samples : default;
+            _channel2 = channelCount > 2 ? image.Channels[2].Samples : default;
+            _channel3 = channelCount > 3 ? image.Channels[3].Samples : default;
         }
 
-        return color;
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+        public ulong Get(int index)
+        {
+            ulong color = (uint)_channel0[index];
+            if (_channelCount > 1)
+            {
+                color |= (ulong)(uint)_channel1[index] << 16;
+                if (_channelCount > 2)
+                {
+                    color |= (ulong)(uint)_channel2[index] << 32;
+                    if (_channelCount > 3)
+                    {
+                        color |= (ulong)(uint)_channel3[index] << 48;
+                    }
+                }
+            }
+
+            return color;
+        }
     }
 
     private long GetLuma(ulong color)
@@ -681,7 +826,7 @@ internal sealed class JpegXlLosslessFrameEncoder
         writer.WriteBool(true);
         writer.WriteBool(true);
         writer.WriteU32(0, 0, 0, 1, 0, 2, 4, 18, 8);
-        ProcessStream(image, GetStreamIndex(group, lfGroupCount), worker);
+        ProcessStream(image, GetStreamIndex(group, lfGroupCount), worker, copySlot: group + 1);
         code.WriteStream(worker.Stream!, writer);
     }
 
@@ -750,10 +895,22 @@ internal sealed class JpegXlLosslessFrameEncoder
             if (_palette is not null)
             {
                 // The colors become indexes; the alpha channel is in the palette
+                // A color is often the one of the previous pixel: its index is not looked up again. The index of a pixel
+                // replaces its first sample once its color is read
+                var colorReader = new ColorReader(image, _channelCount);
                 var indexes = image.Channels[0].Samples;
+                var previous = 0UL;
+                var index = 0;
                 for (var i = 0; i < indexes.Length; i++)
                 {
-                    indexes[i] = _paletteIndexes![GetColor(image, i)];
+                    var color = colorReader.Get(i);
+                    if (i == 0 || color != previous)
+                    {
+                        index = _paletteIndexes![color];
+                        previous = color;
+                    }
+
+                    indexes[i] = index;
                 }
 
                 for (var c = _channelCount - 1; c >= 1; c--)
@@ -820,15 +977,18 @@ internal sealed class JpegXlLosslessFrameEncoder
 
         public ParserSink Sink;
 
-        public void AddValue(int context, uint value)
+        /// <summary>The copies found in the stream that is parsed.</summary>
+        public List<Lz77Copy> Copies { get; } = [];
+
+        public void AddValues(ReadOnlySpan<ulong> values)
         {
             if (_counter is not null)
             {
-                _counter.Add(context, value);
+                _counter.AddRange(values);
             }
             else
             {
-                _code.Add(Stream!, context, value);
+                _code.AddRange(Stream!, values);
             }
         }
 
@@ -845,6 +1005,65 @@ internal sealed class JpegXlLosslessFrameEncoder
             }
 
             Stream?.Dispose();
+        }
+    }
+
+    /// <summary>The state of a worker of the trial of copies: the counts without copies and with them.</summary>
+    private sealed class TrialWorker : IDisposable
+    {
+        private TrialWorker(StreamWorker literal, StreamWorker lz77)
+        {
+            Literal = literal;
+            Lz77 = lz77;
+        }
+
+        public StreamWorker Literal { get; }
+
+        public StreamWorker Lz77 { get; }
+
+        /// <summary>Creates the two workers; the first one is released when the second one cannot be created.</summary>
+        public static TrialWorker Create(Func<StreamWorker> createLiteral, Func<StreamWorker> createLz77)
+        {
+            var literal = createLiteral();
+            try
+            {
+                return new TrialWorker(literal, createLz77());
+            }
+            catch
+            {
+                literal.Dispose();
+                throw;
+            }
+        }
+
+        public void Dispose()
+        {
+            Literal.Dispose();
+            Lz77.Dispose();
+        }
+    }
+
+    /// <summary>A copy of a stream: the position of its first value, its length and the code of its distance.</summary>
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Auto)]
+    internal readonly record struct Lz77Copy(int Position, int Length, uint Distance);
+
+    /// <summary>Receives what the parser finds, as <see cref="ParserSink"/> does, and records the copies with their positions.</summary>
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Auto)]
+    private struct RecordingSink(ParserSink sink, List<Lz77Copy> copies) : JpegXlLz77Parser.IStreamSink
+    {
+        private int _position;
+
+        public void AddValue(int context, uint value)
+        {
+            sink.AddValue(context, value);
+            _position++;
+        }
+
+        public void AddCopy(int context, int length, uint distance)
+        {
+            sink.AddCopy(context, length, distance);
+            copies.Add(new Lz77Copy(_position, length, distance));
+            _position += length;
         }
     }
 
@@ -885,11 +1104,11 @@ internal sealed class JpegXlLosslessFrameEncoder
 
         public static Settings Get(int effort) => effort switch
         {
-            <= 3 => new(16 * 1024, [6, 7, 9, 10, 11, 12], [GradientPredictor, 0, 1, 2], 32, 16, 48, 32, false, 0, 1024),
+            <= 3 => new(16 * 1024, [6, 7, 9, 10, 11, 12], [GradientPredictor, 0, 1, 2], 32, 16, 48, 32, false, 0, 2048),
             4 => new(32 * 1024, [4, 5, 6, 7, 9, 10, 11, 12, 16, 17, 18, 19], [GradientPredictor, 0, 1, 2, 4], 64, 32, 40, 64, true, 0, 2048),
-            5 => new(64 * 1024, [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 18, 19], [GradientPredictor, 0, 1, 2, 4, 13], 128, 32, 40, 128, true, 8, 4096),
-            6 => new(96 * 1024, [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 18, 19], [GradientPredictor, 0, 1, 2, 4, 13], 192, 48, 36, 256, true, 16, 4096),
-            7 => new(128 * 1024, [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19], [GradientPredictor, 0, 1, 2, 4, 13, 6], 160, 48, 32, 256, true, 32, 4096, 2),
+            5 => new(64 * 1024, [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 18, 19], [GradientPredictor, 0, 1, 2, 4], 128, 32, 40, 128, true, 8, 4096),
+            6 => new(96 * 1024, [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 18, 19], [GradientPredictor, 0, 1, 2, 4], 192, 48, 36, 256, true, 16, 4096),
+            7 => new(128 * 1024, [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19], [GradientPredictor, 0, 1, 2, 4, 6], 192, 48, 32, 256, true, 32, 4096, 2),
             8 => new(256 * 1024, [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23], [GradientPredictor, 0, 1, 2, 4, 13, 6], 192, 64, 32, 256, true, 64, 8192, 2),
             _ => new(512 * 1024, [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23], [GradientPredictor, 0, 1, 2, 3, 4, 13, 6], 256, 64, 28, 256, true, 128, 8192, 3),
         };

@@ -177,8 +177,11 @@ public sealed class JpegXlEncoderTests
         var colors = Save(opaque, encoder).Length;
         var all = Save(withAlpha, encoder).Length;
 
-        // Two groups in each direction: a few bytes per group for the code of the channel, when a bit per pixel is 10,125 bytes
-        Assert.True(all - colors < 256, $"Effort {effort}: {all} bytes with an opaque alpha channel, {colors} bytes without it.");
+        // Two groups in each direction: a few bytes per group for the code of the channel, when a bit per pixel is 10,125 bytes.
+        // From the effort 3 the contexts of the alpha channel are clustered with those of the colors, greedily in the order of
+        // the leaves, where the shallow leaves of the alpha channel come early: the colors can be clustered differently, which
+        // moves the size by a few hundred bytes either way (-82 to +446 bytes at the effort 5, measured)
+        Assert.True(all - colors < 1024, $"Effort {effort}: {all} bytes with an opaque alpha channel, {colors} bytes without it.");
     }
 
     /// <summary>

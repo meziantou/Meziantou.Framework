@@ -473,14 +473,21 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   codes its values in the fewest bits (counted as fine tokens, from which the token of every candidate configuration
   follows), and keeps the smaller of prefix codes and ANS. `JpegXlLz77Parser` finds copies with a hash chain and the left
   and above distances, priced with the token costs of a first count without copies; the code with copies is kept only
-  when its estimated size is smaller. The samples are computed twice (counted, then written) instead of being kept,
-  so the memory is the samples of the tree and one group per worker. Decisions that were measured (2026-10-30, 12
+  when its estimated size is smaller. The frame is parsed only when a trial says the copies may win
+  (`IsLz77Worthwhile`: one group in 8, two candidates per value, both codes built and their sizes extrapolated to the
+  frame); the copies found when the groups are counted are kept (`Lz77Copy`, unless a stream has more than one per 16
+  values) and written without a second parse. The samples are computed twice (counted, then written) instead of being
+  kept, so the memory is the samples of the tree and one group per worker: keeping the contexts and residuals (8 bytes
+  per sample, or 1 byte for the leaf of a sample) would save one of the two passes of `JpegXlTreeCoder.Collect`, about
+  a fifth of the time at the effort 5. Decisions that were measured (2026-10-30, 12
   images: photographs, screenshots rendered by WebPlatform, charts, text, repeated tiles; cjxl 0.12.0 at the same effort,
   one thread):
   - Size against cjxl (geometric mean): effort 3 0.77, 5 0.67, 7 0.69, 9 0.79 (before: 1.07, 1.61, 1.70, 1.94).
     Photographs are within 3 % of cjxl at every effort; screenshots and graphics are 2 to 80 % smaller, mostly from
-    LZ77 (-27 to -57 % on screenshots at the effort 7) and the palette. CPU time is 2.2 times the one of cjxl at the
-    efforts 3 and 5, 2.9 times at 7 and the same at 9. The scratch harness (a project referencing the library that
+    LZ77 (-27 to -57 % on screenshots at the effort 7) and the palette. CPU time was 2.2 times the one of cjxl at the
+    efforts 3 and 5, 2.9 times at 7 and the same at 9, before the trial of copies (2026-11-03), which made the effort 5
+    3 times faster on photographs and the efforts 8 and 9 5 to 7 times faster: on a 2048x1536 photograph the effort 5
+    takes about the CPU time of the effort 7 of the reference encoder, for a 0.2 % smaller file. The scratch harness (a project referencing the library that
     encodes PNG inputs at each effort, checks the round trip, runs `cjxl -d 0 -e N --num_threads=0` under
     `/usr/bin/time`, and decodes every output with djxl and jxl-oxide) is not committed: rerun it before changing a
     constant of `JpegXlLosslessFrameEncoder.Settings`.
@@ -488,6 +495,14 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
     of each transform) estimates it 25 % larger (`PaletteTrialMargin`). The trial underestimates the palette: palettes
     estimated 16 % larger wrote 0 to 28 % smaller screenshots; a photograph (14,535 colors) and smooth gradient tiles
     (3,801 colors) were 2.3 and 3 times larger with one. The indexes do not get the weighted predictor (it made them larger).
+  - *LZ77 trial*: the extrapolated ratio of the sizes with and without copies was 1.009 to 1.013 on photographs (1.03
+    to 1.09 when the whole frame is parsed), 0.65 on a screenshot (0.62) and 0.98 on rendered code (0.94 to 0.99). A frame
+    of one group is always parsed.
+  - *Predictors and properties* (2026-11-03, photographs, a screenshot, rendered code and text, glyphs): the predictor 13
+    made photographs 1.6 to 2 % larger at the efforts 5 and 6 (the leaves chose it on their samples), and is left out
+    there; at the efforts 7 to 9 removing it was mixed (-1.5 to +1.2 %). The position properties (2 and 3) made screenshots
+    5 to 10 % larger and are left out at the effort 7 (still searched at 8 and 9). The effort 3 considers a palette of up
+    to 2048 colors, as the effort 4 (1024 before: a screenshot with more colors was 33 % larger and twice as slow).
   - *Samples*: 16K, 32K, 64K per channel at efforts 3 to 5; doubling them gains 0.3 to 1 %, for the time of the learning.
     More leaves than 128 per channel made screenshots up to 4 % larger: the cost of a split (`SplitCost`) does not count
     the distribution a new context may need.

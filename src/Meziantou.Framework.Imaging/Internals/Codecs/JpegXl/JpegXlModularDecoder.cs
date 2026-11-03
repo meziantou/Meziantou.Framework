@@ -922,19 +922,30 @@ internal static class JpegXlModularDecoder
         var samples = other.Samples;
         var row = samples.Slice(y * width, width);
         var above = y > 0 ? samples.Slice((y - 1) * width, width) : default;
-        for (var x = 0; x < width; x++)
+        var interior = y > 0 ? 1 : width;
+        for (var x = 0; x < Math.Min(interior, width); x++)
         {
-            long value = row[x];
             long otherLeft = x > 0 ? row[x - 1] : 0;
             long otherTop = y > 0 ? above[x] : otherLeft;
             long otherTopLeft = x > 0 && y > 0 ? above[x - 1] : otherLeft;
-            long predicted = JpegXlModularTransform.ClampedGradient((int)otherLeft, (int)otherTop, (int)otherTopLeft);
-            var offset = x * stride;
-            destination[offset] = (int)Math.Abs(value);
-            destination[offset + 1] = (int)value;
-            destination[offset + 2] = (int)Math.Abs(value - predicted);
-            destination[offset + 3] = (int)(value - predicted);
+            WriteReferenceProperties(row[x], otherLeft, otherTop, otherTopLeft, destination.Slice(x * stride, PropertiesPerReference));
         }
+
+        // The samples that have every neighbor; which neighbor bounds the gradient is not predictable
+        for (var x = interior; x < width; x++)
+        {
+            WriteReferenceProperties(row[x], row[x - 1], above[x], above[x - 1], destination.Slice(x * stride, PropertiesPerReference));
+        }
+    }
+
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+    private static void WriteReferenceProperties(long value, long left, long top, long topLeft, Span<int> destination)
+    {
+        var predicted = JpegXlModularTransform.ClampedGradientWithoutBranch(left, top, topLeft);
+        destination[3] = (int)(value - predicted);
+        destination[2] = (int)Math.Abs(value - predicted);
+        destination[1] = (int)value;
+        destination[0] = (int)Math.Abs(value);
     }
 
     /// <summary>

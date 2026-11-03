@@ -521,7 +521,7 @@ internal static class JpegXlModularDecoder
                 long guess;
                 if (predictor == 5)
                 {
-                    guess = ClampedGradient(left, top, topLeft);
+                    guess = JpegXlModularTransform.ClampedGradientWithoutBranch(left, top, topLeft);
                 }
                 else
                 {
@@ -702,7 +702,7 @@ internal static class JpegXlModularDecoder
                 if ((uint)(predictor - 5) <= 1)
                 {
                     var isWeighted = -(long)(predictor - 5);
-                    guess = (weightedPrediction & isWeighted) | (ClampedGradient(west, north, northWest) & ~isWeighted);
+                    guess = (weightedPrediction & isWeighted) | (JpegXlModularTransform.ClampedGradientWithoutBranch(west, north, northWest) & ~isWeighted);
                 }
                 else
                 {
@@ -726,20 +726,6 @@ internal static class JpegXlModularDecoder
         reader.SetState(bits, bitCount, position);
         state = new JpegXlWeightedPredictor.RowState(w0, w1, w2, w3, ww0, ww1, ww2, ww3, errorW, west);
         JpegXlWeightedPredictor.PredictEdge(ref sink, in parameters, ref state, last, y, above, twoAbove, errors);
-    }
-
-    /// <summary>The clamped gradient (<see cref="JpegXlModularTransform.ClampedGradient"/>) without a branch: which neighbor bounds it is not predictable.</summary>
-    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-    private static long ClampedGradient(long left, long top, long topLeft)
-    {
-        // The samples are 32-bit values: their differences do not overflow, and the gradient wraps as a 32-bit value does
-        var isLeftSmaller = (left - top) >> 63;
-        var min = (left & isLeftSmaller) | (top & ~isLeftSmaller);
-        var max = (top & isLeftSmaller) | (left & ~isLeftSmaller);
-        long gradient = unchecked((int)(left + top - topLeft));
-        var isAbove = (max - topLeft) >> 63;
-        var isBelow = (topLeft - min) >> 63;
-        return (min & isAbove) | (max & isBelow & ~isAbove) | (gradient & ~(isAbove | isBelow));
     }
 
     /// <summary>Gives the leaf of a sample, for <see cref="DecodeWeighted"/>.</summary>

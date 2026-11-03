@@ -1374,6 +1374,45 @@ public sealed class JpegXlDecoderTests
         }
     }
 
+    /// <summary>
+    /// The gradient and the select predictors computed without a branch give the predictions of the predictors of
+    /// <see cref="JpegXlModularTransform.Predict"/>, on random samples, on nearby samples and on the extreme 32-bit samples.
+    /// </summary>
+    [Fact]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void PredictorsWithoutBranchFollowThePredictors()
+    {
+        var random = new Random(7);
+        int[] extremes = [int.MinValue, int.MinValue + 1, -1, 0, 1, int.MaxValue - 1, int.MaxValue];
+        for (var i = 0; i < 100_000; i++)
+        {
+            long left;
+            long top;
+            long topLeft;
+            switch (i % 3)
+            {
+                case 0:
+                    left = random.Next(int.MinValue, int.MaxValue);
+                    top = random.Next(int.MinValue, int.MaxValue);
+                    topLeft = random.Next(int.MinValue, int.MaxValue);
+                    break;
+                case 1:
+                    left = random.Next(-8, 8);
+                    top = random.Next(-8, 8);
+                    topLeft = random.Next(-8, 8);
+                    break;
+                default:
+                    left = extremes[random.Next(extremes.Length)];
+                    top = extremes[random.Next(extremes.Length)];
+                    topLeft = extremes[random.Next(extremes.Length)];
+                    break;
+            }
+
+            Assert.Equal(JpegXlModularTransform.Predict(5, left, top, 0, topLeft, 0, 0, 0, 0), JpegXlModularTransform.ClampedGradientWithoutBranch(left, top, topLeft));
+            Assert.Equal(JpegXlModularTransform.Predict(4, left, top, 0, topLeft, 0, 0, 0, 0), JpegXlModularTransform.SelectWithoutBranch(left, top, topLeft));
+        }
+    }
+
     public static TheoryData<string> StillFiles =>
     [
         nameof(JpegXlTestFiles.Rgb),

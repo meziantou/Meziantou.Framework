@@ -244,7 +244,7 @@ internal sealed partial class Vp8LEncoder
     /// <paramref name="minimum"/> and at least 3 pixels long, or (0, 0); <paramref name="links"/> holds the triple links
     /// (<see cref="LinkTriples"/>).
     /// </summary>
-    private static (int Distance, int Length) SearchChain(ReadOnlySpan<uint> pixels, ReadOnlySpan<uint> links, int position, int width, int maxLength, int depth, int minimum)
+    internal static (int Distance, int Length) SearchChain(ReadOnlySpan<uint> pixels, ReadOnlySpan<uint> links, int position, int width, int maxLength, int depth, int minimum)
     {
         var bestLength = minimum;
         var bestDistance = 0;

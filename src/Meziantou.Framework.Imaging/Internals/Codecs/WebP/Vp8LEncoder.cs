@@ -1543,49 +1543,124 @@ internal sealed partial class Vp8LEncoder : IDisposable
     /// order, in a few steps. The links are computed from the last pixel to the first, so that the chain of the pixel being
     /// linked (its previous pixels) is still intact.
     /// </remarks>
-    private static void LinkTriples(ReadOnlySpan<uint> pixels, int hashBits, Span<uint> head, Span<uint> previous, int depth)
+    internal static void LinkTriples(ReadOnlySpan<uint> pixels, int hashBits, Span<uint> head, Span<uint> previous, int depth)
     {
         var count = pixels.Length;
         head.Fill(uint.MaxValue);
-        for (var position = 0; position < count; position++)
+        for (var i = 0; i < count; i++)
         {
-            if (position + 1 >= count)
+            if (i + 1 >= count)
             {
-                previous[position] = uint.MaxValue;
+                previous[i] = uint.MaxValue;
                 continue;
             }
 
-            var hash = (int)(((pixels[position] * 0x9E3779B1u) ^ (pixels[position + 1] * 0x85EBCA77u)) >> (32 - hashBits));
-            previous[position] = head[hash];
-            head[hash] = (uint)position;
+            var hash = (int)(((pixels[i] * 0x9E3779B1u) ^ (pixels[i + 1] * 0x85EBCA77u)) >> (32 - hashBits));
+            previous[i] = head[hash];
+            head[hash] = (uint)i;
         }
 
-        for (var position = count - 1; position >= 0; position--)
+        var position = count - 1;
+        for (; position >= 0 && position + 2 >= count; position--)
         {
-            uint link = 0;
-            if (position + 2 < count)
+            previous[position] = 0;
+        }
+
+        // Eight pixels at a time, their walks interleaved so that their memory accesses overlap: a walk only reads the chains
+        // of the pixels before its own, which are replaced after the eight links are found
+        for (; position >= 7; position -= 8)
+        {
+            var walk0 = new TripleWalk(pixels, previous, position);
+            var walk1 = new TripleWalk(pixels, previous, position - 1);
+            var walk2 = new TripleWalk(pixels, previous, position - 2);
+            var walk3 = new TripleWalk(pixels, previous, position - 3);
+            var walk4 = new TripleWalk(pixels, previous, position - 4);
+            var walk5 = new TripleWalk(pixels, previous, position - 5);
+            var walk6 = new TripleWalk(pixels, previous, position - 6);
+            var walk7 = new TripleWalk(pixels, previous, position - 7);
+            for (var entries = 1; entries <= depth; entries++)
             {
-                var first = pixels[position];
-                var second = pixels[position + 1];
-                var third = pixels[position + 2];
-                var candidate = previous[position];
-                for (var entries = 1; entries <= depth && candidate != uint.MaxValue; entries++)
-                {
-                    var distance = position - (int)candidate;
-                    if (distance > MaxDistance)
-                        break;
-
-                    if (pixels[(int)candidate + 2] == third && pixels[(int)candidate] == first && pixels[(int)candidate + 1] == second)
-                    {
-                        link = ((uint)entries << TripleLinkDistanceBits) | (uint)distance;
-                        break;
-                    }
-
-                    candidate = previous[(int)candidate];
-                }
+                var active = walk0.Step(pixels, previous, entries);
+                active |= walk1.Step(pixels, previous, entries);
+                active |= walk2.Step(pixels, previous, entries);
+                active |= walk3.Step(pixels, previous, entries);
+                active |= walk4.Step(pixels, previous, entries);
+                active |= walk5.Step(pixels, previous, entries);
+                active |= walk6.Step(pixels, previous, entries);
+                active |= walk7.Step(pixels, previous, entries);
+                if (!active)
+                    break;
             }
 
-            previous[position] = link;
+            previous[position] = walk0.Link;
+            previous[position - 1] = walk1.Link;
+            previous[position - 2] = walk2.Link;
+            previous[position - 3] = walk3.Link;
+            previous[position - 4] = walk4.Link;
+            previous[position - 5] = walk5.Link;
+            previous[position - 6] = walk6.Link;
+            previous[position - 7] = walk7.Link;
+        }
+
+        for (; position >= 0; position--)
+        {
+            var walk = new TripleWalk(pixels, previous, position);
+            for (var entries = 1; entries <= depth && walk.Step(pixels, previous, entries); entries++)
+            {
+            }
+
+            previous[position] = walk.Link;
+        }
+    }
+
+    /// <summary>The search of the triple link of a pixel along its hash chain (<see cref="LinkTriples"/>), one entry at a time.</summary>
+    [StructLayout(LayoutKind.Auto)]
+    private struct TripleWalk
+    {
+        private readonly int _position;
+        private readonly uint _first;
+        private readonly uint _second;
+        private readonly uint _third;
+        private uint _candidate;
+
+        public TripleWalk(ReadOnlySpan<uint> pixels, ReadOnlySpan<uint> previous, int position)
+        {
+            _position = position;
+            _first = pixels[position];
+            _second = pixels[position + 1];
+            _third = pixels[position + 2];
+            _candidate = previous[position];
+        }
+
+        /// <summary>Gets the triple link found, or zero.</summary>
+        public uint Link { get; private set; }
+
+        /// <summary>Compares the entry <paramref name="entries"/> of the chain and moves to the next one.</summary>
+        /// <returns><see langword="false"/> when the walk is over.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool Step(ReadOnlySpan<uint> pixels, ReadOnlySpan<uint> previous, int entries)
+        {
+            var candidate = _candidate;
+            if (candidate == uint.MaxValue)
+                return false;
+
+            var distance = _position - (int)candidate;
+            if (distance > MaxDistance)
+            {
+                _candidate = uint.MaxValue;
+                return false;
+            }
+
+            if (pixels[(int)candidate + 2] == _third && pixels[(int)candidate] == _first && pixels[(int)candidate + 1] == _second)
+            {
+                Link = ((uint)entries << TripleLinkDistanceBits) | (uint)distance;
+                _candidate = uint.MaxValue;
+                return false;
+            }
+
+            candidate = previous[(int)candidate];
+            _candidate = candidate;
+            return candidate != uint.MaxValue;
         }
     }
 

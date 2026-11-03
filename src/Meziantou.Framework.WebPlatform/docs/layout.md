@@ -1401,7 +1401,8 @@ formatting context (`ExclusionSpace`, owned by `BlockFormattingContextState`).
   (`inset(50%)`) has no effect (as in Blink and WebKit). A line that does not fit next to a float area is moved down by 1px
   steps (`ExclusionSpace.ShapeStep`, as in Blink: the space changes along the shape), and a line that was broken in the band
   of a taller line is laid out again in its own band, once. The float area of a box value of a box whose corners are shaped
-  by `corner-shape` is the polygon of its flattened contour (`CornerContour.GetShape` for the reference box; the corners
+  by `corner-shape` is the polygon of its flattened contour (`CornerContour.GetShape` for the reference box; the margin box is
+  shaped as a box of its own with the outset-adjusted radii, not as the border contour offset by the margin; the corners
   stay elliptical when the corner areas of the contour overlap). Not done: the rounding of `polygon()`.
 - In the columns of a multi-column container, a float that does not fit in what remains of a column is pushed to the next one
   (see [Multi-column layout and fragmentation](#multi-column-layout-and-fragmentation-csslayoutmulticol-csslayoutfragmentation)):
@@ -1657,7 +1658,8 @@ an atomic inline laid out while its parent collects its items rents another inst
   inline-end edges where it ends (`box-decoration-break: slice`), or on every line (`clone`: the line breaking reserves the
   space of the repeated edges, `GetClonedEdgesAtLineStart` and the `ClonesEdges` tags: the inline-start edges of the boxes
   that are open at the start of a line, the inline-end edges of the ones that are open where it ends; the parts of a box
-  split around blocks have them too), on the line-right side for a right-to-left box. The fragment of an inline box has the height of its content area (the ascent and descent of its first
+  split around blocks have them too, except a part without content, which keeps the edges of `slice`:
+  [csswg-drafts#14104](https://github.com/w3c/csswg-drafts/issues/14104)), on the line-right side for a right-to-left box. The fragment of an inline box has the height of its content area (the ascent and descent of its first
   available font) plus its block-axis paddings and borders, which do not change the line height. `text-box-trim` on an inline
   box ([CSS Inline §6.2](https://drafts.csswg.org/css-inline-3/#text-box-trim)) trims its content area to the metrics of
   `text-box-edge` (`InlineMetrics.GetOverEdge`/`GetUnderEdge`: text = ascent/descent, cap, ex, alphabetic = the alphabetic
@@ -1665,7 +1667,8 @@ an atomic inline laid out while its parent collects its items rents another inst
   ideographic-under/over baselines (`ideo`/`idtp`) and `ideographic-ink` the ideographic character face (`icfb`/`icft`), or
   the em box centered between the ascent and the descent for a font without ideographic baseline).
 - **Inline alignment**: `text-indent` (`hanging`, `each-line`, the percentages of the content box; not on an anonymous block
-  of a block container that is not its first child, the outside marker excepted; the anonymous flex and grid items are
+  of a block container that is not its first child, the outside marker excepted, except with `each-line`: the line after a
+  block-level box is indented; the anonymous flex and grid items are
   indented; the static position of an absolutely positioned box whose original display is inline-level is after the
   indentation of the first line, also in a block container without line, where it is the position of the content of an empty
   line box: beside the floats and aligned by `text-align`; a line without text has the direction of its block container, so the
@@ -4117,7 +4120,8 @@ laid out but hidden (`continue: collapse`, as Blink), and the container is sized
   (WPT `line-clamp-012`, `022`–`025`), its baselines are the ones of the content before the clamp point (the baselines of the
   clamped flex and grid items), and the ruby annotations under the last line and `text-box-trim` (the last line before the clamp
   point is the last formatted line, through the block-end edges of its ancestors) apply to it. The floats do not extend the block
-  size of a clamped container (`LineClamp.FloatsEnd` only extends a container that is not clamped). The absolutely positioned boxes
+  size of a line-clamp container, even when it is not clamped (WPT `line-clamp-with-floats-016`, `017`; `LineClamp.FloatsEnd`
+  only extends a legacy `-webkit-line-clamp` container that is not clamped). The absolutely positioned boxes
   are hidden when their containing block is (a box after the clamp point, an inline box that starts after it); the boxes whose
   containing block contains or precedes the clamp point are shown, even when their static position is after it.
 - **`block-ellipsis`** (`ellipsis` is U+2026, or a `<string>`; `no-ellipsis` and the empty string reserve nothing): the last line

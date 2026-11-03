@@ -291,12 +291,7 @@
     "reftest": "PASS"
   },
   "css/css-break/box-decoration-break-clone-block-in-inline-001.html": {
-    "total": 5,
-    "failures": {
-      "An empty inline box between two block level boxes does not add a line": "FAIL",
-      "The empty inline box between the two block level boxes has no size": "FAIL",
-      "Two block level boxes with only an empty inline box in-between are adjacent": "FAIL"
-    }
+    "total": 5
   },
   "css/css-break/box-decoration-break-clone-inline-001.html": {
     "reftest": "PASS"

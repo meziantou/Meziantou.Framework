@@ -336,8 +336,12 @@ internal static class FloatShapes
         {
             // https://drafts.csswg.org/css-borders-4/#corner-shape-rendering: the edges of a box whose corners are shaped by
             // corner-shape are its contour paths (the margin edge has the outset-adjusted radii): the float area is the polygon
-            // of the flattened contour. When the corner areas overlap, the contour is not one polygon: the corners stay elliptical
-            if (borderRadii is { } contourRadii && CornerContour.Create(style, new PhysicalRect(0, 0, size.Width, size.Height), contourRadii) is { } contour
+            // of the flattened contour. When the corner areas overlap, the contour is not one polygon: the corners stay elliptical.
+            // The margin box is shaped as a box of its own, with the outset-adjusted radii: its corners are not the curves of the
+            // border edge offset by the margin (a notch of the margin box is as deep as its radius, WPT
+            // css/css-borders/corner-shape/corner-shape-outside-margin-box.html)
+            var (contourRect, contourRadii) = referenceBox is null or "margin-box" ? (rect, radii) : (new PhysicalRect(0, 0, size.Width, size.Height), borderRadii);
+            if (contourRadii is { } cornerRadii && CornerContour.Create(style, contourRect, cornerRadii) is { } contour
                 && contour.GetShape(rect) is { Cutouts: null, Polygon: { Count: >= 3 } contourPolygon })
             {
                 var vertices = new (double X, double Y)[contourPolygon.Count];

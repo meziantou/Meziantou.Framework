@@ -351,13 +351,7 @@
     }
   },
   "css/css-borders/corner-shape/corner-shape-outside-margin-box.html": {
-    "total": 7,
-    "failures": {
-      "corner-shape: bevel with shape-outside: margin-box": "FAIL",
-      "corner-shape: notch with shape-outside: margin-box": "FAIL",
-      "corner-shape: scoop with shape-outside: margin-box": "FAIL",
-      "corner-shape: superellipse(-.8) with shape-outside: margin-box": "FAIL"
-    }
+    "total": 7
   },
   "css/css-borders/corner-shape/corner-shape-outside-padding-box.html": {
     "total": 7

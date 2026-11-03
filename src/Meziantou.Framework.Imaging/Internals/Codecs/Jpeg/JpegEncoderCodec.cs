@@ -514,6 +514,9 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         // The number of MCU rows that each worker transforms in a batch
         private const int RowsPerWorker = 4;
 
+        // The worst-case output of the blocks of a progressive scan coded by one call
+        private const int ProgressiveRunBytes = 32 * 1024;
+
         private readonly JpegMetadataWriter _metadata;
         private readonly int[] _predictions = new int[3];
         private readonly JpegProgressiveScanEncoder? _scanEncoder;
@@ -1051,11 +1054,12 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             var interleaved = scan.ComponentCount > 1;
             var rows = interleaved ? _mcusY : _coefficientPlanes[scan.FirstComponent]!.ScanBlockRows;
             var columns = interleaved ? _mcusX : _coefficientPlanes[scan.FirstComponent]!.ScanBlocksPerLine;
+            var blocksPerMcu = interleaved ? (_h * _v) + 2 : 1;
             var position = 0;
             switch (_scanPass)
             {
                 case ScanPass.Count:
-                    for (var x = 0; x < columns; x++)
+                    for (var x = 0; x < columns;)
                     {
                         var index = (_mcuRow * columns) + x;
                         if (IsRestartDue(index))
@@ -1063,7 +1067,9 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
                             scanEncoder.Restart(GetRestartNumber(index), default, ref position);
                         }
 
-                        CodeProgressiveMcu(scan, _mcuRow, x, default, ref position);
+                        var count = GetProgressiveRunLength(scan, index, columns - x, blocksPerMcu);
+                        CodeProgressiveMcus(scan, _mcuRow, x, count, default, ref position);
+                        x += count;
                     }
 
                     if (++_mcuRow < rows)
@@ -1086,7 +1092,6 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
                     return false;
             }
 
-            var blocksPerMcu = interleaved ? (_h * _v) + 2 : 1;
             var coded = 0;
             while (_mcuRow < rows)
             {
@@ -1099,17 +1104,18 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
                     // A restart first writes the pending run of blocks, which is bounded like the one a block can write
                     var index = (_mcuRow * columns) + _mcuX;
                     var restart = IsRestartDue(index);
-                    var span = output.GetSpan((blocksPerMcu + (restart ? 1 : 0)) * JpegProgressiveScanEncoder.MaxBlockBytes);
+                    var count = GetProgressiveRunLength(scan, index, columns - _mcuX, blocksPerMcu);
+                    var span = output.GetSpan(JpegProgressiveScanEncoder.GetMaxBytes(scan, count * blocksPerMcu) + (restart ? JpegProgressiveScanEncoder.MaxBlockBytes : 0));
                     position = 0;
                     if (restart)
                     {
                         scanEncoder.Restart(GetRestartNumber(index), span, ref position);
                     }
 
-                    CodeProgressiveMcu(scan, _mcuRow, _mcuX, span, ref position);
+                    CodeProgressiveMcus(scan, _mcuRow, _mcuX, count, span, ref position);
                     output.Advance(position);
-                    _mcuX++;
-                    coded++;
+                    _mcuX += count;
+                    coded += count;
                 }
 
                 _mcuX = 0;
@@ -1127,27 +1133,43 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             return _scanIndex == JpegProgressiveScanEncoder.GetScript(_grayscale).Length;
         }
 
-        /// <summary>Codes one MCU of a progressive scan: the blocks of every component for an interleaved scan, else one block (T.81 A.2).</summary>
-        private void CodeProgressiveMcu(JpegProgressiveScan scan, int row, int column, Span<byte> destination, ref int position)
+        /// <summary>
+        /// Gets the number of MCUs of a progressive scan coded by one call from the MCU <paramref name="index"/>: at most
+        /// <paramref name="remaining"/> (the rest of the line), the MCUs whose worst-case output fits in
+        /// <see cref="ProgressiveRunBytes"/>, and the MCUs before the next restart marker.
+        /// </summary>
+        private int GetProgressiveRunLength(JpegProgressiveScan scan, int index, int remaining, int blocksPerMcu)
+        {
+            var count = Math.Min(remaining, Math.Max(1, ProgressiveRunBytes / (blocksPerMcu * JpegProgressiveScanEncoder.GetMaxBlockBytes(scan))));
+            if (_restartInterval > 0)
+            {
+                count = Math.Min(count, _restartInterval - (index % _restartInterval));
+            }
+
+            return count;
+        }
+
+        /// <summary>Codes consecutive MCUs of a line of a progressive scan: the blocks of every component for an interleaved scan, else one block each (T.81 A.2).</summary>
+        private void CodeProgressiveMcus(JpegProgressiveScan scan, int row, int column, int count, Span<byte> destination, ref int position)
         {
             var scanEncoder = _scanEncoder!;
             if (scan.ComponentCount == 1)
             {
-                scanEncoder.CodeBlock(scan.FirstComponent, _coefficientPlanes[scan.FirstComponent]!.GetBlock(row, column), destination, ref position);
+                scanEncoder.CodeBlocks(scan.FirstComponent, _coefficientPlanes[scan.FirstComponent]!.GetBlocks(row, column, count), destination, ref position);
                 return;
             }
 
             var luminance = _coefficientPlanes[0]!;
-            for (var by = 0; by < _v; by++)
-            {
-                for (var bx = 0; bx < _h; bx++)
-                {
-                    scanEncoder.CodeBlock(0, luminance.GetBlock((row * _v) + by, (column * _h) + bx), destination, ref position);
-                }
-            }
-
-            scanEncoder.CodeBlock(1, _coefficientPlanes[1]!.GetBlock(row, column), destination, ref position);
-            scanEncoder.CodeBlock(2, _coefficientPlanes[2]!.GetBlock(row, column), destination, ref position);
+            scanEncoder.CodeInterleavedDcBlocks(
+                luminance.GetBlocks(row * _v, column * _h, count * _h),
+                _v == 2 ? luminance.GetBlocks((row * _v) + 1, column * _h, count * _h) : default,
+                _coefficientPlanes[1]!.GetBlocks(row, column, count),
+                _coefficientPlanes[2]!.GetBlocks(row, column, count),
+                _h,
+                _v,
+                count,
+                destination,
+                ref position);
         }
 
         /// <summary>Writes the DHT segment of the tables of a progressive scan: DC tables for a DC first scan, the AC table of the component otherwise.</summary>

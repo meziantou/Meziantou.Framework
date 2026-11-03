@@ -42,11 +42,15 @@ internal sealed class JpegCoefficientPlane : IDisposable
     public int ScanBlockRows { get; }
 
     /// <summary>Gets the 64 coefficients (zig-zag order) of a block of the grid.</summary>
-    public Span<short> GetBlock(int blockRow, int blockColumn)
+    public Span<short> GetBlock(int blockRow, int blockColumn) => GetBlocks(blockRow, blockColumn, 1);
+
+    /// <summary>Gets the coefficients of consecutive blocks of a line of the grid, 64 per block.</summary>
+    public Span<short> GetBlocks(int blockRow, int firstColumn, int count)
     {
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(count, BlocksPerLine - firstColumn);
         var buffer = (_buffer ?? throw new ObjectDisposedException(nameof(JpegCoefficientPlane))).RawBuffer;
-        var offset = ((blockRow * BlocksPerLine) + blockColumn) * 64 * sizeof(short);
-        return unsafe(MemoryMarshal.Cast<byte, short>(buffer.AsSpan(offset, 64 * sizeof(short))));
+        var offset = ((blockRow * BlocksPerLine) + firstColumn) * 64 * sizeof(short);
+        return unsafe(MemoryMarshal.Cast<byte, short>(buffer.AsSpan(offset, count * 64 * sizeof(short))));
     }
 
     public void Dispose()

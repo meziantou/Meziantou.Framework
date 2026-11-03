@@ -1793,21 +1793,63 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             var position = 0;
             WriteRestartIfDue(index, span, ref position);
             var writer = new JpegBlockBitWriter(span, position, _bits);
-            for (var mcuX = _mcuX; mcuX < _mcuX + count; mcuX++)
+            if (!stored && JpegForwardDct.UsesAvx512)
             {
-                if (stored)
+                TransformAndEncodeMcus(count, ref writer);
+            }
+            else
+            {
+                for (var mcuX = _mcuX; mcuX < _mcuX + count; mcuX++)
                 {
-                    EncodeStoredMcu(_mcuRow, mcuX, ref writer);
-                }
-                else
-                {
-                    EncodeMcu(mcuX, ref writer);
+                    if (stored)
+                    {
+                        EncodeStoredMcu(_mcuRow, mcuX, ref writer);
+                    }
+                    else
+                    {
+                        EncodeMcu(mcuX, ref writer);
+                    }
                 }
             }
 
             output.Advance(writer.Complete(ref _bits));
             _mcuX += count;
             return count;
+        }
+
+        /// <summary>
+        /// Transforms the blocks of <paramref name="count"/> MCUs of the loaded row of the only worker from <see cref="_mcuX"/>
+        /// into 16-bit coefficients (<see cref="TransformBlock"/>), then codes them: the transforms of consecutive blocks
+        /// overlap, which they do not when each block is coded right after its transform (measured with AVX-512).
+        /// </summary>
+        private void TransformAndEncodeMcus(int count, ref JpegBlockBitWriter writer)
+        {
+            var worker = _transformWorkers[0];
+            var run = worker.GetRun(count * _blocksPerMcu);
+            for (var mcu = 0; mcu < count; mcu++)
+            {
+                for (var block = 0; block < _blocksPerMcu; block++)
+                {
+                    TransformBlock(worker, _mcuX + mcu, block, run.Slice(((mcu * _blocksPerMcu) + block) * 64, 64));
+                }
+            }
+
+            var lumaBlocks = _h * _v;
+            for (var mcu = 0; mcu < count; mcu++)
+            {
+                for (var block = 0; block < _blocksPerMcu; block++)
+                {
+                    var coefficients = run.Slice(((mcu * _blocksPerMcu) + block) * 64, 64);
+                    if (block < lumaBlocks)
+                    {
+                        EncodeBlock<short>(ref writer, coefficients, component: 0, _luminanceDc, _luminanceAc);
+                    }
+                    else
+                    {
+                        EncodeBlock<short>(ref writer, coefficients, component: block - lumaBlocks + 1, _chrominanceDc!, _chrominanceAc!);
+                    }
+                }
+            }
         }
 
         /// <summary>Transforms and codes an MCU of the loaded row of the only worker.</summary>
@@ -2049,6 +2091,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             private PooledBuffer? _planeCb;
             private PooledBuffer? _planeCr;
             private PooledBuffer? _chromaRows;
+            private short[] _run = [];
 
             /// <param name="scope">The scope the buffers are rented from.</param>
             /// <param name="rowBytes">The size of the converted source row, or 0 when the source rows are used as they are.</param>
@@ -2103,6 +2146,18 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             public double[] Scratch { get; } = new double[64];
 
             public int[] Coefficients { get; } = new int[64];
+
+            /// <summary>Gets the coefficients of a run of blocks, transformed before they are coded (see <see cref="TransformAndEncodeMcus"/>).</summary>
+            /// <param name="blocks">The number of blocks.</param>
+            public Span<short> GetRun(int blocks)
+            {
+                if (_run.Length < blocks * 64)
+                {
+                    _run = new short[blocks * 64];
+                }
+
+                return _run.AsSpan(0, blocks * 64);
+            }
 
             public void Dispose()
             {

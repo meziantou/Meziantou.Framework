@@ -322,7 +322,7 @@ internal sealed class JpegProgressiveScanDecoder : JpegScanDecoder
                 cursor.Commit(reader);
                 if (Bmi2.X64.IsSupported)
                 {
-                    DecodeAcRefinementDeferred(table, block);
+                    DecodeAcRefinementDeferred(table, scanComponent.AcLookup, block);
                 }
                 else
                 {
@@ -669,9 +669,8 @@ internal sealed class JpegProgressiveScanDecoder : JpegScanDecoder
     /// (PDEP, in bit-reversed zig-zag order, where the first bit read is the highest), and the zero coefficient after a run is
     /// found by one deposit instead of a loop: the same bits are read in the same order, with the same errors.
     /// </summary>
-    private void DecodeAcRefinementDeferred(JpegHuffmanTable table, Span<short> block)
+    private void DecodeAcRefinementDeferred(JpegHuffmanTable table, int[] lookup, Span<short> block)
     {
-        var lookup = table.FastLookup;
         var reader = Reader;
         var cursor = reader.GetUncheckedCursor();
         var positive = 1 << _low;
@@ -680,6 +679,9 @@ internal sealed class JpegProgressiveScanDecoder : JpegScanDecoder
         var k = _start;
         var nonzero = GetNonzeroMask(block);
         var reversedNonzero = ReverseBits(nonzero);
+
+        // The zero coefficients of the band up to its end (the positions from k are taken at each symbol)
+        var zeroMask = ~nonzero & (ulong.MaxValue >> (63 - end));
 
         // The coefficients whose correction bit is set, at bit 63 - k for the zig-zag position k
         ulong corrections = 0;
@@ -711,7 +713,7 @@ internal sealed class JpegProgressiveScanDecoder : JpegScanDecoder
 
                     if ((symbol & 0x0F) == 1)
                     {
-                        sign = cursor.ReadBits(1) != 0 ? 1 : -1;
+                        sign = (cursor.ReadBits(1) << 1) - 1;
                     }
                 }
 
@@ -723,7 +725,9 @@ internal sealed class JpegProgressiveScanDecoder : JpegScanDecoder
                     if (size != 1)
                         throw Invalid("A JPEG AC refinement scan codes a magnitude other than 1.");
 
-                    value = sign > 0 ? positive : -positive;
+                    // 2^Al with the sign (1 or -1), without a branch on it
+                    var negative = sign >> 31;
+                    value = (positive ^ negative) - negative;
                 }
                 else if (run != 15)
                 {
@@ -732,11 +736,14 @@ internal sealed class JpegProgressiveScanDecoder : JpegScanDecoder
                     break;
                 }
 
-                // The zero coefficient after 'run' zero coefficients (16 for ZRL): the run + 1st zero of the band, if any
-                var zeros = ~nonzero & GetBandMask(k, end);
-                var next = run == 0 ? zeros : Bmi2.X64.ParallelBitDeposit(1UL << run, zeros);
-                var stop = next == 0 ? end + 1 : BitOperations.TrailingZeroCount(next);
-                corrections |= ReadCorrections(ref cursor, reversedNonzero & GetBandMask(63 - (stop - 1), 63 - k));
+                // The zero coefficient after 'run' zero coefficients (16 for ZRL): the run + 1st zero of the band from k,
+                // if any (k is at most 63 here; the trailing zero count of no bit is 64)
+                var next = Bmi2.X64.ParallelBitDeposit(1UL << run, zeroMask & (ulong.MaxValue << k));
+                var stop = Math.Min(BitOperations.TrailingZeroCount(next), end + 1);
+
+                // The nonzero coefficients from k to stop - 1: the bits 64 - stop to 63 - k of the reversed mask (none
+                // when stop is k)
+                corrections |= ReadCorrections(ref cursor, reversedNonzero & (ulong.MaxValue << (64 - stop)) & (ulong.MaxValue >> k));
                 k = stop;
                 if (value != 0)
                 {

@@ -508,7 +508,7 @@ public sealed class JpegEncoderTests
                 samples[i] = iteration % 3 == 0 ? random.Next(256) - 128 : (float)((random.NextDouble() * 255.5) - 128);
             }
 
-            JpegForwardDct.TransformAndQuantize(samples, divisors, scratch, coefficients);
+            JpegForwardDct.TransformAndQuantize(samples, 8, divisors, scratch, coefficients);
             for (var v = 0; v < 8; v++)
             {
                 for (var u = 0; u < 8; u++)

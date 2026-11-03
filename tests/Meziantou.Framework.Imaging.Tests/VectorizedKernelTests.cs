@@ -857,6 +857,10 @@ public sealed class VectorizedKernelTests
         var scratch = new double[64];
         var expected = new int[64];
         var actual = new int[64];
+
+        // The same block as rows of a plane (a stride above 8, the rows not contiguous)
+        const int Stride = 11;
+        var plane = new float[(7 * Stride) + 8];
         for (var round = 0; round < 20_000; round++)
         {
             for (var i = 0; i < 64; i++)
@@ -867,32 +871,44 @@ public sealed class VectorizedKernelTests
                 quantization[i] = (ushort)(round % 3 == 0 ? 1 : random.Next(1, 256));
             }
 
+            plane.AsSpan().Fill(float.NaN);
+            for (var y = 0; y < 8; y++)
+            {
+                samples.AsSpan(y * 8, 8).CopyTo(plane.AsSpan(y * Stride));
+            }
+
             JpegForwardDct.CreateDivisors(quantization, divisors);
-            JpegForwardDct.TransformAndQuantizeScalar(samples, divisors, scratch, expected);
-            JpegForwardDct.TransformAndQuantize(samples, divisors, scratch, actual);
-            Assert.Equal(expected, actual);
+            JpegForwardDct.TransformAndQuantizeScalar(samples, 8, divisors, scratch, expected);
+            AssertPath((samples, stride, coefficients) => JpegForwardDct.TransformAndQuantize(samples, stride, divisors, scratch, coefficients));
+            AssertPath((samples, stride, coefficients) => JpegForwardDct.TransformAndQuantizeScalar(samples, stride, divisors, scratch, coefficients));
             if (System.Runtime.Intrinsics.Vector128.IsHardwareAccelerated)
             {
-                Array.Clear(actual);
-                JpegForwardDct.TransformAndQuantizeVector128(samples, divisors, scratch, actual);
-                Assert.Equal(expected, actual);
+                AssertPath((samples, stride, coefficients) => JpegForwardDct.TransformAndQuantizeVector128(samples, stride, divisors, scratch, coefficients));
             }
 
             if (Avx2.IsSupported)
             {
-                Array.Clear(actual);
-                JpegForwardDct.TransformAndQuantizeAvx2(samples, divisors, scratch, actual);
-                Assert.Equal(expected, actual);
+                AssertPath((samples, stride, coefficients) => JpegForwardDct.TransformAndQuantizeAvx2(samples, stride, divisors, scratch, coefficients));
             }
 
             if (Avx512F.IsSupported)
             {
-                Array.Clear(actual);
-                JpegForwardDct.TransformAndQuantizeAvx512(samples, divisors, actual);
-                Assert.Equal(expected, actual);
+                AssertPath((samples, stride, coefficients) => JpegForwardDct.TransformAndQuantizeAvx512(samples, stride, divisors, coefficients));
             }
         }
+
+        void AssertPath(ForwardDct transform)
+        {
+            Array.Clear(actual);
+            transform(samples, 8, actual);
+            Assert.Equal(expected, actual);
+            Array.Clear(actual);
+            transform(plane, Stride, actual);
+            Assert.Equal(expected, actual);
+        }
     }
+
+    private delegate void ForwardDct(ReadOnlySpan<float> samples, int stride, Span<int> coefficients);
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]

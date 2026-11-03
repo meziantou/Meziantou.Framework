@@ -622,6 +622,10 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         private readonly int _mcusX;
         private readonly int _mcusY;
         private readonly int _planeWidth;
+
+        // The distance between two rows of a plane: an odd number of 64-byte cache lines, so that the rows of a block do not
+        // fall in the same sets of the data cache (plane widths are often a multiple of 4 KB)
+        private readonly int _planeStride;
         private readonly ushort[] _luminanceQuantization = new ushort[64];
         private readonly ushort[] _chrominanceQuantization = new ushort[64];
         private readonly double[] _luminanceDivisors = new double[64];
@@ -682,6 +686,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             _mcusX = (_width + (8 * _h) - 1) / (8 * _h);
             _mcusY = (_height + (8 * _v) - 1) / (8 * _v);
             _planeWidth = _mcusX * 8 * _h;
+            _planeStride = (((_planeWidth + 15) / 16) | 1) * 16;
             _blocksPerMcu = _grayscale ? 1 : (_h * _v) + 2;
             _restartInterval = _encoder.RestartInterval;
 
@@ -709,7 +714,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             _metadata = new JpegMetadataWriter(options.Metadata);
 
             // One MCU row of samples per component, at full resolution (chroma is box-filtered when blocks are extracted)
-            var planeBytes = (long)_planeWidth * 8 * _v * sizeof(float);
+            var planeBytes = (long)_planeStride * 8 * _v * sizeof(float);
             var rowBytes = (long)_width * PixelFormats.GetBytesPerPixel(_workFormat);
             if (planeBytes > CheckedSizes.MaxBufferLength || rowBytes > CheckedSizes.MaxBufferLength)
                 throw CheckedSizes.CreateOverflowException(options.Scope.Limits);
@@ -1140,25 +1145,42 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         /// <summary>Transforms and quantizes a block of an MCU of the loaded row of a worker, and stores its coefficients (zig-zag order).</summary>
         private void TransformBlock(TransformWorker worker, int mcuX, int block, Span<short> destination)
         {
+            // The samples are copied first: reading them from the plane rows, as the baseline coding does, measured slower here
             var coefficients = worker.Coefficients.AsSpan();
-            LoadBlock(worker, mcuX, block);
-            JpegForwardDct.TransformAndQuantize(worker.Block, block < _h * _v ? _luminanceDivisors : _chrominanceDivisors, worker.Scratch, coefficients);
+            var samples = GetBlockSamples(worker, mcuX, block, out var stride);
+            if (stride != 8)
+            {
+                ExtractBlock(samples, stride, x0: 0, y0: 0, factorX: 1, factorY: 1, worker.Block);
+                samples = worker.Block;
+            }
+
+            JpegForwardDct.TransformAndQuantize(samples, 8, block < _h * _v ? _luminanceDivisors : _chrominanceDivisors, worker.Scratch, coefficients);
             NarrowCoefficients(coefficients, destination);
         }
 
-        /// <summary>Copies the samples of a block of an MCU of the loaded row of a worker: the luma blocks in raster order, then the box-filtered Cb and Cr blocks.</summary>
-        private void LoadBlock(TransformWorker worker, int mcuX, int block)
+        /// <summary>
+        /// Gets the samples of a block of an MCU of the loaded row of a worker (the luma blocks in raster order, then the Cb
+        /// and Cr blocks): the rows of the plane, or the box-filtered chroma block copied to <see cref="TransformWorker.Block"/>.
+        /// </summary>
+        /// <param name="worker">The worker.</param>
+        /// <param name="mcuX">The MCU.</param>
+        /// <param name="block">The block of the MCU.</param>
+        /// <param name="stride">The distance between two rows of the samples.</param>
+        private ReadOnlySpan<float> GetBlockSamples(TransformWorker worker, int mcuX, int block, out int stride)
         {
             var x0 = mcuX * 8 * _h;
             var lumaBlocks = _h * _v;
+            stride = _planeStride;
             if (block < lumaBlocks)
-            {
-                ExtractBlock(worker.PlaneY, _planeWidth, x0 + (block % _h * 8), block / _h * 8, factorX: 1, factorY: 1, worker.Block);
-            }
-            else
-            {
-                ExtractBlock(block == lumaBlocks ? worker.PlaneCb : worker.PlaneCr, _planeWidth, x0, 0, _h, _v, worker.Block);
-            }
+                return worker.PlaneY[((block / _h * 8 * _planeStride) + x0 + (block % _h * 8))..];
+
+            var plane = block == lumaBlocks ? worker.PlaneCb : worker.PlaneCr;
+            if (_h == 1 && _v == 1)
+                return plane[x0..];
+
+            ExtractBlock(plane, _planeStride, x0, 0, _h, _v, worker.Block);
+            stride = 8;
+            return worker.Block;
         }
 
         /// <returns><see langword="true"/> when the last scan is written.</returns>
@@ -1393,7 +1415,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
                     source = converted;
                 }
 
-                var offset = r * _planeWidth;
+                var offset = r * _planeStride;
                 if (_grayscale)
                 {
                     ConvertGrayRow(source, planeY.Slice(offset, _planeWidth));
@@ -1434,32 +1456,27 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         {
             var position = 0;
             var worker = _transformWorkers[0];
-            var planeY = worker.PlaneY;
-            var x0 = mcuX * 8 * _h;
-            for (var by = 0; by < _v; by++)
+            var lumaBlocks = _h * _v;
+            for (var block = 0; block < _blocksPerMcu; block++)
             {
-                for (var bx = 0; bx < _h; bx++)
+                var samples = GetBlockSamples(worker, mcuX, block, out var stride);
+                if (block < lumaBlocks)
                 {
-                    ExtractBlock(planeY, _planeWidth, x0 + (bx * 8), by * 8, factorX: 1, factorY: 1, worker.Block);
-                    TransformAndEncodeBlock(worker, destination, ref position, component: 0, _luminanceDivisors, _luminanceDc, _luminanceAc);
+                    TransformAndEncodeBlock(worker, samples, stride, destination, ref position, component: 0, _luminanceDivisors, _luminanceDc, _luminanceAc);
                 }
-            }
-
-            if (!_grayscale)
-            {
-                ExtractBlock(worker.PlaneCb, _planeWidth, x0, 0, _h, _v, worker.Block);
-                TransformAndEncodeBlock(worker, destination, ref position, component: 1, _chrominanceDivisors, _chrominanceDc!, _chrominanceAc!);
-                ExtractBlock(worker.PlaneCr, _planeWidth, x0, 0, _h, _v, worker.Block);
-                TransformAndEncodeBlock(worker, destination, ref position, component: 2, _chrominanceDivisors, _chrominanceDc!, _chrominanceAc!);
+                else
+                {
+                    TransformAndEncodeBlock(worker, samples, stride, destination, ref position, component: block - lumaBlocks + 1, _chrominanceDivisors, _chrominanceDc!, _chrominanceAc!);
+                }
             }
 
             return position;
         }
 
-        private void TransformAndEncodeBlock(TransformWorker worker, Span<byte> destination, ref int position, int component, ReadOnlySpan<double> divisors, JpegHuffmanEncoder dc, JpegHuffmanEncoder ac)
+        private void TransformAndEncodeBlock(TransformWorker worker, ReadOnlySpan<float> samples, int stride, Span<byte> destination, ref int position, int component, ReadOnlySpan<double> divisors, JpegHuffmanEncoder dc, JpegHuffmanEncoder ac)
         {
             var coefficients = worker.Coefficients.AsSpan();
-            JpegForwardDct.TransformAndQuantize(worker.Block, divisors, worker.Scratch, coefficients);
+            JpegForwardDct.TransformAndQuantize(samples, stride, divisors, worker.Scratch, coefficients);
             EncodeBlock(destination, ref position, coefficients, component, dc, ac);
         }
 

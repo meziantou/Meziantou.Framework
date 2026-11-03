@@ -90,34 +90,35 @@ internal static class JpegForwardDct
     }
 
     /// <summary>Transforms and quantizes one block.</summary>
-    /// <param name="samples">64 level-shifted samples (natural order: <c>samples[y * 8 + x]</c>, nominally -128 to 127.5).</param>
+    /// <param name="samples">The 8 x 8 level-shifted samples (row by row: <c>samples[y * stride + x]</c>, nominally -128 to 127.5).</param>
+    /// <param name="stride">The distance between two rows of samples, at least 8.</param>
     /// <param name="divisors">The 64 quantization values of <see cref="CreateDivisors"/>.</param>
     /// <param name="scratch">64 doubles of scratch space.</param>
     /// <param name="coefficients">The 64 quantized coefficients, in zig-zag order.</param>
-    public static void TransformAndQuantize(ReadOnlySpan<float> samples, ReadOnlySpan<double> divisors, Span<double> scratch, Span<int> coefficients)
+    public static void TransformAndQuantize(ReadOnlySpan<float> samples, int stride, ReadOnlySpan<double> divisors, Span<double> scratch, Span<int> coefficients)
     {
         if (Vector512.IsHardwareAccelerated && Avx512F.IsSupported)
         {
-            TransformAndQuantizeAvx512(samples, divisors, coefficients);
+            TransformAndQuantizeAvx512(samples, stride, divisors, coefficients);
         }
         else if (Avx2.IsSupported)
         {
-            TransformAndQuantizeAvx2(samples, divisors, scratch, coefficients);
+            TransformAndQuantizeAvx2(samples, stride, divisors, scratch, coefficients);
         }
         else if (Vector128.IsHardwareAccelerated)
         {
-            TransformAndQuantizeVector128(samples, divisors, scratch, coefficients);
+            TransformAndQuantizeVector128(samples, stride, divisors, scratch, coefficients);
         }
         else
         {
-            TransformAndQuantizeScalar(samples, divisors, scratch, coefficients);
+            TransformAndQuantizeScalar(samples, stride, divisors, scratch, coefficients);
         }
     }
 
     /// <summary>The scalar reference of <see cref="TransformAndQuantize"/>.</summary>
-    internal static void TransformAndQuantizeScalar(ReadOnlySpan<float> samples, ReadOnlySpan<double> divisors, Span<double> scratch, Span<int> coefficients)
+    internal static void TransformAndQuantizeScalar(ReadOnlySpan<float> samples, int stride, ReadOnlySpan<double> divisors, Span<double> scratch, Span<int> coefficients)
     {
-        samples = samples[..64];
+        samples = samples[..((7 * stride) + 8)];
         divisors = divisors[..64];
         coefficients = coefficients[..64];
         var columns = scratch[..64];
@@ -126,7 +127,7 @@ internal static class JpegForwardDct
         for (var x = 0; x < 8; x++)
         {
             Transform(
-                samples[x], samples[8 + x], samples[16 + x], samples[24 + x], samples[32 + x], samples[40 + x], samples[48 + x], samples[56 + x],
+                samples[x], samples[stride + x], samples[(2 * stride) + x], samples[(3 * stride) + x], samples[(4 * stride) + x], samples[(5 * stride) + x], samples[(6 * stride) + x], samples[(7 * stride) + x],
                 columns.Slice(x * 8, 8));
         }
 
@@ -172,9 +173,9 @@ internal static class JpegForwardDct
     }
 
     /// <summary>The transform with <see cref="Vector128{T}"/>: two columns, then two rows, at once.</summary>
-    internal static void TransformAndQuantizeVector128(ReadOnlySpan<float> samples, ReadOnlySpan<double> divisors, Span<double> scratch, Span<int> coefficients)
+    internal static void TransformAndQuantizeVector128(ReadOnlySpan<float> samples, int stride, ReadOnlySpan<double> divisors, Span<double> scratch, Span<int> coefficients)
     {
-        samples = samples[..64];
+        samples = samples[..((7 * stride) + 8)];
         divisors = divisors[..64];
         coefficients = coefficients[..64];
         ref var source = ref unsafe(MemoryMarshal.GetReference(samples));
@@ -185,13 +186,13 @@ internal static class JpegForwardDct
         for (var x = 0; x < 8; x += 4)
         {
             var r0 = LoadSamples(ref source, x);
-            var r1 = LoadSamples(ref source, 8 + x);
-            var r2 = LoadSamples(ref source, 16 + x);
-            var r3 = LoadSamples(ref source, 24 + x);
-            var r4 = LoadSamples(ref source, 32 + x);
-            var r5 = LoadSamples(ref source, 40 + x);
-            var r6 = LoadSamples(ref source, 48 + x);
-            var r7 = LoadSamples(ref source, 56 + x);
+            var r1 = LoadSamples(ref source, stride + x);
+            var r2 = LoadSamples(ref source, (2 * stride) + x);
+            var r3 = LoadSamples(ref source, (3 * stride) + x);
+            var r4 = LoadSamples(ref source, (4 * stride) + x);
+            var r5 = LoadSamples(ref source, (5 * stride) + x);
+            var r6 = LoadSamples(ref source, (6 * stride) + x);
+            var r7 = LoadSamples(ref source, (7 * stride) + x);
             TransformColumns(Vector128.WidenLower(r0), Vector128.WidenLower(r1), Vector128.WidenLower(r2), Vector128.WidenLower(r3), Vector128.WidenLower(r4), Vector128.WidenLower(r5), Vector128.WidenLower(r6), Vector128.WidenLower(r7), ref unsafe(Unsafe.Add(ref columns, x * 8)));
             TransformColumns(Vector128.WidenUpper(r0), Vector128.WidenUpper(r1), Vector128.WidenUpper(r2), Vector128.WidenUpper(r3), Vector128.WidenUpper(r4), Vector128.WidenUpper(r5), Vector128.WidenUpper(r6), Vector128.WidenUpper(r7), ref unsafe(Unsafe.Add(ref columns, (x + 2) * 8)));
         }
@@ -341,9 +342,9 @@ internal static class JpegForwardDct
     /// per group of columns). The quantized values are clamped in double precision, which makes their conversion to 32-bit
     /// integers exact (x64 has no 64-bit integer conversion before AVX-512).
     /// </summary>
-    internal static void TransformAndQuantizeAvx2(ReadOnlySpan<float> samples, ReadOnlySpan<double> divisors, Span<double> scratch, Span<int> coefficients)
+    internal static void TransformAndQuantizeAvx2(ReadOnlySpan<float> samples, int stride, ReadOnlySpan<double> divisors, Span<double> scratch, Span<int> coefficients)
     {
-        samples = samples[..64];
+        samples = samples[..((7 * stride) + 8)];
         divisors = divisors[..64];
         coefficients = coefficients[..64];
         ref var source = ref unsafe(MemoryMarshal.GetReference(samples));
@@ -351,8 +352,8 @@ internal static class JpegForwardDct
         for (var x = 0; x < 8; x += 4)
         {
             Transform(
-                LoadSamples(ref source, x), LoadSamples(ref source, 8 + x), LoadSamples(ref source, 16 + x), LoadSamples(ref source, 24 + x),
-                LoadSamples(ref source, 32 + x), LoadSamples(ref source, 40 + x), LoadSamples(ref source, 48 + x), LoadSamples(ref source, 56 + x),
+                LoadSamples(ref source, x), LoadSamples(ref source, stride + x), LoadSamples(ref source, (2 * stride) + x), LoadSamples(ref source, (3 * stride) + x),
+                LoadSamples(ref source, (4 * stride) + x), LoadSamples(ref source, (5 * stride) + x), LoadSamples(ref source, (6 * stride) + x), LoadSamples(ref source, (7 * stride) + x),
                 out var c0, out var c1, out var c2, out var c3, out var c4, out var c5, out var c6, out var c7);
 
             // Lane k of output v is columns[(x + k) * 8 + v]
@@ -458,15 +459,15 @@ internal static class JpegForwardDct
     /// at once. The quantized values of the transposed order are reordered to the zig-zag order by two-source
     /// permutations of 16 values each (<see cref="ZigZagTransposedIndexes"/>).
     /// </summary>
-    internal static void TransformAndQuantizeAvx512(ReadOnlySpan<float> samples, ReadOnlySpan<double> divisors, Span<int> coefficients)
+    internal static void TransformAndQuantizeAvx512(ReadOnlySpan<float> samples, int stride, ReadOnlySpan<double> divisors, Span<int> coefficients)
     {
-        samples = samples[..64];
+        samples = samples[..((7 * stride) + 8)];
         divisors = divisors[..64];
         coefficients = coefficients[..64];
         ref var source = ref unsafe(MemoryMarshal.GetReference(samples));
         Transform(
-            LoadRow(ref source, 0), LoadRow(ref source, 8), LoadRow(ref source, 16), LoadRow(ref source, 24),
-            LoadRow(ref source, 32), LoadRow(ref source, 40), LoadRow(ref source, 48), LoadRow(ref source, 56),
+            LoadRow(ref source, 0), LoadRow(ref source, stride), LoadRow(ref source, 2 * stride), LoadRow(ref source, 3 * stride),
+            LoadRow(ref source, 4 * stride), LoadRow(ref source, 5 * stride), LoadRow(ref source, 6 * stride), LoadRow(ref source, 7 * stride),
             out var c0, out var c1, out var c2, out var c3, out var c4, out var c5, out var c6, out var c7);
 
         // Lane x of c_v is the output v of the column x; after the transposition, lane v of x_k is the output v of the column k

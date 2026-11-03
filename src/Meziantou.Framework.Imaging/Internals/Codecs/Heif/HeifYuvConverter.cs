@@ -2,6 +2,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -415,6 +416,12 @@ internal sealed class HeifYuvConverter
     internal bool HasVectorPath => _vectorKind is not VectorKind.None;
 
     /// <summary>
+    /// Gets whether the chroma planes are not subsampled: <see cref="UpsampleChromaRow"/> copies the chroma row of the luma row,
+    /// which the conversion can read in place.
+    /// </summary>
+    public bool HasFullResolutionChroma => _subX is 0;
+
+    /// <summary>
     /// Produces the chroma samples of a luma row at the resolution of the luma plane.
     /// </summary>
     /// <param name="image">The planes.</param>
@@ -608,6 +615,8 @@ internal sealed class HeifYuvConverter
             {
                 VectorKind.WideMatrix when alpha.IsEmpty => ConvertRowVectorWide(y, u, v, destination),
                 VectorKind.WideMatrix => ConvertRowVectorWideAlpha(y, u, v, alpha, destination),
+                VectorKind.Matrix when _layout is PixelFormat.Rgba32 => ConvertRowVectorRgba32(y, u, v, alpha, destination),
+                VectorKind.Matrix when _layout is PixelFormat.Rgb24 => ConvertRowVectorRgb24(y, u, v, destination),
                 _ => ConvertRowVector(y, u, v, alpha, destination),
             };
         }
@@ -675,6 +684,105 @@ internal sealed class HeifYuvConverter
                 Vector128.Shuffle(low.AsByte(), indices).CopyTo(destination[(3 * x)..]);
                 Vector128.Shuffle(high.AsByte(), indices).CopyTo(destination[((3 * x) + 12)..]);
             }
+        }
+
+        return x;
+    }
+
+    // ConvertRowVector for the Rgba32 pixels of a matrix, the pixels of an AVIF decoded to Rgba32: the coefficients in locals
+    // and the pixels converted 8 at a time in the lanes of Vector256 when it is accelerated (16 per loop), 4 at a time in the
+    // lanes of Vector128 otherwise (8 per loop), with the operations of ConvertPixels
+    private int ConvertRowVectorRgba32(ReadOnlySpan<ushort> y, ReadOnlySpan<ushort> u, ReadOnlySpan<ushort> v, ReadOnlySpan<ushort> alpha, Span<byte> destination)
+    {
+        var width = y.Length;
+        var hasAlpha = !alpha.IsEmpty;
+        var coefficients = new MatrixCoefficients((int)_cY, _yOffset, _cOffset, _cbR, _crR, _cbG, _crG, _cbB, _crB, _alphaFullRange, (int)_cAlpha, _alphaOffset);
+        var x = 0;
+        if (Vector256.IsHardwareAccelerated)
+        {
+            for (; x <= width - 16; x += 16)
+            {
+                var (yLow, yHigh) = Vector256.Widen(Vector256.Create(y[x..]));
+                var (uLow, uHigh) = Vector256.Widen(Vector256.Create(u[x..]));
+                var (vLow, vHigh) = Vector256.Widen(Vector256.Create(v[x..]));
+                Vector256<uint> alphaLow;
+                Vector256<uint> alphaHigh;
+                if (hasAlpha)
+                {
+                    (alphaLow, alphaHigh) = Vector256.Widen(Vector256.Create(alpha[x..]));
+                    alphaLow = coefficients.ConvertAlpha(alphaLow);
+                    alphaHigh = coefficients.ConvertAlpha(alphaHigh);
+                }
+                else
+                {
+                    alphaLow = alphaHigh = Vector256.Create(255u);
+                }
+
+                coefficients.Convert(yLow, uLow, vLow, alphaLow).AsByte().CopyTo(destination[(4 * x)..]);
+                coefficients.Convert(yHigh, uHigh, vHigh, alphaHigh).AsByte().CopyTo(destination[((4 * x) + 32)..]);
+            }
+        }
+
+        for (; x <= width - 8; x += 8)
+        {
+            var (yLow, yHigh) = Vector128.Widen(Vector128.Create(y[x..]));
+            var (uLow, uHigh) = Vector128.Widen(Vector128.Create(u[x..]));
+            var (vLow, vHigh) = Vector128.Widen(Vector128.Create(v[x..]));
+            Vector128<uint> alphaLow;
+            Vector128<uint> alphaHigh;
+            if (hasAlpha)
+            {
+                (alphaLow, alphaHigh) = Vector128.Widen(Vector128.Create(alpha[x..]));
+                alphaLow = coefficients.ConvertAlpha(alphaLow);
+                alphaHigh = coefficients.ConvertAlpha(alphaHigh);
+            }
+            else
+            {
+                alphaLow = alphaHigh = Vector128.Create(255u);
+            }
+
+            coefficients.Convert(yLow, uLow, vLow, alphaLow).AsByte().CopyTo(destination[(4 * x)..]);
+            coefficients.Convert(yHigh, uHigh, vHigh, alphaHigh).AsByte().CopyTo(destination[((4 * x) + 16)..]);
+        }
+
+        return x;
+    }
+
+    // ConvertRowVector for the Rgb24 pixels of a matrix, the pixels of an opaque AVIF: the coefficients in locals, and with AVX2
+    // the pixels converted 8 at a time in the lanes of Vector256 (16 per loop), whose halves drop the A of their 4 pixels.
+    // The 12 bytes of 4 pixels are written as 16 bytes: the last 4 are overwritten by the pixels that follow
+    private int ConvertRowVectorRgb24(ReadOnlySpan<ushort> y, ReadOnlySpan<ushort> u, ReadOnlySpan<ushort> v, Span<byte> destination)
+    {
+        var width = y.Length;
+        var coefficients = new MatrixCoefficients((int)_cY, _yOffset, _cOffset, _cbR, _crR, _cbG, _crG, _cbB, _crB, _alphaFullRange, (int)_cAlpha, _alphaOffset);
+        var indices = Vector128.Create((byte)0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14, 15, 15, 15, 15);
+        var x = 0;
+        if (Avx2.IsSupported)
+        {
+            var indices256 = Vector256.Create(indices, indices);
+            var opaque = Vector256.Create(255u);
+            for (; x <= width - 18; x += 16)
+            {
+                var (yLow, yHigh) = Vector256.Widen(Vector256.Create(y[x..]));
+                var (uLow, uHigh) = Vector256.Widen(Vector256.Create(u[x..]));
+                var (vLow, vHigh) = Vector256.Widen(Vector256.Create(v[x..]));
+                var low = Avx2.Shuffle(coefficients.Convert(yLow, uLow, vLow, opaque).AsByte(), indices256);
+                var high = Avx2.Shuffle(coefficients.Convert(yHigh, uHigh, vHigh, opaque).AsByte(), indices256);
+                low.GetLower().CopyTo(destination[(3 * x)..]);
+                low.GetUpper().CopyTo(destination[((3 * x) + 12)..]);
+                high.GetLower().CopyTo(destination[((3 * x) + 24)..]);
+                high.GetUpper().CopyTo(destination[((3 * x) + 36)..]);
+            }
+        }
+
+        var alpha = Vector128.Create(255u);
+        for (; x <= width - 10; x += 8)
+        {
+            var (yLow, yHigh) = Vector128.Widen(Vector128.Create(y[x..]));
+            var (uLow, uHigh) = Vector128.Widen(Vector128.Create(u[x..]));
+            var (vLow, vHigh) = Vector128.Widen(Vector128.Create(v[x..]));
+            Vector128.Shuffle(coefficients.Convert(yLow, uLow, vLow, alpha).AsByte(), indices).CopyTo(destination[(3 * x)..]);
+            Vector128.Shuffle(coefficients.Convert(yHigh, uHigh, vHigh, alpha).AsByte(), indices).CopyTo(destination[((3 * x) + 12)..]);
         }
 
         return x;
@@ -973,6 +1081,64 @@ internal sealed class HeifYuvConverter
         => alpha is 0 ? 0 : (int)Math.Min(_outputMax, (((long)color * _outputMax) + (alpha / 2)) / alpha);
 
     private int Clip(long value) => (int)Math.Clamp(value, 0, _outputMax);
+
+    // The coefficients of ConvertPixels and ConvertAlpha in locals of ConvertRowVectorRgba32, with their operations on Vector128
+    // and Vector256
+    [StructLayout(LayoutKind.Auto)]
+    private readonly struct MatrixCoefficients(int y, int yOffset, int cOffset, int cbR, int crR, int cbG, int crG, int cbB, int crB, bool alphaFullRange, int alpha, int alphaOffset)
+    {
+        // Four pixels of 8-bit R, G, B and A in the bytes of their 32-bit lanes
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Vector128<uint> Convert(Vector128<uint> ySample, Vector128<uint> uSample, Vector128<uint> vSample, Vector128<uint> alphaSample)
+        {
+            var luma = (Vector128.Create(y) * (ySample.AsInt32() - Vector128.Create(yOffset))) + Vector128.Create((int)Half);
+            var cb = uSample.AsInt32() - Vector128.Create(cOffset);
+            var cr = vSample.AsInt32() - Vector128.Create(cOffset);
+            var r = ClipToByte((luma + (cb * cbR) + (cr * crR)) >> 16);
+            var g = ClipToByte((luma + (cb * cbG) + (cr * crG)) >> 16);
+            var b = ClipToByte((luma + (cb * cbB) + (cr * crB)) >> 16);
+            return r | (g << 8) | (b << 16) | (alphaSample << 24);
+        }
+
+        // Convert on 8 pixels
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Vector256<uint> Convert(Vector256<uint> ySample, Vector256<uint> uSample, Vector256<uint> vSample, Vector256<uint> alphaSample)
+        {
+            var luma = (Vector256.Create(y) * (ySample.AsInt32() - Vector256.Create(yOffset))) + Vector256.Create((int)Half);
+            var cb = uSample.AsInt32() - Vector256.Create(cOffset);
+            var cr = vSample.AsInt32() - Vector256.Create(cOffset);
+            var r = ClipToByte((luma + (cb * cbR) + (cr * crR)) >> 16);
+            var g = ClipToByte((luma + (cb * cbG) + (cr * crG)) >> 16);
+            var b = ClipToByte((luma + (cb * cbB) + (cr * crB)) >> 16);
+            return r | (g << 8) | (b << 16) | (alphaSample << 24);
+        }
+
+        // ConvertAlpha
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Vector128<uint> ConvertAlpha(Vector128<uint> sample)
+        {
+            if (alphaFullRange)
+                return sample;
+
+            return ClipToByte(((Vector128.Create(alpha) * (sample.AsInt32() - Vector128.Create(alphaOffset))) + Vector128.Create((int)Half)) >> 16);
+        }
+
+        // ConvertAlpha on 8 pixels
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Vector256<uint> ConvertAlpha(Vector256<uint> sample)
+        {
+            if (alphaFullRange)
+                return sample;
+
+            return ClipToByte(((Vector256.Create(alpha) * (sample.AsInt32() - Vector256.Create(alphaOffset))) + Vector256.Create((int)Half)) >> 16);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector128<uint> ClipToByte(Vector128<int> value) => Vector128.Min(Vector128.Max(value, Vector128<int>.Zero), Vector128.Create(255)).AsUInt32();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector256<uint> ClipToByte(Vector256<int> value) => Vector256.Min(Vector256.Max(value, Vector256<int>.Zero), Vector256.Create(255)).AsUInt32();
+    }
 
     // The coefficients of ConvertRowVectorWide, in locals of the loop
     [StructLayout(LayoutKind.Auto)]

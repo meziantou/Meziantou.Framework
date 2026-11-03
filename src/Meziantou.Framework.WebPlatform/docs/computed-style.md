@@ -561,8 +561,8 @@ like the imported style sheets (`DocumentRequest.Initiator` is null), when the d
   `frameset`, `input`, `textarea`, `select`), an `audio` element without `controls` computes to `none` when scripting is
   enabled (it is [not exposing a user interface](https://html.spec.whatwg.org/multipage/rendering.html#embedded-content-rendering-rules)), and a `textarea` is an `inline-block`), `overflow` (the resolved value of `visible` is `auto` when the
   other axis is neither `visible` nor `clip`), `overflow-clip-margin` (the default `padding-box` and a zero length are omitted),
-  the box alignment properties (`first baseline` is `baseline`, `justify-items: legacy` takes the inherited legacy position
-  or is `normal`, `place-content: baseline` sets `justify-content` to `start`), the gaps (clamped to zero),
+  the box alignment properties (`first baseline` is `baseline`, `flex-start` and `flex-end` are `flow-start` and `flow-end`,
+  `justify-items: legacy` takes the inherited legacy position or is `normal`, `place-content: baseline` sets `justify-content` to `start`), the gaps (clamped to zero),
   the filter functions of `filter` and `backdrop-filter` (default arguments, percentages as numbers, amounts clamped),
   the shorthands `white-space` (the legacy keywords and the combinations of `white-space-collapse` and `text-wrap-mode`) and
   `vertical-align` (`baseline-source`, `alignment-baseline`, `baseline-shift`), `text-emphasis-style` (the omitted shape is

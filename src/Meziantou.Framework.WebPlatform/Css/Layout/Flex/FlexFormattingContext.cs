@@ -64,10 +64,11 @@ internal sealed class FlexFormattingContext : FormattingContext
         // max-content inline size is the sum of the cross sizes of the lines (as in the browsers)
         if (properties.IsMultiLine)
         {
-            // The lines of a container with an indefinite block size break at its maximum block size, when it is a length
-            double? maxContentBlockSize = null;
+            // The lines of a container with an indefinite block size break at its maximum block size, when it is definite (a
+            // length, or a percentage of a definite block size: WPT css/css-flexbox/intrinsic-size/col-wrap-dynamic.html)
+            var maxContentBlockSize = input.ContentBlockSize is null ? input.MaxBlockSize : null;
             var boxModel = layout.Box;
-            if (input.ContentBlockSize is null && boxModel.GetMaxSize(!writingDirection.IsHorizontal) is { IsLengthPercentage: true, Value.HasPercentage: false } maxBlockSize)
+            if (input.ContentBlockSize is null && maxContentBlockSize is null && boxModel.GetMaxSize(!writingDirection.IsHorizontal) is { IsLengthPercentage: true, Value.HasPercentage: false } maxBlockSize)
             {
                 var edges = layout.BoxSizing == BoxSizing.BorderBox ? writingDirection.ToLogical(ResolvePadding(boxModel, 0).Add(boxModel.BorderWidth)).BlockSum() : 0;
                 maxContentBlockSize = Math.Max(0, maxBlockSize.Value.Resolve(0) - edges);

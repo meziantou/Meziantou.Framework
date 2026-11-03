@@ -11,8 +11,8 @@ description: "The results of the web-platform-tests of css/css-sizing, and why t
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 192 | 201 | 0 | 96% |
 | [Tentative](#tentative-tests) | 7 | 7 | 0 | 100% |
-| [Reftests](#reftests) | 552 | 569 | 0 | 97% |
-| **All** | **751** | **777** | **0** | **97%** |
+| [Reftests](#reftests) | 553 | 569 | 0 | 97% |
+| **All** | **752** | **777** | **0** | **97%** |
 
 ## Stable tests
 
@@ -795,7 +795,7 @@ description: "The results of the web-platform-tests of css/css-sizing, and why t
 | [`stretch/stretch-quirk-001.html`](https://wpt.fyi/results/css/css-sizing/stretch/stretch-quirk-001.html) | Pass | 1 / 1 |  |  |
 | [`stretch/stretch-quirk-002.html`](https://wpt.fyi/results/css/css-sizing/stretch/stretch-quirk-002.html) | Pass | 1 / 1 |  |  |
 | [`svg-intrinsic-size-005.html`](https://wpt.fyi/results/css/css-sizing/svg-intrinsic-size-005.html) | Pass | 1 / 1 |  |  |
-| [`svg-intrinsic-size-006.html`](https://wpt.fyi/results/css/css-sizing/svg-intrinsic-size-006.html) | Fail | 0 / 1 | BUG | the max-content contribution of an `<svg>` with a cyclic percentage width (`width: 10%`) and only an aspect ratio (`viewBox` or `aspect-ratio`) is 0 instead of the default object width (300px): the `width: max-content` container and the svg are 0px wide instead of 300px and 30px |
+| [`svg-intrinsic-size-006.html`](https://wpt.fyi/results/css/css-sizing/svg-intrinsic-size-006.html) | Pass | 1 / 1 |  |  |
 | [`svg-intrinsic-size-007.tentative.html`](https://wpt.fyi/results/css/css-sizing/svg-intrinsic-size-007.tentative.html) | Pass | 1 / 1 |  |  |
 | [`svg-no-ar-max-height-min-content.html`](https://wpt.fyi/results/css/css-sizing/svg-no-ar-max-height-min-content.html) | Pass | 1 / 1 |  |  |
 | [`svg-no-ar-min-height-min-content.html`](https://wpt.fyi/results/css/css-sizing/svg-no-ar-min-height-min-content.html) | Pass | 1 / 1 |  |  |

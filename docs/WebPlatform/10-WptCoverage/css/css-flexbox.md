@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of css/css-flexbox, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 367 | 376 | 0 | 98% |
+| [Stable](#stable-tests) | 375 | 376 | 0 | 99.7% |
 | [Tentative](#tentative-tests) | 6 | 6 | 0 | 100% |
-| [Reftests](#reftests) | 1,015 | 1,023 | 0 | 99% |
-| **All** | **1,388** | **1,405** | **0** | **99%** |
+| [Reftests](#reftests) | 1,018 | 1,023 | 0 | 99.5% |
+| **All** | **1,399** | **1,405** | **0** | **99.5%** |
 
 ## Stable tests
 
@@ -198,20 +198,20 @@ description: "The results of the web-platform-tests of css/css-flexbox, and why 
 | [`gap-017.html`](https://wpt.fyi/results/css/css-flexbox/gap-017.html) | Pass | 1 / 1 |  |  |
 | [`gap-018.html`](https://wpt.fyi/results/css/css-flexbox/gap-018.html) | Pass | 1 / 1 |  |  |
 | [`getcomputedstyle/flexbox_computedstyle_align-content-center.html`](https://wpt.fyi/results/css/css-flexbox/getcomputedstyle/flexbox_computedstyle_align-content-center.html) | Pass | 1 / 1 |  |  |
-| [`getcomputedstyle/flexbox_computedstyle_align-content-flex-end.html`](https://wpt.fyi/results/css/css-flexbox/getcomputedstyle/flexbox_computedstyle_align-content-flex-end.html) | Fail | 0 / 1 | TEST BUG | outdated test: `flex-start`/`flex-end` are expected to compute to `flow-start`/`flow-end` (every browser fails it) |
-| [`getcomputedstyle/flexbox_computedstyle_align-content-flex-start.html`](https://wpt.fyi/results/css/css-flexbox/getcomputedstyle/flexbox_computedstyle_align-content-flex-start.html) | Fail | 0 / 1 | TEST BUG | outdated test: `flex-start`/`flex-end` are expected to compute to `flow-start`/`flow-end` (every browser fails it) |
+| [`getcomputedstyle/flexbox_computedstyle_align-content-flex-end.html`](https://wpt.fyi/results/css/css-flexbox/getcomputedstyle/flexbox_computedstyle_align-content-flex-end.html) | Pass | 1 / 1 |  |  |
+| [`getcomputedstyle/flexbox_computedstyle_align-content-flex-start.html`](https://wpt.fyi/results/css/css-flexbox/getcomputedstyle/flexbox_computedstyle_align-content-flex-start.html) | Pass | 1 / 1 |  |  |
 | [`getcomputedstyle/flexbox_computedstyle_align-content-space-around.html`](https://wpt.fyi/results/css/css-flexbox/getcomputedstyle/flexbox_computedstyle_align-content-space-around.html) | Pass | 1 / 1 |  |  |
 | [`getcomputedstyle/flexbox_computedstyle_align-content-space-between.html`](https://wpt.fyi/results/css/css-flexbox/getcomputedstyle/flexbox_computedstyle_align-content-space-between.html) | Pass | 1 / 1 |  |  |
 | [`getcomputedstyle/flexbox_computedstyle_align-items-baseline.html`](https://wpt.fyi/results/css/css-flexbox/getcomputedstyle/flexbox_computedstyle_align-items-baseline.html) | Pass | 1 / 1 |  |  |
 | [`getcomputedstyle/flexbox_computedstyle_align-items-center.html`](https://wpt.fyi/results/css/css-flexbox/getcomputedstyle/flexbox_computedstyle_align-items-center.html) | Pass | 1 / 1 |  |  |
-| [`getcomputedstyle/flexbox_computedstyle_align-items-flex-end.html`](https://wpt.fyi/results/css/css-flexbox/getcomputedstyle/flexbox_computedstyle_align-items-flex-end.html) | Fail | 0 / 1 | TEST BUG | outdated test: `flex-start`/`flex-end` are expected to compute to `flow-start`/`flow-end` (every browser fails it) |
-| [`getcomputedstyle/flexbox_computedstyle_align-items-flex-start.html`](https://wpt.fyi/results/css/css-flexbox/getcomputedstyle/flexbox_computedstyle_align-items-flex-start.html) | Fail | 0 / 1 | TEST BUG | outdated test: `flex-start`/`flex-end` are expected to compute to `flow-start`/`flow-end` (every browser fails it) |
+| [`getcomputedstyle/flexbox_computedstyle_align-items-flex-end.html`](https://wpt.fyi/results/css/css-flexbox/getcomputedstyle/flexbox_computedstyle_align-items-flex-end.html) | Pass | 1 / 1 |  |  |
+| [`getcomputedstyle/flexbox_computedstyle_align-items-flex-start.html`](https://wpt.fyi/results/css/css-flexbox/getcomputedstyle/flexbox_computedstyle_align-items-flex-start.html) | Pass | 1 / 1 |  |  |
 | [`getcomputedstyle/flexbox_computedstyle_align-items-invalid.html`](https://wpt.fyi/results/css/css-flexbox/getcomputedstyle/flexbox_computedstyle_align-items-invalid.html) | Pass | 1 / 1 |  |  |
 | [`getcomputedstyle/flexbox_computedstyle_align-items-stretch.html`](https://wpt.fyi/results/css/css-flexbox/getcomputedstyle/flexbox_computedstyle_align-items-stretch.html) | Pass | 1 / 1 |  |  |
 | [`getcomputedstyle/flexbox_computedstyle_align-self-baseline.html`](https://wpt.fyi/results/css/css-flexbox/getcomputedstyle/flexbox_computedstyle_align-self-baseline.html) | Pass | 1 / 1 |  |  |
 | [`getcomputedstyle/flexbox_computedstyle_align-self-center.html`](https://wpt.fyi/results/css/css-flexbox/getcomputedstyle/flexbox_computedstyle_align-self-center.html) | Pass | 1 / 1 |  |  |
-| [`getcomputedstyle/flexbox_computedstyle_align-self-flex-end.html`](https://wpt.fyi/results/css/css-flexbox/getcomputedstyle/flexbox_computedstyle_align-self-flex-end.html) | Fail | 0 / 1 | TEST BUG | outdated test: `flex-start`/`flex-end` are expected to compute to `flow-start`/`flow-end` (every browser fails it) |
-| [`getcomputedstyle/flexbox_computedstyle_align-self-flex-start.html`](https://wpt.fyi/results/css/css-flexbox/getcomputedstyle/flexbox_computedstyle_align-self-flex-start.html) | Fail | 0 / 1 | TEST BUG | outdated test: `flex-start`/`flex-end` are expected to compute to `flow-start`/`flow-end` (every browser fails it) |
+| [`getcomputedstyle/flexbox_computedstyle_align-self-flex-end.html`](https://wpt.fyi/results/css/css-flexbox/getcomputedstyle/flexbox_computedstyle_align-self-flex-end.html) | Pass | 1 / 1 |  |  |
+| [`getcomputedstyle/flexbox_computedstyle_align-self-flex-start.html`](https://wpt.fyi/results/css/css-flexbox/getcomputedstyle/flexbox_computedstyle_align-self-flex-start.html) | Pass | 1 / 1 |  |  |
 | [`getcomputedstyle/flexbox_computedstyle_align-self-invalid.html`](https://wpt.fyi/results/css/css-flexbox/getcomputedstyle/flexbox_computedstyle_align-self-invalid.html) | Pass | 1 / 1 |  |  |
 | [`getcomputedstyle/flexbox_computedstyle_align-self-stretch.html`](https://wpt.fyi/results/css/css-flexbox/getcomputedstyle/flexbox_computedstyle_align-self-stretch.html) | Pass | 1 / 1 |  |  |
 | [`getcomputedstyle/flexbox_computedstyle_display-inline.html`](https://wpt.fyi/results/css/css-flexbox/getcomputedstyle/flexbox_computedstyle_display-inline.html) | Pass | 1 / 1 |  |  |
@@ -260,8 +260,8 @@ description: "The results of the web-platform-tests of css/css-flexbox, and why 
 | [`getcomputedstyle/flexbox_computedstyle_flex-wrap-wrap-reverse.html`](https://wpt.fyi/results/css/css-flexbox/getcomputedstyle/flexbox_computedstyle_flex-wrap-wrap-reverse.html) | Pass | 1 / 1 |  |  |
 | [`getcomputedstyle/flexbox_computedstyle_flex-wrap-wrap.html`](https://wpt.fyi/results/css/css-flexbox/getcomputedstyle/flexbox_computedstyle_flex-wrap-wrap.html) | Pass | 1 / 1 |  |  |
 | [`getcomputedstyle/flexbox_computedstyle_justify-content-center.html`](https://wpt.fyi/results/css/css-flexbox/getcomputedstyle/flexbox_computedstyle_justify-content-center.html) | Pass | 1 / 1 |  |  |
-| [`getcomputedstyle/flexbox_computedstyle_justify-content-flex-end.html`](https://wpt.fyi/results/css/css-flexbox/getcomputedstyle/flexbox_computedstyle_justify-content-flex-end.html) | Fail | 0 / 1 | TEST BUG | outdated test: `flex-start`/`flex-end` are expected to compute to `flow-start`/`flow-end` (every browser fails it) |
-| [`getcomputedstyle/flexbox_computedstyle_justify-content-flex-start.html`](https://wpt.fyi/results/css/css-flexbox/getcomputedstyle/flexbox_computedstyle_justify-content-flex-start.html) | Fail | 0 / 1 | TEST BUG | outdated test: `flex-start`/`flex-end` are expected to compute to `flow-start`/`flow-end` (every browser fails it) |
+| [`getcomputedstyle/flexbox_computedstyle_justify-content-flex-end.html`](https://wpt.fyi/results/css/css-flexbox/getcomputedstyle/flexbox_computedstyle_justify-content-flex-end.html) | Pass | 1 / 1 |  |  |
+| [`getcomputedstyle/flexbox_computedstyle_justify-content-flex-start.html`](https://wpt.fyi/results/css/css-flexbox/getcomputedstyle/flexbox_computedstyle_justify-content-flex-start.html) | Pass | 1 / 1 |  |  |
 | [`getcomputedstyle/flexbox_computedstyle_justify-content-space-around.html`](https://wpt.fyi/results/css/css-flexbox/getcomputedstyle/flexbox_computedstyle_justify-content-space-around.html) | Pass | 1 / 1 |  |  |
 | [`getcomputedstyle/flexbox_computedstyle_justify-content-space-between.html`](https://wpt.fyi/results/css/css-flexbox/getcomputedstyle/flexbox_computedstyle_justify-content-space-between.html) | Pass | 1 / 1 |  |  |
 | [`getcomputedstyle/flexbox_computedstyle_min-auto-size.html`](https://wpt.fyi/results/css/css-flexbox/getcomputedstyle/flexbox_computedstyle_min-auto-size.html) | Pass | 4 / 4 |  |  |
@@ -479,7 +479,7 @@ description: "The results of the web-platform-tests of css/css-flexbox, and why 
 | [`align-self-012.html`](https://wpt.fyi/results/css/css-flexbox/align-self-012.html) | Pass | 1 / 1 |  |  |
 | [`align-self-013.html`](https://wpt.fyi/results/css/css-flexbox/align-self-013.html) | Pass | 1 / 1 |  |  |
 | [`align-self-015.html`](https://wpt.fyi/results/css/css-flexbox/align-self-015.html) | Pass | 1 / 1 |  |  |
-| [`align-self-016.html`](https://wpt.fyi/results/css/css-flexbox/align-self-016.html) | Fail | 0 / 1 | BUG | an item with `align-self: start` in a column wrap container keeps the cross size of its fit-content size in the inner cross size of the container (its hypothetical cross size, https://drafts.csswg.org/css-flexbox-1/#algo-cross-item) when its line is wider than the container (another item is 200px wide in a 100px container); the test expects the item to be fitted again in the cross size of its line (only Chrome passes it) |
+| [`align-self-016.html`](https://wpt.fyi/results/css/css-flexbox/align-self-016.html) | Pass | 1 / 1 |  |  |
 | [`alignment/flex-align-baseline-column-rtl-direction.html`](https://wpt.fyi/results/css/css-flexbox/alignment/flex-align-baseline-column-rtl-direction.html) | Pass | 1 / 1 |  |  |
 | [`alignment/flex-align-baseline-column-vert-lr-rtl-wrap-reverse.html`](https://wpt.fyi/results/css/css-flexbox/alignment/flex-align-baseline-column-vert-lr-rtl-wrap-reverse.html) | Pass | 1 / 1 |  |  |
 | [`alignment/flex-align-baseline-column-vert-rl-rtl-wrap-reverse.html`](https://wpt.fyi/results/css/css-flexbox/alignment/flex-align-baseline-column-vert-rl-rtl-wrap-reverse.html) | Pass | 1 / 1 |  |  |
@@ -1291,7 +1291,7 @@ description: "The results of the web-platform-tests of css/css-flexbox, and why 
 | [`intrinsic-size/col-wrap-016.html`](https://wpt.fyi/results/css/css-flexbox/intrinsic-size/col-wrap-016.html) | Pass | 1 / 1 |  |  |
 | [`intrinsic-size/col-wrap-017.html`](https://wpt.fyi/results/css/css-flexbox/intrinsic-size/col-wrap-017.html) | Pass | 1 / 1 |  |  |
 | [`intrinsic-size/col-wrap-020.html`](https://wpt.fyi/results/css/css-flexbox/intrinsic-size/col-wrap-020.html) | Pass | 1 / 1 |  |  |
-| [`intrinsic-size/col-wrap-dynamic.html`](https://wpt.fyi/results/css/css-flexbox/intrinsic-size/col-wrap-dynamic.html) | Fail | 0 / 1 | BUG | the max-content inline size of a multi-line column container whose block size is indefinite and whose maximum block size is a percentage (`max-height: 100%` of a definite height): the lines are broken at the maximum block size for the intrinsic size only when it is a length, so the container is as wide as one line (only Chrome passes this test) |
+| [`intrinsic-size/col-wrap-dynamic.html`](https://wpt.fyi/results/css/css-flexbox/intrinsic-size/col-wrap-dynamic.html) | Pass | 1 / 1 |  |  |
 | [`intrinsic-size/row-001.html`](https://wpt.fyi/results/css/css-flexbox/intrinsic-size/row-001.html) | Pass | 1 / 1 |  |  |
 | [`intrinsic-size/row-002.html`](https://wpt.fyi/results/css/css-flexbox/intrinsic-size/row-002.html) | Pass | 1 / 1 |  |  |
 | [`intrinsic-size/row-003.html`](https://wpt.fyi/results/css/css-flexbox/intrinsic-size/row-003.html) | Pass | 1 / 1 |  |  |
@@ -1390,7 +1390,7 @@ description: "The results of the web-platform-tests of css/css-flexbox, and why 
 | [`stretched-child-in-nested-flexbox-002.html`](https://wpt.fyi/results/css/css-flexbox/stretched-child-in-nested-flexbox-002.html) | Pass | 1 / 1 |  |  |
 | [`stretched-child-in-nested-flexbox-003.html`](https://wpt.fyi/results/css/css-flexbox/stretched-child-in-nested-flexbox-003.html) | Pass | 1 / 1 |  |  |
 | [`stretching-orthogonal-flows.html`](https://wpt.fyi/results/css/css-flexbox/stretching-orthogonal-flows.html) | Pass | 1 / 1 |  |  |
-| [`svg-no-natural-size-grandchild.html`](https://wpt.fyi/results/css/css-flexbox/svg-no-natural-size-grandchild.html) | Fail | 0 / 1 | BUG | the max-content contribution of a replaced element that only has an aspect ratio (an `svg` with a `viewBox`, `width="100%"` and `height="100%"`) is zero (as WPT css/css-sizing/svg-intrinsic-size-009.html expects for an `auto` width): the flex item that contains it has a flex base size of zero and stays empty, where the browsers give the element a non-zero contribution when its width is a percentage |
+| [`svg-no-natural-size-grandchild.html`](https://wpt.fyi/results/css/css-flexbox/svg-no-natural-size-grandchild.html) | Pass | 1 / 1 |  |  |
 | [`svg-root-as-flex-item-001.html`](https://wpt.fyi/results/css/css-flexbox/svg-root-as-flex-item-001.html) | Pass | 1 / 1 |  |  |
 | [`svg-root-as-flex-item-002.html`](https://wpt.fyi/results/css/css-flexbox/svg-root-as-flex-item-002.html) | Pass | 1 / 1 |  |  |
 | [`svg-root-as-flex-item-003.html`](https://wpt.fyi/results/css/css-flexbox/svg-root-as-flex-item-003.html) | Pass | 1 / 1 |  |  |

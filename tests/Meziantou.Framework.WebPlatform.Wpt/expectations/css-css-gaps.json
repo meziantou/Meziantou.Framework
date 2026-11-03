@@ -696,19 +696,19 @@
     "reftest": "PASS"
   },
   "css/css-gaps/grid-lanes/column-gap-decorations-rule-visibility-items-between-006.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-gaps/grid-lanes/column-gap-decorations-rule-visibility-items-between-007.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-gaps/grid-lanes/column-gap-decorations-rule-visibility-items-between-008.html": {
     "reftest": "PASS"
   },
   "css/css-gaps/grid-lanes/column-gap-decorations-rule-visibility-items-between-009.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-gaps/grid-lanes/column-gap-decorations-rule-visibility-items-between-010.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-gaps/grid-lanes/column-gap-decorations-rule-visibility-items-between-011.html": {
     "reftest": "PASS"
@@ -717,16 +717,16 @@
     "reftest": "PASS"
   },
   "css/css-gaps/grid-lanes/column-gap-decorations-rule-visibility-items-between-013.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-gaps/grid-lanes/column-gap-decorations-rule-visibility-items-between-014.html": {
     "reftest": "PASS"
   },
   "css/css-gaps/grid-lanes/column-gap-decorations-rule-visibility-items-between-015.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-gaps/grid-lanes/column-gap-decorations-rule-visibility-items-between-016.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-gaps/grid-lanes/column-gap-decorations-rule-visibility-items-between-017.html": {
     "reftest": "PASS"
@@ -750,7 +750,7 @@
     "reftest": "PASS"
   },
   "css/css-gaps/grid-lanes/column-gap-decorations-spanner-after-empty-lanes.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-gaps/grid-lanes/column-subgrid-auto-placement-decorations.html": {
     "reftest": "PASS"
@@ -957,19 +957,19 @@
     "reftest": "PASS"
   },
   "css/css-gaps/grid-lanes/row-gap-decorations-rule-visibility-items-between-006.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-gaps/grid-lanes/row-gap-decorations-rule-visibility-items-between-007.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-gaps/grid-lanes/row-gap-decorations-rule-visibility-items-between-008.html": {
     "reftest": "PASS"
   },
   "css/css-gaps/grid-lanes/row-gap-decorations-rule-visibility-items-between-009.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-gaps/grid-lanes/row-gap-decorations-rule-visibility-items-between-010.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-gaps/grid-lanes/row-gap-decorations-rule-visibility-items-between-011.html": {
     "reftest": "PASS"
@@ -993,7 +993,7 @@
     "reftest": "PASS"
   },
   "css/css-gaps/grid-lanes/row-gap-decorations-spanner-after-empty-lanes.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-gaps/grid-lanes/row-subgrid-auto-placement-decorations.html": {
     "reftest": "PASS"

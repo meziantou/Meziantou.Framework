@@ -225,6 +225,7 @@ internal sealed partial class GridLayoutAlgorithm
         // The items of each track from the start of the stacking axis, and the centers of the gutters before them (after them
         // with fill-reverse: the gutter is on the side of the item where the stacking comes from)
         var occupants = new List<GridItem>[lanes.Length];
+        var extents = new (double Start, double End)[lanes.Length][];
         var gutters = new double[lanes.Length][];
         for (var lane = 0; lane < lanes.Length; lane++)
         {
@@ -253,7 +254,19 @@ internal sealed partial class GridLayoutAlgorithm
                 Array.Reverse(centers);
             }
 
+            // The portion of the stacking axis that each item occupies: its area and the halves of the gutters around it
+            var laneExtents = new (double Start, double End)[ordered.Count];
+            for (var i = 0; i < ordered.Count; i++)
+            {
+                var areaStart = ordered[i].LanesAreaStart - (stackGap / 2);
+                var areaEnd = ordered[i].LanesAreaStart + ordered[i].LanesAreaSize + (stackGap / 2);
+                laneExtents[i] = fillReverse
+                    ? (stackOffset + _stackingContainerSize - areaEnd, stackOffset + _stackingContainerSize - areaStart)
+                    : (stackOffset + areaStart, stackOffset + areaEnd);
+            }
+
             occupants[lane] = ordered;
+            extents[lane] = laneExtents;
             gutters[lane] = centers;
         }
 
@@ -276,7 +289,7 @@ internal sealed partial class GridLayoutAlgorithm
             {
                 Center = laneOffset + ((before.End + after.Position) / 2),
                 Size = laneGapSizes[gap],
-                Intersections = CreateLaneGapIntersections(occupants[gap], gutters[gap], gutterIndexes[gap], occupants[gap + 1], gutters[gap + 1], gutterIndexes[gap + 1], stackStart, stackEnd, stackGap),
+                Intersections = CreateLaneGapIntersections(occupants[gap], extents[gap], gutters[gap], gutterIndexes[gap], occupants[gap + 1], extents[gap + 1], gutters[gap + 1], gutterIndexes[gap + 1], stackStart, stackEnd, stackGap),
                 ValueIndex = TrackReverse ? laneGaps.Length - 1 - gap : gap,
                 ValueCount = laneGaps.Length,
                 IsMain = true,
@@ -320,13 +333,18 @@ internal sealed partial class GridLayoutAlgorithm
         };
     }
 
+    /// <summary>The gutter index of a portion of a gap of a grid lanes container that ends where the occupancy of a side changes.</summary>
+    private const int OccupancyChange = -2;
+
     /// <summary>
     /// Returns the intersections of the gutter between two tracks of a grid lanes container: the bounds of the stacking axis, and
     /// the gutters of the stacking axis of the two tracks (the gutters at the same position are one intersection). The gutters of
     /// the two tracks that overlap one another are one gap junction (see <see cref="GapOverlapWindow"/>): its opening has the state
-    /// of the portions inside the junction.
+    /// of the portions inside the junction. A portion is also split where the item of one side ends before the next gutter (the
+    /// last item of a track, an item placed after an empty space before a spanning item): the area beyond it is empty
+    /// (https://drafts.csswg.org/css-gaps-1/#visibility).
     /// </summary>
-    private static GapIntersection[] CreateLaneGapIntersections(List<GridItem> before, double[] beforeGutters, int firstBeforeGutter, List<GridItem> after, double[] afterGutters, int firstAfterGutter, double start, double end, double stackGap)
+    private static GapIntersection[] CreateLaneGapIntersections(List<GridItem> before, (double Start, double End)[] beforeExtents, double[] beforeGutters, int firstBeforeGutter, List<GridItem> after, (double Start, double End)[] afterExtents, double[] afterGutters, int firstAfterGutter, double start, double end, double stackGap)
     {
         var empty = GapSegmentState.None;
         if (before.Count == 0)
@@ -355,6 +373,7 @@ internal sealed partial class GridLayoutAlgorithm
         }
 
         var overlaps = false;
+        var portionStart = start;
         while (true)
         {
             // The same item on the two sides: a spanning item
@@ -365,6 +384,12 @@ internal sealed partial class GridLayoutAlgorithm
             }
 
             var offset = NextOffset();
+            if (!overlaps && empty != (GapSegmentState.EmptyBefore | GapSegmentState.EmptyAfter))
+            {
+                state = AddOccupancySplits(portionStart, Math.Min(offset, end));
+            }
+
+            portionStart = offset;
             if (offset >= end)
             {
                 segments.Add((end, state, false, -1));
@@ -398,6 +423,14 @@ internal sealed partial class GridLayoutAlgorithm
             if (i == segments.Count - 1)
             {
                 result.Add(GapIntersection.Edge(segment.End));
+            }
+            else if (segment.Gutter == OccupancyChange)
+            {
+                // (the bound of the extent of an item is the center of the gutter before or after it, which the gutter would cross:
+                // the decorations end at the edge of the item)
+                var change = GapIntersection.Junction(segment.End, stackGap, -1, outgoing);
+                change.IsOccupancyChange = true;
+                result.Add(change);
             }
             else if (!segment.ContinuesWindow)
             {
@@ -442,6 +475,37 @@ internal sealed partial class GridLayoutAlgorithm
         }
 
         return [.. result];
+
+        // Splits the portion between two offsets where the item of a side starts or ends inside it, and returns the state of its
+        // last part
+        GapSegmentState AddOccupancySplits(double portionStart, double portionEnd)
+        {
+            var beforeExtent = before.Count > 0 ? beforeExtents[beforeIndex] : default;
+            var afterExtent = after.Count > 0 ? afterExtents[afterIndex] : default;
+            Span<double> points = [beforeExtent.Start, beforeExtent.End, afterExtent.Start, afterExtent.End];
+            points.Sort();
+            var partStart = portionStart;
+            foreach (var point in points)
+            {
+                if (point <= partStart + 1e-9 || point >= portionEnd - 1e-9)
+                    continue;
+
+                segments.Add((point, GetState((partStart + point) / 2), false, OccupancyChange));
+                partStart = point;
+            }
+
+            return GetState((partStart + portionEnd) / 2);
+
+            GapSegmentState GetState(double position)
+            {
+                var beforeCovers = before.Count > 0 && beforeExtent.Start <= position && position <= beforeExtent.End;
+                var afterCovers = after.Count > 0 && afterExtent.Start <= position && position <= afterExtent.End;
+                if (beforeCovers && afterCovers && ReferenceEquals(before[beforeIndex], after[afterIndex]))
+                    return GapSegmentState.Blocked;
+
+                return (beforeCovers ? GapSegmentState.None : GapSegmentState.EmptyBefore) | (afterCovers ? GapSegmentState.None : GapSegmentState.EmptyAfter);
+            }
+        }
 
         double NextOffset()
         {

@@ -2497,7 +2497,7 @@
     "reftest": "PASS"
   },
   "css/css-sizing/svg-intrinsic-size-006.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-sizing/svg-intrinsic-size-007.tentative.html": {
     "reftest": "PASS"

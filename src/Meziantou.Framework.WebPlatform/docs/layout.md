@@ -965,7 +965,8 @@ the fragment. The contents of the box (the `foreignObject` boxes of an `svg`) ar
 - **Intrinsic sizes** (`ReplacedFormattingContext.ComputeIntrinsicInlineSizes`): the natural inline size, or the definite
   block size of the content box transferred through the preferred aspect ratio, else the default object size; a box with only
   an aspect ratio has intrinsic sizes of 0 (its `max-content` is the stretch fit into the available space when it is
-  definite: WPT `svg-intrinsic-size-*`). The intrinsic block sizes (the keywords of `min-height`/`max-height`...) are the
+  definite: WPT `svg-intrinsic-size-*`); as in the browsers, its max-content contribution is the default object size when its
+  inline size is a percentage and no definite block size transfers through the ratio (`IntrinsicSizing.MeasureContribution`). The intrinsic block sizes (the keywords of `min-height`/`max-height`...) are the
   natural block size, or the block size transferred from the used inline size.
 - Not done: `image-resolution` (no browser supports it), the
   `appearance: none` checkboxes/radios with children, the native borders and paddings of the other controls, the `number`
@@ -2113,7 +2114,9 @@ blockifies the items and wraps their text in anonymous items (`BoxTreeBuilder.Fi
   is indefinite, `stretch` in the cross size properties resolves against the cross size of the line once it is known (the
   content box of the container before; in an indefinite size, a minimum `stretch` behaves as zero and a maximum one as `none`,
   [csswg-drafts#11006](https://github.com/w3c/csswg-drafts/issues/11006)): the items whose min/max
-  cross size is `stretch` are clamped again and laid out with that size (`StretchItems`). The last layout of each item is reused when the constraint space is the
+  cross size is `stretch` are clamped again and laid out with that size (`StretchItems`). In a multi-line container, an item
+  that is not stretched and whose `auto` cross size is its fit-content size in its inline axis is fitted again in the cross
+  size of its line when the line is larger than the container (as in Blink, [csswg-drafts#11784](https://github.com/w3c/csswg-drafts/issues/11784)): its main size does not change. The last layout of each item is reused when the constraint space is the
   same (`FlexItem.Fragment`/`Space`).
 - **Alignment** (§9.5, §9.6, resolved by the shared [box alignment](#box-alignment-csslayoutboxalignmentcs) in axes measured
   from the main-start/cross-start edges): the positive free space goes to the `auto` main margins, else `justify-content` (`normal` =
@@ -2157,7 +2160,8 @@ blockifies the items and wraps their text in anonymous items (`BoxTreeBuilder.Fi
   same computation on the items of each line) when its items are balanced in an unlimited main size with their outer
   hypothetical main sizes (as in Blink). The collapsed items contribute nothing. In the cross axis of a column container: the largest contributions
   of the items; the max-content size of a multi-line column container whose block size is definite, or limited by a
-  maximum block size that is a length, or that is balanced with a `flex-line-count` above 1, is the sum of the cross sizes of
+  definite maximum block size (a length, or a percentage of a definite block size:
+  `GridLayoutAlgorithm.UsesBlockSizeLimits` passes it), or that is balanced with a `flex-line-count` above 1, is the sum of the cross sizes of
   its lines and of the gaps between them
   (`FlexLayoutAlgorithm.ComputeColumnLinesCrossSize`, the items measured with an indefinite inline size).
 - **Definite sizes** (§9.8): the main size of an item of a column container whose block size is indefinite is indefinite for
@@ -2548,8 +2552,8 @@ own (`TableFormattingContext` gives them an empty fragment); the cells are block
   `height` is a length or a percentage that resolves, else `IsFixedBlockSizeIndefinite`), unless its first layout has that size; its contents
   are then aligned (`BoxFragment.MoveInFlowChildren`): `top`, `middle` (`center`), `bottom`, or `baseline` (the other values;
   the contents that overflow the cell are only moved by an `unsafe` `align-content`),
-  the baseline of a cell being the one of its first line box or row, else the bottom of its content box (of its contents or
-  of its specified height; the middle of its content box when the dominant baseline of a vertical table is central); a cell without content does not take part in the baseline alignment of its row (as in the
+  the baseline of a cell being the one of its first line box or row, else the bottom of its content box (of its contents, or
+  of its specified height when it has none, as in the browsers; the middle of its content box when the dominant baseline of a vertical table is central); a cell without content does not take part in the baseline alignment of its row (as in the
   browsers, it does not move the contents of the other cells); the row baselines come from the final layouts. The margins of the cells are 0 (`FormattingContext.Layout`); the percentages of their paddings resolve
   against the assignable width of the table plus the border spacing between its columns (as in Blink and Gecko). The
   `height` of a cell is a minimum whatever its `overflow`: its contents make it taller. In the first layout of a cell, the
@@ -3197,7 +3201,9 @@ the properties: the decorations take no space.
     from the areas of the items (the cells an item covers, the cells without item).
   - **Grid lanes**: the gutters between the tracks run across the stacking axis; the gutters of the stacking axis are confined to
     their track, just before their item (after it with `fill-reverse`), so the gutter before a spanning item has one segment per
-    track. A portion of a gutter between two tracks is blocked when the same item is on its two sides. The gutters of the two
+    track. A portion of a gutter between two tracks is blocked when the same item is on its two sides, and empty on a side
+    beyond the extent of its item (its area and the halves of the gutters around it: after the last item of a track, before
+    a spanning item placed after an empty space; `GapIntersection.IsOccupancyChange`, for `*-rule-visibility-items`). The gutters of the two
     tracks that overlap one another are one junction (`GapOverlapWindow`).
   - **Flex** (`FlexLayoutAlgorithm.Gaps.cs`): the gaps between the items run across their line (from the gap before the line to
     the gap after it); the gaps between the lines run across the container and are abutted by the gaps of the two lines (the
@@ -3596,7 +3602,10 @@ baseline and the default overflow alignment.
   the `justify-self` of an in-flow block-level box of a block container (not of an anonymous box, an internal table box or an
   item of another layout) other than `normal` makes its automatic inline size `fit-content` (except `stretch`) and, without
   `auto` inline margin, aligns its margin box in the containing block (reduced by the floats for a box placed next to them):
-  `ResolveAutoInlineMargins` adds the offset to its inline-start margin (the default overflow alignment is unsafe). An
+  `ResolveAutoInlineMargins` adds the offset to its inline-start margin (the default overflow alignment is unsafe).
+  `stretch` also stretches a block-level form control whose width is `auto` (`normal` does not, as in the browsers). The
+  legacy `text-align` values `-webkit-left`, `-webkit-right` and `-webkit-center` align the block-level descendants of the
+  element where they are set as the `align` attribute does (`LayoutStyle.DescendantAlignment`). An
   orthogonal box is aligned once its block size is known (`stretch` stretches its block size). The block-level tables too
   (`TableWrapperFormattingContext`).
 - **Absolutely positioned boxes** ([CSS Position 3 §4](https://drafts.csswg.org/css-position-3/#abspos-alignment),
@@ -3663,7 +3672,8 @@ positioning), `StickyPosition` the sticky positioning and `StackingContexts` the
   cascaded `display` before the blockification) is inline-level, else the edge of the content box in the inline axis (it does
   not avoid the floats, as in the browsers) at the block-start of the line, or of the next line when content precedes it on
   the line: a text, an atomic inline, or the start edge of an inline box with a margin, a border or a padding (the line is then
-  not a zero-height line box); it moves with the relatively positioned inline boxes it is in. A box whose original display is
+  not a zero-height line box); a block-level box whose parent is an inline box has the rectangle of the inline layout instead
+  (zero width at the inline-start edge of the content box, as tall as the line, as in Blink); it moves with the relatively positioned inline boxes it is in. A box whose original display is
   inline-level has its inline-start edge at that position in the direction of its bidirectional embedding level (in a
   left-to-right run of a right-to-left block container, the box extends to the right, as in Blink); at a line break it stays
   at the end of the line, with the starts of the inline boxes before it that have no margin, border or padding (the line may

@@ -190,13 +190,40 @@ internal static class GapDecorations
         };
     }
 
+    /// <summary>
+    /// Returns the state that gives the visibility of the portion after an intersection: with <c>between</c>, a portion of a gap of
+    /// a grid lanes container that is split where the occupancy of a side changes (<see cref="GapIntersection.IsOccupancyChange"/>)
+    /// is empty on a side when a part of the segment between its gap junctions is (as in Blink, WPT
+    /// css/css-gaps/grid-lanes/column-gap-decorations-rule-visibility-items-between-015.html).
+    /// </summary>
+    private static GapSegmentState GetVisibilityState(GapIntersection[] intersections, int index, RuleVisibilityItems visibility)
+    {
+        var state = intersections[index].State;
+        if (visibility != RuleVisibilityItems.Between)
+            return state;
+
+        const GapSegmentState Empty = GapSegmentState.EmptyBefore | GapSegmentState.EmptyAfter;
+        // (a part that a spanning item blocks is a bound of the segment, as a junction)
+        for (var i = index; i > 0 && intersections[i].IsOccupancyChange && !IsBlocked(intersections[i - 1].State); i--)
+        {
+            state |= intersections[i - 1].State & Empty;
+        }
+
+        for (var i = index + 1; i < intersections.Length - 1 && intersections[i].IsOccupancyChange && !IsBlocked(intersections[i].State); i++)
+        {
+            state |= intersections[i].State & Empty;
+        }
+
+        return state;
+    }
+
     private static bool IsBlocked(GapSegmentState state) => (state & GapSegmentState.Blocked) != GapSegmentState.None;
 
     /// <summary>Returns whether a segment cannot start at an intersection: the portion of the gap after it is not painted.</summary>
     private static bool SkipsStart(GapIntersection[] intersections, int index, GapContainerKind kind, RuleBreak ruleBreak, RuleVisibilityItems visibility)
     {
         ref readonly var intersection = ref intersections[index];
-        var visible = IsVisible(intersection.State, visibility);
+        var visible = IsVisible(GetVisibilityState(intersections, index, visibility), visibility);
 
         // A segment does not start inside the junction of overlapping crossing gaps: it starts after the junction
         if (kind == GapContainerKind.Flex && intersection.Window != GapOverlapWindow.None)
@@ -216,11 +243,15 @@ internal static class GapDecorations
     private static bool ContinuesThrough(GapIntersection[] intersections, int index, GapContainerKind kind, RuleBreak ruleBreak, RuleVisibilityItems visibility)
     {
         ref readonly var intersection = ref intersections[index];
-        if (!IsVisible(intersection.State, visibility))
+        if (!IsVisible(GetVisibilityState(intersections, index, visibility), visibility))
             return false;
 
         if (ruleBreak == RuleBreak.None)
             return true;
+
+        // (a point where the occupancy of a side changes is not a junction: the decoration only stops before a spanning item)
+        if (intersection.IsOccupancyChange)
+            return !IsBlocked(intersection.State);
 
         var blocked = IsBlocked(intersection.State);
         if (ruleBreak == RuleBreak.Normal)

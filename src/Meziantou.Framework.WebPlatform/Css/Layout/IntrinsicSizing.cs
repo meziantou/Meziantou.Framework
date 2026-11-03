@@ -435,6 +435,17 @@ internal static class IntrinsicSizing
         // The margins resolve against zero, the auto margins are zero (the used margins of a block-level box absorb the remaining space)
         var margins = containingBlock.ToLogical(FormattingContext.ResolveMargins(box.Style.Layout.Box, 0)).InlineSum();
         var max = containingBlock.ToLogical(context.LayoutBox(box, space).Size).Inline + margins;
+
+        // As in the browsers, the max-content contribution of a replaced element that only has an aspect ratio is the default
+        // object size when its inline size is a percentage (zero when it is auto: WPT css/css-sizing/svg-intrinsic-size-009.html;
+        // WPT css/css-flexbox/svg-no-natural-size-grandchild.html), unless a definite block size transfers through the ratio
+        // (WPT css/css-sizing/replaced-element-max-content-contribution-transferred-size.html)
+        var hasDefiniteBlockSize = space.FixedBlockSize is not null || boxModel.GetSize(blockIsHorizontal).TryResolve(containingBlockBlockSize) is not null;
+        if (!hasDefiniteBlockSize && ReplacedFormattingContext.HasOnlyAspectRatio(box) && HasPercentageSize(box, containingBlock.IsHorizontal))
+        {
+            var inlinePaddingAndBorder = containingBlock.ToLogical(FormattingContext.ResolvePadding(boxModel, 0).Add(boxModel.BorderWidth)).InlineSum();
+            max = Math.Max(max, (containingBlock.IsHorizontal ? ReplacedContent.DefaultWidth : ReplacedContent.DefaultHeight) + inlinePaddingAndBorder + margins);
+        }
         // The percentages of a compressible replaced element resolve against zero in its inline axis only: as in the browsers,
         // the percentage block size of an orthogonal replaced element behaves as auto for both contributions (WPT
         // css/css-sizing/intrinsic-percent-replaced-029.tentative.html, https://github.com/w3c/csswg-drafts/issues/12133)

@@ -212,6 +212,10 @@ internal static partial class CssValueComputer
                 // https://drafts.csswg.org/css-align-3/#valdef-justify-items-legacy: the legacy keyword alone takes the
                 // position of an inherited legacy value, and computes to normal otherwise
                 return style.Parent?.GetComputedValue("justify-items") is { } inherited && inherited.StartsWith("legacy ", StringComparison.Ordinal) ? inherited : "normal";
+            case "align-content" or "justify-content" or "align-items" or "justify-items" or "align-self" or "justify-self" when value.Contains("flex-", StringComparison.Ordinal):
+                // https://drafts.csswg.org/css-align-3/#valdef-self-position-flex-start: flex-start and flex-end compute to
+                // flow-start and flow-end (WPT css/css-align/flow-start-and-end-serialization.html)
+                return value.Replace("flex-start", "flow-start", StringComparison.Ordinal).Replace("flex-end", "flow-end", StringComparison.Ordinal);
             case "scroll-marker-group" when value is "before" or "after":
                 // https://drafts.csswg.org/css-overflow-5/#scroll-marker-group-property: the omitted mode is links
                 return value + " links";

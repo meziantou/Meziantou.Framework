@@ -60,10 +60,10 @@
     "reftest": "PASS"
   },
   "css/css-align/abspos/align-self-static-position-003.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-align/abspos/align-self-static-position-004.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-align/abspos/align-self-static-position-005.html": {
     "reftest": "PASS"
@@ -327,7 +327,7 @@
     "total": 3
   },
   "css/css-align/baseline-rules/synthesized-baseline-table-cell-001.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-align/blocks/align-content-block-001.html": {
     "reftest": "PASS"
@@ -447,10 +447,7 @@
     "reftest": "PASS"
   },
   "css/css-align/blocks/justify-self-text-align-2.html": {
-    "total": 3,
-    "failures": {
-      ".item 1": "FAIL"
-    }
+    "total": 3
   },
   "css/css-align/blocks/justify-self-text-align.html": {
     "reftest": "PASS"
@@ -492,7 +489,7 @@
     "total": 16
   },
   "css/css-align/blocks/justify-self-widgets.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-align/blocks/safe-justify-self-htb.html": {
     "total": 24
@@ -510,25 +507,13 @@
     "total": 4
   },
   "css/css-align/content-distribution/parse-align-content-001.html": {
-    "total": 18,
-    "failures": {
-      "Checking align-content: flex-end": "FAIL",
-      "Checking align-content: flex-start": "FAIL",
-      "Checking align-content: safe flex-end": "FAIL",
-      "Checking align-content: unsafe flex-start": "FAIL"
-    }
+    "total": 18
   },
   "css/css-align/content-distribution/parse-align-content-002.html": {
     "total": 7
   },
   "css/css-align/content-distribution/parse-align-content-003.html": {
-    "total": 18,
-    "failures": {
-      "Checking align-content: flex-end": "FAIL",
-      "Checking align-content: flex-start": "FAIL",
-      "Checking align-content: safe flex-end": "FAIL",
-      "Checking align-content: unsafe flex-start": "FAIL"
-    }
+    "total": 18
   },
   "css/css-align/content-distribution/parse-align-content-004.html": {
     "total": 40
@@ -537,25 +522,13 @@
     "total": 3
   },
   "css/css-align/content-distribution/parse-justify-content-001.html": {
-    "total": 17,
-    "failures": {
-      "Checking justify-content: flex-end": "FAIL",
-      "Checking justify-content: flex-start": "FAIL",
-      "Checking justify-content: safe flex-end": "FAIL",
-      "Checking justify-content: unsafe flex-start": "FAIL"
-    }
+    "total": 17
   },
   "css/css-align/content-distribution/parse-justify-content-002.html": {
     "total": 7
   },
   "css/css-align/content-distribution/parse-justify-content-003.html": {
-    "total": 17,
-    "failures": {
-      "Checking justify-content: flex-end": "FAIL",
-      "Checking justify-content: flex-start": "FAIL",
-      "Checking justify-content: safe flex-end": "FAIL",
-      "Checking justify-content: unsafe flex-start": "FAIL"
-    }
+    "total": 17
   },
   "css/css-align/content-distribution/parse-justify-content-004.html": {
     "total": 41
@@ -579,55 +552,7 @@
     "total": 2
   },
   "css/css-align/content-distribution/place-content-shorthand-006.html": {
-    "total": 156,
-    "failures": {
-      "Checking place-content: baseline flex-end": "FAIL",
-      "Checking place-content: baseline flex-start": "FAIL",
-      "Checking place-content: center flex-end": "FAIL",
-      "Checking place-content: center flex-start": "FAIL",
-      "Checking place-content: end flex-end": "FAIL",
-      "Checking place-content: end flex-start": "FAIL",
-      "Checking place-content: first baseline flex-end": "FAIL",
-      "Checking place-content: first baseline flex-start": "FAIL",
-      "Checking place-content: flex-end center": "FAIL",
-      "Checking place-content: flex-end end": "FAIL",
-      "Checking place-content: flex-end flex-end": "FAIL",
-      "Checking place-content: flex-end flex-start": "FAIL",
-      "Checking place-content: flex-end left": "FAIL",
-      "Checking place-content: flex-end normal": "FAIL",
-      "Checking place-content: flex-end right": "FAIL",
-      "Checking place-content: flex-end space-around": "FAIL",
-      "Checking place-content: flex-end space-between": "FAIL",
-      "Checking place-content: flex-end space-evenly": "FAIL",
-      "Checking place-content: flex-end start": "FAIL",
-      "Checking place-content: flex-end stretch": "FAIL",
-      "Checking place-content: flex-start center": "FAIL",
-      "Checking place-content: flex-start end": "FAIL",
-      "Checking place-content: flex-start flex-end": "FAIL",
-      "Checking place-content: flex-start flex-start": "FAIL",
-      "Checking place-content: flex-start left": "FAIL",
-      "Checking place-content: flex-start normal": "FAIL",
-      "Checking place-content: flex-start right": "FAIL",
-      "Checking place-content: flex-start space-around": "FAIL",
-      "Checking place-content: flex-start space-between": "FAIL",
-      "Checking place-content: flex-start space-evenly": "FAIL",
-      "Checking place-content: flex-start start": "FAIL",
-      "Checking place-content: flex-start stretch": "FAIL",
-      "Checking place-content: last baseline flex-end": "FAIL",
-      "Checking place-content: last baseline flex-start": "FAIL",
-      "Checking place-content: normal flex-end": "FAIL",
-      "Checking place-content: normal flex-start": "FAIL",
-      "Checking place-content: space-around flex-end": "FAIL",
-      "Checking place-content: space-around flex-start": "FAIL",
-      "Checking place-content: space-between flex-end": "FAIL",
-      "Checking place-content: space-between flex-start": "FAIL",
-      "Checking place-content: space-evenly flex-end": "FAIL",
-      "Checking place-content: space-evenly flex-start": "FAIL",
-      "Checking place-content: start flex-end": "FAIL",
-      "Checking place-content: start flex-start": "FAIL",
-      "Checking place-content: stretch flex-end": "FAIL",
-      "Checking place-content: stretch flex-start": "FAIL"
-    }
+    "total": 156
   },
   "css/css-align/content-distribution/place-content-shorthand-007.html": {
     "reftest": "PASS"
@@ -636,25 +561,13 @@
     "total": 1
   },
   "css/css-align/default-alignment/parse-align-items-001.html": {
-    "total": 17,
-    "failures": {
-      "Checking align-items: flex-end": "FAIL",
-      "Checking align-items: flex-start": "FAIL",
-      "Checking align-items: safe flex-end": "FAIL",
-      "Checking align-items: unsafe flex-start": "FAIL"
-    }
+    "total": 17
   },
   "css/css-align/default-alignment/parse-align-items-002.html": {
     "total": 7
   },
   "css/css-align/default-alignment/parse-align-items-003.html": {
-    "total": 17,
-    "failures": {
-      "Checking align-items: flex-end": "FAIL",
-      "Checking align-items: flex-start": "FAIL",
-      "Checking align-items: safe flex-end": "FAIL",
-      "Checking align-items: unsafe flex-start": "FAIL"
-    }
+    "total": 17
   },
   "css/css-align/default-alignment/parse-align-items-004.html": {
     "total": 29
@@ -663,25 +576,13 @@
     "total": 3
   },
   "css/css-align/default-alignment/parse-justify-items-001.html": {
-    "total": 22,
-    "failures": {
-      "Checking justify-items: flex-end": "FAIL",
-      "Checking justify-items: flex-start": "FAIL",
-      "Checking justify-items: safe flex-end": "FAIL",
-      "Checking justify-items: unsafe flex-start": "FAIL"
-    }
+    "total": 22
   },
   "css/css-align/default-alignment/parse-justify-items-002.html": {
     "total": 7
   },
   "css/css-align/default-alignment/parse-justify-items-003.html": {
-    "total": 22,
-    "failures": {
-      "Checking justify-items: flex-end": "FAIL",
-      "Checking justify-items: flex-start": "FAIL",
-      "Checking justify-items: safe flex-end": "FAIL",
-      "Checking justify-items: unsafe flex-start": "FAIL"
-    }
+    "total": 22
   },
   "css/css-align/default-alignment/parse-justify-items-004.html": {
     "total": 32
@@ -708,57 +609,7 @@
     "total": 2
   },
   "css/css-align/default-alignment/place-items-shorthand-006.html": {
-    "total": 168,
-    "failures": {
-      "Checking place-items: baseline flex-end": "FAIL",
-      "Checking place-items: baseline flex-start": "FAIL",
-      "Checking place-items: center flex-end": "FAIL",
-      "Checking place-items: center flex-start": "FAIL",
-      "Checking place-items: end flex-end": "FAIL",
-      "Checking place-items: end flex-start": "FAIL",
-      "Checking place-items: first baseline flex-end": "FAIL",
-      "Checking place-items: first baseline flex-start": "FAIL",
-      "Checking place-items: flex-end baseline": "FAIL",
-      "Checking place-items: flex-end center": "FAIL",
-      "Checking place-items: flex-end end": "FAIL",
-      "Checking place-items: flex-end first baseline": "FAIL",
-      "Checking place-items: flex-end flex-end": "FAIL",
-      "Checking place-items: flex-end flex-start": "FAIL",
-      "Checking place-items: flex-end last baseline": "FAIL",
-      "Checking place-items: flex-end left": "FAIL",
-      "Checking place-items: flex-end normal": "FAIL",
-      "Checking place-items: flex-end right": "FAIL",
-      "Checking place-items: flex-end self-end": "FAIL",
-      "Checking place-items: flex-end self-start": "FAIL",
-      "Checking place-items: flex-end start": "FAIL",
-      "Checking place-items: flex-end stretch": "FAIL",
-      "Checking place-items: flex-start baseline": "FAIL",
-      "Checking place-items: flex-start center": "FAIL",
-      "Checking place-items: flex-start end": "FAIL",
-      "Checking place-items: flex-start first baseline": "FAIL",
-      "Checking place-items: flex-start flex-end": "FAIL",
-      "Checking place-items: flex-start flex-start": "FAIL",
-      "Checking place-items: flex-start last baseline": "FAIL",
-      "Checking place-items: flex-start left": "FAIL",
-      "Checking place-items: flex-start normal": "FAIL",
-      "Checking place-items: flex-start right": "FAIL",
-      "Checking place-items: flex-start self-end": "FAIL",
-      "Checking place-items: flex-start self-start": "FAIL",
-      "Checking place-items: flex-start start": "FAIL",
-      "Checking place-items: flex-start stretch": "FAIL",
-      "Checking place-items: last baseline flex-end": "FAIL",
-      "Checking place-items: last baseline flex-start": "FAIL",
-      "Checking place-items: normal flex-end": "FAIL",
-      "Checking place-items: normal flex-start": "FAIL",
-      "Checking place-items: self-end flex-end": "FAIL",
-      "Checking place-items: self-end flex-start": "FAIL",
-      "Checking place-items: self-start flex-end": "FAIL",
-      "Checking place-items: self-start flex-start": "FAIL",
-      "Checking place-items: start flex-end": "FAIL",
-      "Checking place-items: start flex-start": "FAIL",
-      "Checking place-items: stretch flex-end": "FAIL",
-      "Checking place-items: stretch flex-start": "FAIL"
-    }
+    "total": 168
   },
   "css/css-align/default-alignment/shorthand-serialization-001.html": {
     "total": 17
@@ -767,18 +618,7 @@
     "reftest": "PASS"
   },
   "css/css-align/flow-start-and-end-serialization.html": {
-    "total": 9,
-    "failures": {
-      "align-content uses flow-start and flow-end computed serialization": "FAIL",
-      "align-items uses flow-start and flow-end computed serialization": "FAIL",
-      "align-self uses flow-start and flow-end computed serialization": "FAIL",
-      "justify-content uses flow-start and flow-end computed serialization": "FAIL",
-      "justify-items uses flow-start and flow-end computed serialization": "FAIL",
-      "justify-self uses flow-start and flow-end computed serialization": "FAIL",
-      "place-content inherits flow-start and flow-end computed serialization": "FAIL",
-      "place-items inherits flow-start and flow-end computed serialization": "FAIL",
-      "place-self inherits flow-start and flow-end computed serialization": "FAIL"
-    }
+    "total": 9
   },
   "css/css-align/gaps/column-gap-animation-001.html": {
     "total": 1
@@ -850,12 +690,7 @@
     "total": 32
   },
   "css/css-align/parsing/align-content-computed.html": {
-    "total": 18,
-    "failures": {
-      "Property align-content value 'flex-end'": "FAIL",
-      "Property align-content value 'flex-start'": "FAIL",
-      "Property align-content value 'safe flex-start'": "FAIL"
-    }
+    "total": 18
   },
   "css/css-align/parsing/align-content-invalid.html": {
     "total": 23
@@ -864,30 +699,16 @@
     "total": 19
   },
   "css/css-align/parsing/align-items-computed.html": {
-    "total": 19,
-    "failures": {
-      "Property align-items value 'flex-end'": "FAIL",
-      "Property align-items value 'flex-start'": "FAIL",
-      "Property align-items value 'safe normal'": "FAIL",
-      "Property align-items value 'unsafe normal'": "FAIL"
-    }
+    "total": 19
   },
   "css/css-align/parsing/align-items-invalid.html": {
     "total": 26
   },
   "css/css-align/parsing/align-items-valid.html": {
-    "total": 20,
-    "failures": {
-      "e.style['align-items'] = \"safe normal\" should set the property value": "FAIL",
-      "e.style['align-items'] = \"unsafe normal\" should set the property value": "FAIL"
-    }
+    "total": 20
   },
   "css/css-align/parsing/align-self-computed.html": {
-    "total": 20,
-    "failures": {
-      "Property align-self value 'flex-end'": "FAIL",
-      "Property align-self value 'flex-start'": "FAIL"
-    }
+    "total": 20
   },
   "css/css-align/parsing/align-self-invalid.html": {
     "total": 24
@@ -947,12 +768,7 @@
     "total": 5
   },
   "css/css-align/parsing/justify-content-computed.html": {
-    "total": 18,
-    "failures": {
-      "Property justify-content value 'flex-end'": "FAIL",
-      "Property justify-content value 'flex-start'": "FAIL",
-      "Property justify-content value 'safe flex-start'": "FAIL"
-    }
+    "total": 18
   },
   "css/css-align/parsing/justify-content-invalid.html": {
     "total": 24
@@ -961,30 +777,16 @@
     "total": 18
   },
   "css/css-align/parsing/justify-items-computed.html": {
-    "total": 26,
-    "failures": {
-      "Property justify-items value 'flex-end'": "FAIL",
-      "Property justify-items value 'flex-start'": "FAIL",
-      "Property justify-items value 'safe normal'": "FAIL",
-      "Property justify-items value 'unsafe normal'": "FAIL"
-    }
+    "total": 26
   },
   "css/css-align/parsing/justify-items-invalid.html": {
     "total": 21
   },
   "css/css-align/parsing/justify-items-valid.html": {
-    "total": 26,
-    "failures": {
-      "e.style['justify-items'] = \"safe normal\" should set the property value": "FAIL",
-      "e.style['justify-items'] = \"unsafe normal\" should set the property value": "FAIL"
-    }
+    "total": 26
   },
   "css/css-align/parsing/justify-self-computed.html": {
-    "total": 22,
-    "failures": {
-      "Property justify-self value 'flex-end'": "FAIL",
-      "Property justify-self value 'flex-start'": "FAIL"
-    }
+    "total": 22
   },
   "css/css-align/parsing/justify-self-invalid.html": {
     "total": 22
@@ -993,12 +795,7 @@
     "total": 23
   },
   "css/css-align/parsing/place-content-computed.html": {
-    "total": 25,
-    "failures": {
-      "Property place-content value 'flex-start flex-start'": "FAIL",
-      "Property place-content value 'last baseline flex-start'": "FAIL",
-      "Property place-content value 'safe flex-start'": "FAIL"
-    }
+    "total": 25
   },
   "css/css-align/parsing/place-content-invalid.html": {
     "total": 10
@@ -1010,45 +807,19 @@
     "total": 26
   },
   "css/css-align/parsing/place-items-computed.html": {
-    "total": 25,
-    "failures": {
-      "Property place-items value 'flex-end legacy'": "FAIL",
-      "Property place-items value 'flex-end'": "FAIL",
-      "Property place-items value 'normal safe normal'": "FAIL",
-      "Property place-items value 'safe normal safe normal'": "FAIL",
-      "Property place-items value 'safe normal unsafe normal'": "FAIL",
-      "Property place-items value 'unsafe normal unsafe normal'": "FAIL"
-    }
+    "total": 25
   },
   "css/css-align/parsing/place-items-invalid.html": {
     "total": 17
   },
   "css/css-align/parsing/place-items-shorthand.html": {
-    "total": 18,
-    "failures": {
-      "e.style['place-items'] = \"safe normal unsafe normal\" should not set unrelated longhands": "FAIL",
-      "e.style['place-items'] = \"safe normal unsafe normal\" should set align-items": "FAIL",
-      "e.style['place-items'] = \"safe normal unsafe normal\" should set justify-items": "FAIL",
-      "e.style['place-items'] = \"safe normal\" should not set unrelated longhands": "FAIL",
-      "e.style['place-items'] = \"safe normal\" should set align-items": "FAIL",
-      "e.style['place-items'] = \"safe normal\" should set justify-items": "FAIL"
-    }
+    "total": 18
   },
   "css/css-align/parsing/place-items-valid.html": {
-    "total": 24,
-    "failures": {
-      "e.style['place-items'] = \"normal safe normal\" should set the property value": "FAIL",
-      "e.style['place-items'] = \"safe normal safe normal\" should set the property value": "FAIL",
-      "e.style['place-items'] = \"safe normal unsafe normal\" should set the property value": "FAIL",
-      "e.style['place-items'] = \"unsafe normal unsafe normal\" should set the property value": "FAIL"
-    }
+    "total": 24
   },
   "css/css-align/parsing/place-self-computed.html": {
-    "total": 23,
-    "failures": {
-      "Property place-self value 'baseline flex-end'": "FAIL",
-      "Property place-self value 'flex-end'": "FAIL"
-    }
+    "total": 23
   },
   "css/css-align/parsing/place-self-invalid.html": {
     "total": 11
@@ -1072,25 +843,13 @@
     "reftest": "PASS"
   },
   "css/css-align/self-alignment/parse-align-self-001.html": {
-    "total": 18,
-    "failures": {
-      "Checking align-self: flex-end": "FAIL",
-      "Checking align-self: flex-start": "FAIL",
-      "Checking align-self: safe flex-end": "FAIL",
-      "Checking align-self: unsafe flex-start": "FAIL"
-    }
+    "total": 18
   },
   "css/css-align/self-alignment/parse-align-self-002.html": {
     "total": 7
   },
   "css/css-align/self-alignment/parse-align-self-003.html": {
-    "total": 18,
-    "failures": {
-      "Checking align-self: flex-end": "FAIL",
-      "Checking align-self: flex-start": "FAIL",
-      "Checking align-self: safe flex-end": "FAIL",
-      "Checking align-self: unsafe flex-start": "FAIL"
-    }
+    "total": 18
   },
   "css/css-align/self-alignment/parse-align-self-004.html": {
     "total": 28
@@ -1099,25 +858,13 @@
     "total": 3
   },
   "css/css-align/self-alignment/parse-justify-self-001.html": {
-    "total": 20,
-    "failures": {
-      "Checking justify-self: flex-end": "FAIL",
-      "Checking justify-self: flex-start": "FAIL",
-      "Checking justify-self: safe flex-end": "FAIL",
-      "Checking justify-self: unsafe flex-start": "FAIL"
-    }
+    "total": 20
   },
   "css/css-align/self-alignment/parse-justify-self-002.html": {
     "total": 7
   },
   "css/css-align/self-alignment/parse-justify-self-003.html": {
-    "total": 20,
-    "failures": {
-      "Checking justify-self: flex-end": "FAIL",
-      "Checking justify-self: flex-start": "FAIL",
-      "Checking justify-self: safe flex-end": "FAIL",
-      "Checking justify-self: unsafe flex-start": "FAIL"
-    }
+    "total": 20
   },
   "css/css-align/self-alignment/parse-justify-self-004.html": {
     "total": 26
@@ -1141,61 +888,7 @@
     "total": 2
   },
   "css/css-align/self-alignment/place-self-shorthand-006.html": {
-    "total": 195,
-    "failures": {
-      "Checking place-self: auto flex-end": "FAIL",
-      "Checking place-self: auto flex-start": "FAIL",
-      "Checking place-self: baseline flex-end": "FAIL",
-      "Checking place-self: baseline flex-start": "FAIL",
-      "Checking place-self: center flex-end": "FAIL",
-      "Checking place-self: center flex-start": "FAIL",
-      "Checking place-self: end flex-end": "FAIL",
-      "Checking place-self: end flex-start": "FAIL",
-      "Checking place-self: first baseline flex-end": "FAIL",
-      "Checking place-self: first baseline flex-start": "FAIL",
-      "Checking place-self: flex-end auto": "FAIL",
-      "Checking place-self: flex-end baseline": "FAIL",
-      "Checking place-self: flex-end center": "FAIL",
-      "Checking place-self: flex-end end": "FAIL",
-      "Checking place-self: flex-end first baseline": "FAIL",
-      "Checking place-self: flex-end flex-end": "FAIL",
-      "Checking place-self: flex-end flex-start": "FAIL",
-      "Checking place-self: flex-end last baseline": "FAIL",
-      "Checking place-self: flex-end left": "FAIL",
-      "Checking place-self: flex-end normal": "FAIL",
-      "Checking place-self: flex-end right": "FAIL",
-      "Checking place-self: flex-end self-end": "FAIL",
-      "Checking place-self: flex-end self-start": "FAIL",
-      "Checking place-self: flex-end start": "FAIL",
-      "Checking place-self: flex-end stretch": "FAIL",
-      "Checking place-self: flex-start auto": "FAIL",
-      "Checking place-self: flex-start baseline": "FAIL",
-      "Checking place-self: flex-start center": "FAIL",
-      "Checking place-self: flex-start end": "FAIL",
-      "Checking place-self: flex-start first baseline": "FAIL",
-      "Checking place-self: flex-start flex-end": "FAIL",
-      "Checking place-self: flex-start flex-start": "FAIL",
-      "Checking place-self: flex-start last baseline": "FAIL",
-      "Checking place-self: flex-start left": "FAIL",
-      "Checking place-self: flex-start normal": "FAIL",
-      "Checking place-self: flex-start right": "FAIL",
-      "Checking place-self: flex-start self-end": "FAIL",
-      "Checking place-self: flex-start self-start": "FAIL",
-      "Checking place-self: flex-start start": "FAIL",
-      "Checking place-self: flex-start stretch": "FAIL",
-      "Checking place-self: last baseline flex-end": "FAIL",
-      "Checking place-self: last baseline flex-start": "FAIL",
-      "Checking place-self: normal flex-end": "FAIL",
-      "Checking place-self: normal flex-start": "FAIL",
-      "Checking place-self: self-end flex-end": "FAIL",
-      "Checking place-self: self-end flex-start": "FAIL",
-      "Checking place-self: self-start flex-end": "FAIL",
-      "Checking place-self: self-start flex-start": "FAIL",
-      "Checking place-self: start flex-end": "FAIL",
-      "Checking place-self: start flex-start": "FAIL",
-      "Checking place-self: stretch flex-end": "FAIL",
-      "Checking place-self: stretch flex-start": "FAIL"
-    }
+    "total": 195
   },
   "css/css-align/self-alignment/self-align-normal-flex.html": {
     "reftest": "PASS"

@@ -1524,14 +1524,19 @@ internal sealed partial class FlexLayoutAlgorithm
                 if (item.IsCollapsed && line.IsCollapsedPass)
                     continue;
 
+                // In a multi-line container, the fit-content cross size of an item that is not stretched is resolved again in the
+                // cross size of its line, which may be larger than the container (WPT css/css-flexbox/align-self-016.html,
+                // https://github.com/w3c/csswg-drafts/issues/11784)
                 var resolvesStretchInLine = (_properties.IsMultiLine || _definiteCrossSize is null) && HasStretchCrossSize(item);
-                if (!item.Stretches && !resolvesStretchInLine)
+                var fitsInLine = _properties.IsMultiLine && !item.Stretches && item.CrossSizing.IsInlineAxis && item.CrossSizing.StretchSize is { } containerStretch
+                    && line.CrossSize - item.MarginCrossStart - item.MarginCrossEnd > containerStretch + 1e-9 && item.Style.Box.GetSize(!_mainIsHorizontal).IsAuto;
+                if (!item.Stretches && !resolvesStretchInLine && !fitsInLine)
                     continue;
 
                 // The intrinsic size keywords of the min and max block sizes resolve to the automatic block size of the item
                 var crossSizing = item.CrossSizing.IsInlineAxis || item.Fragment is not { } hypothetical ? item.CrossSizing : item.CrossSizing with { ContentSize = hypothetical.IntrinsicBlockSize };
                 var outerMargins = item.MarginCrossStart + item.MarginCrossEnd;
-                if (resolvesStretchInLine)
+                if (resolvesStretchInLine || fitsInLine)
                 {
                     crossSizing = crossSizing with { StretchSize = Math.Max(line.CrossSize - outerMargins, crossSizing.PaddingAndBorder) };
                 }
@@ -1578,7 +1583,7 @@ internal sealed partial class FlexLayoutAlgorithm
         if ((crossSizing.IsInlineAxis || !preferred.IsContentBasedInBlockAxis) && item.CrossSizing.Resolve(preferred, SizingProperty.Preferred) is { } size)
             return size;
 
-        return crossSizing.IsInlineAxis ? item.CrossSizing.Resolve(Size.FromKind(SizeKind.FitContent), SizingProperty.Preferred) : crossSizing.ContentSize;
+        return crossSizing.IsInlineAxis ? crossSizing.Resolve(Size.FromKind(SizeKind.FitContent), SizingProperty.Preferred) : crossSizing.ContentSize;
     }
 
     /// <summary>

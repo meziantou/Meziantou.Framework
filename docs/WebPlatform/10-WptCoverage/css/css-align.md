@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of css/css-align, and why th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 211 | 241 | 0 | 88% |
+| [Stable](#stable-tests) | 241 | 241 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
-| [Reftests](#reftests) | 58 | 64 | 0 | 91% |
-| **All** | **269** | **305** | **0** | **88%** |
+| [Reftests](#reftests) | 62 | 64 | 0 | 97% |
+| **All** | **303** | **305** | **0** | **99%** |
 
 ## Stable tests
 
@@ -119,7 +119,7 @@ description: "The results of the web-platform-tests of css/css-align, and why th
 | [`blocks/justify-self-htb-rtl-htb.html`](https://wpt.fyi/results/css/css-align/blocks/justify-self-htb-rtl-htb.html) | Pass | 16 / 16 |  |  |
 | [`blocks/justify-self-htb-rtl-vlr.html`](https://wpt.fyi/results/css/css-align/blocks/justify-self-htb-rtl-vlr.html) | Pass | 16 / 16 |  |  |
 | [`blocks/justify-self-htb-rtl-vrl.html`](https://wpt.fyi/results/css/css-align/blocks/justify-self-htb-rtl-vrl.html) | Pass | 16 / 16 |  |  |
-| [`blocks/justify-self-text-align-2.html`](https://wpt.fyi/results/css/css-align/blocks/justify-self-text-align-2.html) | Fail | 2 / 3 | NOT IMPLEMENTED | the legacy `text-align` values `-webkit-left`, `-webkit-right` and `-webkit-center` (which also align the block-level children whose `justify-self` is `normal` in the browsers) |
+| [`blocks/justify-self-text-align-2.html`](https://wpt.fyi/results/css/css-align/blocks/justify-self-text-align-2.html) | Pass | 3 / 3 |  |  |
 | [`blocks/justify-self-vlr-ltr-htb.html`](https://wpt.fyi/results/css/css-align/blocks/justify-self-vlr-ltr-htb.html) | Pass | 16 / 16 |  |  |
 | [`blocks/justify-self-vlr-ltr-vlr.html`](https://wpt.fyi/results/css/css-align/blocks/justify-self-vlr-ltr-vlr.html) | Pass | 16 / 16 |  |  |
 | [`blocks/justify-self-vlr-ltr-vrl.html`](https://wpt.fyi/results/css/css-align/blocks/justify-self-vlr-ltr-vrl.html) | Pass | 16 / 16 |  |  |
@@ -136,14 +136,14 @@ description: "The results of the web-platform-tests of css/css-align, and why th
 | [`blocks/safe-justify-self-vlr.html`](https://wpt.fyi/results/css/css-align/blocks/safe-justify-self-vlr.html) | Pass | 24 / 24 |  |  |
 | [`blocks/safe-justify-self-vrl.html`](https://wpt.fyi/results/css/css-align/blocks/safe-justify-self-vrl.html) | Pass | 24 / 24 |  |  |
 | [`content-distribution/default-overflow-alignment-single-axis-scroll-container.html`](https://wpt.fyi/results/css/css-align/content-distribution/default-overflow-alignment-single-axis-scroll-container.html) | Pass | 4 / 4 |  |  |
-| [`content-distribution/parse-align-content-001.html`](https://wpt.fyi/results/css/css-align/content-distribution/parse-align-content-001.html) | Fail | 14 / 18 | NOT IMPLEMENTED | `flex-start` and `flex-end` serialized as `flow-start` and `flow-end` (experimental in Chromium, fails in every browser) |
+| [`content-distribution/parse-align-content-001.html`](https://wpt.fyi/results/css/css-align/content-distribution/parse-align-content-001.html) | Pass | 18 / 18 |  |  |
 | [`content-distribution/parse-align-content-002.html`](https://wpt.fyi/results/css/css-align/content-distribution/parse-align-content-002.html) | Pass | 7 / 7 |  |  |
-| [`content-distribution/parse-align-content-003.html`](https://wpt.fyi/results/css/css-align/content-distribution/parse-align-content-003.html) | Fail | 14 / 18 | NOT IMPLEMENTED | `flex-start` and `flex-end` serialized as `flow-start` and `flow-end` (experimental in Chromium, fails in every browser) |
+| [`content-distribution/parse-align-content-003.html`](https://wpt.fyi/results/css/css-align/content-distribution/parse-align-content-003.html) | Pass | 18 / 18 |  |  |
 | [`content-distribution/parse-align-content-004.html`](https://wpt.fyi/results/css/css-align/content-distribution/parse-align-content-004.html) | Pass | 40 / 40 |  |  |
 | [`content-distribution/parse-align-content-005.html`](https://wpt.fyi/results/css/css-align/content-distribution/parse-align-content-005.html) | Pass | 3 / 3 |  |  |
-| [`content-distribution/parse-justify-content-001.html`](https://wpt.fyi/results/css/css-align/content-distribution/parse-justify-content-001.html) | Fail | 13 / 17 | NOT IMPLEMENTED | `flex-start` and `flex-end` serialized as `flow-start` and `flow-end` (experimental in Chromium, fails in every browser) |
+| [`content-distribution/parse-justify-content-001.html`](https://wpt.fyi/results/css/css-align/content-distribution/parse-justify-content-001.html) | Pass | 17 / 17 |  |  |
 | [`content-distribution/parse-justify-content-002.html`](https://wpt.fyi/results/css/css-align/content-distribution/parse-justify-content-002.html) | Pass | 7 / 7 |  |  |
-| [`content-distribution/parse-justify-content-003.html`](https://wpt.fyi/results/css/css-align/content-distribution/parse-justify-content-003.html) | Fail | 13 / 17 | NOT IMPLEMENTED | `flex-start` and `flex-end` serialized as `flow-start` and `flow-end` (experimental in Chromium, fails in every browser) |
+| [`content-distribution/parse-justify-content-003.html`](https://wpt.fyi/results/css/css-align/content-distribution/parse-justify-content-003.html) | Pass | 17 / 17 |  |  |
 | [`content-distribution/parse-justify-content-004.html`](https://wpt.fyi/results/css/css-align/content-distribution/parse-justify-content-004.html) | Pass | 41 / 41 |  |  |
 | [`content-distribution/parse-justify-content-005.html`](https://wpt.fyi/results/css/css-align/content-distribution/parse-justify-content-005.html) | Pass | 3 / 3 |  |  |
 | [`content-distribution/place-content-shorthand-001.html`](https://wpt.fyi/results/css/css-align/content-distribution/place-content-shorthand-001.html) | Pass | 15 / 15 |  |  |
@@ -151,16 +151,16 @@ description: "The results of the web-platform-tests of css/css-align, and why th
 | [`content-distribution/place-content-shorthand-003.html`](https://wpt.fyi/results/css/css-align/content-distribution/place-content-shorthand-003.html) | Pass | 2 / 2 |  |  |
 | [`content-distribution/place-content-shorthand-004.html`](https://wpt.fyi/results/css/css-align/content-distribution/place-content-shorthand-004.html) | Pass | 7 / 7 |  |  |
 | [`content-distribution/place-content-shorthand-005.html`](https://wpt.fyi/results/css/css-align/content-distribution/place-content-shorthand-005.html) | Pass | 2 / 2 |  |  |
-| [`content-distribution/place-content-shorthand-006.html`](https://wpt.fyi/results/css/css-align/content-distribution/place-content-shorthand-006.html) | Fail | 110 / 156 | NOT IMPLEMENTED | `flex-start` and `flex-end` serialized as `flow-start` and `flow-end` (experimental in Chromium, fails in every browser) |
+| [`content-distribution/place-content-shorthand-006.html`](https://wpt.fyi/results/css/css-align/content-distribution/place-content-shorthand-006.html) | Pass | 156 / 156 |  |  |
 | [`default-alignment/justify-items-legacy-001.html`](https://wpt.fyi/results/css/css-align/default-alignment/justify-items-legacy-001.html) | Pass | 1 / 1 |  |  |
-| [`default-alignment/parse-align-items-001.html`](https://wpt.fyi/results/css/css-align/default-alignment/parse-align-items-001.html) | Fail | 13 / 17 | NOT IMPLEMENTED | `flex-start` and `flex-end` serialized as `flow-start` and `flow-end` (experimental in Chromium, fails in every browser) |
+| [`default-alignment/parse-align-items-001.html`](https://wpt.fyi/results/css/css-align/default-alignment/parse-align-items-001.html) | Pass | 17 / 17 |  |  |
 | [`default-alignment/parse-align-items-002.html`](https://wpt.fyi/results/css/css-align/default-alignment/parse-align-items-002.html) | Pass | 7 / 7 |  |  |
-| [`default-alignment/parse-align-items-003.html`](https://wpt.fyi/results/css/css-align/default-alignment/parse-align-items-003.html) | Fail | 13 / 17 | NOT IMPLEMENTED | `flex-start` and `flex-end` serialized as `flow-start` and `flow-end` (experimental in Chromium, fails in every browser) |
+| [`default-alignment/parse-align-items-003.html`](https://wpt.fyi/results/css/css-align/default-alignment/parse-align-items-003.html) | Pass | 17 / 17 |  |  |
 | [`default-alignment/parse-align-items-004.html`](https://wpt.fyi/results/css/css-align/default-alignment/parse-align-items-004.html) | Pass | 29 / 29 |  |  |
 | [`default-alignment/parse-align-items-005.html`](https://wpt.fyi/results/css/css-align/default-alignment/parse-align-items-005.html) | Pass | 3 / 3 |  |  |
-| [`default-alignment/parse-justify-items-001.html`](https://wpt.fyi/results/css/css-align/default-alignment/parse-justify-items-001.html) | Fail | 18 / 22 | NOT IMPLEMENTED | `flex-start` and `flex-end` serialized as `flow-start` and `flow-end` (experimental in Chromium, fails in every browser) |
+| [`default-alignment/parse-justify-items-001.html`](https://wpt.fyi/results/css/css-align/default-alignment/parse-justify-items-001.html) | Pass | 22 / 22 |  |  |
 | [`default-alignment/parse-justify-items-002.html`](https://wpt.fyi/results/css/css-align/default-alignment/parse-justify-items-002.html) | Pass | 7 / 7 |  |  |
-| [`default-alignment/parse-justify-items-003.html`](https://wpt.fyi/results/css/css-align/default-alignment/parse-justify-items-003.html) | Fail | 18 / 22 | NOT IMPLEMENTED | `flex-start` and `flex-end` serialized as `flow-start` and `flow-end` (experimental in Chromium, fails in every browser) |
+| [`default-alignment/parse-justify-items-003.html`](https://wpt.fyi/results/css/css-align/default-alignment/parse-justify-items-003.html) | Pass | 22 / 22 |  |  |
 | [`default-alignment/parse-justify-items-004.html`](https://wpt.fyi/results/css/css-align/default-alignment/parse-justify-items-004.html) | Pass | 32 / 32 |  |  |
 | [`default-alignment/parse-justify-items-005.html`](https://wpt.fyi/results/css/css-align/default-alignment/parse-justify-items-005.html) | Pass | 3 / 3 |  |  |
 | [`default-alignment/parse-justify-items-006.html`](https://wpt.fyi/results/css/css-align/default-alignment/parse-justify-items-006.html) | Pass | 3 / 3 |  |  |
@@ -169,9 +169,9 @@ description: "The results of the web-platform-tests of css/css-align, and why th
 | [`default-alignment/place-items-shorthand-003.html`](https://wpt.fyi/results/css/css-align/default-alignment/place-items-shorthand-003.html) | Pass | 2 / 2 |  |  |
 | [`default-alignment/place-items-shorthand-004.html`](https://wpt.fyi/results/css/css-align/default-alignment/place-items-shorthand-004.html) | Pass | 4 / 4 |  |  |
 | [`default-alignment/place-items-shorthand-005.html`](https://wpt.fyi/results/css/css-align/default-alignment/place-items-shorthand-005.html) | Pass | 2 / 2 |  |  |
-| [`default-alignment/place-items-shorthand-006.html`](https://wpt.fyi/results/css/css-align/default-alignment/place-items-shorthand-006.html) | Fail | 120 / 168 | NOT IMPLEMENTED | `flex-start` and `flex-end` serialized as `flow-start` and `flow-end` (experimental in Chromium, fails in every browser) |
+| [`default-alignment/place-items-shorthand-006.html`](https://wpt.fyi/results/css/css-align/default-alignment/place-items-shorthand-006.html) | Pass | 168 / 168 |  |  |
 | [`default-alignment/shorthand-serialization-001.html`](https://wpt.fyi/results/css/css-align/default-alignment/shorthand-serialization-001.html) | Pass | 17 / 17 |  |  |
-| [`flow-start-and-end-serialization.html`](https://wpt.fyi/results/css/css-align/flow-start-and-end-serialization.html) | Fail | 0 / 9 | NOT IMPLEMENTED | `flex-start` and `flex-end` serialized as `flow-start` and `flow-end` (experimental in Chromium, fails in every browser) |
+| [`flow-start-and-end-serialization.html`](https://wpt.fyi/results/css/css-align/flow-start-and-end-serialization.html) | Pass | 9 / 9 |  |  |
 | [`gaps/column-gap-animation-001.html`](https://wpt.fyi/results/css/css-align/gaps/column-gap-animation-001.html) | Pass | 1 / 1 |  |  |
 | [`gaps/column-gap-animation-002.html`](https://wpt.fyi/results/css/css-align/gaps/column-gap-animation-002.html) | Pass | 1 / 1 |  |  |
 | [`gaps/column-gap-animation-003.html`](https://wpt.fyi/results/css/css-align/gaps/column-gap-animation-003.html) | Pass | 1 / 1 |  |  |
@@ -193,13 +193,13 @@ description: "The results of the web-platform-tests of css/css-align, and why th
 | [`gaps/row-gap-parsing-001.html`](https://wpt.fyi/results/css/css-align/gaps/row-gap-parsing-001.html) | Pass | 18 / 18 |  |  |
 | [`inheritance.html`](https://wpt.fyi/results/css/css-align/inheritance.html) | Pass | 16 / 16 |  |  |
 | [`multicol/align-content-multicol.html`](https://wpt.fyi/results/css/css-align/multicol/align-content-multicol.html) | Pass | 32 / 32 |  |  |
-| [`parsing/align-content-computed.html`](https://wpt.fyi/results/css/css-align/parsing/align-content-computed.html) | Fail | 15 / 18 | NOT IMPLEMENTED | `flex-start` and `flex-end` serialized as `flow-start` and `flow-end` (experimental in Chromium, fails in every browser) |
+| [`parsing/align-content-computed.html`](https://wpt.fyi/results/css/css-align/parsing/align-content-computed.html) | Pass | 18 / 18 |  |  |
 | [`parsing/align-content-invalid.html`](https://wpt.fyi/results/css/css-align/parsing/align-content-invalid.html) | Pass | 23 / 23 |  |  |
 | [`parsing/align-content-valid.html`](https://wpt.fyi/results/css/css-align/parsing/align-content-valid.html) | Pass | 19 / 19 |  |  |
-| [`parsing/align-items-computed.html`](https://wpt.fyi/results/css/css-align/parsing/align-items-computed.html) | Fail | 15 / 19 | NOT IMPLEMENTED | `flex-start` and `flex-end` serialized as `flow-start` and `flow-end` (experimental in Chromium, fails in every browser) |
+| [`parsing/align-items-computed.html`](https://wpt.fyi/results/css/css-align/parsing/align-items-computed.html) | Pass | 19 / 19 |  |  |
 | [`parsing/align-items-invalid.html`](https://wpt.fyi/results/css/css-align/parsing/align-items-invalid.html) | Pass | 26 / 26 |  |  |
-| [`parsing/align-items-valid.html`](https://wpt.fyi/results/css/css-align/parsing/align-items-valid.html) | Fail | 18 / 20 | NOT IMPLEMENTED | `<overflow-position> normal` (`safe normal`, `unsafe normal`) in `align-items`, `justify-items` and `place-items`: the grammar generated from the specification data (`normal \| stretch \| <baseline-position> \| <overflow-position>? <self-position>`) does not allow an overflow position before `normal` (only `align-self` and `justify-self` do), so the declaration is invalid |
-| [`parsing/align-self-computed.html`](https://wpt.fyi/results/css/css-align/parsing/align-self-computed.html) | Fail | 18 / 20 | NOT IMPLEMENTED | `flex-start` and `flex-end` serialized as `flow-start` and `flow-end` (experimental in Chromium, fails in every browser) |
+| [`parsing/align-items-valid.html`](https://wpt.fyi/results/css/css-align/parsing/align-items-valid.html) | Pass | 20 / 20 |  |  |
+| [`parsing/align-self-computed.html`](https://wpt.fyi/results/css/css-align/parsing/align-self-computed.html) | Pass | 20 / 20 |  |  |
 | [`parsing/align-self-invalid.html`](https://wpt.fyi/results/css/css-align/parsing/align-self-invalid.html) | Pass | 24 / 24 |  |  |
 | [`parsing/align-self-valid.html`](https://wpt.fyi/results/css/css-align/parsing/align-self-valid.html) | Pass | 21 / 21 |  |  |
 | [`parsing/column-gap-computed.html`](https://wpt.fyi/results/css/css-align/parsing/column-gap-computed.html) | Pass | 5 / 5 |  |  |
@@ -219,38 +219,38 @@ description: "The results of the web-platform-tests of css/css-align, and why th
 | [`parsing/grid-row-gap-computed.html`](https://wpt.fyi/results/css/css-align/parsing/grid-row-gap-computed.html) | Pass | 6 / 6 |  |  |
 | [`parsing/grid-row-gap-invalid.html`](https://wpt.fyi/results/css/css-align/parsing/grid-row-gap-invalid.html) | Pass | 4 / 4 |  |  |
 | [`parsing/grid-row-gap-valid.html`](https://wpt.fyi/results/css/css-align/parsing/grid-row-gap-valid.html) | Pass | 5 / 5 |  |  |
-| [`parsing/justify-content-computed.html`](https://wpt.fyi/results/css/css-align/parsing/justify-content-computed.html) | Fail | 15 / 18 | NOT IMPLEMENTED | `flex-start` and `flex-end` serialized as `flow-start` and `flow-end` (experimental in Chromium, fails in every browser) |
+| [`parsing/justify-content-computed.html`](https://wpt.fyi/results/css/css-align/parsing/justify-content-computed.html) | Pass | 18 / 18 |  |  |
 | [`parsing/justify-content-invalid.html`](https://wpt.fyi/results/css/css-align/parsing/justify-content-invalid.html) | Pass | 24 / 24 |  |  |
 | [`parsing/justify-content-valid.html`](https://wpt.fyi/results/css/css-align/parsing/justify-content-valid.html) | Pass | 18 / 18 |  |  |
-| [`parsing/justify-items-computed.html`](https://wpt.fyi/results/css/css-align/parsing/justify-items-computed.html) | Fail | 22 / 26 | NOT IMPLEMENTED | `flex-start` and `flex-end` serialized as `flow-start` and `flow-end` (experimental in Chromium, fails in every browser) |
+| [`parsing/justify-items-computed.html`](https://wpt.fyi/results/css/css-align/parsing/justify-items-computed.html) | Pass | 26 / 26 |  |  |
 | [`parsing/justify-items-invalid.html`](https://wpt.fyi/results/css/css-align/parsing/justify-items-invalid.html) | Pass | 21 / 21 |  |  |
-| [`parsing/justify-items-valid.html`](https://wpt.fyi/results/css/css-align/parsing/justify-items-valid.html) | Fail | 24 / 26 | NOT IMPLEMENTED | `<overflow-position> normal` (`safe normal`, `unsafe normal`) in `align-items`, `justify-items` and `place-items`: the grammar generated from the specification data (`normal \| stretch \| <baseline-position> \| <overflow-position>? <self-position>`) does not allow an overflow position before `normal` (only `align-self` and `justify-self` do), so the declaration is invalid |
-| [`parsing/justify-self-computed.html`](https://wpt.fyi/results/css/css-align/parsing/justify-self-computed.html) | Fail | 20 / 22 | NOT IMPLEMENTED | `flex-start` and `flex-end` serialized as `flow-start` and `flow-end` (experimental in Chromium, fails in every browser) |
+| [`parsing/justify-items-valid.html`](https://wpt.fyi/results/css/css-align/parsing/justify-items-valid.html) | Pass | 26 / 26 |  |  |
+| [`parsing/justify-self-computed.html`](https://wpt.fyi/results/css/css-align/parsing/justify-self-computed.html) | Pass | 22 / 22 |  |  |
 | [`parsing/justify-self-invalid.html`](https://wpt.fyi/results/css/css-align/parsing/justify-self-invalid.html) | Pass | 22 / 22 |  |  |
 | [`parsing/justify-self-valid.html`](https://wpt.fyi/results/css/css-align/parsing/justify-self-valid.html) | Pass | 23 / 23 |  |  |
-| [`parsing/place-content-computed.html`](https://wpt.fyi/results/css/css-align/parsing/place-content-computed.html) | Fail | 22 / 25 | NOT IMPLEMENTED | `flex-start` and `flex-end` serialized as `flow-start` and `flow-end` (experimental in Chromium, fails in every browser) |
+| [`parsing/place-content-computed.html`](https://wpt.fyi/results/css/css-align/parsing/place-content-computed.html) | Pass | 25 / 25 |  |  |
 | [`parsing/place-content-invalid.html`](https://wpt.fyi/results/css/css-align/parsing/place-content-invalid.html) | Pass | 10 / 10 |  |  |
 | [`parsing/place-content-shorthand.html`](https://wpt.fyi/results/css/css-align/parsing/place-content-shorthand.html) | Pass | 15 / 15 |  |  |
 | [`parsing/place-content-valid.html`](https://wpt.fyi/results/css/css-align/parsing/place-content-valid.html) | Pass | 26 / 26 |  |  |
-| [`parsing/place-items-computed.html`](https://wpt.fyi/results/css/css-align/parsing/place-items-computed.html) | Fail | 19 / 25 | NOT IMPLEMENTED | `flex-start` and `flex-end` serialized as `flow-start` and `flow-end` (experimental in Chromium, fails in every browser) |
+| [`parsing/place-items-computed.html`](https://wpt.fyi/results/css/css-align/parsing/place-items-computed.html) | Pass | 25 / 25 |  |  |
 | [`parsing/place-items-invalid.html`](https://wpt.fyi/results/css/css-align/parsing/place-items-invalid.html) | Pass | 17 / 17 |  |  |
-| [`parsing/place-items-shorthand.html`](https://wpt.fyi/results/css/css-align/parsing/place-items-shorthand.html) | Fail | 12 / 18 | NOT IMPLEMENTED | `<overflow-position> normal` (`safe normal`, `unsafe normal`) in `align-items`, `justify-items` and `place-items`: the grammar generated from the specification data (`normal \| stretch \| <baseline-position> \| <overflow-position>? <self-position>`) does not allow an overflow position before `normal` (only `align-self` and `justify-self` do), so the declaration is invalid |
-| [`parsing/place-items-valid.html`](https://wpt.fyi/results/css/css-align/parsing/place-items-valid.html) | Fail | 20 / 24 | NOT IMPLEMENTED | `<overflow-position> normal` (`safe normal`, `unsafe normal`) in `align-items`, `justify-items` and `place-items`: the grammar generated from the specification data (`normal \| stretch \| <baseline-position> \| <overflow-position>? <self-position>`) does not allow an overflow position before `normal` (only `align-self` and `justify-self` do), so the declaration is invalid |
-| [`parsing/place-self-computed.html`](https://wpt.fyi/results/css/css-align/parsing/place-self-computed.html) | Fail | 21 / 23 | NOT IMPLEMENTED | `flex-start` and `flex-end` serialized as `flow-start` and `flow-end` (experimental in Chromium, fails in every browser) |
+| [`parsing/place-items-shorthand.html`](https://wpt.fyi/results/css/css-align/parsing/place-items-shorthand.html) | Pass | 18 / 18 |  |  |
+| [`parsing/place-items-valid.html`](https://wpt.fyi/results/css/css-align/parsing/place-items-valid.html) | Pass | 24 / 24 |  |  |
+| [`parsing/place-self-computed.html`](https://wpt.fyi/results/css/css-align/parsing/place-self-computed.html) | Pass | 23 / 23 |  |  |
 | [`parsing/place-self-invalid.html`](https://wpt.fyi/results/css/css-align/parsing/place-self-invalid.html) | Pass | 11 / 11 |  |  |
 | [`parsing/place-self-shorthand.html`](https://wpt.fyi/results/css/css-align/parsing/place-self-shorthand.html) | Pass | 18 / 18 |  |  |
 | [`parsing/place-self-valid.html`](https://wpt.fyi/results/css/css-align/parsing/place-self-valid.html) | Pass | 23 / 23 |  |  |
 | [`parsing/row-gap-computed.html`](https://wpt.fyi/results/css/css-align/parsing/row-gap-computed.html) | Pass | 6 / 6 |  |  |
 | [`parsing/row-gap-invalid.html`](https://wpt.fyi/results/css/css-align/parsing/row-gap-invalid.html) | Pass | 4 / 4 |  |  |
 | [`parsing/row-gap-valid.html`](https://wpt.fyi/results/css/css-align/parsing/row-gap-valid.html) | Pass | 5 / 5 |  |  |
-| [`self-alignment/parse-align-self-001.html`](https://wpt.fyi/results/css/css-align/self-alignment/parse-align-self-001.html) | Fail | 14 / 18 | NOT IMPLEMENTED | `flex-start` and `flex-end` serialized as `flow-start` and `flow-end` (experimental in Chromium, fails in every browser) |
+| [`self-alignment/parse-align-self-001.html`](https://wpt.fyi/results/css/css-align/self-alignment/parse-align-self-001.html) | Pass | 18 / 18 |  |  |
 | [`self-alignment/parse-align-self-002.html`](https://wpt.fyi/results/css/css-align/self-alignment/parse-align-self-002.html) | Pass | 7 / 7 |  |  |
-| [`self-alignment/parse-align-self-003.html`](https://wpt.fyi/results/css/css-align/self-alignment/parse-align-self-003.html) | Fail | 14 / 18 | NOT IMPLEMENTED | `flex-start` and `flex-end` serialized as `flow-start` and `flow-end` (experimental in Chromium, fails in every browser) |
+| [`self-alignment/parse-align-self-003.html`](https://wpt.fyi/results/css/css-align/self-alignment/parse-align-self-003.html) | Pass | 18 / 18 |  |  |
 | [`self-alignment/parse-align-self-004.html`](https://wpt.fyi/results/css/css-align/self-alignment/parse-align-self-004.html) | Pass | 28 / 28 |  |  |
 | [`self-alignment/parse-align-self-005.html`](https://wpt.fyi/results/css/css-align/self-alignment/parse-align-self-005.html) | Pass | 3 / 3 |  |  |
-| [`self-alignment/parse-justify-self-001.html`](https://wpt.fyi/results/css/css-align/self-alignment/parse-justify-self-001.html) | Fail | 16 / 20 | NOT IMPLEMENTED | `flex-start` and `flex-end` serialized as `flow-start` and `flow-end` (experimental in Chromium, fails in every browser) |
+| [`self-alignment/parse-justify-self-001.html`](https://wpt.fyi/results/css/css-align/self-alignment/parse-justify-self-001.html) | Pass | 20 / 20 |  |  |
 | [`self-alignment/parse-justify-self-002.html`](https://wpt.fyi/results/css/css-align/self-alignment/parse-justify-self-002.html) | Pass | 7 / 7 |  |  |
-| [`self-alignment/parse-justify-self-003.html`](https://wpt.fyi/results/css/css-align/self-alignment/parse-justify-self-003.html) | Fail | 16 / 20 | NOT IMPLEMENTED | `flex-start` and `flex-end` serialized as `flow-start` and `flow-end` (experimental in Chromium, fails in every browser) |
+| [`self-alignment/parse-justify-self-003.html`](https://wpt.fyi/results/css/css-align/self-alignment/parse-justify-self-003.html) | Pass | 20 / 20 |  |  |
 | [`self-alignment/parse-justify-self-004.html`](https://wpt.fyi/results/css/css-align/self-alignment/parse-justify-self-004.html) | Pass | 26 / 26 |  |  |
 | [`self-alignment/parse-justify-self-005.html`](https://wpt.fyi/results/css/css-align/self-alignment/parse-justify-self-005.html) | Pass | 3 / 3 |  |  |
 | [`self-alignment/place-self-shorthand-001.html`](https://wpt.fyi/results/css/css-align/self-alignment/place-self-shorthand-001.html) | Pass | 18 / 18 |  |  |
@@ -258,7 +258,7 @@ description: "The results of the web-platform-tests of css/css-align, and why th
 | [`self-alignment/place-self-shorthand-003.html`](https://wpt.fyi/results/css/css-align/self-alignment/place-self-shorthand-003.html) | Pass | 2 / 2 |  |  |
 | [`self-alignment/place-self-shorthand-004.html`](https://wpt.fyi/results/css/css-align/self-alignment/place-self-shorthand-004.html) | Pass | 4 / 4 |  |  |
 | [`self-alignment/place-self-shorthand-005.html`](https://wpt.fyi/results/css/css-align/self-alignment/place-self-shorthand-005.html) | Pass | 2 / 2 |  |  |
-| [`self-alignment/place-self-shorthand-006.html`](https://wpt.fyi/results/css/css-align/self-alignment/place-self-shorthand-006.html) | Fail | 143 / 195 | NOT IMPLEMENTED | `flex-start` and `flex-end` serialized as `flow-start` and `flow-end` (experimental in Chromium, fails in every browser) |
+| [`self-alignment/place-self-shorthand-006.html`](https://wpt.fyi/results/css/css-align/self-alignment/place-self-shorthand-006.html) | Pass | 195 / 195 |  |  |
 
 ## Reftests
 
@@ -270,11 +270,11 @@ description: "The results of the web-platform-tests of css/css-align, and why th
 | [`abspos/align-out-of-flow-only-content.html`](https://wpt.fyi/results/css/css-align/abspos/align-out-of-flow-only-content.html) | Pass | 1 / 1 |  |  |
 | [`abspos/align-self-static-position-001.html`](https://wpt.fyi/results/css/css-align/abspos/align-self-static-position-001.html) | Pass | 1 / 1 |  |  |
 | [`abspos/align-self-static-position-002.html`](https://wpt.fyi/results/css/css-align/abspos/align-self-static-position-002.html) | Pass | 1 / 1 |  |  |
-| [`abspos/align-self-static-position-003.html`](https://wpt.fyi/results/css/css-align/abspos/align-self-static-position-003.html) | Fail | 0 / 1 | BUG | the static-position rectangle of an absolutely positioned `display: block` box whose parent is an inline box is the one of the block layout (zero height at the start of the next line, as wide as the containing block) instead of the one of the inline layout (zero width at the inline-start edge, as tall as the 25px line): with `justify-self`/`align-self: end \| center` the box is 100px/50px too far in the inline axis and 25px/12.5px too far back in the block axis; only Chrome passes |
-| [`abspos/align-self-static-position-004.html`](https://wpt.fyi/results/css/css-align/abspos/align-self-static-position-004.html) | Fail | 0 / 1 | BUG | the static-position rectangle of an absolutely positioned `display: block` box whose parent is an inline box is the one of the block layout (zero height at the start of the next line, as wide as the containing block) instead of the one of the inline layout (zero width at the inline-start edge, as tall as the 25px line): with `justify-self`/`align-self: end \| center` the box is 100px/50px too far in the inline axis and 25px/12.5px too far back in the block axis; only Chrome passes |
+| [`abspos/align-self-static-position-003.html`](https://wpt.fyi/results/css/css-align/abspos/align-self-static-position-003.html) | Pass | 1 / 1 |  |  |
+| [`abspos/align-self-static-position-004.html`](https://wpt.fyi/results/css/css-align/abspos/align-self-static-position-004.html) | Pass | 1 / 1 |  |  |
 | [`abspos/align-self-static-position-005.html`](https://wpt.fyi/results/css/css-align/abspos/align-self-static-position-005.html) | Pass | 1 / 1 |  |  |
 | [`abspos/align-self-static-position-006.html`](https://wpt.fyi/results/css/css-align/abspos/align-self-static-position-006.html) | Pass | 1 / 1 |  |  |
-| [`abspos/align-self-static-position-007.html`](https://wpt.fyi/results/css/css-align/abspos/align-self-static-position-007.html) | Fail | 0 / 1 | BUG | the static-position rectangle of an absolutely positioned `display: block` box whose parent is an inline box is the one of the block layout (zero height at the start of the next line, as wide as the containing block) instead of the one of the inline layout (zero width at the inline-start edge, as tall as the 25px line): with `justify-self`/`align-self: end \| center` the box is 100px/50px too far in the inline axis and 25px/12.5px too far back in the block axis; only Chrome passes |
+| [`abspos/align-self-static-position-007.html`](https://wpt.fyi/results/css/css-align/abspos/align-self-static-position-007.html) | Fail | 0 / 1 | BUG | an absolutely positioned `display: block` box with `direction: ltr` whose parent is an inline box with `direction: rtl`: its static-position rectangle is on the next line (the line after the content that precedes it, as for the other block-level boxes of an inline box), where Blink uses the line of that content (the box is 25px too low with `align-self: self-start` and `self-end`); only Chrome passes |
 | [`abspos/align-self-static-position-008.html`](https://wpt.fyi/results/css/css-align/abspos/align-self-static-position-008.html) | Pass | 1 / 1 |  |  |
 | [`abspos/align-self-stretch-auto-margins-aspect-ratio.html`](https://wpt.fyi/results/css/css-align/abspos/align-self-stretch-auto-margins-aspect-ratio.html) | Pass | 1 / 1 |  |  |
 | [`abspos/align-self-stretch-auto-margins.html`](https://wpt.fyi/results/css/css-align/abspos/align-self-stretch-auto-margins.html) | Pass | 1 / 1 |  |  |
@@ -293,7 +293,7 @@ description: "The results of the web-platform-tests of css/css-align, and why th
 | [`baseline-rules/inline-table-inline-block-baseline-vert-rl.html`](https://wpt.fyi/results/css/css-align/baseline-rules/inline-table-inline-block-baseline-vert-rl.html) | Pass | 1 / 1 |  |  |
 | [`baseline-rules/inline-table-inline-block-baseline.html`](https://wpt.fyi/results/css/css-align/baseline-rules/inline-table-inline-block-baseline.html) | Pass | 1 / 1 |  |  |
 | [`baseline-rules/overflow-hidden-block-in-inline-baseline.html`](https://wpt.fyi/results/css/css-align/baseline-rules/overflow-hidden-block-in-inline-baseline.html) | Pass | 1 / 1 |  |  |
-| [`baseline-rules/synthesized-baseline-table-cell-001.html`](https://wpt.fyi/results/css/css-align/baseline-rules/synthesized-baseline-table-cell-001.html) | Fail | 0 / 1 | BUG | in the reference, the baseline of a baseline-aligned cell without line box is synthesized from the bottom of the content box of its specified `height` (150px, 230px) although its content (an empty `overflow: hidden` block of 50px, or of 80px with a 50px margin) is shorter: the browsers use the bottom edge of that content, as for the cell of the test whose content box is delimited by its paddings, so 2 of the 9 tables of the reference are 100px too high relative to the text; Safari fails |
+| [`baseline-rules/synthesized-baseline-table-cell-001.html`](https://wpt.fyi/results/css/css-align/baseline-rules/synthesized-baseline-table-cell-001.html) | Pass | 1 / 1 |  |  |
 | [`blocks/align-content-block-001.html`](https://wpt.fyi/results/css/css-align/blocks/align-content-block-001.html) | Pass | 1 / 1 |  |  |
 | [`blocks/align-content-block-012.html`](https://wpt.fyi/results/css/css-align/blocks/align-content-block-012.html) | Pass | 1 / 1 |  |  |
 | [`blocks/align-content-block-break-content-010.html`](https://wpt.fyi/results/css/css-align/blocks/align-content-block-break-content-010.html) | Pass | 1 / 1 |  |  |
@@ -313,7 +313,7 @@ description: "The results of the web-platform-tests of css/css-align, and why th
 | [`blocks/justify-self-block-in-inline-002.html`](https://wpt.fyi/results/css/css-align/blocks/justify-self-block-in-inline-002.html) | Pass | 1 / 1 |  |  |
 | [`blocks/justify-self-normal-1.html`](https://wpt.fyi/results/css/css-align/blocks/justify-self-normal-1.html) | Pass | 1 / 1 |  |  |
 | [`blocks/justify-self-text-align.html`](https://wpt.fyi/results/css/css-align/blocks/justify-self-text-align.html) | Pass | 1 / 1 |  |  |
-| [`blocks/justify-self-widgets.html`](https://wpt.fyi/results/css/css-align/blocks/justify-self-widgets.html) | Fail | 0 / 1 | BUG | `justify-self: stretch` does not stretch the block-level form controls with `width: auto` (`<input>`, `<select>`, `<textarea>`): they keep their intrinsic width (224px, 16px, 195px) instead of filling the 784px of the containing block; only Chrome passes |
+| [`blocks/justify-self-widgets.html`](https://wpt.fyi/results/css/css-align/blocks/justify-self-widgets.html) | Pass | 1 / 1 |  |  |
 | [`blocks/safe-justify-self-text-align-1.html`](https://wpt.fyi/results/css/css-align/blocks/safe-justify-self-text-align-1.html) | Pass | 1 / 1 |  |  |
 | [`content-distribution/place-content-shorthand-007.html`](https://wpt.fyi/results/css/css-align/content-distribution/place-content-shorthand-007.html) | Pass | 1 / 1 |  |  |
 | [`distribution-values/space-evenly-001.html`](https://wpt.fyi/results/css/css-align/distribution-values/space-evenly-001.html) | Pass | 1 / 1 |  |  |

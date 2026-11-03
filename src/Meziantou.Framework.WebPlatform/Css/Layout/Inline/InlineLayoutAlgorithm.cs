@@ -1093,6 +1093,21 @@ internal sealed partial class InlineLayoutAlgorithm
 
                 staticPosition = new LogicalOffset(lineOffset.Inline + inlineOffset, lineOffset.Block + blockStart);
             }
+            else if (box.Parent is { IsInlineBox: true })
+            {
+                // A block-level box whose parent is an inline box: its static-position rectangle is the one of the inline layout,
+                // zero width at the inline-start edge of the line and as tall as the line (as in Blink, WPT
+                // css/css-align/abspos/align-self-static-position-003.html)
+                var rectStart = lineOffset.Block + (afterContent ? line.BlockSize : 0);
+                var blockStart = blockEdge switch
+                {
+                    StaticPositionEdge.End => line.BlockSize,
+                    StaticPositionEdge.Center => line.BlockSize / 2,
+                    _ => 0,
+                };
+
+                staticPosition = new LogicalOffset(content.Offset.Inline, rectStart + blockStart);
+            }
             else
             {
                 var staticInline = inlineEdge switch

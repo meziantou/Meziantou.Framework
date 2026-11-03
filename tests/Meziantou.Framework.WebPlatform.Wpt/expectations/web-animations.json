@@ -1,14 +1,6 @@
 {
   "web-animations/animation-model/animation-types/accumulation-per-property-001.html": {
-    "total": 404,
-    "failures": {
-      "align-content: \"flex-end\" onto \"flex-start\"": "FAIL",
-      "align-content: \"flex-start\" onto \"flex-end\"": "FAIL",
-      "align-items: \"flex-end\" onto \"flex-start\"": "FAIL",
-      "align-items: \"flex-start\" onto \"flex-end\"": "FAIL",
-      "align-self: \"flex-end\" onto \"flex-start\"": "FAIL",
-      "align-self: \"flex-start\" onto \"flex-end\"": "FAIL"
-    }
+    "total": 404
   },
   "web-animations/animation-model/animation-types/accumulation-per-property-002.html": {
     "total": 413,
@@ -17,15 +9,7 @@
     }
   },
   "web-animations/animation-model/animation-types/addition-per-property-001.html": {
-    "total": 404,
-    "failures": {
-      "align-content: \"flex-end\" onto \"flex-start\"": "FAIL",
-      "align-content: \"flex-start\" onto \"flex-end\"": "FAIL",
-      "align-items: \"flex-end\" onto \"flex-start\"": "FAIL",
-      "align-items: \"flex-start\" onto \"flex-end\"": "FAIL",
-      "align-self: \"flex-end\" onto \"flex-start\"": "FAIL",
-      "align-self: \"flex-start\" onto \"flex-end\"": "FAIL"
-    }
+    "total": 404
   },
   "web-animations/animation-model/animation-types/addition-per-property-002.html": {
     "total": 409,
@@ -49,15 +33,6 @@
   "web-animations/animation-model/animation-types/interpolation-per-property-001.html": {
     "total": 507,
     "failures": {
-      "align-content uses discrete animation when animating between \"flex-start\" and \"flex-end\" with effect easing": "FAIL",
-      "align-content uses discrete animation when animating between \"flex-start\" and \"flex-end\" with keyframe easing": "FAIL",
-      "align-content uses discrete animation when animating between \"flex-start\" and \"flex-end\" with linear easing": "FAIL",
-      "align-items uses discrete animation when animating between \"flex-start\" and \"flex-end\" with effect easing": "FAIL",
-      "align-items uses discrete animation when animating between \"flex-start\" and \"flex-end\" with keyframe easing": "FAIL",
-      "align-items uses discrete animation when animating between \"flex-start\" and \"flex-end\" with linear easing": "FAIL",
-      "align-self uses discrete animation when animating between \"flex-start\" and \"flex-end\" with effect easing": "FAIL",
-      "align-self uses discrete animation when animating between \"flex-start\" and \"flex-end\" with keyframe easing": "FAIL",
-      "align-self uses discrete animation when animating between \"flex-start\" and \"flex-end\" with linear easing": "FAIL",
       "filter: hue-rotate function with different unit(deg -> rad)": "FAIL"
     }
   },
@@ -121,7 +96,6 @@
       "iteration composition of animation non-additive units": "FAIL",
       "iteration composition of complex math functions preserves AST left-to-right operand order": "FAIL",
       "iteration composition of discrete filter list because of mismatch of the order": "FAIL",
-      "iteration composition of discrete type animation (align-content)": "FAIL",
       "iteration composition of incompatible calc-size() bases (accumulation skipped at 0%, allowed at 50%)": "FAIL",
       "iteration composition of incompatible clip rects (accumulation skipped at 0%, allowed at 50%)": "FAIL",
       "iteration composition of incompatible intrinsic size keywords (accumulation is skipped)": "FAIL",

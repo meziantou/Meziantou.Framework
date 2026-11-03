@@ -6512,6 +6512,68 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void WebPLosslessColorCacheUpdatesMatchAddingEveryPixel()
+    {
+        // Backward references (overlapping or not) and spans of pixels, with values that hash to few entries (runs of the
+        // same values, as in alpha planes) or to many, at lengths around the groups of 4 and 16 pixels
+        var random = new Random(4057);
+        for (var round = 0; round < 3000; round++)
+        {
+            var cacheBits = 1 + (round % 4);
+            var palette = new uint[1 + random.Next(round % 3 == 0 ? 3 : 64)];
+            for (var i = 0; i < palette.Length; i++)
+            {
+                palette[i] = random.Next(4) == 0 ? (uint)random.Next(256) << 8 : (uint)random.Next() ^ ((uint)random.Next() << 16);
+            }
+
+            var pixels = new uint[random.Next(1, 120)];
+            for (var i = 0; i < pixels.Length; i++)
+            {
+                pixels[i] = palette[random.Next(palette.Length)];
+            }
+
+            var initial = new uint[1 << cacheBits];
+            for (var i = 0; i < initial.Length; i++)
+            {
+                initial[i] = (uint)random.Next();
+            }
+
+            // A copy of length pixels at distance, after the first pixels
+            var position = random.Next(1, pixels.Length + 1);
+            var distance = random.Next(1, position + 1);
+            var length = random.Next(0, pixels.Length - position + 1);
+            for (var i = 0; i < length; i++)
+            {
+                pixels[position + i] = pixels[position + i - distance];
+            }
+
+            var expected = initial.ToArray();
+            foreach (var argb in pixels.AsSpan(position, length))
+            {
+                expected[Vp8LDecoder.ColorCacheHash(argb, cacheBits)] = argb;
+            }
+
+            var actual = initial.ToArray();
+            Vp8LDecoder.InsertCopyIntoCache(pixels.AsSpan(position, length), distance, actual, cacheBits);
+            Assert.Equal(expected, actual);
+
+            if (cacheBits == 1)
+            {
+                expected = initial.ToArray();
+                foreach (var argb in pixels)
+                {
+                    expected[Vp8LDecoder.ColorCacheHash(argb, cacheBits)] = argb;
+                }
+
+                actual = initial.ToArray();
+                Vp8LDecoder.InsertIntoTwoEntryCache(pixels, actual);
+                Assert.Equal(expected, actual);
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void WebPAlphaAndOutputKernelsMatchTheScalarReferences()
     {
         // Alpha filtering and unfiltering (every filter, the first row and column, clamps of the gradient), the green

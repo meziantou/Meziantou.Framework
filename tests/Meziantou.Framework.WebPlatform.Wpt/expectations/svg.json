@@ -1157,7 +1157,7 @@
     "reftest": "PASS"
   },
   "svg/embedded/image-preserveaspectratio-ignores-svg-root-viewbox.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "svg/embedded/image-preserveaspectratio-meet-svg-viewbox-only.html": {
     "reftest": "PASS"
@@ -1175,7 +1175,7 @@
     "reftest": "PASS"
   },
   "svg/embedded/image-preserveaspectratio-overrides-svg-root.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "svg/embedded/image-preserveaspectratio-slice-svg.html": {
     "reftest": "PASS"
@@ -3039,7 +3039,7 @@
     "total": 7
   },
   "svg/struct/reftests/conditional-processing-never-rendered-resources.svg": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "svg/struct/reftests/currentScale-change-repaint.html": {
     "reftest": "PASS"
@@ -3820,7 +3820,7 @@
     "reftest": "PASS"
   },
   "svg/text/reftests/text-positioning-list-combining-marks-indexing.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "svg/text/reftests/text-positioning-list-combining-marks.html": {
     "reftest": "PASS"

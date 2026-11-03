@@ -1112,9 +1112,11 @@ internal sealed class SvgTextLayout
                 var dxs = ParseLengths(element, "dx", width);
                 var dys = ParseLengths(element, "dy", height);
                 var rotates = ParseNumbers(element.GetAnimatedAttributeValue("rotate"));
-                var index = 0;
+                // The lists are indexed by addressable character (a UTF-16 code unit), but the value of a code unit after the first
+                // one of a typographic character ("middle" in the algorithm) is ignored: it does not move it away from its base
                 for (var i = range.Start; i < range.End; i++)
                 {
+                    var index = i - range.Start;
                     if (!characters[i].IsClusterStart)
                         continue;
 
@@ -1143,8 +1145,6 @@ internal sealed class SvgTextLayout
                     {
                         rotate[i] = rotates[Math.Min(index, rotates.Count - 1)];
                     }
-
-                    index++;
                 }
             }
 

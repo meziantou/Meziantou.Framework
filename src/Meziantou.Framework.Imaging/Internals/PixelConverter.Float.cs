@@ -153,15 +153,16 @@ internal static partial class PixelConverter
         ref var src = ref unsafe(MemoryMarshal.GetReference(source));
         ref var dst = ref unsafe(MemoryMarshal.GetReference(destination));
 
-        // The vector path converts the pixels whose samples are all in [0, 1], which every policy without tone mapping
-        // keeps as they are; the scalar loop converts the others one block at a time
-        var vectors = useVectors && UseVectors && toInteger && !floats.ToneMaps && (typeof(TDestination) == typeof(Rgba32) || typeof(TDestination) == typeof(Rgba64));
+        // The vector path converts the pixels whose samples are all in [0, 1] to integers, which every policy without tone
+        // mapping keeps as they are, and the finite floats that round to finite halves to halves; the scalar loop converts
+        // the others one block at a time
+        var vectors = useVectors && UseVectors && (toHalf || (toInteger && !floats.ToneMaps && (typeof(TDestination) == typeof(Rgba32) || typeof(TDestination) == typeof(Rgba64))));
         nint end = 0;
         for (nint i = 0; i < source.Length; i++)
         {
             if (vectors && i == end)
             {
-                i += ConvertUnitPixels(source[(int)i..], destination[(int)i..]);
+                i += toHalf ? ConvertHalfRangePixels(source[(int)i..], destination[(int)i..]) : ConvertUnitPixels(source[(int)i..], destination[(int)i..]);
                 end = Math.Min(i + UnitPixelBlock, source.Length);
                 if (i >= source.Length)
                     break;
@@ -415,6 +416,44 @@ internal static partial class PixelConverter
                 if (valid.AsUInt32() != Vector128<uint>.AllBitsSet)
                     break;
             }
+        }
+
+        return count;
+    }
+
+    /// <summary>
+    /// Converts the leading <see cref="RgbaFloat"/> pixels, by blocks of <see cref="UnitPixelBlock"/>, whose samples are all
+    /// finite and round to finite halves, to <see cref="RgbaHalf"/> (<see cref="SingleToHalf"/>, the rounding of a cast).
+    /// </summary>
+    /// <returns>The number of pixels converted.</returns>
+    private static int ConvertHalfRangePixels<TSource, TDestination>(ReadOnlySpan<TSource> source, Span<TDestination> destination)
+        where TSource : unmanaged
+        where TDestination : unmanaged
+    {
+        var count = 0;
+        if (typeof(TSource) != typeof(RgbaFloat) || typeof(TDestination) != typeof(RgbaHalf))
+            return count;
+
+        ref var samples = ref unsafe(Unsafe.As<TSource, float>(ref MemoryMarshal.GetReference(source)));
+        ref var output = ref unsafe(Unsafe.As<TDestination, ushort>(ref MemoryMarshal.GetReference(destination)));
+        var high = Vector128.Create(BitConverter.Int32BitsToSingle(BitConverter.SingleToInt32Bits(HalfOverflow) - 1));
+        var low = -high;
+        for (; count + UnitPixelBlock <= source.Length; count += UnitPixelBlock)
+        {
+            var offset = (nuint)count * 4;
+            var v0 = unsafe(Vector128.LoadUnsafe(ref samples, offset));
+            var v1 = unsafe(Vector128.LoadUnsafe(ref samples, offset + 4));
+            var v2 = unsafe(Vector128.LoadUnsafe(ref samples, offset + 8));
+            var v3 = unsafe(Vector128.LoadUnsafe(ref samples, offset + 12));
+            var valid = Vector128.GreaterThanOrEqual(v0, low) & Vector128.LessThanOrEqual(v0, high)
+                & Vector128.GreaterThanOrEqual(v1, low) & Vector128.LessThanOrEqual(v1, high)
+                & Vector128.GreaterThanOrEqual(v2, low) & Vector128.LessThanOrEqual(v2, high)
+                & Vector128.GreaterThanOrEqual(v3, low) & Vector128.LessThanOrEqual(v3, high);
+            if (valid.AsUInt32() != Vector128<uint>.AllBitsSet)
+                break;
+
+            unsafe { Vector128.Narrow(SingleToHalf(v0), SingleToHalf(v1)).StoreUnsafe(ref output, offset); }
+            unsafe { Vector128.Narrow(SingleToHalf(v2), SingleToHalf(v3)).StoreUnsafe(ref output, offset + 8); }
         }
 
         return count;

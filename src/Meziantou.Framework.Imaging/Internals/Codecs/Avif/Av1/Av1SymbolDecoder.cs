@@ -103,12 +103,12 @@ internal sealed class Av1SymbolDecoder
     }
 
     /// <summary>
-    /// Copies the state of the range decoder, for a loop that decodes many symbols with <see cref="ReadSymbol4"/> and keeps
+    /// Copies the state of the range decoder, for a loop that decodes many symbols with <see cref="ReadSymbol4Branchless"/> and keeps
     /// the state in locals; <see cref="Restore"/> gives it back to the decoder before its other methods are called.
     /// </summary>
     public State Save() => new() { Window = _window, Count = _count, Range = _range };
 
-    /// <summary>Sets the state of the range decoder that <see cref="Save"/> copied and <see cref="ReadSymbol4"/> advanced.</summary>
+    /// <summary>Sets the state of the range decoder that <see cref="Save"/> copied and <see cref="ReadSymbol4Branchless"/> advanced.</summary>
     public void Restore(State state)
     {
         _window = state.Window;
@@ -118,84 +118,8 @@ internal sealed class Av1SymbolDecoder
 
     /// <summary>
     /// <see cref="ReadSymbol"/> for a distribution of 4 symbols (5 values with the counter), on a state copied by
-    /// <see cref="Save"/>: the coefficient levels, most of the symbols of a tile.
-    /// </summary>
-    // The loop of ReadSymbol unrolled for 4 symbols (cur( 3 ) is 0, below every value), Renormalize on the state, and the
-    // adaptation of Av1Cdf.Update with the rate of 4 symbols
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public int ReadSymbol4(ref State state, Span<ushort> cdf)
-    {
-        cdf = cdf[..5];
-        var value = (uint)(state.Window >> state.Count);
-        var range = state.Range;
-        var scale = range >> 8;
-        uint c0 = cdf[0];
-        int symbol;
-        uint prev;
-        uint cur;
-        var cur0 = ((scale * (((1u << 15) - c0) >> Av1Constants.EcProbShift)) >> (7 - Av1Constants.EcProbShift)) + (3 * Av1Constants.EcMinProb);
-        if (value >= cur0)
-        {
-            symbol = 0;
-            prev = range;
-            cur = cur0;
-        }
-        else
-        {
-            uint c1 = cdf[1];
-            var cur1 = ((scale * (((1u << 15) - c1) >> Av1Constants.EcProbShift)) >> (7 - Av1Constants.EcProbShift)) + (2 * Av1Constants.EcMinProb);
-            if (value >= cur1)
-            {
-                symbol = 1;
-                prev = cur0;
-                cur = cur1;
-            }
-            else
-            {
-                uint c2 = cdf[2];
-                var cur2 = ((scale * (((1u << 15) - c2) >> Av1Constants.EcProbShift)) >> (7 - Av1Constants.EcProbShift)) + Av1Constants.EcMinProb;
-                if (value >= cur2)
-                {
-                    symbol = 2;
-                    prev = cur1;
-                    cur = cur2;
-                }
-                else
-                {
-                    symbol = 3;
-                    prev = cur2;
-                    cur = 0;
-                }
-            }
-        }
-
-        Renormalize(ref state, prev - cur, cur);
-        if (!_disableCdfUpdate)
-        {
-            var counter = cdf[4];
-            var rate = 5 + (counter > 15 ? 1 : 0) + (counter > 31 ? 1 : 0);
-            for (var i = 0; i < 3; i++)
-            {
-                if (i < symbol)
-                {
-                    cdf[i] -= (ushort)(cdf[i] >> rate);
-                }
-                else
-                {
-                    cdf[i] += (ushort)(((1 << 15) - cdf[i]) >> rate);
-                }
-            }
-
-            if (counter < 32)
-                cdf[4] = (ushort)(counter + 1);
-        }
-
-        return symbol;
-    }
-
-    /// <summary>
-    /// <see cref="ReadSymbol4"/> without branches on the decoded symbol, for the symbols that a branch predictor cannot guess
-    /// (the levels of the coefficients). Returns the same symbol and leaves the same state and distribution.
+    /// <see cref="Save"/>, without branches on the decoded symbol: the coefficient levels, most of the symbols of a tile, which
+    /// a branch predictor cannot guess.
     /// </summary>
     // The values cur( 0 ) > cur( 1 ) > cur( 2 ) > cur( 3 ) = 0 decrease: the symbol is the number of them above the value,
     // and symbol i is coded when value < cur( j ) for every j < i. prev - cur and cur are selected with the masks of these
@@ -228,7 +152,9 @@ internal sealed class Av1SymbolDecoder
         newRange += mask1 & (d2 - d1);
         newRange += mask2 & (cur2 - d2);
         var subtracted = cur0 - (mask0 & d1) - (mask1 & d2) - (mask2 & cur2);
-        Renormalize(ref state, newRange, subtracted);
+
+        // The adaptation of Av1Cdf.Update with the rate of 4 symbols, before the renormalization: the values of the
+        // distribution are not live across the refill
         if (!_disableCdfUpdate)
         {
             int counter = cdf[4];
@@ -239,6 +165,7 @@ internal sealed class Av1SymbolDecoder
             cdf[4] = (ushort)(counter + (counter < 32 ? 1 : 0));
         }
 
+        Renormalize(ref state, newRange, subtracted);
         return below0 + below1 + below2;
     }
 
@@ -331,7 +258,7 @@ internal sealed class Av1SymbolDecoder
 
     // The window of Refill for a state copied by Save, whose count is not changed: the window and the count of a state stay in
     // registers when they are not given by reference
-    [MethodImpl(MethodImplOptions.NoInlining)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private ulong RefillWindow(ulong window, int count)
     {
         while (count <= 40)

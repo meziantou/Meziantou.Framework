@@ -442,9 +442,18 @@ internal ref partial struct Av1TileCoder
             coefficientCount = 1;
             if (eob > 1)
             {
-                coefficientCount = txClass is TxClass2D
-                    ? ReadLevels2D(_symbols, _cdf, scan, eob - 1, levels, list, Av1CoefficientContexts.GetBaseOffsets(txSz), txSz, bwl, coeffBaseOffset, coeffBrOffset)
-                    : ReadLevels(_symbols, _cdf, scan, eob - 1, levels, list, txSz, txClass, bwl, coeffBaseOffset, coeffBrOffset);
+                if (txClass is not TxClass2D)
+                {
+                    coefficientCount = ReadLevels(_symbols, _cdf, scan, eob - 1, levels, list, txSz, txClass, bwl, coeffBaseOffset, coeffBrOffset);
+                }
+                else if (scan.IsWide)
+                {
+                    coefficientCount = ReadLevels2D(_symbols, _cdf, scan.Wide, eob - 1, levels, list, Av1CoefficientContexts.GetBaseOffsets(txSz), txSz, bwl, coeffBaseOffset, coeffBrOffset);
+                }
+                else
+                {
+                    coefficientCount = ReadLevels2D(_symbols, _cdf, scan.Narrow, eob - 1, levels, list, Av1CoefficientContexts.GetBaseOffsets(txSz), txSz, bwl, coeffBaseOffset, coeffBrOffset);
+                }
             }
 
             culLevel = Math.Min(63, ReadSignsAndDequantize(plane, txSz, list[..coefficientCount], aboveDc, leftDc, x4, y4, w4, h4, maxX4, maxY4, out dcCategory, out var positions));
@@ -560,7 +569,8 @@ internal ref partial struct Av1TileCoder
     // the scan order (the coeff_base and coeff_br symbols of the coefficients syntax), read on a copy of the state of the symbol
     // decoder: a method of its own, whose few live values let the state stay in registers. The context offsets of the
     // positions come from a table, and the symbols are read without branches on their values. Returns the length of the list
-    private static int ReadLevels2D(Av1SymbolDecoder symbols, Span<ushort> cdf, Av1Scan scan, int count, Span<byte> levels, Span<int> list, ReadOnlySpan<byte> baseOffsets, int txSz, int bwl, int coeffBaseOffset, int coeffBrOffset)
+    private static int ReadLevels2D<TPosition>(Av1SymbolDecoder symbols, Span<ushort> cdf, ReadOnlySpan<TPosition> scan, int count, Span<byte> levels, Span<int> list, ReadOnlySpan<byte> baseOffsets, int txSz, int bwl, int coeffBaseOffset, int coeffBrOffset)
+        where TPosition : unmanaged, IBinaryInteger<TPosition>
     {
         var state = symbols.Save();
         var stride = (1 << bwl) + Av1TileScratch.LevelMapPadding;
@@ -568,7 +578,7 @@ internal ref partial struct Av1TileCoder
         var listCount = 1;
         for (var c = count - 1; c > 0; c--)
         {
-            var pos = scan[c];
+            var pos = int.CreateTruncating(scan[c]);
             var row = pos >> bwl;
             var index = pos + (row * Av1TileScratch.LevelMapPadding);
             var neighbors = levels[index..];
@@ -587,7 +597,7 @@ internal ref partial struct Av1TileCoder
             listCount += level is not 0 ? 1 : 0;
         }
 
-        listCount = ReadLevel(symbols, ref state, cdf, scan[0], levels, list, listCount, txSz, TxClass2D, bwl, coeffBaseOffset, coeffBrOffset);
+        listCount = ReadLevel(symbols, ref state, cdf, int.CreateTruncating(scan[0]), levels, list, listCount, txSz, TxClass2D, bwl, coeffBaseOffset, coeffBrOffset);
         symbols.Restore(state);
         return listCount;
     }
@@ -607,6 +617,7 @@ internal ref partial struct Av1TileCoder
     }
 
     // The level of the coefficient at pos, with the contexts of any class
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static int ReadLevel(Av1SymbolDecoder symbols, ref Av1SymbolDecoder.State state, Span<ushort> cdf, int pos, Span<byte> levels, Span<int> list, int listCount, int txSz, int txClass, int bwl, int coeffBaseOffset, int coeffBrOffset)
     {
         var stride = (1 << bwl) + Av1TileScratch.LevelMapPadding;
@@ -622,6 +633,7 @@ internal ref partial struct Av1TileCoder
     }
 
     // The coeff_br symbols of a coefficient: what they add to its level
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static int ReadBaseRange(Av1SymbolDecoder symbols, ref Av1SymbolDecoder.State state, Span<ushort> cdf)
     {
         var sum = 0;

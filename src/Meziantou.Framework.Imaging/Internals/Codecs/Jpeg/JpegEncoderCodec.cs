@@ -1641,12 +1641,8 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             }
         }
 
-        /// <summary>Gets the size category SSSS of a value: the number of bits of its magnitude (T.81 F.1.2.1.1).</summary>
-        private static int GetSizeCategory(int value)
-        {
-            var magnitude = (uint)Math.Abs(value);
-            return magnitude == 0 ? 0 : 32 - BitOperations.LeadingZeroCount(magnitude);
-        }
+        /// <summary>Gets the size category SSSS of a value, -2047 to 2047: the number of bits of its magnitude (T.81 F.1.2.1.1).</summary>
+        private static int GetSizeCategory(int value) => (int)(ValueBits[value + 2048] >> 16);
 
         /// <summary>Codes the quantized coefficients (zig-zag order) of a block of a component.</summary>
         /// <remarks>

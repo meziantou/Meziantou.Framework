@@ -477,7 +477,7 @@
     "reftest": "PASS"
   },
   "css/filter-effects/drop-shadow-scale.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/filter-effects/drop-shadow-transform-in-opacity-overlap.html": {
     "reftest": "PASS"

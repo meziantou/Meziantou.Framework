@@ -3632,7 +3632,7 @@
     "reftest": "PASS"
   },
   "html/canvas/element/manual/filters/canvas-filter-shadow-and-properties-blur.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/manual/filters/canvas-filter-shadow-and-properties.html": {
     "reftest": "PASS"

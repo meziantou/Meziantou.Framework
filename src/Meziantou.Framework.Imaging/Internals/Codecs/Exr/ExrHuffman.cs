@@ -657,7 +657,9 @@ internal sealed class ExrHuffman : IDisposable
         /// <returns><see langword="false"/> when the bits do not fit the destination (nothing is written).</returns>
         /// <remarks>
         /// The bytes completed are stored, and the current byte too, its bits after those written zero: the destination
-        /// always holds the bits written so far, padded.
+        /// always holds the bits written so far, padded. Away from the end of the destination, the bytes are stored as 8
+        /// bytes at once, which also clears bytes after the current one (they are not written yet, and each byte is
+        /// stored whole when its first bit is written).
         /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryWrite(ulong value, int count)
@@ -671,6 +673,13 @@ internal sealed class ExrHuffman : IDisposable
             var pending = (int)(_position & 7) + count;
             _bits = (_bits << count) | (value & (ulong.MaxValue >> (64 - count)));
             var byteIndex = byteStart + (int)(_position >> 3);
+            if (byteIndex <= _destination.Length - sizeof(ulong))
+            {
+                BinaryPrimitives.WriteUInt64BigEndian(_destination[byteIndex..], _bits << (64 - pending));
+                _position += count;
+                return true;
+            }
+
             while (pending >= 8)
             {
                 pending -= 8;

@@ -64,12 +64,37 @@ internal static partial class Av1InverseTransform
     {
         if (Av1Simd.IsSupported && !lossless)
         {
-            TransformVector(dequant, residual, txSz, txType, bitDepth, rows, columns, inRange);
+            TransformVector(dequant, residual, txSz, txType, bitDepth, rows, columns, inRange, destination: [], destinationStride: 0, flipUD: false);
         }
         else
         {
             TransformScalar(dequant, residual, txSz, txType, lossless, bitDepth);
         }
+    }
+
+    /// <summary>
+    /// <see cref="Transform(ReadOnlySpan{int}, Span{int}, int, int, bool, int, int, int)"/> that adds the residual to the predicted
+    /// samples of the block, clamped to 0 to 2^<paramref name="bitDepth"/> - 1, the rows in reverse order when
+    /// <paramref name="flipUD"/> is set, when the vector transforms apply (not lossless).
+    /// </summary>
+    /// <param name="dequant">The dequantized coefficients, in the dequantization range.</param>
+    /// <param name="scratch">Scratch for the transform: <c>Residual</c>, whose values are of no use after the call.</param>
+    /// <param name="txSz">The transform size.</param>
+    /// <param name="txType">The transform type (<c>PlaneTxType</c>).</param>
+    /// <param name="bitDepth">The bit depth of the samples.</param>
+    /// <param name="rows">A bound of the rows of the coefficients that are not zero.</param>
+    /// <param name="columns">A bound of the columns of the coefficients that are not zero.</param>
+    /// <param name="destination">The predicted samples, from the top left sample of the block.</param>
+    /// <param name="stride">The number of samples of a row of <paramref name="destination"/>.</param>
+    /// <param name="flipUD">Whether the rows of the residual are added in reverse order.</param>
+    /// <returns><see langword="false"/> when the vector transforms do not apply: nothing is changed.</returns>
+    public static bool TryTransformAdd(ReadOnlySpan<int> dequant, Span<int> scratch, int txSz, int txType, int bitDepth, int rows, int columns, Span<ushort> destination, int stride, bool flipUD)
+    {
+        if (!Av1Simd.IsSupported)
+            return false;
+
+        TransformVector(dequant, scratch, txSz, txType, bitDepth, rows, columns, inRange: true, destination, stride, flipUD);
+        return true;
     }
 
     /// <summary>The scalar reference of <see cref="Transform(ReadOnlySpan{int}, Span{int}, int, int, bool, int)"/>.</summary>

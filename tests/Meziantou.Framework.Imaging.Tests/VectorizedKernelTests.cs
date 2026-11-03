@@ -5313,6 +5313,145 @@ public sealed class VectorizedKernelTests
     [InlineData(10)]
     [InlineData(12)]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void Av1ReconstructionOfDequantizedCoefficientsMatchesTheScalarReference(int bitDepth)
+    {
+        // Every transform size and type: the residual of the scalar transform added to the predicted samples (flipped as the
+        // type says) and clamped, on coefficients of the dequantization range, with exact and larger bounds of their extent
+        var random = new Random(bitDepth * 23);
+        var limit = 1 << (7 + bitDepth);
+        var maxSample = (1 << bitDepth) - 1;
+        const int Stride = 80;
+        var residual = new int[64 * 64];
+        var scratch = new int[1024 + 4096];
+        for (var txSz = 0; txSz < Av1Constants.TxSizesAll; txSz++)
+        {
+            var w = 1 << Av1Tables.TxWidthLog2[txSz];
+            var h = 1 << Av1Tables.TxHeightLog2[txSz];
+            var tw = Math.Min(32, w);
+            var th = Math.Min(32, h);
+            var dequant = new int[tw * th];
+            for (var txType = 0; txType < Av1Constants.TxTypes; txType++)
+            {
+                var rowKind = Av1InverseTransform.GetRowKind(txType);
+                var columnKind = Av1InverseTransform.GetColumnKind(txType);
+                if ((rowKind is Av1InverseTransform.Kind.Adst && w > 16) || (rowKind is Av1InverseTransform.Kind.Identity && w > 32)
+                    || (columnKind is Av1InverseTransform.Kind.Adst && h > 16) || (columnKind is Av1InverseTransform.Kind.Identity && h > 32))
+                {
+                    continue;
+                }
+
+                for (var round = 0; round < 12; round++)
+                {
+                    Array.Clear(dequant);
+                    var rows = 0;
+                    var columns = 0;
+                    for (var i = 0; i < dequant.Length; i++)
+                    {
+                        dequant[i] = (round % 5) switch
+                        {
+                            0 => random.Next(-300, 301),
+                            1 => random.Next(6) == 0 ? random.Next(-limit, limit) : 0,
+                            2 => i is 0 ? random.Next(-limit, limit) : 0,
+                            3 => random.Next(2) == 0 ? -limit : limit - 1,
+                            _ => (i % tw) < 4 && (i / tw) < 4 ? random.Next(-limit, limit) : 0,
+                        };
+
+                        if (dequant[i] is not 0)
+                        {
+                            rows = Math.Max(rows, (i / tw) + 1);
+                            columns = Math.Max(columns, (i % tw) + 1);
+                        }
+                    }
+
+                    if (round % 2 is 1)
+                    {
+                        rows = th;
+                        columns = tw;
+                    }
+
+                    var predicted = new ushort[(h + 2) * Stride];
+                    for (var i = 0; i < predicted.Length; i++)
+                    {
+                        predicted[i] = (ushort)random.Next(maxSample + 1);
+                    }
+
+                    var expected = predicted.ToArray();
+                    Av1InverseTransform.TransformScalar(dequant, residual.AsSpan(0, w * h), txSz, txType, lossless: false, bitDepth);
+                    var flipUD = txType is Av1Constants.FlipadstDct or Av1Constants.FlipadstAdst or Av1Constants.VFlipadst or Av1Constants.FlipadstFlipadst;
+                    var flipLR = txType is Av1Constants.DctFlipadst or Av1Constants.AdstFlipadst or Av1Constants.HFlipadst or Av1Constants.FlipadstFlipadst;
+                    for (var i = 0; i < h; i++)
+                    {
+                        for (var j = 0; j < w; j++)
+                        {
+                            var index = ((1 + (flipUD ? h - 1 - i : i)) * Stride) + 3 + (flipLR ? w - 1 - j : j);
+                            expected[index] = (ushort)Math.Clamp(expected[index] + residual[(i * w) + j], 0, maxSample);
+                        }
+                    }
+
+                    var actual = predicted.ToArray();
+                    Av1Reconstruction.ReconstructDequantized(actual, Stride, 3, 1, dequant, eob: 2, scratch, txSz, txType, lossless: false, bitDepth, Math.Max(rows, 1), Math.Max(columns, 1));
+                    Assert.True(expected.AsSpan().SequenceEqual(actual), $"Transform size {txSz}, type {txType}, round {round}.");
+                }
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void Av1FourSymbolDecodingMatchesTheSymbolDecoder()
+    {
+        // The coefficient levels decoded on a copied state (with the adaptation of the distributions in vectors when they are
+        // accelerated) and with the methods of the decoder
+        var random = new Random(41);
+        var distributions = new ushort[16][];
+        for (var i = 0; i < distributions.Length; i++)
+        {
+            var cuts = new SortedSet<int>();
+            while (cuts.Count < 3)
+            {
+                cuts.Add(random.Next(1, 32768));
+            }
+
+            distributions[i] = [.. cuts.Select(cut => (ushort)cut), 32768, 0];
+        }
+
+        var symbols = new (int Distribution, int Value)[20000];
+        var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(Av1FourSymbolDecodingMatchesTheSymbolDecoder));
+        using var output = new PooledPayloadWriter(scope);
+        var encoder = new Av1SymbolEncoder();
+        encoder.Initialize(output, disableCdfUpdate: false);
+        var encoded = distributions.Select(cdf => (ushort[])cdf.Clone()).ToArray();
+        for (var i = 0; i < symbols.Length; i++)
+        {
+            symbols[i] = (random.Next(distributions.Length), random.Next(4));
+            if (random.Next(3) is 0)
+                symbols[i].Value = 0;
+
+            encoder.WriteSymbol(encoded[symbols[i].Distribution], symbols[i].Value);
+        }
+
+        var length = encoder.Finish();
+        var data = output.WrittenSpan[..length].ToArray();
+        var reference = new Av1SymbolDecoder();
+        reference.Initialize(data, 0, data.Length, disableCdfUpdate: false);
+        var referenceDistributions = distributions.Select(cdf => (ushort[])cdf.Clone()).ToArray();
+        var decoder = new Av1SymbolDecoder();
+        decoder.Initialize(data, 0, data.Length, disableCdfUpdate: false);
+        var decoded = distributions.Select(cdf => (ushort[])cdf.Clone()).ToArray();
+        var state = decoder.Save();
+        foreach (var (distribution, value) in symbols)
+        {
+            Assert.Equal(value, reference.ReadSymbol(referenceDistributions[distribution]));
+            Assert.Equal(value, decoder.ReadSymbol4Branchless(ref state, decoded[distribution]));
+            Assert.Equal(referenceDistributions[distribution], decoded[distribution]);
+        }
+    }
+
+    [Theory]
+    [InlineData(8)]
+    [InlineData(10)]
+    [InlineData(12)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void Av1ChromaFromLumaMatchesTheScalarReference(int bitDepth)
     {
         // Every subsampling and transform size of the chroma from luma prediction, with the luma samples clamped at every

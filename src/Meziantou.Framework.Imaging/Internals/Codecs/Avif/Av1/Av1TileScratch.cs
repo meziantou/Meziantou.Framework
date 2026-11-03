@@ -34,7 +34,7 @@ internal sealed class Av1TileScratch : IDisposable
 
     public Av1TileScratch(AllocationScope scope)
     {
-        _coefficients = Av1PooledArray<int>.Rent(scope, QuantLength + TransformLength + CflLength);
+        _coefficients = Av1PooledArray<int>.Rent(scope, QuantLength + TransformLength + CflLength + DequantLength + CoefficientListLength);
         try
         {
             _bytes = Av1PooledArray<byte>.Rent(scope, (2 * ColorMapLength) + (3 * BlockDecodedLength) + (6 * SuperblockSize4) + SuperblockSize4 + TxTypesLength + LevelMapLength);
@@ -56,6 +56,10 @@ internal sealed class Av1TileScratch : IDisposable
 
     private static int CflLength => 1024;
 
+    private static int DequantLength => 1024;
+
+    private static int CoefficientListLength => 1024;
+
     private static int ColorMapLength => MaxPaletteBlockSize * MaxPaletteBlockSize;
 
     private static int BlockDecodedLength => BlockDecodedStride * BlockDecodedStride;
@@ -72,6 +76,19 @@ internal sealed class Av1TileScratch : IDisposable
 
     /// <summary>Gets the scratch of <see cref="Av1Reconstruction.PredictChromaFromLuma"/>.</summary>
     public Span<int> Cfl => _coefficients.Span.Slice(QuantLength + TransformLength, CflLength);
+
+    /// <summary>
+    /// Gets the dequantized coefficients of the transform block being decoded, Min(32, width) per row. The entries are zero
+    /// between the transform blocks: a block sets the entries of its coefficients that are not zero, and clears them after
+    /// its reconstruction (<see cref="ClearDequant"/> clears them all at the start of a tile).
+    /// </summary>
+    public Span<int> Dequant => _coefficients.Span.Slice(QuantLength + TransformLength + CflLength, DequantLength);
+
+    /// <summary>
+    /// Gets the coefficients of the transform block being decoded whose level is not zero, from the last to the first in
+    /// the scan order: the position in the low 16 bits and the level above them.
+    /// </summary>
+    public Span<int> CoefficientList => _coefficients.Span.Slice(QuantLength + TransformLength + CflLength + DequantLength, CoefficientListLength);
 
     /// <summary>Gets <c>ColorMapY</c> (<paramref name="plane"/> 0) or <c>ColorMapUV</c> (<paramref name="plane"/> 1): 64 entries per row.</summary>
     public Span<byte> GetColorMap(int plane) => _bytes.Span.Slice(plane * ColorMapLength, ColorMapLength);
@@ -150,6 +167,9 @@ internal sealed class Av1TileScratch : IDisposable
 
         _aboveMiCols = miCols;
     }
+
+    /// <summary>Clears <see cref="Dequant"/>, which a tile that stopped on an error may have left with coefficients.</summary>
+    public void ClearDequant() => Dequant.Clear();
 
     public void Dispose()
     {

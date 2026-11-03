@@ -1,7 +1,9 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -694,6 +696,9 @@ internal sealed class HeifYuvConverter
     // lanes of Vector128 otherwise (8 per loop), with the operations of ConvertPixels
     private int ConvertRowVectorRgba32(ReadOnlySpan<ushort> y, ReadOnlySpan<ushort> u, ReadOnlySpan<ushort> v, ReadOnlySpan<ushort> alpha, Span<byte> destination)
     {
+        if (AdvSimd.Arm64.IsSupported && CanConvertRgba32AdvSimd(alpha.IsEmpty))
+            return ConvertRowRgba32AdvSimd(y, u, v, alpha, destination);
+
         var width = y.Length;
         var hasAlpha = !alpha.IsEmpty;
         var coefficients = new MatrixCoefficients((int)_cY, _yOffset, _cOffset, _cbR, _crR, _cbG, _crG, _cbB, _crB, _alphaFullRange, (int)_cAlpha, _alphaOffset);
@@ -746,6 +751,74 @@ internal sealed class HeifYuvConverter
         }
 
         return x;
+    }
+
+    // Whether ConvertRowRgba32AdvSimd applies: 8-bit samples, an alpha plane copied (full range), and coefficients whose
+    // parts of 65536 (High16) keep the sums of their products with the samples within 16 bits
+    private bool CanConvertRgba32AdvSimd(bool opaque)
+    {
+        if (_max is not 255 || (!opaque && !_alphaFullRange))
+            return false;
+
+        foreach (var coefficient in (ReadOnlySpan<int>)[(int)_cY, _cbR, _crR, _cbG, _crG, _cbB, _crB])
+        {
+            if (Math.Abs(High16(coefficient)) > 32)
+                return false;
+        }
+
+        return true;
+    }
+
+    // The part of 65536 of a coefficient: coefficient = 65536 * High16( coefficient ) + (short)coefficient
+    private static short High16(int coefficient) => (short)((coefficient - (short)coefficient) >> 16);
+
+    // ConvertRowVectorRgba32 with AdvSimd, 8 pixels per loop in 16-bit lanes. Each coefficient k is 65536 * h + l, l the
+    // signed 16 low bits of k: the sum of the scalar path, ( Half + sum of k * s ) >> 16 for the centered samples s, is
+    // H + ( ( Half + sum of l * s ) >> 16 ) where H is the sum of h * s (CanConvertRgba32AdvSimd keeps it within 16 bits).
+    // The sums of the low parts are widening multiply-accumulates (below 2^25 for samples of 8 bits), shifted and narrowed
+    // to 16 bits, and the clip of each channel to 0 to 255 is a saturating narrowing; the 4 channels are interleaved into
+    // pixels. Returns the number of pixels converted: the scalar path converts the others
+    private int ConvertRowRgba32AdvSimd(ReadOnlySpan<ushort> y, ReadOnlySpan<ushort> u, ReadOnlySpan<ushort> v, ReadOnlySpan<ushort> alpha, Span<byte> destination)
+    {
+        var width = y.Length;
+        var hasAlpha = !alpha.IsEmpty;
+        var low = Vector128.Create((short)_cY, (short)_cbR, (short)_crR, (short)_cbG, (short)_crG, (short)_cbB, (short)_crB, 0);
+        var high = Vector128.Create(High16((int)_cY), High16(_cbR), High16(_crR), High16(_cbG), High16(_crG), High16(_cbB), High16(_crB), 0);
+        var half = Vector128.Create((int)Half);
+        var yOffset = Vector128.Create((short)_yOffset);
+        var cOffset = Vector128.Create((short)_cOffset);
+        var opaque = Vector128.Create((byte)255);
+        var x = 0;
+        for (; x <= width - 8; x += 8)
+        {
+            var luma = Vector128.Create(y[x..]).AsInt16() - yOffset;
+            var cb = Vector128.Create(u[x..]).AsInt16() - cOffset;
+            var cr = Vector128.Create(v[x..]).AsInt16() - cOffset;
+            var lumaLow = AdvSimd.MultiplyBySelectedScalarWideningLowerAndAdd(half, luma.GetLower(), low, 0);
+            var lumaHigh = AdvSimd.MultiplyBySelectedScalarWideningUpperAndAdd(half, luma, low, 0);
+            var lumaParts = AdvSimd.MultiplyBySelectedScalar(luma, high, 0);
+            var r = Channel(lumaLow, lumaHigh, lumaParts, cb, cr, low, high, 1, 2);
+            var g = Channel(lumaLow, lumaHigh, lumaParts, cb, cr, low, high, 3, 4);
+            var b = Channel(lumaLow, lumaHigh, lumaParts, cb, cr, low, high, 5, 6);
+            var a = hasAlpha ? AdvSimd.ExtractNarrowingLower(Vector128.Create(alpha[x..])).ToVector128() : opaque;
+            var rg = AdvSimd.Arm64.ZipLow(r, g).AsUInt16();
+            var ba = AdvSimd.Arm64.ZipLow(b, a).AsUInt16();
+            AdvSimd.Arm64.ZipLow(rg, ba).AsByte().CopyTo(destination[(4 * x)..]);
+            AdvSimd.Arm64.ZipHigh(rg, ba).AsByte().CopyTo(destination[((4 * x) + 16)..]);
+        }
+
+        return x;
+
+        // A channel of the 8 pixels in the 8 lower bytes, from the coefficients of the cb and cr samples at their indexes
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static Vector128<byte> Channel(Vector128<int> lumaLow, Vector128<int> lumaHigh, Vector128<short> lumaParts, Vector128<short> cb, Vector128<short> cr, Vector128<short> low, Vector128<short> high, [ConstantExpected(Max = (byte)7)] byte cbIndex, [ConstantExpected(Max = (byte)7)] byte crIndex)
+        {
+            var sumLow = AdvSimd.MultiplyBySelectedScalarWideningLowerAndAdd(AdvSimd.MultiplyBySelectedScalarWideningLowerAndAdd(lumaLow, cb.GetLower(), low, cbIndex), cr.GetLower(), low, crIndex);
+            var sumHigh = AdvSimd.MultiplyBySelectedScalarWideningUpperAndAdd(AdvSimd.MultiplyBySelectedScalarWideningUpperAndAdd(lumaHigh, cb, low, cbIndex), cr, low, crIndex);
+            var parts = AdvSimd.MultiplyAddBySelectedScalar(AdvSimd.MultiplyAddBySelectedScalar(lumaParts, cb, high, cbIndex), cr, high, crIndex);
+            var shifted = AdvSimd.ShiftRightLogicalNarrowingUpper(AdvSimd.ShiftRightLogicalNarrowingLower(sumLow, 16), sumHigh, 16);
+            return AdvSimd.ExtractNarrowingSaturateUnsignedLower(shifted + parts).ToVector128();
+        }
     }
 
     // ConvertRowVector for the Rgb24 pixels of a matrix, the pixels of an opaque AVIF: the coefficients in locals, and with AVX2

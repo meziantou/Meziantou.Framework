@@ -218,6 +218,7 @@ internal ref partial struct Av1TileCoder
         _currentQIndex = _header.BaseQIdx;
 
         ClearAboveContext();
+        _scratch.ClearDequant();
         _deltaLf = default;
         ResetLoopRestorationReferences();
 
@@ -301,22 +302,19 @@ internal ref partial struct Av1TileCoder
             var sbWidth4 = (_miColEnd - c) >> subX;
             var sbHeight4 = (_miRowEnd - r) >> subY;
             var flags = _scratch.GetBlockDecoded(plane);
-            for (var y = -1; y <= (sbSize4 >> subY); y++)
-            {
-                for (var x = -1; x <= (sbSize4 >> subX); x++)
-                {
-                    byte value = 0;
-                    if (y < 0 && x < sbWidth4)
-                    {
-                        value = 1;
-                    }
-                    else if (x < 0 && y < sbHeight4)
-                    {
-                        value = 1;
-                    }
 
-                    flags[BlockDecodedIndex(y, x)] = value;
-                }
+            // Columns -1 to sbSize4 >> subX: in the row above, the columns before sbWidth4 are decoded; in the other rows,
+            // the column to the left of the rows before sbHeight4
+            var width = (sbSize4 >> subX) + 2;
+            var top = flags.Slice(BlockDecodedIndex(-1, -1), width);
+            var decoded = Math.Clamp(sbWidth4 + 1, 0, width);
+            top[..decoded].Fill(1);
+            top[decoded..].Clear();
+            for (var y = 0; y <= (sbSize4 >> subY); y++)
+            {
+                var row = flags.Slice(BlockDecodedIndex(y, -1), width);
+                row[0] = (byte)(y < sbHeight4 ? 1 : 0);
+                row[1..].Clear();
             }
 
             flags[BlockDecodedIndex(sbSize4 >> subY, -1)] = 0;

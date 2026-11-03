@@ -720,6 +720,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
     {
         var done = Vector512.IsHardwareAccelerated && Avx512F.IsSupported ? DownsampleRowAvx512(first, second, destination)
             : Avx2.IsSupported ? DownsampleRowAvx2(first, second, destination)
+            : AdvSimd.Arm64.IsSupported ? DownsampleRowArm64(first, second, destination)
             : Vector128.IsHardwareAccelerated ? DownsampleRowVector(first, second, destination)
             : 0;
         DownsampleRowScalar(first[(2 * done)..], second.IsEmpty ? second : second[(2 * done)..], destination[done..]);
@@ -784,6 +785,46 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
 
             return sum * scale;
         }
+    }
+
+    /// <summary>
+    /// Subsamples the whole groups of four samples with Arm64: the pairs of the first row are added by FADDP (the sum of
+    /// adjacent lanes, then added to zero as in the scalar reference), and the even and odd samples of the second row,
+    /// separated by unzips (UZP1, UZP2) before they are widened, are added to them.
+    /// </summary>
+    /// <returns>The number of subsampled samples.</returns>
+    internal static int DownsampleRowArm64(ReadOnlySpan<float> first, ReadOnlySpan<float> second, Span<float> destination)
+    {
+        var twoRows = !second.IsEmpty;
+        var count = GetDownsampledCount(first, second, destination) & ~3;
+        ref var firstStart = ref unsafe(MemoryMarshal.GetReference(first));
+        ref var secondStart = ref unsafe(MemoryMarshal.GetReference(twoRows ? second : first));
+        ref var output = ref unsafe(MemoryMarshal.GetReference(destination));
+        var scale = Vector128.Create(twoRows ? 1d / 4 : 1d / 2);
+        for (var x = 0; x < count; x += 4)
+        {
+            // Samples 2x to 2x + 7 of the first row: (0 + (s0 + s1), 0 + (s2 + s3)) and the same for s4 to s7; adding s0 and s1
+            // to zero one after the other gives the same sum, of either sign when it is zero
+            var samples = unsafe(Vector128.LoadUnsafe(ref firstStart, (nuint)(2 * x)));
+            var low = Vector128<double>.Zero + AdvSimd.Arm64.AddPairwise(Vector128.WidenLower(samples), Vector128.WidenUpper(samples));
+            samples = unsafe(Vector128.LoadUnsafe(ref firstStart, (nuint)((2 * x) + 4)));
+            var high = Vector128<double>.Zero + AdvSimd.Arm64.AddPairwise(Vector128.WidenLower(samples), Vector128.WidenUpper(samples));
+            if (twoRows)
+            {
+                var lower = unsafe(Vector128.LoadUnsafe(ref secondStart, (nuint)(2 * x)));
+                var upper = unsafe(Vector128.LoadUnsafe(ref secondStart, (nuint)((2 * x) + 4)));
+                var even = AdvSimd.Arm64.UnzipEven(lower, upper);
+                var odd = AdvSimd.Arm64.UnzipOdd(lower, upper);
+                low += Vector128.WidenLower(even);
+                low += Vector128.WidenLower(odd);
+                high += Vector128.WidenUpper(even);
+                high += Vector128.WidenUpper(odd);
+            }
+
+            unsafe { Vector128.Narrow(low * scale, high * scale).StoreUnsafe(ref output, (nuint)x); }
+        }
+
+        return count;
     }
 
     /// <summary>

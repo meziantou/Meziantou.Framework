@@ -1609,10 +1609,11 @@ public sealed class VectorizedKernelTests
                     var second = new float[twoRows ? 2 * length : 0];
                     for (var i = 0; i < first.Length; i++)
                     {
-                        first[i] = round % 4 == 0 ? (random.Next(2) == 0 ? -128f : 127f) : (float)((random.NextDouble() * 256) - 128);
+                        // Negative zeros too, whose sums give the sign of the reference
+                        first[i] = round % 4 == 0 ? (random.Next(2) == 0 ? -128f : 127f) : round % 4 == 1 && random.Next(3) == 0 ? -0f : (float)((random.NextDouble() * 256) - 128);
                         if (twoRows)
                         {
-                            second[i] = (float)((random.NextDouble() * 256) - 128);
+                            second[i] = round % 4 == 1 && random.Next(3) == 0 ? -0f : (float)((random.NextDouble() * 256) - 128);
                         }
                     }
 
@@ -1627,6 +1628,11 @@ public sealed class VectorizedKernelTests
                     if (Avx2.IsSupported)
                     {
                         AssertPath(first, second, expected, (first, second, destination) => Complete(first, second, destination, JpegEncoderCodec.DownsampleRowAvx2(first, second, destination)));
+                    }
+
+                    if (System.Runtime.Intrinsics.Arm.AdvSimd.Arm64.IsSupported)
+                    {
+                        AssertPath(first, second, expected, (first, second, destination) => Complete(first, second, destination, JpegEncoderCodec.DownsampleRowArm64(first, second, destination)));
                     }
 
                     if (Avx512F.IsSupported)

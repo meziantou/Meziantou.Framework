@@ -638,12 +638,18 @@ public sealed class JpegXlDecoderTests
         }
     }
 
+    // The properties that the learned trees of libjxl test most, and the predictors of their leaves
+    private const int LearnedTreeProperties = -2;
+    private const int GradientOrWeighted = -2;
+
+    private static readonly int[] LearnedProperties = [2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15];
+
     public static TheoryData<int> ModularTreeSeeds
     {
         get
         {
             var data = new TheoryData<int>();
-            for (var seed = 0; seed < 60; seed++)
+            for (var seed = 0; seed < 120; seed++)
             {
                 data.Add(seed);
             }
@@ -654,9 +660,12 @@ public sealed class JpegXlDecoderTests
 
     /// <summary>
     /// A Modular sub-bitstream whose tree is drawn at random (the first 14 seeds: one leaf with each predictor; the next 14:
-    /// decisions on one property, 2 to 15) is decoded like a transcription of the section H.3 of the standard does: every
-    /// sample computes the properties, walks the tree and predicts from its neighbors, at the edges of channels of 1 to 40
-    /// samples, with the previous channels of the same size as the source of the properties from 16 on.
+    /// decisions on one property, 2 to 15; from 60: decisions on the property of the weighted predictor and leaves that all
+    /// use it, the tree of most lossless files; from 84: decisions on the properties of the neighbors and of the weighted
+    /// predictor, as in learned trees, with leaves that use the gradient or the weighted predictor from 102; ANS for the
+    /// even seeds) is decoded like a transcription of the section H.3 of the standard does: every sample computes the
+    /// properties, walks the tree and predicts from its neighbors, at the edges of channels of 1 to 40 samples, with the
+    /// previous channels of the same size as the source of the properties from 16 on.
     /// </summary>
     [Theory]
     [MemberData(nameof(ModularTreeSeeds))]
@@ -683,7 +692,11 @@ public sealed class JpegXlDecoderTests
         else
         {
             // Then trees whose decisions all test the same property, of the sample and its neighbors, then any
-            BuildTree(random, nodes, sizes.Length, seed < JpegXlMaTree.PredictorCount + 14 ? seed - JpegXlMaTree.PredictorCount + 2 : -1);
+            var isWeightedTable = seed is >= 60 and < 84;
+            var isLearnedTree = seed >= 84;
+            var onlyProperty = isWeightedTable ? JpegXlMaTree.WeightedProperty : isLearnedTree ? LearnedTreeProperties : seed < JpegXlMaTree.PredictorCount + 14 ? seed - JpegXlMaTree.PredictorCount + 2 : -1;
+            var onlyPredictor = isWeightedTable ? 6 : seed >= 102 ? GradientOrWeighted : -1;
+            BuildTree(random, nodes, sizes.Length, onlyProperty, onlyPredictor);
         }
 
         var leafCount = 0;
@@ -836,7 +849,7 @@ public sealed class JpegXlDecoderTests
             return samples;
         }
 
-        static void BuildTree(Random random, List<JpegXlMaTreeNode> nodes, int channelCount, int onlyProperty)
+        static void BuildTree(Random random, List<JpegXlMaTreeNode> nodes, int channelCount, int onlyProperty, int onlyPredictor)
         {
             // Breadth first: each queued node keeps the range of values its ancestors leave to each property
             var queue = new Queue<(int Index, int Depth, Dictionary<int, (int Low, int High)> Ranges)>();
@@ -844,7 +857,7 @@ public sealed class JpegXlDecoderTests
             queue.Enqueue((0, 0, []));
             while (queue.TryDequeue(out var item))
             {
-                var property = onlyProperty >= 0 ? onlyProperty : random.Next(4) switch
+                var property = onlyProperty >= 0 ? onlyProperty : onlyProperty == LearnedTreeProperties ? LearnedProperties[random.Next(LearnedProperties.Length)] : random.Next(4) switch
                 {
                     0 => random.Next(16),
                     1 => 16 + random.Next(4 * channelCount),
@@ -855,7 +868,7 @@ public sealed class JpegXlDecoderTests
                 {
                     var multiplierLog = random.Next(3) == 0 ? random.Next(3) : 0;
                     var multiplier = random.Next(3) == 0 ? (random.Next(3) + 1) << multiplierLog : 1;
-                    nodes[item.Index] = new JpegXlMaTreeNode { Property = -1, ValueOrOffset = random.Next(-5, 6), RightOrPredictor = random.Next(JpegXlMaTree.PredictorCount), Multiplier = multiplier };
+                    nodes[item.Index] = new JpegXlMaTreeNode { Property = -1, ValueOrOffset = random.Next(-5, 6), RightOrPredictor = onlyPredictor >= 0 ? onlyPredictor : onlyPredictor == GradientOrWeighted ? 5 + random.Next(2) : random.Next(JpegXlMaTree.PredictorCount), Multiplier = multiplier };
                     continue;
                 }
 
@@ -1265,6 +1278,138 @@ public sealed class JpegXlDecoderTests
                 weighted.Update(sample, x, y);
                 reference.Update(sample, x, y);
             }
+        }
+    }
+
+    /// <summary>
+    /// The weighted predictor gives, a row at a time, the predictions and the property of the transcription of the section
+    /// H.5.2 of the standard, on the samples of <see cref="WeightedPredictorFollowsItsTranscription"/>.
+    /// </summary>
+    [Theory]
+    [InlineData(1, 0)]
+    [InlineData(2, 1)]
+    [InlineData(3, 2)]
+    [InlineData(4, 3)]
+    [InlineData(37, 4)]
+    [InlineData(64, 5)]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void WeightedPredictorRowsFollowItsTranscription(int width, int seed)
+    {
+        var random = new Random(seed);
+        var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(WeightedPredictorRowsFollowItsTranscription));
+        var header = JpegXlWeightedPredictorHeader.Default;
+        if (seed % 2 == 1)
+        {
+            using var writer = new LsbBitWriter(scope);
+            writer.WriteBits(0, 1);
+            for (var i = 0; i < 7; i++)
+            {
+                writer.WriteBits((uint)random.Next(32), 5);
+            }
+
+            for (var i = 0; i < 4; i++)
+            {
+                writer.WriteBits((uint)random.Next(16), 4);
+            }
+
+            writer.Finish();
+            var data = writer.WrittenSpan.ToArray();
+            header = JpegXlWeightedPredictorHeader.Read(new JpegXlBitReader(data, 0, data.Length));
+        }
+
+        var height = 40;
+        var samples = new int[width * height];
+        using var weighted = new JpegXlWeightedPredictor(header, width, scope);
+        var sink = new TranscriptionSink(new WeightedPredictorTranscription(header, width), random, samples, width);
+        for (var y = 0; y < height; y++)
+        {
+            sink.Y = y;
+            var above = y > 0 ? samples.AsSpan((y - 1) * width, width) : default;
+            var twoAbove = y > 1 ? samples.AsSpan((y - 2) * width, width) : above;
+            weighted.PredictRow(y, above, twoAbove, ref sink);
+        }
+
+        Assert.Equal(width * height, sink.Count);
+    }
+
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Auto)]
+    private struct TranscriptionSink(WeightedPredictorTranscription reference, Random random, int[] samples, int width) : JpegXlWeightedPredictor.IRowSink
+    {
+        public int Y { get; set; }
+
+        public int Count { get; private set; }
+
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+        public int Next(int x, long prediction, int maxError)
+        {
+            var y = Y;
+            var samples1 = samples;
+            var width1 = width;
+            long Get(int column, int row) => samples1[(row * width1) + column];
+            long left = x > 0 ? Get(x - 1, y) : y > 0 ? Get(x, y - 1) : 0;
+            long top = y > 0 ? Get(x, y - 1) : left;
+            long topLeft = x > 0 && y > 0 ? Get(x - 1, y - 1) : left;
+            long topRight = x + 1 < width && y > 0 ? Get(x + 1, y - 1) : top;
+            long topTop = y > 1 ? Get(x, y - 2) : top;
+            var expected = reference.Predict(x, y, top, left, topRight, topLeft, topTop, out var expectedProperty);
+            Assert.Equal((expected, expectedProperty), (prediction, maxError));
+
+            // Rows 0 to 9 follow a texture, 10 to 19 are random, 20 to 29 are extreme, then random again
+            var sample = (y / 10) switch
+            {
+                0 => (int)Math.Clamp(prediction + random.Next(-6, 7), int.MinValue, int.MaxValue),
+                2 => random.Next(4) switch
+                {
+                    0 => int.MinValue,
+                    1 => int.MaxValue,
+                    2 => -(1 << 30),
+                    _ => 1 << 30,
+                },
+                _ => random.Next(-70000, 70000),
+            };
+            samples[(y * width) + x] = sample;
+            reference.Update(sample, x, y);
+            Count++;
+            return sample;
+        }
+    }
+
+    /// <summary>
+    /// The gradient and the select predictors computed without a branch give the predictions of the predictors of
+    /// <see cref="JpegXlModularTransform.Predict"/>, on random samples, on nearby samples and on the extreme 32-bit samples.
+    /// </summary>
+    [Fact]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void PredictorsWithoutBranchFollowThePredictors()
+    {
+        var random = new Random(7);
+        int[] extremes = [int.MinValue, int.MinValue + 1, -1, 0, 1, int.MaxValue - 1, int.MaxValue];
+        for (var i = 0; i < 100_000; i++)
+        {
+            long left;
+            long top;
+            long topLeft;
+            switch (i % 3)
+            {
+                case 0:
+                    left = random.Next(int.MinValue, int.MaxValue);
+                    top = random.Next(int.MinValue, int.MaxValue);
+                    topLeft = random.Next(int.MinValue, int.MaxValue);
+                    break;
+                case 1:
+                    left = random.Next(-8, 8);
+                    top = random.Next(-8, 8);
+                    topLeft = random.Next(-8, 8);
+                    break;
+                default:
+                    left = extremes[random.Next(extremes.Length)];
+                    top = extremes[random.Next(extremes.Length)];
+                    topLeft = extremes[random.Next(extremes.Length)];
+                    break;
+            }
+
+            Assert.Equal(JpegXlModularTransform.Predict(5, left, top, 0, topLeft, 0, 0, 0, 0), JpegXlModularTransform.ClampedGradientWithoutBranch(left, top, topLeft));
+            Assert.Equal(JpegXlModularTransform.Predict(4, left, top, 0, topLeft, 0, 0, 0, 0), JpegXlModularTransform.SelectWithoutBranch(left, top, topLeft));
         }
     }
 

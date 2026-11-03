@@ -217,6 +217,32 @@ internal sealed class JpegXlModularTransform
         return topLeft < min ? max : gradient;
     }
 
+    /// <summary>The clamped gradient (<see cref="ClampedGradient"/>) without a branch: which neighbor bounds it is not predictable.</summary>
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+    internal static long ClampedGradientWithoutBranch(long left, long top, long topLeft)
+    {
+        // The samples are 32-bit values: their differences do not overflow, and the gradient wraps as a 32-bit value does
+        var isLeftSmaller = (left - top) >> 63;
+        var min = (left & isLeftSmaller) | (top & ~isLeftSmaller);
+        var max = (top & isLeftSmaller) | (left & ~isLeftSmaller);
+        long gradient = unchecked((int)(left + top - topLeft));
+        var isAbove = (max - topLeft) >> 63;
+        var isBelow = (topLeft - min) >> 63;
+        return (min & isAbove) | (max & isBelow & ~isAbove) | (gradient & ~(isAbove | isBelow));
+    }
+
+    /// <summary>The select predictor (<see cref="Predict"/>, 4) without a branch: which neighbor it selects is not predictable.</summary>
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+    internal static long SelectWithoutBranch(long left, long top, long topLeft)
+    {
+        // The samples are 32-bit values: the differences and their magnitudes do not overflow
+        var gradient = left + top - topLeft;
+        var fromLeft = gradient - left;
+        var fromTop = gradient - top;
+        var isLeft = (((fromLeft ^ (fromLeft >> 63)) - (fromLeft >> 63)) - ((fromTop ^ (fromTop >> 63)) - (fromTop >> 63))) >> 63;
+        return (left & isLeft) | (top & ~isLeft);
+    }
+
     private static long Select(long left, long top, long topLeft)
     {
         var gradient = left + top - topLeft;

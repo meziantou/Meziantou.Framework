@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Runtime.InteropServices;
 using Meziantou.Framework.Imaging.Metadata;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -316,6 +317,13 @@ internal sealed class TgaStructureParser : ImageParser<ImageInfo>
         {
             while (_rowIndex < Header.Height)
             {
+                if (_packetRemaining == 0 && _walk == StructureWalk.Decode && ReadRowPackets(buffer, ref consumed))
+                {
+                    _storedFilled = 0;
+                    EmitRow(ref lease, _storedRow!.Span[..storedRowLength]);
+                    continue;
+                }
+
                 if (_packetRemaining == 0)
                 {
                     var remaining = buffer[consumed..];
@@ -390,6 +398,85 @@ internal sealed class TgaStructureParser : ImageParser<ImageInfo>
         finally
         {
             lease.Dispose();
+        }
+    }
+
+    /// <summary>
+    /// Expands the whole packets of the current row that are complete in the input, as long as each one ends within the
+    /// row: the common case, without the state of a packet split across calls. The other packets (incomplete, crossing the
+    /// end of the row, or invalid) are left to the general loop.
+    /// </summary>
+    /// <returns><see langword="true"/> when the row is complete.</returns>
+    private bool ReadRowPackets(ReadOnlySpan<byte> buffer, ref int consumed)
+    {
+        var bytesPerPixel = Header.BytesPerStoredPixel;
+        var row = _storedRow!.Span[..Layout.StoredRowLength];
+        var filled = _storedFilled;
+        var pixelsLeft = _pixelsLeft;
+        var offset = consumed;
+        while (filled < row.Length && offset < buffer.Length)
+        {
+            var packet = buffer[offset];
+            var count = (packet & 0x7F) + 1;
+            var length = count * bytesPerPixel;
+            if (count > pixelsLeft || length > row.Length - filled)
+                break;
+
+            var destination = row.Slice(filled, length);
+            if ((packet & TgaFormat.RunLengthPacketFlag) != 0)
+            {
+                if (buffer.Length - offset < 1 + bytesPerPixel)
+                    break;
+
+                FillPixels(destination, buffer.Slice(offset + 1, bytesPerPixel));
+                offset += 1 + bytesPerPixel;
+            }
+            else
+            {
+                if (buffer.Length - offset < 1 + length)
+                    break;
+
+                buffer.Slice(offset + 1, length).CopyTo(destination);
+                offset += 1 + length;
+            }
+
+            filled += length;
+            pixelsLeft -= count;
+        }
+
+        _position += offset - consumed;
+        consumed = offset;
+        _storedFilled = filled;
+        _pixelsLeft = pixelsLeft;
+        return filled == row.Length;
+    }
+
+    /// <summary>Repeats one stored pixel over <paramref name="destination"/>.</summary>
+    private static void FillPixels(Span<byte> destination, ReadOnlySpan<byte> pixel)
+    {
+        switch (pixel.Length)
+        {
+            case 1:
+                destination.Fill(pixel[0]);
+                break;
+
+            case 2:
+                unsafe { MemoryMarshal.Cast<byte, ushort>(destination).Fill(MemoryMarshal.Read<ushort>(pixel)); }
+                break;
+
+            case 4:
+                unsafe { MemoryMarshal.Cast<byte, uint>(destination).Fill(MemoryMarshal.Read<uint>(pixel)); }
+                break;
+
+            default:
+                for (var offset = 0; offset < destination.Length; offset += 3)
+                {
+                    destination[offset] = pixel[0];
+                    destination[offset + 1] = pixel[1];
+                    destination[offset + 2] = pixel[2];
+                }
+
+                break;
         }
     }
 

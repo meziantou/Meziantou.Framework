@@ -270,11 +270,12 @@ internal static class JpegForwardDct
     private static void Quantize(Vector128<double> coefficient, ref double divisors, ref int destination, int index)
     {
         // The clamping of the scalar reference, applied before rounding (the same result: the bounds are integers); the DC
-        // coefficient (index 0) has its own range
+        // coefficient (index 0) has its own range. The quotients are finite and the bounds are not zero, so the native
+        // minimum and maximum (MINPD and MAXPD on x64, without the fix-ups for NaN and signed zeros) give the same values
         var quotient = coefficient / unsafe(Vector128.LoadUnsafe(ref divisors, (nuint)index));
         var minimum = index == 0 ? Vector128.Create((double)MinDc, -MaxAcMagnitude) : Vector128.Create((double)-MaxAcMagnitude);
         var maximum = index == 0 ? Vector128.Create((double)MaxDc, MaxAcMagnitude) : Vector128.Create((double)MaxAcMagnitude);
-        var clamped = Vector128.Min(Vector128.Max(quotient, minimum), maximum);
+        var clamped = Vector128.MinNative(Vector128.MaxNative(quotient, minimum), maximum);
         ref var positions = ref unsafe(Unsafe.Add(ref MemoryMarshal.GetReference(TransposedZigZagPositions), index));
         if (AdvSimd.Arm64.IsSupported)
         {
@@ -440,7 +441,7 @@ internal static class JpegForwardDct
         var quotient = coefficient / unsafe(Vector256.LoadUnsafe(ref divisors, (nuint)index));
         var minimum = index == 0 ? Vector256.Create((double)MinDc, -MaxAcMagnitude, -MaxAcMagnitude, -MaxAcMagnitude) : Vector256.Create((double)-MaxAcMagnitude);
         var maximum = index == 0 ? Vector256.Create((double)MaxDc, MaxAcMagnitude, MaxAcMagnitude, MaxAcMagnitude) : Vector256.Create((double)MaxAcMagnitude);
-        var clamped = Vector256.Min(Vector256.Max(quotient, minimum), maximum);
+        var clamped = Vector256.MinNative(Vector256.MaxNative(quotient, minimum), maximum);
 
         // trunc(q) plus or minus 1 when the exact fraction reaches one half
         var half = Vector256.Create(0.5);
@@ -550,7 +551,7 @@ internal static class JpegForwardDct
         var quotient = coefficient / unsafe(Vector512.LoadUnsafe(ref divisors, (nuint)index));
         var minimum = index == 0 ? Vector512.Create((double)MinDc, -MaxAcMagnitude, -MaxAcMagnitude, -MaxAcMagnitude, -MaxAcMagnitude, -MaxAcMagnitude, -MaxAcMagnitude, -MaxAcMagnitude) : Vector512.Create((double)-MaxAcMagnitude);
         var maximum = index == 0 ? Vector512.Create((double)MaxDc, MaxAcMagnitude, MaxAcMagnitude, MaxAcMagnitude, MaxAcMagnitude, MaxAcMagnitude, MaxAcMagnitude, MaxAcMagnitude) : Vector512.Create((double)MaxAcMagnitude);
-        var clamped = Vector512.Min(Vector512.Max(quotient, minimum), maximum);
+        var clamped = Vector512.MinNative(Vector512.MaxNative(quotient, minimum), maximum);
 
         // trunc(q) plus or minus 1 when the exact fraction reaches one half (VRNDSCALEPD with the truncation mode, no exception)
         var half = Vector512.Create(0.5);

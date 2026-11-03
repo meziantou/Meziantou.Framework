@@ -2060,6 +2060,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         /// destination has <see cref="MaxBlockBytes"/> per block and <see cref="JpegBlockBitWriter.SpeculativeBytes"/> bytes.
         /// </remarks>
         /// <typeparam name="T">The type of the coefficients: <see cref="int"/> when they come from the forward DCT, <see cref="short"/> when they are stored.</typeparam>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void EncodeBlock<T>(ref JpegBlockBitWriter bits, ReadOnlySpan<T> coefficients, int component, JpegHuffmanEncoder dc, JpegHuffmanEncoder ac)
             where T : unmanaged, IBinaryInteger<T>
         {

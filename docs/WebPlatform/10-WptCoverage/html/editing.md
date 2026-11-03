@@ -105,7 +105,7 @@ description: "The results of the web-platform-tests of html/editing, and why the
 | [`dnd/remove/001.html`](https://wpt.fyi/results/html/editing/dnd/remove/001.html) | Pass | 1 / 1 |  |  |
 | [`dnd/remove/002.html`](https://wpt.fyi/results/html/editing/dnd/remove/002.html) | Pass | 1 / 1 |  |  |
 | [`dnd/remove/003.html`](https://wpt.fyi/results/html/editing/dnd/remove/003.html) | Pass | 1 / 1 |  |  |
-| [`dnd/remove/004.html`](https://wpt.fyi/results/html/editing/dnd/remove/004.html) | Timeout | 0 / 1 |  | *No reason documented* |
+| [`dnd/remove/004.html`](https://wpt.fyi/results/html/editing/dnd/remove/004.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | dragging the selected text of a text control (the `<input>` selection is not a document selection, so no drag starts) |
 | [`dnd/remove/005.html`](https://wpt.fyi/results/html/editing/dnd/remove/005.html) | Pass | 1 / 1 |  |  |
 | [`dnd/remove/006.html`](https://wpt.fyi/results/html/editing/dnd/remove/006.html) | Pass | 1 / 1 |  |  |
 | [`dnd/remove/007.html`](https://wpt.fyi/results/html/editing/dnd/remove/007.html) | Pass | 1 / 1 |  |  |

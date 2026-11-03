@@ -1081,7 +1081,7 @@ description: "The results of the web-platform-tests of css/css-ui, and why the t
 | [`outline-svg-a-001.html`](https://wpt.fyi/results/css/css-ui/outline-svg-a-001.html) | Pass | 1 / 1 |  |  |
 | [`outline-svg-g-001.html`](https://wpt.fyi/results/css/css-ui/outline-svg-g-001.html) | Pass | 1 / 1 |  |  |
 | [`outline-svg-g-auto-001.html`](https://wpt.fyi/results/css/css-ui/outline-svg-g-auto-001.html) | Pass | 1 / 1 |  |  |
-| [`outline-svg-nested-svg-001.html`](https://wpt.fyi/results/css/css-ui/outline-svg-nested-svg-001.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`outline-svg-nested-svg-001.html`](https://wpt.fyi/results/css/css-ui/outline-svg-nested-svg-001.html) | Fail | 0 / 1 | BUG | the outline of a nested `svg` element is painted inside the clip of its own viewport (`overflow: hidden` by default), so the 4px outline around the 60x60 viewport is entirely clipped |
 | [`outline-with-padding-001.html`](https://wpt.fyi/results/css/css-ui/outline-with-padding-001.html) | Fail | 0 / 1 | BUG | the `outline: auto` of a block container is painted around its border box only: it does not enclose the inline content that overflows the box (a 65px inline-block in a content box of 50px), where the reference (and Chrome) has the outline around the box and its overflowing line (15px wider) |
 | [`pointer-events-no-scrollbars-001.html`](https://wpt.fyi/results/css/css-ui/pointer-events-no-scrollbars-001.html) | Pass | 1 / 1 |  |  |
 | [`pointer-events-no-scrollbars-002.html`](https://wpt.fyi/results/css/css-ui/pointer-events-no-scrollbars-002.html) | Pass | 1 / 1 |  |  |

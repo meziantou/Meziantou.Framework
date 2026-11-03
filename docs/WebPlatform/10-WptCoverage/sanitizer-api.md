@@ -27,7 +27,7 @@ description: "The results of the web-platform-tests of sanitizer-api, and why th
 | [`sanitizer-boolean-defaults.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-boolean-defaults.html) | Pass | 3 / 3 |  |  |
 | [`sanitizer-config.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-config.html) | Pass | 72 / 72 |  |  |
 | [`sanitizer-custom-elements-constructor.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-custom-elements-constructor.html) | Pass | 14 / 14 |  |  |
-| [`sanitizer-custom-elements-is.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-custom-elements-is.html) | Fail | 8 / 20 |  | *No reason documented* |
+| [`sanitizer-custom-elements-is.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-custom-elements-is.html) | Fail | 8 / 20 | BUG | `Document.parseHTML()` parses the whole document and then sanitizes it, so an element whose `is` attribute the sanitizer removes keeps its `is` value and its "undefined" custom element state (it does not match `:defined`); `setHTML()` passes (the sanitizer is applied by the parser, which drops the `is` value when the element is created) |
 | [`sanitizer-default-config.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-default-config.html) | Pass | 1 / 1 |  |  |
 | [`sanitizer-duplicate-html-body.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-duplicate-html-body.html) | Pass | 12 / 12 |  |  |
 | [`sanitizer-get.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-get.html) | Pass | 9 / 9 |  |  |

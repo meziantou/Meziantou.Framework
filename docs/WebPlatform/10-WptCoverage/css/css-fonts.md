@@ -481,7 +481,7 @@ description: "The results of the web-platform-tests of css/css-fonts, and why th
 | [`font-weight-lighter-001.xht`](https://wpt.fyi/results/css/css-fonts/font-weight-lighter-001.xht) | Pass | 1 / 1 |  |  |
 | [`font-weight-normal-001.xht`](https://wpt.fyi/results/css/css-fonts/font-weight-normal-001.xht) | Pass | 1 / 1 |  |  |
 | [`font-weight-normal-variable.html`](https://wpt.fyi/results/css/css-fonts/font-weight-normal-variable.html) | Pass | 1 / 1 |  |  |
-| [`generic-family-lang-attr-cascade.html`](https://wpt.fyi/results/css/css-fonts/generic-family-lang-attr-cascade.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`generic-family-lang-attr-cascade.html`](https://wpt.fyi/results/css/css-fonts/generic-family-lang-attr-cascade.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the generic families `cursive` and `fantasy` map to no font (there is no bundled font for them, `BundledFonts.GetGenericFamily` returns null), so `font-family: cursive, ahem` and `fantasy, ahem` fall back to Ahem instead of a default font as in the reference |
 | [`hiragana-katakana-kerning.html`](https://wpt.fyi/results/css/css-fonts/hiragana-katakana-kerning.html) | Pass | 1 / 1 |  |  |
 | [`italic-oblique-fallback.html`](https://wpt.fyi/results/css/css-fonts/italic-oblique-fallback.html) | Pass | 1 / 1 |  |  |
 | [`lang-attribute-affects-rendering-of-second-text-run.html`](https://wpt.fyi/results/css/css-fonts/lang-attribute-affects-rendering-of-second-text-run.html) | Pass | 1 / 1 |  |  |

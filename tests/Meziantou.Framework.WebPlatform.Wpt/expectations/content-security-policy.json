@@ -2953,10 +2953,7 @@
     "total": 1
   },
   "content-security-policy/worker-src/service-worker-src-child-fallback-blocked.https.sub.html": {
-    "total": 1,
-    "failures": {
-      "Same-origin service worker allowed by child-src 'self'.": "FAIL"
-    }
+    "total": 1
   },
   "content-security-policy/worker-src/service-worker-src-child-fallback.https.sub.html": {
     "total": 1

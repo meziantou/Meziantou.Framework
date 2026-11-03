@@ -49,10 +49,10 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 25,578 | 29,691 | 2,570 | 94% |
+| [Stable](#stable-tests) | 25,579 | 29,691 | 2,570 | 94% |
 | [Tentative](#tentative-tests) | 1,173 | 3,074 | 847 | 53% |
 | [Reftests](#reftests) | 27,768 | 29,220 | 180 | 96% |
-| **All** | **54,519** | **61,985** | **3,597** | **93%** |
+| **All** | **54,520** | **61,985** | **3,597** | **93%** |
 
 ## Stable tests
 
@@ -87,7 +87,7 @@ The features of `REQUIRES`:
 | [`contacts`](contacts.md) | 0 | 1 | 1 | – |
 | [`content-dpr`](content-dpr.md) | 0 | 1 | 1 | – |
 | [`content-index`](content-index.md) | 0 | 2 | 2 | – |
-| [`content-security-policy`](content-security-policy.md) | 855 | 893 | 0 | 96% |
+| [`content-security-policy`](content-security-policy.md) | 856 | 893 | 0 | 96% |
 | [`contenteditable`](contenteditable.md) | 0 | 2 | 2 | – |
 | [`cookies`](cookies.md) | 71 | 76 | 0 | 93% |
 | [`cookiestore`](cookiestore.md) | 39 | 47 | 0 | 83% |
@@ -401,7 +401,7 @@ The features of `REQUIRES`:
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 317 | 330 | 0 | 96% |
 | [`xml`](xml.md) | 0 | 12 | 12 | – |
-| **Total (343 sections)** | **25,578** | **29,691** | **2,570** | **94%** |
+| **Total (343 sections)** | **25,579** | **29,691** | **2,570** | **94%** |
 
 ## Tentative tests
 

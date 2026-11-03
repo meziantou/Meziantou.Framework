@@ -34,7 +34,7 @@ description: "The results of the web-platform-tests of css/css-writing-modes, an
 | [`forms/select-size-scrolling-and-sizing.optional.html`](https://wpt.fyi/results/css/css-writing-modes/forms/select-size-scrolling-and-sizing.optional.html) | Pass | 10 / 10 |  |  |
 | [`forms/text-input-baseline.html`](https://wpt.fyi/results/css/css-writing-modes/forms/text-input-baseline.html) | Pass | 21 / 21 |  |  |
 | [`forms/text-input-block-size.optional.html`](https://wpt.fyi/results/css/css-writing-modes/forms/text-input-block-size.optional.html) | Pass | 28 / 28 |  |  |
-| [`forms/text-input-scroll-on-blur.html`](https://wpt.fyi/results/css/css-writing-modes/forms/text-input-scroll-on-blur.html) | Fail | 0 / 10 |  | *No reason documented* |
+| [`forms/text-input-scroll-on-blur.html`](https://wpt.fyi/results/css/css-writing-modes/forms/text-input-scroll-on-blur.html) | Fail | 0 / 10 | NOT IMPLEMENTED | `setSelectionRange()` on a focused text field does not scroll its value to reveal the caret (only the arrow keys, `Home` and `End` do), so `scrollLeft`/`scrollTop` is still 0 before the blur; the scroll back to the start of the value when the field loses the focus is not implemented either |
 | [`forms/text-input-vertical-overflow-no-scroll.html`](https://wpt.fyi/results/css/css-writing-modes/forms/text-input-vertical-overflow-no-scroll.html) | Pass | 16 / 16 |  |  |
 | [`forms/textarea-rows-cols-sizing.html`](https://wpt.fyi/results/css/css-writing-modes/forms/textarea-rows-cols-sizing.html) | Pass | 10 / 10 |  |  |
 | [`inheritance.html`](https://wpt.fyi/results/css/css-writing-modes/inheritance.html) | Pass | 10 / 10 |  |  |
@@ -946,7 +946,7 @@ description: "The results of the web-platform-tests of css/css-writing-modes, an
 | [`row-progression-vrl-008.xht`](https://wpt.fyi/results/css/css-writing-modes/row-progression-vrl-008.xht) | Pass | 1 / 1 |  |  |
 | [`scrollbar-vertical-rl.html`](https://wpt.fyi/results/css/css-writing-modes/scrollbar-vertical-rl.html) | Pass | 1 / 1 |  |  |
 | [`sideways-inline-001.html`](https://wpt.fyi/results/css/css-writing-modes/sideways-inline-001.html) | Pass | 1 / 1 |  |  |
-| [`sideways-inline-002.html`](https://wpt.fyi/results/css/css-writing-modes/sideways-inline-002.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`sideways-inline-002.html`](https://wpt.fyi/results/css/css-writing-modes/sideways-inline-002.html) | Fail | 0 / 1 | TEST BUG | the image `4color.png` does not exist in WPT, so the `img` of the test and of the reference is broken: the reference, which rotates the image, only matches the sideways layout of a square image, and the broken image is narrower than it is tall |
 | [`sideways-inline-003.html`](https://wpt.fyi/results/css/css-writing-modes/sideways-inline-003.html) | Pass | 1 / 1 |  |  |
 | [`sideways-inline-004.html`](https://wpt.fyi/results/css/css-writing-modes/sideways-inline-004.html) | Pass | 1 / 1 |  |  |
 | [`sideways-lr-main-axis.html`](https://wpt.fyi/results/css/css-writing-modes/sideways-lr-main-axis.html) | Pass | 1 / 1 |  |  |

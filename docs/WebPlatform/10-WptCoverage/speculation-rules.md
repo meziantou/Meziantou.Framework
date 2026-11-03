@@ -32,7 +32,7 @@ description: "The results of the web-platform-tests of speculation-rules, and wh
 | [`prefetch/different-initiators.sub.https.html`](https://wpt.fyi/results/speculation-rules/prefetch/different-initiators.sub.https.html) | Pass | 3 / 3 |  |  |
 | [`prefetch/document-rules-details-element.https.html`](https://wpt.fyi/results/speculation-rules/prefetch/document-rules-details-element.https.html) | Pass | 2 / 2 |  |  |
 | [`prefetch/document-rules-pending-stylesheet.https.html`](https://wpt.fyi/results/speculation-rules/prefetch/document-rules-pending-stylesheet.https.html) | Pass | 1 / 1 |  |  |
-| [`prefetch/document-rules-visibility.https.html`](https://wpt.fyi/results/speculation-rules/prefetch/document-rules-visibility.https.html) | Error | 4 / 6 |  | *No reason documented* |
+| [`prefetch/document-rules-visibility.https.html`](https://wpt.fyi/results/speculation-rules/prefetch/document-rules-visibility.https.html) | Error | 4 / 6 | TEST BUG | the customized built-in `<a>` element calls `attachShadow()` in its constructor, which throws a `NotSupportedError` (`a` is not a valid shadow host, https://dom.spec.whatwg.org/#valid-shadow-host-name); `createElement()` reports the exception, so the harness errors and the last two subtests time out or do not run |
 | [`prefetch/document-rules.https.html`](https://wpt.fyi/results/speculation-rules/prefetch/document-rules.https.html) | Pass | 18 / 18 |  |  |
 | [`prefetch/duplicate-urls.https.html`](https://wpt.fyi/results/speculation-rules/prefetch/duplicate-urls.https.html) | Pass | 1 / 1 |  |  |
 | [`prefetch/fragment.https.html`](https://wpt.fyi/results/speculation-rules/prefetch/fragment.https.html) | Pass | 1 / 1 |  |  |
@@ -48,8 +48,8 @@ description: "The results of the web-platform-tests of speculation-rules, and wh
 | [`prefetch/navigation-timing-delivery-type.https.html`](https://wpt.fyi/results/speculation-rules/prefetch/navigation-timing-delivery-type.https.html) | Pass | 4 / 4 |  |  |
 | [`prefetch/navigation-timing-requestStart-responseStart.https.html`](https://wpt.fyi/results/speculation-rules/prefetch/navigation-timing-requestStart-responseStart.https.html) | Pass | 4 / 4 |  |  |
 | [`prefetch/navigation-timing-sizes.https.html`](https://wpt.fyi/results/speculation-rules/prefetch/navigation-timing-sizes.https.html) | Pass | 4 / 4 |  |  |
-| [`prefetch/no-http-cache-interference-inflight.https.html`](https://wpt.fyi/results/speculation-rules/prefetch/no-http-cache-interference-inflight.https.html) | Timeout | 0 / 1 |  | *No reason documented* |
-| [`prefetch/no-http-cache-interference-slow-error.https.html`](https://wpt.fyi/results/speculation-rules/prefetch/no-http-cache-interference-slow-error.https.html) | Timeout | 0 / 1 |  | *No reason documented* |
+| [`prefetch/no-http-cache-interference-inflight.https.html`](https://wpt.fyi/results/speculation-rules/prefetch/no-http-cache-interference-inflight.https.html) | Timeout | 0 / 1 | TEST RUNNER | `speculation-rules/prefetch/resources/delayed-conditional-status.py` is not emulated |
+| [`prefetch/no-http-cache-interference-slow-error.https.html`](https://wpt.fyi/results/speculation-rules/prefetch/no-http-cache-interference-slow-error.https.html) | Timeout | 0 / 1 | TEST RUNNER | `speculation-rules/prefetch/resources/slow-body-conditional-status.py` is not emulated |
 | [`prefetch/no-http-cache-interference.https.html`](https://wpt.fyi/results/speculation-rules/prefetch/no-http-cache-interference.https.html) | Pass | 1 / 1 |  |  |
 | [`prefetch/no-prefetch-for-post.https.html`](https://wpt.fyi/results/speculation-rules/prefetch/no-prefetch-for-post.https.html) | Pass | 1 / 1 |  |  |
 | [`prefetch/no-vary-search/prefetch-single-with-hint.https.html`](https://wpt.fyi/results/speculation-rules/prefetch/no-vary-search/prefetch-single-with-hint.https.html) | Pass | 28 / 28 |  |  |

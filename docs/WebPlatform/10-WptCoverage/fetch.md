@@ -56,7 +56,7 @@ description: "The results of the web-platform-tests of fetch, and why the tests 
 | [`api/basic/scheme-blob.sub.any.js`](https://wpt.fyi/results/fetch/api/basic/scheme-blob.sub.any.js) | Pass | 36 / 36 |  |  |
 | [`api/basic/scheme-data.any.js`](https://wpt.fyi/results/fetch/api/basic/scheme-data.any.js) | Pass | 24 / 24 |  |  |
 | [`api/basic/scheme-others.sub.any.js`](https://wpt.fyi/results/fetch/api/basic/scheme-others.sub.any.js) | Pass | 48 / 48 |  |  |
-| [`api/basic/split-byte-order-mark.any.js`](https://wpt.fyi/results/fetch/api/basic/split-byte-order-mark.any.js) | Fail | 0 / 10 |  | *No reason documented* |
+| [`api/basic/split-byte-order-mark.any.js`](https://wpt.fyi/results/fetch/api/basic/split-byte-order-mark.any.js) | Fail | 0 / 10 | TEST RUNNER | `xhr/resources/content-in-chunks.py` is not emulated (404) |
 | [`api/basic/status.h2.any.js`](https://wpt.fyi/results/fetch/api/basic/status.h2.any.js) | Pass | 14 / 14 |  |  |
 | [`api/basic/stream-response.any.js`](https://wpt.fyi/results/fetch/api/basic/stream-response.any.js) | Pass | 6 / 6 |  |  |
 | [`api/basic/stream-safe-creation.any.js`](https://wpt.fyi/results/fetch/api/basic/stream-safe-creation.any.js) | Pass | 189 / 189 |  |  |

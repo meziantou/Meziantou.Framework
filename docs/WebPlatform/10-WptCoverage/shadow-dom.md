@@ -92,7 +92,7 @@ description: "The results of the web-platform-tests of shadow-dom, and why the t
 | [`focus-navigation/focus-reverse-unassigned-slot.html`](https://wpt.fyi/results/shadow-dom/focus-navigation/focus-reverse-unassigned-slot.html) | Pass | 1 / 1 |  |  |
 | [`focus-navigation/focus-unassignable-slot.html`](https://wpt.fyi/results/shadow-dom/focus-navigation/focus-unassignable-slot.html) | Pass | 1 / 1 |  |  |
 | [`focus-navigation/focus-with-negative-index.html`](https://wpt.fyi/results/shadow-dom/focus-navigation/focus-with-negative-index.html) | Pass | 2 / 2 |  |  |
-| [`focus-navigation/reading-flow/carousel-grid-order.html`](https://wpt.fyi/results/shadow-dom/focus-navigation/reading-flow/carousel-grid-order.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`focus-navigation/reading-flow/carousel-grid-order.html`](https://wpt.fyi/results/shadow-dom/focus-navigation/reading-flow/carousel-grid-order.html) | Fail | 0 / 1 | NOT IMPLEMENTED | keyboard-focusable scroll containers: the test focuses a scroll container without `tabindex` (in Chromium, a scroll container that overflows and has no focusable descendant is a tab stop); the `grid-order` reading flow of its items is implemented |
 | [`focus-navigation/reading-flow/flex-flow.html`](https://wpt.fyi/results/shadow-dom/focus-navigation/reading-flow/flex-flow.html) | Pass | 4 / 4 |  |  |
 | [`focus-navigation/reading-flow/flex-visual-fragmentation.html`](https://wpt.fyi/results/shadow-dom/focus-navigation/reading-flow/flex-visual-fragmentation.html) | Pass | 3 / 3 |  |  |
 | [`focus-navigation/reading-flow/flex-visual-order.html`](https://wpt.fyi/results/shadow-dom/focus-navigation/reading-flow/flex-visual-order.html) | Pass | 4 / 4 |  |  |

@@ -164,7 +164,7 @@ description: "The results of the web-platform-tests of css/filter-effects, and w
 | [`backdrop-filters-saturate.html`](https://wpt.fyi/results/css/filter-effects/backdrop-filters-saturate.html) | Pass | 1 / 1 |  |  |
 | [`backdrop-filters-sepia.html`](https://wpt.fyi/results/css/filter-effects/backdrop-filters-sepia.html) | Pass | 1 / 1 |  |  |
 | [`background-image-blur-repaint.html`](https://wpt.fyi/results/css/filter-effects/background-image-blur-repaint.html) | Pass | 1 / 1 |  |  |
-| [`blur-clip-border-radius.html`](https://wpt.fyi/results/css/filter-effects/blur-clip-border-radius.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`blur-clip-border-radius.html`](https://wpt.fyi/results/css/filter-effects/blur-clip-border-radius.html) | Fail | 0 / 1 | BUG | antialiasing only: 38 pixels differ (maximum difference 3; the test allows 30) on the edges of the nested rounded clips (`overflow: clip`, `border-radius: 50%`) around the blurred element |
 | [`blur-clip-stacking-context-001.html`](https://wpt.fyi/results/css/filter-effects/blur-clip-stacking-context-001.html) | Pass | 1 / 1 |  |  |
 | [`blur-clip-stacking-context-002.html`](https://wpt.fyi/results/css/filter-effects/blur-clip-stacking-context-002.html) | Pass | 1 / 1 |  |  |
 | [`blur-text.html`](https://wpt.fyi/results/css/filter-effects/blur-text.html) | Fail | 0 / 1 | BUG | the filter of the `data:` URL document is applied, but its filter region (the default -10%/120% of the bounding box of each fragment of the inline box) clips the blur between the lines, which `filter: blur(4px)` of the reference does not: 25,101 pixels differ by up to 18; fails in every browser |
@@ -204,7 +204,7 @@ description: "The results of the web-platform-tests of css/filter-effects, and w
 | [`drop-shadow-perspective-rotation.html`](https://wpt.fyi/results/css/filter-effects/drop-shadow-perspective-rotation.html) | Pass | 1 / 1 |  |  |
 | [`drop-shadow-perspective-scale.html`](https://wpt.fyi/results/css/filter-effects/drop-shadow-perspective-scale.html) | Pass | 1 / 1 |  |  |
 | [`drop-shadow-perspective.html`](https://wpt.fyi/results/css/filter-effects/drop-shadow-perspective.html) | Pass | 1 / 1 |  |  |
-| [`drop-shadow-scale.html`](https://wpt.fyi/results/css/filter-effects/drop-shadow-scale.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`drop-shadow-scale.html`](https://wpt.fyi/results/css/filter-effects/drop-shadow-scale.html) | Fail | 0 / 1 | BUG | the blur radius of `drop-shadow(30px 10px 4px blue)` on an element with `transform: scale(10)` is not scaled like the rest of the element: the shadow is at the right offset but much sharper than the 40px blur of the reference |
 | [`drop-shadow-transform-in-opacity-overlap.html`](https://wpt.fyi/results/css/filter-effects/drop-shadow-transform-in-opacity-overlap.html) | Pass | 1 / 1 |  |  |
 | [`drop-shadow-transform.html`](https://wpt.fyi/results/css/filter-effects/drop-shadow-transform.html) | Pass | 1 / 1 |  |  |
 | [`drop-shadow-with-3d-transform.html`](https://wpt.fyi/results/css/filter-effects/drop-shadow-with-3d-transform.html) | Pass | 1 / 1 |  |  |
@@ -259,11 +259,11 @@ description: "The results of the web-platform-tests of css/filter-effects, and w
 | [`feflood-with-filter-reference.html`](https://wpt.fyi/results/css/filter-effects/feflood-with-filter-reference.html) | Pass | 1 / 1 |  |  |
 | [`feimage-element-ref-geometry.html`](https://wpt.fyi/results/css/filter-effects/feimage-element-ref-geometry.html) | Pass | 1 / 1 |  |  |
 | [`feimage-huge-subregion.html`](https://wpt.fyi/results/css/filter-effects/feimage-huge-subregion.html) | Pass | 1 / 1 |  |  |
-| [`feimage-subregion-beyond-filter-region.html`](https://wpt.fyi/results/css/filter-effects/feimage-subregion-beyond-filter-region.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`feimage-subregion-beyond-filter-region.html`](https://wpt.fyi/results/css/filter-effects/feimage-subregion-beyond-filter-region.html) | Fail | 0 / 1 | BUG | the image of `feImage` is fitted to its primitive subregion clipped to the filter region (100x100) instead of to the whole primitive subregion (300x300, then clipped), so the 3x3 image shows a red border around a 33px green square |
 | [`feimage-svg-fragment.html`](https://wpt.fyi/results/css/filter-effects/feimage-svg-fragment.html) | Pass | 1 / 1 |  |  |
 | [`feimage-svg-preserveaspectratio-slice.html`](https://wpt.fyi/results/css/filter-effects/feimage-svg-preserveaspectratio-slice.html) | Pass | 1 / 1 |  |  |
 | [`feimage-svg-resolution.html`](https://wpt.fyi/results/css/filter-effects/feimage-svg-resolution.html) | Pass | 1 / 1 |  |  |
-| [`feimage-svg-root-preserveaspectratio.html`](https://wpt.fyi/results/css/filter-effects/feimage-svg-root-preserveaspectratio.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`feimage-svg-root-preserveaspectratio.html`](https://wpt.fyi/results/css/filter-effects/feimage-svg-root-preserveaspectratio.html) | Fail | 0 / 1 | BUG | `feImage` honors the `preserveAspectRatio` of the root `svg` element of the referenced SVG image (`xMaxYMid meet`: the green 50x100 image is on the right half) instead of treating it as `none` as an `image` element does (the image is stretched to 100x100) |
 | [`filter-3d-child-behind-eye-plane.html`](https://wpt.fyi/results/css/filter-effects/filter-3d-child-behind-eye-plane.html) | Pass | 1 / 1 |  |  |
 | [`filter-3d-child-in-3d-filtered-layer.html`](https://wpt.fyi/results/css/filter-effects/filter-3d-child-in-3d-filtered-layer.html) | Pass | 1 / 1 |  |  |
 | [`filter-3d-child-spanning-eye-plane.html`](https://wpt.fyi/results/css/filter-effects/filter-3d-child-spanning-eye-plane.html) | Pass | 1 / 1 |  |  |
@@ -304,8 +304,8 @@ description: "The results of the web-platform-tests of css/filter-effects, and w
 | [`filter-grayscale-005.html`](https://wpt.fyi/results/css/filter-effects/filter-grayscale-005.html) | Pass | 1 / 1 |  |  |
 | [`filter-hue_rotate-001-test.html`](https://wpt.fyi/results/css/filter-effects/filter-hue_rotate-001-test.html) | Pass | 1 / 1 |  |  |
 | [`filter-hue_rotate-002-test.html`](https://wpt.fyi/results/css/filter-effects/filter-hue_rotate-002-test.html) | Pass | 1 / 1 |  |  |
-| [`filter-in-3d-transformed-ancestor-child-crossing-eye-plane.html`](https://wpt.fyi/results/css/filter-effects/filter-in-3d-transformed-ancestor-child-crossing-eye-plane.html) | Fail | 0 / 1 |  | *No reason documented* |
-| [`filter-in-3d-transformed-ancestor-child-near-eye-plane.html`](https://wpt.fyi/results/css/filter-effects/filter-in-3d-transformed-ancestor-child-near-eye-plane.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`filter-in-3d-transformed-ancestor-child-crossing-eye-plane.html`](https://wpt.fyi/results/css/filter-effects/filter-in-3d-transformed-ancestor-child-crossing-eye-plane.html) | Fail | 0 / 1 | BUG | a filtered element (`drop-shadow()`) rotated under a perspective whose child projects close to or across the eye plane of its own `perspective: 100px` (`translate3d(0, 0, 60px\|70px) rotateY(80deg)`) is drawn as a washed-out smear over the whole viewport instead of the projected green box, its shadow and the orange child |
+| [`filter-in-3d-transformed-ancestor-child-near-eye-plane.html`](https://wpt.fyi/results/css/filter-effects/filter-in-3d-transformed-ancestor-child-near-eye-plane.html) | Fail | 0 / 1 | BUG | a filtered element (`drop-shadow()`) rotated under a perspective whose child projects close to or across the eye plane of its own `perspective: 100px` (`translate3d(0, 0, 60px\|70px) rotateY(80deg)`) is drawn as a washed-out smear over the whole viewport instead of the projected green box, its shadow and the orange child |
 | [`filter-in-3d-transformed-ancestor.html`](https://wpt.fyi/results/css/filter-effects/filter-in-3d-transformed-ancestor.html) | Pass | 1 / 1 |  |  |
 | [`filter-invalid.html`](https://wpt.fyi/results/css/filter-effects/filter-invalid.html) | Pass | 1 / 1 |  |  |
 | [`filter-invert-001-test.html`](https://wpt.fyi/results/css/filter-effects/filter-invert-001-test.html) | Pass | 1 / 1 |  |  |
@@ -328,7 +328,7 @@ description: "The results of the web-platform-tests of css/filter-effects, and w
 | [`filter-target-offscreen-below-viewport-002.html`](https://wpt.fyi/results/css/filter-effects/filter-target-offscreen-below-viewport-002.html) | Pass | 1 / 1 |  |  |
 | [`filter-target-offscreen-below-viewport-003.html`](https://wpt.fyi/results/css/filter-effects/filter-target-offscreen-below-viewport-003.html) | Pass | 1 / 1 |  |  |
 | [`filter-turbulence-invalid-001.html`](https://wpt.fyi/results/css/filter-effects/filter-turbulence-invalid-001.html) | Pass | 1 / 1 |  |  |
-| [`filter-unbounded-child-in-layer-plane.html`](https://wpt.fyi/results/css/filter-effects/filter-unbounded-child-in-layer-plane.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`filter-unbounded-child-in-layer-plane.html`](https://wpt.fyi/results/css/filter-effects/filter-unbounded-child-in-layer-plane.html) | Fail | 0 / 1 | BUG | the fully transparent 2000px-wide child that crosses the eye plane of the filtered element (`rotateY(70deg)` under `perspective: 100px`) extends the scrollable overflow of the page, so the test has a horizontal scrollbar that the reference does not have (the filtered element itself is painted in neither, see `css/css-transforms/preserve3d-and-filter-with-perspective.html`) |
 | [`filter-url-to-non-existent-filter-001.html`](https://wpt.fyi/results/css/filter-effects/filter-url-to-non-existent-filter-001.html) | Pass | 1 / 1 |  |  |
 | [`filter-with-mix-blend-mode.html`](https://wpt.fyi/results/css/filter-effects/filter-with-mix-blend-mode.html) | Pass | 1 / 1 |  |  |
 | [`filtered-block-is-container.html`](https://wpt.fyi/results/css/filter-effects/filtered-block-is-container.html) | Pass | 1 / 1 |  |  |

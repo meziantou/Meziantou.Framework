@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of content-security-policy, 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 855 | 893 | 0 | 96% |
+| [Stable](#stable-tests) | 856 | 893 | 0 | 96% |
 | [Tentative](#tentative-tests) | 8 | 15 | 0 | 53% |
 | [Reftests](#reftests) | 8 | 8 | 0 | 100% |
-| **All** | **871** | **916** | **0** | **95%** |
+| **All** | **872** | **916** | **0** | **95%** |
 
 ## Stable tests
 
@@ -739,7 +739,7 @@ description: "The results of the web-platform-tests of content-security-policy, 
 | [`securitypolicyviolation/inside-nested-dedicated-worker.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/inside-nested-dedicated-worker.html) | Pass | 1 / 1 |  |  |
 | [`securitypolicyviolation/inside-service-worker.https.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/inside-service-worker.https.html) | Pass | 3 / 3 |  |  |
 | [`securitypolicyviolation/inside-shared-worker.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/inside-shared-worker.html) | Pass | 3 / 3 |  |  |
-| [`securitypolicyviolation/no-violation-for-inline-handler-in-document-without-browsing-context.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/no-violation-for-inline-handler-in-document-without-browsing-context.html) | Fail | 1 / 5 |  | *No reason documented* |
+| [`securitypolicyviolation/no-violation-for-inline-handler-in-document-without-browsing-context.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/no-violation-for-inline-handler-in-document-without-browsing-context.html) | Fail | 1 / 5 | BUG | `ContentSecurityPolicy.GetInlineCheckDocument` checks the event handler content attributes of the elements of a document without a browsing context (`DOMParser.parseFromString()`, template contents, `createHTMLDocument()`) against the CSP list of the document of the global object instead of the empty CSP list of their own document, so an `inline` violation is reported for each of them before the `eval` one |
 | [`securitypolicyviolation/script-sample-no-opt-in.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/script-sample-no-opt-in.html) | Pass | 4 / 4 |  |  |
 | [`securitypolicyviolation/script-sample.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/script-sample.html) | Pass | 6 / 6 |  |  |
 | [`securitypolicyviolation/securitypolicyviolation-block-cross-origin-image-from-script.sub.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/securitypolicyviolation-block-cross-origin-image-from-script.sub.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the source location of a violation is the location of the script that runs when the request is checked, not of the script that started the request: the image is fetched later (in a microtask), so the line and column of the violation are not the ones of the `src` setter or of `appendChild()` |
@@ -892,7 +892,7 @@ description: "The results of the web-platform-tests of content-security-policy, 
 | [`worker-src/service-list.https.sub.html`](https://wpt.fyi/results/content-security-policy/worker-src/service-list.https.sub.html) | Pass | 1 / 1 |  |  |
 | [`worker-src/service-none.https.sub.html`](https://wpt.fyi/results/content-security-policy/worker-src/service-none.https.sub.html) | Pass | 1 / 1 |  |  |
 | [`worker-src/service-self.https.sub.html`](https://wpt.fyi/results/content-security-policy/worker-src/service-self.https.sub.html) | Pass | 1 / 1 |  |  |
-| [`worker-src/service-worker-src-child-fallback-blocked.https.sub.html`](https://wpt.fyi/results/content-security-policy/worker-src/service-worker-src-child-fallback-blocked.https.sub.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`worker-src/service-worker-src-child-fallback-blocked.https.sub.html`](https://wpt.fyi/results/content-security-policy/worker-src/service-worker-src-child-fallback-blocked.https.sub.html) | Pass | 1 / 1 |  |  |
 | [`worker-src/service-worker-src-child-fallback.https.sub.html`](https://wpt.fyi/results/content-security-policy/worker-src/service-worker-src-child-fallback.https.sub.html) | Pass | 1 / 1 |  |  |
 | [`worker-src/service-worker-src-default-fallback.https.sub.html`](https://wpt.fyi/results/content-security-policy/worker-src/service-worker-src-default-fallback.https.sub.html) | Pass | 1 / 1 |  |  |
 | [`worker-src/service-worker-src-script-fallback.https.sub.html`](https://wpt.fyi/results/content-security-policy/worker-src/service-worker-src-script-fallback.https.sub.html) | Pass | 1 / 1 |  |  |

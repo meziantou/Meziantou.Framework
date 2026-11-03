@@ -48,6 +48,7 @@ Assert.Equal("5", document.QuerySelector("output")!.TextContent);
 deeper recursion throws a `RangeError`), the largest size of a memory ([MaxMemorySize](cref:Meziantou.Framework.WebPlatform.Wasmtime.WasmtimeRuntimeOptions.MaxMemorySize): the memories are .NET arrays,
 shared with the `ArrayBuffer` objects of the scripts), and how often the running code checks whether it must stop
 ([InterruptionCheckInterval](cref:Meziantou.Framework.WebPlatform.Wasmtime.WasmtimeRuntimeOptions.InterruptionCheckInterval), 10 ms by default).
+A table has at most 10,000,000 elements, the limit of the JavaScript API of browsers: `table.grow` returns -1 beyond it.
 
 Wasmtime is a native library: it comes with the `Wasmtime` package, a dependency of
 `Meziantou.Framework.WebPlatform.Wasmtime`.

@@ -40,21 +40,7 @@
     "total": 14
   },
   "sanitizer-api/sanitizer-custom-elements-is.html": {
-    "total": 20,
-    "failures": {
-      "parseHTML removes body is= attribute with global removeAttributes": "FAIL",
-      "parseHTML removes body is= attribute with local allow attributes": "FAIL",
-      "parseHTML removes body is= attribute with local removeAttributes": "FAIL",
-      "parseHTML removes body is= attribute with the default sanitizer config.": "FAIL",
-      "parseHTML removes div is= attribute with global removeAttributes": "FAIL",
-      "parseHTML removes div is= attribute with local allow attributes": "FAIL",
-      "parseHTML removes div is= attribute with local removeAttributes": "FAIL",
-      "parseHTML removes div is= attribute with the default sanitizer config.": "FAIL",
-      "parseHTML removes html is= attribute with global removeAttributes": "FAIL",
-      "parseHTML removes html is= attribute with local allow attributes": "FAIL",
-      "parseHTML removes html is= attribute with local removeAttributes": "FAIL",
-      "parseHTML removes html is= attribute with the default sanitizer config.": "FAIL"
-    }
+    "total": 20
   },
   "sanitizer-api/sanitizer-custom-elements-is.tentative.html": {
     "total": 8

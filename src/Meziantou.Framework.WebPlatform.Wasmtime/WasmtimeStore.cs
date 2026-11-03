@@ -16,6 +16,9 @@ namespace Meziantou.Framework.WebPlatform.Wasmtime;
 [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2216:Disposable types should declare finalizer", Justification = "The native store is released by its SafeHandle")]
 internal sealed unsafe partial class WasmtimeStore : WasmStore
 {
+    /// <summary>The maximum number of elements of a table (https://webassembly.github.io/spec/js-api/#limits).</summary>
+    private const long MaxTableElements = 10_000_000;
+
     private readonly WasmtimeRuntime _runtime;
     private readonly IWasmHost _host;
     private readonly StoreHandle _store;
@@ -48,6 +51,11 @@ internal sealed unsafe partial class WasmtimeStore : WasmStore
         _store = new StoreHandle(NativeMethods.wasmtime_store_new(engine.Value, GCHandle.ToIntPtr(data), null), data);
         var store = _store.DangerousGetHandle();
         _context = NativeMethods.wasmtime_store_context(store);
+
+        // A table cannot have more elements than the limit of the JavaScript API, so that growing it more makes table.grow
+        // return -1 instead of failing to allocate (https://webassembly.github.io/spec/js-api/#limits). The other limits of
+        // Wasmtime (10,000 instances, tables and memories by default) are removed, the memories have their own limit.
+        NativeMethods.wasmtime_store_limiter(store, memorySize: -1, MaxTableElements, instances: int.MaxValue, tables: int.MaxValue, memories: int.MaxValue);
 
         // The running code calls the callback at each tick of the epoch of the engine (see WasmtimeRuntime)
         NativeMethods.wasmtime_store_epoch_deadline_callback(store, &OnEpochDeadline, GCHandle.ToIntPtr(data), null);

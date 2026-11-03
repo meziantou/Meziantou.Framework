@@ -39,7 +39,7 @@ public partial class SvgGraphicsElement
     /// </summary>
     /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGGraphicsElement__getBBox"/>
     [IdlMember("getBBox", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGGraphicsElement__getBBox")]
-    public DomRect GetBBox(SvgBoundingBoxOptions? options = null) => SvgBoundingBox.Compute(this, options?.Fill ?? true, options?.Stroke ?? false);
+    public DomRect GetBBox(SvgBoundingBoxOptions? options = null) => SvgBoundingBox.Compute(this, options?.Fill ?? true, options?.Stroke ?? false, notRenderedGeometry: true);
 
     /// <summary>
     /// https://svgwg.org/svg2-draft/types.html#__svg__SVGGraphicsElement__getCTM: the transform from the user space of the

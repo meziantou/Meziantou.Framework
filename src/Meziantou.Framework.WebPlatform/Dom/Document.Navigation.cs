@@ -36,6 +36,13 @@ public partial class Document
     internal Document? RealmDocument { get; set; }
 
     /// <summary>
+    /// The document where the nodes created by the fragment parsing algorithm in this document are inserted (the node document
+    /// of the target, or the template contents owner document of a template element), or null when this document is not the
+    /// document of a fragment parser.
+    /// </summary>
+    internal Document? FragmentParsingDestination { get; set; }
+
+    /// <summary>
     /// The global object of the relevant realm of the document, if known: its window, or the one of the document that created
     /// it (<see cref="RealmDocument"/>).
     /// </summary>

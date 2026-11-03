@@ -231,4 +231,7 @@ internal sealed class BrowsingContextGroup
 {
     /// <summary>https://html.spec.whatwg.org/multipage/document-sequences.html#bcg-cross-origin-isolation</summary>
     public CrossOriginIsolationMode CrossOriginIsolationMode { get; init; }
+
+    /// <summary>The agent cluster map and the historical agent cluster key map of the group (https://html.spec.whatwg.org/multipage/document-sequences.html#agent-cluster-map).</summary>
+    public AgentClusterMap AgentClusters { get; } = new();
 }

@@ -678,6 +678,14 @@ internal static class HitTesting
     }
 
     /// <summary>
+    /// Whether a fragment is not clipped by its parent: the ::view-transition pseudo-element of a scoped view transition, which
+    /// is exempted from the clips of its root element, as in the painting
+    /// (https://drafts.csswg.org/css-view-transitions-2/#scoped-vt-layout: "If the root element clips its overflow, the
+    /// ::view-transition pseudo-element is exempted from that clip").
+    /// </summary>
+    private static bool IsExemptFromParentClips(Fragment fragment) => fragment is BoxFragment { Box.IsScopedViewTransitionRoot: true };
+
+    /// <summary>
     /// Returns a point of the root of the fragment tree (see <see cref="LayoutEngine.MapToRoot(Fragment, PhysicalRect)"/>) in the
     /// coordinates of a fragment, or null when it is clipped out by an ancestor or a transform is not invertible. The points of
     /// the ancestors are cached in the context.
@@ -712,7 +720,7 @@ internal static class HitTesting
                 point = rootPoint - current.Offset;
                 known = true;
             }
-            else if (point is not { } parentPoint || IsClippedOut(context, current.Parent!, parentPoint))
+            else if (point is not { } parentPoint || (IsClippedOut(context, current.Parent!, parentPoint) && !IsExemptFromParentClips(current)))
             {
                 point = null;
             }

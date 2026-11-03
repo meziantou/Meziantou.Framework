@@ -320,6 +320,9 @@ internal static unsafe partial class NativeMethods
     public static partial nint wasmtime_store_new(nint engine, nint data, delegate* unmanaged<nint, void> finalizer);
 
     [LibraryImport(LibraryName)]
+    public static partial void wasmtime_store_limiter(nint store, long memorySize, long tableElements, long instances, long tables, long memories);
+
+    [LibraryImport(LibraryName)]
     public static partial nint wasmtime_store_context(nint store);
 
     [LibraryImport(LibraryName)]

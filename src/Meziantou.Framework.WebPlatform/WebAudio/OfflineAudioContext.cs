@@ -385,12 +385,14 @@ public sealed class OfflineAudioContext : BaseAudioContext
             var finished = Length is { } length && _renderedFrames >= length;
             QueueMediaElementTask(() =>
             {
+                // The context is still running while the promise is resolved (resolving it with an AudioBuffer gets its "then"
+                // property, which a script can define), then it is closed in the same task, before the reactions run
+                pending.Completion.TrySetResult(buffer);
                 if (finished && State != AudioContextState.Closed)
                 {
                     SetState(AudioContextState.Closed);
                 }
 
-                pending.Completion.TrySetResult(buffer);
                 if (Length is not null)
                 {
                     QueueMediaElementTask(() => FireEvent(new OfflineAudioCompletionEvent("complete", new OfflineAudioCompletionEventInit { RenderedBuffer = buffer })));

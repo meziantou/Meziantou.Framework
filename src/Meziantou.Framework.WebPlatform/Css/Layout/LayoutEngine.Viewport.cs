@@ -17,6 +17,14 @@ internal sealed partial class LayoutEngine
     public PhysicalSize InitialContainingBlockSize => _initialContainingBlockSize;
 
     /// <summary>
+    /// The rectangle of the viewport of the nested browsing context of a container, in the coordinates of its fragment (see
+    /// <see cref="GetNestedViewportSize"/>): the rectangle where <c>object-fit</c> places a document that has natural
+    /// dimensions, else the content box. The painting, the hit testing, the geometry and the intersections of the nested
+    /// document are relative to it.
+    /// </summary>
+    public static PhysicalRect GetNestedViewportRect(BoxFragment containerFragment) => containerFragment.ReplacedContentRect ?? containerFragment.ContentBoxRect;
+
+    /// <summary>
     /// Returns the size of the viewport of a nested browsing context whose container (an <c>iframe</c>, <c>frame</c>,
     /// <c>object</c> or <c>embed</c> element) is laid out in this document: the content box of its principal box
     /// (https://html.spec.whatwg.org/multipage/iframe-embed-object.html#the-iframe-element: "the nested navigable's viewport
@@ -44,7 +52,7 @@ internal sealed partial class LayoutEngine
 
         // https://html.spec.whatwg.org/multipage/rendering.html#frames-and-framesets: the content navigable of a frame element
         // that does not have a frameset parent "is expected to have a viewport with zero width and zero height"
-        var content = fragment.ReplacedContentRect ?? fragment.ContentBoxRect;
+        var content = GetNestedViewportRect(fragment);
         var zoom = box.Style.Layout.EffectiveZoom;
         var size = container is HtmlFrameElement && !FramesetFormattingContext.IsFramesetChild(container) ? (0, 0) : (Math.Max(0, content.Width / zoom), Math.Max(0, content.Height / zoom));
         (_nestedViewportSizes ??= new(ReferenceEqualityComparer.Instance))[container] = size;

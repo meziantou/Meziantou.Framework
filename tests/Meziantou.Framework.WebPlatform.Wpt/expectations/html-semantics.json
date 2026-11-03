@@ -4985,11 +4985,7 @@
     "total": 1
   },
   "html/semantics/forms/the-select-element/customizable-select/option-selectedness-wrapper.html": {
-    "total": 32,
-    "failures": {
-      "drop-down box: moving a wrapper with a selected option into the select": "FAIL",
-      "list box: moving a wrapper with a selected option into the select": "FAIL"
-    }
+    "total": 32
   },
   "html/semantics/forms/the-select-element/customizable-select/picker-and-slotted-invalidation.html": {
     "reftest": "PASS"
@@ -5434,11 +5430,7 @@
     "total": 1
   },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-queued-update.html": {
-    "total": 10,
-    "failures": {
-      "Moving a selectedcontent element and removing the selected option queues a single update.": "FAIL",
-      "Moving a selectedcontent element into a select updates all of its selectedcontent elements.": "FAIL"
-    }
+    "total": 10
   },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-restore.optional.html": {
     "total": 2

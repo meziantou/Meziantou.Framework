@@ -2383,13 +2383,7 @@
     "total": 1
   },
   "content-security-policy/securitypolicyviolation/no-violation-for-inline-handler-in-document-without-browsing-context.html": {
-    "total": 5,
-    "failures": {
-      "DOMParser.parseFromString()": "FAIL",
-      "setAttribute() in a document created by createHTMLDocument()": "FAIL",
-      "setAttribute() in template contents": "FAIL",
-      "template.innerHTML": "FAIL"
-    }
+    "total": 5
   },
   "content-security-policy/securitypolicyviolation/script-sample-no-opt-in.html": {
     "total": 4

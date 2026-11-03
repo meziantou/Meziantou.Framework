@@ -152,7 +152,7 @@ internal sealed partial class LayoutEngine
             state.AnchoringAdjustments += applied;
             if (state.SmoothScroll is { } smooth)
             {
-                state.SmoothScroll = new SmoothScroll(smooth.Start + applied, state.Clamp(smooth.Target + applied), smooth.StartTimestamp);
+                state.SmoothScroll = new SmoothScroll(smooth.Start + applied, state.Clamp(smooth.Target + applied), smooth.StartTimestamp) { IsUserScroll = smooth.IsUserScroll };
             }
         }
 

@@ -562,8 +562,11 @@ public partial class Element : Node
         if (target is null)
             return;
 
-        // The inline check of the content security policies: a blocked value does not change the event handler
-        if (value is not null && ContentSecurityPolicy.ShouldBlockInline(this, ContentSecurityPolicyInlineType.ScriptAttribute, value))
+        // The inline check of the content security policies: a blocked value does not change the event handler. A document
+        // without a browsing context (DOMParser, the template contents, createHTMLDocument()) has an empty CSP list, as in the
+        // browsers: its event handlers are not checked against the policies of the window that created it. The nodes of the
+        // fragment parsing algorithm (innerHTML) are created in a document of the parser: the document where they are inserted decides.
+        if (value is not null && (NodeDocument.FragmentParsingDestination ?? NodeDocument).BrowsingContext is not null && ContentSecurityPolicy.ShouldBlockInline(this, ContentSecurityPolicyInlineType.ScriptAttribute, value))
             return;
 
         var map = target.GetEventHandlerMap(create: value is not null);

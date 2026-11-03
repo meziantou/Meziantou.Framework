@@ -203,10 +203,21 @@ internal sealed class ExrHuffman : IDisposable
     /// </summary>
     private void BuildCanonicalCodes(ReadOnlySpan<byte> lengths, int min, int max, Span<ulong> codes)
     {
+        // The symbols without code are skipped by runs: most of the 65,537 are unused
         Array.Clear(_count);
-        for (var symbol = min; symbol <= max; symbol++)
+        var range = lengths[min..(max + 1)];
+        for (var i = 0; i < range.Length; i++)
         {
-            _count[lengths[symbol]]++;
+            if (range[i] == 0)
+            {
+                var used = range[i..].IndexOfAnyExcept((byte)0);
+                if (used < 0)
+                    break;
+
+                i += used;
+            }
+
+            _count[range[i]]++;
         }
 
         _count[0] = 0;
@@ -240,12 +251,19 @@ internal sealed class ExrHuffman : IDisposable
         _firstSymbol.CopyTo(next);
         _start.CopyTo(nextCode);
         var symbols = Symbols;
-        for (var symbol = min; symbol <= max; symbol++)
+        for (var i = 0; i < range.Length; i++)
         {
-            var length = lengths[symbol];
-            if (length == 0)
-                continue;
+            if (range[i] == 0)
+            {
+                var used = range[i..].IndexOfAnyExcept((byte)0);
+                if (used < 0)
+                    break;
 
+                i += used;
+            }
+
+            var symbol = min + i;
+            var length = range[i];
             symbols[next[length]++] = symbol;
             if (!codes.IsEmpty)
             {
@@ -418,14 +436,22 @@ internal sealed class ExrHuffman : IDisposable
 
         // Leaves sorted by (frequency, symbol): the frequency in the high bits of the key
         var leafCount = 0;
-        for (var symbol = min; symbol <= max; symbol++)
+        var range = frequencies[min..(max + 1)];
+        for (var i = 0; i < range.Length; i++)
         {
-            if (frequencies[symbol] != 0)
+            if (range[i] == 0)
             {
-                weights[leafCount] = (frequencies[symbol] << 17) | (long)symbol;
-                symbols[leafCount] = symbol;
-                leafCount++;
+                var used = range[i..].IndexOfAnyExcept(0L);
+                if (used < 0)
+                    break;
+
+                i += used;
             }
+
+            var symbol = min + i;
+            weights[leafCount] = (range[i] << 17) | (long)symbol;
+            symbols[leafCount] = symbol;
+            leafCount++;
         }
 
         weights[..leafCount].Sort(symbols[..leafCount]);

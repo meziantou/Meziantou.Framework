@@ -1,3 +1,5 @@
+using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -58,6 +60,14 @@ internal sealed class HeifRgbConverter
     private readonly bool _premultiplyAlpha;
     private readonly bool _cositedColumns;
 
+    // The fast path of ConvertRows (ConvertRgba32Matrix): 8-bit RGBA, a matrix with Kr and Kb, no premultiplied alpha, and
+    // planes of at most 12 bits. Its divisions are multiplications (RoundedDivisor), and the scaling of alpha a table
+    private readonly bool _fast;
+    private readonly RoundedDivisor _lumaDivisor;
+    private readonly RoundedDivisor _uDivisor;
+    private readonly RoundedDivisor _vDivisor;
+    private readonly ushort[] _alphaScale = [];
+
     /// <summary>Creates the converter of an image.</summary>
     /// <param name="layout">The layout of the rows to convert: <see cref="PixelFormat.Gray8"/>, <see cref="PixelFormat.Gray16"/>, <see cref="PixelFormat.Rgba32"/> or <see cref="PixelFormat.Rgba64"/>.</param>
     /// <param name="bitDepth">The bit depth of the planes.</param>
@@ -113,6 +123,22 @@ internal sealed class HeifRgbConverter
             if (matrixCoefficients is Av1Constants.McIdentity && (_subX is not 0 || _subY is not 0 || !fullRange))
                 throw new ArgumentException("The identity matrix requires 4:4:4 samples in full range.", nameof(matrixCoefficients));
         }
+
+        if (layout is PixelFormat.Rgba32 && !premultiplyAlpha && bitDepth <= 12 && matrixCoefficients is not (Av1Constants.McIdentity or Av1Constants.McSmpteYcgco))
+        {
+            // The denominators of Convert and FinishChroma, and the largest magnitudes of their numerators: the weighted sum
+            // of a pixel and the numerator of its chroma are at most D * inputMax, and a chroma sample sums count of them
+            _fast = true;
+            var count = (_cositedColumns ? 4 : 1 + _subX) * (1 + _subY);
+            _lumaDivisor = new RoundedDivisor(D * _inputMax, D * _inputMax * _yRange);
+            _uDivisor = new RoundedDivisor(2 * (D - _kb) * count * _inputMax, count * D * _inputMax * _cRange);
+            _vDivisor = new RoundedDivisor(2 * (D - _kr) * count * _inputMax, count * D * _inputMax * _cRange);
+            _alphaScale = new ushort[256];
+            for (var a = 0; a < 256; a++)
+            {
+                _alphaScale[a] = (ushort)RoundedDivide(a * _max, _inputMax);
+            }
+        }
     }
 
     /// <summary>Gets the number of rows of pixels that <see cref="ConvertRows"/> converts: 2 when the chroma planes have half the rows.</summary>
@@ -133,6 +159,15 @@ internal sealed class HeifRgbConverter
     /// <param name="hasSecondRow">Whether <paramref name="row1"/> is a row of the image.</param>
     /// <returns>Whether a pixel of the rows is not opaque.</returns>
     public bool ConvertRows(ReadOnlySpan<byte> row0, ReadOnlySpan<byte> row1, Span<ushort> y0, Span<ushort> y1, Span<ushort> u, Span<ushort> v, Span<ushort> a0, Span<ushort> a1, bool hasSecondRow)
+        => _fast
+            ? ConvertRgba32Matrix(row0, row1, y0, y1, u, v, a0, a1, hasSecondRow)
+            : ConvertRowsReference(row0, row1, y0, y1, u, v, a0, a1, hasSecondRow);
+
+    /// <summary>
+    /// <see cref="ConvertRows"/> for every layout, one pixel at a time with the generic equations: the reference of the fast
+    /// path of 8-bit RGBA images.
+    /// </summary>
+    internal bool ConvertRowsReference(ReadOnlySpan<byte> row0, ReadOnlySpan<byte> row1, Span<ushort> y0, Span<ushort> y1, Span<ushort> u, Span<ushort> v, Span<ushort> a0, Span<ushort> a1, bool hasSecondRow)
     {
         var width = y0.Length;
         var transparent = false;
@@ -225,6 +260,143 @@ internal sealed class HeifRgbConverter
         }
 
         return transparent;
+    }
+
+    // ConvertRowsReference for 8-bit RGBA pixels and a matrix with Kr and Kb, without premultiplied alpha: the same values
+    // in the same order, with the parameters in locals and the divisions done by multiplications (RoundedDivisor)
+    private bool ConvertRgba32Matrix(ReadOnlySpan<byte> row0, ReadOnlySpan<byte> row1, Span<ushort> y0, Span<ushort> y1, Span<ushort> u, Span<ushort> v, Span<ushort> a0, Span<ushort> a1, bool hasSecondRow)
+    {
+        var width = y0.Length;
+        var subX = _subX;
+        var subY = _subY;
+        var chromaWidth = (width + subX) >> subX;
+        var kr = _kr;
+        var kg = D - _kr - _kb;
+        var kb = _kb;
+        var yOffset = _yOffset;
+        var yRange = _yRange;
+        var cOffset = _cOffset;
+        var cRange = _cRange;
+        var max = _max;
+        var cosited = _cositedColumns;
+        var clearTransparentColors = _clearTransparentColors;
+        var lumaDivisor = _lumaDivisor;
+        var uDivisor = _uDivisor;
+        var vDivisor = _vDivisor;
+        var alphaScale = _alphaScale;
+        var transparent = false;
+
+        // The chroma of the odd column that precedes the chroma sample, for each row: the first column is repeated
+        long previousU0 = 0;
+        long previousV0 = 0;
+        long previousU1 = 0;
+        long previousV1 = 0;
+        for (var cx = 0; cx < chromaWidth; cx++)
+        {
+            long uSum = 0;
+            long vSum = 0;
+            for (var dy = 0; dy <= subY; dy++)
+            {
+                var row = dy is 0 ? row0 : row1;
+                var luma = dy is 0 ? y0 : y1;
+                var alpha = dy is 0 ? a0 : a1;
+                var write = dy is 0 || hasSecondRow;
+                for (var dx = 0; dx <= subX; dx++)
+                {
+                    // The last column is repeated when the width is odd
+                    var x = Math.Min((cx << subX) + dx, width - 1);
+                    var pixel = row.Slice(4 * x, 4);
+                    long r = pixel[0];
+                    long g = pixel[1];
+                    long b = pixel[2];
+                    var a = pixel[3];
+                    if (a is not 255)
+                    {
+                        transparent = true;
+                        if (a is 0 && clearTransparentColors)
+                        {
+                            r = g = b = 0;
+                        }
+                    }
+
+                    // Convert, for the default matrices
+                    var weighted = (kr * r) + (kg * g) + (kb * b);
+                    var uNumerator = (b * D) - weighted;
+                    var vNumerator = (r * D) - weighted;
+                    if (!cosited)
+                    {
+                        uSum += uNumerator;
+                        vSum += vNumerator;
+                    }
+                    else if (dx is 0)
+                    {
+                        uSum += (2 * uNumerator) + (cx is 0 ? uNumerator : dy is 0 ? previousU0 : previousU1);
+                        vSum += (2 * vNumerator) + (cx is 0 ? vNumerator : dy is 0 ? previousV0 : previousV1);
+                    }
+                    else
+                    {
+                        uSum += uNumerator;
+                        vSum += vNumerator;
+                        if (dy is 0)
+                        {
+                            (previousU0, previousV0) = (uNumerator, vNumerator);
+                        }
+                        else
+                        {
+                            (previousU1, previousV1) = (uNumerator, vNumerator);
+                        }
+                    }
+
+                    if (write && (dx is 0 || ((cx << subX) + dx) < width))
+                    {
+                        luma[x] = (ushort)Math.Clamp(yOffset + lumaDivisor.Divide(weighted * yRange), 0, max);
+                        if (!alpha.IsEmpty)
+                        {
+                            alpha[x] = alphaScale[a];
+                        }
+                    }
+                }
+            }
+
+            u[cx] = (ushort)Math.Clamp(cOffset + uDivisor.Divide(uSum * cRange), 0, max);
+            v[cx] = (ushort)Math.Clamp(cOffset + vDivisor.Divide(vSum * cRange), 0, max);
+        }
+
+        return transparent;
+    }
+
+    // RoundedDivide by a denominator, for numerators of at most a given magnitude, without a division instruction: the doubled
+    // numerator plus the denominator, made positive by a multiple of the doubled denominator, is divided by the doubled
+    // denominator. The quotient is the high bits of the product by the inverse of the divisor rounded up: for a dividend
+    // below 2^40 and an inverse rounded up to 2^-K with 2^K at least 2^40 times the divisor, the error is less than
+    // 1 / divisor, which leaves the integer part unchanged
+    [StructLayout(LayoutKind.Auto)]
+    private readonly struct RoundedDivisor
+    {
+        private const int DividendBits = 40;
+
+        private readonly ulong _multiplier;
+        private readonly int _shift;
+        private readonly long _offset;
+        private readonly long _biasQuotient;
+
+        public RoundedDivisor(long denominator, long maxMagnitude)
+        {
+            var divisor = 2 * denominator;
+            _biasQuotient = (2 * maxMagnitude / divisor) + 1;
+            _offset = denominator + (_biasQuotient * divisor);
+            if ((2 * maxMagnitude) + _offset >= 1L << DividendBits)
+                throw new ArgumentOutOfRangeException(nameof(maxMagnitude));
+
+            var log2 = 64 - BitOperations.LeadingZeroCount((ulong)divisor - 1);
+            var k = Math.Max(DividendBits + log2, 64);
+            _multiplier = (ulong)(((UInt128.One << k) + (ulong)divisor - 1) / (ulong)divisor);
+            _shift = k - 64;
+        }
+
+        // RoundedDivide( numerator, denominator )
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public long Divide(long numerator) => (long)(Math.BigMul((ulong)((2 * numerator) + _offset), _multiplier, out _) >> _shift) - _biasQuotient;
     }
 
     private void ReadPixel(ReadOnlySpan<byte> row, int x, out long r, out long g, out long b, out long a)

@@ -326,7 +326,7 @@ internal sealed class JpegProgressiveScanDecoder : JpegScanDecoder
                 }
                 else
                 {
-                    DecodeAcRefinementUnchecked(table, block);
+                    DecodeAcRefinementUnchecked(table, scanComponent.AcLookup, block);
                 }
 
                 cursor = reader.GetUncheckedCursor();
@@ -569,16 +569,18 @@ internal sealed class JpegProgressiveScanDecoder : JpegScanDecoder
     /// one lookup of <see cref="JpegHuffmanTable.FastLookup"/> per symbol, which also gives the sign bit of a newly nonzero
     /// coefficient when it fits, and the same bits read in the same order, with the same errors.
     /// </summary>
-    private void DecodeAcRefinementUnchecked(JpegHuffmanTable table, Span<short> block)
+    private void DecodeAcRefinementUnchecked(JpegHuffmanTable table, int[] lookup, Span<short> block)
     {
-        var lookup = table.FastLookup;
         var reader = Reader;
         var cursor = reader.GetUncheckedCursor();
         var positive = 1 << _low;
         var end = _end;
         var endOfBandRun = _endOfBandRun;
         var k = _start;
-        var nonzero = GetNonzeroMask(block);
+
+        // Only the coefficients of the band are refined: often none of them is nonzero yet
+        var natural = JpegIdct.GetNonzeroMask(block) & _naturalBand;
+        var nonzero = natural == 0 ? 0 : ToZigZagMask(natural);
         if (endOfBandRun == 0)
         {
             while (k <= end)

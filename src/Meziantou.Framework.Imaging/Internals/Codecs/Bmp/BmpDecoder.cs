@@ -26,11 +26,18 @@ internal sealed class BmpDecoder : IImageDecodeObserver
         _context = context;
     }
 
+    /// <summary>
+    /// Gets a value indicating whether the 24-bit pixels are expanded to opaque <see cref="PixelFormat.Rgba32"/> rows (requested
+    /// so: no conversion) rather than to <see cref="BmpDibLayout.SourcePixelFormat"/>.
+    /// </summary>
+    public bool OpaqueRgbaRows { get; private set; }
+
     public void OnHeaderComplete(BmpStructureParser structure)
     {
         ArgumentNullException.ThrowIfNull(structure);
         _structure = structure;
-        _sink = DecodedFrameSink.Create(_context, _request, ImageFormat.Bmp, structure.Size, structure.DefaultPixelFormat, structure.DefaultPixelFormat, iccProfile: null);
+        OpaqueRgbaRows = structure.Layout.Header.BitsPerPixel == 24 && _request.PixelFormat == PixelFormat.Rgba32;
+        _sink = DecodedFrameSink.Create(_context, _request, ImageFormat.Bmp, structure.Size, structure.DefaultPixelFormat, OpaqueRgbaRows ? PixelFormat.Rgba32 : structure.DefaultPixelFormat, iccProfile: null);
     }
 
     /// <summary>Starts the frame on its first row and leases it; dispose the lease before returning from the parser call.</summary>

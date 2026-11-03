@@ -498,6 +498,8 @@ public sealed class JpegEncoderTests
         var scratch = new double[64];
         var quantization = new ushort[64];
         quantization.AsSpan().Fill(1);
+        var divisors = new double[64];
+        JpegForwardDct.CreateDivisors(quantization, divisors);
         var nearTies = 0;
         for (var iteration = 0; iteration < 5000; iteration++)
         {
@@ -506,7 +508,7 @@ public sealed class JpegEncoderTests
                 samples[i] = iteration % 3 == 0 ? random.Next(256) - 128 : (float)((random.NextDouble() * 255.5) - 128);
             }
 
-            JpegForwardDct.TransformAndQuantize(samples, quantization, scratch, coefficients);
+            JpegForwardDct.TransformAndQuantize(samples, divisors, scratch, coefficients);
             for (var v = 0; v < 8; v++)
             {
                 for (var u = 0; u < 8; u++)

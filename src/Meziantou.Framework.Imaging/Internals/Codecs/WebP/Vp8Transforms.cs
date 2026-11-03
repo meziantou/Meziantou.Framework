@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -82,6 +83,28 @@ internal static class Vp8Transforms
             return;
 
         var dc = (dcCoefficient + 4) >> 3;
+        if (Vector128.IsHardwareAccelerated)
+        {
+            // The 4 rows in one vector: adding then subtracting with unsigned saturation clamps like the scalar code
+            _ = destination.Slice(3 * stride, 4);
+            ref var origin = ref unsafe(MemoryMarshal.GetReference(destination));
+            var rows = Vector128.Create(Read(ref origin, 0), Read(ref origin, stride), Read(ref origin, 2 * stride), Read(ref origin, 3 * stride)).AsByte();
+            rows = Vector128.SubtractSaturate(Vector128.AddSaturate(rows, Vector128.Create((byte)Math.Clamp(dc, 0, 255))), Vector128.Create((byte)Math.Clamp(-dc, 0, 255)));
+            var words = rows.AsUInt32();
+            Write(ref origin, 0, words.ToScalar());
+            Write(ref origin, stride, words.GetElement(1));
+            Write(ref origin, 2 * stride, words.GetElement(2));
+            Write(ref origin, 3 * stride, words.GetElement(3));
+            return;
+
+            static uint Read(ref byte origin, int offset) => unsafe(Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref origin, offset)));
+
+            static void Write(ref byte origin, int offset, uint value)
+            {
+                unsafe { Unsafe.WriteUnaligned(ref Unsafe.Add(ref origin, offset), value); }
+            }
+        }
+
         for (var y = 0; y < 4; y++)
         {
             var row = destination.Slice(y * stride, 4);

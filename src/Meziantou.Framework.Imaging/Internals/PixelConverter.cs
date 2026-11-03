@@ -542,6 +542,36 @@ internal static partial class PixelConverter
         SwapRedAndBlue24Scalar(source[done..], destination[done..]);
     }
 
+    /// <summary>Converts 3-byte pixels to 4-byte pixels, exchanging the first and the third byte, the fourth byte 0xFF (BGR to opaque RGBA).</summary>
+    /// <param name="source">The 3-byte pixels.</param>
+    /// <param name="destination">At least <c>4 / 3</c> times as many bytes.</param>
+    public static void SwapRedAndBlue24ToOpaque32(ReadOnlySpan<byte> source, Span<byte> destination)
+    {
+        var count = source.Length / 3;
+        destination = destination[..(count * 4)];
+        var done = 0;
+        if (UseVectors)
+        {
+            // 4 pixels per step: 12 bytes of the 16 loaded
+            ref var input = ref unsafe(MemoryMarshal.GetReference(source));
+            ref var output = ref unsafe(MemoryMarshal.GetReference(destination));
+            var order = Vector128.Create((byte)2, 1, 0, 0xFF, 5, 4, 3, 0xFF, 8, 7, 6, 0xFF, 11, 10, 9, 0xFF);
+            var opaque = Vector128.Create(0xFF000000u).AsByte();
+            for (; (3 * done) + Vector128<byte>.Count <= source.Length; done += 4)
+            {
+                unsafe { (Vector128.Shuffle(Vector128.LoadUnsafe(ref input, (nuint)(3 * done)), order) | opaque).StoreUnsafe(ref output, (nuint)(4 * done)); }
+            }
+        }
+
+        for (var x = done; x < count; x++)
+        {
+            destination[4 * x] = source[(3 * x) + 2];
+            destination[(4 * x) + 1] = source[(3 * x) + 1];
+            destination[(4 * x) + 2] = source[3 * x];
+            destination[(4 * x) + 3] = byte.MaxValue;
+        }
+    }
+
     /// <summary>The scalar reference of <see cref="SwapRedAndBlue24"/>.</summary>
     internal static void SwapRedAndBlue24Scalar(ReadOnlySpan<byte> source, Span<byte> destination)
     {

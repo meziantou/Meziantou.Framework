@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Meziantou.Framework.Imaging.Metadata;
 
@@ -118,7 +119,7 @@ internal sealed class QoiStructureParser : ImageParser<ImageInfo>
                     {
                         _context.Sequential?.OnHeader(CreateInfo(ImageIdentifyMode.Header));
                         _decoder!.OnHeaderComplete(this);
-                        _row = _context.Scope.Rent(Width * Channels, AllocationKind.DecoderState, clear: false);
+                        _row = _context.Scope.Rent(Width * _decoder.RowChannels, AllocationKind.DecoderState, clear: false);
                         if (_context.TryConsumeYield())
                             return ParseStatus.Complete;
                     }
@@ -262,7 +263,9 @@ internal sealed class QoiStructureParser : ImageParser<ImageInfo>
     private ParseStatus DecodeChunks(ReadOnlySpan<byte> buffer, ref int consumed)
     {
         var width = Width;
-        var channels = Channels;
+        // The rows of an RGB image decoded to RGBA are opaque, whatever the alpha of the pixels in the index
+        var channels = _decoder!.RowChannels;
+        var opaque = Channels == 3 && channels == 4 ? 0xFF000000 : 0;
         var row = _row!.RawBuffer.AsSpan(0, width * channels);
         var row32 = channels == 4 ? unsafe(MemoryMarshal.Cast<byte, uint>(row)) : default;
         var index = _index.AsSpan();
@@ -280,7 +283,7 @@ internal sealed class QoiStructureParser : ImageParser<ImageInfo>
                 {
                     // A run carried over from the previous row
                     var count = Math.Min(_run, width - x);
-                    Fill(row, row32, channels, x, count, pixel);
+                    Fill(row, row32, channels, x, count, pixel | opaque);
                     x += count;
                     _run -= count;
                 }
@@ -302,7 +305,14 @@ internal sealed class QoiStructureParser : ImageParser<ImageInfo>
                     continue;
                 }
 
-                // Chunks of the current row
+                // Chunks of the current row: while a chunk of any length fits in the buffer, no length is checked
+                if (i <= buffer.Length - QoiFormat.MaxChunkLength)
+                {
+                    DecodeCompleteChunks(buffer, ref i, consumed, row, row32, index, opaque, ref pixel, ref x);
+                    if (x == width)
+                        continue;
+                }
+
                 while (x < width)
                 {
                     if (i >= buffer.Length)
@@ -372,7 +382,7 @@ internal sealed class QoiStructureParser : ImageParser<ImageInfo>
                                 index[QoiFormat.Hash(pixel)] = pixel;
                                 i++;
                                 var count = Math.Min(run, width - x);
-                                Fill(row, row32, channels, x, count, pixel);
+                                Fill(row, row32, channels, x, count, pixel | opaque);
                                 x += count;
                                 _run = run - count;
                                 continue;
@@ -383,7 +393,7 @@ internal sealed class QoiStructureParser : ImageParser<ImageInfo>
                     index[QoiFormat.Hash(pixel)] = pixel;
                     if (channels == 4)
                     {
-                        row32[x] = pixel;
+                        row32[x] = pixel | opaque;
                     }
                     else
                     {
@@ -405,6 +415,119 @@ internal sealed class QoiStructureParser : ImageParser<ImageInfo>
             Advance(ref consumed, i - consumed);
         }
     }
+
+    /// <summary>
+    /// Decodes the chunks of the current row while at least <see cref="QoiFormat.MaxChunkLength"/> bytes remain from
+    /// <paramref name="position"/>: no chunk can then be incomplete, so the input, the index and the row are read and written
+    /// without checks. Stops at the end of the row or when fewer bytes remain; the caller decodes the rest with checks.
+    /// </summary>
+    private void DecodeCompleteChunks(ReadOnlySpan<byte> buffer, ref int position, int consumed, Span<byte> row, Span<uint> row32, Span<uint> index, uint opaque, ref uint pixel, ref int column)
+    {
+        var width = Width;
+        var channels = row32.IsEmpty ? 3 : 4;
+        var limit = buffer.Length - QoiFormat.MaxChunkLength;
+        ref var source = ref unsafe(MemoryMarshal.GetReference(buffer));
+        ref var entries = ref unsafe(MemoryMarshal.GetReference(index));
+        ref var destination = ref unsafe(MemoryMarshal.GetReference(row));
+        var i = position;
+        var x = column;
+        var current = pixel;
+        while (x < width && i <= limit)
+        {
+            uint tag = unsafe(Unsafe.Add(ref source, i));
+            if (tag < QoiFormat.OpLuma)
+            {
+                if (tag < QoiFormat.OpDiff)
+                {
+                    // QOI_OP_INDEX
+                    current = unsafe(Unsafe.Add(ref entries, (int)tag));
+                }
+                else
+                {
+                    // QOI_OP_DIFF: 2-bit differences with a bias of 2, wrapping around 256
+                    var dr = (int)((tag >> 4) & 3) - 2;
+                    var dg = (int)((tag >> 2) & 3) - 2;
+                    var db = (int)(tag & 3) - 2;
+                    current = AddBytes(current, (uint)(dr & 0xFF) | ((uint)(dg & 0xFF) << 8) | ((uint)(db & 0xFF) << 16));
+                }
+
+                i++;
+            }
+            else if (tag < QoiFormat.OpRun)
+            {
+                // QOI_OP_LUMA: green difference with a bias of 32; red and blue differences relative to it, bias 8
+                uint second = unsafe(Unsafe.Add(ref source, i + 1));
+                var dg = (int)(tag & 0x3F) - 32;
+                var dr = dg - 8 + (int)(second >> 4);
+                var db = dg - 8 + (int)(second & 0x0F);
+                current = AddBytes(current, (uint)(dr & 0xFF) | ((uint)(dg & 0xFF) << 8) | ((uint)(db & 0xFF) << 16));
+                i += 2;
+            }
+            else if (tag < QoiFormat.OpRgb)
+            {
+                // QOI_OP_RUN: 1-62 repetitions of the previous pixel; the part past this row is carried over
+                var run = (int)(tag & 0x3F) + 1;
+                var left = ((long)(Height - _y) * width) - x;
+                if (run > left)
+                    throw RunPastEnd(run, left, _position + (i - consumed));
+
+                unsafe { Unsafe.Add(ref entries, QoiFormat.Hash(current)) = current; }
+                i++;
+                var count = Math.Min(run, width - x);
+                Fill(row, row32, channels, x, count, current | opaque);
+                x += count;
+                _run = run - count;
+                continue;
+            }
+            else
+            {
+                // QOI_OP_RGB keeps the alpha of the previous pixel; QOI_OP_RGBA replaces it
+                var value = unsafe(Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref source, i + 1)));
+                if (!BitConverter.IsLittleEndian)
+                {
+                    value = BinaryPrimitives.ReverseEndianness(value);
+                }
+
+                if (tag == QoiFormat.OpRgb)
+                {
+                    current = (current & 0xFF000000) | (value & 0x00FFFFFF);
+                    i += 4;
+                }
+                else
+                {
+                    current = value;
+                    i += 5;
+                }
+            }
+
+            unsafe { Unsafe.Add(ref entries, QoiFormat.Hash(current)) = current; }
+            if (channels == 4)
+            {
+                unsafe { Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, x * 4), current | opaque); }
+            }
+            else
+            {
+                ref var target = ref unsafe(Unsafe.Add(ref destination, x * 3));
+                target = (byte)current;
+                unsafe
+                {
+                    Unsafe.Add(ref target, 1) = (byte)(current >> 8);
+                    Unsafe.Add(ref target, 2) = (byte)(current >> 16);
+                }
+            }
+
+            x++;
+        }
+
+        position = i;
+        column = x;
+        pixel = current;
+    }
+
+    // Adds the bytes of delta to the bytes of value, each modulo 256: the low 7 bits of the bytes add without carrying into
+    // the next byte, and the top bits are added (xored) apart
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static uint AddBytes(uint value, uint delta) => ((value & 0x7F7F7F7F) + (delta & 0x7F7F7F7F)) ^ ((value ^ delta) & 0x80808080);
 
     private static void Fill(Span<byte> row, Span<uint> row32, int channels, int x, int count, uint pixel)
     {

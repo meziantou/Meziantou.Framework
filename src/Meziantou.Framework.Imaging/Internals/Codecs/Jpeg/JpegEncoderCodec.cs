@@ -46,11 +46,17 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         };
     }
 
+    // The reciprocals of 1.772 and 1.402 (Cb and Cr scales of JFIF 1.02)
+    private const double BlueScale = 1 / 1.772;
+    private const double RedScale = 1 / 1.402;
+
     /// <summary>
     /// Converts 8-bit RGB pixels to level-shifted JFIF 1.02 full-range YCbCr samples (ITU-R BT.601 luma weights):
     /// <c>Y = 0.299 R + 0.587 G + 0.114 B</c>, <c>Cb = (B - Y) / 1.772</c>, <c>Cr = (R - Y) / 1.402</c>, computed in double
     /// precision and stored unrounded (single precision) after the level shift of 128 (<c>Y - 128</c>), so the only rounding
-    /// before the DCT is the conversion to single precision.
+    /// before the DCT is the conversion to single precision. The divisions are multiplications by the double-precision
+    /// reciprocals: for each of the 2^24 colors, the single-precision results are those of the divisions (checked
+    /// exhaustively), and a multiplication is several times faster.
     /// </summary>
     /// <param name="source">The interleaved RGB samples, 3 bytes per pixel.</param>
     /// <param name="luma">The level-shifted luma samples; its length is the number of pixels.</param>
@@ -58,7 +64,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
     /// <param name="red">The Cr samples minus 128.</param>
     /// <remarks>
     /// With 128-bit hardware vectors, 16 pixels are deinterleaved by byte shuffles and converted two at a time with the same
-    /// operations in the same order (separate multiplications and additions, the divisions kept), so the samples are identical;
+    /// operations in the same order (separate multiplications and additions), so the samples are identical;
     /// with AVX2, four at a time.
     /// </remarks>
     internal static void ConvertRgbToYCbCr(ReadOnlySpan<byte> source, Span<float> luma, Span<float> blue, Span<float> red)
@@ -79,8 +85,8 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             double b = source[(3 * x) + 2];
             var y = (0.299 * r) + (0.587 * g) + (0.114 * b);
             luma[x] = (float)(y - 128);
-            blue[x] = (float)((b - y) / 1.772);
-            red[x] = (float)((r - y) / 1.402);
+            blue[x] = (float)((b - y) * BlueScale);
+            red[x] = (float)((r - y) * RedScale);
         }
     }
 
@@ -149,8 +155,8 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         {
             var y = (0.299 * r) + (0.587 * g) + (0.114 * b);
             luma = y - Vector128.Create(128.0);
-            blue = (b - y) / Vector128.Create(1.772);
-            red = (r - y) / Vector128.Create(1.402);
+            blue = (b - y) * Vector128.Create(BlueScale);
+            red = (r - y) * Vector128.Create(RedScale);
         }
     }
 
@@ -196,8 +202,8 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             var b = Avx.ConvertToVector256Double(blue8);
             var y = (0.299 * r) + (0.587 * g) + (0.114 * b);
             unsafe { Avx.ConvertToVector128Single(y - Vector256.Create(128.0)).StoreUnsafe(ref luma); }
-            unsafe { Avx.ConvertToVector128Single((b - y) / Vector256.Create(1.772)).StoreUnsafe(ref blue); }
-            unsafe { Avx.ConvertToVector128Single((r - y) / Vector256.Create(1.402)).StoreUnsafe(ref red); }
+            unsafe { Avx.ConvertToVector128Single((b - y) * Vector256.Create(BlueScale)).StoreUnsafe(ref blue); }
+            unsafe { Avx.ConvertToVector128Single((r - y) * Vector256.Create(RedScale)).StoreUnsafe(ref red); }
         }
     }
 
@@ -218,6 +224,56 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             | Vector128.Shuffle(v1, Vector128.Create((byte)0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 1, 4, 7, 10, 13, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF))
             | Vector128.Shuffle(v2, Vector128.Create((byte)0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0, 3, 6, 9, 12, 15));
         return (r, g, b);
+    }
+
+    /// <summary>Stores 64 quantized coefficients (within the 16-bit range) as 16-bit values.</summary>
+    internal static void NarrowCoefficients(ReadOnlySpan<int> coefficients, Span<short> destination)
+    {
+        coefficients = coefficients[..64];
+        destination = destination[..64];
+        if (!Vector128.IsHardwareAccelerated)
+        {
+            for (var k = 0; k < 64; k++)
+            {
+                destination[k] = (short)coefficients[k];
+            }
+
+            return;
+        }
+
+        ref var source = ref unsafe(MemoryMarshal.GetReference(coefficients));
+        ref var target = ref unsafe(MemoryMarshal.GetReference(destination));
+        for (var k = 0; k < 64; k += 8)
+        {
+            var low = unsafe(Vector128.LoadUnsafe(ref source, (nuint)k));
+            var high = unsafe(Vector128.LoadUnsafe(ref source, (nuint)(k + 4)));
+            unsafe { Vector128.Narrow(low, high).StoreUnsafe(ref target, (nuint)k); }
+        }
+    }
+
+    /// <summary>Loads 64 stored coefficients as 32-bit values.</summary>
+    internal static void WidenCoefficients(ReadOnlySpan<short> stored, Span<int> coefficients)
+    {
+        stored = stored[..64];
+        coefficients = coefficients[..64];
+        if (!Vector128.IsHardwareAccelerated)
+        {
+            for (var k = 0; k < 64; k++)
+            {
+                coefficients[k] = stored[k];
+            }
+
+            return;
+        }
+
+        ref var source = ref unsafe(MemoryMarshal.GetReference(stored));
+        ref var target = ref unsafe(MemoryMarshal.GetReference(coefficients));
+        for (var k = 0; k < 64; k += 8)
+        {
+            var (low, high) = Vector128.Widen(unsafe(Vector128.LoadUnsafe(ref source, (nuint)k)));
+            unsafe { low.StoreUnsafe(ref target, (nuint)k); }
+            unsafe { high.StoreUnsafe(ref target, (nuint)(k + 4)); }
+        }
     }
 
     /// <summary>Gets a mask of the non-zero values among 64 coefficients: bit <c>k</c> is set when <c>coefficients[k]</c> is not zero.</summary>
@@ -444,6 +500,8 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         private readonly int _planeWidth;
         private readonly ushort[] _luminanceQuantization = new ushort[64];
         private readonly ushort[] _chrominanceQuantization = new ushort[64];
+        private readonly double[] _luminanceDivisors = new double[64];
+        private readonly double[] _chrominanceDivisors = new double[64];
         private readonly int _restartInterval;
 
         // With optimized tables, the symbol counts of the luminance DC and AC tables, then of the chrominance ones
@@ -511,6 +569,8 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
 
             JpegEncodingTables.ScaleQuantizationTable(JpegEncodingTables.LuminanceQuantization, _encoder.Quality, _luminanceQuantization);
             JpegEncodingTables.ScaleQuantizationTable(JpegEncodingTables.ChrominanceQuantization, _encoder.Quality, _chrominanceQuantization);
+            JpegForwardDct.CreateDivisors(_luminanceQuantization, _luminanceDivisors);
+            JpegForwardDct.CreateDivisors(_chrominanceQuantization, _chrominanceDivisors);
             _luminanceDc = new JpegHuffmanEncoder(JpegEncodingTables.LuminanceDcBits, JpegEncodingTables.LuminanceDcValues);
             _luminanceAc = new JpegHuffmanEncoder(JpegEncodingTables.LuminanceAcBits, JpegEncodingTables.LuminanceAcValues);
             if (!_grayscale)
@@ -955,11 +1015,8 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         {
             var coefficients = worker.Coefficients.AsSpan();
             LoadBlock(worker, mcuX, block);
-            JpegForwardDct.TransformAndQuantize(worker.Block, block < _h * _v ? _luminanceQuantization : _chrominanceQuantization, worker.Scratch, coefficients);
-            for (var k = 0; k < 64; k++)
-            {
-                destination[k] = (short)coefficients[k];
-            }
+            JpegForwardDct.TransformAndQuantize(worker.Block, block < _h * _v ? _luminanceDivisors : _chrominanceDivisors, worker.Scratch, coefficients);
+            NarrowCoefficients(coefficients, destination);
         }
 
         /// <summary>Copies the samples of a block of an MCU of the loaded row of a worker: the luma blocks in raster order, then the box-filtered Cb and Cr blocks.</summary>
@@ -1144,7 +1201,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
                         if (coded > 0 && output.ShouldFlush)
                             return false;
 
-                        var span = output.GetSpan((blocksPerMcu * MaxBlockBytes) + (_restartInterval > 0 ? MaxRestartBytes : 0));
+                        var span = output.GetSpan((blocksPerMcu * MaxBlockBytes) + (_restartInterval > 0 ? MaxRestartBytes : 0) + JpegBlockBitWriter.SpeculativeBytes);
                         var length = 0;
                         WriteRestartIfDue((_mcuRow * _mcusX) + _mcuX, span, ref length);
                         length += batched ? EncodeStoredMcu(_mcuRow, _mcuX, span[length..]) : EncodeMcu(_mcuX, span[length..]);
@@ -1238,25 +1295,25 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
                 for (var bx = 0; bx < _h; bx++)
                 {
                     ExtractBlock(planeY, _planeWidth, x0 + (bx * 8), by * 8, factorX: 1, factorY: 1, worker.Block);
-                    TransformAndEncodeBlock(worker, destination, ref position, component: 0, _luminanceQuantization, _luminanceDc, _luminanceAc);
+                    TransformAndEncodeBlock(worker, destination, ref position, component: 0, _luminanceDivisors, _luminanceDc, _luminanceAc);
                 }
             }
 
             if (!_grayscale)
             {
                 ExtractBlock(worker.PlaneCb, _planeWidth, x0, 0, _h, _v, worker.Block);
-                TransformAndEncodeBlock(worker, destination, ref position, component: 1, _chrominanceQuantization, _chrominanceDc!, _chrominanceAc!);
+                TransformAndEncodeBlock(worker, destination, ref position, component: 1, _chrominanceDivisors, _chrominanceDc!, _chrominanceAc!);
                 ExtractBlock(worker.PlaneCr, _planeWidth, x0, 0, _h, _v, worker.Block);
-                TransformAndEncodeBlock(worker, destination, ref position, component: 2, _chrominanceQuantization, _chrominanceDc!, _chrominanceAc!);
+                TransformAndEncodeBlock(worker, destination, ref position, component: 2, _chrominanceDivisors, _chrominanceDc!, _chrominanceAc!);
             }
 
             return position;
         }
 
-        private void TransformAndEncodeBlock(TransformWorker worker, Span<byte> destination, ref int position, int component, ReadOnlySpan<ushort> quantization, JpegHuffmanEncoder dc, JpegHuffmanEncoder ac)
+        private void TransformAndEncodeBlock(TransformWorker worker, Span<byte> destination, ref int position, int component, ReadOnlySpan<double> divisors, JpegHuffmanEncoder dc, JpegHuffmanEncoder ac)
         {
             var coefficients = worker.Coefficients.AsSpan();
-            JpegForwardDct.TransformAndQuantize(worker.Block, quantization, worker.Scratch, coefficients);
+            JpegForwardDct.TransformAndQuantize(worker.Block, divisors, worker.Scratch, coefficients);
             EncodeBlock(destination, ref position, coefficients, component, dc, ac);
         }
 
@@ -1280,10 +1337,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         private void LoadStoredBlock(int row, int mcuX, int block, Span<int> coefficients)
         {
             var stored = _batch is not null ? GetBatchBlock(row, mcuX, block) : GetPlaneBlock(row, mcuX, block);
-            for (var k = 0; k < 64; k++)
-            {
-                coefficients[k] = stored[k];
-            }
+            WidenCoefficients(stored, coefficients);
         }
 
         /// <summary>
@@ -1352,7 +1406,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
                     if (coded > 0 && output.ShouldFlush)
                         return false;
 
-                    var span = output.GetSpan((_blocksPerMcu * MaxBlockBytes) + MaxRestartBytes);
+                    var span = output.GetSpan((_blocksPerMcu * MaxBlockBytes) + MaxRestartBytes + JpegBlockBitWriter.SpeculativeBytes);
                     var length = 0;
                     WriteRestartIfDue((_mcuRow * _mcusX) + _mcuX, span, ref length);
                     length += EncodeStoredMcu(_mcuRow, _mcuX, span[length..]);
@@ -1413,12 +1467,18 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         }
 
         /// <summary>Codes the quantized coefficients (zig-zag order) of a block of a component.</summary>
+        /// <remarks>
+        /// The bits go through a <see cref="JpegBlockBitWriter"/>, which stuffs the block once it is coded: the destination
+        /// has <see cref="MaxBlockBytes"/> and <see cref="JpegBlockBitWriter.SpeculativeBytes"/> bytes.
+        /// </remarks>
         private void EncodeBlock(Span<byte> destination, ref int position, Span<int> coefficients, int component, JpegHuffmanEncoder dc, JpegHuffmanEncoder ac)
         {
+            var bits = new JpegBlockBitWriter(destination, position, _bits);
+
             // DC: difference with the previous block of the component, size category then the additional bits (T.81 F.1.2.1)
             var difference = coefficients[0] - _predictions[component];
             _predictions[component] = coefficients[0];
-            WriteValue(destination, ref position, dc, symbolHigh: 0, difference);
+            WriteValue(ref bits, dc, symbolHigh: 0, difference);
 
             // AC: run lengths of zeros (ZRL for 16), EOB after the last nonzero coefficient (T.81 F.1.2.2); the nonzero
             // coefficients are visited through a bit mask
@@ -1431,30 +1491,49 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
                 var run = k - previous - 1;
                 while (run > 15)
                 {
-                    WriteSymbol(destination, ref position, ac, 0xF0);
+                    WriteSymbol(ref bits, ac, 0xF0);
                     run -= 16;
                 }
 
-                WriteValue(destination, ref position, ac, run, coefficients[k]);
+                WriteValue(ref bits, ac, run, coefficients[k]);
                 previous = k;
             }
 
             if (previous < 63)
             {
-                WriteSymbol(destination, ref position, ac, 0x00);
+                WriteSymbol(ref bits, ac, 0x00);
             }
+
+            position = bits.Complete(ref _bits);
         }
 
         /// <summary>Writes the symbol <c>(symbolHigh &lt;&lt; 4) | SSSS</c> for a value, then its SSSS additional bits (negative values as <c>value - 1</c>), as one write.</summary>
-        private void WriteValue(Span<byte> destination, ref int position, JpegHuffmanEncoder table, int symbolHigh, int value)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void WriteValue(ref JpegBlockBitWriter writer, JpegHuffmanEncoder table, int symbolHigh, int value)
         {
             var magnitude = (uint)Math.Abs(value);
-            var size = magnitude == 0 ? 0 : 32 - BitOperations.LeadingZeroCount(magnitude);
-            var bits = value < 0 ? (uint)(value - 1) & ((1u << size) - 1) : (uint)value;
-            _bits.WriteSymbolAndBits(destination, ref position, table, (symbolHigh << 4) | size, bits, size);
+            var size = 32 - BitOperations.LeadingZeroCount(magnitude);
+            var bits = (uint)(value - (value >>> 31)) & ((1u << size) - 1);
+            var symbol = (symbolHigh << 4) | size;
+            var length = table.GetLength(symbol);
+            if (length == 0)
+                ThrowMissingCode(symbol);
+
+            // At most 16 + 16 bits
+            writer.Write((table.GetCode(symbol) << size) | bits, length + size);
         }
 
-        private void WriteSymbol(Span<byte> destination, ref int position, JpegHuffmanEncoder table, int symbol) => _bits.WriteSymbolAndBits(destination, ref position, table, symbol, 0, 0);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void WriteSymbol(ref JpegBlockBitWriter writer, JpegHuffmanEncoder table, int symbol)
+        {
+            var length = table.GetLength(symbol);
+            if (length == 0)
+                ThrowMissingCode(symbol);
+
+            writer.Write(table.GetCode(symbol), length);
+        }
+
+        private static void ThrowMissingCode(int symbol) => throw new InvalidOperationException(string.Create(CultureInfo.InvariantCulture, $"The Huffman table has no code for the symbol 0x{symbol:X2}."));
 
         /// <summary>
         /// The buffers of a worker that transforms MCU rows: the source row converted to the working format, one MCU row of

@@ -853,6 +853,7 @@ public sealed class VectorizedKernelTests
         var random = new Random(85);
         var samples = new float[64];
         var quantization = new ushort[64];
+        var divisors = new double[64];
         var scratch = new double[64];
         var expected = new int[64];
         var actual = new int[64];
@@ -866,27 +867,21 @@ public sealed class VectorizedKernelTests
                 quantization[i] = (ushort)(round % 3 == 0 ? 1 : random.Next(1, 256));
             }
 
-            JpegForwardDct.TransformAndQuantizeScalar(samples, quantization, scratch, expected);
-            JpegForwardDct.TransformAndQuantize(samples, quantization, scratch, actual);
+            JpegForwardDct.CreateDivisors(quantization, divisors);
+            JpegForwardDct.TransformAndQuantizeScalar(samples, divisors, scratch, expected);
+            JpegForwardDct.TransformAndQuantize(samples, divisors, scratch, actual);
             Assert.Equal(expected, actual);
             if (System.Runtime.Intrinsics.Vector128.IsHardwareAccelerated)
             {
                 Array.Clear(actual);
-                JpegForwardDct.TransformAndQuantizeVector128(samples, quantization, scratch, actual);
-                Assert.Equal(expected, actual);
-            }
-
-            if (System.Numerics.Vector.IsHardwareAccelerated && System.Numerics.Vector<double>.Count is 2 or 4 or 8)
-            {
-                Array.Clear(actual);
-                JpegForwardDct.TransformAndQuantizeVector(samples, quantization, scratch, actual);
+                JpegForwardDct.TransformAndQuantizeVector128(samples, divisors, scratch, actual);
                 Assert.Equal(expected, actual);
             }
 
             if (Avx2.IsSupported)
             {
                 Array.Clear(actual);
-                JpegForwardDct.TransformAndQuantizeAvx2(samples, quantization, scratch, actual);
+                JpegForwardDct.TransformAndQuantizeAvx2(samples, divisors, scratch, actual);
                 Assert.Equal(expected, actual);
             }
         }
@@ -3242,6 +3237,33 @@ public sealed class VectorizedKernelTests
             // In place
             PixelConverter.SwapRedAndBlue24(source, source);
             Assert.Equal(expected, source);
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void SwapRedAndBlue24ToOpaque32MatchesThePixelDefinition()
+    {
+        // Lengths around the 16-byte loads (4 pixels per step), and a longer destination that keeps its other bytes
+        var random = new Random(2405);
+        for (var pixels = 0; pixels <= 40; pixels++)
+        {
+            var source = new byte[pixels * 3];
+            random.NextBytes(source);
+            var expected = new byte[pixels * 4];
+            for (var x = 0; x < pixels; x++)
+            {
+                expected[4 * x] = source[(3 * x) + 2];
+                expected[(4 * x) + 1] = source[(3 * x) + 1];
+                expected[(4 * x) + 2] = source[3 * x];
+                expected[(4 * x) + 3] = 0xFF;
+            }
+
+            var actual = new byte[expected.Length + 5];
+            Array.Fill(actual, (byte)0xA5);
+            PixelConverter.SwapRedAndBlue24ToOpaque32(source, actual);
+            Assert.Equal(expected, actual[..expected.Length]);
+            Assert.All(actual[expected.Length..], value => Assert.Equal(0xA5, value));
         }
     }
 

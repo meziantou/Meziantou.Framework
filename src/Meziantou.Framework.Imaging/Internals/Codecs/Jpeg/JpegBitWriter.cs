@@ -86,6 +86,16 @@ internal struct JpegBitWriter
         }
     }
 
+    /// <summary>Gets the accumulator: its low <see cref="PendingBitCount"/> bits are the bits of the incomplete byte.</summary>
+    internal readonly ulong Accumulator => _buffer;
+
+    /// <summary>Sets the state left by a <see cref="JpegBlockBitWriter"/>.</summary>
+    internal void Restore(ulong accumulator, int pendingBitCount)
+    {
+        _buffer = accumulator;
+        _count = pendingBitCount;
+    }
+
     /// <summary>Forgets the bits of the incomplete byte: the start of a scan whose previous one was not completed here.</summary>
     public void Reset()
     {

@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
@@ -117,6 +118,12 @@ internal static class Vp8Reconstruction
         above = above[..size];
         left = left[..size];
         GetEdges(plane, stride, offset, size, mbX, mbY, above, left, out var aboveLeft);
+        if (useVectors && mode != Vp8Tables.TmPred)
+        {
+            PredictBlockVector(plane, stride, offset, size, mbX, mbY, mode, above, left);
+            return;
+        }
+
         switch (mode)
         {
             case Vp8Tables.DcPred:
@@ -182,6 +189,76 @@ internal static class Vp8Reconstruction
                 }
 
                 break;
+        }
+    }
+
+    // DC, V and H predictions of a whole block with one store per row (16 bytes, or 8 for chroma), after one check that the
+    // block lies in the plane
+    private static void PredictBlockVector(Span<byte> plane, int stride, int offset, int size, int mbX, int mbY, int mode, ReadOnlySpan<byte> above, ReadOnlySpan<byte> left)
+    {
+        _ = plane.Slice(offset, ((size - 1) * stride) + size);
+        ref var origin = ref unsafe(Unsafe.Add(ref MemoryMarshal.GetReference(plane), offset));
+        if (mode == Vp8Tables.HPred)
+        {
+            for (var y = 0; y < size; y++)
+            {
+                StoreRow(ref origin, y * stride, size, Vector128.Create(left[y]));
+            }
+
+            return;
+        }
+
+        Vector128<byte> row;
+        if (mode == Vp8Tables.VPred)
+        {
+            row = size == 16 ? Vector128.Create(above[..16]) : Vector128.CreateScalar(BinaryPrimitives.ReadUInt64LittleEndian(above[..8])).AsByte();
+        }
+        else
+        {
+            var shift = size == 16 ? 3 : 2;
+            int value;
+            if (mbY > 0 && mbX > 0)
+            {
+                value = (SumVector(above, size) + SumVector(left, size) + size) >> (shift + 2);
+            }
+            else if (mbY > 0)
+            {
+                value = (SumVector(above, size) + (size >> 1)) >> (shift + 1);
+            }
+            else if (mbX > 0)
+            {
+                value = (SumVector(left, size) + (size >> 1)) >> (shift + 1);
+            }
+            else
+            {
+                value = 128;
+            }
+
+            row = Vector128.Create((byte)value);
+        }
+
+        for (var y = 0; y < size; y++)
+        {
+            StoreRow(ref origin, y * stride, size, row);
+        }
+
+        static int SumVector(ReadOnlySpan<byte> values, int size)
+        {
+            var vector = size == 16 ? Vector128.Create(values[..16]) : Vector128.CreateScalar(BinaryPrimitives.ReadUInt64LittleEndian(values[..8])).AsByte();
+            return Vector128.Sum(Vector128.WidenLower(vector)) + Vector128.Sum(Vector128.WidenUpper(vector));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static void StoreRow(ref byte origin, int offset, int size, Vector128<byte> row)
+        {
+            if (size == 16)
+            {
+                unsafe { row.StoreUnsafe(ref Unsafe.Add(ref origin, offset)); }
+            }
+            else
+            {
+                unsafe { Unsafe.WriteUnaligned(ref Unsafe.Add(ref origin, offset), row.AsUInt64().ToScalar()); }
+            }
         }
     }
 

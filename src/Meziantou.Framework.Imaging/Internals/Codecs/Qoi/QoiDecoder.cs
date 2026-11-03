@@ -3,8 +3,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <summary>
 /// The QOI pixel sink, shared by eager loads and sequential readers:
 /// <see cref="QoiStructureParser"/> reconstructs each row and this observer writes it to a <see cref="DecodedFrameSink"/> in
-/// the source layout of the header (<see cref="PixelFormat.Rgb24"/> for 3 channels, <see cref="PixelFormat.Rgba32"/> for 4),
-/// so 8-bit samples, including the colors of fully transparent pixels, are preserved exactly.
+/// the source layout of the header (<see cref="PixelFormat.Rgb24"/> for 3 channels, <see cref="PixelFormat.Rgba32"/> for 4,
+/// or for 3 channels requested as <see cref="PixelFormat.Rgba32"/>: opaque rows that need no conversion), so 8-bit samples,
+/// including the colors of fully transparent pixels, are preserved exactly.
 /// </summary>
 /// <remarks>
 /// Call order: <see cref="OnHeaderComplete"/> once, <see cref="WriteRow"/> for every row (the frame is begun at the first row,
@@ -27,11 +28,16 @@ internal sealed class QoiDecoder : IImageDecodeObserver
         _context = context;
     }
 
+    /// <summary>Gets the number of channels of the rows given to <see cref="WriteRow"/>: 4 for an RGB image requested as <see cref="PixelFormat.Rgba32"/> (opaque rows, no conversion), otherwise the channels of the image.</summary>
+    public int RowChannels { get; private set; }
+
     public void OnHeaderComplete(QoiStructureParser structure)
     {
         ArgumentNullException.ThrowIfNull(structure);
         _structure = structure;
-        _sink = DecodedFrameSink.Create(_context, _request, ImageFormat.Qoi, structure.Size, structure.DefaultPixelFormat, structure.DefaultPixelFormat, iccProfile: null);
+        var rgba = structure.Channels == 4 || _request.PixelFormat == PixelFormat.Rgba32;
+        RowChannels = rgba ? 4 : 3;
+        _sink = DecodedFrameSink.Create(_context, _request, ImageFormat.Qoi, structure.Size, structure.DefaultPixelFormat, rgba ? PixelFormat.Rgba32 : PixelFormat.Rgb24, iccProfile: null);
     }
 
     /// <summary>Starts the frame on its first row and leases it; dispose the lease before returning from the parser call.</summary>

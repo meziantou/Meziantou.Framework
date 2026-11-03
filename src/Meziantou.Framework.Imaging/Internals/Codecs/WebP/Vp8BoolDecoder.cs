@@ -106,7 +106,8 @@ internal struct Vp8BoolDecoder
     public static bool ReadBool(ref Vp8BoolDecoder decoder, ref ulong value, ref uint range, ref int bits, int probability)
     {
         // The window is refilled before it is used rather than after the shift, so that no call separates the decision from
-        // its use; the state may therefore be stored with up to 7 missing bits
+        // its use; the state may therefore be stored with up to 7 missing bits. The state is updated in a branch on the
+        // decoded bit, which is usually predicted (faster than selects)
         var currentBits = bits;
         var currentValue = value;
         if (currentBits < 0)
@@ -118,9 +119,18 @@ internal struct Vp8BoolDecoder
         var currentRange = range;
         var split = 1 + (((currentRange - 1) * (uint)probability) >> 8);
         var bigSplit = (ulong)split << WindowShift;
-        var result = currentValue >= bigSplit;
-        currentRange = result ? currentRange - split : split;
-        currentValue = result ? currentValue - bigSplit : currentValue;
+        bool result;
+        if (currentValue >= bigSplit)
+        {
+            currentRange -= split;
+            currentValue -= bigSplit;
+            result = true;
+        }
+        else
+        {
+            currentRange = split;
+            result = false;
+        }
 
         // Normalize: shift the range back to [128, 255], and the value by as many bits
         var shift = BitOperations.LeadingZeroCount(currentRange) - 24;

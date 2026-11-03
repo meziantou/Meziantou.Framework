@@ -821,6 +821,18 @@ internal sealed class Vp8Decoder : IDisposable
             return 7 + high + (Vp8BoolDecoder.ReadBool(ref d, ref value, ref range, ref bits, 145) ? 1 : 0); // DCT_CAT2: 7-10
         }
 
+        // Rare: the state goes through memory, so that the hot path keeps it in registers without inlining this part
+        d.Store(value, range, bits);
+        var large = ReadLargeCategory(ref d, ref p);
+        d.Load(out value, out range, out bits);
+        return large;
+    }
+
+    /// <summary>Decodes DCT_CAT3 to DCT_CAT6 (the subtree at node 8) and their extra bits.</summary>
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int ReadLargeCategory(ref Vp8BoolDecoder d, ref byte p)
+    {
+        d.Load(out var value, out var range, out var bits);
         var b1 = Vp8BoolDecoder.ReadBool(ref d, ref value, ref range, ref bits, unsafe(Unsafe.Add(ref p, 8))) ? 1 : 0;
         var b0 = Vp8BoolDecoder.ReadBool(ref d, ref value, ref range, ref bits, unsafe(Unsafe.Add(ref p, 9 + b1))) ? 1 : 0;
         var category = (2 * b1) + b0; // DCT_CAT3 to DCT_CAT6
@@ -837,6 +849,7 @@ internal sealed class Vp8Decoder : IDisposable
             extraBits = (extraBits << 1) | (Vp8BoolDecoder.ReadBool(ref d, ref value, ref range, ref bits, probability) ? 1 : 0);
         }
 
+        d.Store(value, range, bits);
         return extraBits + 3 + (8 << category);
     }
 

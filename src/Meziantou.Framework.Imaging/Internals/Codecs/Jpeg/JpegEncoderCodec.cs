@@ -226,6 +226,56 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         return (r, g, b);
     }
 
+    /// <summary>Stores 64 quantized coefficients (within the 16-bit range) as 16-bit values.</summary>
+    internal static void NarrowCoefficients(ReadOnlySpan<int> coefficients, Span<short> destination)
+    {
+        coefficients = coefficients[..64];
+        destination = destination[..64];
+        if (!Vector128.IsHardwareAccelerated)
+        {
+            for (var k = 0; k < 64; k++)
+            {
+                destination[k] = (short)coefficients[k];
+            }
+
+            return;
+        }
+
+        ref var source = ref unsafe(MemoryMarshal.GetReference(coefficients));
+        ref var target = ref unsafe(MemoryMarshal.GetReference(destination));
+        for (var k = 0; k < 64; k += 8)
+        {
+            var low = unsafe(Vector128.LoadUnsafe(ref source, (nuint)k));
+            var high = unsafe(Vector128.LoadUnsafe(ref source, (nuint)(k + 4)));
+            unsafe { Vector128.Narrow(low, high).StoreUnsafe(ref target, (nuint)k); }
+        }
+    }
+
+    /// <summary>Loads 64 stored coefficients as 32-bit values.</summary>
+    internal static void WidenCoefficients(ReadOnlySpan<short> stored, Span<int> coefficients)
+    {
+        stored = stored[..64];
+        coefficients = coefficients[..64];
+        if (!Vector128.IsHardwareAccelerated)
+        {
+            for (var k = 0; k < 64; k++)
+            {
+                coefficients[k] = stored[k];
+            }
+
+            return;
+        }
+
+        ref var source = ref unsafe(MemoryMarshal.GetReference(stored));
+        ref var target = ref unsafe(MemoryMarshal.GetReference(coefficients));
+        for (var k = 0; k < 64; k += 8)
+        {
+            var (low, high) = Vector128.Widen(unsafe(Vector128.LoadUnsafe(ref source, (nuint)k)));
+            unsafe { low.StoreUnsafe(ref target, (nuint)k); }
+            unsafe { high.StoreUnsafe(ref target, (nuint)(k + 4)); }
+        }
+    }
+
     /// <summary>Gets a mask of the non-zero values among 64 coefficients: bit <c>k</c> is set when <c>coefficients[k]</c> is not zero.</summary>
     /// <param name="coefficients">The 64 coefficients.</param>
     internal static ulong GetNonZeroMask(ReadOnlySpan<int> coefficients)
@@ -966,10 +1016,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             var coefficients = worker.Coefficients.AsSpan();
             LoadBlock(worker, mcuX, block);
             JpegForwardDct.TransformAndQuantize(worker.Block, block < _h * _v ? _luminanceDivisors : _chrominanceDivisors, worker.Scratch, coefficients);
-            for (var k = 0; k < 64; k++)
-            {
-                destination[k] = (short)coefficients[k];
-            }
+            NarrowCoefficients(coefficients, destination);
         }
 
         /// <summary>Copies the samples of a block of an MCU of the loaded row of a worker: the luma blocks in raster order, then the box-filtered Cb and Cr blocks.</summary>
@@ -1290,10 +1337,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         private void LoadStoredBlock(int row, int mcuX, int block, Span<int> coefficients)
         {
             var stored = _batch is not null ? GetBatchBlock(row, mcuX, block) : GetPlaneBlock(row, mcuX, block);
-            for (var k = 0; k < 64; k++)
-            {
-                coefficients[k] = stored[k];
-            }
+            WidenCoefficients(stored, coefficients);
         }
 
         /// <summary>

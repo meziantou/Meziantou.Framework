@@ -650,6 +650,15 @@ internal static partial class PixelConverter
         }
     }
 
+    /// <summary>The byte permutation of 16 <see cref="Rgb24"/> pixels to <see cref="Rgba32"/> pixels (the fourth bytes are set afterward).</summary>
+    private static ReadOnlySpan<byte> Rgb24ToRgba32Order512 =>
+    [
+        0, 1, 2, 0, 3, 4, 5, 0, 6, 7, 8, 0, 9, 10, 11, 0,
+        12, 13, 14, 0, 15, 16, 17, 0, 18, 19, 20, 0, 21, 22, 23, 0,
+        24, 25, 26, 0, 27, 28, 29, 0, 30, 31, 32, 0, 33, 34, 35, 0,
+        36, 37, 38, 0, 39, 40, 41, 0, 42, 43, 44, 0, 45, 46, 47, 0,
+    ];
+
     /// <summary>The byte permutation of <see cref="SwapRedAndBlue24ToOpaque32"/> for 16 pixels (the fourth bytes are replaced afterward).</summary>
     private static ReadOnlySpan<byte> SwapRedAndBlue24ToOpaque32Order512 =>
     [
@@ -827,7 +836,17 @@ internal static partial class PixelConverter
                 // Each 128-bit lane is loaded from the 12 bytes of its 4 pixels (16 bytes are read) and expanded in place
                 var order256 = Vector256.Create(order, order);
                 var opaque256 = Vector256.Create(opaque, opaque);
-                if (Avx512BW.IsSupported)
+                if (Avx512Vbmi.IsSupported)
+                {
+                    // 16 pixels from one 64-byte load (48 bytes are used), spread across the whole vector
+                    var order512 = Vector512.Create(swaps ? SwapRedAndBlue24ToOpaque32Order512 : Rgb24ToRgba32Order512);
+                    var opaque512 = Vector512.Create(opaque256, opaque256);
+                    for (; i + 22 <= length; i += 16)
+                    {
+                        unsafe { (Avx512Vbmi.PermuteVar64x8(Vector512.LoadUnsafe(ref input, (nuint)(3 * i)), order512) | opaque512).StoreUnsafe(ref output, (nuint)(4 * i)); }
+                    }
+                }
+                else if (Avx512BW.IsSupported)
                 {
                     var order512 = Vector512.Create(order256, order256);
                     var opaque512 = Vector512.Create(opaque256, opaque256);

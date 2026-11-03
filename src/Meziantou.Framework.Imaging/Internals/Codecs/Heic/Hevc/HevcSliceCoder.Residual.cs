@@ -57,34 +57,7 @@ internal ref partial struct HevcSliceCoder
         }
 
         // last_sig_coeff_x_prefix, last_sig_coeff_y_prefix (clause 9.3.4.2.3), then the suffixes
-        GetLastSigCoeffPrefixContext(log2TrafoSize, cIdx, out var ctxOffset, out var ctxShift);
-        var cMax = (log2TrafoSize << 1) - 1;
-        var lastSigCoeffXPrefix = 0;
-        while (lastSigCoeffXPrefix < cMax && _cabac.DecodeDecision(HevcContextLayout.LastSigCoeffXPrefix + (lastSigCoeffXPrefix >> ctxShift) + ctxOffset) is not 0)
-        {
-            lastSigCoeffXPrefix++;
-        }
-
-        var lastSigCoeffYPrefix = 0;
-        while (lastSigCoeffYPrefix < cMax && _cabac.DecodeDecision(HevcContextLayout.LastSigCoeffYPrefix + (lastSigCoeffYPrefix >> ctxShift) + ctxOffset) is not 0)
-        {
-            lastSigCoeffYPrefix++;
-        }
-
-        // Equations 7-74 to 7-77
-        var lastSignificantCoeffX = lastSigCoeffXPrefix;
-        if (lastSigCoeffXPrefix > 3)
-        {
-            var length = (lastSigCoeffXPrefix >> 1) - 1;
-            lastSignificantCoeffX = ((1 << length) * (2 + (lastSigCoeffXPrefix & 1))) + _cabac.DecodeBypassBits(length);
-        }
-
-        var lastSignificantCoeffY = lastSigCoeffYPrefix;
-        if (lastSigCoeffYPrefix > 3)
-        {
-            var length = (lastSigCoeffYPrefix >> 1) - 1;
-            lastSignificantCoeffY = ((1 << length) * (2 + (lastSigCoeffYPrefix & 1))) + _cabac.DecodeBypassBits(length);
-        }
+        var (lastSignificantCoeffX, lastSignificantCoeffY) = ReadLastSignificantCoeff(_cabac, log2TrafoSize, cIdx);
 
         // scanIdx: the scan order of a small block follows its intra prediction mode
         var scanIdx = GetScanIdx(log2TrafoSize, cIdx, predModeIntra);
@@ -234,6 +207,46 @@ internal ref partial struct HevcSliceCoder
         _statCoeff = levels.StatCoeff;
         _tools |= levels.Tools;
         return transformSkipFlag;
+    }
+
+    // LastSignificantCoeffX and LastSignificantCoeffY before the swap of the vertical scan (Equations 7-74 to 7-77), from
+    // last_sig_coeff_x_prefix, last_sig_coeff_y_prefix (clause 9.3.4.2.3) and their suffixes. Not inlined, like
+    // ReadSigCoeffFlags
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static (int X, int Y) ReadLastSignificantCoeff(HevcCabacDecoder cabac, int log2TrafoSize, int cIdx)
+    {
+        GetLastSigCoeffPrefixContext(log2TrafoSize, cIdx, out var ctxOffset, out var ctxShift);
+        var contexts = cabac.Contexts;
+        var engine = cabac.Engine;
+        var cMax = (log2TrafoSize << 1) - 1;
+        var lastSigCoeffXPrefix = 0;
+        while (lastSigCoeffXPrefix < cMax && engine.DecodeDecision(contexts, HevcContextLayout.LastSigCoeffXPrefix + (lastSigCoeffXPrefix >> ctxShift) + ctxOffset, cabac) is not 0)
+        {
+            lastSigCoeffXPrefix++;
+        }
+
+        var lastSigCoeffYPrefix = 0;
+        while (lastSigCoeffYPrefix < cMax && engine.DecodeDecision(contexts, HevcContextLayout.LastSigCoeffYPrefix + (lastSigCoeffYPrefix >> ctxShift) + ctxOffset, cabac) is not 0)
+        {
+            lastSigCoeffYPrefix++;
+        }
+
+        var lastSignificantCoeffX = lastSigCoeffXPrefix;
+        if (lastSigCoeffXPrefix > 3)
+        {
+            var length = (lastSigCoeffXPrefix >> 1) - 1;
+            lastSignificantCoeffX = ((1 << length) * (2 + (lastSigCoeffXPrefix & 1))) + engine.DecodeBypassBits(length, cabac);
+        }
+
+        var lastSignificantCoeffY = lastSigCoeffYPrefix;
+        if (lastSigCoeffYPrefix > 3)
+        {
+            var length = (lastSigCoeffYPrefix >> 1) - 1;
+            lastSignificantCoeffY = ((1 << length) * (2 + (lastSigCoeffYPrefix & 1))) + engine.DecodeBypassBits(length, cabac);
+        }
+
+        cabac.Engine = engine;
+        return (lastSignificantCoeffX, lastSignificantCoeffY);
     }
 
     // last_sig_coeff_x_prefix and last_sig_coeff_y_prefix (clause 9.3.4.2.3): ctxOffset and ctxShift

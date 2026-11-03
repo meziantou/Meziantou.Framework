@@ -852,7 +852,7 @@
     "reftest": "PASS"
   },
   "css/filter-effects/filter-unbounded-child-in-layer-plane.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/filter-effects/filter-url-to-non-existent-filter-001.html": {
     "reftest": "PASS"

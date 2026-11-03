@@ -457,7 +457,10 @@ internal abstract class JpegScanDecoder
         }
     }
 
-    private void DecodeMcu(int mcuX, int mcuY)
+    /// <summary>Decodes the blocks of an MCU, in scan order (<see cref="DecodeBlock"/>).</summary>
+    /// <param name="mcuX">The column of the MCU.</param>
+    /// <param name="mcuY">The row of the MCU.</param>
+    protected virtual void DecodeMcu(int mcuX, int mcuY)
     {
         if (!_interleaved)
         {

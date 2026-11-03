@@ -41,12 +41,6 @@ internal sealed class JpegSequentialScanDecoder : JpegScanDecoder
             return;
         }
 
-        if (UncheckedReads)
-        {
-            DecodeBlockUnchecked(scanComponent, blockRow, blockColumn);
-            return;
-        }
-
         // The destination is computed first: one value instead of two to keep alive through the loop
         var offset = scanComponent.GetBlockOffset(blockRow, blockColumn);
         var reader = Reader.GetCursor();
@@ -128,7 +122,43 @@ internal sealed class JpegSequentialScanDecoder : JpegScanDecoder
     /// magnitude bits fit, and no check of the end of the data. The other symbols are validated in the order of the
     /// regular path.
     /// </summary>
-    private void DecodeBlockUnchecked(ScanComponent scanComponent, int blockRow, int blockColumn)
+    /// <remarks>The blocks of an MCU whose bytes are buffered share one <see cref="JpegEntropyReader.UncheckedCursor"/>.</remarks>
+    protected override void DecodeMcu(int mcuX, int mcuY)
+    {
+        if (!UncheckedReads || _deferTransforms)
+        {
+            base.DecodeMcu(mcuX, mcuY);
+            return;
+        }
+
+        var reader = Reader;
+        var cursor = reader.GetUncheckedCursor();
+        if (!IsInterleaved)
+        {
+            DecodeBlockUnchecked(ref cursor, Components[0], mcuY, mcuX);
+        }
+        else
+        {
+            foreach (var scanComponent in Components)
+            {
+                var component = scanComponent.Component;
+                var h = component.HorizontalSampling;
+                var v = component.VerticalSampling;
+                for (var by = 0; by < v; by++)
+                {
+                    for (var bx = 0; bx < h; bx++)
+                    {
+                        DecodeBlockUnchecked(ref cursor, scanComponent, (mcuY * v) + by, (mcuX * h) + bx);
+                    }
+                }
+            }
+        }
+
+        cursor.Commit(reader);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void DecodeBlockUnchecked(ref JpegEntropyReader.UncheckedCursor cursor, ScanComponent scanComponent, int blockRow, int blockColumn)
     {
         // Everything the loops need is loaded first: they make no call, so that the state stays in registers
         var offset = scanComponent.GetBlockOffset(blockRow, blockColumn);
@@ -136,8 +166,6 @@ internal sealed class JpegSequentialScanDecoder : JpegScanDecoder
         var acTable = scanComponent.AcTable!;
         var dcLookup = dcTable.FastLookup;
         var acLookup = acTable.FastLookup;
-        var reader = Reader;
-        var cursor = reader.GetUncheckedCursor();
 
         // DC: difference from the prediction (T.81 F.2.2.1)
         cursor.Refill();
@@ -239,7 +267,6 @@ internal sealed class JpegSequentialScanDecoder : JpegScanDecoder
         }
         while (k < 64);
 
-        cursor.Commit(reader);
         TransformBlock(scanComponent, offset, _block, dc, naturalIndexes != 0, JpegIdct.IsSparse(naturalIndexes));
     }
 

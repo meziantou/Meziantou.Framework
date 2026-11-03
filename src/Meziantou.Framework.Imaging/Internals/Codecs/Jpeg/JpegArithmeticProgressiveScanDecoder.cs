@@ -48,7 +48,7 @@ internal sealed class JpegArithmeticProgressiveScanDecoder : JpegArithmeticScanD
 
     protected override void DecodeBlock(ScanComponent scanComponent, int blockRow, int blockColumn)
     {
-        var block = scanComponent.Component.GetCoefficients(blockRow, blockColumn);
+        var block = scanComponent.GetCoefficients(blockRow, blockColumn);
         if (_start == 0)
         {
             if (_refinement)

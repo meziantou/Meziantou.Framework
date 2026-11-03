@@ -12,6 +12,18 @@ internal sealed class JpegHuffmanTable
     /// <summary>The number of bits resolved by the lookup table.</summary>
     public const int LookupBits = 9;
 
+    /// <summary>The number of bits resolved by <see cref="FastLookup"/>.</summary>
+    public const int FastLookupBits = 10;
+
+    /// <summary>The flag of the <see cref="FastLookup"/> entries that also resolve the magnitude bits of their symbol.</summary>
+    public const int FastLookupComplete = 1 << 10;
+
+    /// <summary>The position of the symbol (8 bits) in a <see cref="FastLookup"/> entry.</summary>
+    public const int FastLookupSymbolShift = 11;
+
+    /// <summary>The position of the coefficient (signed, 11 bits) in a complete <see cref="FastLookup"/> entry.</summary>
+    public const int FastLookupValueShift = 21;
+
     // Entries of FastAc, which no bit pattern decodes: the regular path decodes every coefficient
     private static readonly int[] NoFastAc = new int[1 << LookupBits];
 
@@ -24,6 +36,10 @@ internal sealed class JpegHuffmanTable
 
     private bool _isAc;
 
+    // The code counts of the definition (1 to 16 bits) and the table built from them by BuildFastLookup
+    private readonly byte[] _counts;
+    private int[]? _fastLookup;
+
     // Largest code of each length (index 1 to 16), -1 when there is none
     private readonly int[] _maxCode = new int[17];
 
@@ -32,8 +48,9 @@ internal sealed class JpegHuffmanTable
 
     private readonly byte[] _values;
 
-    private JpegHuffmanTable(byte[] values)
+    private JpegHuffmanTable(byte[] counts, byte[] values)
     {
+        _counts = counts;
         _values = values;
     }
 
@@ -69,7 +86,7 @@ internal sealed class JpegHuffmanTable
             return null;
         }
 
-        var table = new JpegHuffmanTable(values.ToArray());
+        var table = new JpegHuffmanTable(counts.ToArray(), values.ToArray());
         var code = 0;
         var index = 0;
         for (var length = 1; length <= 16; length++)
@@ -152,9 +169,84 @@ internal sealed class JpegHuffmanTable
         return fastAc;
     }
 
+    /// <summary>
+    /// Gets the entries of the next <see cref="FastLookupBits"/> bits (built on first use), which resolve a symbol and, when
+    /// they fit too, the magnitude bits of its coefficient (T.81 F.2.2.1, EXTEND applied) in one lookup. Bits 0 to 4 of an
+    /// entry are the number of bits it consumes (bit 5 is 0, so that a shift by the entry consumes them): the code, or the
+    /// code and the magnitude bits when <see cref="FastLookupComplete"/> is set; bits 11 to 18 are the symbol, and bits 21 to
+    /// 31 the signed coefficient of a complete entry (0 for a symbol without magnitude bits: DC category 0, end of block,
+    /// ZRL). An entry is 0 when the code is longer than <see cref="FastLookupBits"/>. The magnitude size of a symbol is its
+    /// value for a DC table, its low nibble for an AC table; a DC symbol above 15 is never complete.
+    /// </summary>
+    public int[] FastLookup => _fastLookup ??= BuildFastLookup();
+
+    private int[] BuildFastLookup()
+    {
+        var lookup = new int[1 << FastLookupBits];
+        var code = 0;
+        var index = 0;
+        for (var length = 1; length <= FastLookupBits; length++)
+        {
+            int count = _counts[length - 1];
+            for (var i = 0; i < count; i++)
+            {
+                int symbol = _values[index];
+                var size = _isAc ? symbol & 0x0F : symbol;
+                var shift = FastLookupBits - length;
+                var first = code << shift;
+                var partial = length | (symbol << FastLookupSymbolShift);
+                for (var j = 0; j < (1 << shift); j++)
+                {
+                    if (size == 0)
+                    {
+                        lookup[first + j] = partial | FastLookupComplete;
+                    }
+                    else if (size <= shift)
+                    {
+                        // The magnitude bits follow the code: EXTEND gives the coefficient
+                        var magnitude = (j >> (shift - size)) & ((1 << size) - 1);
+                        var coefficient = magnitude < (1 << (size - 1)) ? magnitude - (1 << size) + 1 : magnitude;
+                        lookup[first + j] = (length + size) | FastLookupComplete | (symbol << FastLookupSymbolShift) | (coefficient << FastLookupValueShift);
+                    }
+                    else
+                    {
+                        lookup[first + j] = partial;
+                    }
+                }
+
+                code++;
+                index++;
+            }
+
+            code <<= 1;
+        }
+
+        return lookup;
+    }
+
     /// <summary>Gets the lookup entry of the next <see cref="LookupBits"/> bits: <c>(length &lt;&lt; 8) | symbol</c>, or 0 for a longer code.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int Lookup(int bits) => _lookup[bits];
+
+    /// <summary>
+    /// Resolves a code longer than <see cref="FastLookupBits"/> from the next 16 bits, inline: the loop of
+    /// <see cref="DecodeLong"/> without a call, for the decoders that keep their bit state in registers.
+    /// </summary>
+    /// <param name="bits16">The next 16 bits, most significant first.</param>
+    /// <returns><c>(length &lt;&lt; 8) | symbol</c>, or -1 if no code matches.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public int DecodeLongInline(int bits16)
+    {
+        var maxCode = _maxCode;
+        for (var length = FastLookupBits + 1; length < maxCode.Length; length++)
+        {
+            var code = bits16 >> (16 - length);
+            if (code <= maxCode[length])
+                return (length << 8) | _values[_valueOffset[length] + code];
+        }
+
+        return -1;
+    }
 
     /// <summary>Resolves a code longer than <see cref="LookupBits"/> from the next 16 bits.</summary>
     /// <param name="bits16">The next 16 bits, most significant first.</param>

@@ -83,7 +83,7 @@ internal sealed class JpegFrameComponent : IDisposable
     public int BlockHeight { get; private set; }
 
     /// <summary>Gets a value indicating whether the blocks are transformed into fewer samples than they code (scaled decoding).</summary>
-    public bool IsReduced => BlockWidth != DataUnitSize || BlockHeight != DataUnitSize;
+    public bool IsReduced { get; private set; }
 
     /// <summary>Gets the number of samples per row of the plane: <c>ceil(X * H / Hmax)</c>, divided by the horizontal reduction when the frame is scaled.</summary>
     public int Width { get; private set; }
@@ -128,10 +128,10 @@ internal sealed class JpegFrameComponent : IDisposable
     public int CoefficientBlocksPerLine => _coefficientBlocksPerLine;
 
     /// <summary>Gets the samples of the plane (bands in ring order), for a precision of 8 bits.</summary>
-    public byte[] Samples => (_plane ?? throw new InvalidOperationException("The JPEG component plane is not allocated.")).RawBuffer;
+    public byte[] Samples => (_plane ?? ThrowPlaneNotAllocated()).RawBuffer;
 
     /// <summary>Gets the samples of the plane (bands in ring order), for a precision other than 8 bits.</summary>
-    public Span<ushort> DeepSamples => unsafe(MemoryMarshal.Cast<byte, ushort>((_plane ?? throw new InvalidOperationException("The JPEG component plane is not allocated.")).RawBuffer.AsSpan()));
+    public Span<ushort> DeepSamples => unsafe(MemoryMarshal.Cast<byte, ushort>((_plane ?? ThrowPlaneNotAllocated()).RawBuffer.AsSpan()));
 
     /// <summary>Sets the sampling geometry of the component.</summary>
     /// <param name="frameWidth">The width of the frame.</param>
@@ -157,6 +157,7 @@ internal sealed class JpegFrameComponent : IDisposable
         var verticalReduction = scaleDenominator / verticalShared;
         BlockWidth = DataUnitSize / horizontalReduction;
         BlockHeight = DataUnitSize / verticalReduction;
+        IsReduced = BlockWidth != DataUnitSize || BlockHeight != DataUnitSize;
 
         // The plane of the reduced blocks: ceil(ceil(X * H / Hmax) / d) samples, which the remaining factor upsamples to at
         // least ceil(X / s) samples
@@ -234,10 +235,15 @@ internal sealed class JpegFrameComponent : IDisposable
     /// <param name="blockColumn">The block column.</param>
     public Span<short> GetCoefficients(int blockRow, int blockColumn)
     {
-        var buffer = (_coefficients ?? throw new InvalidOperationException("The JPEG component coefficients are not allocated.")).RawBuffer;
+        var buffer = CoefficientBuffer;
         var offset = ((blockRow * _coefficientBlocksPerLine) + blockColumn) * 64 * sizeof(short);
         return unsafe(MemoryMarshal.Cast<byte, short>(buffer.AsSpan(offset, 64 * sizeof(short))));
     }
+
+    /// <summary>Gets the buffer of the coefficient grid (<see cref="GetCoefficients"/>): 64 coefficients per block, row by row.</summary>
+    public byte[] CoefficientBuffer => (_coefficients ?? ThrowCoefficientsNotAllocated()).RawBuffer;
+
+    private static PooledBuffer ThrowCoefficientsNotAllocated() => throw new InvalidOperationException("The JPEG component coefficients are not allocated.");
 
     /// <summary>Releases the coefficients of a progressive frame.</summary>
     public void ReleaseCoefficients()
@@ -265,6 +271,9 @@ internal sealed class JpegFrameComponent : IDisposable
 
     /// <summary>Gets a sample row of a precision other than 8 bits, at most <see cref="Width"/> valid samples.</summary>
     public ReadOnlySpan<ushort> GetDeepRow(int row) => DeepSamples.Slice(GetRowOffset(row), Width);
+
+    // Out of line, so that the accessors of the plane are inlined
+    private static PooledBuffer ThrowPlaneNotAllocated() => throw new InvalidOperationException("The JPEG component plane is not allocated.");
 
     /// <summary>Releases the plane, keeping the coefficients of a progressive frame.</summary>
     public void ReleasePlane()

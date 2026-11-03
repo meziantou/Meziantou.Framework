@@ -3704,34 +3704,36 @@ public sealed class VectorizedKernelTests
     }
 
     [Theory]
-    [InlineData(75, 5, "CBFF4C59433F923F07B866DCE314ECC508C614F946ED99398B4CCFF1BC889E9E")]
-    [InlineData(30, 2, "3F3AD9A3201EAD6C422D7F35D844AA92888F2ED292C77448C4719087688AECAC")]
-    [InlineData(95, 9, "98E7C1610D9D6D894D44BEE9CDE49718659EB59C4EFF5379111CAD8D056374D0")]
-    [InlineData(60, 0, "F50DE7068B6A6B8224C2B3C0160E7F296A712A70CE4B735CE4D6EA88AAC19160")]
+    [InlineData(83, 61, 75, 5, "CBFF4C59433F923F07B866DCE314ECC508C614F946ED99398B4CCFF1BC889E9E")]
+    [InlineData(83, 61, 30, 2, "3F3AD9A3201EAD6C422D7F35D844AA92888F2ED292C77448C4719087688AECAC")]
+    [InlineData(83, 61, 95, 9, "98E7C1610D9D6D894D44BEE9CDE49718659EB59C4EFF5379111CAD8D056374D0")]
+    [InlineData(83, 61, 60, 0, "F50DE7068B6A6B8224C2B3C0160E7F296A712A70CE4B735CE4D6EA88AAC19160")]
+    [InlineData(160, 128, 75, 5, "19BD7B4D07D0CBFFB45230FD5CE15C1F0CB01F8DFBF7E6FFD4BF5F7507BEE46D")]
+    [InlineData(160, 128, 90, 4, "1AC49067C13A263A9F3BAF3166192E83902BD4D790A097BD6CFD81B7DE1C38F8")]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
-    public void WebPLossyEncoderGivesTheSameBytesOnEveryPath(int quality, int effort, string expectedHash)
+    public void WebPLossyEncoderGivesTheSameBytesOnEveryPath(int width, int height, int quality, int effort, string expectedHash)
     {
-        // VectorizedKernelFallbackTests runs this again without vectors: a smooth gradient, noise, sharp edges, fully
-        // transparent areas and partial alpha, in an odd size
-        const int Width = 83;
-        const int Height = 61;
+        // VectorizedKernelFallbackTests runs this again without vectors (and without the searches the vector paths skip): a
+        // smooth gradient, noise, sharp edges, fully transparent areas and partial alpha, in an odd size; the larger image also
+        // has flat areas, where most modes cannot be chosen
         var random = new Random(611);
-        var rgba = new byte[Width * Height * 4];
-        for (var y = 0; y < Height; y++)
+        var rgba = new byte[width * height * 4];
+        for (var y = 0; y < height; y++)
         {
-            for (var x = 0; x < Width; x++)
+            for (var x = 0; x < width; x++)
             {
-                var i = ((y * Width) + x) * 4;
+                var i = ((y * width) + x) * 4;
+                var flat = width > 100 && (x < 64 || y < 32);
                 var edge = ((x / 9) + (y / 7)) % 2 == 0 ? 60 : 0;
-                rgba[i] = (byte)Math.Clamp((x * 3) + edge + random.Next(-8, 9), 0, 255);
-                rgba[i + 1] = (byte)Math.Clamp((y * 4) - edge + random.Next(-20, 21), 0, 255);
-                rgba[i + 2] = (byte)(((x * x) + (3 * y * y)) % 200);
-                rgba[i + 3] = x > 60 && y < 30 ? (byte)0 : y > 50 ? (byte)(x * 3) : (byte)255;
+                rgba[i] = flat ? (byte)(x < 40 ? 90 : 160) : (byte)Math.Clamp((x * 3 % 256) + edge + random.Next(-8, 9), 0, 255);
+                rgba[i + 1] = flat ? (byte)(y < 20 ? 30 : 200) : (byte)Math.Clamp((y * 4 % 256) - edge + random.Next(-20, 21), 0, 255);
+                rgba[i + 2] = flat ? (byte)(100 + (x / 16)) : (byte)(((x * x) + (3 * y * y)) % 200);
+                rgba[i + 3] = x > 60 && (width < 100 || x < 75) && y < 30 ? (byte)0 : y > 50 && y < 61 ? (byte)(x * 3) : (byte)255;
             }
         }
 
         var scope = new AllocationScope(ImageResourceLimits.Default);
-        using var payload = Vp8Encoder.Encode(scope, rgba, Width, Height, quality, effort, CancellationToken.None);
+        using var payload = Vp8Encoder.Encode(scope, rgba, width, height, quality, effort, CancellationToken.None);
         Assert.Equal(expectedHash, Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(payload.WrittenMemory.Span)));
     }
 

@@ -536,8 +536,23 @@ internal sealed class Vp8Encoder : IDisposable
             if (YModeCosts[mode] > MinLumaModeBits && YModeCosts[mode] + MinChromaModeBits > modeBitLimit)
                 continue;
 
-            Vp8Reconstruction.PredictBlock(recon, stride, offset, 16, mbX, mbY, mode);
-            var cost = EncodeLuma16(offset, trialLevels, aboveNonZero, leftNonZero) + (modeLambda * YModeCosts[mode]);
+            double cost;
+            var modeCost = modeLambda * YModeCosts[mode];
+            if (Vp8EncoderKernels.IsSupported)
+            {
+                // The costs are not negative and their sums are monotonic: a mode whose bits alone cost the best cost cannot be chosen
+                if (modeCost >= bestCost)
+                    continue;
+
+                Vp8Reconstruction.PredictBlock(recon, stride, offset, 16, mbX, mbY, mode);
+                cost = EncodeLuma16Vector(offset, trialLevels, aboveNonZero, leftNonZero, modeCost, bestCost);
+            }
+            else
+            {
+                Vp8Reconstruction.PredictBlock(recon, stride, offset, 16, mbX, mbY, mode);
+                cost = EncodeLuma16(offset, trialLevels, aboveNonZero, leftNonZero) + modeCost;
+            }
+
             if (cost < bestCost)
             {
                 bestCost = cost;
@@ -553,7 +568,10 @@ internal sealed class Vp8Encoder : IDisposable
         if (_effort >= 2 && YModeCosts[Vp8Tables.BPred] + MinChromaModeBits <= modeBitLimit)
         {
             Span<short> subLevels = stackalloc short[16 * 16];
-            var subCost = EncodeSubBlocks(mbX, mbY, offset, subModes, subLevels, aboveModes, leftModes, aboveNonZero, leftNonZero, out var subModeBits) + (modeLambda * YModeCosts[Vp8Tables.BPred]);
+            var subModeCost = modeLambda * YModeCosts[Vp8Tables.BPred];
+            var subCost = Vp8EncoderKernels.IsSupported
+                ? EncodeSubBlocksVector(mbX, mbY, offset, subModes, subLevels, aboveModes, leftModes, aboveNonZero, leftNonZero, subModeCost, bestCost, out var subModeBits)
+                : EncodeSubBlocks(mbX, mbY, offset, subModes, subLevels, aboveModes, leftModes, aboveNonZero, leftNonZero, out subModeBits) + subModeCost;
             subModeBits += YModeCosts[Vp8Tables.BPred];
             if (subCost < bestCost && subModeBits + MinChromaModeBits <= modeBitLimit)
             {
@@ -599,9 +617,15 @@ internal sealed class Vp8Encoder : IDisposable
             if (UVModeCosts[mode] > MinChromaModeBits && lumaModeBits + UVModeCosts[mode] > modeBitLimit)
                 continue;
 
+            var modeCost = modeLambda * UVModeCosts[mode];
+            if (Vp8EncoderKernels.IsSupported && modeCost >= bestCost)
+                continue;
+
             Vp8Reconstruction.PredictBlock(_reconstruction.U, uvStride, uvOffset, 8, mbX, mbY, mode);
             Vp8Reconstruction.PredictBlock(_reconstruction.V, uvStride, uvOffset, 8, mbX, mbY, mode);
-            var cost = EncodeChroma(uvOffset, uvLevels, aboveNonZero, leftNonZero) + (modeLambda * UVModeCosts[mode]);
+            var cost = Vp8EncoderKernels.IsSupported
+                ? EncodeChromaVector(uvOffset, uvLevels, aboveNonZero, leftNonZero, modeCost, bestCost)
+                : EncodeChroma(uvOffset, uvLevels, aboveNonZero, leftNonZero) + modeCost;
             if (cost < bestCost)
             {
                 bestCost = cost;
@@ -635,9 +659,6 @@ internal sealed class Vp8Encoder : IDisposable
     /// <returns>The rate-distortion cost of the residuals.</returns>
     private double EncodeLuma16(int offset, Span<short> levels, ReadOnlySpan<byte> aboveNonZero, ReadOnlySpan<byte> leftNonZero)
     {
-        if (Vp8EncoderKernels.IsSupported)
-            return EncodeLuma16Vector(offset, levels, aboveNonZero, leftNonZero);
-
         var recon = _reconstruction.Y;
         var source = _source.Y;
         var stride = _reconstruction.YStride;
@@ -694,9 +715,6 @@ internal sealed class Vp8Encoder : IDisposable
     /// <returns>The rate-distortion cost of the sub-blocks; <paramref name="modeBits"/> receives the bits of their modes.</returns>
     private double EncodeSubBlocks(int mbX, int mbY, int offset, Span<byte> subModes, Span<short> levels, Span<byte> aboveModes, Span<byte> leftModes, ReadOnlySpan<byte> aboveNonZero, ReadOnlySpan<byte> leftNonZero, out double modeBits)
     {
-        if (Vp8EncoderKernels.IsSupported)
-            return EncodeSubBlocksVector(mbX, mbY, offset, subModes, levels, aboveModes, leftModes, aboveNonZero, leftNonZero, out modeBits);
-
         modeBits = 0;
         var modeWeight = _modeBitWeight;
         var recon = _reconstruction.Y;
@@ -784,11 +802,18 @@ internal sealed class Vp8Encoder : IDisposable
     }
 
     /// <summary>
-    /// <see cref="EncodeSubBlocks"/> with the vector kernels: the source and the predictions of a sub-block are column-major
-    /// vectors, and each mode is transformed, quantized, reconstructed and measured in registers (the same values and costs, in
-    /// the same order).
+    /// <see cref="EncodeSubBlocks"/> plus <paramref name="modeCost"/> with the vector kernels: the source and the predictions of a
+    /// sub-block are column-major vectors, and each mode is transformed, quantized, reconstructed and measured in registers
+    /// (the same values and costs, in the same order).
     /// </summary>
-    private double EncodeSubBlocksVector(int mbX, int mbY, int offset, Span<byte> subModes, Span<short> levels, Span<byte> aboveModes, Span<byte> leftModes, ReadOnlySpan<byte> aboveNonZero, ReadOnlySpan<byte> leftNonZero, out double modeBits)
+    /// <remarks>
+    /// The costs are not negative and their sums are monotonic: a mode is skipped as soon as a lower bound of its cost (its mode
+    /// bits and the cheaper value of the first boolean of its tokens, then its distortion too) is not below the best cost of its
+    /// sub-block, or would bring the cost of the macroblock to <paramref name="limit"/>; the search stops when the macroblock
+    /// cannot cost less than <paramref name="limit"/>. The modes that are skipped could not be chosen: the result is the same.
+    /// </remarks>
+    /// <returns>The rate-distortion cost of the sub-blocks and <paramref name="modeCost"/>, or infinity when it is not below <paramref name="limit"/>.</returns>
+    private double EncodeSubBlocksVector(int mbX, int mbY, int offset, Span<byte> subModes, Span<short> levels, Span<byte> aboveModes, Span<byte> leftModes, ReadOnlySpan<byte> aboveNonZero, ReadOnlySpan<byte> leftNonZero, double modeCost, double limit, out double modeBits)
     {
         modeBits = 0;
         var modeWeight = _modeBitWeight;
@@ -818,6 +843,8 @@ internal sealed class Vp8Encoder : IDisposable
             var blockOffset = offset + (by * 4 * stride) + (bx * 4);
             var context = nzAbove[bx] + nzLeft[by];
             var modeCosts = allModeCosts.AsSpan(((modesAbove[bx] * 10) + modesLeft[by]) * 10, 10);
+            var firstNode = _probabilities[(3 * 8 * 3 * Vp8Tables.TokenNodes) + (context * Vp8Tables.TokenNodes)];
+            var firstBit = Math.Min(BitCosts[firstNode], BitCosts[256 - firstNode]);
             var bestCost = double.MaxValue;
             var bestMode = 0;
             var bestLow = Vector128<short>.Zero;
@@ -828,6 +855,12 @@ internal sealed class Vp8Encoder : IDisposable
             var sourcePixels = Vp8EncoderKernels.LoadColumns(source, blockOffset, stride);
             for (var mode = 0; mode < modeCount; mode++)
             {
+                // Lower bounds of the cost: the mode bits and the first boolean of the tokens (enough for flat blocks, whose best
+                // cost is small), then the distortion too
+                var bits = lambda * (firstBit + (modeWeight * modeCosts[mode]));
+                if (bits >= bestCost || total + bits + modeCost >= limit)
+                    continue;
+
                 var prediction = predictor.Predict(mode);
                 if (!Vp8EncoderKernels.TryEncodeBlock(sourcePixels, prediction, _lumaQuantizer, out var low, out var high, out var pixels))
                 {
@@ -836,9 +869,8 @@ internal sealed class Vp8Encoder : IDisposable
 
                 double distortion = Vp8EncoderKernels.SquaredError(sourcePixels, pixels);
 
-                // The token bits are not negative and the operations are monotonic: when the cost without them is not below
-                // the best cost, the full cost is not either, and the mode cannot be chosen
-                if (distortion + (lambda * (modeWeight * modeCosts[mode])) >= bestCost)
+                var bound = distortion + bits;
+                if (bound >= bestCost || total + bound + modeCost >= limit)
                     continue;
 
                 low.CopyTo(trial);
@@ -854,6 +886,10 @@ internal sealed class Vp8Encoder : IDisposable
                 }
             }
 
+            // Every mode makes the macroblock cost at least the limit
+            if (bestCost == double.MaxValue)
+                return double.PositiveInfinity;
+
             Vp8EncoderKernels.StoreColumns(recon, blockOffset, stride, bestPixels);
             var blockLevels = levels.Slice(block * 16, 16);
             bestLow.CopyTo(blockLevels);
@@ -863,18 +899,17 @@ internal sealed class Vp8Encoder : IDisposable
             modesAbove[bx] = modesLeft[by] = (byte)bestMode;
             nzAbove[bx] = nzLeft[by] = (bestLow | bestHigh) != Vector128<short>.Zero ? (byte)1 : (byte)0;
             total += bestCost;
+            if (total + modeCost >= limit)
+                return double.PositiveInfinity;
         }
 
         modesAbove.CopyTo(aboveModes);
         modesLeft.CopyTo(leftModes);
-        return total;
+        return total + modeCost;
     }
 
     private double EncodeChroma(int offset, Span<short> levels, ReadOnlySpan<byte> aboveNonZero, ReadOnlySpan<byte> leftNonZero)
     {
-        if (Vp8EncoderKernels.IsSupported)
-            return EncodeChromaVector(offset, levels, aboveNonZero, leftNonZero);
-
         var stride = _reconstruction.UVStride;
         Span<int> residual = stackalloc int[16];
         Span<int> coefficients = stackalloc int[16];
@@ -909,8 +944,12 @@ internal sealed class Vp8Encoder : IDisposable
         return distortion + (_lambda * bits);
     }
 
-    /// <summary><see cref="EncodeLuma16"/> with the vector kernels (the same levels, pixels and costs, in the same order).</summary>
-    private double EncodeLuma16Vector(int offset, Span<short> levels, ReadOnlySpan<byte> aboveNonZero, ReadOnlySpan<byte> leftNonZero)
+    /// <summary>
+    /// <see cref="EncodeLuma16"/> plus <paramref name="modeCost"/> with the vector kernels (the same levels, pixels and costs, in the
+    /// same order). The search stops as soon as the distortion and <paramref name="modeCost"/> are not below <paramref name="limit"/>.
+    /// </summary>
+    /// <returns>The rate-distortion cost of the mode, or infinity when it is not below <paramref name="limit"/>.</returns>
+    private double EncodeLuma16Vector(int offset, Span<short> levels, ReadOnlySpan<byte> aboveNonZero, ReadOnlySpan<byte> leftNonZero, double modeCost, double limit)
     {
         var recon = _reconstruction.Y;
         var source = _source.Y;
@@ -995,13 +1034,19 @@ internal sealed class Vp8Encoder : IDisposable
                 Vp8EncoderKernels.Dequantize(l3, step));
             Vp8EncoderKernels.StoreColumns(recon, blockOffset, stride, pixels);
             distortion += Vp8EncoderKernels.SquaredError(Vp8EncoderKernels.LoadColumns(source, blockOffset, stride), pixels);
+            if (distortion + modeCost >= limit)
+                return double.PositiveInfinity;
         }
 
-        return distortion + (_lambda * bits);
+        return distortion + (_lambda * bits) + modeCost;
     }
 
-    /// <summary><see cref="EncodeChroma"/> with the vector kernels (the same levels, pixels and costs, in the same order).</summary>
-    private double EncodeChromaVector(int offset, Span<short> levels, ReadOnlySpan<byte> aboveNonZero, ReadOnlySpan<byte> leftNonZero)
+    /// <summary>
+    /// <see cref="EncodeChroma"/> plus <paramref name="modeCost"/> with the vector kernels (the same levels, pixels and costs, in the
+    /// same order). The search stops as soon as the distortion and <paramref name="modeCost"/> are not below <paramref name="limit"/>.
+    /// </summary>
+    /// <returns>The rate-distortion cost of the mode, or infinity when it is not below <paramref name="limit"/>.</returns>
+    private double EncodeChromaVector(int offset, Span<short> levels, ReadOnlySpan<byte> aboveNonZero, ReadOnlySpan<byte> leftNonZero, double modeCost, double limit)
     {
         var stride = _reconstruction.UVStride;
         var bits = 0.0;
@@ -1036,9 +1081,11 @@ internal sealed class Vp8Encoder : IDisposable
             }
 
             distortion += planeDistortion;
+            if (distortion + modeCost >= limit)
+                return double.PositiveInfinity;
         }
 
-        return distortion + (_lambda * bits);
+        return distortion + (_lambda * bits) + modeCost;
     }
 
     private static void GetResidual(ReadOnlySpan<byte> source, ReadOnlySpan<byte> prediction, int stride, int offset, Span<int> residual)

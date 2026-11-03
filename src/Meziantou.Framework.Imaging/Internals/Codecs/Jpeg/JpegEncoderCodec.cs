@@ -339,9 +339,20 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         if (!Vector128.IsHardwareAccelerated)
             return GetNonZeroMaskScalar(coefficients);
 
-        // The comparison results (all ones or zero) of 16 coefficients narrowed to 16 bytes, one mask bit each
         ref var start = ref unsafe(MemoryMarshal.GetReference(coefficients));
         var zeros = 0UL;
+        if (Vector512.IsHardwareAccelerated)
+        {
+            // One mask bit per comparison of 16 coefficients
+            for (var i = 0; i < 64; i += 16)
+            {
+                zeros |= (ulong)Vector512.Equals(unsafe(Vector512.LoadUnsafe(ref start, (nuint)i)), Vector512<int>.Zero).ExtractMostSignificantBits() << i;
+            }
+
+            return ~zeros;
+        }
+
+        // The comparison results (all ones or zero) of 16 coefficients narrowed to 16 bytes, one mask bit each
         for (var i = 0; i < 64; i += 16)
         {
             var first = Vector128.Narrow(Vector128.Equals(Load(ref start, i), Vector128<int>.Zero), Vector128.Equals(Load(ref start, i + 4), Vector128<int>.Zero));

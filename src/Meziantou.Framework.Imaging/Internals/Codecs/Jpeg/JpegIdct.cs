@@ -667,13 +667,73 @@ internal static class JpegIdct
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsSparse(int naturalIndexes) => (naturalIndexes & 0b100_100) == 0;
 
-    /// <summary>Gets a value indicating whether every coefficient (natural order) outside the top-left 4x4 corner of a block is zero.</summary>
+    /// <summary>
+    /// Gets a value indicating whether the nonzero coefficients of a mask (<see cref="GetNonzeroMask"/>) are all in the
+    /// top-left 4x4 corner of the block: the columns 0 to 3 of the rows 0 to 3.
+    /// </summary>
+    /// <param name="nonzeroMask">The mask of the nonzero coefficients, in natural order.</param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool IsSparse(ulong nonzeroMask) => (nonzeroMask & ~0x0F0F_0F0FUL) == 0;
+
+    /// <summary>Gets the mask of the nonzero coefficients of a block: bit <c>i</c> is set when the coefficient <c>i</c> is not zero.</summary>
     /// <param name="coefficients">The 64 coefficients.</param>
-    public static bool IsSparse(ReadOnlySpan<short> coefficients)
+    /// <remarks>One comparison per 32 coefficients with AVX-512, per 16 with 256-bit vectors, per 8 with 128-bit vectors.</remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ulong GetNonzeroMask(ReadOnlySpan<short> coefficients)
     {
-        // Rows 0 to 3: the columns 4 to 7 are the second half of each row; rows 4 to 7: everything
-        var words = unsafe(MemoryMarshal.Cast<short, ulong>(coefficients[..64]));
-        return (words[1] | words[3] | words[5] | words[7]) == 0 && words[8..].IndexOfAnyExcept(0UL) < 0;
+        // The length is checked once here; the loads below use an unchecked reference
+        ArgumentOutOfRangeException.ThrowIfLessThan(coefficients.Length, 64);
+        ref var start = ref unsafe(MemoryMarshal.GetReference(coefficients));
+        if (Vector512.IsHardwareAccelerated)
+        {
+            var low = Vector512.Equals(unsafe(Vector512.LoadUnsafe(ref start)), Vector512<short>.Zero).ExtractMostSignificantBits();
+            var high = Vector512.Equals(unsafe(Vector512.LoadUnsafe(ref start, 32)), Vector512<short>.Zero).ExtractMostSignificantBits();
+            return ~(low | (high << 32));
+        }
+
+        if (Vector256.IsHardwareAccelerated)
+        {
+            return ~(GetZeroBits256(ref start, 0) | ((ulong)GetZeroBits256(ref start, 32) << 32));
+        }
+
+        if (Vector128.IsHardwareAccelerated)
+        {
+            return ~(GetZeroBits128(ref start, 0)
+                | ((ulong)GetZeroBits128(ref start, 16) << 16)
+                | ((ulong)GetZeroBits128(ref start, 32) << 32)
+                | ((ulong)GetZeroBits128(ref start, 48) << 48));
+        }
+
+        return GetNonzeroMaskScalar(coefficients);
+
+        // Bit i: the coefficient offset + i is zero
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static uint GetZeroBits256(ref short start, nuint offset)
+        {
+            var low = Vector256.Equals(unsafe(Vector256.LoadUnsafe(ref start, offset)), Vector256<short>.Zero);
+            var high = Vector256.Equals(unsafe(Vector256.LoadUnsafe(ref start, offset + 16)), Vector256<short>.Zero);
+            return Vector256.Narrow(low, high).ExtractMostSignificantBits();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static uint GetZeroBits128(ref short start, nuint offset)
+        {
+            var low = Vector128.Equals(unsafe(Vector128.LoadUnsafe(ref start, offset)), Vector128<short>.Zero);
+            var high = Vector128.Equals(unsafe(Vector128.LoadUnsafe(ref start, offset + 8)), Vector128<short>.Zero);
+            return Vector128.Narrow(low, high).ExtractMostSignificantBits();
+        }
+    }
+
+    /// <summary>The scalar reference of <see cref="GetNonzeroMask"/>.</summary>
+    internal static ulong GetNonzeroMaskScalar(ReadOnlySpan<short> coefficients)
+    {
+        ulong mask = 0;
+        for (var i = 0; i < 64; i++)
+        {
+            mask |= (coefficients[i] != 0 ? 1UL : 0) << i;
+        }
+
+        return mask;
     }
 
     /// <summary>The scalar reference of <see cref="Transform(Span{double}, Span{byte}, int, bool)"/>.</summary>
@@ -933,15 +993,7 @@ internal static class JpegIdct
                 Load256(ref block, 0), Load256(ref block, 8), Load256(ref block, 16), Load256(ref block, 24),
                 out var c0, out var c1, out var c2, out var c3, out var c4, out var c5, out var c6, out var c7);
             Store256(c0, c1, c2, c3, c4, c5, c6, c7, ref block, 0);
-
-            // Rows, four at a time (the samples 4 to 7 of each row are zero)
-            for (var y = 0; y < 8; y += 4)
-            {
-                Transpose(Load256(ref block, y * 8), Load256(ref block, (y * 8) + 8), Load256(ref block, (y * 8) + 16), Load256(ref block, (y * 8) + 24), out var x0, out var x1, out var x2, out var x3);
-                Transform1D(x0, x1, x2, x3, out var o0, out var o1, out var o2, out var o3, out var o4, out var o5, out var o6, out var o7);
-                StoreSamplesAvx2(o0, o1, o2, o3, o4, o5, o6, o7, ref unsafe(Unsafe.Add(ref output, y * stride)), stride);
-            }
-
+            TransformSparseRowsAvx2(ref block, ref output, stride);
             return;
         }
 
@@ -955,7 +1007,13 @@ internal static class JpegIdct
             Store256(o0, o1, o2, o3, o4, o5, o6, o7, ref block, u);
         }
 
-        // Rows, four at a time: lane k is row y + k
+        TransformRowsAvx2(ref block, ref output, stride);
+    }
+
+    /// <summary>The row pass of <see cref="TransformAvx2"/>: four rows at a time, lane <c>k</c> is row <c>y + k</c>.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void TransformRowsAvx2(ref double block, ref byte output, int stride)
+    {
         for (var y = 0; y < 8; y += 4)
         {
             ref var rows = ref unsafe(Unsafe.Add(ref block, y * 8));
@@ -964,9 +1022,22 @@ internal static class JpegIdct
             Transform1D(x0, x1, x2, x3, x4, x5, x6, x7, out var o0, out var o1, out var o2, out var o3, out var o4, out var o5, out var o6, out var o7);
             StoreSamplesAvx2(o0, o1, o2, o3, o4, o5, o6, o7, ref unsafe(Unsafe.Add(ref output, y * stride)), stride);
         }
-
-        static Vector256<double> Load256(ref double block, int index) => unsafe(Vector256.LoadUnsafe(ref block, (nuint)index));
     }
+
+    /// <summary>The row pass of <see cref="TransformAvx2"/> for a sparse block: the samples 4 to 7 of each row are zero.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void TransformSparseRowsAvx2(ref double block, ref byte output, int stride)
+    {
+        for (var y = 0; y < 8; y += 4)
+        {
+            Transpose(Load256(ref block, y * 8), Load256(ref block, (y * 8) + 8), Load256(ref block, (y * 8) + 16), Load256(ref block, (y * 8) + 24), out var x0, out var x1, out var x2, out var x3);
+            Transform1D(x0, x1, x2, x3, out var o0, out var o1, out var o2, out var o3, out var o4, out var o5, out var o6, out var o7);
+            StoreSamplesAvx2(o0, o1, o2, o3, o4, o5, o6, o7, ref unsafe(Unsafe.Add(ref output, y * stride)), stride);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector256<double> Load256(ref double block, int index) => unsafe(Vector256.LoadUnsafe(ref block, (nuint)index));
 
     /// <summary>
     /// The transform with AVX-512: the eight columns, then the eight rows at once. The column pass reads the rows of the block
@@ -1002,6 +1073,113 @@ internal static class JpegIdct
         StoreSamplesAvx2(o0.GetUpper(), o1.GetUpper(), o2.GetUpper(), o3.GetUpper(), o4.GetUpper(), o5.GetUpper(), o6.GetUpper(), o7.GetUpper(), ref unsafe(Unsafe.Add(ref output, 4 * stride)), stride);
 
         static Vector512<double> Load512(ref double block, int index) => unsafe(Vector512.LoadUnsafe(ref block, (nuint)index));
+    }
+
+    /// <summary>
+    /// Dequantizes and transforms quantized coefficients (natural order) into 8x8 samples: the samples of
+    /// <see cref="Dequantize"/> followed by <see cref="Transform(Span{double}, Span{byte}, int, bool)"/>.
+    /// </summary>
+    /// <param name="coefficients">The 64 quantized coefficients, natural order.</param>
+    /// <param name="quantization">The 64 quantization values, as doubles.</param>
+    /// <param name="block">A scratch block of 64 values.</param>
+    /// <param name="destination">The first sample of the block.</param>
+    /// <param name="stride">The distance between two sample rows.</param>
+    /// <param name="sparse">Whether every coefficient outside the top-left 4x4 corner is zero (see <see cref="IsSparse(ulong)"/>).</param>
+    /// <remarks>
+    /// With AVX-512 and AVX2, the coefficients of the column pass are dequantized in registers (the same exact conversions and
+    /// the same products as <see cref="Dequantize"/>) instead of being stored to the block and loaded back.
+    /// </remarks>
+    public static void TransformQuantized(ReadOnlySpan<short> coefficients, ReadOnlySpan<double> quantization, Span<double> block, Span<byte> destination, int stride, bool sparse)
+    {
+        if (Vector512.IsHardwareAccelerated && Avx512F.IsSupported)
+        {
+            TransformQuantizedAvx512(coefficients, quantization, destination, stride, sparse);
+        }
+        else if (Avx2.IsSupported)
+        {
+            TransformQuantizedAvx2(coefficients, quantization, block, destination, stride, sparse);
+        }
+        else
+        {
+            Dequantize(coefficients, quantization, block);
+            Transform(block, destination, stride, sparse);
+        }
+    }
+
+    /// <summary><see cref="TransformAvx512"/> of the coefficients that <see cref="Dequantize"/> gives, dequantized row by row in registers.</summary>
+    internal static void TransformQuantizedAvx512(ReadOnlySpan<short> coefficients, ReadOnlySpan<double> quantization, Span<byte> destination, int stride, bool sparse)
+    {
+        // Bounds are checked once here; the loads below use unchecked references
+        ArgumentOutOfRangeException.ThrowIfLessThan(coefficients.Length, 64);
+        ArgumentOutOfRangeException.ThrowIfLessThan(quantization.Length, 64);
+        ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, (7 * stride) + 8);
+        ref var source = ref unsafe(MemoryMarshal.GetReference(coefficients));
+        ref var scales = ref unsafe(MemoryMarshal.GetReference(quantization));
+        ref var output = ref unsafe(MemoryMarshal.GetReference(destination));
+        Vector512<double> o0, o1, o2, o3, o4, o5, o6, o7;
+        if (sparse)
+        {
+            Transform1D(Row(ref source, ref scales, 0), Row(ref source, ref scales, 8), Row(ref source, ref scales, 16), Row(ref source, ref scales, 24), out var c0, out var c1, out var c2, out var c3, out var c4, out var c5, out var c6, out var c7);
+            TransposeFirstColumns(c0, c1, c2, c3, c4, c5, c6, c7, out var x0, out var x1, out var x2, out var x3);
+            Transform1D(x0, x1, x2, x3, out o0, out o1, out o2, out o3, out o4, out o5, out o6, out o7);
+        }
+        else
+        {
+            Transform1D(
+                Row(ref source, ref scales, 0), Row(ref source, ref scales, 8), Row(ref source, ref scales, 16), Row(ref source, ref scales, 24),
+                Row(ref source, ref scales, 32), Row(ref source, ref scales, 40), Row(ref source, ref scales, 48), Row(ref source, ref scales, 56),
+                out var c0, out var c1, out var c2, out var c3, out var c4, out var c5, out var c6, out var c7);
+            Transpose(c0, c1, c2, c3, c4, c5, c6, c7, out var x0, out var x1, out var x2, out var x3, out var x4, out var x5, out var x6, out var x7);
+            Transform1D(x0, x1, x2, x3, x4, x5, x6, x7, out o0, out o1, out o2, out o3, out o4, out o5, out o6, out o7);
+        }
+
+        StoreSamplesAvx2(o0.GetLower(), o1.GetLower(), o2.GetLower(), o3.GetLower(), o4.GetLower(), o5.GetLower(), o6.GetLower(), o7.GetLower(), ref output, stride);
+        StoreSamplesAvx2(o0.GetUpper(), o1.GetUpper(), o2.GetUpper(), o3.GetUpper(), o4.GetUpper(), o5.GetUpper(), o6.GetUpper(), o7.GetUpper(), ref unsafe(Unsafe.Add(ref output, 4 * stride)), stride);
+
+        // The eight dequantized coefficients of a row: exact conversions to 32-bit integers, then to doubles
+        static Vector512<double> Row(ref short source, ref double scales, int index)
+            => Avx512F.ConvertToVector512Double(Avx2.ConvertToVector256Int32(unsafe(Vector128.LoadUnsafe(ref source, (nuint)index)))) * unsafe(Vector512.LoadUnsafe(ref scales, (nuint)index));
+    }
+
+    /// <summary><see cref="TransformAvx2"/> of the coefficients that <see cref="Dequantize"/> gives, dequantized in registers for the column pass.</summary>
+    internal static void TransformQuantizedAvx2(ReadOnlySpan<short> coefficients, ReadOnlySpan<double> quantization, Span<double> block, Span<byte> destination, int stride, bool sparse)
+    {
+        // Bounds are checked once here; the loops below use unchecked references
+        ArgumentOutOfRangeException.ThrowIfLessThan(coefficients.Length, 64);
+        ArgumentOutOfRangeException.ThrowIfLessThan(quantization.Length, 64);
+        ArgumentOutOfRangeException.ThrowIfLessThan(block.Length, 64);
+        ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, (7 * stride) + 8);
+        ref var source = ref unsafe(MemoryMarshal.GetReference(coefficients));
+        ref var scales = ref unsafe(MemoryMarshal.GetReference(quantization));
+        ref var columns = ref unsafe(MemoryMarshal.GetReference(block));
+        ref var output = ref unsafe(MemoryMarshal.GetReference(destination));
+        if (sparse)
+        {
+            Transform1D(
+                Quarter(ref source, ref scales, 0), Quarter(ref source, ref scales, 8), Quarter(ref source, ref scales, 16), Quarter(ref source, ref scales, 24),
+                out var c0, out var c1, out var c2, out var c3, out var c4, out var c5, out var c6, out var c7);
+            Store256(c0, c1, c2, c3, c4, c5, c6, c7, ref columns, 0);
+            TransformSparseRowsAvx2(ref columns, ref output, stride);
+            return;
+        }
+
+        for (var u = 0; u < 8; u += 4)
+        {
+            Transform1D(
+                Quarter(ref source, ref scales, u), Quarter(ref source, ref scales, 8 + u), Quarter(ref source, ref scales, 16 + u), Quarter(ref source, ref scales, 24 + u),
+                Quarter(ref source, ref scales, 32 + u), Quarter(ref source, ref scales, 40 + u), Quarter(ref source, ref scales, 48 + u), Quarter(ref source, ref scales, 56 + u),
+                out var o0, out var o1, out var o2, out var o3, out var o4, out var o5, out var o6, out var o7);
+            Store256(o0, o1, o2, o3, o4, o5, o6, o7, ref columns, u);
+        }
+
+        TransformRowsAvx2(ref columns, ref output, stride);
+
+        // The four dequantized coefficients from the index: exact conversions to 32-bit integers, then to doubles
+        static Vector256<double> Quarter(ref short source, ref double scales, int index)
+        {
+            var values = unsafe(Vector128.CreateScalarUnsafe(Unsafe.ReadUnaligned<long>(ref Unsafe.As<short, byte>(ref Unsafe.Add(ref source, index))))).AsInt16();
+            return Avx.ConvertToVector256Double(Sse41.ConvertToVector128Int32(values)) * unsafe(Vector256.LoadUnsafe(ref scales, (nuint)index));
+        }
     }
 
     /// <summary>Transposes an 8x8 matrix of doubles: <c>t[j][k] = r[k][j]</c>.</summary>

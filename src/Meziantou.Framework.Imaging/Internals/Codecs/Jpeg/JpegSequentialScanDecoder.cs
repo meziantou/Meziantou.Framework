@@ -117,44 +117,53 @@ internal sealed class JpegSequentialScanDecoder : JpegScanDecoder
     }
 
     /// <summary>
-    /// Decodes the next block like <see cref="DecodeBlock"/> when its bytes are buffered (<see cref="JpegScanDecoder.UncheckedReads"/>):
+    /// Decodes the next MCUs like <see cref="DecodeBlock"/> when their bytes are buffered (<see cref="JpegScanDecoder.UncheckedReads"/>):
     /// one lookup of <see cref="JpegHuffmanTable.FastLookup"/> per symbol, which also gives the coefficient when its
     /// magnitude bits fit, and no check of the end of the data. The other symbols are validated in the order of the
     /// regular path.
     /// </summary>
-    /// <remarks>The blocks of an MCU whose bytes are buffered share one <see cref="JpegEntropyReader.UncheckedCursor"/>.</remarks>
-    protected override void DecodeMcu(int mcuX, int mcuY)
+    /// <remarks>
+    /// The blocks of the MCUs whose bytes are buffered share one <see cref="JpegEntropyReader.UncheckedCursor"/>, up to the
+    /// end of their row.
+    /// </remarks>
+    protected override int DecodeMcus(int mcuX, int mcuY, int count)
     {
-        if (!UncheckedReads || _deferTransforms)
-        {
-            base.DecodeMcu(mcuX, mcuY);
-            return;
-        }
+        if (_deferTransforms)
+            return base.DecodeMcus(mcuX, mcuY, count);
 
         var reader = Reader;
         var cursor = reader.GetUncheckedCursor();
-        if (!IsInterleaved)
+        var decoded = 0;
+        do
         {
-            DecodeBlockUnchecked(ref cursor, Components[0], mcuY, mcuX);
-        }
-        else
-        {
-            foreach (var scanComponent in Components)
+            var x = mcuX + decoded;
+            if (!IsInterleaved)
             {
-                var component = scanComponent.Component;
-                var h = component.HorizontalSampling;
-                var v = component.VerticalSampling;
-                for (var by = 0; by < v; by++)
+                DecodeBlockUnchecked(ref cursor, Components[0], mcuY, x);
+            }
+            else
+            {
+                foreach (var scanComponent in Components)
                 {
-                    for (var bx = 0; bx < h; bx++)
+                    var component = scanComponent.Component;
+                    var h = component.HorizontalSampling;
+                    var v = component.VerticalSampling;
+                    for (var by = 0; by < v; by++)
                     {
-                        DecodeBlockUnchecked(ref cursor, scanComponent, (mcuY * v) + by, (mcuX * h) + bx);
+                        for (var bx = 0; bx < h; bx++)
+                        {
+                            DecodeBlockUnchecked(ref cursor, scanComponent, (mcuY * v) + by, (x * h) + bx);
+                        }
                     }
                 }
             }
+
+            decoded++;
         }
+        while (decoded < count && HasUncheckedBytes(cursor));
 
         cursor.Commit(reader);
+        return decoded;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -30,6 +30,7 @@ internal sealed class ExrHuffman : IDisposable
     private readonly long[] _start = new long[MaxCodeLength + 2];
     private readonly int[] _count = new int[MaxCodeLength + 2];
     private readonly int[] _firstSymbol = new int[MaxCodeLength + 2];
+    private Range _usedFrequencies = ..0;
 
     public ExrHuffman(AllocationScope scope, bool encoder)
     {
@@ -80,8 +81,9 @@ internal sealed class ExrHuffman : IDisposable
         if (min >= SymbolCount || max >= SymbolCount || min > max)
             throw ExrFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"the Huffman symbols of a PIZ chunk range from {min} to {max}."));
 
+        // The code lengths are read and used from min to max only
         var lengths = Lengths;
-        lengths.Clear();
+        lengths[(int)min..((int)max + 1)].Clear();
         var tableEnd = ReadTable(stream[HeaderLength..], (int)min, (int)max, lengths) + HeaderLength;
         var dataLength = (bitCount + 7L) / 8;
         if (dataLength > stream.Length - tableEnd)
@@ -101,8 +103,9 @@ internal sealed class ExrHuffman : IDisposable
         if (source.IsEmpty)
             return 0;
 
+        // The frequencies are zero but from the symbols of the previous stream (the buffer is rented cleared)
         var frequencies = unsafe(MemoryMarshal.Cast<byte, long>(_frequencies!.Span));
-        frequencies.Clear();
+        frequencies[_usedFrequencies].Clear();
         var min = int.MaxValue;
         var maxValue = 0;
         foreach (var value in source)
@@ -114,9 +117,10 @@ internal sealed class ExrHuffman : IDisposable
 
         // The run symbol is the largest coded symbol, always present (section 5.4.1)
         var runSymbol = maxValue + 1;
+        _usedFrequencies = min..(runSymbol + 1);
         frequencies[runSymbol] = 1;
         var lengths = Lengths;
-        lengths.Clear();
+        lengths[min..(runSymbol + 1)].Clear();
         BuildLengths(frequencies, min, runSymbol, lengths);
         var codes = unsafe(MemoryMarshal.Cast<byte, ulong>(_codes!.Span));
         BuildCanonicalCodes(lengths, min, runSymbol, codes);

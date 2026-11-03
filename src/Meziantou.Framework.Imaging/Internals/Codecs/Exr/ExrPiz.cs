@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Numerics;
 using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -17,6 +18,9 @@ internal sealed class ExrPiz : IDisposable
     private readonly PooledBuffer _table;
     private readonly PooledBuffer _bitmap;
     private readonly ExrHuffman _huffman;
+
+    // The entries of the table past those of the values are zero up to this one: the table is rented without being cleared
+    private int _tableDirtyEnd = 65536;
 
     public ExrPiz(AllocationScope scope, int maxDataLength, bool encoder)
     {
@@ -73,7 +77,8 @@ internal sealed class ExrPiz : IDisposable
 
         // The reverse lookup table: the k-th value that occurs (0 always does)
         var table = Table;
-        var maxIndex = BuildReverseTable(bitmap, table);
+        var maxIndex = BuildReverseTable(bitmap, table, _tableDirtyEnd);
+        _tableDirtyEnd = maxIndex + 1;
         var words = unsafe(MemoryMarshal.Cast<byte, ushort>(_words.Span[..destination.Length]));
         _huffman.Decode(stored.Slice(position, (int)streamLength), words);
 
@@ -92,12 +97,7 @@ internal sealed class ExrPiz : IDisposable
             offset += nx * ny * w;
         }
 
-        for (var i = 0; i < words.Length; i++)
-        {
-            words[i] = table[words[i]];
-        }
-
-        CopyPlanes(words, default, destination, layout, toPlanes: false);
+        CopyPlanes(words, default, destination, table, layout, toPlanes: false);
     }
 
     /// <summary>Compresses a chunk.</summary>
@@ -108,7 +108,7 @@ internal sealed class ExrPiz : IDisposable
     public int Compress(ReadOnlySpan<byte> source, Span<byte> destination, in ExrChunkLayout layout)
     {
         var words = unsafe(MemoryMarshal.Cast<byte, ushort>(_words.Span[..source.Length]));
-        CopyPlanes(words, source, default, layout, toPlanes: true);
+        CopyPlanes(words, source, default, default, layout, toPlanes: true);
 
         // The bitmap of the values that occur, without 0 (always present)
         var bitmap = _bitmap.Span;
@@ -124,6 +124,7 @@ internal sealed class ExrPiz : IDisposable
 
         // The forward table: the rank of each value
         var table = Table;
+        _tableDirtyEnd = table.Length;
         var rank = 0;
         for (var v = 0; v < 65536; v++)
         {
@@ -182,23 +183,43 @@ internal sealed class ExrPiz : IDisposable
         _huffman?.Dispose();
     }
 
-    private static int BuildReverseTable(ReadOnlySpan<byte> bitmap, Span<ushort> table)
+    /// <summary>
+    /// Fills the table with the values that occur in increasing order (0 first, which always does) and zeros after them,
+    /// up to <paramref name="dirtyEnd"/> (the entries after it are zero).
+    /// </summary>
+    /// <returns>The index of the last value.</returns>
+    private static int BuildReverseTable(ReadOnlySpan<byte> bitmap, Span<ushort> table, int dirtyEnd)
     {
-        var k = 0;
-        for (var v = 0; v < 65536; v++)
+        table[0] = 0;
+        var k = 1;
+        for (var i = 0; i < bitmap.Length; i++)
         {
-            if (v == 0 || (bitmap[v >> 3] & (1 << (v & 7))) != 0)
+            uint bits = bitmap[i];
+            if (i == 0)
             {
-                table[k++] = (ushort)v;
+                bits &= 0xFE;
+            }
+
+            while (bits != 0)
+            {
+                table[k++] = (ushort)((i * 8) + BitOperations.TrailingZeroCount(bits));
+                bits &= bits - 1;
             }
         }
 
-        table[k..].Clear();
+        if (k < dirtyEnd)
+        {
+            table[k..dirtyEnd].Clear();
+        }
+
         return k - 1;
     }
 
-    /// <summary>Copies the samples between the layout of a chunk and the planes of words of each channel (section 5.1).</summary>
-    private static void CopyPlanes(Span<ushort> words, ReadOnlySpan<byte> input, Span<byte> output, in ExrChunkLayout layout, bool toPlanes)
+    /// <summary>
+    /// Copies the samples between the layout of a chunk and the planes of words of each channel (section 5.1); to the layout,
+    /// each word is replaced by its entry of <paramref name="table"/>.
+    /// </summary>
+    private static void CopyPlanes(Span<ushort> words, ReadOnlySpan<byte> input, Span<byte> output, ReadOnlySpan<ushort> table, in ExrChunkLayout layout, bool toPlanes)
     {
         var channelCount = layout.Channels.Count;
         Span<int> planeOffsets = channelCount <= 64 ? stackalloc int[channelCount] : new int[channelCount];
@@ -224,9 +245,25 @@ internal sealed class ExrPiz : IDisposable
                 if (toPlanes)
                 {
                     var bytes = input.Slice(position, rowWords * 2);
-                    for (var i = 0; i < plane.Length; i++)
+                    if (BitConverter.IsLittleEndian)
                     {
-                        plane[i] = BinaryPrimitives.ReadUInt16LittleEndian(bytes[(2 * i)..]);
+                        var samples = unsafe(MemoryMarshal.Cast<byte, ushort>(bytes));
+                        samples.CopyTo(plane);
+                    }
+                    else
+                    {
+                        for (var i = 0; i < plane.Length; i++)
+                        {
+                            plane[i] = BinaryPrimitives.ReadUInt16LittleEndian(bytes[(2 * i)..]);
+                        }
+                    }
+                }
+                else if (BitConverter.IsLittleEndian)
+                {
+                    var samples = unsafe(MemoryMarshal.Cast<byte, ushort>(output.Slice(position, rowWords * 2)));
+                    for (var i = 0; i < samples.Length; i++)
+                    {
+                        samples[i] = table[plane[i]];
                     }
                 }
                 else
@@ -234,7 +271,7 @@ internal sealed class ExrPiz : IDisposable
                     var bytes = output.Slice(position, rowWords * 2);
                     for (var i = 0; i < plane.Length; i++)
                     {
-                        BinaryPrimitives.WriteUInt16LittleEndian(bytes[(2 * i)..], plane[i]);
+                        BinaryPrimitives.WriteUInt16LittleEndian(bytes[(2 * i)..], table[plane[i]]);
                     }
                 }
 

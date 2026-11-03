@@ -1363,6 +1363,17 @@ public sealed class VectorizedKernelTests
                 AssertPath((samples, stride, coefficients) => JpegForwardDct.TransformAndQuantizeAvx2(samples, stride, divisors, scratch, coefficients));
             }
 
+            if (System.Runtime.Intrinsics.Arm.AdvSimd.Arm64.IsSupported)
+            {
+                // The 16-bit coefficients reordered by table lookups, from contiguous rows and from the rows of a plane
+                var stored = new short[64];
+                JpegForwardDct.TransformAndQuantizeArm64(samples, 8, divisors, scratch, stored);
+                Assert.Equal(expected, Array.ConvertAll(stored, value => (int)value));
+                Array.Clear(stored);
+                JpegForwardDct.TransformAndQuantizeArm64(plane, Stride, divisors, scratch, stored);
+                Assert.Equal(expected, Array.ConvertAll(stored, value => (int)value));
+            }
+
             if (Avx512F.IsSupported)
             {
                 AssertPath((samples, stride, coefficients) => JpegForwardDct.TransformAndQuantizeAvx512(samples, stride, divisors, coefficients));
@@ -1386,6 +1397,39 @@ public sealed class VectorizedKernelTests
     }
 
     private delegate void ForwardDct(ReadOnlySpan<float> samples, int stride, Span<int> coefficients);
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void JpegForwardDctRoundingBiasRoundsHalfAwayFromZero()
+    {
+        // The truncation of the value plus the bias is the rounding of Math.Round: halves, the doubles next to them, the
+        // largest double below one half, integers, and random values up to the 16-bit range
+        var values = new List<double> { 0, -0.0, 0.49999999999999994, -0.49999999999999994, 2047.5, -2047.5, 1024, -1024 };
+        for (var k = -2048; k <= 2048; k++)
+        {
+            var half = k + 0.5;
+            values.Add(half);
+            values.Add(Math.BitDecrement(half));
+            values.Add(Math.BitIncrement(half));
+            values.Add(k);
+            values.Add(Math.BitDecrement((double)k));
+            values.Add(Math.BitIncrement((double)k));
+        }
+
+        var random = new Random(86);
+        for (var i = 0; i < 100_000; i++)
+        {
+            values.Add((random.NextDouble() - 0.5) * (i % 2 == 0 ? 4 : 65536));
+        }
+
+        foreach (var value in values)
+        {
+            var expected = (long)Math.Round(value, MidpointRounding.AwayFromZero);
+            Assert.Equal(expected, (long)Math.Truncate(JpegForwardDct.AddRoundingBias(Vector128.Create(value)).ToScalar()));
+            Assert.Equal(expected, (long)Math.Truncate(JpegForwardDct.AddRoundingBias(Vector256.Create(value)).ToScalar()));
+            Assert.Equal(expected, (long)Math.Truncate(JpegForwardDct.AddRoundingBias(Vector512.Create(value)).ToScalar()));
+        }
+    }
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
@@ -1462,6 +1506,8 @@ public sealed class VectorizedKernelTests
             {
                 AssertPath(source, expected, (source, luma, blue, red) => Complete(source, luma, blue, red, JpegEncoderCodec.ConvertRgbToYCbCrAvx512(source, luma, blue, red)));
             }
+
+            AssertRationalPaths(source, expected);
         }
 
         static void AssertPath(byte[] source, float[][] expected, ConvertRgbToYCbCr convert)
@@ -1483,7 +1529,86 @@ public sealed class VectorizedKernelTests
             JpegEncoderCodec.ConvertRgbToYCbCrScalar(source[(3 * done)..], luma[done..], blue[done..], red[done..]);
     }
 
+    [Fact]
+    public void JpegEncoderColorConversionFromFractionsMatchesTheScalarReferenceForEveryColor()
+    {
+        // The 2^16 colors of each red level, those that the fractions convert first (in whole 16-pixel groups), then the
+        // gray levels and the colors whose luma is 128, which are converted in double precision: every color goes through
+        // the computation that converts it in an image
+        var source = new byte[3 * 65536];
+        var expected = new float[3][];
+        for (var c = 0; c < 3; c++)
+        {
+            expected[c] = new float[65536];
+        }
+
+        for (var red = 0; red < 256; red++)
+        {
+            var count = 0;
+            foreach (var fractions in new[] { true, false })
+            {
+                for (var green = 0; green < 256; green++)
+                {
+                    for (var blue = 0; blue < 256; blue++)
+                    {
+                        var converted = (red != green || green != blue) && (299 * red) + (587 * green) + (114 * blue) != 128000;
+                        if (converted == fractions)
+                        {
+                            source[3 * count] = (byte)red;
+                            source[(3 * count) + 1] = (byte)green;
+                            source[(3 * count) + 2] = (byte)blue;
+                            count++;
+                        }
+                    }
+                }
+            }
+
+            JpegEncoderCodec.ConvertRgbToYCbCrScalar(source, expected[0], expected[1], expected[2]);
+            AssertRationalPaths(source, expected);
+        }
+    }
+
+    // Each conversion from the fractions on its own, then the scalar reference for the rest
+    private static void AssertRationalPaths(byte[] source, float[][] expected)
+    {
+        if (System.Runtime.Intrinsics.Arm.AdvSimd.Arm64.IsSupported)
+        {
+            AssertConversionPath(source, expected, JpegEncoderCodec.ConvertRgbToYCbCrRationalArm64);
+        }
+
+        if (Avx2.IsSupported)
+        {
+            AssertConversionPath(source, expected, JpegEncoderCodec.ConvertRgbToYCbCrRationalAvx2);
+        }
+
+        if (Avx512F.IsSupported)
+        {
+            AssertConversionPath(source, expected, JpegEncoderCodec.ConvertRgbToYCbCrRationalAvx512);
+        }
+
+        AssertConversionPath(source, expected, (source, luma, blue, red) =>
+        {
+            JpegEncoderCodec.ConvertRgbToYCbCr(source, luma, blue, red);
+            return luma.Length;
+        });
+    }
+
+    private static void AssertConversionPath(byte[] source, float[][] expected, ConvertRgbToYCbCrGroups convert)
+    {
+        var length = expected[0].Length;
+        var luma = new float[length];
+        var blue = new float[length];
+        var red = new float[length];
+        var done = convert(source, luma, blue, red);
+        JpegEncoderCodec.ConvertRgbToYCbCrScalar(source.AsSpan(3 * done), luma.AsSpan(done), blue.AsSpan(done), red.AsSpan(done));
+        Assert.Equal(expected[0], luma);
+        Assert.Equal(expected[1], blue);
+        Assert.Equal(expected[2], red);
+    }
+
     private delegate void ConvertRgbToYCbCr(ReadOnlySpan<byte> source, Span<float> luma, Span<float> blue, Span<float> red);
+
+    private delegate int ConvertRgbToYCbCrGroups(ReadOnlySpan<byte> source, Span<float> luma, Span<float> blue, Span<float> red);
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
@@ -1562,10 +1687,11 @@ public sealed class VectorizedKernelTests
                     var second = new float[twoRows ? 2 * length : 0];
                     for (var i = 0; i < first.Length; i++)
                     {
-                        first[i] = round % 4 == 0 ? (random.Next(2) == 0 ? -128f : 127f) : (float)((random.NextDouble() * 256) - 128);
+                        // Negative zeros too, whose sums give the sign of the reference
+                        first[i] = round % 4 == 0 ? (random.Next(2) == 0 ? -128f : 127f) : round % 4 == 1 && random.Next(3) == 0 ? -0f : (float)((random.NextDouble() * 256) - 128);
                         if (twoRows)
                         {
-                            second[i] = (float)((random.NextDouble() * 256) - 128);
+                            second[i] = round % 4 == 1 && random.Next(3) == 0 ? -0f : (float)((random.NextDouble() * 256) - 128);
                         }
                     }
 
@@ -1580,6 +1706,11 @@ public sealed class VectorizedKernelTests
                     if (Avx2.IsSupported)
                     {
                         AssertPath(first, second, expected, (first, second, destination) => Complete(first, second, destination, JpegEncoderCodec.DownsampleRowAvx2(first, second, destination)));
+                    }
+
+                    if (System.Runtime.Intrinsics.Arm.AdvSimd.Arm64.IsSupported)
+                    {
+                        AssertPath(first, second, expected, (first, second, destination) => Complete(first, second, destination, JpegEncoderCodec.DownsampleRowArm64(first, second, destination)));
                     }
 
                     if (Avx512F.IsSupported)

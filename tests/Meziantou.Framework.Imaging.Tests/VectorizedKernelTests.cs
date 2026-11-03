@@ -1069,6 +1069,36 @@ public sealed class VectorizedKernelTests
                 JpegEncoderCodec.ExtractBlockScalar(plane, PlaneWidth, x0, y0, factorX, factorY, expected);
                 JpegEncoderCodec.ExtractBlock(plane, PlaneWidth, x0, y0, factorX, factorY, actual);
                 Assert.Equal(expected, actual);
+                if (factorX == 1 && factorY == 1 && Vector128.IsHardwareAccelerated)
+                {
+                    Array.Clear(actual);
+                    JpegEncoderCodec.ExtractBlockVector(plane, PlaneWidth, x0, y0, factorX, factorY, actual);
+                    Assert.Equal(expected, actual);
+                }
+
+                if (factorX == 2)
+                {
+                    if (Vector128.IsHardwareAccelerated)
+                    {
+                        Array.Clear(actual);
+                        JpegEncoderCodec.ExtractBlockVector(plane, PlaneWidth, x0, y0, factorX, factorY, actual);
+                        Assert.Equal(expected, actual);
+                    }
+
+                    if (Avx2.IsSupported)
+                    {
+                        Array.Clear(actual);
+                        JpegEncoderCodec.ExtractBlockAvx2(plane, PlaneWidth, x0, y0, factorY, actual);
+                        Assert.Equal(expected, actual);
+                    }
+
+                    if (Avx512F.IsSupported)
+                    {
+                        Array.Clear(actual);
+                        JpegEncoderCodec.ExtractBlockAvx512(plane, PlaneWidth, x0, y0, factorY, actual);
+                        Assert.Equal(expected, actual);
+                    }
+                }
             }
         }
     }

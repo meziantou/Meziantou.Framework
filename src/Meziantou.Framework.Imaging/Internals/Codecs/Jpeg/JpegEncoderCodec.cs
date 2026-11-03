@@ -365,11 +365,20 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
     /// <param name="block">The 64 samples of the block.</param>
     /// <remarks>
     /// With 128-bit hardware vectors, a horizontal factor of 2 (with a vertical factor of 1 or 2) computes two block samples
-    /// at once with the same additions in the same order, and a factor of 1 copies 4 samples at a time.
+    /// at once with the same additions in the same order (four with AVX2, a row of eight with AVX-512), and a factor of 1
+    /// copies 4 samples at a time (8 when 256-bit vectors are accelerated).
     /// </remarks>
     internal static void ExtractBlock(ReadOnlySpan<float> plane, int planeWidth, int x0, int y0, int factorX, int factorY, Span<float> block)
     {
-        if (Vector128.IsHardwareAccelerated && ((factorX == 1 && factorY == 1) || (factorX == 2 && factorY is 1 or 2)))
+        if (factorX == 2 && factorY is 1 or 2 && Vector512.IsHardwareAccelerated && Avx512F.IsSupported)
+        {
+            ExtractBlockAvx512(plane, planeWidth, x0, y0, factorY, block);
+        }
+        else if (factorX == 2 && factorY is 1 or 2 && Avx2.IsSupported)
+        {
+            ExtractBlockAvx2(plane, planeWidth, x0, y0, factorY, block);
+        }
+        else if (Vector128.IsHardwareAccelerated && ((factorX == 1 && factorY == 1) || (factorX == 2 && factorY is 1 or 2)))
         {
             ExtractBlockVector(plane, planeWidth, x0, y0, factorX, factorY, block);
         }
@@ -412,7 +421,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         }
     }
 
-    private static void ExtractBlockVector(ReadOnlySpan<float> plane, int planeWidth, int x0, int y0, int factorX, int factorY, Span<float> block)
+    internal static void ExtractBlockVector(ReadOnlySpan<float> plane, int planeWidth, int x0, int y0, int factorX, int factorY, Span<float> block)
     {
         // Bounds are checked once here; the loops below use unchecked references
         var lastRow = ((y0 + (8 * factorY) - 1) * planeWidth) + x0;
@@ -426,8 +435,15 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             for (var y = 0; y < 8; y++)
             {
                 ref var row = ref unsafe(Unsafe.Add(ref source, ((y0 + y) * planeWidth) + x0));
-                unsafe { Vector128.LoadUnsafe(ref row).StoreUnsafe(ref destination, (nuint)(y * 8)); }
-                unsafe { Vector128.LoadUnsafe(ref row, 4).StoreUnsafe(ref destination, (nuint)((y * 8) + 4)); }
+                if (Vector256.IsHardwareAccelerated)
+                {
+                    unsafe { Vector256.LoadUnsafe(ref row).StoreUnsafe(ref destination, (nuint)(y * 8)); }
+                }
+                else
+                {
+                    unsafe { Vector128.LoadUnsafe(ref row).StoreUnsafe(ref destination, (nuint)(y * 8)); }
+                    unsafe { Vector128.LoadUnsafe(ref row, 4).StoreUnsafe(ref destination, (nuint)((y * 8) + 4)); }
+                }
             }
 
             return;
@@ -466,6 +482,78 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             }
 
             return sum * scale;
+        }
+    }
+
+    /// <summary>
+    /// The 2 x 1 or 2 x 2 box filter of <see cref="ExtractBlock"/> with AVX2, four block samples at a time: the even and
+    /// odd samples of a row come from two unpacks, in the lane order 0, 2, 1, 3, restored by one permutation at the end.
+    /// </summary>
+    internal static void ExtractBlockAvx2(ReadOnlySpan<float> plane, int planeWidth, int x0, int y0, int factorY, Span<float> block)
+    {
+        // Bounds are checked once here; the loop below uses unchecked references
+        _ = plane.Slice(((y0 + (8 * factorY) - 1) * planeWidth) + x0, 16);
+        _ = plane.Slice((y0 * planeWidth) + x0, 16);
+        ArgumentOutOfRangeException.ThrowIfLessThan(block.Length, 64);
+        ref var source = ref unsafe(MemoryMarshal.GetReference(plane));
+        ref var destination = ref unsafe(MemoryMarshal.GetReference(block));
+        var scale = Vector256.Create(1d / (2 * factorY));
+        for (var y = 0; y < 8; y++)
+        {
+            ref var first = ref unsafe(Unsafe.Add(ref source, ((y0 + (y * factorY)) * planeWidth) + x0));
+            ref var second = ref unsafe(Unsafe.Add(ref first, factorY == 2 ? planeWidth : 0));
+            for (var x = 0; x < 8; x += 4)
+            {
+                // Plane samples 2x to 2x + 7: (0, 1, 2, 3) and (4, 5, 6, 7) give the pairs of the block samples (x, x + 2, x + 1, x + 3)
+                var lower = Avx.ConvertToVector256Double(unsafe(Vector128.LoadUnsafe(ref first, (nuint)(2 * x))));
+                var upper = Avx.ConvertToVector256Double(unsafe(Vector128.LoadUnsafe(ref first, (nuint)((2 * x) + 4))));
+                var sum = Vector256<double>.Zero + Avx.UnpackLow(lower, upper);
+                sum += Avx.UnpackHigh(lower, upper);
+                if (factorY == 2)
+                {
+                    lower = Avx.ConvertToVector256Double(unsafe(Vector128.LoadUnsafe(ref second, (nuint)(2 * x))));
+                    upper = Avx.ConvertToVector256Double(unsafe(Vector128.LoadUnsafe(ref second, (nuint)((2 * x) + 4))));
+                    sum += Avx.UnpackLow(lower, upper);
+                    sum += Avx.UnpackHigh(lower, upper);
+                }
+
+                unsafe { Avx.ConvertToVector128Single(Avx2.Permute4x64(sum * scale, 0b11_01_10_00)).StoreUnsafe(ref destination, (nuint)((y * 8) + x)); }
+            }
+        }
+    }
+
+    /// <summary>
+    /// The 2 x 1 or 2 x 2 box filter of <see cref="ExtractBlock"/> with AVX-512, a row of eight block samples at a time:
+    /// the even and odd samples come from two unpacks, in the lane order 0, 4, 1, 5, 2, 6, 3, 7, restored by one
+    /// permutation at the end.
+    /// </summary>
+    internal static void ExtractBlockAvx512(ReadOnlySpan<float> plane, int planeWidth, int x0, int y0, int factorY, Span<float> block)
+    {
+        // Bounds are checked once here; the loop below uses unchecked references
+        _ = plane.Slice(((y0 + (8 * factorY) - 1) * planeWidth) + x0, 16);
+        _ = plane.Slice((y0 * planeWidth) + x0, 16);
+        ArgumentOutOfRangeException.ThrowIfLessThan(block.Length, 64);
+        ref var source = ref unsafe(MemoryMarshal.GetReference(plane));
+        ref var destination = ref unsafe(MemoryMarshal.GetReference(block));
+        var scale = Vector512.Create(1d / (2 * factorY));
+        var order = Vector512.Create(0L, 2, 4, 6, 1, 3, 5, 7);
+        for (var y = 0; y < 8; y++)
+        {
+            ref var first = ref unsafe(Unsafe.Add(ref source, ((y0 + (y * factorY)) * planeWidth) + x0));
+            ref var second = ref unsafe(Unsafe.Add(ref first, factorY == 2 ? planeWidth : 0));
+            var lower = Avx512F.ConvertToVector512Double(unsafe(Vector256.LoadUnsafe(ref first)));
+            var upper = Avx512F.ConvertToVector512Double(unsafe(Vector256.LoadUnsafe(ref first, 8)));
+            var sum = Vector512<double>.Zero + Avx512F.UnpackLow(lower, upper);
+            sum += Avx512F.UnpackHigh(lower, upper);
+            if (factorY == 2)
+            {
+                lower = Avx512F.ConvertToVector512Double(unsafe(Vector256.LoadUnsafe(ref second)));
+                upper = Avx512F.ConvertToVector512Double(unsafe(Vector256.LoadUnsafe(ref second, 8)));
+                sum += Avx512F.UnpackLow(lower, upper);
+                sum += Avx512F.UnpackHigh(lower, upper);
+            }
+
+            unsafe { Avx512F.ConvertToVector256Single(Avx512F.PermuteVar8x64(sum * scale, order)).StoreUnsafe(ref destination, (nuint)(y * 8)); }
         }
     }
 

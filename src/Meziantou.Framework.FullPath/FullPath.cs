@@ -455,15 +455,15 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
     public static unsafe FullPath GetKnownFolderPath(KnownFolder knownFolder)
     {
         var result = PInvoke.SHGetKnownFolderPath(knownFolder.FolderId, Windows.Win32.UI.Shell.KNOWN_FOLDER_FLAG.KF_FLAG_DEFAULT, hToken: null, out var path);
-        if (result.Succeeded)
+        using (path)
         {
-            var expandedValue = Environment.ExpandEnvironmentVariables(path.ToString());
-            Marshal.FreeCoTaskMem((nint)path.Value);
+            if (result.Failed)
+                throw new Win32Exception(result.Value, $"Failed to get shell folder path for {knownFolder}");
+
+            using var lease = path.Lease();
+            var expandedValue = Environment.ExpandEnvironmentVariables(lease.Value.ToString());
             return FromPath(expandedValue);
         }
-
-        Marshal.FreeCoTaskMem((nint)path.Value);
-        throw new Win32Exception(result.Value, $"Failed to get shell folder path for {knownFolder}");
     }
 
     /// <summary>Gets the current working directory.</summary>

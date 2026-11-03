@@ -58,61 +58,49 @@ internal sealed class NativeDirectoryEnumerator : IDisposable
     private unsafe bool Query(bool restartScan, string? searchExpression, List<string> names)
     {
         var buffer = new byte[BufferSize];
-        var handleAcquired = false;
-        try
+
+        fixed (char* searchExpressionPtr = searchExpression)
         {
-            _handle.DangerousAddRef(ref handleAcquired);
-
-            fixed (char* searchExpressionPtr = searchExpression)
+            var searchExpressionLength = checked((ushort)((searchExpression?.Length ?? 0) * sizeof(char)));
+            UNICODE_STRING? fileName = searchExpression is null ? null : new UNICODE_STRING
             {
-                var searchExpressionLength = checked((ushort)((searchExpression?.Length ?? 0) * sizeof(char)));
-                UNICODE_STRING? fileName = searchExpression is null ? null : new UNICODE_STRING
-                {
-                    Length = searchExpressionLength,
-                    MaximumLength = searchExpressionLength,
-                    Buffer = searchExpressionPtr,
-                };
+                Length = searchExpressionLength,
+                MaximumLength = searchExpressionLength,
+                Buffer = searchExpressionPtr,
+            };
 
-                var status = Windows.Wdk.TestPInvoke.NtQueryDirectoryFile(
-                    (HANDLE)_handle.DangerousGetHandle(),
-                    Event: default,
-                    ApcRoutine: null,
-                    ApcContext: null,
-                    IoStatusBlock: out _,
-                    buffer,
-                    FILE_INFORMATION_CLASS.FileDirectoryInformation,
-                    ReturnSingleEntry: false,
-                    fileName,
-                    restartScan);
+            var status = Windows.Wdk.TestPInvoke.NtQueryDirectoryFile(
+                _handle,
+                Event: null,
+                ApcRoutine: null,
+                ApcContext: null,
+                IoStatusBlock: out _,
+                buffer,
+                FILE_INFORMATION_CLASS.FileDirectoryInformation,
+                ReturnSingleEntry: false,
+                fileName,
+                restartScan);
 
-                // STATUS_NO_MORE_FILES and any other non-success status end the enumeration
-                if (status.Value is not 0)
-                    return false;
-            }
-
-            fixed (byte* bufferPtr = buffer)
-            {
-                var entry = (FILE_DIRECTORY_INFORMATION*)bufferPtr;
-                while (true)
-                {
-                    names.Add(new string(entry->FileName.AsSpan((int)(entry->FileNameLength / sizeof(char)))));
-
-                    if (entry->NextEntryOffset is 0)
-                        break;
-
-                    entry = (FILE_DIRECTORY_INFORMATION*)((byte*)entry + entry->NextEntryOffset);
-                }
-            }
-
-            return true;
+            // STATUS_NO_MORE_FILES and any other non-success status end the enumeration
+            if (status.Value is not 0)
+                return false;
         }
-        finally
+
+        fixed (byte* bufferPtr = buffer)
         {
-            if (handleAcquired)
+            var entry = (FILE_DIRECTORY_INFORMATION*)bufferPtr;
+            while (true)
             {
-                _handle.DangerousRelease();
+                names.Add(new string(entry->FileName.AsSpan((int)(entry->FileNameLength / sizeof(char)))));
+
+                if (entry->NextEntryOffset is 0)
+                    break;
+
+                entry = (FILE_DIRECTORY_INFORMATION*)((byte*)entry + entry->NextEntryOffset);
             }
         }
+
+        return true;
     }
 
     public void Dispose()

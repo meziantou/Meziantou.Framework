@@ -19,7 +19,13 @@ internal static class NativeMethods
 
     internal static unsafe HResult PrjStartVirtualizing(string virtualizationRootPath, in ProjFs.PRJ_CALLBACKS callbacks, IntPtr instanceContext, in ProjFs.PRJ_STARTVIRTUALIZING_OPTIONS options, out ProjFSSafeHandle? namespaceVirtualizationContext)
     {
-        var hr = ToHResult(PInvoke.PrjStartVirtualizing(virtualizationRootPath, in callbacks, (void*)instanceContext, options, out var context));
+        ProjFs.PRJ_NAMESPACE_VIRTUALIZATION_CONTEXT context;
+        HResult hr;
+        fixed (char* virtualizationRootPathPointer = virtualizationRootPath)
+        fixed (ProjFs.PRJ_STARTVIRTUALIZING_OPTIONS* optionsPointer = &options)
+        {
+            hr = ToHResult(PInvoke.PrjStartVirtualizing(virtualizationRootPathPointer, in callbacks, (void*)instanceContext, optionsPointer, &context));
+        }
 
         // Only take ownership when the call succeeded. On failure the out parameter is not a
         // handle the driver ever gave out, and wrapping it leaves the instance looking started.

@@ -64,10 +64,39 @@ internal static class JpegIdct
     /// <param name="stride">The distance between two sample rows.</param>
     public static void TransformDcOnly(long dequantizedDc, Span<byte> destination, int stride)
     {
-        var value = (byte)Math.Clamp(((dequantizedDc + 4) >> 3) + 128, 0, 255);
+        // Each row is one 8-byte store of the sample repeated; the bounds are checked once
+        ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, (7 * stride) + 8);
+        var samples = (ulong)Math.Clamp(((dequantizedDc + 4) >> 3) + 128, 0, 255) * 0x0101_0101_0101_0101UL;
+        ref var row = ref unsafe(MemoryMarshal.GetReference(destination));
         for (var y = 0; y < 8; y++)
         {
-            destination.Slice(y * stride, 8).Fill(value);
+            unsafe { Unsafe.WriteUnaligned(ref Unsafe.Add(ref row, y * stride), samples); }
+        }
+    }
+
+    /// <summary>Clears the 64 coefficients of a block.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void ClearBlock(double[] block)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(block.Length, 64);
+        ref var start = ref unsafe(MemoryMarshal.GetArrayDataReference(block));
+        if (Vector512.IsHardwareAccelerated)
+        {
+            for (var i = 0; i < 64; i += 8)
+            {
+                unsafe { Vector512<double>.Zero.StoreUnsafe(ref start, (nuint)i); }
+            }
+        }
+        else if (Vector256.IsHardwareAccelerated)
+        {
+            for (var i = 0; i < 64; i += 4)
+            {
+                unsafe { Vector256<double>.Zero.StoreUnsafe(ref start, (nuint)i); }
+            }
+        }
+        else
+        {
+            block.AsSpan(0, 64).Clear();
         }
     }
 

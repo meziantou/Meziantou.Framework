@@ -229,7 +229,7 @@ internal abstract class JpegScanDecoder
             {
                 block[0] = dc * (double)quantization[0];
                 TransformScaledBlock(component, offset, block, (long)dc * quantization[0], hasAc: true, sparse);
-                Array.Clear(block);
+                JpegIdct.ClearBlock(block);
             }
             else
             {
@@ -251,7 +251,7 @@ internal abstract class JpegScanDecoder
                 JpegIdct.Transform(block, component.Samples.AsSpan(offset), component.Stride, sparse);
             }
 
-            Array.Clear(block);
+            JpegIdct.ClearBlock(block);
         }
         else if (component.Precision > 8)
         {

@@ -128,10 +128,10 @@ internal sealed class JpegFrameComponent : IDisposable
     public int CoefficientBlocksPerLine => _coefficientBlocksPerLine;
 
     /// <summary>Gets the samples of the plane (bands in ring order), for a precision of 8 bits.</summary>
-    public byte[] Samples => (_plane ?? throw new InvalidOperationException("The JPEG component plane is not allocated.")).RawBuffer;
+    public byte[] Samples => (_plane ?? ThrowPlaneNotAllocated()).RawBuffer;
 
     /// <summary>Gets the samples of the plane (bands in ring order), for a precision other than 8 bits.</summary>
-    public Span<ushort> DeepSamples => unsafe(MemoryMarshal.Cast<byte, ushort>((_plane ?? throw new InvalidOperationException("The JPEG component plane is not allocated.")).RawBuffer.AsSpan()));
+    public Span<ushort> DeepSamples => unsafe(MemoryMarshal.Cast<byte, ushort>((_plane ?? ThrowPlaneNotAllocated()).RawBuffer.AsSpan()));
 
     /// <summary>Sets the sampling geometry of the component.</summary>
     /// <param name="frameWidth">The width of the frame.</param>
@@ -265,6 +265,9 @@ internal sealed class JpegFrameComponent : IDisposable
 
     /// <summary>Gets a sample row of a precision other than 8 bits, at most <see cref="Width"/> valid samples.</summary>
     public ReadOnlySpan<ushort> GetDeepRow(int row) => DeepSamples.Slice(GetRowOffset(row), Width);
+
+    // Out of line, so that the accessors of the plane are inlined
+    private static PooledBuffer ThrowPlaneNotAllocated() => throw new InvalidOperationException("The JPEG component plane is not allocated.");
 
     /// <summary>Releases the plane, keeping the coefficients of a progressive frame.</summary>
     public void ReleasePlane()

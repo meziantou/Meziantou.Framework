@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using System.Numerics;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -110,29 +111,34 @@ internal sealed class ExrPiz : IDisposable
         var words = unsafe(MemoryMarshal.Cast<byte, ushort>(_words.Span[..source.Length]));
         CopyPlanes(words, source, default, default, layout, toPlanes: true);
 
-        // The bitmap of the values that occur, without 0 (always present)
-        var bitmap = _bitmap.Span;
-        bitmap.Clear();
+        // The values that occur are marked in the table (each word a store, not a read-modify-write of a bitmap byte that
+        // the next word may share), then the bitmap is built from the marks and the table gets the rank of each value
+        var table = Table;
+        _tableDirtyEnd = table.Length;
+        table.Clear();
+        table[0] = 1;
         foreach (var word in words)
         {
-            bitmap[word >> 3] |= (byte)(1 << (word & 7));
+            table[word] = 1;
+        }
+
+        var bitmap = _bitmap.Span;
+        var rank = 0;
+        for (var i = 0; i < bitmap.Length; i++)
+        {
+            var marks = table.Slice(i * 8, 8);
+            var bits = ~Vector128.Equals(Vector128.Create<ushort>(marks), Vector128<ushort>.Zero).ExtractMostSignificantBits() & 0xFF;
+            bitmap[i] = (byte)bits;
+            while (bits != 0)
+            {
+                marks[BitOperations.TrailingZeroCount(bits)] = (ushort)rank++;
+                bits &= bits - 1;
+            }
         }
 
         bitmap[0] &= 0xFE;
         var first = bitmap.IndexOfAnyExcept((byte)0);
         var last = bitmap.LastIndexOfAnyExcept((byte)0);
-
-        // The forward table: the rank of each value
-        var table = Table;
-        _tableDirtyEnd = table.Length;
-        var rank = 0;
-        for (var v = 0; v < 65536; v++)
-        {
-            if (v == 0 || (bitmap[v >> 3] & (1 << (v & 7))) != 0)
-            {
-                table[v] = (ushort)rank++;
-            }
-        }
 
         var maxIndex = rank - 1;
         for (var i = 0; i < words.Length; i++)

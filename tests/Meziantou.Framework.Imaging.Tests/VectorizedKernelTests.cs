@@ -831,6 +831,52 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void ExrWaveletMatchesTheScalarReference()
+    {
+        var random = new Random(4130);
+        foreach (var (nx, ny) in new[] { (1, 1), (16, 2), (17, 3), (31, 5), (32, 32), (33, 16), (48, 7), (100, 9), (2048, 2) })
+        {
+            foreach (var xStride in new[] { 1, 2 })
+            {
+                foreach (var fourteenBits in new[] { true, false })
+                {
+                    // Words of the 14-bit range or of any value, with an offset and a row stride larger than a row
+                    var offset = random.Next(3);
+                    var yStride = (nx * xStride) + random.Next(3);
+                    var words = new ushort[offset + (ny * yStride) + 1];
+                    for (var i = 0; i < words.Length; i++)
+                    {
+                        words[i] = (ushort)(fourteenBits ? random.Next(1 << 14) : random.Next(1 << 16));
+                    }
+
+                    var expected = (ushort[])words.Clone();
+                    var actual = (ushort[])words.Clone();
+                    ExrWavelet.EncodeScalar(expected, offset, nx, xStride, ny, yStride, fourteenBits);
+                    ExrWavelet.Encode(actual, offset, nx, xStride, ny, yStride, fourteenBits);
+                    Assert.Equal(expected, actual);
+
+                    // The coefficients of any value, and back to the words
+                    for (var i = 0; i < words.Length; i += 7)
+                    {
+                        expected[i] = (ushort)random.Next(1 << 16);
+                    }
+
+                    actual = (ushort[])expected.Clone();
+                    ExrWavelet.DecodeScalar(expected, offset, nx, xStride, ny, yStride, fourteenBits);
+                    ExrWavelet.Decode(actual, offset, nx, xStride, ny, yStride, fourteenBits);
+                    Assert.Equal(expected, actual);
+
+                    actual = (ushort[])words.Clone();
+                    ExrWavelet.Encode(actual, offset, nx, xStride, ny, yStride, fourteenBits);
+                    ExrWavelet.Decode(actual, offset, nx, xStride, ny, yStride, fourteenBits);
+                    Assert.Equal(words, actual);
+                }
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void JpegInverseDctMatchesTheScalarReferenceBitForBit()
     {
         var random = new Random(20);

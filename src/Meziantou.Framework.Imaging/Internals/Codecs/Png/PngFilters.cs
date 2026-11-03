@@ -32,8 +32,8 @@ internal static class PngFilters
     /// With 128-bit hardware vector support, Up adds whole vectors; Sub reconstructs 16 bytes per step as a prefix sum
     /// inside the vector (modulo 256 additions are associative); Average and Paeth reconstruct one pixel per step for
     /// pixels of 3, 4, 6 and 8 bytes: the bytes of a pixel only depend on the previous pixel, so they are computed together
-    /// in the lanes of one vector (16-bit lanes, whose intermediate values exceed a byte). For pixels of 1 and 2 bytes,
-    /// Paeth runs a branch-free scalar loop.
+    /// in the lanes of one vector (16-bit lanes, whose intermediate values exceed a byte; on Arm64, Average stays in byte
+    /// lanes with a halving add). For pixels of 1 and 2 bytes, Paeth runs a branch-free scalar loop.
     /// The result is identical to <see cref="UnfilterScalar(byte, Span{byte}, ReadOnlySpan{byte}, int)"/>, the reference.
     /// </remarks>
     public static void Unfilter(byte filterType, Span<byte> row, ReadOnlySpan<byte> previous, int bytesPerPixel)
@@ -597,7 +597,19 @@ internal static class PngFilters
         var step = (nuint)TSize.Value;
         var last = (nuint)(row.Length - Vector128<byte>.Count);
         nuint i = 0;
-        if (filterType == Average)
+        if (filterType == Average && AdvSimd.IsSupported)
+        {
+            // The halving add computes floor((left + above) / 2) in byte lanes: two operations per pixel on the chain of "left"
+            var left = Vector128<byte>.Zero;
+            for (; i <= last; i += step)
+            {
+                var b = unsafe(Vector128.LoadUnsafe(ref above, i));
+                var x = unsafe(Vector128.LoadUnsafe(ref current, i));
+                left = x + AdvSimd.FusedAddHalving(left, b);
+                StorePixel<TSize>(ref unsafe(Unsafe.Add(ref current, i)), left);
+            }
+        }
+        else if (filterType == Average)
         {
             // floor((left + above) / 2) needs 9 bits: 16-bit lanes, the sum reduced modulo 256 before it is the next "left"
             var byteMask = Vector128.Create((ushort)0xFF);

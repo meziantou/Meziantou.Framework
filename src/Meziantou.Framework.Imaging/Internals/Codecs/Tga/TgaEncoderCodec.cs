@@ -180,6 +180,12 @@ internal sealed class TgaEncoderCodec : ImageEncoderCodec
         /// <summary>Converts one source row to the stored samples (blue, green and red for 24-bit pixels) in <paramref name="stored"/>.</summary>
         private ReadOnlySpan<byte> ConvertRow(ReadOnlySpan<byte> source, Span<byte> stored)
         {
+            if (_workFormat == PixelFormat.Bgra32 && _sourceFormat == PixelFormat.Rgba32)
+            {
+                PixelConverter.SwapRedAndBlue32(source, stored);
+                return stored;
+            }
+
             if (_workFormat != PixelFormat.Rgb24)
             {
                 PixelConverter.ConvertRow(_sourceFormat, source, _workFormat, stored, background: null, ImageFormat.Tga);

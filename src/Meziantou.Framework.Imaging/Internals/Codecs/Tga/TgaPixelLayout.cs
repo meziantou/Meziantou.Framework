@@ -165,7 +165,7 @@ internal sealed class TgaPixelLayout
                 default:
                     if (hasAlpha)
                     {
-                        PixelConverter.ConvertRow(PixelFormat.Bgra32, stored[..(width * 4)], PixelFormat.Rgba32, destination);
+                        PixelConverter.SwapRedAndBlue32(stored[..(width * 4)], destination);
                     }
                     else
                     {

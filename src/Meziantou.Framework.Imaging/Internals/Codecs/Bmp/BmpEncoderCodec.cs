@@ -516,7 +516,11 @@ internal sealed class BmpEncoderCodec : ImageEncoderCodec
                 CancellationToken.ThrowIfCancellationRequested();
                 var source = lease.GetRowBytes(GetDisplayRow(_row))[..(_width * bytesPerPixel)];
                 var destination = output.GetSpan(_rowLength);
-                if (_layout == BmpPixelLayout.Bgra32)
+                if (_layout == BmpPixelLayout.Bgra32 && _sourceFormat == PixelFormat.Rgba32)
+                {
+                    PixelConverter.SwapRedAndBlue32(source, destination);
+                }
+                else if (_layout == BmpPixelLayout.Bgra32)
                 {
                     PixelConverter.ConvertRow(_sourceFormat, source, PixelFormat.Bgra32, destination[..samples], background: null, ImageFormat.Bmp);
                 }

@@ -3243,6 +3243,33 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void RedBlueExchangeOf32BitPixelsMatchesTheScalarReference()
+    {
+        // Lengths around the 16-, 32- and 64-byte steps (4, 8 and 16 pixels)
+        var random = new Random(3205);
+        for (var pixels = 0; pixels <= 80; pixels++)
+        {
+            var source = new byte[pixels * 4];
+            random.NextBytes(source);
+            var expected = new Bgra32[pixels];
+            PixelConverter.ConvertRowScalar<Rgba32, Bgra32>(unsafe(System.Runtime.InteropServices.MemoryMarshal.Cast<byte, Rgba32>(source)), expected);
+            var expectedBytes = unsafe(System.Runtime.InteropServices.MemoryMarshal.AsBytes(expected.AsSpan())).ToArray();
+
+            // A longer destination keeps its other bytes
+            var actual = new byte[source.Length + 5];
+            Array.Fill(actual, (byte)0xA5);
+            PixelConverter.SwapRedAndBlue32(source, actual);
+            Assert.Equal(expectedBytes, actual[..source.Length]);
+            Assert.All(actual[source.Length..], value => Assert.Equal(0xA5, value));
+
+            // In place
+            PixelConverter.SwapRedAndBlue32(source, source);
+            Assert.Equal(expectedBytes, source);
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void SwapRedAndBlue24ToOpaque32MatchesThePixelDefinition()
     {
         // Lengths around the 16-, 32- and 64-byte loads (4, 8 and 16 pixels per step), and a longer destination that keeps its other bytes

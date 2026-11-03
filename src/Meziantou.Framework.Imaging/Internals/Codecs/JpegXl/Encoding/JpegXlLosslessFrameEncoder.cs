@@ -1104,7 +1104,7 @@ internal sealed class JpegXlLosslessFrameEncoder
 
         public static Settings Get(int effort) => effort switch
         {
-            <= 3 => new(16 * 1024, [6, 7, 9, 10, 11, 12], [GradientPredictor, 0, 1, 2], 32, 16, 48, 32, false, 0, 1024),
+            <= 3 => new(16 * 1024, [6, 7, 9, 10, 11, 12], [GradientPredictor, 0, 1, 2], 32, 16, 48, 32, false, 0, 2048),
             4 => new(32 * 1024, [4, 5, 6, 7, 9, 10, 11, 12, 16, 17, 18, 19], [GradientPredictor, 0, 1, 2, 4], 64, 32, 40, 64, true, 0, 2048),
             5 => new(64 * 1024, [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 18, 19], [GradientPredictor, 0, 1, 2, 4], 128, 32, 40, 128, true, 8, 4096),
             6 => new(96 * 1024, [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 18, 19], [GradientPredictor, 0, 1, 2, 4], 192, 48, 36, 256, true, 16, 4096),

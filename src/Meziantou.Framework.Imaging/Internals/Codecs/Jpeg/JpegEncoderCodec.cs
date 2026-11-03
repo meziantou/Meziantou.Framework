@@ -1841,7 +1841,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             var position = 0;
             WriteRestartIfDue(index, span, ref position);
             var writer = new JpegBlockBitWriter(span, position, _bits);
-            if (!stored && JpegForwardDct.UsesAvx512)
+            if (!stored && (JpegForwardDct.UsesAvx512 || AdvSimd.Arm64.IsSupported))
             {
                 TransformAndEncodeMcus(count, ref writer);
             }
@@ -1868,7 +1868,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         /// <summary>
         /// Transforms the blocks of <paramref name="count"/> MCUs of the loaded row of the only worker from <see cref="_mcuX"/>
         /// into 16-bit coefficients (<see cref="TransformBlock"/>), then codes them: the transforms of consecutive blocks
-        /// overlap, which they do not when each block is coded right after its transform (measured with AVX-512).
+        /// overlap, which they do not when each block is coded right after its transform (measured with AVX-512 and Arm64).
         /// </summary>
         private void TransformAndEncodeMcus(int count, ref JpegBlockBitWriter writer)
         {
@@ -1921,15 +1921,6 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
 
         private void TransformAndEncodeBlock(TransformWorker worker, ReadOnlySpan<float> samples, int stride, ref JpegBlockBitWriter writer, int component, ReadOnlySpan<double> divisors, JpegHuffmanEncoder dc, JpegHuffmanEncoder ac)
         {
-            if (AdvSimd.Arm64.IsSupported)
-            {
-                // The 16-bit coefficients in zig-zag order from table lookups, whose non-zero mask is cheaper
-                var stored = worker.StoredCoefficients.AsSpan();
-                JpegForwardDct.TransformAndQuantizeArm64(samples, stride, divisors, worker.Scratch, stored);
-                EncodeBlock<short>(ref writer, stored, component, dc, ac);
-                return;
-            }
-
             var coefficients = worker.Coefficients.AsSpan();
             JpegForwardDct.TransformAndQuantize(samples, stride, divisors, worker.Scratch, coefficients);
             EncodeBlock<int>(ref writer, coefficients, component, dc, ac);
@@ -2203,8 +2194,6 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             public double[] Scratch { get; } = new double[64];
 
             public int[] Coefficients { get; } = new int[64];
-
-            public short[] StoredCoefficients { get; } = new short[64];
 
             /// <summary>Gets the coefficients of a run of blocks, transformed before they are coded (see <see cref="TransformAndEncodeMcus"/>).</summary>
             /// <param name="blocks">The number of blocks.</param>

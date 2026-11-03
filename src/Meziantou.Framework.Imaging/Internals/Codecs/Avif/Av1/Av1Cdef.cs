@@ -24,6 +24,9 @@ internal static class Av1Cdef
     // The taps of a sample: 4 primary taps and 8 secondary taps
     private const int TapCount = 12;
 
+    // The entries of the offsets of the taps of a direction: the 12 offsets, then their lowest and highest values
+    private const int TapStride = TapCount + 2;
+
     // The value of the samples outside the frame in the window of a block on an edge of the frame
     private const ushort Unavailable = ushort.MaxValue;
 
@@ -91,6 +94,19 @@ internal static class Av1Cdef
         var flags = state.Flags;
         var miCols = header.MiCols;
         var miRows = header.MiRows;
+
+        // The offsets of the taps of the interior blocks of each plane in each direction, and their lowest and highest values
+        Span<int> taps = stackalloc int[3 * 8 * TapStride];
+        for (var plane = 0; plane < planeCount; plane++)
+        {
+            for (var dir = 0; dir < 8; dir++)
+            {
+                var entry = taps.Slice(((plane * 8) + dir) * TapStride, TapStride);
+                GetTapOffsets(entry[..TapCount], frame.GetPlane(plane).Stride, dir);
+                GetTapExtent(entry[..TapCount], out entry[TapCount], out entry[TapCount + 1]);
+            }
+        }
+
         for (var r = rowStart; r < rowEnd; r += 2)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -166,7 +182,7 @@ internal static class Av1Cdef
                 var varStr = (variance >> 6) is not 0 ? Math.Min(BitOperations.Log2((uint)(variance >> 6)), 12) : 0;
                 priStr = variance is not 0 ? ((priStr * (4 + varStr)) + 8) >> 4 : 0;
                 var damping = header.CdefDamping + coeffShift;
-                FilterBlock(luma, source[..sourceLength], r, c, 0, 0, miRows, miCols, priStr, secStr, damping, dir, coeffShift);
+                FilterBlock(luma, source[..sourceLength], r, c, 0, 0, miRows, miCols, priStr, secStr, damping, dir, coeffShift, taps.Slice(dir * TapStride, TapStride));
                 if (planeCount is 1)
                     continue;
 
@@ -176,7 +192,7 @@ internal static class Av1Cdef
                 damping = header.CdefDamping + coeffShift - 1;
                 for (var plane = 1; plane < 3; plane++)
                 {
-                    FilterBlock(frame.GetPlane(plane), source.Slice(plane * sourceLength, sourceLength), r, c, sequence.SubsamplingX, sequence.SubsamplingY, miRows, miCols, priStr, secStr, damping, dir, coeffShift);
+                    FilterBlock(frame.GetPlane(plane), source.Slice(plane * sourceLength, sourceLength), r, c, sequence.SubsamplingX, sequence.SubsamplingY, miRows, miCols, priStr, secStr, damping, dir, coeffShift, taps.Slice(((plane * 8) + dir) * TapStride, TapStride));
                 }
             }
         }
@@ -403,7 +419,8 @@ internal static class Av1Cdef
     }
 
     // Section 7.15.3 "CDEF filter process"
-    private static void FilterBlock(Av1Plane plane, ReadOnlySpan<ushort> source, int r, int c, int subX, int subY, int miRows, int miCols, int priStr, int secStr, int damping, int dir, int coeffShift)
+    // taps: the offsets of the taps of an interior block in the direction, then their lowest and highest values
+    private static void FilterBlock(Av1Plane plane, ReadOnlySpan<ushort> source, int r, int c, int subX, int subY, int miRows, int miCols, int priStr, int secStr, int damping, int dir, int coeffShift, ReadOnlySpan<int> taps)
     {
         // Without strength the sum of the taps is zero, and the sample is within the range of its neighbors: it is unchanged
         if (priStr is 0 && secStr is 0)
@@ -423,7 +440,7 @@ internal static class Av1Cdef
         var planeHeight = (miRows * Av1Constants.MiSize) >> subY;
         if (x0 >= 2 && y0 >= 2 && x0 + w + 2 <= planeWidth && y0 + h + 2 <= planeHeight)
         {
-            FilterInteriorBlock(samples.Slice((y0 * stride) + x0), source[(x0 - 2)..], stride, w, h, priStr, secStr, damping, dir, priTaps, secTaps);
+            FilterInteriorBlock(samples.Slice((y0 * stride) + x0), source[(x0 - 2)..], stride, w, h, priStr, secStr, damping, taps, priTaps, secTaps);
             return;
         }
 
@@ -587,13 +604,11 @@ internal static class Av1Cdef
 
     // The filter of a block whose taps are all inside the frame. The window starts two rows above and two samples to the
     // left of the block: the block is at row 2 and column 2 of the window
-    private static void FilterInteriorBlock(Span<ushort> destination, ReadOnlySpan<ushort> window, int stride, int w, int h, int priStr, int secStr, int damping, int dir, ReadOnlySpan<byte> priTaps, ReadOnlySpan<byte> secTaps)
+    private static void FilterInteriorBlock(Span<ushort> destination, ReadOnlySpan<ushort> window, int stride, int w, int h, int priStr, int secStr, int damping, ReadOnlySpan<int> taps, ReadOnlySpan<byte> priTaps, ReadOnlySpan<byte> secTaps)
     {
-        Span<int> offsets = stackalloc int[TapCount];
-        GetTapOffsets(offsets, stride, dir);
         var priShift = priStr is 0 ? 0 : Math.Max(0, damping - BitOperations.Log2((uint)priStr));
         var secShift = secStr is 0 ? 0 : Math.Max(0, damping - BitOperations.Log2((uint)secStr));
-        FilterInteriorRows(destination, window, stride, w, h, offsets, priStr, secStr, priShift, secShift, priTaps[0], priTaps[1], secTaps[0], secTaps[1]);
+        FilterInteriorRows(destination, window, stride, w, h, taps[..TapCount], taps[TapCount], taps[TapCount + 1], priStr, secStr, priShift, secShift, priTaps[0], priTaps[1], secTaps[0], secTaps[1]);
     }
 
     /// <summary>
@@ -607,11 +622,24 @@ internal static class Av1Cdef
     /// </remarks>
     internal static void FilterInteriorRows(Span<ushort> destination, ReadOnlySpan<ushort> window, int stride, int w, int h, ReadOnlySpan<int> offsets, int priStr, int secStr, int priShift, int secShift, int priTap0, int priTap1, int secTap0, int secTap1)
     {
-        if (Vector128.IsHardwareAccelerated && w is 8 && AreTapsInside(destination, window, stride, w, h, offsets))
+        if (offsets.Length is not TapCount)
+        {
+            FilterInteriorRowsScalar(destination, window, stride, w, h, offsets, priStr, secStr, priShift, secShift, priTap0, priTap1, secTap0, secTap1);
+            return;
+        }
+
+        GetTapExtent(offsets, out var lowest, out var highest);
+        FilterInteriorRows(destination, window, stride, w, h, offsets, lowest, highest, priStr, secStr, priShift, secShift, priTap0, priTap1, secTap0, secTap1);
+    }
+
+    // FilterInteriorRows for the 12 offsets of the taps, whose lowest and highest values are given
+    private static void FilterInteriorRows(Span<ushort> destination, ReadOnlySpan<ushort> window, int stride, int w, int h, ReadOnlySpan<int> offsets, int lowest, int highest, int priStr, int secStr, int priShift, int secShift, int priTap0, int priTap1, int secTap0, int secTap1)
+    {
+        if (Vector128.IsHardwareAccelerated && w is 8 && AreTapsInside(destination, window, stride, w, h, lowest, highest))
         {
             FilterInteriorRows8Vector(destination, window, stride, h, offsets, priStr, secStr, priShift, secShift, priTap0, priTap1, secTap0, secTap1);
         }
-        else if (Vector128.IsHardwareAccelerated && w is 4 && AreTapsInside(destination, window, stride, w, h, offsets))
+        else if (Vector128.IsHardwareAccelerated && w is 4 && AreTapsInside(destination, window, stride, w, h, lowest, highest))
         {
             FilterInteriorRowsVector(destination, window, stride, w, h, offsets, priStr, secStr, priShift, secShift, priTap0, priTap1, secTap0, secTap1);
         }
@@ -621,7 +649,7 @@ internal static class Av1Cdef
         }
     }
 
-    /// <summary>The scalar reference of <see cref="FilterInteriorRows"/>.</summary>
+    /// <summary>The scalar reference of <see cref="FilterInteriorRows(Span{ushort}, ReadOnlySpan{ushort}, int, int, int, ReadOnlySpan{int}, int, int, int, int, int, int, int, int)"/>.</summary>
     internal static void FilterInteriorRowsScalar(Span<ushort> destination, ReadOnlySpan<ushort> window, int stride, int w, int h, ReadOnlySpan<int> offsets, int priStr, int secStr, int priShift, int secShift, int priTap0, int priTap1, int secTap0, int secTap1)
     {
         for (var i = 0; i < h; i++)
@@ -657,20 +685,25 @@ internal static class Av1Cdef
         }
     }
 
-    // Whether every sample that the vector rows read and write is inside the spans (they are then accessed without checks)
-    private static bool AreTapsInside(Span<ushort> destination, ReadOnlySpan<ushort> window, int stride, int w, int h, ReadOnlySpan<int> offsets)
+    // The lowest and the highest offsets of the taps, and 0 (the center)
+    private static void GetTapExtent(ReadOnlySpan<int> offsets, out int lowest, out int highest)
     {
-        var lowest = 0;
-        var highest = 0;
+        lowest = 0;
+        highest = 0;
         foreach (var offset in offsets)
         {
             lowest = Math.Min(lowest, offset);
             highest = Math.Max(highest, offset);
         }
+    }
 
+    // Whether every sample that the vector rows read and write is inside the spans (they are then accessed without checks), for
+    // 12 taps whose offsets are from lowest to highest
+    private static bool AreTapsInside(Span<ushort> destination, ReadOnlySpan<ushort> window, int stride, int w, int h, int lowest, int highest)
+    {
         var firstCenter = (2 * stride) + 2;
         var lastCenter = ((h + 1) * stride) + 2 + (w - 1);
-        return offsets.Length == TapCount && h > 0 && stride >= w && firstCenter + lowest >= 0 && lastCenter + highest < window.Length && ((h - 1) * stride) + w <= destination.Length;
+        return h > 0 && stride >= w && firstCenter + lowest >= 0 && lastCenter + highest < window.Length && ((h - 1) * stride) + w <= destination.Length;
     }
 
     private static void FilterInteriorRowsVector(Span<ushort> destination, ReadOnlySpan<ushort> window, int stride, int w, int h, ReadOnlySpan<int> offsets, int priStr, int secStr, int priShift, int secShift, int priTap0, int priTap1, int secTap0, int secTap1)

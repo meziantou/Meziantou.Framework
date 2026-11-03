@@ -1008,7 +1008,7 @@ internal static class JpegXlModularDecoder
                     row[0] = Sample(decoder.Read(reader, context, distanceMultiplier), multiplier, offset + JpegXlModularTransform.Predict(4, above[0], above[0], 0, above[0], 0, 0, 0, 0));
                     for (var x = 1; x < width; x++)
                     {
-                        row[x] = Sample(decoder.Read(reader, context, distanceMultiplier), multiplier, offset + JpegXlModularTransform.Predict(4, row[x - 1], above[x], 0, above[x - 1], 0, 0, 0, 0));
+                        row[x] = Sample(decoder.Read(reader, context, distanceMultiplier), multiplier, offset + JpegXlModularTransform.SelectWithoutBranch(row[x - 1], above[x], above[x - 1]));
                     }
 
                     break;
@@ -1017,7 +1017,7 @@ internal static class JpegXlModularDecoder
                     row[0] = Sample(decoder.Read(reader, context, distanceMultiplier), multiplier, offset + JpegXlModularTransform.ClampedGradient(above[0], above[0], above[0]));
                     for (var x = 1; x < width; x++)
                     {
-                        row[x] = Sample(decoder.Read(reader, context, distanceMultiplier), multiplier, offset + JpegXlModularTransform.ClampedGradient(row[x - 1], above[x], above[x - 1]));
+                        row[x] = Sample(decoder.Read(reader, context, distanceMultiplier), multiplier, offset + JpegXlModularTransform.ClampedGradientWithoutBranch(row[x - 1], above[x], above[x - 1]));
                     }
 
                     break;

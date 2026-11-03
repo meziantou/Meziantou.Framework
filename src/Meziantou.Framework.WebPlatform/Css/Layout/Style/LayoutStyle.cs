@@ -978,6 +978,22 @@ internal sealed class LayoutStyle
                         break;
                     }
 
+                    // The legacy values -webkit-left, -webkit-right and -webkit-center of text-align also align the block-level
+                    // descendants, as in the browsers (WPT css/css-align/blocks/justify-self-text-align-2.html): the element where
+                    // the value is set (its parent has another value) aligns them
+                    if (style.GetComputedValue("text-align-all") is ['-', ..] textAlign && style.Parent?.GetComputedValue("text-align-all") != textAlign)
+                    {
+                        alignment = textAlign switch
+                        {
+                            "-webkit-left" => DescendantAlignment.Left,
+                            "-webkit-right" => DescendantAlignment.Right,
+                            "-webkit-center" => DescendantAlignment.Center,
+                            _ => DescendantAlignment.None,
+                        };
+                        if (alignment != DescendantAlignment.None)
+                            break;
+                    }
+
                     // As in the browsers, the alignment does not cross a table: they reset the text-align of the tables that
                     // inherit their -webkit-center, -webkit-left or -webkit-right value (the one of the center elements and of
                     // the align attributes) to start

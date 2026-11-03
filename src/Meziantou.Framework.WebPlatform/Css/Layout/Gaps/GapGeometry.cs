@@ -89,6 +89,13 @@ internal struct GapIntersection
     /// <summary>The flow of the crossing gap (see <see cref="GapLine.FlowKey"/>).</summary>
     public int FlowKey;
 
+    /// <summary>
+    /// Whether the intersection is not a gap junction but a point of a gap of a grid lanes container where the area of one of its
+    /// sides becomes empty or occupied (the end of the last item of a track, the start of a spanning item): the decorations continue
+    /// through it when they are visible on both sides.
+    /// </summary>
+    public bool IsOccupancyChange;
+
     public static GapIntersection Edge(double offset, GapSegmentState state = GapSegmentState.None)
         => new() { Offset = offset, State = state, IsEdge = true, CrossGapIndex = -1 };
 

@@ -49,10 +49,10 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 25,610 | 29,691 | 2,570 | 94% |
+| [Stable](#stable-tests) | 25,648 | 29,691 | 2,570 | 95% |
 | [Tentative](#tentative-tests) | 1,175 | 3,074 | 847 | 53% |
-| [Reftests](#reftests) | 27,798 | 29,220 | 180 | 96% |
-| **All** | **54,583** | **61,985** | **3,597** | **93%** |
+| [Reftests](#reftests) | 27,818 | 29,220 | 180 | 96% |
+| **All** | **54,641** | **61,985** | **3,597** | **94%** |
 
 ## Stable tests
 
@@ -96,7 +96,7 @@ The features of `REQUIRES`:
 | [`cpu-performance`](cpu-performance.md) | 0 | 1 | 1 | – |
 | [`credential-management`](credential-management.md) | 0 | 16 | 16 | – |
 | [`css/compositing`](css/compositing.md) | 13 | 15 | 0 | 87% |
-| [`css/css-align`](css/css-align.md) | 211 | 241 | 0 | 88% |
+| [`css/css-align`](css/css-align.md) | 241 | 241 | 0 | 100% |
 | [`css/css-anchor-position`](css/css-anchor-position.md) | 259 | 262 | 0 | 99% |
 | [`css/css-animations`](css/css-animations.md) | 94 | 98 | 0 | 96% |
 | [`css/css-backgrounds`](css/css-backgrounds.md) | 127 | 132 | 0 | 96% |
@@ -116,7 +116,7 @@ The features of `REQUIRES`:
 | [`css/css-easing`](css/css-easing.md) | 11 | 13 | 0 | 85% |
 | [`css/css-env`](css/css-env.md) | 3 | 3 | 0 | 100% |
 | [`css/css-exclusions`](css/css-exclusions.md) | 0 | 8 | 8 | – |
-| [`css/css-flexbox`](css/css-flexbox.md) | 367 | 376 | 0 | 98% |
+| [`css/css-flexbox`](css/css-flexbox.md) | 375 | 376 | 0 | 99.7% |
 | [`css/css-font-loading`](css/css-font-loading.md) | 22 | 23 | 0 | 96% |
 | [`css/css-fonts`](css/css-fonts.md) | 153 | 167 | 0 | 92% |
 | [`css/css-forced-color-adjust`](css/css-forced-color-adjust.md) | 4 | 4 | 0 | 100% |
@@ -401,7 +401,7 @@ The features of `REQUIRES`:
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 317 | 330 | 0 | 96% |
 | [`xml`](xml.md) | 0 | 12 | 12 | – |
-| **Total (343 sections)** | **25,610** | **29,691** | **2,570** | **94%** |
+| **Total (343 sections)** | **25,648** | **29,691** | **2,570** | **95%** |
 
 ## Tentative tests
 
@@ -586,7 +586,7 @@ The features of `REQUIRES`:
 | [`content-security-policy`](content-security-policy.md#reftests) | 8 | 8 | 0 | 100% |
 | [`contenteditable`](contenteditable.md#reftests) | 0 | 1 | 1 | – |
 | [`css/compositing`](css/compositing.md#reftests) | 55 | 60 | 0 | 92% |
-| [`css/css-align`](css/css-align.md#reftests) | 58 | 64 | 0 | 91% |
+| [`css/css-align`](css/css-align.md#reftests) | 62 | 64 | 0 | 97% |
 | [`css/css-anchor-position`](css/css-anchor-position.md#reftests) | 236 | 241 | 0 | 98% |
 | [`css/css-animations`](css/css-animations.md#reftests) | 36 | 36 | 0 | 100% |
 | [`css/css-backgrounds`](css/css-backgrounds.md#reftests) | 701 | 719 | 1 | 98% |
@@ -602,11 +602,11 @@ The features of `REQUIRES`:
 | [`css/css-counter-styles`](css/css-counter-styles.md#reftests) | 253 | 259 | 0 | 98% |
 | [`css/css-display`](css/css-display.md#reftests) | 164 | 218 | 0 | 75% |
 | [`css/css-exclusions`](css/css-exclusions.md#reftests) | 0 | 4 | 4 | – |
-| [`css/css-flexbox`](css/css-flexbox.md#reftests) | 1,015 | 1,023 | 0 | 99% |
+| [`css/css-flexbox`](css/css-flexbox.md#reftests) | 1,018 | 1,023 | 0 | 99.5% |
 | [`css/css-font-loading`](css/css-font-loading.md#reftests) | 6 | 7 | 0 | 86% |
 | [`css/css-fonts`](css/css-fonts.md#reftests) | 359 | 385 | 1 | 93% |
 | [`css/css-forms`](css/css-forms.md#reftests) | 6 | 17 | 0 | 35% |
-| [`css/css-gaps`](css/css-gaps.md#reftests) | 526 | 544 | 0 | 97% |
+| [`css/css-gaps`](css/css-gaps.md#reftests) | 539 | 544 | 0 | 99% |
 | [`css/css-grid`](css/css-grid.md#reftests) | 1,731 | 1,767 | 0 | 98% |
 | [`css/css-highlight-api`](css/css-highlight-api.md#reftests) | 112 | 118 | 0 | 95% |
 | [`css/css-image-animation`](css/css-image-animation.md#reftests) | 0 | 22 | 22 | – |
@@ -707,4 +707,4 @@ The features of `REQUIRES`:
 | [`webgl`](webgl.md#reftests) | 0 | 2 | 2 | – |
 | [`webvtt`](webvtt.md#reftests) | 182 | 251 | 0 | 73% |
 | [`xml`](xml.md#reftests) | 0 | 3 | 3 | – |
-| **Total (130 sections)** | **27,798** | **29,220** | **180** | **96%** |
+| **Total (130 sections)** | **27,818** | **29,220** | **180** | **96%** |

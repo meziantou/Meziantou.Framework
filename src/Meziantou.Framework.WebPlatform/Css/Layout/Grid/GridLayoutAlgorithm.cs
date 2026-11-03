@@ -159,10 +159,12 @@ internal sealed partial class GridLayoutAlgorithm
     /// <summary>
     /// Returns whether the intrinsic inline sizes of a box depend on its definite minimum and maximum block sizes: a grid container
     /// whose rows have an automatic repetition (https://drafts.csswg.org/css-grid-2/#auto-repeat), whose number gives the rows where
-    /// the items are placed (the lanes of a grid lanes container whose stacking axis is the inline axis).
+    /// the items are placed (the lanes of a grid lanes container whose stacking axis is the inline axis), or a multi-line column flex
+    /// container, whose lines break at its maximum block size.
     /// </summary>
     public static bool UsesBlockSizeLimits(ContainerBox box)
-        => box.Display.IsGridContainer && box.Kind == ContainerBoxKind.Normal && box.Style.Layout.Grid.TemplateRows.AutoRepeat is not null;
+        => box.Kind == ContainerBoxKind.Normal
+            && (box.Display.IsGridContainer && box.Style.Layout.Grid.TemplateRows.AutoRepeat is not null || box.Display.IsFlexContainer && FlexContainerProperties.Get(box) is { IsRow: false, IsMultiLine: true });
 
     /// <summary>Returns the size of the rows sized with the content box (the automatic block size of the container).</summary>
     public double ComputeRowsSize()

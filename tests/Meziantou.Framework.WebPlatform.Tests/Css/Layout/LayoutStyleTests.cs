@@ -466,6 +466,8 @@ public sealed class LayoutStyleTests : IDisposable
     [InlineData("align-items: first baseline", AlignmentKeyword.Baseline, OverflowAlignment.Default, false)]
     [InlineData("align-items: unsafe flex-end", AlignmentKeyword.FlexEnd, OverflowAlignment.Unsafe, false)]
     [InlineData("align-items: normal", AlignmentKeyword.Normal, OverflowAlignment.Default, false)]
+    [InlineData("align-items: safe normal", AlignmentKeyword.Normal, OverflowAlignment.Safe, false)]
+    [InlineData("align-items: safe flex-start", AlignmentKeyword.FlexStart, OverflowAlignment.Safe, false)]
     public void Alignment(string declarations, object keyword, object overflow, bool legacy)
         => Assert.Equal(new Alignment((AlignmentKeyword)keyword, (OverflowAlignment)overflow, legacy), GetLayout($"<div id=target style='{declarations}'></div>").Alignment.AlignItems);
 

@@ -423,7 +423,7 @@
     "reftest": "PASS"
   },
   "css/css-flexbox/align-self-016.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-flexbox/align-self-baseline-with-flex-wrap.html": {
     "total": 16
@@ -3108,16 +3108,10 @@
     "total": 1
   },
   "css/css-flexbox/getcomputedstyle/flexbox_computedstyle_align-content-flex-end.html": {
-    "total": 1,
-    "failures": {
-      "flexbox | computed style | align-content: flex-end": "FAIL"
-    }
+    "total": 1
   },
   "css/css-flexbox/getcomputedstyle/flexbox_computedstyle_align-content-flex-start.html": {
-    "total": 1,
-    "failures": {
-      "flexbox | computed style | align-content: flex-start": "FAIL"
-    }
+    "total": 1
   },
   "css/css-flexbox/getcomputedstyle/flexbox_computedstyle_align-content-space-around.html": {
     "total": 1
@@ -3132,16 +3126,10 @@
     "total": 1
   },
   "css/css-flexbox/getcomputedstyle/flexbox_computedstyle_align-items-flex-end.html": {
-    "total": 1,
-    "failures": {
-      "flexbox | computed style | align-items: flex-end": "FAIL"
-    }
+    "total": 1
   },
   "css/css-flexbox/getcomputedstyle/flexbox_computedstyle_align-items-flex-start.html": {
-    "total": 1,
-    "failures": {
-      "flexbox | computed style | align-items: flex-start": "FAIL"
-    }
+    "total": 1
   },
   "css/css-flexbox/getcomputedstyle/flexbox_computedstyle_align-items-invalid.html": {
     "total": 1
@@ -3156,16 +3144,10 @@
     "total": 1
   },
   "css/css-flexbox/getcomputedstyle/flexbox_computedstyle_align-self-flex-end.html": {
-    "total": 1,
-    "failures": {
-      "flexbox | computed style | align-self: flex-end": "FAIL"
-    }
+    "total": 1
   },
   "css/css-flexbox/getcomputedstyle/flexbox_computedstyle_align-self-flex-start.html": {
-    "total": 1,
-    "failures": {
-      "flexbox | computed style | align-self: flex-start": "FAIL"
-    }
+    "total": 1
   },
   "css/css-flexbox/getcomputedstyle/flexbox_computedstyle_align-self-invalid.html": {
     "total": 1
@@ -3312,16 +3294,10 @@
     "total": 1
   },
   "css/css-flexbox/getcomputedstyle/flexbox_computedstyle_justify-content-flex-end.html": {
-    "total": 1,
-    "failures": {
-      "flexbox | computed style | justify-content: flex-end": "FAIL"
-    }
+    "total": 1
   },
   "css/css-flexbox/getcomputedstyle/flexbox_computedstyle_justify-content-flex-start.html": {
-    "total": 1,
-    "failures": {
-      "flexbox | computed style | justify-content: flex-start": "FAIL"
-    }
+    "total": 1
   },
   "css/css-flexbox/getcomputedstyle/flexbox_computedstyle_justify-content-space-around.html": {
     "total": 1
@@ -3537,7 +3513,7 @@
     "total": 2
   },
   "css/css-flexbox/intrinsic-size/col-wrap-dynamic.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-flexbox/intrinsic-size/col-wrap-grid-item-001.html": {
     "total": 1
@@ -4095,7 +4071,7 @@
     "reftest": "PASS"
   },
   "css/css-flexbox/svg-no-natural-size-grandchild.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-flexbox/svg-root-as-flex-item-001.html": {
     "reftest": "PASS"

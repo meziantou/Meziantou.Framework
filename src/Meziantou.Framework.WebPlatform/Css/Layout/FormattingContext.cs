@@ -747,6 +747,14 @@ internal abstract class FormattingContext
                     inlineIsRatioDependent = true;
                     inlineSize = transferred;
                 }
+                else if (justification is { Alignment: AxisAlignment.Stretch, IsFitContent: false } && preferredInlineSize.BehavesAs == SizeKind.Auto && !isOrthogonal && inlineStretchFit is { } widgetStretch
+                    && box.Kind == ContainerBoxKind.Replaced && ReplacedContent.Get(context, box).Kind == ReplacedContentKind.FormControl)
+                {
+                    // https://drafts.csswg.org/css-align-3/#justify-block: justify-self: stretch stretches a block-level widget
+                    // (https://drafts.csswg.org/css-ui-4/#widget) whose width is auto, which normal does not (WPT
+                    // css/css-align/blocks/justify-self-widgets.html)
+                    inlineSize = widgetStretch;
+                }
                 else
                 {
                     // The auto margins of a block-level box that fills its containing block are 0; the size of a replaced box or of

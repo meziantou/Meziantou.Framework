@@ -52,7 +52,18 @@ internal static partial class CssPropertyRegistry
         // an overflow position before it, as for the other self positions (WPT css/css-anchor-position/anchor-center-safe.html)
         ["align-self"] = "auto | <overflow-position>? [ normal | <self-position> | anchor-center ] | stretch | <baseline-position>",
         ["justify-self"] = "auto | <overflow-position>? [ normal | <self-position> | left | right | anchor-center ] | stretch | <baseline-position>",
+
+        // https://drafts.csswg.org/css-align-3/#align-items-property: an overflow position can precede normal
+        // ([ <overflow-position>? normal ]), which the grammar of webref does not have yet (WPT css/css-align/parsing/align-items-valid.html)
+        ["align-items"] = "<overflow-position>? normal | stretch | <baseline-position> | <overflow-position>? <self-position>",
+        ["justify-items"] = "<overflow-position>? [ normal | <self-position> | left | right ] | stretch | <baseline-position> | legacy | legacy && [ left | right | center ]",
         ["container-name"] = "none | <container-name>+",
+
+        // https://drafts.csswg.org/css-text-4/#text-align-property, with the legacy values -webkit-left, -webkit-right and
+        // -webkit-center of the browsers, which also align the block-level descendants (WPT
+        // css/css-align/blocks/justify-self-text-align-2.html)
+        ["text-align"] = "start | end | left | right | center | <string> | justify | match-parent | justify-all | -webkit-left | -webkit-right | -webkit-center",
+        ["text-align-all"] = "start | end | left | right | center | <string> | justify | match-parent | -webkit-left | -webkit-right | -webkit-center",
 
         // https://drafts.csswg.org/css-display-4/#the-display-properties, with the inner display types of MathML Core, of
         // the grid lanes (CSS Grid 3) and of the CSS Layout API (https://drafts.css-houdini.org/css-layout-api-1/#layout-api-containers:

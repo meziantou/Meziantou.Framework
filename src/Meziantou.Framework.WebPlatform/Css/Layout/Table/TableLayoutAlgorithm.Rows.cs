@@ -639,11 +639,16 @@ internal sealed partial class TableLayoutAlgorithm
             return true;
         }
 
-        // The bottom of the content box of the cell before it is stretched to its rows: its automatic block size or its specified
-        // height (the cell box is at least that tall), without its block-end border and padding
+        // The bottom of the content box of the cell before it is stretched to its rows, without its block-end border and padding:
+        // the end of its contents, or the specified height of an empty cell (the cell box is at least that tall). As in the
+        // browsers, the specified height is ignored when the cell has contents without line box (WPT
+        // css/css-align/baseline-rules/synthesized-baseline-table-cell-001-ref.html)
         var edges = _writingDirection.ToLogical(fragment.Border.Add(fragment.Padding));
         var blockSize = fragment.WritingDirection.IsOrthogonalTo(_writingDirection) ? _writingDirection.ToLogical(fragment.Size).Block : fragment.IntrinsicBlockSize;
-        blockSize = Math.Max(blockSize, GetSpecifiedCellBlockSize(cell, fragment));
+        if (fragment.ChildrenSpan.IsEmpty)
+        {
+            blockSize = Math.Max(blockSize, GetSpecifiedCellBlockSize(cell, fragment));
+        }
         baseline = SynthesizeBaseline(edges.BlockStart, Math.Max(0, blockSize - edges.BlockEnd));
         return false;
     }

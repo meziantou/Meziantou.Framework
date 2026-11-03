@@ -853,6 +853,7 @@ public sealed class VectorizedKernelTests
         var random = new Random(85);
         var samples = new float[64];
         var quantization = new ushort[64];
+        var divisors = new double[64];
         var scratch = new double[64];
         var expected = new int[64];
         var actual = new int[64];
@@ -866,27 +867,21 @@ public sealed class VectorizedKernelTests
                 quantization[i] = (ushort)(round % 3 == 0 ? 1 : random.Next(1, 256));
             }
 
-            JpegForwardDct.TransformAndQuantizeScalar(samples, quantization, scratch, expected);
-            JpegForwardDct.TransformAndQuantize(samples, quantization, scratch, actual);
+            JpegForwardDct.CreateDivisors(quantization, divisors);
+            JpegForwardDct.TransformAndQuantizeScalar(samples, divisors, scratch, expected);
+            JpegForwardDct.TransformAndQuantize(samples, divisors, scratch, actual);
             Assert.Equal(expected, actual);
             if (System.Runtime.Intrinsics.Vector128.IsHardwareAccelerated)
             {
                 Array.Clear(actual);
-                JpegForwardDct.TransformAndQuantizeVector128(samples, quantization, scratch, actual);
-                Assert.Equal(expected, actual);
-            }
-
-            if (System.Numerics.Vector.IsHardwareAccelerated && System.Numerics.Vector<double>.Count is 2 or 4 or 8)
-            {
-                Array.Clear(actual);
-                JpegForwardDct.TransformAndQuantizeVector(samples, quantization, scratch, actual);
+                JpegForwardDct.TransformAndQuantizeVector128(samples, divisors, scratch, actual);
                 Assert.Equal(expected, actual);
             }
 
             if (Avx2.IsSupported)
             {
                 Array.Clear(actual);
-                JpegForwardDct.TransformAndQuantizeAvx2(samples, quantization, scratch, actual);
+                JpegForwardDct.TransformAndQuantizeAvx2(samples, divisors, scratch, actual);
                 Assert.Equal(expected, actual);
             }
         }

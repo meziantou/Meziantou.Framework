@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -300,6 +301,7 @@ internal sealed class GifLzwDecoder : IDisposable
     /// Writes the string of <paramref name="code"/> (<paramref name="length"/> indices) at the start of <paramref name="target"/>
     /// and returns its first index. The indices after the string may be overwritten (they are not written yet).
     /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static byte Expand(ReadOnlySpan<ushort> heads, ReadOnlySpan<uint> chunks, ReadOnlySpan<byte> chunkBytes, int code, Span<byte> target, int length)
     {
         // The last chunk holds 1 to 4 indices; every chunk before it is full

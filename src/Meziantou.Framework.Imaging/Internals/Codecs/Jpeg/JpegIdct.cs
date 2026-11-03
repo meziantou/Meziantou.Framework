@@ -62,6 +62,7 @@ internal static class JpegIdct
     /// <param name="dequantizedDc">The DC coefficient multiplied by its quantization value.</param>
     /// <param name="destination">The first sample of the block.</param>
     /// <param name="stride">The distance between two sample rows.</param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void TransformDcOnly(long dequantizedDc, Span<byte> destination, int stride)
     {
         // Each row is one 8-byte store of the sample repeated; the bounds are checked once
@@ -1089,6 +1090,7 @@ internal static class JpegIdct
     /// With AVX-512 and AVX2, the coefficients of the column pass are dequantized in registers (the same exact conversions and
     /// the same products as <see cref="Dequantize"/>) instead of being stored to the block and loaded back.
     /// </remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void TransformQuantized(ReadOnlySpan<short> coefficients, ReadOnlySpan<double> quantization, Span<double> block, Span<byte> destination, int stride, bool sparse)
     {
         if (Vector512.IsHardwareAccelerated && Avx512F.IsSupported)

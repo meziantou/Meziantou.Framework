@@ -3496,7 +3496,7 @@ public sealed class VectorizedKernelTests
             }
         }
 
-        // Every (luma, chroma) pair with the other chroma sample at its extremes and at its center
+        // Every (luma, Cb, Cr) triple
         var lumas = new byte[256 * 256];
         var chromas = new byte[256 * 256];
         for (var i = 0; i < lumas.Length; i++)
@@ -3505,10 +3505,10 @@ public sealed class VectorizedKernelTests
             chromas[i] = (byte)i;
         }
 
-        foreach (var other in new byte[] { 0, 128, 255 })
+        for (var other = 0; other < 256; other++)
         {
             var constant = new byte[lumas.Length];
-            Array.Fill(constant, other);
+            Array.Fill(constant, (byte)other);
             foreach (var (blue, red) in new[] { (chromas, constant), (constant, chromas) })
             {
                 var expected = new byte[lumas.Length * 4];

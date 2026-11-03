@@ -1,5 +1,6 @@
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -154,16 +155,30 @@ internal ref partial struct HevcSliceCoder
             }
         }
 
-        var rounding = 1L << (bdShift - 1);
         var subBlocksPerSide = 1 << (log2TrafoSize - 2);
         Span<byte> codedSubBlockFlag = stackalloc byte[64];
         Span<byte> significant = stackalloc byte[16];
-        Span<byte> greater1Flag = stackalloc byte[16];
+        Span<int> remaining = stackalloc int[16];
         var transformSkipContext = _sps.TransformSkipContextEnabledFlag && (transformSkipFlag || _cuTransquantBypassFlag);
         var implicitRdpcm = _sps.ImplicitRdpcmEnabledFlag && transformSkipFlag && predModeIntra is HevcConstants.IntraAngular10 or HevcConstants.IntraAngular26;
-        var signHidingAllowed = _pps.SignDataHidingEnabledFlag && !_cuTransquantBypassFlag && !implicitRdpcm && !_explicitRdpcmFlag;
-        var persistentRice = _sps.PersistentRiceAdaptationEnabledFlag;
-        var sbType = (cIdx is 0 ? 2 : 0) + (transformSkipFlag || _cuTransquantBypassFlag ? 1 : 0);
+        var levels = new HevcResidualLevels
+        {
+            Coefficients = coefficients,
+            PositionScan = positionScan,
+            ScalingFactors = m,
+            Remaining = remaining,
+            LevelScale = levelScale,
+            Rounding = 1L << (bdShift - 1),
+            BdShift = bdShift,
+            Log2TrafoSize = log2TrafoSize,
+            Scaled = scaled,
+            SignHidingAllowed = _pps.SignDataHidingEnabledFlag && !_cuTransquantBypassFlag && !implicitRdpcm && !_explicitRdpcmFlag,
+            PersistentRice = _sps.PersistentRiceAdaptationEnabledFlag,
+            SbType = (cIdx is 0 ? 2 : 0) + (transformSkipFlag || _cuTransquantBypassFlag ? 1 : 0),
+            Greater1Context = HevcContextLayout.CoeffAbsLevelGreater1Flag + (cIdx is 0 ? 0 : 16),
+            Greater2Context = HevcContextLayout.CoeffAbsLevelGreater2Flag + (cIdx is 0 ? 0 : 4),
+            StatCoeff = _statCoeff,
+        };
         var greater1Ctx = 1;
         if (transformSkipContext)
         {
@@ -210,96 +225,14 @@ internal ref partial struct HevcSliceCoder
             if (numSig is 0)
                 continue;
 
-            // coeff_abs_level_greater1_flag (clause 9.3.4.2.6): the first 8 significant coefficients of the sub-block
-            var ctxSet = i is 0 || cIdx > 0 ? 0 : 2;
-            if (greater1Ctx is 0)
-            {
-                ctxSet++;
-            }
-
-            var greater1Count = Math.Min(numSig, 8);
-            greater1Ctx = ReadGreater1Flags(_cabac, HevcContextLayout.CoeffAbsLevelGreater1Flag + (ctxSet * 4) + (cIdx is 0 ? 0 : 16), greater1Flag[..greater1Count], out var lastGreater1Index);
-
-            // coeff_abs_level_greater2_flag (clause 9.3.4.2.7): the first coefficient that is greater than 1
-            var greater2Flag = 0;
-            if (lastGreater1Index >= 0)
-            {
-                greater2Flag = _cabac.DecodeDecision(HevcContextLayout.CoeffAbsLevelGreater2Flag + ctxSet + (cIdx is 0 ? 0 : 4));
-            }
-
-            // coeff_sign_flag: the sign of the last coefficient of the sub-block in decoding order is hidden in the parity
-            // of the sum of the levels when the first and the last one are more than 3 scan positions apart
-            var signHidden = signHidingAllowed && significant[0] - significant[numSig - 1] > 3;
-            var signCount = signHidden ? numSig - 1 : numSig;
-            var signs = _cabac.DecodeBypassBits(signCount) << (16 - signCount);
-            if (signHidden)
-            {
-                _tools |= HevcTools.SignDataHiding;
-            }
-
-            // coeff_abs_level_remaining (clause 9.3.3.11)
-            var numSigCoeff = 0;
-            var sumAbsLevel = 0;
-            var firstRemaining = true;
-            var cLastAbsLevel = 0;
-            var cLastRiceParam = 0;
-            for (var k = 0; k < numSig; k++)
-            {
-                var baseLevel = 1 + (k < greater1Count ? greater1Flag[k] : 0) + (k == lastGreater1Index ? greater2Flag : 0);
-                var absLevel = baseLevel;
-                if (baseLevel == (numSigCoeff < 8 ? (k == lastGreater1Index ? 3 : 2) : 1))
-                {
-                    if (firstRemaining && persistentRice)
-                    {
-                        // Equation 9-22
-                        cLastRiceParam = (int)((_statCoeff >> (sbType * 8)) & 0xFF) / 4;
-                    }
-
-                    // Equations 9-24 and 9-25
-                    var cRiceParam = cLastRiceParam + (cLastAbsLevel > 3 * (1 << cLastRiceParam) ? 1 : 0);
-                    if (!persistentRice)
-                    {
-                        cRiceParam = Math.Min(cRiceParam, 4);
-                    }
-
-                    var coeffAbsLevelRemaining = ReadCoeffAbsLevelRemaining(_cabac, cRiceParam);
-                    if (firstRemaining && persistentRice)
-                    {
-                        UpdateStatCoeff(sbType, coeffAbsLevelRemaining);
-                    }
-
-                    firstRemaining = false;
-                    absLevel = baseLevel + coeffAbsLevelRemaining;
-                    cLastAbsLevel = absLevel;
-                    cLastRiceParam = cRiceParam;
-                    _tools |= HevcTools.EscapeCoefficients;
-                }
-
-                // The signs are hard to predict: 1 when the level is negative
-                var negative = (signs >> (15 - k)) & 1;
-                if (signHidden)
-                {
-                    sumAbsLevel += absLevel;
-                    if (k == numSig - 1)
-                    {
-                        negative |= sumAbsLevel & 1;
-                    }
-                }
-
-                // Clause 7.4.9.11: a transform coefficient level is in the range of CoeffMinY to CoeffMaxY
-                var level = (absLevel ^ -negative) + negative;
-                if (level is < HevcInverseTransform.CoeffMin or > HevcInverseTransform.CoeffMax)
-                    throw HevcErrors.Invalid("a transform coefficient level is out of range.");
-
-                var position = positionScan[significant[k]];
-                var index = ((((yS << 2) + HevcScanOrder.Y(position)) << log2TrafoSize) + (xS << 2)) + HevcScanOrder.X(position);
-                coefficients[index] = scaled
-                    ? (int)Math.Clamp((((m.IsEmpty ? level : level * m[index]) * levelScale) + rounding) >> bdShift, HevcInverseTransform.CoeffMin, HevcInverseTransform.CoeffMax)
-                    : level;
-                numSigCoeff++;
-            }
+            // ctxSet of coeff_abs_level_greater1_flag (clause 9.3.4.2.6): lastGreater1Ctx is greater1Ctx after the flags of the
+            // previous sub-block that has some
+            var ctxSet = (i is 0 || cIdx > 0 ? 0 : 2) + (greater1Ctx is 0 ? 1 : 0);
+            greater1Ctx = ReadCoefficientLevels(_cabac, ref levels, significant[..numSig], ctxSet, (yS << (log2TrafoSize + 2)) + (xS << 2));
         }
 
+        _statCoeff = levels.StatCoeff;
+        _tools |= levels.Tools;
         return transformSkipFlag;
     }
 
@@ -442,70 +375,137 @@ internal ref partial struct HevcSliceCoder
         return numSig;
     }
 
-    // coeff_abs_level_greater1_flag (clause 9.3.4.2.6) of the first significant coefficients of a sub-block, whose ctxIdx is
-    // contextBase + Min( 3, greater1Ctx ). Returns greater1Ctx after the last flag. Not inlined, like ReadSigCoeffFlags
+    // The levels of the significant coefficients of a sub-block (clause 7.3.8.11), from coeff_abs_level_greater1_flag to
+    // coeff_abs_level_remaining, scaled and stored in the block: significant holds their scan positions in decoding order,
+    // subBlockOffset is the index in the block of the first coefficient of the sub-block. Returns greater1Ctx after the last
+    // coeff_abs_level_greater1_flag. Not inlined, like ReadSigCoeffFlags
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static int ReadGreater1Flags(HevcCabacDecoder cabac, int contextBase, Span<byte> greater1Flag, out int lastGreater1Index)
+    private static int ReadCoefficientLevels(HevcCabacDecoder cabac, scoped ref HevcResidualLevels levels, ReadOnlySpan<byte> significant, int ctxSet, int subBlockOffset)
     {
         var contexts = cabac.Contexts;
         var engine = cabac.Engine;
+        var numSig = significant.Length;
 
-        // greater1Ctx is 0 after a flag equal to 1, otherwise 1 + the number of flags already read: the bit k of flags is
-        // the flag k
+        // coeff_abs_level_greater1_flag (clause 9.3.4.2.6) of the first 8 significant coefficients: the bit k of flags is the
+        // flag of the coefficient k. greater1Ctx is 0 after a flag equal to 1, otherwise 1 + the number of flags already read
+        var greater1Count = Math.Min(numSig, 8);
+        var greater1Context = levels.Greater1Context + (ctxSet * 4);
         var flags = 0;
-        for (var k = 0; k < greater1Flag.Length; k++)
+        for (var k = 0; k < greater1Count; k++)
         {
             var greater1Ctx = flags is 0 ? Math.Min(3, k + 1) : 0;
-            var flag = engine.DecodeDecision(contexts, contextBase + greater1Ctx, cabac);
-            greater1Flag[k] = (byte)flag;
-            flags |= flag << k;
+            flags |= engine.DecodeDecision(contexts, greater1Context + greater1Ctx, cabac) << k;
+        }
+
+        // coeff_abs_level_greater2_flag (clause 9.3.4.2.7): the first coefficient that is greater than 1
+        var firstGreater1 = flags & -flags;
+        var greater2Flag = 0;
+        if (flags is not 0)
+        {
+            greater2Flag = engine.DecodeDecision(contexts, levels.Greater2Context + ctxSet, cabac);
+        }
+
+        // coeff_sign_flag: the sign of the last coefficient of the sub-block in decoding order is hidden in the parity of the
+        // sum of the levels when the first and the last one are more than 3 scan positions apart
+        var signHidden = levels.SignHidingAllowed && significant[0] - significant[numSig - 1] > 3;
+        var signCount = signHidden ? numSig - 1 : numSig;
+        var signs = engine.DecodeBypassBits(signCount, cabac) << (16 - signCount);
+        if (signHidden)
+        {
+            levels.Tools |= HevcTools.SignDataHiding;
+        }
+
+        // coeff_abs_level_remaining (clause 9.3.3.11), in the order of the coefficients, of those whose baseLevel is the
+        // largest that the flags give: the first 8 coefficients greater than 1 but the first one, which has it when it is
+        // greater than 2, and the coefficients after the first 8 ones. The bit k of escapes is set for the coefficient k
+        var escapes = ((flags & ~firstGreater1) | (greater2Flag is not 0 ? firstGreater1 : 0) | ~0xFF) & ((1 << numSig) - 1);
+        var remaining = levels.Remaining;
+        if (escapes is not 0)
+        {
+            levels.Tools |= HevcTools.EscapeCoefficients;
+            var cLastAbsLevel = 0;
+            var cLastRiceParam = 0;
+            if (levels.PersistentRice)
+            {
+                // Equation 9-22
+                cLastRiceParam = (int)((levels.StatCoeff >> (levels.SbType * 8)) & 0xFF) / 4;
+            }
+
+            var pending = escapes;
+            var firstRemaining = true;
+            do
+            {
+                var k = BitOperations.TrailingZeroCount(pending);
+                pending &= pending - 1;
+
+                // Equations 9-24 and 9-25
+                var cRiceParam = cLastRiceParam + (cLastAbsLevel > 3 * (1 << cLastRiceParam) ? 1 : 0);
+                if (!levels.PersistentRice)
+                {
+                    cRiceParam = Math.Min(cRiceParam, 4);
+                }
+
+                var coeffAbsLevelRemaining = engine.DecodeCoeffAbsLevelRemaining(cRiceParam, cabac);
+                if (firstRemaining && levels.PersistentRice)
+                {
+                    UpdateStatCoeff(ref levels, coeffAbsLevelRemaining);
+                }
+
+                firstRemaining = false;
+                remaining[k] = coeffAbsLevelRemaining;
+                cLastAbsLevel = GetBaseLevel(flags, firstGreater1, greater2Flag, k) + coeffAbsLevelRemaining;
+                cLastRiceParam = cRiceParam;
+            }
+            while (pending is not 0);
         }
 
         cabac.Engine = engine;
-        lastGreater1Index = flags is 0 ? -1 : BitOperations.TrailingZeroCount(flags);
-        return flags is 0 ? greater1Flag.Length + 1 : 0;
+
+        // The transform coefficient levels, scaled (clause 8.6.3) when the coding unit does not bypass the scaling
+        var coefficients = levels.Coefficients;
+        var positionScan = levels.PositionScan;
+        var m = levels.ScalingFactors;
+        var log2TrafoSize = levels.Log2TrafoSize;
+        var sumAbsLevel = 0;
+        for (var k = 0; k < numSig; k++)
+        {
+            // remaining is only read for the coefficients that have coeff_abs_level_remaining
+            var absLevel = GetBaseLevel(flags, firstGreater1, greater2Flag, k) + (remaining[k] & -((escapes >> k) & 1));
+
+            // The signs are hard to predict: 1 when the level is negative
+            var negative = (signs >> (15 - k)) & 1;
+            sumAbsLevel += absLevel;
+            if (signHidden && k == numSig - 1)
+            {
+                negative |= sumAbsLevel & 1;
+            }
+
+            // Clause 7.4.9.11: a transform coefficient level is in the range of CoeffMinY to CoeffMaxY
+            var level = (absLevel ^ -negative) + negative;
+            if (level is < HevcInverseTransform.CoeffMin or > HevcInverseTransform.CoeffMax)
+                throw HevcErrors.Invalid("a transform coefficient level is out of range.");
+
+            var position = positionScan[significant[k]];
+            var index = subBlockOffset + (HevcScanOrder.Y(position) << log2TrafoSize) + HevcScanOrder.X(position);
+            coefficients[index] = levels.Scaled
+                ? (int)Math.Clamp((((m.IsEmpty ? level : level * m[index]) * levels.LevelScale) + levels.Rounding) >> levels.BdShift, HevcInverseTransform.CoeffMin, HevcInverseTransform.CoeffMax)
+                : level;
+        }
+
+        return flags is 0 ? greater1Count + 1 : 0;
     }
 
-    // The binarization of coeff_abs_level_remaining (clause 9.3.3.11): a prefix of at most 4 bins and a suffix of
-    // cRiceParam bins, or a prefix of 4 bins and an Exp-Golomb code of order cRiceParam + 1. Not inlined, like
-    // ReadSigCoeffFlags
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static int ReadCoeffAbsLevelRemaining(HevcCabacDecoder cabac, int cRiceParam)
-    {
-        var engine = cabac.Engine;
-        var prefix = 0;
-        while (engine.DecodeBypass(cabac) is not 0)
-        {
-            // The longest codes are those of the largest transform coefficient levels: a longer prefix is not a value
-            if (++prefix > 32)
-                throw HevcErrors.Invalid("a transform coefficient level is out of range.");
-        }
-
-        long value;
-        if (prefix <= 3)
-        {
-            value = (prefix << cRiceParam) + engine.DecodeBypassBits(cRiceParam, cabac);
-        }
-        else
-        {
-            var length = prefix - 3 + cRiceParam;
-            if (length > 30)
-                throw HevcErrors.Invalid("a transform coefficient level is out of range.");
-
-            value = (((1L << (prefix - 3)) + 3 - 1) << cRiceParam) + engine.DecodeBypassBits(length, cabac);
-            if (value > 2 * -(long)HevcInverseTransform.CoeffMin)
-                throw HevcErrors.Invalid("a transform coefficient level is out of range.");
-        }
-
-        cabac.Engine = engine;
-        return (int)value;
-    }
+    // baseLevel of the coefficient k of a sub-block (Equation 7-80 without coeff_abs_level_remaining): 1, plus its
+    // coeff_abs_level_greater1_flag, plus coeff_abs_level_greater2_flag for the first coefficient greater than 1
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int GetBaseLevel(int flags, int firstGreater1, int greater2Flag, int k)
+        => 1 + ((flags >> k) & 1) + (((firstGreater1 >> k) & 1) * greater2Flag);
 
     // Equation 9-23
-    private void UpdateStatCoeff(int sbType, int coeffAbsLevelRemaining)
+    private static void UpdateStatCoeff(scoped ref HevcResidualLevels levels, int coeffAbsLevelRemaining)
     {
-        var shift = sbType * 8;
-        var statCoeff = (int)((_statCoeff >> shift) & 0xFF);
+        var shift = levels.SbType * 8;
+        var statCoeff = (int)((levels.StatCoeff >> shift) & 0xFF);
         if (coeffAbsLevelRemaining >= 3 << (statCoeff / 4))
         {
             statCoeff++;
@@ -515,7 +515,43 @@ internal ref partial struct HevcSliceCoder
             statCoeff--;
         }
 
-        _statCoeff = (_statCoeff & ~(0xFFu << shift)) | ((uint)statCoeff << shift);
-        _tools |= HevcTools.PersistentRiceAdaptation;
+        levels.StatCoeff = (levels.StatCoeff & ~(0xFFu << shift)) | ((uint)statCoeff << shift);
+        levels.Tools |= HevcTools.PersistentRiceAdaptation;
+    }
+
+    // The parameters of the levels of a transform block that are the same for its sub-blocks (ReadCoefficientLevels)
+    [StructLayout(LayoutKind.Auto)]
+    private ref struct HevcResidualLevels
+    {
+        // The rows of the block: TransCoeffLevel, or the scaled transform coefficients d (ResidualCoding)
+        public Span<int> Coefficients;
+
+        // The positions of a sub-block in scan order
+        public ReadOnlySpan<byte> PositionScan;
+
+        // m[ x ][ y ] of the scaling list, empty when it is 16 for every coefficient (LevelScale is then multiplied by 16)
+        public ReadOnlySpan<byte> ScalingFactors;
+
+        // coeff_abs_level_remaining of the 16 coefficients of a sub-block
+        public Span<int> Remaining;
+
+        public long LevelScale;
+        public long Rounding;
+        public int BdShift;
+        public int Log2TrafoSize;
+
+        // false for a coding unit that bypasses the scaling and the transform
+        public bool Scaled;
+        public bool SignHidingAllowed;
+        public bool PersistentRice;
+        public int SbType;
+
+        // ctxIdx of the first coeff_abs_level_greater1_flag and coeff_abs_level_greater2_flag of the colour component
+        public int Greater1Context;
+        public int Greater2Context;
+
+        // StatCoeff of the four sbType (Equation 9-23), and the coding tools that the levels use
+        public uint StatCoeff;
+        public HevcTools Tools;
     }
 }

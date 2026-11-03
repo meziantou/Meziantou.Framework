@@ -89,6 +89,43 @@ internal struct HevcCabacEngine
         return 0;
     }
 
+    /// <summary>
+    /// Decodes <c>coeff_abs_level_remaining</c> (clause 9.3.3.11): a prefix of at most 4 bins and a suffix of
+    /// <paramref name="cRiceParam"/> bins, or a prefix of 4 bins and an Exp-Golomb code of order <paramref name="cRiceParam"/> + 1.
+    /// </summary>
+    /// <param name="cRiceParam"><c>cRiceParam</c>.</param>
+    /// <param name="source">The decoder that reads the data.</param>
+    /// <exception cref="InvalidImageContentException">The value is larger than the levels of transform coefficients.</exception>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public int DecodeCoeffAbsLevelRemaining(int cRiceParam, HevcCabacDecoder source)
+    {
+        var prefix = 0;
+        while (DecodeBypass(source) is not 0)
+        {
+            // The longest codes are those of the largest transform coefficient levels: a longer prefix is not a value
+            if (++prefix > 32)
+                throw HevcErrors.Invalid("a transform coefficient level is out of range.");
+        }
+
+        long value;
+        if (prefix <= 3)
+        {
+            value = (prefix << cRiceParam) + DecodeBypassBits(cRiceParam, source);
+        }
+        else
+        {
+            var length = prefix - 3 + cRiceParam;
+            if (length > 30)
+                throw HevcErrors.Invalid("a transform coefficient level is out of range.");
+
+            value = (((1L << (prefix - 3)) + 3 - 1) << cRiceParam) + DecodeBypassBits(length, source);
+            if (value > 2 * -(long)HevcInverseTransform.CoeffMin)
+                throw HevcErrors.Invalid("a transform coefficient level is out of range.");
+        }
+
+        return (int)value;
+    }
+
     /// <summary>Decodes <paramref name="count"/> bypass bins, the first one being the most significant bit of the result.</summary>
     /// <param name="count">The number of bins.</param>
     /// <param name="source">The decoder that reads the data.</param>

@@ -86,6 +86,11 @@ internal sealed class Vp8Encoder : IDisposable
     private static readonly double[] UVModeCosts = CreateModeCosts(UVModeTree, Vp8Tables.KeyFrameUVModeProbabilities, 4, contexts: 1);
     private static readonly double[] BModeCosts = CreateModeCosts(BModeTree, Vp8Tables.KeyFrameBModeProbabilities, 10, contexts: 100);
 
+    // The paths of the modes in their trees (Vp8BoolEncoder.GetTreePath)
+    private static readonly int[] YModePaths = CreateTreePaths(KeyFrameYModeTree, 5);
+    private static readonly int[] UVModePaths = CreateTreePaths(UVModeTree, 4);
+    private static readonly int[] BModePaths = CreateTreePaths(BModeTree, 10);
+
     /// <summary>The bits of the cheapest 16x16 luma mode: modes cost the same in every context.</summary>
     private static readonly double MinLumaModeBits = Math.Min(Math.Min(YModeCosts[Vp8Tables.DcPred], YModeCosts[Vp8Tables.VPred]), Math.Min(YModeCosts[Vp8Tables.HPred], YModeCosts[Vp8Tables.TmPred]));
 
@@ -1208,6 +1213,17 @@ internal sealed class Vp8Encoder : IDisposable
         }
     }
 
+    private static int[] CreateTreePaths(ReadOnlySpan<sbyte> tree, int modes)
+    {
+        var paths = new int[modes];
+        for (var mode = 0; mode < modes; mode++)
+        {
+            paths[mode] = Vp8BoolEncoder.GetTreePath(tree, mode);
+        }
+
+        return paths;
+    }
+
     /// <summary>Tabulates <see cref="ModeBits"/> for <paramref name="contexts"/> consecutive probability sets of a tree.</summary>
     private static double[] CreateModeCosts(ReadOnlySpan<sbyte> tree, ReadOnlySpan<byte> probabilities, int modes, int contexts)
     {
@@ -1305,7 +1321,7 @@ internal sealed class Vp8Encoder : IDisposable
             {
                 bits += Cost(ref costs, unsafe(Unsafe.Add(ref p, 2)), true);
                 var sink = new CostSink(bits);
-                WriteLargeValue(unsafe(MemoryMarshal.CreateReadOnlySpan(ref p, Vp8Tables.TokenNodes)), value, ref sink);
+                WriteLargeValue(unsafe(MemoryMarshal.CreateReadOnlySpan(ref p, Vp8Tables.TokenNodes)), -1, value, ref sink);
                 bits = sink.Bits;
                 context = 2;
             }
@@ -1334,12 +1350,14 @@ internal sealed class Vp8Encoder : IDisposable
 
     /// <summary>
     /// Walks the token tree of a block exactly as it is written (RFC 6386 section 13), reporting every boolean with its
-    /// probability: end of block, zero runs, values with their extra bits, signs.
+    /// probability and the index of that probability in the table (-1 for the fixed probabilities): end of block, zero runs,
+    /// values with their extra bits, signs.
     /// </summary>
     private void WalkTokens<TSink>(ReadOnlySpan<short> levels, int first, int type, int context, ref TSink write)
         where TSink : struct, IBoolSink
     {
-        var probabilities = _probabilities.AsSpan(type * 8 * 3 * Vp8Tables.TokenNodes, 8 * 3 * Vp8Tables.TokenNodes);
+        var typeOffset = type * 8 * 3 * Vp8Tables.TokenNodes;
+        var probabilities = _probabilities.AsSpan(typeOffset, 8 * 3 * Vp8Tables.TokenNodes);
         var bands = Vp8Tables.Bands;
         var zigzag = Vp8Tables.Zigzag;
         var last = -1;
@@ -1355,86 +1373,88 @@ internal sealed class Vp8Encoder : IDisposable
         var previousWasZero = false;
         for (var i = first; i < 16; i++)
         {
-            var p = probabilities.Slice(((bands[i] * 3) + context) * Vp8Tables.TokenNodes, Vp8Tables.TokenNodes);
+            var offset = ((bands[i] * 3) + context) * Vp8Tables.TokenNodes;
+            var p = probabilities.Slice(offset, Vp8Tables.TokenNodes);
+            var node = typeOffset + offset;
             if (!previousWasZero)
             {
                 if (i > last)
                 {
-                    write.Write(p[0], false); // end of block
+                    write.Write(node, p[0], false); // end of block
                     return;
                 }
 
-                write.Write(p[0], true);
+                write.Write(node, p[0], true);
             }
 
             var level = (int)levels[zigzag[i]];
             var value = Math.Abs(level);
             if (value == 0)
             {
-                write.Write(p[1], false);
+                write.Write(node + 1, p[1], false);
                 previousWasZero = true;
                 context = 0;
                 continue;
             }
 
-            write.Write(p[1], true);
+            write.Write(node + 1, p[1], true);
             previousWasZero = false;
             if (value == 1)
             {
-                write.Write(p[2], false);
+                write.Write(node + 2, p[2], false);
                 context = 1;
             }
             else
             {
-                write.Write(p[2], true);
-                WriteLargeValue(p, value, ref write);
+                write.Write(node + 2, p[2], true);
+                WriteLargeValue(p, node, value, ref write);
                 context = 2;
             }
 
-            write.Write(128, level < 0);
+            write.Write(-1, 128, level < 0);
         }
     }
 
-    private static void WriteLargeValue<TSink>(ReadOnlySpan<byte> p, int value, ref TSink write)
+    private static void WriteLargeValue<TSink>(ReadOnlySpan<byte> p, int node, int value, ref TSink write)
         where TSink : struct, IBoolSink
     {
         if (value <= 4)
         {
-            write.Write(p[3], false);
+            write.Write(node + 3, p[3], false);
             if (value == 2)
             {
-                write.Write(p[4], false);
+                write.Write(node + 4, p[4], false);
             }
             else
             {
-                write.Write(p[4], true);
-                write.Write(p[5], value == 4);
+                write.Write(node + 4, p[4], true);
+                write.Write(node + 5, p[5], value == 4);
             }
 
             return;
         }
 
-        write.Write(p[3], true);
+        write.Write(node + 3, p[3], true);
         if (value <= 10)
         {
-            write.Write(p[6], false);
+            write.Write(node + 6, p[6], false);
             if (value <= 6)
             {
-                write.Write(p[7], false);
-                write.Write(159, value == 6);
+                write.Write(node + 7, p[7], false);
+                write.Write(-1, 159, value == 6);
             }
             else
             {
-                write.Write(p[7], true);
+                write.Write(node + 7, p[7], true);
                 var extra = value - 7;
-                write.Write(165, (extra & 2) != 0);
-                write.Write(145, (extra & 1) != 0);
+                write.Write(-1, 165, (extra & 2) != 0);
+                write.Write(-1, 145, (extra & 1) != 0);
             }
 
             return;
         }
 
-        write.Write(p[6], true);
+        write.Write(node + 6, p[6], true);
         int category;
         ReadOnlySpan<byte> extraProbabilities;
         if (value <= 18)
@@ -1460,12 +1480,12 @@ internal sealed class Vp8Encoder : IDisposable
 
         var b1 = category >> 1;
         var b0 = category & 1;
-        write.Write(p[8], b1 != 0);
-        write.Write(p[9 + b1], b0 != 0);
+        write.Write(node + 8, p[8], b1 != 0);
+        write.Write(node + 9 + b1, p[9 + b1], b0 != 0);
         var extraValue = value - (3 + (8 << category));
         for (var i = 0; i < extraProbabilities.Length; i++)
         {
-            write.Write(extraProbabilities[i], ((extraValue >> (extraProbabilities.Length - 1 - i)) & 1) != 0);
+            write.Write(-1, extraProbabilities[i], ((extraValue >> (extraProbabilities.Length - 1 - i)) & 1) != 0);
         }
     }
 
@@ -1563,7 +1583,8 @@ internal sealed class Vp8Encoder : IDisposable
             return;
 
         var counts = new int[_probabilities.Length * 2];
-        WalkFrameTokens((type, band, context, node, value) => counts[((((((type * 8) + band) * 3) + context) * Vp8Tables.TokenNodes) + node) * 2 + (value ? 1 : 0)]++);
+        var sink = new CountSink(counts);
+        WalkFrameTokens(ref sink);
         var update = Vp8Tables.TokenUpdateProbabilities;
         for (var i = 0; i < _probabilities.Length; i++)
         {
@@ -1587,8 +1608,9 @@ internal sealed class Vp8Encoder : IDisposable
         }
     }
 
-    /// <summary>Walks the tokens of every macroblock with the decoder's contexts, reporting (type, band, context, node, value) for the tree nodes.</summary>
-    private void WalkFrameTokens(Action<int, int, int, int, bool> visit)
+    /// <summary>Walks the tokens of every macroblock with the decoder's contexts.</summary>
+    private void WalkFrameTokens<TSink>(ref TSink sink)
+        where TSink : struct, IBoolSink
     {
         var aboveNonZero = new byte[_mbWidth * 9];
         var leftNonZero = new byte[9];
@@ -1615,20 +1637,21 @@ internal sealed class Vp8Encoder : IDisposable
                     continue;
                 }
 
-                ForEachBlock(levels, hasY2, above, leftNonZero, (blockLevels, first, type, context) => WalkTokensWithNodes(blockLevels, first, type, context, visit));
+                WalkMacroblockTokens(levels, hasY2, above, leftNonZero, ref sink);
             }
         }
     }
 
-    /// <summary>Calls <paramref name="action"/> for every coded block of a macroblock in bitstream order, with its context, and updates the contexts.</summary>
-    private static void ForEachBlock(ReadOnlySpan<short> levels, bool hasY2, Span<byte> above, Span<byte> left, BlockAction action)
+    /// <summary>Walks the tokens of every coded block of a macroblock in bitstream order, with its context, and updates the contexts.</summary>
+    private void WalkMacroblockTokens<TSink>(ReadOnlySpan<short> levels, bool hasY2, Span<byte> above, Span<byte> left, ref TSink sink)
+        where TSink : struct, IBoolSink
     {
         var first = 0;
         var yType = 3;
         if (hasY2)
         {
             var y2 = levels.Slice(24 * 16, 16);
-            action(y2, 0, 1, above[8] + left[8]);
+            WalkTokens(y2, 0, 1, above[8] + left[8], ref sink);
             above[8] = left[8] = HasLevels(y2, 0) ? (byte)1 : (byte)0;
             first = 1;
             yType = 0;
@@ -1637,7 +1660,7 @@ internal sealed class Vp8Encoder : IDisposable
         for (var block = 0; block < 16; block++)
         {
             var blockLevels = levels.Slice(block * 16, 16);
-            action(blockLevels, first, yType, above[block & 3] + left[block >> 2]);
+            WalkTokens(blockLevels, first, yType, above[block & 3] + left[block >> 2], ref sink);
             above[block & 3] = left[block >> 2] = HasLevels(blockLevels, first) ? (byte)1 : (byte)0;
         }
 
@@ -1647,89 +1670,9 @@ internal sealed class Vp8Encoder : IDisposable
             for (var block = 0; block < 4; block++)
             {
                 var blockLevels = levels.Slice((16 + (plane * 4) + block) * 16, 16);
-                action(blockLevels, 0, 2, above[context + (block & 1)] + left[context + (block >> 1)]);
+                WalkTokens(blockLevels, 0, 2, above[context + (block & 1)] + left[context + (block >> 1)], ref sink);
                 above[context + (block & 1)] = left[context + (block >> 1)] = HasLevels(blockLevels, 0) ? (byte)1 : (byte)0;
             }
-        }
-    }
-
-    private delegate void BlockAction(ReadOnlySpan<short> levels, int first, int type, int context);
-
-    private static void WalkTokensWithNodes(ReadOnlySpan<short> levels, int first, int type, int context, Action<int, int, int, int, bool> visit)
-    {
-        // Same walk as WalkTokens, reporting the probability index instead of the probability
-        var bands = Vp8Tables.Bands;
-        var zigzag = Vp8Tables.Zigzag;
-        var last = -1;
-        for (var i = 15; i >= first; i--)
-        {
-            if (levels[zigzag[i]] != 0)
-            {
-                last = i;
-                break;
-            }
-        }
-
-        var previousWasZero = false;
-        for (var i = first; i < 16; i++)
-        {
-            var band = bands[i];
-            if (!previousWasZero)
-            {
-                if (i > last)
-                {
-                    visit(type, band, context, 0, false);
-                    return;
-                }
-
-                visit(type, band, context, 0, true);
-            }
-
-            var value = Math.Abs((int)levels[zigzag[i]]);
-            if (value == 0)
-            {
-                visit(type, band, context, 1, false);
-                previousWasZero = true;
-                context = 0;
-                continue;
-            }
-
-            visit(type, band, context, 1, true);
-            previousWasZero = false;
-            if (value == 1)
-            {
-                visit(type, band, context, 2, false);
-                context = 1;
-                continue;
-            }
-
-            visit(type, band, context, 2, true);
-            if (value <= 4)
-            {
-                visit(type, band, context, 3, false);
-                visit(type, band, context, 4, value != 2);
-                if (value != 2)
-                {
-                    visit(type, band, context, 5, value == 4);
-                }
-            }
-            else
-            {
-                visit(type, band, context, 3, true);
-                visit(type, band, context, 6, value > 10);
-                if (value <= 10)
-                {
-                    visit(type, band, context, 7, value > 6);
-                }
-                else
-                {
-                    var category = value <= 18 ? 0 : value <= 34 ? 1 : value <= 66 ? 2 : 3;
-                    visit(type, band, context, 8, category >= 2);
-                    visit(type, band, context, 9 + (category >> 1), (category & 1) != 0);
-                }
-            }
-
-            context = 2;
         }
     }
 
@@ -1769,7 +1712,7 @@ internal sealed class Vp8Encoder : IDisposable
                     header.WriteBool(_skipProbability, !mb.HasCoefficients);
                 }
 
-                header.WriteTree(KeyFrameYModeTree, Vp8Tables.KeyFrameYModeProbabilities, mb.YMode);
+                header.WriteTreePath(KeyFrameYModeTree, Vp8Tables.KeyFrameYModeProbabilities, YModePaths[mb.YMode]);
                 var above = aboveModes.AsSpan(mbX * 4, 4);
                 if (!hasY2)
                 {
@@ -1779,7 +1722,7 @@ internal sealed class Vp8Encoder : IDisposable
                         {
                             var mode = mb.GetSubMode((by * 4) + bx);
                             var probabilities = Vp8Tables.KeyFrameBModeProbabilities.Slice(((above[bx] * 10) + leftModes[by]) * 9, 9);
-                            header.WriteTree(BModeTree, probabilities, mode);
+                            header.WriteTreePath(BModeTree, probabilities, BModePaths[mode]);
                             above[bx] = leftModes[by] = mode;
                         }
                     }
@@ -1797,7 +1740,7 @@ internal sealed class Vp8Encoder : IDisposable
                     leftModes.AsSpan().Fill((byte)implied);
                 }
 
-                header.WriteTree(UVModeTree, Vp8Tables.KeyFrameUVModeProbabilities, mb.UVMode);
+                header.WriteTreePath(UVModeTree, Vp8Tables.KeyFrameUVModeProbabilities, UVModePaths[mb.UVMode]);
 
                 // Tokens
                 var nonZeroAbove = aboveNonZero.AsSpan(mbX * 9, 9);
@@ -1814,11 +1757,8 @@ internal sealed class Vp8Encoder : IDisposable
                 }
 
                 var levels = Levels.Slice(index * 25 * 16, 25 * 16);
-                ForEachBlock(levels, hasY2, nonZeroAbove, leftNonZero, (blockLevels, first, type, context) =>
-                {
-                    var sink = new EncoderSink(tokens);
-                    WalkTokens(blockLevels, first, type, context, ref sink);
-                });
+                var sink = new EncoderSink(tokens);
+                WalkMacroblockTokens(levels, hasY2, nonZeroAbove, leftNonZero, ref sink);
             }
         }
 
@@ -1908,10 +1848,10 @@ internal sealed class Vp8Encoder : IDisposable
 
     private static byte ClampByte(int value) => (byte)Math.Clamp(value, 0, 255);
 
-    /// <summary>Receives the booleans of a token walk.</summary>
+    /// <summary>Receives the booleans of a token walk: the index of their probability in the token table (-1 for a fixed probability), the probability and the value.</summary>
     private interface IBoolSink
     {
-        void Write(int probability, bool value);
+        void Write(int node, int probability, bool value);
     }
 
     /// <summary>Sums the estimated cost in bits of the booleans.</summary>
@@ -1921,14 +1861,27 @@ internal sealed class Vp8Encoder : IDisposable
         public double Bits { get; private set; } = bits;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Write(int probability, bool value) => Bits += BoolBits(probability, value);
+        public void Write(int node, int probability, bool value) => Bits += BoolBits(probability, value);
     }
 
     /// <summary>Writes the booleans to a boolean encoder.</summary>
     [StructLayout(LayoutKind.Auto)]
     private readonly struct EncoderSink(Vp8BoolEncoder encoder) : IBoolSink
     {
-        public void Write(int probability, bool value) => encoder.WriteBool(probability, value);
+        public void Write(int node, int probability, bool value) => encoder.WriteBool(probability, value);
+    }
+
+    /// <summary>Counts the booleans of each probability of the token table (false at <c>2 * node</c>, true at <c>2 * node + 1</c>).</summary>
+    [StructLayout(LayoutKind.Auto)]
+    private readonly struct CountSink(int[] counts) : IBoolSink
+    {
+        public void Write(int node, int probability, bool value)
+        {
+            if (node >= 0)
+            {
+                counts[(2 * node) + (value ? 1 : 0)]++;
+            }
+        }
     }
 
     [StructLayout(LayoutKind.Auto)]

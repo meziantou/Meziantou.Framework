@@ -428,10 +428,10 @@
     "reftest": "PASS"
   },
   "css/css-inline/initial-letter/initial-letter-block-position-fractional-drop-vlr.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-inline/initial-letter/initial-letter-block-position-fractional-drop-vrl.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-inline/initial-letter/initial-letter-block-position-fractional-drop.html": {
     "reftest": "PASS"
@@ -464,13 +464,13 @@
     "reftest": "PASS"
   },
   "css/css-inline/initial-letter/initial-letter-block-position-over-sunk-vlr.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-inline/initial-letter/initial-letter-block-position-over-sunk-vrl.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-inline/initial-letter/initial-letter-block-position-over-sunk.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-inline/initial-letter/initial-letter-block-position-raise-over-ruby-tall.html": {
     "reftest": "PASS"

@@ -1310,8 +1310,9 @@ internal static class PaintOrder
     {
         var truncation = markers ? LineTruncator.GetTruncation(line) : null;
 
-        // The background of the ::first-line pseudo-element is painted behind the content of the line (the root inline box)
-        if (markers && line.Style is { PseudoElement: "first-line" })
+        // The background of the ::first-line pseudo-element is painted behind the content of the line (the root inline box); the
+        // hit testing hits the block container there, above the descendants with a negative z-index
+        if (line.Style is { PseudoElement: "first-line" })
         {
             output.Add(new PaintItem(line));
         }

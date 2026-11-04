@@ -913,10 +913,10 @@
     "total": 2
   },
   "css/css-conditional/container-queries/scrollbar-container-units-block.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-conditional/container-queries/scrollbar-container-units-inline.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-conditional/container-queries/sibling-layout-dependency.html": {
     "total": 4
@@ -1240,11 +1240,7 @@
     "total": 15
   },
   "css/css-conditional/match-container-change-event.tentative.html": {
-    "total": 17,
-    "failures": {
-      "change event fires for a container change made inside a hidden subtree once revealed.": "FAIL",
-      "change event fires when a hidden ancestor container becomes rendered.": "FAIL"
-    }
+    "total": 17
   },
   "css/css-conditional/match-container.tentative.html": {
     "total": 30

@@ -270,7 +270,7 @@
     "reftest": "PASS"
   },
   "css/css-images/gradient/gradient-none-interpolation.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-images/gradient/gradient-powerless-hue-hsl.html": {
     "reftest": "PASS"

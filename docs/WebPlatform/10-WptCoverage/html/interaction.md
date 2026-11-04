@@ -14,6 +14,16 @@ description: "The results of the web-platform-tests of html/interaction, and why
 | [Reftests](#reftests) | 1 | 1 | 0 | 100% |
 | **All** | **57** | **205** | **138** | **85%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 1
+- **NOT IMPLEMENTED**: 146
+- **REQUIRES**: 139
+  - `layout`: 1
+  - `user-input`: 138
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

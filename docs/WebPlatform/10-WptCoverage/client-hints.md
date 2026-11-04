@@ -14,6 +14,14 @@ description: "The results of the web-platform-tests of client-hints, and why the
 | Reftests | 0 | 0 | 0 | – |
 | **All** | **121** | **132** | **0** | **92%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **TEST BUG**: 9
+- **NOT IMPLEMENTED**: 1
+- **TEST RUNNER**: 1
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

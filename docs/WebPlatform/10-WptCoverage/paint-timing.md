@@ -14,6 +14,13 @@ description: "The results of the web-platform-tests of paint-timing, and why the
 | Reftests | 0 | 0 | 0 | – |
 | **All** | **58** | **59** | **0** | **98%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **REQUIRES**: 1
+  - `rendering`: 1
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

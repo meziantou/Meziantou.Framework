@@ -14,6 +14,13 @@ description: "The results of the web-platform-tests of css/css-flexbox, and why 
 | [Reftests](#reftests) | 1,018 | 1,023 | 0 | 99.5% |
 | **All** | **1,399** | **1,405** | **0** | **99.5%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 3
+- **TEST BUG**: 3
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

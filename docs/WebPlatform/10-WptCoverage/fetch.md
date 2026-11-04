@@ -14,6 +14,19 @@ description: "The results of the web-platform-tests of fetch, and why the tests 
 | [Reftests](#reftests) | 9 | 11 | 0 | 82% |
 | **All** | **350** | **496** | **2** | **71%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 13
+- **TEST BUG**: 18
+- **NOT IMPLEMENTED**: 91
+- **REQUIRES**: 3
+  - `layout`: 2
+  - `workers`: 1
+- **TEST RUNNER**: 79
+- **FLAKY**: 1
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

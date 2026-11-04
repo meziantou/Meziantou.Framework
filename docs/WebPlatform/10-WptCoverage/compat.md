@@ -14,6 +14,14 @@ description: "The results of the web-platform-tests of compat, and why the tests
 | [Reftests](#reftests) | 24 | 27 | 0 | 89% |
 | **All** | **37** | **41** | **0** | **90%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 2
+- **NOT IMPLEMENTED**: 1
+- **OUT OF SCOPE**: 1
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

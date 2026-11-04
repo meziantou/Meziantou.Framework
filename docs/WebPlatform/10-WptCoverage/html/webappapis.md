@@ -14,6 +14,15 @@ description: "The results of the web-platform-tests of html/webappapis, and why 
 | Reftests | 0 | 0 | 0 | – |
 | **All** | **313** | **344** | **1** | **91%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 11
+- **TEST BUG**: 1
+- **NOT IMPLEMENTED**: 8
+- **TEST RUNNER**: 11
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

@@ -14,6 +14,15 @@ description: "The results of the web-platform-tests of workers, and why the test
 | Reftests | 0 | 0 | 0 | – |
 | **All** | **277** | **296** | **0** | **94%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 6
+- **TEST BUG**: 2
+- **NOT IMPLEMENTED**: 11
+- **TEST RUNNER**: 7
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

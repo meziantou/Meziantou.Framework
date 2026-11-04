@@ -14,6 +14,14 @@ description: "The results of the web-platform-tests of html/rendering, and why t
 | [Reftests](#reftests) | 321 | 330 | 0 | 97% |
 | **All** | **467** | **487** | **0** | **96%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **TEST BUG**: 15
+- **NOT IMPLEMENTED**: 3
+- **OUT OF SCOPE**: 2
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

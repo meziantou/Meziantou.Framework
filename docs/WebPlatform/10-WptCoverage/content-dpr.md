@@ -14,6 +14,14 @@ description: "The results of the web-platform-tests of content-dpr, and why the 
 | [Reftests](#reftests) | 0 | 5 | 5 | – |
 | **All** | **0** | **6** | **6** | **–** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **REQUIRES**: 6
+  - `layout`: 6
+  - `rendering`: 6
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

@@ -14,6 +14,19 @@ description: "The results of the web-platform-tests of html/semantics, and why t
 | [Reftests](#reftests) | 327 | 431 | 66 | 90% |
 | **All** | **2,498** | **2,826** | **129** | **93%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **TEST BUG**: 56
+- **NOT IMPLEMENTED**: 266
+- **REQUIRES**: 2
+  - `layout`: 1
+  - `media`: 1
+- **TEST RUNNER**: 3
+- **OUT OF SCOPE**: 1
+- **PERFORMANCE**: 1
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

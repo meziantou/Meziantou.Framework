@@ -14,6 +14,18 @@ description: "The results of the web-platform-tests of html/canvas, and why the 
 | [Reftests](#reftests) | 213 | 552 | 0 | 39% |
 | **All** | **3,292** | **3,976** | **0** | **83%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 18
+- **TEST BUG**: 4
+- **NOT IMPLEMENTED**: 658
+- **REQUIRES**: 4
+  - `media`: 3
+  - `rendering`: 1
+- **TEST RUNNER**: 1
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

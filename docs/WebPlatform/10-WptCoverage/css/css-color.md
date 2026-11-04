@@ -14,6 +14,15 @@ description: "The results of the web-platform-tests of css/css-color, and why th
 | [Reftests](#reftests) | 301 | 308 | 1 | 98% |
 | **All** | **368** | **377** | **1** | **98%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 2
+- **TEST BUG**: 4
+- **NOT IMPLEMENTED**: 2
+- **FLAKY**: 1
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

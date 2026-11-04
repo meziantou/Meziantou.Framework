@@ -355,7 +355,9 @@
 ## Test groups
 
 See [the WPT coverage](../../../docs/WebPlatform/10-WptCoverage/01-Overview.md) for the coverage of the test suite per section, and the page of each section
-(`docs/WebPlatform/10-WptCoverage/`) for the result of each test and the reason why it does not pass. The tentative tests (`.tentative.`
+(`docs/WebPlatform/10-WptCoverage/`) for the result of each test and the reason why it does not pass. Each page has a
+**Failure reasons** section that counts the tests that do not pass (failing or disabled) per kind of reason, and per feature
+for `REQUIRES`. The tentative tests (`.tentative.`
 in the file name or a `tentative` directory: experimental features that no specification requires yet) are reported
 separately from the stable tests. The pages are generated from the
 [WPT manifest](https://github.com/web-platform-tests/wpt/releases) of the pinned revision, the expectations and the

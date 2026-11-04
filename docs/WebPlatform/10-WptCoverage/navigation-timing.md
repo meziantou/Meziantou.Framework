@@ -14,6 +14,13 @@ description: "The results of the web-platform-tests of navigation-timing, and wh
 | Reftests | 0 | 0 | 0 | – |
 | **All** | **54** | **58** | **0** | **93%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 1
+- **NOT IMPLEMENTED**: 3
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

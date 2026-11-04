@@ -14,6 +14,13 @@ description: "The results of the web-platform-tests of css/css-shapes, and why t
 | [Reftests](#reftests) | 237 | 238 | 0 | 99.5% |
 | **All** | **383** | **385** | **0** | **99%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 1
+- **TEST BUG**: 1
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

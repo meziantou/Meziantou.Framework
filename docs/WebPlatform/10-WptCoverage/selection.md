@@ -14,6 +14,14 @@ description: "The results of the web-platform-tests of selection, and why the te
 | [Reftests](#reftests) | 19 | 19 | 0 | 100% |
 | **All** | **122** | **143** | **0** | **85%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 13
+- **TEST BUG**: 8
+- **NOT IMPLEMENTED**: 4
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

@@ -14,6 +14,15 @@ description: "The results of the web-platform-tests of media-source, and why the
 | Reftests | 0 | 0 | 0 | – |
 | **All** | **76** | **87** | **0** | **87%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **TEST BUG**: 6
+- **NOT IMPLEMENTED**: 3
+- **REQUIRES**: 2
+  - `media`: 2
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

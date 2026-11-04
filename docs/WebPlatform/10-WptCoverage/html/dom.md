@@ -14,6 +14,18 @@ description: "The results of the web-platform-tests of html/dom, and why the tes
 | [Reftests](#reftests) | 127 | 127 | 0 | 100% |
 | **All** | **364** | **376** | **0** | **97%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 1
+- **TEST BUG**: 7
+- **NOT IMPLEMENTED**: 3
+- **REQUIRES**: 2
+  - `layout`: 1
+  - `rendering`: 1
+- **TEST RUNNER**: 1
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

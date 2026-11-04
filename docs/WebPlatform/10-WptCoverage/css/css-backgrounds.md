@@ -14,6 +14,15 @@ description: "The results of the web-platform-tests of css/css-backgrounds, and 
 | [Reftests](#reftests) | 705 | 719 | 1 | 98% |
 | **All** | **833** | **851** | **1** | **98%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 11
+- **TEST BUG**: 5
+- **NOT IMPLEMENTED**: 1
+- **FLAKY**: 1
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

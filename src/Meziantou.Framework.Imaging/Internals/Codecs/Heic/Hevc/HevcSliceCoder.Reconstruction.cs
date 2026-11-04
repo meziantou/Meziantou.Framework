@@ -354,22 +354,24 @@ internal ref partial struct HevcSliceCoder
         var available = availableBuffer[..p.Length];
         available.Clear();
         var constrainedIntraPred = _pps.ConstrainedIntraPredFlag;
+        var zCurr = GetZScanIndexInCtb(xTbY, yTbY);
 
         // The left column, p[ -1 ][ y ]
         for (var y = 0; y < nTbS * 2; y += unitHeight)
         {
-            if (!IsAvailableForIntra(xTbY, yTbY, xTbY - 1, yTbY + (y * subHeight), constrainedIntraPred))
+            if (!IsAvailableForIntra(zCurr, xTbY - 1, yTbY + (y * subHeight), constrainedIntraPred))
                 continue;
 
             for (var k = 0; k < unitHeight; k++)
             {
                 p[corner - 1 - y - k] = samples[((yTb + y + k) * stride) + xTb - 1];
-                available[corner - 1 - y - k] = true;
             }
+
+            available.Slice(corner - y - unitHeight, unitHeight).Fill(true);
         }
 
         // The corner, p[ -1 ][ -1 ]
-        if (IsAvailableForIntra(xTbY, yTbY, xTbY - 1, yTbY - 1, constrainedIntraPred))
+        if (IsAvailableForIntra(zCurr, xTbY - 1, yTbY - 1, constrainedIntraPred))
         {
             p[corner] = samples[((yTb - 1) * stride) + xTb - 1];
             available[corner] = true;
@@ -378,7 +380,7 @@ internal ref partial struct HevcSliceCoder
         // The row above, p[ x ][ -1 ]
         for (var x = 0; x < nTbS * 2; x += unitWidth)
         {
-            if (!IsAvailableForIntra(xTbY, yTbY, xTbY + (x * subWidth), yTbY - 1, constrainedIntraPred))
+            if (!IsAvailableForIntra(zCurr, xTbY + (x * subWidth), yTbY - 1, constrainedIntraPred))
                 continue;
 
             samples.Slice(((yTb - 1) * stride) + xTb + x, unitWidth).CopyTo(p[(corner + 1 + x)..]);
@@ -437,9 +439,10 @@ internal ref partial struct HevcSliceCoder
 
     // A neighbouring sample is marked as available for intra prediction when its block is available and, with constrained
     // intra prediction, when its coding unit is coded in intra prediction mode
-    private readonly bool IsAvailableForIntra(int xCurr, int yCurr, int xNbY, int yNbY, bool constrainedIntraPred)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private readonly bool IsAvailableForIntra(int zCurr, int xNbY, int yNbY, bool constrainedIntraPred)
     {
-        if (!IsAvailable(xCurr, yCurr, xNbY, yNbY))
+        if (!IsAvailable(zCurr, xNbY, yNbY))
             return false;
 
         return !constrainedIntraPred || (GetCuFlags(xNbY, yNbY) & HevcPictureState.CuIntra) is not 0;

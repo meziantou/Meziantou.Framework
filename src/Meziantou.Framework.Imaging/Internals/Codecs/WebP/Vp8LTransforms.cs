@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -131,16 +132,62 @@ internal static class Vp8LTransforms
         }
     }
 
+    /// <remarks>
+    /// The pixels are a running sum of the residuals, per byte: with 128-bit vectors, 4 pixels at a time are the prefix sums
+    /// of their residuals (each lane plus the lanes shifted by one, then by two pixels) plus the previous pixel in every lane,
+    /// so that only the last addition and the broadcast of the last pixel depend on the previous group.
+    /// </remarks>
     private static void AddLeft(Span<uint> row, int start, int end)
     {
         if (start >= end)
             return;
 
-        var left = row[start - 1];
-        foreach (ref var pixel in row[start..end])
+        var x = start;
+        if (Vector128.IsHardwareAccelerated && BitConverter.IsLittleEndian && (Sse2.IsSupported || AdvSimd.Arm64.IsSupported) && end - start >= Vector128<uint>.Count)
         {
-            left = Vp8LDecoder.AddPixels(pixel, left);
-            pixel = left;
+            // The pixels read and written: start - 1 to end - 1
+            _ = row[start - 1];
+            _ = row[end - 1];
+            ref var pixels = ref unsafe(MemoryMarshal.GetReference(row));
+            var left = Vector128.Create(row[start - 1]).AsByte();
+            for (; x <= end - Vector128<uint>.Count; x += Vector128<uint>.Count)
+            {
+                var sums = unsafe(Vector128.LoadUnsafe(ref pixels, (nuint)x)).AsByte();
+                sums += ShiftPixelsUp(sums, 1);
+                sums += ShiftPixelsUp(sums, 2);
+                sums += left;
+                unsafe { sums.AsUInt32().StoreUnsafe(ref pixels, (nuint)x); }
+                left = BroadcastLastPixel(sums);
+            }
+        }
+
+        if (x < end)
+        {
+            var left = row[x - 1];
+            foreach (ref var pixel in row[x..end])
+            {
+                left = Vp8LDecoder.AddPixels(pixel, left);
+                pixel = left;
+            }
+        }
+
+        // The pixels moved to the lanes count pixels higher, zeros in the first count lanes
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static Vector128<byte> ShiftPixelsUp(Vector128<byte> value, [ConstantExpected(Min = 1, Max = 2)] byte count)
+        {
+            if (AdvSimd.Arm64.IsSupported)
+                return count == 1 ? AdvSimd.ExtractVector128(Vector128<byte>.Zero, value, 12) : AdvSimd.ExtractVector128(Vector128<byte>.Zero, value, 8);
+
+            return count == 1 ? Sse2.ShiftLeftLogical128BitLane(value, 4) : Sse2.ShiftLeftLogical128BitLane(value, 8);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static Vector128<byte> BroadcastLastPixel(Vector128<byte> value)
+        {
+            if (AdvSimd.Arm64.IsSupported)
+                return AdvSimd.DuplicateSelectedScalarToVector128(value.AsUInt32(), 3).AsByte();
+
+            return Sse2.Shuffle(value.AsUInt32(), 0b11_11_11_11).AsByte();
         }
     }
 
@@ -295,6 +342,12 @@ internal static class Vp8LTransforms
         _ = above[end];
         ref var current = ref unsafe(MemoryMarshal.GetReference(row));
         ref var top = ref unsafe(MemoryMarshal.GetReference(above));
+        if (!AdvSimd.IsSupported && mode is 5 or 6 or 7 or 10)
+        {
+            PredictAveragesComplemented(ref current, ref top, start, end, mode);
+            return;
+        }
+
         var left = Load(ref current, start - 1);
         switch (mode)
         {
@@ -384,6 +437,68 @@ internal static class Vp8LTransforms
 
         // The 4 bytes as 16-bit lanes
         static Vector128<short> Widen(Vector128<byte> pixel) => Vector128.WidenLower(pixel).AsInt16();
+    }
+
+    /// <summary>
+    /// The modes 5, 6, 7 and 10 (averages of the left pixel) on x64, where the floor of a mean is a rounded mean (PAVGB) and a
+    /// correction: the chain goes through the complements of the pixels, whose rounded means are the complements of the
+    /// floors of the means (<c>~avg(a, b) = pavgb(~a, ~b)</c>), so that each step is one or two PAVGB and a subtraction:
+    /// <c>~(residual + ~p) = p - residual</c>.
+    /// </summary>
+    private static void PredictAveragesComplemented(ref uint current, ref uint top, int start, int end, int mode)
+    {
+        var ones = Vector128<byte>.AllBitsSet;
+        var complemented = Load(ref current, start - 1) ^ ones;
+        switch (mode)
+        {
+            case 5:
+                // avg(avg(L, TR), T)
+                for (var x = start; x < end; x++)
+                {
+                    complemented = Sse2.Average(Sse2.Average(complemented, Load(ref top, x + 1) ^ ones), Load(ref top, x) ^ ones) - Load(ref current, x);
+                    Store(ref current, x, complemented ^ ones);
+                }
+
+                break;
+
+            case 6:
+                // avg(L, TL)
+                for (var x = start; x < end; x++)
+                {
+                    complemented = Sse2.Average(complemented, Load(ref top, x - 1) ^ ones) - Load(ref current, x);
+                    Store(ref current, x, complemented ^ ones);
+                }
+
+                break;
+
+            case 7:
+                // avg(L, T)
+                for (var x = start; x < end; x++)
+                {
+                    complemented = Sse2.Average(complemented, Load(ref top, x) ^ ones) - Load(ref current, x);
+                    Store(ref current, x, complemented ^ ones);
+                }
+
+                break;
+
+            default:
+                // avg(avg(L, TL), avg(T, TR))
+                for (var x = start; x < end; x++)
+                {
+                    var right = Sse2.Average(Load(ref top, x) ^ ones, Load(ref top, x + 1) ^ ones);
+                    complemented = Sse2.Average(Sse2.Average(complemented, Load(ref top, x - 1) ^ ones), right) - Load(ref current, x);
+                    Store(ref current, x, complemented ^ ones);
+                }
+
+                break;
+        }
+
+        static Vector128<byte> Load(ref uint pixels, int x) => Vector128.CreateScalar(unsafe(Unsafe.Add(ref pixels, x))).AsByte();
+
+        static void Store(ref uint pixels, int x, Vector128<byte> pixel)
+        {
+            unsafe { Unsafe.Add(ref pixels, x) = pixel.AsUInt32().ToScalar(); }
+        }
     }
 
     /// <summary>The floor of the mean of each byte.</summary>

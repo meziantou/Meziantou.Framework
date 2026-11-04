@@ -14,6 +14,14 @@ description: "The results of the web-platform-tests of navigation-api, and why t
 | Reftests | 0 | 0 | 0 | – |
 | **All** | **448** | **470** | **0** | **95%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 4
+- **TEST BUG**: 8
+- **NOT IMPLEMENTED**: 10
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

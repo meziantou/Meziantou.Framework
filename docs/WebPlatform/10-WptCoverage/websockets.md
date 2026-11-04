@@ -14,6 +14,15 @@ description: "The results of the web-platform-tests of websockets, and why the t
 | Reftests | 0 | 0 | 0 | – |
 | **All** | **198** | **216** | **0** | **92%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **TEST BUG**: 1
+- **NOT IMPLEMENTED**: 14
+- **TEST RUNNER**: 1
+- **OUT OF SCOPE**: 2
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

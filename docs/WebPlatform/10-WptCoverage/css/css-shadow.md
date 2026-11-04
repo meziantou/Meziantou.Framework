@@ -14,6 +14,13 @@ description: "The results of the web-platform-tests of css/css-shadow, and why t
 | [Reftests](#reftests) | 107 | 114 | 0 | 94% |
 | **All** | **194** | **205** | **0** | **95%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **TEST BUG**: 4
+- **NOT IMPLEMENTED**: 7
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

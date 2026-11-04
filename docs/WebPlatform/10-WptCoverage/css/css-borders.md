@@ -14,6 +14,14 @@ description: "The results of the web-platform-tests of css/css-borders, and why 
 | [Reftests](#reftests) | 101 | 114 | 0 | 89% |
 | **All** | **174** | **198** | **0** | **88%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 10
+- **TEST BUG**: 10
+- **NOT IMPLEMENTED**: 4
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

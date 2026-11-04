@@ -155,6 +155,12 @@ internal sealed class TgaEncoderCodec : ImageEncoderCodec
             var storedRowLength = _width * _bytesPerStoredPixel;
             using var lease = frame.GetStorage().AcquireLease();
             var rows = Math.Min(RowsPerCall, _height - _rowsWritten);
+            if (!_runLength)
+            {
+                // The output grows once for the whole band, instead of doubling (and copying) as the rows are appended
+                output.GetSpan(rows * storedRowLength);
+            }
+
             for (var i = 0; i < rows; i++)
             {
                 CancellationToken.ThrowIfCancellationRequested();

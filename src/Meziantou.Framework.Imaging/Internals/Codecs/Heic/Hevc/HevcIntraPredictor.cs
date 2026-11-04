@@ -305,10 +305,19 @@ internal static class HevcIntraPredictor
         Span<ushort> buffer = unsafe(stackalloc ushort[(3 * 32) + 2]);
         var reference = buffer[..((3 * nTbS) + 2)];
         var mainStep = vertical ? 1 : -1;
-        for (var x = 0; x <= nTbS; x++)
+
+        // Equations 8-53 and 8-61, and 8-55 and 8-63 for an angle that is not negative: the samples above, or the samples
+        // on the left in reverse order
+        var mainCount = (intraPredAngle < 0 ? nTbS : 2 * nTbS) + 1;
+        var main = reference.Slice(nTbS, mainCount);
+        if (vertical)
         {
-            // Equations 8-53 and 8-61
-            reference[nTbS + x] = p[corner + (mainStep * x)];
+            p.Slice(corner, mainCount).CopyTo(main);
+        }
+        else
+        {
+            p.Slice(corner - mainCount + 1, mainCount).CopyTo(main);
+            main.Reverse();
         }
 
         if (intraPredAngle < 0)
@@ -322,14 +331,6 @@ internal static class HevcIntraPredictor
                 {
                     reference[nTbS + x] = p[corner - (mainStep * (((x * invAngle) + 128) >> 8))];
                 }
-            }
-        }
-        else
-        {
-            for (var x = nTbS + 1; x <= 2 * nTbS; x++)
-            {
-                // Equations 8-55 and 8-63
-                reference[nTbS + x] = p[corner + (mainStep * x)];
             }
         }
 

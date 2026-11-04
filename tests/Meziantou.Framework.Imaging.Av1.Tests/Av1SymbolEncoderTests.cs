@@ -64,6 +64,35 @@ public sealed class Av1SymbolEncoderTests
     }
 
     [Theory]
+    [InlineData(9, 3000)]
+    [InlineData(10, 60000)]
+    public void FourSymbolDistributionsAreDecodedOnACopiedState(int seed, int count)
+    {
+        // The distributions of the coefficient levels: AssertRoundTrip decodes them with ReadSymbol4Branchless too
+        var random = new Random(seed);
+        var distributions = CreateDistributions(random, 16, symbols: 4);
+        distributions[0] = [4, 8, 32764, 32768, 0];
+        distributions[1] = [32760, 32762, 32764, 32768, 0];
+        distributions[2] = [1, 2, 3, 32768, 0];
+        var operations = new (int Kind, int Distribution, int Value, int Bits)[count];
+        for (var i = 0; i < count; i++)
+        {
+            if (random.Next(4) is 0)
+            {
+                operations[i] = (1, 0, random.Next(2), 1);
+            }
+            else
+            {
+                var distribution = random.Next(distributions.Length);
+                operations[i] = (0, distribution, PickSymbol(random, distributions[distribution]), 0);
+            }
+        }
+
+        AssertRoundTrip(distributions, operations, disableCdfUpdate: false);
+        AssertRoundTrip(distributions, operations, disableCdfUpdate: true);
+    }
+
+    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public void ImprobableAndProbableSymbolsCarryIntoTheWrittenBytes(bool mostProbable)
@@ -209,18 +238,51 @@ public sealed class Av1SymbolEncoderTests
         }
 
         decoder.Exit();
+
+        // The methods that decode on a copied state: the 4-symbol distributions and the bits without branches
+        decoder = new Av1SymbolDecoder();
+        decoder.Initialize(data, 0, data.Length, disableCdfUpdate);
+        var branchless = Clone(distributions);
+        var state = decoder.Save();
+        foreach (var (kind, distribution, value, bits) in operations)
+        {
+            int actual;
+            if (kind is 0 && branchless[distribution].Length is 5)
+            {
+                actual = decoder.ReadSymbol4Branchless(ref state, branchless[distribution]);
+            }
+            else if (kind is 1)
+            {
+                actual = decoder.ReadBoolBranchless(ref state);
+            }
+            else
+            {
+                decoder.Restore(state);
+                actual = kind is 0 ? decoder.ReadSymbol(branchless[distribution]) : decoder.ReadLiteral(bits);
+                state = decoder.Save();
+            }
+
+            Assert.Equal(value, actual);
+        }
+
+        decoder.Restore(state);
+        decoder.Exit();
+        for (var i = 0; i < distributions.Length; i++)
+        {
+            Assert.Equal(decoded[i], branchless[i]);
+        }
     }
 
     private static ushort[][] Clone(ushort[][] distributions) => [.. distributions.Select(distribution => (ushort[])distribution.Clone())];
 
     // Cumulative distributions of 2 to 16 symbols in the form of the specification: increasing values that end with 32768,
     // then the adaptation counter. Some are uniform, some give nearly all the probability to one symbol
-    private static ushort[][] CreateDistributions(Random random, int count)
+    private static ushort[][] CreateDistributions(Random random, int count, int symbols = 0)
     {
         var result = new ushort[count][];
         for (var i = 0; i < count; i++)
         {
-            var n = random.Next(2, 17);
+            var n = symbols is 0 ? random.Next(2, 17) : symbols;
             var cdf = new ushort[n + 1];
             var cuts = new SortedSet<int>();
             while (cuts.Count < n - 1)

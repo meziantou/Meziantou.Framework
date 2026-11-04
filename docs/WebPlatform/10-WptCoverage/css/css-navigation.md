@@ -14,6 +14,12 @@ description: "The results of the web-platform-tests of css/css-navigation, and w
 | [Reftests](#reftests) | 0 | 3 | 3 | – |
 | **All** | **0** | **23** | **23** | **–** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **NOT IMPLEMENTED**: 23
+
 ## Tentative tests
 
 | Test | Result | Subtests | Kind | Description |

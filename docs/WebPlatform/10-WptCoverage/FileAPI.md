@@ -14,6 +14,14 @@ description: "The results of the web-platform-tests of FileAPI, and why the test
 | [Reftests](#reftests) | 1 | 1 | 0 | 100% |
 | **All** | **68** | **74** | **0** | **92%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 3
+- **NOT IMPLEMENTED**: 3
+- **TEST RUNNER**: 1
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

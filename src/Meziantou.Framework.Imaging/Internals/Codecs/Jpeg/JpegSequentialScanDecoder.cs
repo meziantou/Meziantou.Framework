@@ -113,48 +113,57 @@ internal sealed class JpegSequentialScanDecoder : JpegScanDecoder
         reader.Commit();
 
         // The DC coefficient is read back from the predictor: one value less to keep alive in the loop
-        TransformBlock(scanComponent, offset, _block, scanComponent.Predictor, naturalIndexes != 0, JpegIdct.IsSparse(naturalIndexes));
+        Transform(scanComponent, offset, scanComponent.Predictor, naturalIndexes);
     }
 
     /// <summary>
-    /// Decodes the next block like <see cref="DecodeBlock"/> when its bytes are buffered (<see cref="JpegScanDecoder.UncheckedReads"/>):
+    /// Decodes the next MCUs like <see cref="DecodeBlock"/> when their bytes are buffered (<see cref="JpegScanDecoder.UncheckedReads"/>):
     /// one lookup of <see cref="JpegHuffmanTable.FastLookup"/> per symbol, which also gives the coefficient when its
     /// magnitude bits fit, and no check of the end of the data. The other symbols are validated in the order of the
     /// regular path.
     /// </summary>
-    /// <remarks>The blocks of an MCU whose bytes are buffered share one <see cref="JpegEntropyReader.UncheckedCursor"/>.</remarks>
-    protected override void DecodeMcu(int mcuX, int mcuY)
+    /// <remarks>
+    /// The blocks of the MCUs whose bytes are buffered share one <see cref="JpegEntropyReader.UncheckedCursor"/>, up to the
+    /// end of their row.
+    /// </remarks>
+    protected override int DecodeMcus(int mcuX, int mcuY, int count)
     {
-        if (!UncheckedReads || _deferTransforms)
-        {
-            base.DecodeMcu(mcuX, mcuY);
-            return;
-        }
+        if (_deferTransforms)
+            return base.DecodeMcus(mcuX, mcuY, count);
 
         var reader = Reader;
         var cursor = reader.GetUncheckedCursor();
-        if (!IsInterleaved)
+        var decoded = 0;
+        do
         {
-            DecodeBlockUnchecked(ref cursor, Components[0], mcuY, mcuX);
-        }
-        else
-        {
-            foreach (var scanComponent in Components)
+            var x = mcuX + decoded;
+            if (!IsInterleaved)
             {
-                var component = scanComponent.Component;
-                var h = component.HorizontalSampling;
-                var v = component.VerticalSampling;
-                for (var by = 0; by < v; by++)
+                DecodeBlockUnchecked(ref cursor, Components[0], mcuY, x);
+            }
+            else
+            {
+                foreach (var scanComponent in Components)
                 {
-                    for (var bx = 0; bx < h; bx++)
+                    var component = scanComponent.Component;
+                    var h = component.HorizontalSampling;
+                    var v = component.VerticalSampling;
+                    for (var by = 0; by < v; by++)
                     {
-                        DecodeBlockUnchecked(ref cursor, scanComponent, (mcuY * v) + by, (mcuX * h) + bx);
+                        for (var bx = 0; bx < h; bx++)
+                        {
+                            DecodeBlockUnchecked(ref cursor, scanComponent, (mcuY * v) + by, (x * h) + bx);
+                        }
                     }
                 }
             }
+
+            decoded++;
         }
+        while (decoded < count && HasUncheckedBytes(cursor));
 
         cursor.Commit(reader);
+        return decoded;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -164,8 +173,8 @@ internal sealed class JpegSequentialScanDecoder : JpegScanDecoder
         var offset = scanComponent.GetBlockOffset(blockRow, blockColumn);
         var dcTable = scanComponent.DcTable!;
         var acTable = scanComponent.AcTable!;
-        var dcLookup = dcTable.FastLookup;
-        var acLookup = acTable.FastLookup;
+        var dcLookup = scanComponent.DcLookup;
+        var acLookup = scanComponent.AcLookup;
 
         // DC: difference from the prediction (T.81 F.2.2.1)
         cursor.Refill();
@@ -267,7 +276,38 @@ internal sealed class JpegSequentialScanDecoder : JpegScanDecoder
         }
         while (k < 64);
 
-        TransformBlock(scanComponent, offset, _block, dc, naturalIndexes != 0, JpegIdct.IsSparse(naturalIndexes));
+        Transform(scanComponent, offset, dc, naturalIndexes);
+    }
+
+    /// <summary>
+    /// Writes the samples of a decoded block (<see cref="JpegScanDecoder.TransformBlock(ScanComponent, int, double[], int, bool, bool)"/>),
+    /// with the case of 8-bit samples at full scale inline.
+    /// </summary>
+    /// <param name="scanComponent">The component of the block.</param>
+    /// <param name="offset">The offset of the first sample of the block in the plane of the component.</param>
+    /// <param name="dc">The quantized DC coefficient.</param>
+    /// <param name="naturalIndexes">The natural indexes of the non-zero AC coefficients ORed together, with bit 6 set when there is one.</param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void Transform(ScanComponent scanComponent, int offset, int dc, int naturalIndexes)
+    {
+        if (!scanComponent.IsFullScale8Bit)
+        {
+            TransformBlock(scanComponent, offset, _block, dc, naturalIndexes != 0, JpegIdct.IsSparse(naturalIndexes));
+            return;
+        }
+
+        var samples = scanComponent.Samples.AsSpan(offset);
+        var stride = scanComponent.Component.Stride;
+        if (naturalIndexes != 0)
+        {
+            _block[0] = dc * (double)scanComponent.Quantization[0];
+            JpegIdct.Transform(_block, samples, stride, JpegIdct.IsSparse(naturalIndexes));
+            JpegIdct.ClearBlock(_block);
+        }
+        else
+        {
+            JpegIdct.TransformDcOnly((long)dc * scanComponent.Quantization[0], samples, stride);
+        }
     }
 
     /// <summary>

@@ -14,6 +14,14 @@ description: "The results of the web-platform-tests of wasm, and why the tests t
 | Reftests | 0 | 0 | 0 | – |
 | **All** | **339** | **412** | **0** | **82%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 1
+- **TEST BUG**: 4
+- **NOT IMPLEMENTED**: 68
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

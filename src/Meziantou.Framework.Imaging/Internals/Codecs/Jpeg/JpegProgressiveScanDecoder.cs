@@ -43,6 +43,9 @@ internal sealed class JpegProgressiveScanDecoder : JpegScanDecoder
     private readonly int _low;
     private readonly bool _refinement;
     private readonly bool _referenceRefinement;
+
+    // The natural indexes of the coefficients of the band
+    private readonly ulong _naturalBand;
     private int _endOfBandRun;
 
     /// <param name="components">The scan components with their tables, in scan order.</param>
@@ -63,6 +66,10 @@ internal sealed class JpegProgressiveScanDecoder : JpegScanDecoder
         _low = low;
         _refinement = high != 0;
         _referenceRefinement = s_testUseReferenceRefinement;
+        for (var k = start; k <= end; k++)
+        {
+            _naturalBand |= 1UL << JpegIdct.ZigZag[k];
+        }
     }
 
     /// <summary>
@@ -101,18 +108,10 @@ internal sealed class JpegProgressiveScanDecoder : JpegScanDecoder
         }
         else if (_refinement)
         {
+            // The blocks whose bytes are buffered are decoded by DecodeMcus
             if (_referenceRefinement)
             {
                 DecodeAcRefinementReference(scanComponent.AcTable!, block);
-            }
-            else if (UncheckedReads && Bmi2.X64.IsSupported && _endOfBandRun == 0)
-            {
-                // A block of an EOB run only has correction bits: the regular walk is cheaper for it
-                DecodeAcRefinementDeferred(scanComponent.AcTable!, block);
-            }
-            else if (UncheckedReads)
-            {
-                DecodeAcRefinementUnchecked(scanComponent.AcTable!, block);
             }
             else
             {
@@ -126,41 +125,219 @@ internal sealed class JpegProgressiveScanDecoder : JpegScanDecoder
     }
 
     /// <remarks>
-    /// The blocks of an MCU of a DC scan whose bytes are buffered (<see cref="JpegScanDecoder.UncheckedReads"/>) share one
-    /// <see cref="JpegEntropyReader.UncheckedCursor"/>.
+    /// <para>
+    /// The MCUs of a DC scan whose bytes are buffered (<see cref="JpegScanDecoder.UncheckedReads"/>) share one
+    /// <see cref="JpegEntropyReader.UncheckedCursor"/>, up to the end of their row.
+    /// </para>
+    /// <para>
+    /// So do the blocks of an AC refinement scan: a block of an EOB run, which only has the correction bits of its nonzero
+    /// coefficients (most often none), is refined in the loop; the other blocks are decoded by
+    /// <see cref="DecodeAcRefinementDeferred"/> (x64 with BMI2) or <see cref="DecodeAcRefinementUnchecked"/>.
+    /// </para>
     /// </remarks>
-    protected override void DecodeMcu(int mcuX, int mcuY)
+    protected override int DecodeMcus(int mcuX, int mcuY, int count)
     {
-        if (_start != 0 || !UncheckedReads)
-        {
-            base.DecodeMcu(mcuX, mcuY);
-            return;
-        }
+        if (_start == 0)
+            return DecodeDcMcus(mcuX, mcuY, count);
 
+        if (!_refinement)
+            return DecodeAcFirstBlocks(mcuX, mcuY, count);
+
+        if (!_referenceRefinement)
+            return DecodeAcRefinementBlocks(mcuX, mcuY, count);
+
+        return base.DecodeMcus(mcuX, mcuY, count);
+    }
+
+    /// <summary>
+    /// The blocks of an AC first scan whose bytes are buffered, like <see cref="DecodeAcFirst"/>: one lookup of
+    /// <see cref="JpegHuffmanTable.FastLookup"/> per symbol, which also gives the coefficient when its magnitude bits fit,
+    /// and the same checks in the same order. The blocks of an EOB run that the row has are counted as decoded; the rest
+    /// of the run is left to the scan (<see cref="JpegScanDecoder.SkippableMcus"/>).
+    /// </summary>
+    private int DecodeAcFirstBlocks(int mcuX, int mcuY, int count)
+    {
+        Debug.Assert(SkippableMcus == 0);
+        var scanComponent = Components[0];
+        var table = scanComponent.AcTable!;
+        var lookup = table.FastLookup;
         var reader = Reader;
         var cursor = reader.GetUncheckedCursor();
-        if (!IsInterleaved)
+        ref var zigZag = ref unsafe(MemoryMarshal.GetReference(JpegIdct.ZigZag));
+        var start = _start;
+        var end = _end;
+        var low = _low;
+        var skippable = 0;
+        var decoded = 0;
+        do
         {
-            DecodeDcUnchecked(ref cursor, Components[0], mcuY, mcuX);
-        }
-        else
-        {
-            foreach (var scanComponent in Components)
+            ref var coefficients = ref unsafe(MemoryMarshal.GetReference(scanComponent.GetCoefficients(mcuY, mcuX + decoded)));
+            var k = start;
+            do
             {
-                var component = scanComponent.Component;
-                var h = component.HorizontalSampling;
-                var v = component.VerticalSampling;
-                for (var by = 0; by < v; by++)
+                cursor.Refill();
+                var entry = cursor.Lookup(lookup);
+                int symbol;
+                var coefficient = 0;
+                if ((entry & JpegHuffmanTable.FastLookupComplete) != 0)
                 {
-                    for (var bx = 0; bx < h; bx++)
+                    cursor.Consume(entry);
+                    symbol = (entry >> JpegHuffmanTable.FastLookupSymbolShift) & 0xFF;
+                    coefficient = entry >> JpegHuffmanTable.FastLookupValueShift;
+                }
+                else
+                {
+                    if (entry != 0)
                     {
-                        DecodeDcUnchecked(ref cursor, scanComponent, (mcuY * v) + by, (mcuX * h) + bx);
+                        cursor.Consume(entry);
+                        symbol = (entry >> JpegHuffmanTable.FastLookupSymbolShift) & 0xFF;
+                    }
+                    else
+                    {
+                        symbol = cursor.DecodeLongCode(table);
+                    }
+
+                    var size = symbol & 0x0F;
+                    if (size != 0)
+                    {
+                        if (k + (symbol >> 4) > end)
+                            throw Invalid("The JPEG AC coefficients run past the end of the spectral band.");
+
+                        if (size > MaxAcCategory)
+                            throw CreateAcCategoryException();
+
+                        coefficient = cursor.ReceiveExtend(size);
+                    }
+                }
+
+                var run = symbol >> 4;
+                if ((symbol & 0x0F) == 0)
+                {
+                    if (run != 15)
+                    {
+                        // EOBn: this block and the next 2^n - 1 + (n extra bits) blocks end here
+                        skippable = (1 << run) - 1 + (run == 0 ? 0 : cursor.ReadBits(run));
+                        break;
+                    }
+
+                    k += 16; // ZRL
+                    continue;
+                }
+
+                k += run;
+                if (k > end)
+                    throw Invalid("The JPEG AC coefficients run past the end of the spectral band.");
+
+                var shifted = (long)coefficient << low;
+                if (Math.Abs(shifted) > short.MaxValue)
+                    throw Invalid("The JPEG AC coefficient is out of range.");
+
+                // The zig-zag position is at most 63 and the block has 64 coefficients
+                unsafe { Unsafe.Add(ref coefficients, Unsafe.Add(ref zigZag, k)) = (short)shifted; }
+                k++;
+            }
+            while (k <= end);
+
+            decoded++;
+            if (skippable > 0)
+            {
+                // The blocks of the run code nothing: as many as the row has are decoded
+                var skipped = Math.Min(skippable, count - decoded);
+                decoded += skipped;
+                skippable -= skipped;
+                if (skippable > 0)
+                    break;
+            }
+        }
+        while (decoded < count && HasUncheckedBytes(cursor));
+
+        cursor.Commit(reader);
+        SkippableMcus = skippable;
+        return decoded;
+    }
+
+    private int DecodeDcMcus(int mcuX, int mcuY, int count)
+    {
+        var reader = Reader;
+        var cursor = reader.GetUncheckedCursor();
+        var decoded = 0;
+        do
+        {
+            var x = mcuX + decoded;
+            if (!IsInterleaved)
+            {
+                DecodeDcUnchecked(ref cursor, Components[0], mcuY, x);
+            }
+            else
+            {
+                foreach (var scanComponent in Components)
+                {
+                    var component = scanComponent.Component;
+                    var h = component.HorizontalSampling;
+                    var v = component.VerticalSampling;
+                    for (var by = 0; by < v; by++)
+                    {
+                        for (var bx = 0; bx < h; bx++)
+                        {
+                            DecodeDcUnchecked(ref cursor, scanComponent, (mcuY * v) + by, (x * h) + bx);
+                        }
                     }
                 }
             }
+
+            decoded++;
         }
+        while (decoded < count && HasUncheckedBytes(cursor));
 
         cursor.Commit(reader);
+        return decoded;
+    }
+
+    private int DecodeAcRefinementBlocks(int mcuX, int mcuY, int count)
+    {
+        // An AC scan has one component, and its MCU is one block
+        var scanComponent = Components[0];
+        var table = scanComponent.AcTable!;
+        var reader = Reader;
+        var naturalBand = _naturalBand;
+        var positive = 1 << _low;
+        var cursor = reader.GetUncheckedCursor();
+        var decoded = 0;
+        do
+        {
+            var block = scanComponent.GetCoefficients(mcuY, mcuX + decoded);
+            if (_endOfBandRun > 0)
+            {
+                // The correction bits of the nonzero coefficients of the band, in zig-zag order
+                var natural = JpegIdct.GetNonzeroMask(block) & naturalBand;
+                if (natural != 0)
+                {
+                    RefineAll(ref cursor, block, ToZigZagMask(natural), positive);
+                }
+
+                _endOfBandRun--;
+            }
+            else
+            {
+                cursor.Commit(reader);
+                if (Bmi2.X64.IsSupported)
+                {
+                    DecodeAcRefinementDeferred(table, scanComponent.AcLookup, block);
+                }
+                else
+                {
+                    DecodeAcRefinementUnchecked(table, scanComponent.AcLookup, block);
+                }
+
+                cursor = reader.GetUncheckedCursor();
+            }
+
+            decoded++;
+        }
+        while (decoded < count && HasUncheckedBytes(cursor));
+
+        cursor.Commit(reader);
+        return decoded;
     }
 
     /// <summary>
@@ -171,21 +348,16 @@ internal sealed class JpegProgressiveScanDecoder : JpegScanDecoder
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void DecodeDcUnchecked(ref JpegEntropyReader.UncheckedCursor cursor, ScanComponent scanComponent, int blockRow, int blockColumn)
     {
-        var block = scanComponent.GetCoefficients(blockRow, blockColumn);
+        ref var coefficient = ref unsafe(MemoryMarshal.GetReference(scanComponent.GetCoefficients(blockRow, blockColumn)));
         cursor.Refill();
         if (_refinement)
         {
             // T.81 G.1.2.1: the next bit of the DC value
-            if (cursor.ReadBits(1) != 0)
-            {
-                block[0] |= (short)(1 << _low);
-            }
-
+            coefficient |= (short)(cursor.ReadBits(1) << _low);
             return;
         }
 
-        var table = scanComponent.DcTable!;
-        var entry = cursor.Lookup(table.FastLookup);
+        var entry = cursor.Lookup(scanComponent.DcLookup);
         int difference;
         if ((entry & JpegHuffmanTable.FastLookupComplete) != 0)
         {
@@ -202,11 +374,11 @@ internal sealed class JpegProgressiveScanDecoder : JpegScanDecoder
             }
             else
             {
-                category = cursor.DecodeLongCode(table);
+                category = cursor.DecodeLongCode(scanComponent.DcTable!);
             }
 
             if (category > MaxDcCategory)
-                throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG DC coefficient category is greater than {MaxDcCategory}."));
+                throw CreateDcCategoryException();
 
             difference = category == 0 ? 0 : cursor.ReceiveExtend(category);
         }
@@ -214,11 +386,18 @@ internal sealed class JpegProgressiveScanDecoder : JpegScanDecoder
         var dc = scanComponent.Predictor + difference;
         var value = (long)dc << _low;
         if (value is < short.MinValue or > short.MaxValue)
-            throw Invalid("The JPEG DC coefficient is out of range.");
+            throw CreateDcRangeException();
 
         scanComponent.Predictor = dc;
-        block[0] = (short)value;
+        coefficient = (short)value;
     }
+
+    // The exceptions are created out of line, which keeps their message formatting out of the inlined loops
+    private InvalidImageContentException CreateDcCategoryException() => Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG DC coefficient category is greater than {MaxDcCategory}."));
+
+    private static InvalidImageContentException CreateDcRangeException() => Invalid("The JPEG DC coefficient is out of range.");
+
+    private InvalidImageContentException CreateAcCategoryException() => Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG AC coefficient magnitude category is greater than {MaxAcCategory}."));
 
     /// <summary>T.81 G.1.2.1: the DC difference from the prediction, in the point-transformed domain.</summary>
     private void DecodeDcFirst(ScanComponent scanComponent, Span<short> block)
@@ -226,7 +405,7 @@ internal sealed class JpegProgressiveScanDecoder : JpegScanDecoder
         var reader = Reader;
         var category = reader.DecodeHuffman(scanComponent.DcTable!);
         if (category > MaxDcCategory)
-            throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG DC coefficient category is greater than {MaxDcCategory}."));
+            throw CreateDcCategoryException();
 
         var dc = scanComponent.Predictor + (category == 0 ? 0 : reader.ReceiveExtend(category));
         var value = (long)dc << _low;
@@ -291,7 +470,7 @@ internal sealed class JpegProgressiveScanDecoder : JpegScanDecoder
                 throw Invalid("The JPEG AC coefficients run past the end of the spectral band.");
 
             if (size > MaxAcCategory)
-                throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG AC coefficient magnitude category is greater than {MaxAcCategory}."));
+                throw CreateAcCategoryException();
 
             var value = (long)reader.ReceiveExtend(size) << low;
             if (Math.Abs(value) > short.MaxValue)
@@ -390,16 +569,18 @@ internal sealed class JpegProgressiveScanDecoder : JpegScanDecoder
     /// one lookup of <see cref="JpegHuffmanTable.FastLookup"/> per symbol, which also gives the sign bit of a newly nonzero
     /// coefficient when it fits, and the same bits read in the same order, with the same errors.
     /// </summary>
-    private void DecodeAcRefinementUnchecked(JpegHuffmanTable table, Span<short> block)
+    private void DecodeAcRefinementUnchecked(JpegHuffmanTable table, int[] lookup, Span<short> block)
     {
-        var lookup = table.FastLookup;
         var reader = Reader;
         var cursor = reader.GetUncheckedCursor();
         var positive = 1 << _low;
         var end = _end;
         var endOfBandRun = _endOfBandRun;
         var k = _start;
-        var nonzero = GetNonzeroMask(block);
+
+        // Only the coefficients of the band are refined: often none of them is nonzero yet
+        var natural = JpegIdct.GetNonzeroMask(block) & _naturalBand;
+        var nonzero = natural == 0 ? 0 : ToZigZagMask(natural);
         if (endOfBandRun == 0)
         {
             while (k <= end)
@@ -490,17 +671,27 @@ internal sealed class JpegProgressiveScanDecoder : JpegScanDecoder
     /// (PDEP, in bit-reversed zig-zag order, where the first bit read is the highest), and the zero coefficient after a run is
     /// found by one deposit instead of a loop: the same bits are read in the same order, with the same errors.
     /// </summary>
-    private void DecodeAcRefinementDeferred(JpegHuffmanTable table, Span<short> block)
+    private void DecodeAcRefinementDeferred(JpegHuffmanTable table, int[] lookup, Span<short> block)
     {
-        var lookup = table.FastLookup;
         var reader = Reader;
         var cursor = reader.GetUncheckedCursor();
         var positive = 1 << _low;
         var end = _end;
         var endOfBandRun = _endOfBandRun;
         var k = _start;
-        var nonzero = GetNonzeroMask(block);
-        var reversedNonzero = ReverseBits(nonzero);
+
+        // Only the coefficients of the band are refined: often none of them is nonzero yet
+        var natural = JpegIdct.GetNonzeroMask(block) & _naturalBand;
+        ulong nonzero = 0;
+        ulong reversedNonzero = 0;
+        if (natural != 0)
+        {
+            nonzero = ToZigZagMask(natural);
+            reversedNonzero = ReverseBits(nonzero);
+        }
+
+        // The zero coefficients of the band up to its end (the positions from k are taken at each symbol)
+        var zeroMask = ~nonzero & (ulong.MaxValue >> (63 - end));
 
         // The coefficients whose correction bit is set, at bit 63 - k for the zig-zag position k
         ulong corrections = 0;
@@ -532,7 +723,7 @@ internal sealed class JpegProgressiveScanDecoder : JpegScanDecoder
 
                     if ((symbol & 0x0F) == 1)
                     {
-                        sign = cursor.ReadBits(1) != 0 ? 1 : -1;
+                        sign = (cursor.ReadBits(1) << 1) - 1;
                     }
                 }
 
@@ -544,7 +735,9 @@ internal sealed class JpegProgressiveScanDecoder : JpegScanDecoder
                     if (size != 1)
                         throw Invalid("A JPEG AC refinement scan codes a magnitude other than 1.");
 
-                    value = sign > 0 ? positive : -positive;
+                    // 2^Al with the sign (1 or -1), without a branch on it
+                    var negative = sign >> 31;
+                    value = (positive ^ negative) - negative;
                 }
                 else if (run != 15)
                 {
@@ -553,11 +746,14 @@ internal sealed class JpegProgressiveScanDecoder : JpegScanDecoder
                     break;
                 }
 
-                // The zero coefficient after 'run' zero coefficients (16 for ZRL): the run + 1st zero of the band, if any
-                var zeros = ~nonzero & GetBandMask(k, end);
-                var next = run == 0 ? zeros : Bmi2.X64.ParallelBitDeposit(1UL << run, zeros);
-                var stop = next == 0 ? end + 1 : BitOperations.TrailingZeroCount(next);
-                corrections |= ReadCorrections(ref cursor, reversedNonzero & GetBandMask(63 - (stop - 1), 63 - k));
+                // The zero coefficient after 'run' zero coefficients (16 for ZRL): the run + 1st zero of the band from k,
+                // if any (k is at most 63 here; the trailing zero count of no bit is 64)
+                var next = Bmi2.X64.ParallelBitDeposit(1UL << run, zeroMask & (ulong.MaxValue << k));
+                var stop = Math.Min(BitOperations.TrailingZeroCount(next), end + 1);
+
+                // The nonzero coefficients from k to stop - 1: the bits 64 - stop to 63 - k of the reversed mask (none
+                // when stop is k)
+                corrections |= ReadCorrections(ref cursor, reversedNonzero & (ulong.MaxValue << (64 - stop)) & (ulong.MaxValue >> k));
                 k = stop;
                 if (value != 0)
                 {
@@ -794,26 +990,12 @@ internal sealed class JpegProgressiveScanDecoder : JpegScanDecoder
 
     /// <summary>Gets the mask of the nonzero coefficients of a block, in zig-zag order.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static ulong GetNonzeroMask(Span<short> block)
-    {
-        ulong natural;
-        if (Vector128.IsHardwareAccelerated)
-        {
-            ref var start = ref unsafe(MemoryMarshal.GetReference(block));
-            natural = (ulong)GetNonzeroBits(ref start, 0)
-                | ((ulong)GetNonzeroBits(ref start, 16) << 16)
-                | ((ulong)GetNonzeroBits(ref start, 32) << 32)
-                | ((ulong)GetNonzeroBits(ref start, 48) << 48);
-        }
-        else
-        {
-            natural = 0;
-            for (var i = 0; i < 64; i++)
-            {
-                natural |= (block[i] != 0 ? 1UL : 0) << i;
-            }
-        }
+    private static ulong GetNonzeroMask(Span<short> block) => ToZigZagMask(JpegIdct.GetNonzeroMask(block));
 
+    /// <summary>Converts a mask of coefficients in natural order (bit <c>i</c>: the coefficient <c>i</c>) to zig-zag order.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static ulong ToZigZagMask(ulong natural)
+    {
         var tables = ZigZagMasks;
         return tables[(int)(natural & 0xFF)]
             | tables[256 + (int)((natural >> 8) & 0xFF)]
@@ -823,15 +1005,6 @@ internal sealed class JpegProgressiveScanDecoder : JpegScanDecoder
             | tables[1280 + (int)((natural >> 40) & 0xFF)]
             | tables[1536 + (int)((natural >> 48) & 0xFF)]
             | tables[1792 + (int)(natural >> 56)];
-
-        // Bit i: the coefficient offset + i is nonzero
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static uint GetNonzeroBits(ref short start, nuint offset)
-        {
-            var low = Vector128.Equals(unsafe(Vector128.LoadUnsafe(ref start, offset)), Vector128<short>.Zero);
-            var high = Vector128.Equals(unsafe(Vector128.LoadUnsafe(ref start, offset + 8)), Vector128<short>.Zero);
-            return ~Vector128.Narrow(low, high).ExtractMostSignificantBits() & 0xFFFF;
-        }
     }
 
     private static ulong[] CreateZigZagMasks()

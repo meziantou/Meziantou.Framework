@@ -14,6 +14,15 @@ description: "The results of the web-platform-tests of css/css-images, and why t
 | [Reftests](#reftests) | 465 | 476 | 0 | 98% |
 | **All** | **509** | **521** | **0** | **98%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 4
+- **TEST BUG**: 5
+- **NOT IMPLEMENTED**: 2
+- **TEST RUNNER**: 1
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

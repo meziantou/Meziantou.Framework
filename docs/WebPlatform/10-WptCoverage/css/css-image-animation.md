@@ -14,6 +14,12 @@ description: "The results of the web-platform-tests of css/css-image-animation, 
 | [Reftests](#reftests) | 0 | 22 | 22 | – |
 | **All** | **0** | **23** | **23** | **–** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **NOT IMPLEMENTED**: 23
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

@@ -14,6 +14,17 @@ description: "The results of the web-platform-tests of css/css-text, and why the
 | [Reftests](#reftests) | 1,514 | 1,559 | 0 | 97% |
 | **All** | **1,872** | **1,926** | **0** | **97%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 1
+- **TEST BUG**: 46
+- **NOT IMPLEMENTED**: 4
+- **REQUIRES**: 1
+  - `rendering`: 1
+- **TEST RUNNER**: 2
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

@@ -38,7 +38,10 @@ internal sealed partial class AvifDecoder : HeifDecodeObserver
     {
         ArgumentNullException.ThrowIfNull(structure);
         _structure = structure;
-        _sink = DecodedFrameSink.Create(_context, _request, ImageFormat.Avif, structure.CanvasSize, structure.PixelFormat, structure.SourcePixelFormat, structure.Metadata.IccProfile);
+        // An opaque 8-bit image loaded as Rgba32 is converted to Rgba32 rows, which the sink stores as they are, instead of Rgb24
+        // rows that it would widen
+        var source = structure.SourcePixelFormat is PixelFormat.Rgb24 && _request.PixelFormat is PixelFormat.Rgba32 ? PixelFormat.Rgba32 : structure.SourcePixelFormat;
+        _sink = DecodedFrameSink.Create(_context, _request, ImageFormat.Avif, structure.CanvasSize, structure.PixelFormat, source, structure.Metadata.IccProfile);
     }
 
     public override void OnImageData(HeifStructureParser structure)

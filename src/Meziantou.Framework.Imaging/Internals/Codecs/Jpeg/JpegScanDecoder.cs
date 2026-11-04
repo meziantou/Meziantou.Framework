@@ -440,7 +440,22 @@ internal abstract class JpegScanDecoder
                     return;
 
                 Debug.Assert(!UncheckedReads || _reader.BufferedBytes >= _uncheckedBytes);
-                DecodeMcu(_mcuX, _mcuY);
+                if (UncheckedReads)
+                {
+                    // The MCUs up to the end of the row or of the restart interval, as far as their bytes are buffered
+                    count = _mcusPerLine - _mcuX;
+                    if (_restartInterval > 0)
+                    {
+                        count = Math.Min(count, _intervalRemaining);
+                    }
+
+                    count = DecodeMcus(_mcuX, _mcuY, count);
+                    Debug.Assert(count >= 1);
+                }
+                else
+                {
+                    DecodeMcu(_mcuX, _mcuY);
+                }
             }
 
             _mcu += count;
@@ -456,6 +471,30 @@ internal abstract class JpegScanDecoder
             }
         }
     }
+
+    /// <summary>
+    /// Decodes the next MCUs of a row whose bytes are buffered (<see cref="UncheckedReads"/>): at least the first one, then
+    /// each next one as long as <see cref="HasUncheckedBytes"/> holds before it, which subclasses check with the bit state in
+    /// locals instead of returning to the scan after each MCU. The default decodes one MCU (<see cref="DecodeMcu"/>).
+    /// </summary>
+    /// <param name="mcuX">The column of the first MCU.</param>
+    /// <param name="mcuY">The row of the MCUs.</param>
+    /// <param name="count">The number of MCUs to the end of the row or of the restart interval (at least 1).</param>
+    /// <returns>The number of MCUs decoded, from 1 to <paramref name="count"/>.</returns>
+    /// <remarks>An MCU that sets <see cref="SkippableMcus"/> must be the last one decoded.</remarks>
+    protected virtual int DecodeMcus(int mcuX, int mcuY, int count)
+    {
+        DecodeMcu(mcuX, mcuY);
+        return 1;
+    }
+
+    /// <summary>
+    /// Gets a value indicating whether the next MCU of <see cref="DecodeMcus"/> can be decoded with the bit state of a cursor:
+    /// the bytes of the largest MCU and 16 more are buffered after it, as the scan checks before each MCU.
+    /// </summary>
+    /// <param name="cursor">The bit state.</param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    protected bool HasUncheckedBytes(in JpegEntropyReader.UncheckedCursor cursor) => cursor.GetAvailableBytes(_reader) >= _safeBytes;
 
     /// <summary>Decodes the blocks of an MCU, in scan order (<see cref="DecodeBlock"/>).</summary>
     /// <param name="mcuX">The column of the MCU.</param>
@@ -498,6 +537,15 @@ internal abstract class JpegScanDecoder
 
         /// <summary>Gets the quantization values in natural order.</summary>
         public ushort[] Quantization { get; } = quantization;
+
+        /// <summary>Gets the <see cref="JpegHuffmanTable.FastLookup"/> of the DC table, or an empty array without DC table.</summary>
+        public int[] DcLookup { get; } = dcTable?.FastLookup ?? [];
+
+        /// <summary>Gets the <see cref="JpegHuffmanTable.FastLookup"/> of the AC table, or an empty array without AC table.</summary>
+        public int[] AcLookup { get; } = acTable?.FastLookup ?? [];
+
+        /// <summary>Gets a value indicating whether the component has 8-bit samples at full scale (the first case of <see cref="TransformBlock(ScanComponent, int, double[], int, bool, bool)"/>).</summary>
+        public bool IsFullScale8Bit { get; } = !component.IsReduced && !component.HasDeepSamples;
 
         /// <summary>
         /// Gets, for each zig-zag position, <c>(quantization value &lt;&lt; 6) | natural index</c>: the two lookups of a

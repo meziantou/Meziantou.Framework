@@ -14,6 +14,13 @@ description: "The results of the web-platform-tests of web-nfc, and why the test
 | Reftests | 0 | 0 | 0 | – |
 | **All** | **0** | **11** | **11** | **–** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **REQUIRES**: 11
+  - `hardware`: 11
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

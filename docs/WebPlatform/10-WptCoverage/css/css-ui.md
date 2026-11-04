@@ -14,6 +14,17 @@ description: "The results of the web-platform-tests of css/css-ui, and why the t
 | [Reftests](#reftests) | 959 | 964 | 0 | 99% |
 | **All** | **1,064** | **1,081** | **0** | **98%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 2
+- **TEST BUG**: 4
+- **NOT IMPLEMENTED**: 4
+- **REQUIRES**: 7
+  - `layout`: 7
+- **TEST RUNNER**: 4
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

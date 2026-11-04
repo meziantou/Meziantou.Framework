@@ -14,6 +14,13 @@ description: "The results of the web-platform-tests of container-timing, and why
 | Reftests | 0 | 0 | 0 | – |
 | **All** | **0** | **29** | **29** | **–** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **REQUIRES**: 29
+  - `rendering`: 29
+
 ## Tentative tests
 
 | Test | Result | Subtests | Kind | Description |

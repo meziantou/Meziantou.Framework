@@ -308,7 +308,15 @@ internal sealed class QoiStructureParser : ImageParser<ImageInfo>
                 // Chunks of the current row: while a chunk of any length fits in the buffer, no length is checked
                 if (i <= buffer.Length - QoiFormat.MaxChunkLength)
                 {
-                    DecodeCompleteChunks(buffer, ref i, consumed, row, row32, index, opaque, ref pixel, ref x);
+                    if (channels == 4)
+                    {
+                        DecodeCompleteChunks<RgbaRow>(buffer, ref i, consumed, row, index, opaque, ref pixel, ref x);
+                    }
+                    else
+                    {
+                        DecodeCompleteChunks<RgbRow>(buffer, ref i, consumed, row, index, opaque, ref pixel, ref x);
+                    }
+
                     if (x == width)
                         continue;
                 }
@@ -421,10 +429,15 @@ internal sealed class QoiStructureParser : ImageParser<ImageInfo>
     /// <paramref name="position"/>: no chunk can then be incomplete, so the input, the index and the row are read and written
     /// without checks. Stops at the end of the row or when fewer bytes remain; the caller decodes the rest with checks.
     /// </summary>
-    private void DecodeCompleteChunks(ReadOnlySpan<byte> buffer, ref int position, int consumed, Span<byte> row, Span<uint> row32, Span<uint> index, uint opaque, ref uint pixel, ref int column)
+    /// <remarks>
+    /// The loop is specialized for the 3- and 4-byte rows (<typeparamref name="TChannels"/>), and the runs, mostly of one or
+    /// two pixels, are written in place: the remaining pixels of the image are only counted for a run that crosses the end
+    /// of the row.
+    /// </remarks>
+    private void DecodeCompleteChunks<TChannels>(ReadOnlySpan<byte> buffer, ref int position, int consumed, Span<byte> row, Span<uint> index, uint opaque, ref uint pixel, ref int column)
+        where TChannels : struct, IRowChannels
     {
         var width = Width;
-        var channels = row32.IsEmpty ? 3 : 4;
         var limit = buffer.Length - QoiFormat.MaxChunkLength;
         ref var source = ref unsafe(MemoryMarshal.GetReference(buffer));
         ref var entries = ref unsafe(MemoryMarshal.GetReference(index));
@@ -467,16 +480,29 @@ internal sealed class QoiStructureParser : ImageParser<ImageInfo>
             {
                 // QOI_OP_RUN: 1-62 repetitions of the previous pixel; the part past this row is carried over
                 var run = (int)(tag & 0x3F) + 1;
-                var left = ((long)(Height - _y) * width) - x;
-                if (run > left)
-                    throw RunPastEnd(run, left, _position + (i - consumed));
+                var count = width - x;
+                if (run <= count)
+                {
+                    count = run;
+                }
+                else
+                {
+                    var left = ((long)(Height - _y) * width) - x;
+                    if (run > left)
+                        throw RunPastEnd(run, left, _position + (i - consumed));
+
+                    _run = run - count;
+                }
 
                 unsafe { Unsafe.Add(ref entries, QoiFormat.Hash(current)) = current; }
                 i++;
-                var count = Math.Min(run, width - x);
-                Fill(row, row32, channels, x, count, current | opaque);
+                var value = current | opaque;
+                for (var k = 0; k < count; k++)
+                {
+                    TChannels.Write(ref destination, x + k, value);
+                }
+
                 x += count;
-                _run = run - count;
                 continue;
             }
             else
@@ -501,21 +527,7 @@ internal sealed class QoiStructureParser : ImageParser<ImageInfo>
             }
 
             unsafe { Unsafe.Add(ref entries, QoiFormat.Hash(current)) = current; }
-            if (channels == 4)
-            {
-                unsafe { Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, x * 4), current | opaque); }
-            }
-            else
-            {
-                ref var target = ref unsafe(Unsafe.Add(ref destination, x * 3));
-                target = (byte)current;
-                unsafe
-                {
-                    Unsafe.Add(ref target, 1) = (byte)(current >> 8);
-                    Unsafe.Add(ref target, 2) = (byte)(current >> 16);
-                }
-            }
-
+            TChannels.Write(ref destination, x, current | opaque);
             x++;
         }
 
@@ -571,4 +583,37 @@ internal sealed class QoiStructureParser : ImageParser<ImageInfo>
         => Invalid(string.Create(CultureInfo.InvariantCulture, $"The QOI run of {run} pixels at offset {position} extends past the last pixel ({left} pixels are left)."));
 
     private static InvalidImageContentException Invalid(string message) => new(message, ImageFormat.Qoi);
+
+    /// <summary>The layout of the rows given to the decoder, as a type argument, so that each layout gets its own specialized chunk loop.</summary>
+    private interface IRowChannels
+    {
+        /// <summary>Writes the pixel <paramref name="x"/> of a row from a packed RGBA value.</summary>
+        static abstract void Write(ref byte row, int x, uint value);
+    }
+
+    /// <summary>3-byte RGB rows.</summary>
+    private readonly struct RgbRow : IRowChannels
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Write(ref byte row, int x, uint value)
+        {
+            ref var target = ref unsafe(Unsafe.Add(ref row, x * 3));
+            target = (byte)value;
+            unsafe
+            {
+                Unsafe.Add(ref target, 1) = (byte)(value >> 8);
+                Unsafe.Add(ref target, 2) = (byte)(value >> 16);
+            }
+        }
+    }
+
+    /// <summary>4-byte RGBA rows.</summary>
+    private readonly struct RgbaRow : IRowChannels
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Write(ref byte row, int x, uint value)
+        {
+            unsafe { Unsafe.Add(ref Unsafe.As<byte, uint>(ref row), x) = value; }
+        }
+    }
 }

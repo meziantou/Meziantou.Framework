@@ -14,6 +14,19 @@ description: "The results of the web-platform-tests of service-workers, and why 
 | [Reftests](#reftests) | 1 | 1 | 0 | 100% |
 | **All** | **246** | **295** | **4** | **85%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 13
+- **TEST BUG**: 7
+- **NOT IMPLEMENTED**: 24
+- **REQUIRES**: 2
+  - `service-workers`: 1
+  - `user-input`: 1
+- **TEST RUNNER**: 2
+- **FLAKY**: 3
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

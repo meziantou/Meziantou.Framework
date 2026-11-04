@@ -14,6 +14,14 @@ description: "The results of the web-platform-tests of css/filter-effects, and w
 | [Reftests](#reftests) | 382 | 394 | 0 | 97% |
 | **All** | **419** | **431** | **0** | **97%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 8
+- **TEST BUG**: 4
+- **NOT IMPLEMENTED**: 1
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

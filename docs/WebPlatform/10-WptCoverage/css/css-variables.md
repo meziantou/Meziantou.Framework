@@ -14,6 +14,13 @@ description: "The results of the web-platform-tests of css/css-variables, and wh
 | [Reftests](#reftests) | 183 | 183 | 0 | 100% |
 | **All** | **244** | **246** | **0** | **99%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 1
+- **TEST BUG**: 1
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

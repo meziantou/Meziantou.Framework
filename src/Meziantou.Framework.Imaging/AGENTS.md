@@ -473,14 +473,21 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   codes its values in the fewest bits (counted as fine tokens, from which the token of every candidate configuration
   follows), and keeps the smaller of prefix codes and ANS. `JpegXlLz77Parser` finds copies with a hash chain and the left
   and above distances, priced with the token costs of a first count without copies; the code with copies is kept only
-  when its estimated size is smaller. The samples are computed twice (counted, then written) instead of being kept,
-  so the memory is the samples of the tree and one group per worker. Decisions that were measured (2026-10-30, 12
+  when its estimated size is smaller. The frame is parsed only when a trial says the copies may win
+  (`IsLz77Worthwhile`: one group in 8, two candidates per value, both codes built and their sizes extrapolated to the
+  frame); the copies found when the groups are counted are kept (`Lz77Copy`, unless a stream has more than one per 16
+  values) and written without a second parse. The samples are computed twice (counted, then written) instead of being
+  kept, so the memory is the samples of the tree and one group per worker: keeping the contexts and residuals (8 bytes
+  per sample, or 1 byte for the leaf of a sample) would save one of the two passes of `JpegXlTreeCoder.Collect`, about
+  a fifth of the time at the effort 5. Decisions that were measured (2026-10-30, 12
   images: photographs, screenshots rendered by WebPlatform, charts, text, repeated tiles; cjxl 0.12.0 at the same effort,
   one thread):
   - Size against cjxl (geometric mean): effort 3 0.77, 5 0.67, 7 0.69, 9 0.79 (before: 1.07, 1.61, 1.70, 1.94).
     Photographs are within 3 % of cjxl at every effort; screenshots and graphics are 2 to 80 % smaller, mostly from
-    LZ77 (-27 to -57 % on screenshots at the effort 7) and the palette. CPU time is 2.2 times the one of cjxl at the
-    efforts 3 and 5, 2.9 times at 7 and the same at 9. The scratch harness (a project referencing the library that
+    LZ77 (-27 to -57 % on screenshots at the effort 7) and the palette. CPU time was 2.2 times the one of cjxl at the
+    efforts 3 and 5, 2.9 times at 7 and the same at 9, before the trial of copies (2026-11-03), which made the effort 5
+    3 times faster on photographs and the efforts 8 and 9 5 to 7 times faster: on a 2048x1536 photograph the effort 5
+    takes about the CPU time of the effort 7 of the reference encoder, for a 0.2 % smaller file. The scratch harness (a project referencing the library that
     encodes PNG inputs at each effort, checks the round trip, runs `cjxl -d 0 -e N --num_threads=0` under
     `/usr/bin/time`, and decodes every output with djxl and jxl-oxide) is not committed: rerun it before changing a
     constant of `JpegXlLosslessFrameEncoder.Settings`.
@@ -488,6 +495,14 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
     of each transform) estimates it 25 % larger (`PaletteTrialMargin`). The trial underestimates the palette: palettes
     estimated 16 % larger wrote 0 to 28 % smaller screenshots; a photograph (14,535 colors) and smooth gradient tiles
     (3,801 colors) were 2.3 and 3 times larger with one. The indexes do not get the weighted predictor (it made them larger).
+  - *LZ77 trial*: the extrapolated ratio of the sizes with and without copies was 1.009 to 1.013 on photographs (1.03
+    to 1.09 when the whole frame is parsed), 0.65 on a screenshot (0.62) and 0.98 on rendered code (0.94 to 0.99). A frame
+    of one group is always parsed.
+  - *Predictors and properties* (2026-11-03, photographs, a screenshot, rendered code and text, glyphs): the predictor 13
+    made photographs 1.6 to 2 % larger at the efforts 5 and 6 (the leaves chose it on their samples), and is left out
+    there; at the efforts 7 to 9 removing it was mixed (-1.5 to +1.2 %). The position properties (2 and 3) made screenshots
+    5 to 10 % larger and are left out at the effort 7 (still searched at 8 and 9). The effort 3 considers a palette of up
+    to 2048 colors, as the effort 4 (1024 before: a screenshot with more colors was 33 % larger and twice as slow).
   - *Samples*: 16K, 32K, 64K per channel at efforts 3 to 5; doubling them gains 0.3 to 1 %, for the time of the learning.
     More leaves than 128 per channel made screenshots up to 4 % larger: the cost of a split (`SplitCost`) does not count
     the distribution a new context may need.
@@ -550,24 +565,40 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
       at least;
     - the field is computed from the image once: the encoder does not decode the frame to measure it and refine
       the field.
-- **WebP lossless encoder** (`Vp8LEncoder` and its partial files). The transforms of a frame are chosen by measurement
-  (`RankConfigurations`: each candidate is encoded at effort 2 into `LsbBitWriter.CreateCounter`), the main image is
-  parsed a second time against a cost model from effort 5 (`Vp8LEncoder.CostModel.cs`), and an entropy image splits the
-  prefix codes from effort 3 (`Vp8LEncoder.EntropyImage.cs`). `cwebp -lossless -exact -z <effort> -metadata none` (in the
-  prebuilt tools, not used by the tests) is the yardstick, and `cwebp -v` prints the transforms it chose. Measured on
-  screenshots, UI icons, photographs, smooth graphics, gradients and synthetic images (2026-10, against the encoder with
-  one group and fixed transforms): effort 3 -8.7 %, effort 5 -11.4 % (0.99 x the size of `cwebp -z 5`), effort 9
-  -10.1 %, for 1.3x, 2.3x and 7x the CPU time. What decided the design:
+- **WebP lossless encoder** (`Vp8LEncoder` and its partial files). What each effort does is in `Vp8LEncoderTools`
+  (one table for the main image, one for the alpha plane of a lossy frame, which keeps its earlier tools: lossy output
+  must not change with a lossless tuning). The transforms of a frame are chosen by measurement (`RankConfigurations`:
+  each candidate is encoded at effort 2 into `LsbBitWriter.CreateCounter`; from effort 8 the two best are encoded
+  fully), the predictor modes and color transform multipliers by the cost of their residuals under the statistics of the
+  tiles chosen before (`Vp8LEncoder.TransformSearch.cs`), the backward references of flat images by a cost model from
+  effort 4 and those of other images from effort 6 (`Vp8LEncoder.CostModel.cs`), and an entropy image splits the prefix
+  codes from effort 3 (`Vp8LEncoder.EntropyImage.cs`). `cwebp -lossless -exact -z <effort> -metadata none` (in the
+  prebuilt tools, not used by the tests) is the yardstick, and `cwebp -v` prints the transforms it chose. Retuned
+  2026-11 on 12 images (three photographs of 0.2 to 3 megapixels, a 1600x1600 text screenshot, UI screenshots, emoji and
+  glyph renders with alpha, gradients): at effort 5, photographs -4 to -13 % (from 1.7 % smaller to 0.6 % larger than
+  `cwebp -lossless`) in a third of the CPU time, the other images from -7 % to +1.4 %; from effort 1, every effort makes
+  the photographs smaller than before (effort 0: from -10 % to +0.7 %). What decided the design:
+  - Photographs: the transforms make the size. Subtract green only when it makes the gradient residuals of red and blue
+    cheaper (`IsSubtractGreenCheaper`: -9 % on the small photograph at every effort, -10 % on the large one below effort
+    3, where there is no color transform, 0.1 % above; it costs up to 4 % on some graphics below effort 3), the 14
+    predictor modes by their cost on tiles of 8 pixels (0.2 to 2 % smaller
+    than tiles of 16), the color transform on tiles of 16 (its least-squares candidates: 0.1 to 0.3 % smaller than the
+    entropy search of each multiplier, and several times faster).
+  - Photographs: a greedy hash chain search makes them 4 to 17 % larger (short matches replace cheaper literals), and the
+    parse with a cost model does not make them smaller even with its literal prices seeded by an all-literal parse (it
+    gains 1 % on a small photograph). Images where fewer than half the pixels repeat a neighbor (`IsFlat`) only try the
+    left and top neighbors below effort 6, without building hash chains. A parse with a cost model is kept by the
+    estimated size of its prefix codes, not by the entropy of its symbols, which kept parses that were larger.
   - Screenshots and flat graphics are 30 % smaller without the predictor (subtract green alone): their repetitions are
-    exact and backward references find them. Images where fewer than half the pixels repeat a neighbor always lose
-    without it, so the candidate is skipped there (`IsFlat`).
+    exact and backward references find them. Their size comes from the parse with a cost model (text, against effort 3:
+    -10 % at effort 4 with 16 chain entries, -20 % at effort 5 with 64, -26 % at effort 8).
   - A color table loses to the predictor (on the colors or on the indexes) on smooth ramps of up to 256 colors, by 2 to
     4 times; with 16 colors or fewer the bundled indexes win below effort 7.
-  - Predictor tiles of 16 and 64 pixels differ by 2 % at most, so effort 5 tries one size.
-  - The second parse is most of the CPU time: committing references of 128 pixels or more (below effort 9) and not
-    searching the hash chains while a match of 16 pixels is known removed 40 % of it for 0.4 % of size.
-  - Ranking without the second parse can misrank text images, where the cost model gains more with a color table:
-    effort 9 encodes the two best candidates fully. Rank on a sample (bands of 64 rows, a quarter of a large image):
+  - Predictor tiles of 4 pixels win or lose 0.6 % depending on the image: from effort 8 both 4 and 8 are encoded.
+  - The second parse is most of the CPU time of flat images: committing references of 128 pixels or more (below effort
+    9) and not searching the hash chains while a match of 16 pixels is known removed 40 % of it for 0.4 % of size.
+  - Ranking without the second parse can misrank text images, where the cost model gains more with a color table: from
+    effort 8 the two best candidates are encoded fully. Rank on a sample (bands of 64 rows, a quarter of a large image):
     whole-image ranking gained 0.3 %.
   Measure CPU time per thread (`clock_gettime(CLOCK_THREAD_CPUTIME_ID)`), not wall time: other sessions load this
   machine and wall times varied 3x between identical runs.

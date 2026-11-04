@@ -9,23 +9,16 @@ description: "The results of the web-platform-tests of vibration, and why the te
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 4 | 4 | – |
+| [Stable](#stable-tests) | 4 | 4 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **0** | **4** | **4** | **–** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **REQUIRES**: 4
-  - `hardware`: 4
+| **All** | **4** | **4** | **0** | **100%** |
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`api-is-present.html`](https://wpt.fyi/results/vibration/api-is-present.html) | Disabled | – | REQUIRES(hardware) | Vibration API |
-| [`idlharness.window.js`](https://wpt.fyi/results/vibration/idlharness.window.js) | Disabled | – | REQUIRES(hardware) | Vibration API |
-| [`invalid-values.html`](https://wpt.fyi/results/vibration/invalid-values.html) | Disabled | – | REQUIRES(hardware) | Vibration API |
-| [`silent-ignore.html`](https://wpt.fyi/results/vibration/silent-ignore.html) | Disabled | – | REQUIRES(hardware) | Vibration API |
+| [`api-is-present.html`](https://wpt.fyi/results/vibration/api-is-present.html) | Pass | 1 / 1 |  |  |
+| [`idlharness.window.js`](https://wpt.fyi/results/vibration/idlharness.window.js) | Pass | 16 / 16 |  |  |
+| [`invalid-values.html`](https://wpt.fyi/results/vibration/invalid-values.html) | Pass | 8 / 8 |  |  |
+| [`silent-ignore.html`](https://wpt.fyi/results/vibration/silent-ignore.html) | Pass | 1 / 1 |  |  |

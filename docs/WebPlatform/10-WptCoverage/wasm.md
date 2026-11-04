@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of wasm, and why the tests t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 324 | 342 | 0 | 95% |
+| [Stable](#stable-tests) | 325 | 342 | 0 | 95% |
 | [Tentative](#tentative-tests) | 15 | 70 | 0 | 21% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **339** | **412** | **0** | **82%** |
+| **All** | **340** | **412** | **0** | **83%** |
 
 ## Failure reasons
 
@@ -20,7 +20,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 1
 - **TEST BUG**: 4
-- **NOT IMPLEMENTED**: 68
+- **NOT IMPLEMENTED**: 67
 
 ## Stable tests
 
@@ -341,7 +341,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`serialization/module/no-transferring.html`](https://wpt.fyi/results/wasm/serialization/module/no-transferring.html) | Pass | 3 / 3 |  |  |
 | [`serialization/module/serialization-via-history.html`](https://wpt.fyi/results/wasm/serialization/module/serialization-via-history.html) | Pass | 4 / 4 |  |  |
 | [`serialization/module/serialization-via-idb.any.js`](https://wpt.fyi/results/wasm/serialization/module/serialization-via-idb.any.js) | Pass | 4 / 4 |  |  |
-| [`serialization/module/serialization-via-notifications-api.any.js`](https://wpt.fyi/results/wasm/serialization/module/serialization-via-notifications-api.any.js) | Fail | 0 / 4 | NOT IMPLEMENTED | the Notifications API |
+| [`serialization/module/serialization-via-notifications-api.any.js`](https://wpt.fyi/results/wasm/serialization/module/serialization-via-notifications-api.any.js) | Pass | 4 / 4 |  |  |
 | [`serialization/module/share-module-cross-origin-fails.sub.html`](https://wpt.fyi/results/wasm/serialization/module/share-module-cross-origin-fails.sub.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | origin-keyed agent clusters by default: the same-site cross-origin iframe is in the agent cluster of the page (the agent clusters are keyed by site), so it receives the module |
 | [`serialization/module/window-cross-origin-isolated.https.sub.html`](https://wpt.fyi/results/wasm/serialization/module/window-cross-origin-isolated.https.sub.html) | Pass | 3 / 3 |  |  |
 | [`serialization/module/window-cross-site-failure.html`](https://wpt.fyi/results/wasm/serialization/module/window-cross-site-failure.html) | Pass | 3 / 3 |  |  |

@@ -93,18 +93,10 @@
     "total": 2
   },
   "html/infrastructure/safe-passing-of-structured-data/shared-array-buffers/serialization-via-notifications-api.any.js": {
-    "total": 2,
-    "failures": {
-      "SharedArrayBuffer cloning via the Notifications API's data member: basic case": "FAIL",
-      "SharedArrayBuffer cloning via the Notifications API's data member: is interleaved correctly": "FAIL"
-    }
+    "total": 2
   },
   "html/infrastructure/safe-passing-of-structured-data/shared-array-buffers/serialization-via-notifications-api.any.js#dedicatedworker": {
-    "total": 2,
-    "failures": {
-      "SharedArrayBuffer cloning via the Notifications API's data member: basic case": "FAIL",
-      "SharedArrayBuffer cloning via the Notifications API's data member: is interleaved correctly": "FAIL"
-    }
+    "total": 2
   },
   "html/infrastructure/safe-passing-of-structured-data/shared-array-buffers/window-domain-failure.https.sub.html": {
     "total": 1

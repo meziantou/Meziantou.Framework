@@ -9,38 +9,32 @@ description: "The results of the web-platform-tests of web-share, and why the te
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 14 | 14 | – |
-| [Tentative](#tentative-tests) | 0 | 1 | 1 | – |
+| [Stable](#stable-tests) | 14 | 14 | 0 | 100% |
+| [Tentative](#tentative-tests) | 1 | 1 | 0 | 100% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **0** | **15** | **15** | **–** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **NOT IMPLEMENTED**: 15
+| **All** | **15** | **15** | **0** | **100%** |
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`canShare-files.https.html`](https://wpt.fyi/results/web-share/canShare-files.https.html) | Disabled | – | NOT IMPLEMENTED | Web Share API |
-| [`canShare-insecure.http.html`](https://wpt.fyi/results/web-share/canShare-insecure.http.html) | Disabled | – | NOT IMPLEMENTED | Web Share API |
-| [`canShare.https.html`](https://wpt.fyi/results/web-share/canShare.https.html) | Disabled | – | NOT IMPLEMENTED | Web Share API |
-| [`disabled-by-permissions-policy-cross-origin.https.sub.html`](https://wpt.fyi/results/web-share/disabled-by-permissions-policy-cross-origin.https.sub.html) | Disabled | – | NOT IMPLEMENTED | Web Share API |
-| [`disabled-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/web-share/disabled-by-permissions-policy.https.sub.html) | Disabled | – | NOT IMPLEMENTED | Web Share API |
-| [`idlharness.https.window.js`](https://wpt.fyi/results/web-share/idlharness.https.window.js) | Disabled | – | NOT IMPLEMENTED | Web Share API |
-| [`share-consume-activation.https.html`](https://wpt.fyi/results/web-share/share-consume-activation.https.html) | Disabled | – | NOT IMPLEMENTED | Web Share API |
-| [`share-empty.https.html`](https://wpt.fyi/results/web-share/share-empty.https.html) | Disabled | – | NOT IMPLEMENTED | Web Share API |
-| [`share-file-url-with-base-tag.https.html`](https://wpt.fyi/results/web-share/share-file-url-with-base-tag.https.html) | Disabled | – | NOT IMPLEMENTED | Web Share API |
-| [`share-securecontext.http.html`](https://wpt.fyi/results/web-share/share-securecontext.http.html) | Disabled | – | NOT IMPLEMENTED | Web Share API |
-| [`share-sharePromise-internal-slot.https.html`](https://wpt.fyi/results/web-share/share-sharePromise-internal-slot.https.html) | Disabled | – | NOT IMPLEMENTED | Web Share API |
-| [`share-url-invalid.https.html`](https://wpt.fyi/results/web-share/share-url-invalid.https.html) | Disabled | – | NOT IMPLEMENTED | Web Share API |
-| [`share-without-user-gesture.https.html`](https://wpt.fyi/results/web-share/share-without-user-gesture.https.html) | Disabled | – | NOT IMPLEMENTED | Web Share API |
-| [`test-fully-active.https.html`](https://wpt.fyi/results/web-share/test-fully-active.https.html) | Disabled | – | NOT IMPLEMENTED | Web Share API |
+| [`canShare-files.https.html`](https://wpt.fyi/results/web-share/canShare-files.https.html) | Pass | 6 / 6 |  |  |
+| [`canShare-insecure.http.html`](https://wpt.fyi/results/web-share/canShare-insecure.http.html) | Pass | 1 / 1 |  |  |
+| [`canShare.https.html`](https://wpt.fyi/results/web-share/canShare.https.html) | Pass | 6 / 6 |  |  |
+| [`disabled-by-permissions-policy-cross-origin.https.sub.html`](https://wpt.fyi/results/web-share/disabled-by-permissions-policy-cross-origin.https.sub.html) | Pass | 6 / 6 |  |  |
+| [`disabled-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/web-share/disabled-by-permissions-policy.https.sub.html) | Pass | 2 / 2 |  |  |
+| [`idlharness.https.window.js`](https://wpt.fyi/results/web-share/idlharness.https.window.js) | Pass | 19 / 19 |  |  |
+| [`share-consume-activation.https.html`](https://wpt.fyi/results/web-share/share-consume-activation.https.html) | Pass | 1 / 1 |  |  |
+| [`share-empty.https.html`](https://wpt.fyi/results/web-share/share-empty.https.html) | Pass | 6 / 6 |  |  |
+| [`share-file-url-with-base-tag.https.html`](https://wpt.fyi/results/web-share/share-file-url-with-base-tag.https.html) | Pass | 3 / 3 |  |  |
+| [`share-securecontext.http.html`](https://wpt.fyi/results/web-share/share-securecontext.http.html) | Pass | 1 / 1 |  |  |
+| [`share-sharePromise-internal-slot.https.html`](https://wpt.fyi/results/web-share/share-sharePromise-internal-slot.https.html) | Pass | 1 / 1 |  |  |
+| [`share-url-invalid.https.html`](https://wpt.fyi/results/web-share/share-url-invalid.https.html) | Pass | 8 / 8 |  |  |
+| [`share-without-user-gesture.https.html`](https://wpt.fyi/results/web-share/share-without-user-gesture.https.html) | Pass | 1 / 1 |  |  |
+| [`test-fully-active.https.html`](https://wpt.fyi/results/web-share/test-fully-active.https.html) | Pass | 3 / 3 |  |  |
 
 ## Tentative tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`feature-policy-listed.tentative.html`](https://wpt.fyi/results/web-share/feature-policy-listed.tentative.html) | Disabled | – | NOT IMPLEMENTED | Web Share API |
+| [`feature-policy-listed.tentative.html`](https://wpt.fyi/results/web-share/feature-policy-listed.tentative.html) | Pass | 4 / 4 |  |  |

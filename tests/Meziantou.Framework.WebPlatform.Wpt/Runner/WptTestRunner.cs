@@ -82,11 +82,17 @@ internal sealed partial class WptTestRunner
     // The functions that give the console messages of a window to the WebDriver BiDi log listeners of its realm (testdriver-vendor.js)
     private readonly System.Runtime.CompilerServices.ConditionalWeakTable<GlobalScope, Action<ConsoleMessage>> _consoleListeners = [];
 
+    /// <summary>The position of the device of the tests that do not override it.</summary>
+    private static readonly GeolocationReading DefaultGeolocationPosition = new(latitude: 0, longitude: 0, accuracy: 1);
+
     /// <summary>The states of the permissions set by test_driver.set_permission(), by name.</summary>
     private readonly Dictionary<string, string> _permissions = new(StringComparer.Ordinal);
 
     /// <summary>The permission store of the browsing contexts, whose states are set by test_driver.set_permission().</summary>
     private readonly PermissionStore _permissionStore = new();
+
+    /// <summary>The position of the device, overridden by test_driver.bidi.emulation.set_geolocation_override().</summary>
+    private readonly GeolocationProvider _geolocation = new() { Position = DefaultGeolocationPosition };
     private readonly WptStash _stash = new();
 
     /// <summary>The WebSocket server of wptserve (its connections are in-memory pipes).</summary>
@@ -176,6 +182,9 @@ internal sealed partial class WptTestRunner
                 // The permissions set by test_driver.set_permission(): the access is allowed unless it is denied
                 Permissions = _permissionStore,
                 ClipboardPermission = (_, access) => !_permissions.TryGetValue(access == ClipboardAccess.Read ? "clipboard-read" : "clipboard-write", out var state) || state != "denied",
+
+                // The device knows its position (overridden by test_driver.bidi.emulation.set_geolocation_override)
+                Geolocation = _geolocation,
 
                 // The pages of the reftests are rasterized; the images of all the tests are decoded by the backend
                 RenderingBackend = _renderingBackend,
@@ -1555,6 +1564,23 @@ internal sealed partial class WptTestRunner
                 browsingContext.IsVisible = adapter.ToBoolean(args[1]);
             }
 
+            return adapter.Undefined;
+        });
+        Define("__wpt_set_geolocation_override", 10, (_, args) =>
+        {
+            // The override is set after the tasks that are already queued, as a WebDriver command
+            var hasCoordinates = adapter.ToBoolean(args[0]);
+            var isError = adapter.ToBoolean(args[8]);
+            double? Optional(TValue value) => adapter.ToNumber(value) is var number && double.IsNaN(number) ? null : number;
+            var position = hasCoordinates
+                ? new GeolocationReading(adapter.ToNumber(args[1]), adapter.ToNumber(args[2]), adapter.ToNumber(args[3])) { Altitude = Optional(args[4]), AltitudeAccuracy = Optional(args[5]), Heading = Optional(args[6]), Speed = Optional(args[7]) }
+                : isError ? null : DefaultGeolocationPosition;
+            var completion = CreateCompletion(args[9], args[9]);
+            QueueTask(() =>
+            {
+                _geolocation.Position = position;
+                completion(null);
+            });
             return adapter.Undefined;
         });
         Define("__wpt_set_permission", 3, (_, args) =>

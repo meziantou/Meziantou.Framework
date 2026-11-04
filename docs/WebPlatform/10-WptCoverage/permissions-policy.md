@@ -9,18 +9,18 @@ description: "The results of the web-platform-tests of permissions-policy, and w
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 39 | 94 | 0 | 41% |
+| [Stable](#stable-tests) | 40 | 94 | 0 | 43% |
 | [Tentative](#tentative-tests) | 14 | 23 | 0 | 61% |
 | [Reftests](#reftests) | 0 | 1 | 0 | 0% |
-| **All** | **53** | **118** | **0** | **45%** |
+| **All** | **54** | **118** | **0** | **46%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **BUG**: 1
-- **TEST BUG**: 9
-- **NOT IMPLEMENTED**: 54
+- **TEST BUG**: 10
+- **NOT IMPLEMENTED**: 52
 - **TEST RUNNER**: 1
 
 ## Stable tests
@@ -96,8 +96,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`reporting/fullscreen-reporting.html`](https://wpt.fyi/results/permissions-policy/reporting/fullscreen-reporting.html) | Pass | 1 / 1 |  |  |
 | [`reporting/generic-sensor-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/generic-sensor-report-only.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the Generic Sensor API (`Accelerometer`, `Gyroscope`, `Magnetometer`...) |
 | [`reporting/generic-sensor-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/generic-sensor-reporting.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the Generic Sensor API (`Accelerometer`, `Gyroscope`, `Magnetometer`...) |
-| [`reporting/geolocation-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/geolocation-report-only.https.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | the Geolocation API (`navigator.geolocation`) |
-| [`reporting/geolocation-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/geolocation-reporting.https.html) | Error | 0 / 1 | NOT IMPLEMENTED | the Geolocation API (`navigator.geolocation`) |
+| [`reporting/geolocation-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/geolocation-report-only.https.html) | Fail | 0 / 1 | TEST BUG | the test expects a position but does not grant the `geolocation` permission (`test_driver.set_permission()`): the report is checked, then `getCurrentPosition()` fails with `PERMISSION_DENIED` |
+| [`reporting/geolocation-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/geolocation-reporting.https.html) | Pass | 1 / 1 |  |  |
 | [`reporting/microphone-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/microphone-report-only.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Media Capture and Streams: the test uses the `camera`/`microphone` features with `navigator.mediaDevices.getUserMedia()` (and `/mediacapture-streams/permission-helper.js`, which is not fetched); the reports of the features that the library implements are tested by `reporting/sync-xhr-report-only.html` |
 | [`reporting/microphone-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/microphone-reporting.https.html) | Error | 0 / 1 | NOT IMPLEMENTED | Media Capture and Streams: the test uses the `camera`/`microphone` features with `navigator.mediaDevices.getUserMedia()` (and `/mediacapture-streams/permission-helper.js`, which is not fetched); the reports of the features that the library implements are tested by `reporting/sync-xhr-report-only.html` |
 | [`reporting/midi-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/midi-report-only.https.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | the Web MIDI API (`navigator.requestMIDIAccess()`) |

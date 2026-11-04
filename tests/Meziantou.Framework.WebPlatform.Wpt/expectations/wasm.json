@@ -1847,18 +1847,10 @@
     "total": 2
   },
   "wasm/serialization/module/serialization-via-notifications-api.any.js": {
-    "total": 2,
-    "failures": {
-      "WebAssembly.Module cloning via the Notifications API's data member: basic case": "FAIL",
-      "WebAssembly.Module cloning via the Notifications API's data member: is interleaved correctly": "FAIL"
-    }
+    "total": 2
   },
   "wasm/serialization/module/serialization-via-notifications-api.any.js#dedicatedworker": {
-    "total": 2,
-    "failures": {
-      "WebAssembly.Module cloning via the Notifications API's data member: basic case": "FAIL",
-      "WebAssembly.Module cloning via the Notifications API's data member: is interleaved correctly": "FAIL"
-    }
+    "total": 2
   },
   "wasm/serialization/module/share-module-cross-origin-fails.sub.html": {
     "harness": "TIMEOUT",

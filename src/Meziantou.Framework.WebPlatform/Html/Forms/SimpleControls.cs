@@ -55,12 +55,14 @@ public partial class HtmlLabelElement
         // As in browsers, the click forwarded for a click of the user is trusted and keeps the properties of the pointer
         if (@event.IsTrusted && @event is MouseEvent mouseEvent)
         {
-            // As in the browsers, a click of the user on the label focuses its labeled control
-            if (!mouseEvent.IsPositionless && FocusModel.IsClickFocusable(control) && NodeDocument.BrowsingContext?.Top.Document is { } topDocument)
+            // As in the browsers, a click of the user on the label focuses its labeled control, or the focus delegate of a
+            // labeled control whose shadow root delegates the focus (https://html.spec.whatwg.org/multipage/interaction.html#focus-delegate)
+            if (!mouseEvent.IsPositionless && NodeDocument.BrowsingContext?.Top.Document is { } topDocument
+                && (FocusModel.IsClickFocusable(control) ? control : control.AttachedShadowRoot is { DelegatesFocus: true } ? FocusModel.GetFocusableArea(control, FocusTrigger.Click) : null) is { } focusTarget)
             {
                 topDocument.LastFocusWasPointer = true;
                 topDocument.LastPointerFocusDocument = control.NodeDocument;
-                FocusModel.Focus(control, focusVisible: null, FocusTrigger.Click);
+                FocusModel.Focus(focusTarget, focusVisible: null, FocusTrigger.Click);
             }
 
             control.ForwardTrustedClick(mouseEvent);

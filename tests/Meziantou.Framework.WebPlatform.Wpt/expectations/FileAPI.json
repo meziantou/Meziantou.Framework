@@ -1,9 +1,6 @@
 {
   "FileAPI/Blob-methods-from-detached-frame.html": {
-    "total": 5,
-    "failures": {
-      "slice()": "FAIL"
-    }
+    "total": 5
   },
   "FileAPI/BlobURL/cross-partition-navigation.https.html": {
     "total": 5,

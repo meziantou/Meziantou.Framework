@@ -445,6 +445,13 @@ internal static class Fetching
                 if (request.Method != "GET" || entry is null)
                     return FetchResponse.NetworkError();
 
+                // https://w3c.github.io/FileAPI/#blob-url-obtain-object: the blob URL of another storage key (the origin of the
+                // environment that created it, https://storage.spec.whatwg.org/#obtain-a-storage-key-for-non-storage-purposes) is
+                // not authorized for the request of an environment (e.g. a cross-origin blob: URL loaded by a script element).
+                // The navigations are not checked: the environment of their reserved client has no origin yet.
+                if (request.Mode != RequestMode.Navigate && (request.Client is not { } blobRequestClient || !OriginRecord.IsSameOrigin(entry.Environment.Origin, blobRequestClient.Origin)))
+                    return FetchResponse.NetworkError();
+
                 var blob = entry.Object;
                 var bytes = blob.Data.ToArray();
                 var headers = new List<KeyValuePair<string, string>>();

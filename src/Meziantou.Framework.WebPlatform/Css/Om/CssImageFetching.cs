@@ -14,7 +14,8 @@ namespace Meziantou.Framework.WebPlatform.Css.Om;
 /// images, the list markers, the generated content and the cursors are fetched with the "no-cors" mode
 /// (https://drafts.csswg.org/css-backgrounds/#background-image), the masks (https://drafts.fxtf.org/css-masking/#mask-image-property)
 /// and the shapes (https://drafts.csswg.org/css-shapes/#shape-outside-property) with the "cors" mode. The initiator type of
-/// their resource timing is "css" (https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-initiatortype). The
+/// their resource timing is "css", or "body" for the background attribute of the body element
+/// (https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-initiatortype). The
 /// request URL modifiers of a URL (https://drafts.csswg.org/css-values-5/#request-url-modifiers) set the mode, the credentials
 /// mode, the integrity metadata and the referrer policy of its request. An image is fetched once per document, mode and
 /// modifiers, as by the memory cache of the user agent.
@@ -283,7 +284,7 @@ internal static class CssImageFetching
                         document.CssImagesDelayingTheLoadEvent--;
                         document.TryQueueLoadEvent();
                     }
-                }, initiatorType: "css");
+                }, initiatorType: GetInitiatorType(document, element, property, key));
                 if (!started && delaysLoadEvent)
                 {
                     document.CssImagesDelayingTheLoadEvent--;
@@ -291,6 +292,14 @@ internal static class CssImageFetching
             }
         }
     }
+
+    /// <summary>
+    /// The initiator type of the resource timing of an image (https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-initiatortype):
+    /// "body" for the image of the background attribute of the body element (its presentational hint of background-image,
+    /// https://html.spec.whatwg.org/multipage/rendering.html#the-page), else "css".
+    /// </summary>
+    private static string GetInitiatorType(Document document, Element element, string property, string url)
+        => property == "background-image" && element is HtmlBodyElement && element.GetAttributeValue("background") is { Length: > 0 } background && Html.Reflection.EncodingParseAndSerializeUrl(document, background) == url ? "body" : "css";
 
     /// <summary>
     /// Records the natural size of a fetched image (read from its header, see <see cref="ImageHeaders"/>), used by the layout

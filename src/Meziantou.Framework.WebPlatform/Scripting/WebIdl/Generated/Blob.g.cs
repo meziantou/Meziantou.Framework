@@ -27,7 +27,7 @@ internal static class Binding_Blob<TAdapter, TValue> where TAdapter : struct, gl
         var has0 = !r.IsMissing(a, 0); var a0 = has0 ? (long?)r.ToLongLong(a[0], global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.Clamp) : default;
         var has1 = !r.IsMissing(a, 1); var a1 = has1 ? (long?)r.ToLongLong(a[1], global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.Clamp) : default;
         var has2 = !r.IsMissing(a, 2); var a2 = has2 ? (string?)r.ToDomString(a[2]) : default;
-        var result = o.Slice((has0 ? a0 : default(long?)), (has1 ? a1 : default(long?)), (has2 ? a2 : (string?)null)); return r.Wrap(result);
+        var result = o.Slice((has0 ? a0 : default(long?)), (has1 ? a1 : default(long?)), (has2 ? a2 : (string?)null)); return r.GetRelevantRealm(t).Wrap(result);
     }
     private static TValue Op_text(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {

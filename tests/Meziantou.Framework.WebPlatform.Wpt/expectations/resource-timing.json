@@ -201,10 +201,7 @@
     }
   },
   "resource-timing/initiator-type/misc.html": {
-    "total": 6,
-    "failures": {
-      "The initiator type for <body background> must be 'body'": "FAIL"
-    }
+    "total": 6
   },
   "resource-timing/initiator-type/picture.html": {
     "total": 4

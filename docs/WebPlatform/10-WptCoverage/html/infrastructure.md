@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of html/infrastructure, and 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 62 | 69 | 0 | 90% |
+| [Stable](#stable-tests) | 63 | 69 | 0 | 91% |
 | Tentative | 0 | 0 | 0 | – |
 | [Reftests](#reftests) | 0 | 1 | 1 | – |
-| **All** | **62** | **70** | **1** | **90%** |
+| **All** | **63** | **70** | **1** | **91%** |
 
 ## Failure reasons
 
@@ -20,7 +20,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 1
 - **TEST BUG**: 1
-- **NOT IMPLEMENTED**: 5
+- **NOT IMPLEMENTED**: 4
 - **TEST RUNNER**: 1
 
 ## Stable tests
@@ -48,7 +48,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`safe-passing-of-structured-data/shared-array-buffers/no-transferring.https.html`](https://wpt.fyi/results/html/infrastructure/safe-passing-of-structured-data/shared-array-buffers/no-transferring.https.html) | Pass | 3 / 3 |  |  |
 | [`safe-passing-of-structured-data/shared-array-buffers/serialization-via-history.https.html`](https://wpt.fyi/results/html/infrastructure/safe-passing-of-structured-data/shared-array-buffers/serialization-via-history.https.html) | Pass | 4 / 4 |  |  |
 | [`safe-passing-of-structured-data/shared-array-buffers/serialization-via-idb.any.js`](https://wpt.fyi/results/html/infrastructure/safe-passing-of-structured-data/shared-array-buffers/serialization-via-idb.any.js) | Pass | 4 / 4 |  |  |
-| [`safe-passing-of-structured-data/shared-array-buffers/serialization-via-notifications-api.any.js`](https://wpt.fyi/results/html/infrastructure/safe-passing-of-structured-data/shared-array-buffers/serialization-via-notifications-api.any.js) | Fail | 0 / 4 | NOT IMPLEMENTED | the Notifications API |
+| [`safe-passing-of-structured-data/shared-array-buffers/serialization-via-notifications-api.any.js`](https://wpt.fyi/results/html/infrastructure/safe-passing-of-structured-data/shared-array-buffers/serialization-via-notifications-api.any.js) | Pass | 4 / 4 |  |  |
 | [`safe-passing-of-structured-data/shared-array-buffers/window-domain-failure.https.sub.html`](https://wpt.fyi/results/html/infrastructure/safe-passing-of-structured-data/shared-array-buffers/window-domain-failure.https.sub.html) | Pass | 1 / 1 |  |  |
 | [`safe-passing-of-structured-data/shared-array-buffers/window-failure.https.html`](https://wpt.fyi/results/html/infrastructure/safe-passing-of-structured-data/shared-array-buffers/window-failure.https.html) | Pass | 1 / 1 |  |  |
 | [`safe-passing-of-structured-data/shared-array-buffers/window-iframe-messagechannel.https.html`](https://wpt.fyi/results/html/infrastructure/safe-passing-of-structured-data/shared-array-buffers/window-iframe-messagechannel.https.html) | Pass | 4 / 4 |  |  |

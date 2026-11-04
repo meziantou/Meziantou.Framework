@@ -49,10 +49,10 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 25,763 | 29,691 | 2,505 | 95% |
+| [Stable](#stable-tests) | 25,765 | 29,691 | 2,505 | 95% |
 | [Tentative](#tentative-tests) | 1,181 | 3,074 | 840 | 53% |
 | [Reftests](#reftests) | 27,875 | 29,220 | 180 | 96% |
-| **All** | **54,819** | **61,985** | **3,525** | **94%** |
+| **All** | **54,821** | **61,985** | **3,525** | **94%** |
 
 ## Failure reasons
 
@@ -60,7 +60,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 473
 - **TEST BUG**: 980
-- **NOT IMPLEMENTED**: 4,370
+- **NOT IMPLEMENTED**: 4,368
 - **REQUIRES**: 1,167
   - `hardware`: 764
   - `layout`: 38
@@ -247,7 +247,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`html/cross-origin-opener-policy`](html/cross-origin-opener-policy.md) | 67 | 114 | 0 | 59% |
 | [`html/dom`](html/dom.md) | 210 | 216 | 0 | 97% |
 | [`html/editing`](html/editing.md) | 119 | 129 | 0 | 92% |
-| [`html/infrastructure`](html/infrastructure.md) | 62 | 69 | 0 | 90% |
+| [`html/infrastructure`](html/infrastructure.md) | 63 | 69 | 0 | 91% |
 | [`html/interaction`](html/interaction.md) | 55 | 58 | 0 | 95% |
 | [`html/links`](html/links.md) | 6 | 6 | 0 | 100% |
 | [`html/meta`](html/meta.md) | 1 | 1 | 0 | 100% |
@@ -382,7 +382,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`virtual-keyboard`](virtual-keyboard.md) | 0 | 3 | 3 | – |
 | [`visual-viewport`](visual-viewport.md) | 16 | 19 | 0 | 84% |
 | [`wai-aria`](wai-aria.md) | 20 | 21 | 0 | 95% |
-| [`wasm`](wasm.md) | 324 | 342 | 0 | 95% |
+| [`wasm`](wasm.md) | 325 | 342 | 0 | 95% |
 | [`web-animations`](web-animations.md) | 117 | 136 | 0 | 86% |
 | [`web-based-payment-handler`](web-based-payment-handler.md) | 0 | 10 | 10 | – |
 | [`web-extensions`](web-extensions.md) | 0 | 6 | 6 | – |
@@ -421,7 +421,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 317 | 330 | 0 | 96% |
 | [`xml`](xml.md) | 0 | 12 | 12 | – |
-| **Total (343 sections)** | **25,763** | **29,691** | **2,505** | **95%** |
+| **Total (343 sections)** | **25,765** | **29,691** | **2,505** | **95%** |
 
 ## Tentative tests
 

@@ -19,19 +19,6 @@ internal static class Binding_SVGPathElement<TAdapter, TValue> where TAdapter : 
         DefineMembers = DefineMembers,
     };
 
-    private static TValue Get_pathLength(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.SvgPathElement>(t, Binding); return r.Wrap(o.PathLength); }
-    private static TValue Op_getTotalLength(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
-    {
-        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.SvgPathElement>(t, Binding);
-        var result = o.GetTotalLength(); return r.FromNumber((double)result);
-    }
-    private static TValue Op_getPointAtLength(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
-    {
-        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.SvgPathElement>(t, Binding);
-        if (a.Length < 1) throw r.NotEnoughArguments("getPointAtLength", 1, a.Length);
-        var a0 = r.ToFloat(a[0], restricted: true);
-        var result = o.GetPointAtLength(a0); return r.Wrap(result);
-    }
     private static TValue Op_getPathSegmentAtLength(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.SvgPathElement>(t, Binding);
@@ -54,9 +41,6 @@ internal static class Binding_SVGPathElement<TAdapter, TValue> where TAdapter : 
     }
     private static void DefineMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue interfaceObject, TValue prototype, TValue instanceTarget)
     {
-        r.DefineAttribute(instanceTarget, "pathLength", Get_pathLength, null);
-        r.DefineOperation(instanceTarget, "getTotalLength", 0, Op_getTotalLength);
-        r.DefineOperation(instanceTarget, "getPointAtLength", 1, Op_getPointAtLength);
         r.DefineOperation(instanceTarget, "getPathSegmentAtLength", 1, Op_getPathSegmentAtLength);
         r.DefineOperation(instanceTarget, "getPathData", 0, Op_getPathData);
         r.DefineOperation(instanceTarget, "setPathData", 1, Op_setPathData);

@@ -1588,7 +1588,6 @@
     "svg-aam/role/roles.tentative.html": [{ "kind": "TEST BUG", "description": "the tentative test expects the placeholder role `UNDEFINED in SVG-AAM, but possibly graphics-document`, which no engine returns" }],
     "svg/animations/seek-repeat-event-condition.html": [{ "kind": "NOT IMPLEMENTED", "description": "resolving the `repeat(n)` event conditions over the iterations that a seek (`setCurrentTime()`) skips: a seek fires no events, so `source.repeat(3)` never resolves and the test times out" }],
     "svg/embedded/attr-image-fetchpriority.optional.html": [{ "kind": "NOT IMPLEMENTED", "description": "`fetchPriority` of SVG `<image>`" }],
-    "svg/historical.html": [{ "kind": "BUG", "description": "`getTotalLength()`, `getPointAtLength()` and `pathLength` are also on `SVGPathElement.prototype` (they belong to `SVGGeometryElement`)" }],
     "svg/interact/scripted/async-*": [{ "kind": "NOT IMPLEMENTED", "description": "the `async` and module scripts of SVG (`<script async>`, `<script type=module>` in an SVG document)" }],
     "svg/interact/scripted/defer-*": [{ "kind": "NOT IMPLEMENTED", "description": "the `defer` and module scripts of SVG (`<script defer>`, `<script type=module>` in an SVG document)" }],
     "svg/interact/scripted/module-*": [{ "kind": "NOT IMPLEMENTED", "description": "the module scripts of SVG (`<script type=module>`)" }],

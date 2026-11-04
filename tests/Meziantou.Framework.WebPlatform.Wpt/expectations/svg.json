@@ -1526,12 +1526,7 @@
     "total": 4
   },
   "svg/historical.html": {
-    "total": 68,
-    "failures": {
-      "SVGPathElement.prototype.getPointAtLength must be moved to SVGGeometryElement.prototype": "FAIL",
-      "SVGPathElement.prototype.getTotalLength must be moved to SVGGeometryElement.prototype": "FAIL",
-      "SVGPathElement.prototype.pathLength must be moved to SVGGeometryElement.prototype": "FAIL"
-    }
+    "total": 68
   },
   "svg/interact/focus-inside-hidden-svg-containers-01.html": {
     "total": 1

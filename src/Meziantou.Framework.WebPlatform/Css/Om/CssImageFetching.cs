@@ -57,7 +57,9 @@ internal static class CssImageFetching
     {
         foreach (var declaration in declarations)
         {
-            if (ImageProperties.ContainsKey(declaration.Name) && declaration.Value.Value.Contains('(', StringComparison.Ordinal))
+            // (a longhand set by a shorthand with a substitution function, e.g. background: var(--image), has a pending-substitution
+            // value: its value is the one of the shorthand)
+            if (ImageProperties.ContainsKey(declaration.Name) && (declaration.Value.Value.Contains('(', StringComparison.Ordinal) || declaration.Value.ShorthandValue?.Contains('(', StringComparison.Ordinal) == true))
                 return true;
         }
 
@@ -72,7 +74,7 @@ internal static class CssImageFetching
     {
         foreach (var declaration in declarations)
         {
-            if (ResourcePropertySet.Contains(declaration.Name) && MayReferenceExternalResource(declaration.Value.Value))
+            if (ResourcePropertySet.Contains(declaration.Name) && (MayReferenceExternalResource(declaration.Value.Value) || (declaration.Value.ShorthandValue is { } shorthandValue && MayReferenceExternalResource(shorthandValue))))
                 return true;
         }
 

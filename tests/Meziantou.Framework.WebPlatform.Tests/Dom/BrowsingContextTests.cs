@@ -1321,6 +1321,44 @@ public sealed class BrowsingContextTests
         Assert.Equal("sniffed", document.QuerySelector("p")!.TextContent);
     }
 
+    [Theory]
+    [InlineData("application/octet-stream", "text")]
+    [InlineData("text/plain", "PK\u0003\u0004")]
+    [InlineData("text/plain; charset=ISO-8859-1", "\u0001")]
+    [InlineData("text/plain; charset=iso-8859-1", "\u0001")]
+    [InlineData("text/plain; charset=UTF-8", "\u0001")]
+    public void Navigate_BinaryResource_IsADownload(string contentType, string content)
+    {
+        // https://mimesniff.spec.whatwg.org/#supplied-mime-type-detection-algorithm: the text/plain type of Apache is sniffed
+        var downloads = new List<string>();
+        using var context = new BrowsingContext(new BrowsingContextOptions
+        {
+            DocumentLoader = new DelegateDocumentLoader((_, _) => ValueTask.FromResult<DocumentResource?>(new DocumentResource(System.Text.Encoding.Latin1.GetBytes(content)) { Headers = [new("Content-Type", contentType)] })),
+            DownloadStarted = (_, download) => downloads.Add(download.Url),
+        });
+
+        var document = Load(context, "<p>current</p>");
+        context.Window.Location.Assign("file");
+        context.EventLoop.RunUntilIdle();
+        Assert.Same(document, context.Document);
+        Assert.Equal(["https://example.com/dir/file"], downloads);
+    }
+
+    [Theory]
+    [InlineData("text/plain", "<p>text</p>", null)]
+    [InlineData("text/plain;charset=UTF-8", "\u0001", null)]
+    [InlineData("text/plain", "\u0001", "nosniff")]
+    public void Navigate_TextPlainResource_IsATextDocument(string contentType, string content, string? contentTypeOptions)
+    {
+        using var context = new BrowsingContext();
+        var document = context.Navigate("https://example.com/", _ => new DocumentResource(System.Text.Encoding.Latin1.GetBytes(content))
+        {
+            Headers = contentTypeOptions is null ? [new("Content-Type", contentType)] : [new("Content-Type", contentType), new("X-Content-Type-Options", contentTypeOptions)],
+        });
+        Assert.Equal("text/plain", document.ContentType);
+        Assert.Null(document.QuerySelector("p"));
+    }
+
     [Fact]
     public void Navigate_DocumentResource_CharsetOfSeveralContentTypeHeaders()
     {

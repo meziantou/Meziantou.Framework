@@ -95,7 +95,9 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             Define("isFormData", 1, (_, args) => adapter.FromBoolean(Adapter.IsObject(args[0]) && Unwrap(args[0]) is FormData));
             Define("isURLSearchParams", 1, (_, args) => adapter.FromBoolean(Adapter.IsObject(args[0]) && Unwrap(args[0]) is UrlSearchParams));
             Define("blobBytes", 1, (_, args) => FromBuffer(JsBufferKind.Uint8Array, ((Blob)Unwrap(args[0])!).Data));
-            Define("createBlob", 2, (_, args) => Wrap(new Blob([GetBytes(args[0])], new BlobPropertyBag { Type = Adapter.ToString(args[1]) })));
+            // The type of the blob of Body.blob() is the serialized MIME type of the body (https://fetch.spec.whatwg.org/#concept-body-package-data),
+            // not normalized as the type of the Blob constructor (lowercased, empty when not printable ASCII)
+            Define("createBlob", 2, (_, args) => Wrap(Blob.Create(GetBytes(args[0]), Adapter.ToString(args[1]))));
             Define("serializeFormData", 1, (_, args) =>
             {
                 var (bytes, contentType) = XmlHttpRequest.ExtractBody(Unwrap(args[0])!);

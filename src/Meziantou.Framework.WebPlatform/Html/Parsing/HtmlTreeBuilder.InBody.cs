@@ -898,9 +898,11 @@ internal sealed partial class HtmlTreeBuilder
             var bookmark = formattingElementIndex;
             Element node;
 
-            // The elements removed or replaced by their children by the sanitizer are not inserted, as in Blink: the last node
-            // is null while the nodes are removed (see HtmlTreeBuilder.Sanitizer.cs)
-            Element? lastNode = GetSanitizerAction(furthestBlock) == SanitizerElementAction.Keep ? furthestBlock : null;
+            // The elements removed or replaced by their children by the sanitizer are not inserted, as in Blink (see
+            // HtmlTreeBuilder.Sanitizer.cs). The location of an element replaced by its children is known once its parent is
+            // inserted, so the nodes are inserted from the top when sanitizing: chain lists them from furthestBlock.
+            var lastNode = furthestBlock;
+            var chain = _sanitizerActions is null ? null : new List<Element> { furthestBlock };
             var nodeIndex = furthestBlockIndex;
             var innerLoopCounter = 0;
             while (true)
@@ -943,34 +945,24 @@ internal sealed partial class HtmlTreeBuilder
                     bookmark = nodeFormattingIndex + 1;
                 }
 
-                switch (GetSanitizerAction(node))
+                if (chain is null)
                 {
-                    case SanitizerElementAction.Keep:
-                        if (lastNode is not null)
-                        {
-                            node.AppendChildCore(DetachIfNeeded(lastNode));
-                        }
-
-                        lastNode = node;
-                        break;
-
-                    case SanitizerElementAction.Remove:
-                        lastNode?.RemoveFromParent();
-                        lastNode = null;
-                        break;
+                    InsertElementAt(lastNode, (node, null));
                 }
+                else
+                {
+                    chain.Add(node);
+                }
+
+                lastNode = node;
             }
 
-            if (lastNode is not null)
+            InsertElementAt(lastNode, GetAdjustedInsertionLocation(commonAncestor));
+            if (chain is not null)
             {
-                var (target, refNode) = GetAdjustedInsertionLocation(commonAncestor);
-                lastNode.RemoveFromParent();
-                if (lastNode.ParentNode is null &&
-                    !lastNode.IsHostIncludingInclusiveAncestorOf(target) &&
-                    !(target is Document targetDocument && targetDocument.DocumentElement is not null) &&
-                    (refNode is null || ReferenceEquals(refNode.ParentNode, target)))
+                for (var i = chain.Count - 2; i >= 0; i--)
                 {
-                    target.InsertBeforeCore(lastNode, refNode);
+                    InsertElementAt(chain[i], AdjustInsertionLocation(GetChildInsertionLocation(chain[i + 1])));
                 }
             }
 
@@ -992,11 +984,14 @@ internal sealed partial class HtmlTreeBuilder
             OnElementPushed(newFormattingElement);
 
             // The children of furthestBlock stay in it when the new element is replaced by its children, and are removed with
-            // it when it is removed. The stack of open elements is updated first, so the element is appended to the nearest kept
-            // ancestor of furthestBlock when furthestBlock is replaced by its children.
+            // it when it is removed. The children of a furthestBlock replaced by its children are not in it.
+            var furthestBlockLocation = AdjustInsertionLocation(GetChildInsertionLocation(furthestBlock));
             var newFormattingElementAction = GetSanitizerAction(newFormattingElement);
             if (newFormattingElementAction == SanitizerElementAction.ReplaceWithChildren)
+            {
+                InsertElementAt(newFormattingElement, furthestBlockLocation);
                 continue;
+            }
 
             // A custom element reaction may have inserted the new element in the tree (e.g. in furthestBlock): the nodes are
             // not appended to one of their descendants, which would create a cycle
@@ -1012,29 +1007,12 @@ internal sealed partial class HtmlTreeBuilder
                 child = next is not null && ReferenceEquals(next.ParentNode, furthestBlock) ? next : null;
             }
 
+            MoveReplacedElementLocations(furthestBlock, newFormattingElement);
             if (newFormattingElementAction == SanitizerElementAction.Remove)
                 continue;
 
-            var newParent = SkipElementsReplacedWithChildren(furthestBlock);
-            Node? newReferenceChild = null;
-            if (RootInsertionTarget is not null && ReferenceEquals(newParent, _openElements[0]))
-            {
-                newParent = RootInsertionTarget;
-                newReferenceChild = RootInsertionReferenceChild;
-            }
-
-            if (!newFormattingElement.IsHostIncludingInclusiveAncestorOf(newParent) && !IsDisplaced(newParent, newReferenceChild))
-            {
-                newFormattingElement.RemoveFromParent();
-                newParent.InsertBeforeCore(newFormattingElement, newReferenceChild);
-            }
+            InsertElementAt(newFormattingElement, furthestBlockLocation);
         }
-    }
-
-    private static Node DetachIfNeeded(Node node)
-    {
-        node.RemoveFromParent();
-        return node;
     }
 
     // ----------------------------------------------------------------------------------------------------------------

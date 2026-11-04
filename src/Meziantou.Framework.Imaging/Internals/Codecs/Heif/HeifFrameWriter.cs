@@ -25,6 +25,22 @@ internal sealed class HeifFrameWriter : IDisposable
     /// <exception cref="InvalidImageContentException">The identity matrix is used with subsampled chroma.</exception>
     /// <exception cref="ImageResourceLimitException">The rows exceed the live-allocation limit.</exception>
     public HeifFrameWriter(ImageCodecContext context, HeifStructureParser structure, in HeifBitstreamFormat color, HeifBitstreamFormat? alpha, Size codedSize, Rectangle crop)
+        : this(context, structure, color, alpha, codedSize, crop, structure.SourcePixelFormat)
+    {
+    }
+
+    /// <summary>Creates the converter of an image to rows of <paramref name="layout"/>, and rents its rows.</summary>
+    /// <param name="context">The operation.</param>
+    /// <param name="structure">The walker of the file: its color description and its pixel layout.</param>
+    /// <param name="color">The sample format of the color image.</param>
+    /// <param name="alpha">The sample format of the alpha plane, or <see langword="null"/> for an opaque image.</param>
+    /// <param name="codedSize">The size of the image before its clean aperture.</param>
+    /// <param name="crop">The part of the image that the clean aperture keeps.</param>
+    /// <param name="layout">The layout of the rows: the source pixel format of the sink.</param>
+    /// <exception cref="UnsupportedImageFeatureException">The matrix coefficients are not supported.</exception>
+    /// <exception cref="InvalidImageContentException">The identity matrix is used with subsampled chroma.</exception>
+    /// <exception cref="ImageResourceLimitException">The rows exceed the live-allocation limit.</exception>
+    public HeifFrameWriter(ImageCodecContext context, HeifStructureParser structure, in HeifBitstreamFormat color, HeifBitstreamFormat? alpha, Size codedSize, Rectangle crop, PixelFormat layout)
     {
         // A 'colr' box of type 'nclx' describes the colors of the image; otherwise the bitstream does
         var nclx = structure.ContainerColorDescription;
@@ -32,7 +48,7 @@ internal sealed class HeifFrameWriter : IDisposable
         var fullRange = nclx?.FullRange ?? color.FullRange;
         var primaries = nclx?.ColorPrimaries ?? color.ColorPrimaries;
         var transfer = nclx?.TransferCharacteristics ?? color.TransferCharacteristics;
-        _converter = new HeifYuvConverter(structure.Binding, color, matrix, fullRange, alpha, structure.SourcePixelFormat, alpha is not null && structure.IsPremultiplied, primaries, transfer);
+        _converter = new HeifYuvConverter(structure.Binding, color, matrix, fullRange, alpha, layout, alpha is not null && structure.IsPremultiplied, primaries, transfer);
         _context = context;
         _width = codedSize.Width;
         _height = codedSize.Height;
@@ -59,7 +75,7 @@ internal sealed class HeifFrameWriter : IDisposable
     /// <param name="crop">The part of the image that the clean aperture keeps.</param>
     public static void WriteFrame(ImageCodecContext context, DecodedFrameSink sink, HeifStructureParser structure, HeifPlanarImage color, HeifPlanarImage? alpha, Size codedSize, Rectangle crop)
     {
-        using var writer = new HeifFrameWriter(context, structure, color.Format, alpha?.Format, codedSize, crop);
+        using var writer = new HeifFrameWriter(context, structure, color.Format, alpha?.Format, codedSize, crop, sink.SourcePixelFormat);
         writer.WriteRows(sink, color, alpha, 0, crop.Height);
     }
 
@@ -79,6 +95,7 @@ internal sealed class HeifFrameWriter : IDisposable
         var v = _rows.Span.Slice(width, width);
         var pixelRow = _pixels.RawBuffer.AsSpan(0, width * _converter.BytesPerPixel);
         var hasChroma = color.PlaneCount > 1;
+        var whole = _crop.X is 0 && _crop.Width == width;
         using var target = sink.LeaseCurrentFrame();
         for (var y = start; y < end; y++)
         {
@@ -100,6 +117,15 @@ internal sealed class HeifFrameWriter : IDisposable
             }
 
             var alphaRow = alpha is null ? default : alpha.GetRow(0, sourceY)[..width];
+
+            // The rows that the sink stores without conversion are converted in place when the clean aperture keeps them whole
+            var direct = whole ? sink.GetDirectRow(target, y) : default;
+            if (!direct.IsEmpty)
+            {
+                _converter.ConvertRow(color.GetRow(0, sourceY)[..width], uRow, vRow, alphaRow, direct);
+                continue;
+            }
+
             _converter.ConvertRow(color.GetRow(0, sourceY)[..width], uRow, vRow, alphaRow, pixelRow);
             sink.WriteRow(target, y, pixelRow.Slice(_crop.X * _converter.BytesPerPixel, _crop.Width * _converter.BytesPerPixel));
         }

@@ -148,6 +148,18 @@ public sealed class HevcTableTests
 
         Assert.Equal(63, HevcCabacTables.TransIdxLps[63]);
 
+        // The transitions of a context variable byte are those of Table 9-53, valMps being inverted by a least probable
+        // symbol in the state 0
+        var nextContextState = HevcCabacTables.NextContextState;
+        Assert.HasCount(256, nextContextState.ToArray());
+        for (var context = 0; context < 128; context++)
+        {
+            var pStateIdx = context >> 1;
+            var valMps = context & 1;
+            Assert.Equal((HevcCabacTables.TransIdxMps[pStateIdx] << 1) | valMps, nextContextState[context]);
+            Assert.Equal((HevcCabacTables.TransIdxLps[pStateIdx] << 1) | (pStateIdx is 0 ? 1 - valMps : valMps), nextContextState[128 + context]);
+        }
+
         // Table 9-4: 173 context variables, the same number for the three initialization types
         Assert.Equal(173, HevcContextLayout.Count);
         Assert.Equal(HevcContextLayout.Count, HevcContextLayout.ResScaleSignFlag + 2);

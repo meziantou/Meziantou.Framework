@@ -69,6 +69,13 @@ are written as they come, whatever their number.
 | [DurationRounding](cref:Meziantou.Framework.Imaging.Formats.JpegXlEncoder.DurationRounding) | [RoundToNearest](cref:Meziantou.Framework.Imaging.Formats.FrameDurationRounding.RoundToNearest) rounds durations to the nearest millisecond; [RequireExact](cref:Meziantou.Framework.Imaging.Formats.FrameDurationRounding.RequireExact) throws | [RoundToNearest](cref:Meziantou.Framework.Imaging.Formats.FrameDurationRounding.RoundToNearest) |
 | [MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling) | What to do with metadata JPEG XL cannot store (text, resolution) | [Strict](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.Strict) |
 
+For lossless output, the effort sets how much the encoder learns about the image before coding it. On a 2048x1536
+photograph, on one thread of a desktop x64 processor: efforts 0 to 2 take about 80 ms, effort 3 about 340 ms, effort 5
+(the default) about 660 ms, effort 7 about 1.4 s and effort 9 about 2.5 s. The file of effort 3 is 23% smaller than the one
+of efforts 0 to 2, effort 5 is 3% smaller than effort 3, and effort 9 another 2%. Screenshots and graphics gain more from
+efforts 3 to 5, which code them with a palette of their colors and copy their repeated runs: a 2048x2048 screenshot is
+about half as large at effort 5 as at effort 4.
+
 ## Show an image while it downloads
 
 [ReadFrameRefinementInto](cref:Meziantou.Framework.Imaging.ImageReader{TPixel}.ReadFrameRefinementInto) renders a frame from the bytes received so far: coarse at first, then finer, then the frame

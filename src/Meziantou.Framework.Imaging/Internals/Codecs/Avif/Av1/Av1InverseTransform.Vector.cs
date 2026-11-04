@@ -23,19 +23,22 @@ internal static partial class Av1InverseTransform
     // of NarrowLanes128 and NarrowLanes256 when no product of the kernels can exceed 32 bits (IsNarrowExact, for inputs of
     // the dequantization range: inRange for the rows), the 64-bit products of Lanes128 and Lanes256 otherwise. The inputs of
     // the columns are clamped to the column range, which is 16 bits for a bit depth of at most 10
-    private static void TransformVector(ReadOnlySpan<int> dequant, Span<int> residual, int txSz, int txType, int bitDepth, int rows, int columns, bool inRange)
+    // destination: when not empty, the predicted samples (from the top left sample of the block, destinationStride per row)
+    // that the residual is added to, clamped to the samples of the bit depth, with the rows in reverse order for flipUD;
+    // residual is then a scratch that is left with values of no use
+    private static void TransformVector(ReadOnlySpan<int> dequant, Span<int> residual, int txSz, int txType, int bitDepth, int rows, int columns, bool inRange, Span<ushort> destination, int destinationStride, bool flipUD)
     {
         if (bitDepth > 10)
         {
-            TransformVector<Lanes128, Lanes128, Lanes256>(dequant, residual, txSz, txType, bitDepth, rows, columns);
+            TransformVector<Lanes128, Lanes128, Lanes256>(dequant, residual, txSz, txType, bitDepth, rows, columns, destination, destinationStride, flipUD);
         }
         else if (inRange && IsNarrowExact(bitDepth + 8, GetRowKind(txType), Av1Tables.TxWidthLog2[txSz]))
         {
-            TransformVector<NarrowLanes128, NarrowLanes128, NarrowLanes256>(dequant, residual, txSz, txType, bitDepth, rows, columns);
+            TransformVector<NarrowLanes128, NarrowLanes128, NarrowLanes256>(dequant, residual, txSz, txType, bitDepth, rows, columns, destination, destinationStride, flipUD);
         }
         else
         {
-            TransformVector<Lanes128, NarrowLanes128, NarrowLanes256>(dequant, residual, txSz, txType, bitDepth, rows, columns);
+            TransformVector<Lanes128, NarrowLanes128, NarrowLanes256>(dequant, residual, txSz, txType, bitDepth, rows, columns, destination, destinationStride, flipUD);
         }
     }
 
@@ -55,7 +58,7 @@ internal static partial class Av1InverseTransform
     // rows rows and columns columns of coefficients may not be zero: the other rows transform to zeros, and the DCT of rows
     // or columns whose last inputs are zero is InverseDctSparse, which does not read them
     [SkipLocalsInit]
-    private static void TransformVector<TRows, TColumns, TColumns256>(ReadOnlySpan<int> dequant, Span<int> residual, int txSz, int txType, int bitDepth, int rows, int columns)
+    private static void TransformVector<TRows, TColumns, TColumns256>(ReadOnlySpan<int> dequant, Span<int> residual, int txSz, int txType, int bitDepth, int rows, int columns, Span<ushort> destination, int destinationStride, bool flipUD)
         where TRows : struct, ILanes<Vector128<int>>
         where TColumns : struct, ILanes<Vector128<int>>
         where TColumns256 : struct, ILanes<Vector256<int>>
@@ -155,15 +158,28 @@ internal static partial class Av1InverseTransform
             }
         }
 
+        var add = !destination.IsEmpty;
         if (lastRow < 0)
         {
-            residual[(rowGroups * w)..].Clear();
+            // A residual of zeros changes no sample
+            if (!add)
+                residual[(rowGroups * w)..].Clear();
+
             return;
         }
 
         if (lastRow is 0 && !residual[..w].ContainsAnyExcept(residual[0]))
         {
             TransformConstantRows(residual, w, h, log2H, colKind, colClampRange, lossless: false, ColumnShift);
+            if (add)
+            {
+                var maxSample = (1 << bitDepth) - 1;
+                for (var i = 0; i < h; i++)
+                {
+                    Av1Reconstruction.AddConstant(destination, destinationStride, 0, flipUD ? h - 1 - i : i, w, 1, residual[i * w], maxSample);
+                }
+            }
+
             return;
         }
 
@@ -174,11 +190,19 @@ internal static partial class Av1InverseTransform
 
         if (Avx2.IsSupported && w >= 8)
         {
-            TransformColumns256<TColumns256>(residual, w, h, log2H, colKind, colClampRange, sparseColumnInputs);
+            TransformColumns256<TColumns256>(residual, w, h, log2H, colKind, colClampRange, sparseColumnInputs, destination, destinationStride, flipUD, (1 << bitDepth) - 1);
             return;
         }
 
+        var maxSamples = Vector128.Create((1 << bitDepth) - 1);
+
         var columnLength = sparseColumnInputs is 0 ? h : sparseColumnInputs;
+        if (add && AdvSimd.Arm64.IsSupported && w >= 8)
+        {
+            TransformColumnPairsAdd<TColumns>(residual, t, w, h, log2H, colKind, colClampRange, sparseColumnInputs, destination, destinationStride, flipUD, (1 << bitDepth) - 1);
+            return;
+        }
+
         for (var j = 0; j < w; j += 4)
         {
             var column = t[..h];
@@ -194,6 +218,16 @@ internal static partial class Av1InverseTransform
             else
             {
                 Apply<TColumns, Vector128<int>>(colKind, column, log2H, colClampRange);
+            }
+
+            if (add)
+            {
+                for (var i = 0; i < h; i++)
+                {
+                    AddResidual4(destination, ((flipUD ? h - 1 - i : i) * destinationStride) + j, Av1Simd.ShiftRightArithmeticRounded(column[i], ColumnShift), maxSamples);
+                }
+
+                continue;
             }
 
             for (var i = 0; i < h; i++)
@@ -213,9 +247,10 @@ internal static partial class Av1InverseTransform
 
     // The columns of TransformVector by groups of 8, for a block at least 8 samples wide
     [SkipLocalsInit]
-    private static void TransformColumns256<TLanes>(Span<int> residual, int w, int h, int log2H, Kind colKind, int colClampRange, int sparseInputs)
+    private static void TransformColumns256<TLanes>(Span<int> residual, int w, int h, int log2H, Kind colKind, int colClampRange, int sparseInputs, Span<ushort> destination, int destinationStride, bool flipUD, int maxSample)
         where TLanes : struct, ILanes<Vector256<int>>
     {
+        var maxSamples = Vector256.Create(maxSample);
         // Every element is written before it is read
         Span<Vector256<int>> column = unsafe(stackalloc Vector256<int>[64])[..h];
         var columnLength = sparseInputs is 0 ? h : sparseInputs;
@@ -235,10 +270,79 @@ internal static partial class Av1InverseTransform
                 Apply<TLanes, Vector256<int>>(colKind, column, log2H, colClampRange);
             }
 
+            if (!destination.IsEmpty)
+            {
+                for (var i = 0; i < h; i++)
+                {
+                    var samples = destination.Slice(((flipUD ? h - 1 - i : i) * destinationStride) + j, 8);
+                    var predicted = Avx2.ConvertToVector256Int32(Vector128.Create(samples));
+                    var sum = Vector256.Min(Vector256.Max(predicted + Lanes256.ShiftRightArithmeticRounded(column[i], ColumnShift), Vector256<int>.Zero), maxSamples);
+                    Vector256.Narrow(sum, sum).GetLower().AsUInt16().CopyTo(samples);
+                }
+
+                continue;
+            }
+
             for (var i = 0; i < h; i++)
             {
                 Lanes256.ShiftRightArithmeticRounded(column[i], ColumnShift).CopyTo(residual.Slice((i * w) + j, 8));
             }
+        }
+    }
+
+    // The columns of TransformVector with AdvSimd, by pairs of groups of 4 that the residual adds to 8 predicted samples at once:
+    // the residual narrowed with saturation to 16 bits and added with saturation, then clamped, which is the clamp of the
+    // 32-bit sum (a residual outside 16 bits gives the bound that its sign gives anyway)
+    [SkipLocalsInit]
+    private static void TransformColumnPairsAdd<TLanes>(Span<int> residual, Span<Vector128<int>> first, int w, int h, int log2H, Kind colKind, int colClampRange, int sparseInputs, Span<ushort> destination, int destinationStride, bool flipUD, int maxSample)
+        where TLanes : struct, ILanes<Vector128<int>>
+    {
+        // Every element is written before it is read
+        Span<Vector128<int>> second = unsafe(stackalloc Vector128<int>[64])[..h];
+        first = first[..h];
+        var maxSamples = Vector128.Create((short)maxSample);
+        var columnLength = sparseInputs is 0 ? h : sparseInputs;
+        for (var j = 0; j < w; j += 8)
+        {
+            for (var i = 0; i < columnLength; i++)
+            {
+                first[i] = Vector128.Create(residual.Slice((i * w) + j, 4));
+                second[i] = Vector128.Create(residual.Slice((i * w) + j + 4, 4));
+            }
+
+            if (sparseInputs is not 0)
+            {
+                InverseDctSparse<TLanes, Vector128<int>>(first, log2H, colClampRange, sparseInputs);
+                InverseDctSparse<TLanes, Vector128<int>>(second, log2H, colClampRange, sparseInputs);
+            }
+            else
+            {
+                Apply<TLanes, Vector128<int>>(colKind, first, log2H, colClampRange);
+                Apply<TLanes, Vector128<int>>(colKind, second, log2H, colClampRange);
+            }
+
+            for (var i = 0; i < h; i++)
+            {
+                var samples = destination.Slice(((flipUD ? h - 1 - i : i) * destinationStride) + j, 8);
+                var low = AdvSimd.ShiftRightArithmeticRounded(first[i], ColumnShift);
+                var high = AdvSimd.ShiftRightArithmeticRounded(second[i], ColumnShift);
+                var sum = AdvSimd.AddSaturate(Vector128.Create(samples).AsInt16(), AdvSimd.ExtractNarrowingSaturateUpper(AdvSimd.ExtractNarrowingSaturateLower(low), high));
+                Vector128.Min(Vector128.Max(sum, Vector128<short>.Zero), maxSamples).AsUInt16().CopyTo(samples);
+            }
+        }
+    }
+
+    // Adds 4 residual samples to the 4 predicted samples at destination[index], clamped to 0 to the lanes of maxSamples
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void AddResidual4(Span<ushort> destination, int index, Vector128<int> residual, Vector128<int> maxSamples)
+    {
+        ref var samples = ref unsafe(Unsafe.As<ushort, byte>(ref destination.Slice(index, 4)[0]));
+        var predicted = Vector128.WidenLower(Vector128.CreateScalar(unsafe(Unsafe.ReadUnaligned<ulong>(ref samples))).AsUInt16()).AsInt32();
+        var sum = Vector128.Min(Vector128.Max(predicted + residual, Vector128<int>.Zero), maxSamples);
+        var narrowed = Vector128.Narrow(sum, sum).AsUInt64().ToScalar();
+        unsafe
+        {
+            Unsafe.WriteUnaligned(ref samples, narrowed);
         }
     }
 
@@ -561,11 +665,19 @@ internal static partial class Av1InverseTransform
         where TVector : unmanaged
     {
         t = t[..4];
-        (t[1], t[2]) = (t[2], t[1]);
-        TLanes.B(t, 0, 1, 32, flip: true);
-        TLanes.B(t, 2, 3, 48, flip: false);
-        TLanes.H(t, 0, 3, flip: false, min, max);
-        TLanes.H(t, 1, 2, flip: false, min, max);
+        var t0 = t[0];
+        var t1 = t[1];
+        var t2 = t[2];
+        var t3 = t[3];
+        (t1, t2) = (t2, t1);
+        (t0, t1) = TLanes.Rotate(t0, t1, 32, flip: true);
+        (t2, t3) = TLanes.Rotate(t2, t3, 48, flip: false);
+        (t0, t3) = TLanes.Hadamard(t0, t3, flip: false, min, max);
+        (t1, t2) = TLanes.Hadamard(t1, t2, flip: false, min, max);
+        t[0] = t0;
+        t[1] = t1;
+        t[2] = t2;
+        t[3] = t3;
     }
 
     private static void InverseDct8<TLanes, TVector>(Span<TVector> t, TVector min, TVector max)
@@ -573,21 +685,37 @@ internal static partial class Av1InverseTransform
         where TVector : unmanaged
     {
         t = t[..8];
-        (t[1], t[4]) = (t[4], t[1]);
-        (t[3], t[6]) = (t[6], t[3]);
-        TLanes.B(t, 4, 7, 56, flip: false);
-        TLanes.B(t, 5, 6, 24, flip: false);
-        TLanes.B(t, 0, 1, 32, flip: true);
-        TLanes.B(t, 2, 3, 48, flip: false);
-        TLanes.H(t, 4, 5, flip: false, min, max);
-        TLanes.H(t, 6, 7, flip: true, min, max);
-        TLanes.H(t, 0, 3, flip: false, min, max);
-        TLanes.H(t, 1, 2, flip: false, min, max);
-        TLanes.B(t, 6, 5, 32, flip: true);
-        TLanes.H(t, 0, 7, flip: false, min, max);
-        TLanes.H(t, 1, 6, flip: false, min, max);
-        TLanes.H(t, 2, 5, flip: false, min, max);
-        TLanes.H(t, 3, 4, flip: false, min, max);
+        var t0 = t[0];
+        var t1 = t[1];
+        var t2 = t[2];
+        var t3 = t[3];
+        var t4 = t[4];
+        var t5 = t[5];
+        var t6 = t[6];
+        var t7 = t[7];
+        (t1, t4) = (t4, t1);
+        (t3, t6) = (t6, t3);
+        (t4, t7) = TLanes.Rotate(t4, t7, 56, flip: false);
+        (t5, t6) = TLanes.Rotate(t5, t6, 24, flip: false);
+        (t0, t1) = TLanes.Rotate(t0, t1, 32, flip: true);
+        (t2, t3) = TLanes.Rotate(t2, t3, 48, flip: false);
+        (t4, t5) = TLanes.Hadamard(t4, t5, flip: false, min, max);
+        (t6, t7) = TLanes.Hadamard(t6, t7, flip: true, min, max);
+        (t0, t3) = TLanes.Hadamard(t0, t3, flip: false, min, max);
+        (t1, t2) = TLanes.Hadamard(t1, t2, flip: false, min, max);
+        (t6, t5) = TLanes.Rotate(t6, t5, 32, flip: true);
+        (t0, t7) = TLanes.Hadamard(t0, t7, flip: false, min, max);
+        (t1, t6) = TLanes.Hadamard(t1, t6, flip: false, min, max);
+        (t2, t5) = TLanes.Hadamard(t2, t5, flip: false, min, max);
+        (t3, t4) = TLanes.Hadamard(t3, t4, flip: false, min, max);
+        t[0] = t0;
+        t[1] = t1;
+        t[2] = t2;
+        t[3] = t3;
+        t[4] = t4;
+        t[5] = t5;
+        t[6] = t6;
+        t[7] = t7;
     }
 
     private static void InverseDct16<TLanes, TVector>(Span<TVector> t, TVector min, TVector max)
@@ -595,49 +723,81 @@ internal static partial class Av1InverseTransform
         where TVector : unmanaged
     {
         t = t[..16];
-        (t[1], t[8]) = (t[8], t[1]);
-        (t[2], t[4]) = (t[4], t[2]);
-        (t[3], t[12]) = (t[12], t[3]);
-        (t[5], t[10]) = (t[10], t[5]);
-        (t[7], t[14]) = (t[14], t[7]);
-        (t[11], t[13]) = (t[13], t[11]);
-        TLanes.B(t, 8, 15, 60, flip: false);
-        TLanes.B(t, 9, 14, 28, flip: false);
-        TLanes.B(t, 10, 13, 44, flip: false);
-        TLanes.B(t, 11, 12, 12, flip: false);
-        TLanes.B(t, 4, 7, 56, flip: false);
-        TLanes.B(t, 5, 6, 24, flip: false);
-        TLanes.H(t, 8, 9, flip: false, min, max);
-        TLanes.H(t, 10, 11, flip: true, min, max);
-        TLanes.H(t, 12, 13, flip: false, min, max);
-        TLanes.H(t, 14, 15, flip: true, min, max);
-        TLanes.B(t, 0, 1, 32, flip: true);
-        TLanes.B(t, 2, 3, 48, flip: false);
-        TLanes.H(t, 4, 5, flip: false, min, max);
-        TLanes.H(t, 6, 7, flip: true, min, max);
-        TLanes.B(t, 14, 9, 48, flip: true);
-        TLanes.B(t, 13, 10, 112, flip: true);
-        TLanes.H(t, 0, 3, flip: false, min, max);
-        TLanes.H(t, 1, 2, flip: false, min, max);
-        TLanes.B(t, 6, 5, 32, flip: true);
-        TLanes.H(t, 8, 11, flip: false, min, max);
-        TLanes.H(t, 9, 10, flip: false, min, max);
-        TLanes.H(t, 12, 15, flip: true, min, max);
-        TLanes.H(t, 13, 14, flip: true, min, max);
-        TLanes.H(t, 0, 7, flip: false, min, max);
-        TLanes.H(t, 1, 6, flip: false, min, max);
-        TLanes.H(t, 2, 5, flip: false, min, max);
-        TLanes.H(t, 3, 4, flip: false, min, max);
-        TLanes.B(t, 13, 10, 32, flip: true);
-        TLanes.B(t, 12, 11, 32, flip: true);
-        TLanes.H(t, 0, 15, flip: false, min, max);
-        TLanes.H(t, 1, 14, flip: false, min, max);
-        TLanes.H(t, 2, 13, flip: false, min, max);
-        TLanes.H(t, 3, 12, flip: false, min, max);
-        TLanes.H(t, 4, 11, flip: false, min, max);
-        TLanes.H(t, 5, 10, flip: false, min, max);
-        TLanes.H(t, 6, 9, flip: false, min, max);
-        TLanes.H(t, 7, 8, flip: false, min, max);
+        var t0 = t[0];
+        var t1 = t[1];
+        var t2 = t[2];
+        var t3 = t[3];
+        var t4 = t[4];
+        var t5 = t[5];
+        var t6 = t[6];
+        var t7 = t[7];
+        var t8 = t[8];
+        var t9 = t[9];
+        var t10 = t[10];
+        var t11 = t[11];
+        var t12 = t[12];
+        var t13 = t[13];
+        var t14 = t[14];
+        var t15 = t[15];
+        (t1, t8) = (t8, t1);
+        (t2, t4) = (t4, t2);
+        (t3, t12) = (t12, t3);
+        (t5, t10) = (t10, t5);
+        (t7, t14) = (t14, t7);
+        (t11, t13) = (t13, t11);
+        (t8, t15) = TLanes.Rotate(t8, t15, 60, flip: false);
+        (t9, t14) = TLanes.Rotate(t9, t14, 28, flip: false);
+        (t10, t13) = TLanes.Rotate(t10, t13, 44, flip: false);
+        (t11, t12) = TLanes.Rotate(t11, t12, 12, flip: false);
+        (t4, t7) = TLanes.Rotate(t4, t7, 56, flip: false);
+        (t5, t6) = TLanes.Rotate(t5, t6, 24, flip: false);
+        (t8, t9) = TLanes.Hadamard(t8, t9, flip: false, min, max);
+        (t10, t11) = TLanes.Hadamard(t10, t11, flip: true, min, max);
+        (t12, t13) = TLanes.Hadamard(t12, t13, flip: false, min, max);
+        (t14, t15) = TLanes.Hadamard(t14, t15, flip: true, min, max);
+        (t0, t1) = TLanes.Rotate(t0, t1, 32, flip: true);
+        (t2, t3) = TLanes.Rotate(t2, t3, 48, flip: false);
+        (t4, t5) = TLanes.Hadamard(t4, t5, flip: false, min, max);
+        (t6, t7) = TLanes.Hadamard(t6, t7, flip: true, min, max);
+        (t14, t9) = TLanes.Rotate(t14, t9, 48, flip: true);
+        (t13, t10) = TLanes.Rotate(t13, t10, 112, flip: true);
+        (t0, t3) = TLanes.Hadamard(t0, t3, flip: false, min, max);
+        (t1, t2) = TLanes.Hadamard(t1, t2, flip: false, min, max);
+        (t6, t5) = TLanes.Rotate(t6, t5, 32, flip: true);
+        (t8, t11) = TLanes.Hadamard(t8, t11, flip: false, min, max);
+        (t9, t10) = TLanes.Hadamard(t9, t10, flip: false, min, max);
+        (t12, t15) = TLanes.Hadamard(t12, t15, flip: true, min, max);
+        (t13, t14) = TLanes.Hadamard(t13, t14, flip: true, min, max);
+        (t0, t7) = TLanes.Hadamard(t0, t7, flip: false, min, max);
+        (t1, t6) = TLanes.Hadamard(t1, t6, flip: false, min, max);
+        (t2, t5) = TLanes.Hadamard(t2, t5, flip: false, min, max);
+        (t3, t4) = TLanes.Hadamard(t3, t4, flip: false, min, max);
+        (t13, t10) = TLanes.Rotate(t13, t10, 32, flip: true);
+        (t12, t11) = TLanes.Rotate(t12, t11, 32, flip: true);
+        (t0, t15) = TLanes.Hadamard(t0, t15, flip: false, min, max);
+        (t1, t14) = TLanes.Hadamard(t1, t14, flip: false, min, max);
+        (t2, t13) = TLanes.Hadamard(t2, t13, flip: false, min, max);
+        (t3, t12) = TLanes.Hadamard(t3, t12, flip: false, min, max);
+        (t4, t11) = TLanes.Hadamard(t4, t11, flip: false, min, max);
+        (t5, t10) = TLanes.Hadamard(t5, t10, flip: false, min, max);
+        (t6, t9) = TLanes.Hadamard(t6, t9, flip: false, min, max);
+        (t7, t8) = TLanes.Hadamard(t7, t8, flip: false, min, max);
+        t[0] = t0;
+        t[1] = t1;
+        t[2] = t2;
+        t[3] = t3;
+        t[4] = t4;
+        t[5] = t5;
+        t[6] = t6;
+        t[7] = t7;
+        t[8] = t8;
+        t[9] = t9;
+        t[10] = t10;
+        t[11] = t11;
+        t[12] = t12;
+        t[13] = t13;
+        t[14] = t14;
+        t[15] = t15;
     }
 
     private static void InverseDct32<TLanes, TVector>(Span<TVector> t, TVector min, TVector max)
@@ -645,115 +805,179 @@ internal static partial class Av1InverseTransform
         where TVector : unmanaged
     {
         t = t[..32];
-        (t[1], t[16]) = (t[16], t[1]);
-        (t[2], t[8]) = (t[8], t[2]);
-        (t[3], t[24]) = (t[24], t[3]);
-        (t[5], t[20]) = (t[20], t[5]);
-        (t[6], t[12]) = (t[12], t[6]);
-        (t[7], t[28]) = (t[28], t[7]);
-        (t[9], t[18]) = (t[18], t[9]);
-        (t[11], t[26]) = (t[26], t[11]);
-        (t[13], t[22]) = (t[22], t[13]);
-        (t[15], t[30]) = (t[30], t[15]);
-        (t[19], t[25]) = (t[25], t[19]);
-        (t[23], t[29]) = (t[29], t[23]);
-        TLanes.B(t, 16, 31, 62, flip: false);
-        TLanes.B(t, 17, 30, 30, flip: false);
-        TLanes.B(t, 18, 29, 46, flip: false);
-        TLanes.B(t, 19, 28, 14, flip: false);
-        TLanes.B(t, 20, 27, 54, flip: false);
-        TLanes.B(t, 21, 26, 22, flip: false);
-        TLanes.B(t, 22, 25, 38, flip: false);
-        TLanes.B(t, 23, 24, 6, flip: false);
-        TLanes.B(t, 8, 15, 60, flip: false);
-        TLanes.B(t, 9, 14, 28, flip: false);
-        TLanes.B(t, 10, 13, 44, flip: false);
-        TLanes.B(t, 11, 12, 12, flip: false);
-        TLanes.H(t, 16, 17, flip: false, min, max);
-        TLanes.H(t, 18, 19, flip: true, min, max);
-        TLanes.H(t, 20, 21, flip: false, min, max);
-        TLanes.H(t, 22, 23, flip: true, min, max);
-        TLanes.H(t, 24, 25, flip: false, min, max);
-        TLanes.H(t, 26, 27, flip: true, min, max);
-        TLanes.H(t, 28, 29, flip: false, min, max);
-        TLanes.H(t, 30, 31, flip: true, min, max);
-        TLanes.B(t, 4, 7, 56, flip: false);
-        TLanes.B(t, 5, 6, 24, flip: false);
-        TLanes.H(t, 8, 9, flip: false, min, max);
-        TLanes.H(t, 10, 11, flip: true, min, max);
-        TLanes.H(t, 12, 13, flip: false, min, max);
-        TLanes.H(t, 14, 15, flip: true, min, max);
-        TLanes.B(t, 30, 17, 56, flip: true);
-        TLanes.B(t, 29, 18, 120, flip: true);
-        TLanes.B(t, 26, 21, 24, flip: true);
-        TLanes.B(t, 25, 22, 88, flip: true);
-        TLanes.B(t, 0, 1, 32, flip: true);
-        TLanes.B(t, 2, 3, 48, flip: false);
-        TLanes.H(t, 4, 5, flip: false, min, max);
-        TLanes.H(t, 6, 7, flip: true, min, max);
-        TLanes.B(t, 14, 9, 48, flip: true);
-        TLanes.B(t, 13, 10, 112, flip: true);
-        TLanes.H(t, 16, 19, flip: false, min, max);
-        TLanes.H(t, 17, 18, flip: false, min, max);
-        TLanes.H(t, 20, 23, flip: true, min, max);
-        TLanes.H(t, 21, 22, flip: true, min, max);
-        TLanes.H(t, 24, 27, flip: false, min, max);
-        TLanes.H(t, 25, 26, flip: false, min, max);
-        TLanes.H(t, 28, 31, flip: true, min, max);
-        TLanes.H(t, 29, 30, flip: true, min, max);
-        TLanes.H(t, 0, 3, flip: false, min, max);
-        TLanes.H(t, 1, 2, flip: false, min, max);
-        TLanes.B(t, 6, 5, 32, flip: true);
-        TLanes.H(t, 8, 11, flip: false, min, max);
-        TLanes.H(t, 9, 10, flip: false, min, max);
-        TLanes.H(t, 12, 15, flip: true, min, max);
-        TLanes.H(t, 13, 14, flip: true, min, max);
-        TLanes.B(t, 29, 18, 48, flip: true);
-        TLanes.B(t, 28, 19, 48, flip: true);
-        TLanes.B(t, 27, 20, 112, flip: true);
-        TLanes.B(t, 26, 21, 112, flip: true);
-        TLanes.H(t, 0, 7, flip: false, min, max);
-        TLanes.H(t, 1, 6, flip: false, min, max);
-        TLanes.H(t, 2, 5, flip: false, min, max);
-        TLanes.H(t, 3, 4, flip: false, min, max);
-        TLanes.B(t, 13, 10, 32, flip: true);
-        TLanes.B(t, 12, 11, 32, flip: true);
-        TLanes.H(t, 16, 23, flip: false, min, max);
-        TLanes.H(t, 17, 22, flip: false, min, max);
-        TLanes.H(t, 18, 21, flip: false, min, max);
-        TLanes.H(t, 19, 20, flip: false, min, max);
-        TLanes.H(t, 24, 31, flip: true, min, max);
-        TLanes.H(t, 25, 30, flip: true, min, max);
-        TLanes.H(t, 26, 29, flip: true, min, max);
-        TLanes.H(t, 27, 28, flip: true, min, max);
-        TLanes.H(t, 0, 15, flip: false, min, max);
-        TLanes.H(t, 1, 14, flip: false, min, max);
-        TLanes.H(t, 2, 13, flip: false, min, max);
-        TLanes.H(t, 3, 12, flip: false, min, max);
-        TLanes.H(t, 4, 11, flip: false, min, max);
-        TLanes.H(t, 5, 10, flip: false, min, max);
-        TLanes.H(t, 6, 9, flip: false, min, max);
-        TLanes.H(t, 7, 8, flip: false, min, max);
-        TLanes.B(t, 27, 20, 32, flip: true);
-        TLanes.B(t, 26, 21, 32, flip: true);
-        TLanes.B(t, 25, 22, 32, flip: true);
-        TLanes.B(t, 24, 23, 32, flip: true);
-        TLanes.H(t, 0, 31, flip: false, min, max);
-        TLanes.H(t, 1, 30, flip: false, min, max);
-        TLanes.H(t, 2, 29, flip: false, min, max);
-        TLanes.H(t, 3, 28, flip: false, min, max);
-        TLanes.H(t, 4, 27, flip: false, min, max);
-        TLanes.H(t, 5, 26, flip: false, min, max);
-        TLanes.H(t, 6, 25, flip: false, min, max);
-        TLanes.H(t, 7, 24, flip: false, min, max);
-        TLanes.H(t, 8, 23, flip: false, min, max);
-        TLanes.H(t, 9, 22, flip: false, min, max);
-        TLanes.H(t, 10, 21, flip: false, min, max);
-        TLanes.H(t, 11, 20, flip: false, min, max);
-        TLanes.H(t, 12, 19, flip: false, min, max);
-        TLanes.H(t, 13, 18, flip: false, min, max);
-        TLanes.H(t, 14, 17, flip: false, min, max);
-        TLanes.H(t, 15, 16, flip: false, min, max);
+        var t0 = t[0];
+        var t1 = t[1];
+        var t2 = t[2];
+        var t3 = t[3];
+        var t4 = t[4];
+        var t5 = t[5];
+        var t6 = t[6];
+        var t7 = t[7];
+        var t8 = t[8];
+        var t9 = t[9];
+        var t10 = t[10];
+        var t11 = t[11];
+        var t12 = t[12];
+        var t13 = t[13];
+        var t14 = t[14];
+        var t15 = t[15];
+        var t16 = t[16];
+        var t17 = t[17];
+        var t18 = t[18];
+        var t19 = t[19];
+        var t20 = t[20];
+        var t21 = t[21];
+        var t22 = t[22];
+        var t23 = t[23];
+        var t24 = t[24];
+        var t25 = t[25];
+        var t26 = t[26];
+        var t27 = t[27];
+        var t28 = t[28];
+        var t29 = t[29];
+        var t30 = t[30];
+        var t31 = t[31];
+        (t1, t16) = (t16, t1);
+        (t2, t8) = (t8, t2);
+        (t3, t24) = (t24, t3);
+        (t5, t20) = (t20, t5);
+        (t6, t12) = (t12, t6);
+        (t7, t28) = (t28, t7);
+        (t9, t18) = (t18, t9);
+        (t11, t26) = (t26, t11);
+        (t13, t22) = (t22, t13);
+        (t15, t30) = (t30, t15);
+        (t19, t25) = (t25, t19);
+        (t23, t29) = (t29, t23);
+        (t16, t31) = TLanes.Rotate(t16, t31, 62, flip: false);
+        (t17, t30) = TLanes.Rotate(t17, t30, 30, flip: false);
+        (t18, t29) = TLanes.Rotate(t18, t29, 46, flip: false);
+        (t19, t28) = TLanes.Rotate(t19, t28, 14, flip: false);
+        (t20, t27) = TLanes.Rotate(t20, t27, 54, flip: false);
+        (t21, t26) = TLanes.Rotate(t21, t26, 22, flip: false);
+        (t22, t25) = TLanes.Rotate(t22, t25, 38, flip: false);
+        (t23, t24) = TLanes.Rotate(t23, t24, 6, flip: false);
+        (t8, t15) = TLanes.Rotate(t8, t15, 60, flip: false);
+        (t9, t14) = TLanes.Rotate(t9, t14, 28, flip: false);
+        (t10, t13) = TLanes.Rotate(t10, t13, 44, flip: false);
+        (t11, t12) = TLanes.Rotate(t11, t12, 12, flip: false);
+        (t16, t17) = TLanes.Hadamard(t16, t17, flip: false, min, max);
+        (t18, t19) = TLanes.Hadamard(t18, t19, flip: true, min, max);
+        (t20, t21) = TLanes.Hadamard(t20, t21, flip: false, min, max);
+        (t22, t23) = TLanes.Hadamard(t22, t23, flip: true, min, max);
+        (t24, t25) = TLanes.Hadamard(t24, t25, flip: false, min, max);
+        (t26, t27) = TLanes.Hadamard(t26, t27, flip: true, min, max);
+        (t28, t29) = TLanes.Hadamard(t28, t29, flip: false, min, max);
+        (t30, t31) = TLanes.Hadamard(t30, t31, flip: true, min, max);
+        (t4, t7) = TLanes.Rotate(t4, t7, 56, flip: false);
+        (t5, t6) = TLanes.Rotate(t5, t6, 24, flip: false);
+        (t8, t9) = TLanes.Hadamard(t8, t9, flip: false, min, max);
+        (t10, t11) = TLanes.Hadamard(t10, t11, flip: true, min, max);
+        (t12, t13) = TLanes.Hadamard(t12, t13, flip: false, min, max);
+        (t14, t15) = TLanes.Hadamard(t14, t15, flip: true, min, max);
+        (t30, t17) = TLanes.Rotate(t30, t17, 56, flip: true);
+        (t29, t18) = TLanes.Rotate(t29, t18, 120, flip: true);
+        (t26, t21) = TLanes.Rotate(t26, t21, 24, flip: true);
+        (t25, t22) = TLanes.Rotate(t25, t22, 88, flip: true);
+        (t0, t1) = TLanes.Rotate(t0, t1, 32, flip: true);
+        (t2, t3) = TLanes.Rotate(t2, t3, 48, flip: false);
+        (t4, t5) = TLanes.Hadamard(t4, t5, flip: false, min, max);
+        (t6, t7) = TLanes.Hadamard(t6, t7, flip: true, min, max);
+        (t14, t9) = TLanes.Rotate(t14, t9, 48, flip: true);
+        (t13, t10) = TLanes.Rotate(t13, t10, 112, flip: true);
+        (t16, t19) = TLanes.Hadamard(t16, t19, flip: false, min, max);
+        (t17, t18) = TLanes.Hadamard(t17, t18, flip: false, min, max);
+        (t20, t23) = TLanes.Hadamard(t20, t23, flip: true, min, max);
+        (t21, t22) = TLanes.Hadamard(t21, t22, flip: true, min, max);
+        (t24, t27) = TLanes.Hadamard(t24, t27, flip: false, min, max);
+        (t25, t26) = TLanes.Hadamard(t25, t26, flip: false, min, max);
+        (t28, t31) = TLanes.Hadamard(t28, t31, flip: true, min, max);
+        (t29, t30) = TLanes.Hadamard(t29, t30, flip: true, min, max);
+        (t0, t3) = TLanes.Hadamard(t0, t3, flip: false, min, max);
+        (t1, t2) = TLanes.Hadamard(t1, t2, flip: false, min, max);
+        (t6, t5) = TLanes.Rotate(t6, t5, 32, flip: true);
+        (t8, t11) = TLanes.Hadamard(t8, t11, flip: false, min, max);
+        (t9, t10) = TLanes.Hadamard(t9, t10, flip: false, min, max);
+        (t12, t15) = TLanes.Hadamard(t12, t15, flip: true, min, max);
+        (t13, t14) = TLanes.Hadamard(t13, t14, flip: true, min, max);
+        (t29, t18) = TLanes.Rotate(t29, t18, 48, flip: true);
+        (t28, t19) = TLanes.Rotate(t28, t19, 48, flip: true);
+        (t27, t20) = TLanes.Rotate(t27, t20, 112, flip: true);
+        (t26, t21) = TLanes.Rotate(t26, t21, 112, flip: true);
+        (t0, t7) = TLanes.Hadamard(t0, t7, flip: false, min, max);
+        (t1, t6) = TLanes.Hadamard(t1, t6, flip: false, min, max);
+        (t2, t5) = TLanes.Hadamard(t2, t5, flip: false, min, max);
+        (t3, t4) = TLanes.Hadamard(t3, t4, flip: false, min, max);
+        (t13, t10) = TLanes.Rotate(t13, t10, 32, flip: true);
+        (t12, t11) = TLanes.Rotate(t12, t11, 32, flip: true);
+        (t16, t23) = TLanes.Hadamard(t16, t23, flip: false, min, max);
+        (t17, t22) = TLanes.Hadamard(t17, t22, flip: false, min, max);
+        (t18, t21) = TLanes.Hadamard(t18, t21, flip: false, min, max);
+        (t19, t20) = TLanes.Hadamard(t19, t20, flip: false, min, max);
+        (t24, t31) = TLanes.Hadamard(t24, t31, flip: true, min, max);
+        (t25, t30) = TLanes.Hadamard(t25, t30, flip: true, min, max);
+        (t26, t29) = TLanes.Hadamard(t26, t29, flip: true, min, max);
+        (t27, t28) = TLanes.Hadamard(t27, t28, flip: true, min, max);
+        (t0, t15) = TLanes.Hadamard(t0, t15, flip: false, min, max);
+        (t1, t14) = TLanes.Hadamard(t1, t14, flip: false, min, max);
+        (t2, t13) = TLanes.Hadamard(t2, t13, flip: false, min, max);
+        (t3, t12) = TLanes.Hadamard(t3, t12, flip: false, min, max);
+        (t4, t11) = TLanes.Hadamard(t4, t11, flip: false, min, max);
+        (t5, t10) = TLanes.Hadamard(t5, t10, flip: false, min, max);
+        (t6, t9) = TLanes.Hadamard(t6, t9, flip: false, min, max);
+        (t7, t8) = TLanes.Hadamard(t7, t8, flip: false, min, max);
+        (t27, t20) = TLanes.Rotate(t27, t20, 32, flip: true);
+        (t26, t21) = TLanes.Rotate(t26, t21, 32, flip: true);
+        (t25, t22) = TLanes.Rotate(t25, t22, 32, flip: true);
+        (t24, t23) = TLanes.Rotate(t24, t23, 32, flip: true);
+        (t0, t31) = TLanes.Hadamard(t0, t31, flip: false, min, max);
+        (t1, t30) = TLanes.Hadamard(t1, t30, flip: false, min, max);
+        (t2, t29) = TLanes.Hadamard(t2, t29, flip: false, min, max);
+        (t3, t28) = TLanes.Hadamard(t3, t28, flip: false, min, max);
+        (t4, t27) = TLanes.Hadamard(t4, t27, flip: false, min, max);
+        (t5, t26) = TLanes.Hadamard(t5, t26, flip: false, min, max);
+        (t6, t25) = TLanes.Hadamard(t6, t25, flip: false, min, max);
+        (t7, t24) = TLanes.Hadamard(t7, t24, flip: false, min, max);
+        (t8, t23) = TLanes.Hadamard(t8, t23, flip: false, min, max);
+        (t9, t22) = TLanes.Hadamard(t9, t22, flip: false, min, max);
+        (t10, t21) = TLanes.Hadamard(t10, t21, flip: false, min, max);
+        (t11, t20) = TLanes.Hadamard(t11, t20, flip: false, min, max);
+        (t12, t19) = TLanes.Hadamard(t12, t19, flip: false, min, max);
+        (t13, t18) = TLanes.Hadamard(t13, t18, flip: false, min, max);
+        (t14, t17) = TLanes.Hadamard(t14, t17, flip: false, min, max);
+        (t15, t16) = TLanes.Hadamard(t15, t16, flip: false, min, max);
+        t[0] = t0;
+        t[1] = t1;
+        t[2] = t2;
+        t[3] = t3;
+        t[4] = t4;
+        t[5] = t5;
+        t[6] = t6;
+        t[7] = t7;
+        t[8] = t8;
+        t[9] = t9;
+        t[10] = t10;
+        t[11] = t11;
+        t[12] = t12;
+        t[13] = t13;
+        t[14] = t14;
+        t[15] = t15;
+        t[16] = t16;
+        t[17] = t17;
+        t[18] = t18;
+        t[19] = t19;
+        t[20] = t20;
+        t[21] = t21;
+        t[22] = t22;
+        t[23] = t23;
+        t[24] = t24;
+        t[25] = t25;
+        t[26] = t26;
+        t[27] = t27;
+        t[28] = t28;
+        t[29] = t29;
+        t[30] = t30;
+        t[31] = t31;
     }
     // The number of inputs of a DCT of 2^n points that InverseDctSparse reads, when the inputs from count are zero: 4 for 8 to 32
     // points, 8 for 16 and 32 points, 0 when no kernel applies
@@ -804,25 +1028,38 @@ internal static partial class Av1InverseTransform
         where TVector : unmanaged
     {
         t = t[..8];
-        t[4] = t[1];
-        t[6] = t[3];
-        t[7] = TLanes.MultiplyRound12(t[4], 4017);
-        t[4] = TLanes.MultiplyRound12(t[4], 799);
-        t[5] = TLanes.MultiplyRound12(t[6], -2276);
-        t[6] = TLanes.MultiplyRound12(t[6], 3406);
-        t[1] = TLanes.MultiplyRound12(t[0], 2896);
-        t[0] = TLanes.MultiplyRound12(t[0], 2896);
-        t[3] = TLanes.MultiplyRound12(t[2], 3784);
-        t[2] = TLanes.MultiplyRound12(t[2], 1567);
-        TLanes.H(t, 4, 5, flip: false, min, max);
-        TLanes.H(t, 7, 6, flip: false, min, max);
-        TLanes.H(t, 0, 3, flip: false, min, max);
-        TLanes.H(t, 1, 2, flip: false, min, max);
-        TLanes.B(t, 6, 5, 32, flip: true);
-        TLanes.H(t, 0, 7, flip: false, min, max);
-        TLanes.H(t, 1, 6, flip: false, min, max);
-        TLanes.H(t, 2, 5, flip: false, min, max);
-        TLanes.H(t, 3, 4, flip: false, min, max);
+        var t0 = t[0];
+        var t1 = t[1];
+        var t2 = t[2];
+        var t3 = t[3];
+        TVector t4, t5, t6, t7;
+        t4 = t1;
+        t6 = t3;
+        t7 = TLanes.MultiplyRound12(t4, 4017);
+        t4 = TLanes.MultiplyRound12(t4, 799);
+        t5 = TLanes.MultiplyRound12(t6, -2276);
+        t6 = TLanes.MultiplyRound12(t6, 3406);
+        t1 = TLanes.MultiplyRound12(t0, 2896);
+        t0 = TLanes.MultiplyRound12(t0, 2896);
+        t3 = TLanes.MultiplyRound12(t2, 3784);
+        t2 = TLanes.MultiplyRound12(t2, 1567);
+        (t4, t5) = TLanes.Hadamard(t4, t5, flip: false, min, max);
+        (t7, t6) = TLanes.Hadamard(t7, t6, flip: false, min, max);
+        (t0, t3) = TLanes.Hadamard(t0, t3, flip: false, min, max);
+        (t1, t2) = TLanes.Hadamard(t1, t2, flip: false, min, max);
+        (t6, t5) = TLanes.Rotate(t6, t5, 32, flip: true);
+        (t0, t7) = TLanes.Hadamard(t0, t7, flip: false, min, max);
+        (t1, t6) = TLanes.Hadamard(t1, t6, flip: false, min, max);
+        (t2, t5) = TLanes.Hadamard(t2, t5, flip: false, min, max);
+        (t3, t4) = TLanes.Hadamard(t3, t4, flip: false, min, max);
+        t[0] = t0;
+        t[1] = t1;
+        t[2] = t2;
+        t[3] = t3;
+        t[4] = t4;
+        t[5] = t5;
+        t[6] = t6;
+        t[7] = t7;
     }
 
     private static void InverseDct16Sparse4<TLanes, TVector>(Span<TVector> t, TVector min, TVector max)
@@ -830,54 +1067,75 @@ internal static partial class Av1InverseTransform
         where TVector : unmanaged
     {
         t = t[..16];
-        t[8] = t[1];
-        t[4] = t[2];
-        t[12] = t[3];
-        t[15] = TLanes.MultiplyRound12(t[8], 4076);
-        t[8] = TLanes.MultiplyRound12(t[8], 401);
-        t[11] = TLanes.MultiplyRound12(t[12], -1189);
-        t[12] = TLanes.MultiplyRound12(t[12], 3920);
-        t[7] = TLanes.MultiplyRound12(t[4], 4017);
-        t[4] = TLanes.MultiplyRound12(t[4], 799);
-        t[8] = TLanes.Clamp(t[8], min, max);
-        t[9] = t[8];
-        t[11] = TLanes.Clamp(t[11], min, max);
-        t[10] = t[11];
-        t[12] = TLanes.Clamp(t[12], min, max);
-        t[13] = t[12];
-        t[15] = TLanes.Clamp(t[15], min, max);
-        t[14] = t[15];
-        t[1] = TLanes.MultiplyRound12(t[0], 2896);
-        t[0] = TLanes.MultiplyRound12(t[0], 2896);
-        t[4] = TLanes.Clamp(t[4], min, max);
-        t[5] = t[4];
-        t[7] = TLanes.Clamp(t[7], min, max);
-        t[6] = t[7];
-        TLanes.B(t, 14, 9, 48, flip: true);
-        TLanes.B(t, 13, 10, 112, flip: true);
-        t[0] = TLanes.Clamp(t[0], min, max);
-        t[3] = t[0];
-        t[1] = TLanes.Clamp(t[1], min, max);
-        t[2] = t[1];
-        TLanes.B(t, 6, 5, 32, flip: true);
-        TLanes.H(t, 8, 11, flip: false, min, max);
-        TLanes.H(t, 9, 10, flip: false, min, max);
-        TLanes.H(t, 15, 12, flip: false, min, max);
-        TLanes.H(t, 14, 13, flip: false, min, max);
-        TLanes.H(t, 0, 7, flip: false, min, max);
-        TLanes.H(t, 1, 6, flip: false, min, max);
-        TLanes.H(t, 2, 5, flip: false, min, max);
-        TLanes.H(t, 3, 4, flip: false, min, max);
-        TLanes.B(t, 13, 10, 32, flip: true);
-        TLanes.B(t, 12, 11, 32, flip: true);
-        TLanes.H(t, 0, 15, flip: false, min, max);
-        TLanes.H(t, 1, 14, flip: false, min, max);
-        TLanes.H(t, 2, 13, flip: false, min, max);
-        TLanes.H(t, 3, 12, flip: false, min, max);
-        TLanes.H(t, 4, 11, flip: false, min, max);
-        TLanes.H(t, 5, 10, flip: false, min, max);
-        TLanes.H(t, 6, 9, flip: false, min, max);
-        TLanes.H(t, 7, 8, flip: false, min, max);
+        var t0 = t[0];
+        var t1 = t[1];
+        var t2 = t[2];
+        var t3 = t[3];
+        TVector t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15;
+        t8 = t1;
+        t4 = t2;
+        t12 = t3;
+        t15 = TLanes.MultiplyRound12(t8, 4076);
+        t8 = TLanes.MultiplyRound12(t8, 401);
+        t11 = TLanes.MultiplyRound12(t12, -1189);
+        t12 = TLanes.MultiplyRound12(t12, 3920);
+        t7 = TLanes.MultiplyRound12(t4, 4017);
+        t4 = TLanes.MultiplyRound12(t4, 799);
+        t8 = TLanes.Clamp(t8, min, max);
+        t9 = t8;
+        t11 = TLanes.Clamp(t11, min, max);
+        t10 = t11;
+        t12 = TLanes.Clamp(t12, min, max);
+        t13 = t12;
+        t15 = TLanes.Clamp(t15, min, max);
+        t14 = t15;
+        t1 = TLanes.MultiplyRound12(t0, 2896);
+        t0 = TLanes.MultiplyRound12(t0, 2896);
+        t4 = TLanes.Clamp(t4, min, max);
+        t5 = t4;
+        t7 = TLanes.Clamp(t7, min, max);
+        t6 = t7;
+        (t14, t9) = TLanes.Rotate(t14, t9, 48, flip: true);
+        (t13, t10) = TLanes.Rotate(t13, t10, 112, flip: true);
+        t0 = TLanes.Clamp(t0, min, max);
+        t3 = t0;
+        t1 = TLanes.Clamp(t1, min, max);
+        t2 = t1;
+        (t6, t5) = TLanes.Rotate(t6, t5, 32, flip: true);
+        (t8, t11) = TLanes.Hadamard(t8, t11, flip: false, min, max);
+        (t9, t10) = TLanes.Hadamard(t9, t10, flip: false, min, max);
+        (t15, t12) = TLanes.Hadamard(t15, t12, flip: false, min, max);
+        (t14, t13) = TLanes.Hadamard(t14, t13, flip: false, min, max);
+        (t0, t7) = TLanes.Hadamard(t0, t7, flip: false, min, max);
+        (t1, t6) = TLanes.Hadamard(t1, t6, flip: false, min, max);
+        (t2, t5) = TLanes.Hadamard(t2, t5, flip: false, min, max);
+        (t3, t4) = TLanes.Hadamard(t3, t4, flip: false, min, max);
+        (t13, t10) = TLanes.Rotate(t13, t10, 32, flip: true);
+        (t12, t11) = TLanes.Rotate(t12, t11, 32, flip: true);
+        (t0, t15) = TLanes.Hadamard(t0, t15, flip: false, min, max);
+        (t1, t14) = TLanes.Hadamard(t1, t14, flip: false, min, max);
+        (t2, t13) = TLanes.Hadamard(t2, t13, flip: false, min, max);
+        (t3, t12) = TLanes.Hadamard(t3, t12, flip: false, min, max);
+        (t4, t11) = TLanes.Hadamard(t4, t11, flip: false, min, max);
+        (t5, t10) = TLanes.Hadamard(t5, t10, flip: false, min, max);
+        (t6, t9) = TLanes.Hadamard(t6, t9, flip: false, min, max);
+        (t7, t8) = TLanes.Hadamard(t7, t8, flip: false, min, max);
+        t[0] = t0;
+        t[1] = t1;
+        t[2] = t2;
+        t[3] = t3;
+        t[4] = t4;
+        t[5] = t5;
+        t[6] = t6;
+        t[7] = t7;
+        t[8] = t8;
+        t[9] = t9;
+        t[10] = t10;
+        t[11] = t11;
+        t[12] = t12;
+        t[13] = t13;
+        t[14] = t14;
+        t[15] = t15;
     }
 
     private static void InverseDct32Sparse4<TLanes, TVector>(Span<TVector> t, TVector min, TVector max)
@@ -885,100 +1143,137 @@ internal static partial class Av1InverseTransform
         where TVector : unmanaged
     {
         t = t[..32];
-        t[16] = t[1];
-        t[8] = t[2];
-        t[24] = t[3];
-        t[31] = TLanes.MultiplyRound12(t[16], 4091);
-        t[16] = TLanes.MultiplyRound12(t[16], 201);
-        t[23] = TLanes.MultiplyRound12(t[24], -601);
-        t[24] = TLanes.MultiplyRound12(t[24], 4052);
-        t[15] = TLanes.MultiplyRound12(t[8], 4076);
-        t[8] = TLanes.MultiplyRound12(t[8], 401);
-        t[16] = TLanes.Clamp(t[16], min, max);
-        t[17] = t[16];
-        t[23] = TLanes.Clamp(t[23], min, max);
-        t[22] = t[23];
-        t[24] = TLanes.Clamp(t[24], min, max);
-        t[25] = t[24];
-        t[31] = TLanes.Clamp(t[31], min, max);
-        t[30] = t[31];
-        t[8] = TLanes.Clamp(t[8], min, max);
-        t[9] = t[8];
-        t[15] = TLanes.Clamp(t[15], min, max);
-        t[14] = t[15];
-        TLanes.B(t, 30, 17, 56, flip: true);
-        TLanes.B(t, 25, 22, 88, flip: true);
-        t[1] = TLanes.MultiplyRound12(t[0], 2896);
-        t[0] = TLanes.MultiplyRound12(t[0], 2896);
-        TLanes.B(t, 14, 9, 48, flip: true);
-        t[19] = t[16];
-        t[17] = TLanes.Clamp(t[17], min, max);
-        t[18] = t[17];
-        t[20] = t[23];
-        t[22] = TLanes.Clamp(t[22], min, max);
-        t[21] = t[22];
-        t[27] = t[24];
-        t[25] = TLanes.Clamp(t[25], min, max);
-        t[26] = t[25];
-        t[28] = t[31];
-        t[30] = TLanes.Clamp(t[30], min, max);
-        t[29] = t[30];
-        t[0] = TLanes.Clamp(t[0], min, max);
-        t[3] = t[0];
-        t[1] = TLanes.Clamp(t[1], min, max);
-        t[2] = t[1];
-        t[11] = t[8];
-        t[9] = TLanes.Clamp(t[9], min, max);
-        t[10] = t[9];
-        t[12] = t[15];
-        t[14] = TLanes.Clamp(t[14], min, max);
-        t[13] = t[14];
-        TLanes.B(t, 29, 18, 48, flip: true);
-        TLanes.B(t, 28, 19, 48, flip: true);
-        TLanes.B(t, 27, 20, 112, flip: true);
-        TLanes.B(t, 26, 21, 112, flip: true);
-        t[7] = t[0];
-        t[6] = t[1];
-        t[5] = t[2];
-        t[4] = t[3];
-        TLanes.B(t, 13, 10, 32, flip: true);
-        TLanes.B(t, 12, 11, 32, flip: true);
-        TLanes.H(t, 16, 23, flip: false, min, max);
-        TLanes.H(t, 17, 22, flip: false, min, max);
-        TLanes.H(t, 18, 21, flip: false, min, max);
-        TLanes.H(t, 19, 20, flip: false, min, max);
-        TLanes.H(t, 31, 24, flip: false, min, max);
-        TLanes.H(t, 30, 25, flip: false, min, max);
-        TLanes.H(t, 29, 26, flip: false, min, max);
-        TLanes.H(t, 28, 27, flip: false, min, max);
-        TLanes.H(t, 0, 15, flip: false, min, max);
-        TLanes.H(t, 1, 14, flip: false, min, max);
-        TLanes.H(t, 2, 13, flip: false, min, max);
-        TLanes.H(t, 3, 12, flip: false, min, max);
-        TLanes.H(t, 4, 11, flip: false, min, max);
-        TLanes.H(t, 5, 10, flip: false, min, max);
-        TLanes.H(t, 6, 9, flip: false, min, max);
-        TLanes.H(t, 7, 8, flip: false, min, max);
-        TLanes.B(t, 27, 20, 32, flip: true);
-        TLanes.B(t, 26, 21, 32, flip: true);
-        TLanes.B(t, 25, 22, 32, flip: true);
-        TLanes.B(t, 24, 23, 32, flip: true);
-        TLanes.H(t, 0, 31, flip: false, min, max);
-        TLanes.H(t, 1, 30, flip: false, min, max);
-        TLanes.H(t, 2, 29, flip: false, min, max);
-        TLanes.H(t, 3, 28, flip: false, min, max);
-        TLanes.H(t, 4, 27, flip: false, min, max);
-        TLanes.H(t, 5, 26, flip: false, min, max);
-        TLanes.H(t, 6, 25, flip: false, min, max);
-        TLanes.H(t, 7, 24, flip: false, min, max);
-        TLanes.H(t, 8, 23, flip: false, min, max);
-        TLanes.H(t, 9, 22, flip: false, min, max);
-        TLanes.H(t, 10, 21, flip: false, min, max);
-        TLanes.H(t, 11, 20, flip: false, min, max);
-        TLanes.H(t, 12, 19, flip: false, min, max);
-        TLanes.H(t, 13, 18, flip: false, min, max);
-        TLanes.H(t, 14, 17, flip: false, min, max);
-        TLanes.H(t, 15, 16, flip: false, min, max);
+        var t0 = t[0];
+        var t1 = t[1];
+        var t2 = t[2];
+        var t3 = t[3];
+        TVector t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, t19, t20, t21, t22, t23, t24, t25, t26, t27, t28, t29, t30, t31;
+        t16 = t1;
+        t8 = t2;
+        t24 = t3;
+        t31 = TLanes.MultiplyRound12(t16, 4091);
+        t16 = TLanes.MultiplyRound12(t16, 201);
+        t23 = TLanes.MultiplyRound12(t24, -601);
+        t24 = TLanes.MultiplyRound12(t24, 4052);
+        t15 = TLanes.MultiplyRound12(t8, 4076);
+        t8 = TLanes.MultiplyRound12(t8, 401);
+        t16 = TLanes.Clamp(t16, min, max);
+        t17 = t16;
+        t23 = TLanes.Clamp(t23, min, max);
+        t22 = t23;
+        t24 = TLanes.Clamp(t24, min, max);
+        t25 = t24;
+        t31 = TLanes.Clamp(t31, min, max);
+        t30 = t31;
+        t8 = TLanes.Clamp(t8, min, max);
+        t9 = t8;
+        t15 = TLanes.Clamp(t15, min, max);
+        t14 = t15;
+        (t30, t17) = TLanes.Rotate(t30, t17, 56, flip: true);
+        (t25, t22) = TLanes.Rotate(t25, t22, 88, flip: true);
+        t1 = TLanes.MultiplyRound12(t0, 2896);
+        t0 = TLanes.MultiplyRound12(t0, 2896);
+        (t14, t9) = TLanes.Rotate(t14, t9, 48, flip: true);
+        t19 = t16;
+        t17 = TLanes.Clamp(t17, min, max);
+        t18 = t17;
+        t20 = t23;
+        t22 = TLanes.Clamp(t22, min, max);
+        t21 = t22;
+        t27 = t24;
+        t25 = TLanes.Clamp(t25, min, max);
+        t26 = t25;
+        t28 = t31;
+        t30 = TLanes.Clamp(t30, min, max);
+        t29 = t30;
+        t0 = TLanes.Clamp(t0, min, max);
+        t3 = t0;
+        t1 = TLanes.Clamp(t1, min, max);
+        t2 = t1;
+        t11 = t8;
+        t9 = TLanes.Clamp(t9, min, max);
+        t10 = t9;
+        t12 = t15;
+        t14 = TLanes.Clamp(t14, min, max);
+        t13 = t14;
+        (t29, t18) = TLanes.Rotate(t29, t18, 48, flip: true);
+        (t28, t19) = TLanes.Rotate(t28, t19, 48, flip: true);
+        (t27, t20) = TLanes.Rotate(t27, t20, 112, flip: true);
+        (t26, t21) = TLanes.Rotate(t26, t21, 112, flip: true);
+        t7 = t0;
+        t6 = t1;
+        t5 = t2;
+        t4 = t3;
+        (t13, t10) = TLanes.Rotate(t13, t10, 32, flip: true);
+        (t12, t11) = TLanes.Rotate(t12, t11, 32, flip: true);
+        (t16, t23) = TLanes.Hadamard(t16, t23, flip: false, min, max);
+        (t17, t22) = TLanes.Hadamard(t17, t22, flip: false, min, max);
+        (t18, t21) = TLanes.Hadamard(t18, t21, flip: false, min, max);
+        (t19, t20) = TLanes.Hadamard(t19, t20, flip: false, min, max);
+        (t31, t24) = TLanes.Hadamard(t31, t24, flip: false, min, max);
+        (t30, t25) = TLanes.Hadamard(t30, t25, flip: false, min, max);
+        (t29, t26) = TLanes.Hadamard(t29, t26, flip: false, min, max);
+        (t28, t27) = TLanes.Hadamard(t28, t27, flip: false, min, max);
+        (t0, t15) = TLanes.Hadamard(t0, t15, flip: false, min, max);
+        (t1, t14) = TLanes.Hadamard(t1, t14, flip: false, min, max);
+        (t2, t13) = TLanes.Hadamard(t2, t13, flip: false, min, max);
+        (t3, t12) = TLanes.Hadamard(t3, t12, flip: false, min, max);
+        (t4, t11) = TLanes.Hadamard(t4, t11, flip: false, min, max);
+        (t5, t10) = TLanes.Hadamard(t5, t10, flip: false, min, max);
+        (t6, t9) = TLanes.Hadamard(t6, t9, flip: false, min, max);
+        (t7, t8) = TLanes.Hadamard(t7, t8, flip: false, min, max);
+        (t27, t20) = TLanes.Rotate(t27, t20, 32, flip: true);
+        (t26, t21) = TLanes.Rotate(t26, t21, 32, flip: true);
+        (t25, t22) = TLanes.Rotate(t25, t22, 32, flip: true);
+        (t24, t23) = TLanes.Rotate(t24, t23, 32, flip: true);
+        (t0, t31) = TLanes.Hadamard(t0, t31, flip: false, min, max);
+        (t1, t30) = TLanes.Hadamard(t1, t30, flip: false, min, max);
+        (t2, t29) = TLanes.Hadamard(t2, t29, flip: false, min, max);
+        (t3, t28) = TLanes.Hadamard(t3, t28, flip: false, min, max);
+        (t4, t27) = TLanes.Hadamard(t4, t27, flip: false, min, max);
+        (t5, t26) = TLanes.Hadamard(t5, t26, flip: false, min, max);
+        (t6, t25) = TLanes.Hadamard(t6, t25, flip: false, min, max);
+        (t7, t24) = TLanes.Hadamard(t7, t24, flip: false, min, max);
+        (t8, t23) = TLanes.Hadamard(t8, t23, flip: false, min, max);
+        (t9, t22) = TLanes.Hadamard(t9, t22, flip: false, min, max);
+        (t10, t21) = TLanes.Hadamard(t10, t21, flip: false, min, max);
+        (t11, t20) = TLanes.Hadamard(t11, t20, flip: false, min, max);
+        (t12, t19) = TLanes.Hadamard(t12, t19, flip: false, min, max);
+        (t13, t18) = TLanes.Hadamard(t13, t18, flip: false, min, max);
+        (t14, t17) = TLanes.Hadamard(t14, t17, flip: false, min, max);
+        (t15, t16) = TLanes.Hadamard(t15, t16, flip: false, min, max);
+        t[0] = t0;
+        t[1] = t1;
+        t[2] = t2;
+        t[3] = t3;
+        t[4] = t4;
+        t[5] = t5;
+        t[6] = t6;
+        t[7] = t7;
+        t[8] = t8;
+        t[9] = t9;
+        t[10] = t10;
+        t[11] = t11;
+        t[12] = t12;
+        t[13] = t13;
+        t[14] = t14;
+        t[15] = t15;
+        t[16] = t16;
+        t[17] = t17;
+        t[18] = t18;
+        t[19] = t19;
+        t[20] = t20;
+        t[21] = t21;
+        t[22] = t22;
+        t[23] = t23;
+        t[24] = t24;
+        t[25] = t25;
+        t[26] = t26;
+        t[27] = t27;
+        t[28] = t28;
+        t[29] = t29;
+        t[30] = t30;
+        t[31] = t31;
     }
 
     private static void InverseDct16Sparse8<TLanes, TVector>(Span<TVector> t, TVector min, TVector max)
@@ -986,56 +1281,81 @@ internal static partial class Av1InverseTransform
         where TVector : unmanaged
     {
         t = t[..16];
-        t[8] = t[1];
-        (t[2], t[4]) = (t[4], t[2]);
-        t[12] = t[3];
-        t[10] = t[5];
-        t[14] = t[7];
-        t[15] = TLanes.MultiplyRound12(t[8], 4076);
-        t[8] = TLanes.MultiplyRound12(t[8], 401);
-        t[9] = TLanes.MultiplyRound12(t[14], -2598);
-        t[14] = TLanes.MultiplyRound12(t[14], 3166);
-        t[13] = TLanes.MultiplyRound12(t[10], 3612);
-        t[10] = TLanes.MultiplyRound12(t[10], 1931);
-        t[11] = TLanes.MultiplyRound12(t[12], -1189);
-        t[12] = TLanes.MultiplyRound12(t[12], 3920);
-        t[7] = TLanes.MultiplyRound12(t[4], 4017);
-        t[4] = TLanes.MultiplyRound12(t[4], 799);
-        t[5] = TLanes.MultiplyRound12(t[6], -2276);
-        t[6] = TLanes.MultiplyRound12(t[6], 3406);
-        TLanes.H(t, 8, 9, flip: false, min, max);
-        TLanes.H(t, 11, 10, flip: false, min, max);
-        TLanes.H(t, 12, 13, flip: false, min, max);
-        TLanes.H(t, 15, 14, flip: false, min, max);
-        t[1] = TLanes.MultiplyRound12(t[0], 2896);
-        t[0] = TLanes.MultiplyRound12(t[0], 2896);
-        t[3] = TLanes.MultiplyRound12(t[2], 3784);
-        t[2] = TLanes.MultiplyRound12(t[2], 1567);
-        TLanes.H(t, 4, 5, flip: false, min, max);
-        TLanes.H(t, 7, 6, flip: false, min, max);
-        TLanes.B(t, 14, 9, 48, flip: true);
-        TLanes.B(t, 13, 10, 112, flip: true);
-        TLanes.H(t, 0, 3, flip: false, min, max);
-        TLanes.H(t, 1, 2, flip: false, min, max);
-        TLanes.B(t, 6, 5, 32, flip: true);
-        TLanes.H(t, 8, 11, flip: false, min, max);
-        TLanes.H(t, 9, 10, flip: false, min, max);
-        TLanes.H(t, 15, 12, flip: false, min, max);
-        TLanes.H(t, 14, 13, flip: false, min, max);
-        TLanes.H(t, 0, 7, flip: false, min, max);
-        TLanes.H(t, 1, 6, flip: false, min, max);
-        TLanes.H(t, 2, 5, flip: false, min, max);
-        TLanes.H(t, 3, 4, flip: false, min, max);
-        TLanes.B(t, 13, 10, 32, flip: true);
-        TLanes.B(t, 12, 11, 32, flip: true);
-        TLanes.H(t, 0, 15, flip: false, min, max);
-        TLanes.H(t, 1, 14, flip: false, min, max);
-        TLanes.H(t, 2, 13, flip: false, min, max);
-        TLanes.H(t, 3, 12, flip: false, min, max);
-        TLanes.H(t, 4, 11, flip: false, min, max);
-        TLanes.H(t, 5, 10, flip: false, min, max);
-        TLanes.H(t, 6, 9, flip: false, min, max);
-        TLanes.H(t, 7, 8, flip: false, min, max);
+        var t0 = t[0];
+        var t1 = t[1];
+        var t2 = t[2];
+        var t3 = t[3];
+        var t4 = t[4];
+        var t5 = t[5];
+        var t6 = t[6];
+        var t7 = t[7];
+        TVector t8, t9, t10, t11, t12, t13, t14, t15;
+        t8 = t1;
+        (t2, t4) = (t4, t2);
+        t12 = t3;
+        t10 = t5;
+        t14 = t7;
+        t15 = TLanes.MultiplyRound12(t8, 4076);
+        t8 = TLanes.MultiplyRound12(t8, 401);
+        t9 = TLanes.MultiplyRound12(t14, -2598);
+        t14 = TLanes.MultiplyRound12(t14, 3166);
+        t13 = TLanes.MultiplyRound12(t10, 3612);
+        t10 = TLanes.MultiplyRound12(t10, 1931);
+        t11 = TLanes.MultiplyRound12(t12, -1189);
+        t12 = TLanes.MultiplyRound12(t12, 3920);
+        t7 = TLanes.MultiplyRound12(t4, 4017);
+        t4 = TLanes.MultiplyRound12(t4, 799);
+        t5 = TLanes.MultiplyRound12(t6, -2276);
+        t6 = TLanes.MultiplyRound12(t6, 3406);
+        (t8, t9) = TLanes.Hadamard(t8, t9, flip: false, min, max);
+        (t11, t10) = TLanes.Hadamard(t11, t10, flip: false, min, max);
+        (t12, t13) = TLanes.Hadamard(t12, t13, flip: false, min, max);
+        (t15, t14) = TLanes.Hadamard(t15, t14, flip: false, min, max);
+        t1 = TLanes.MultiplyRound12(t0, 2896);
+        t0 = TLanes.MultiplyRound12(t0, 2896);
+        t3 = TLanes.MultiplyRound12(t2, 3784);
+        t2 = TLanes.MultiplyRound12(t2, 1567);
+        (t4, t5) = TLanes.Hadamard(t4, t5, flip: false, min, max);
+        (t7, t6) = TLanes.Hadamard(t7, t6, flip: false, min, max);
+        (t14, t9) = TLanes.Rotate(t14, t9, 48, flip: true);
+        (t13, t10) = TLanes.Rotate(t13, t10, 112, flip: true);
+        (t0, t3) = TLanes.Hadamard(t0, t3, flip: false, min, max);
+        (t1, t2) = TLanes.Hadamard(t1, t2, flip: false, min, max);
+        (t6, t5) = TLanes.Rotate(t6, t5, 32, flip: true);
+        (t8, t11) = TLanes.Hadamard(t8, t11, flip: false, min, max);
+        (t9, t10) = TLanes.Hadamard(t9, t10, flip: false, min, max);
+        (t15, t12) = TLanes.Hadamard(t15, t12, flip: false, min, max);
+        (t14, t13) = TLanes.Hadamard(t14, t13, flip: false, min, max);
+        (t0, t7) = TLanes.Hadamard(t0, t7, flip: false, min, max);
+        (t1, t6) = TLanes.Hadamard(t1, t6, flip: false, min, max);
+        (t2, t5) = TLanes.Hadamard(t2, t5, flip: false, min, max);
+        (t3, t4) = TLanes.Hadamard(t3, t4, flip: false, min, max);
+        (t13, t10) = TLanes.Rotate(t13, t10, 32, flip: true);
+        (t12, t11) = TLanes.Rotate(t12, t11, 32, flip: true);
+        (t0, t15) = TLanes.Hadamard(t0, t15, flip: false, min, max);
+        (t1, t14) = TLanes.Hadamard(t1, t14, flip: false, min, max);
+        (t2, t13) = TLanes.Hadamard(t2, t13, flip: false, min, max);
+        (t3, t12) = TLanes.Hadamard(t3, t12, flip: false, min, max);
+        (t4, t11) = TLanes.Hadamard(t4, t11, flip: false, min, max);
+        (t5, t10) = TLanes.Hadamard(t5, t10, flip: false, min, max);
+        (t6, t9) = TLanes.Hadamard(t6, t9, flip: false, min, max);
+        (t7, t8) = TLanes.Hadamard(t7, t8, flip: false, min, max);
+        t[0] = t0;
+        t[1] = t1;
+        t[2] = t2;
+        t[3] = t3;
+        t[4] = t4;
+        t[5] = t5;
+        t[6] = t6;
+        t[7] = t7;
+        t[8] = t8;
+        t[9] = t9;
+        t[10] = t10;
+        t[11] = t11;
+        t[12] = t12;
+        t[13] = t13;
+        t[14] = t14;
+        t[15] = t15;
     }
 
     private static void InverseDct32Sparse8<TLanes, TVector>(Span<TVector> t, TVector min, TVector max)
@@ -1043,125 +1363,166 @@ internal static partial class Av1InverseTransform
         where TVector : unmanaged
     {
         t = t[..32];
-        t[16] = t[1];
-        t[8] = t[2];
-        t[24] = t[3];
-        t[20] = t[5];
-        t[12] = t[6];
-        t[28] = t[7];
-        t[31] = TLanes.MultiplyRound12(t[16], 4091);
-        t[16] = TLanes.MultiplyRound12(t[16], 201);
-        t[19] = TLanes.MultiplyRound12(t[28], -1380);
-        t[28] = TLanes.MultiplyRound12(t[28], 3857);
-        t[27] = TLanes.MultiplyRound12(t[20], 3973);
-        t[20] = TLanes.MultiplyRound12(t[20], 995);
-        t[23] = TLanes.MultiplyRound12(t[24], -601);
-        t[24] = TLanes.MultiplyRound12(t[24], 4052);
-        t[15] = TLanes.MultiplyRound12(t[8], 4076);
-        t[8] = TLanes.MultiplyRound12(t[8], 401);
-        t[11] = TLanes.MultiplyRound12(t[12], -1189);
-        t[12] = TLanes.MultiplyRound12(t[12], 3920);
-        t[16] = TLanes.Clamp(t[16], min, max);
-        t[17] = t[16];
-        t[19] = TLanes.Clamp(t[19], min, max);
-        t[18] = t[19];
-        t[20] = TLanes.Clamp(t[20], min, max);
-        t[21] = t[20];
-        t[23] = TLanes.Clamp(t[23], min, max);
-        t[22] = t[23];
-        t[24] = TLanes.Clamp(t[24], min, max);
-        t[25] = t[24];
-        t[27] = TLanes.Clamp(t[27], min, max);
-        t[26] = t[27];
-        t[28] = TLanes.Clamp(t[28], min, max);
-        t[29] = t[28];
-        t[31] = TLanes.Clamp(t[31], min, max);
-        t[30] = t[31];
-        t[7] = TLanes.MultiplyRound12(t[4], 4017);
-        t[4] = TLanes.MultiplyRound12(t[4], 799);
-        t[8] = TLanes.Clamp(t[8], min, max);
-        t[9] = t[8];
-        t[11] = TLanes.Clamp(t[11], min, max);
-        t[10] = t[11];
-        t[12] = TLanes.Clamp(t[12], min, max);
-        t[13] = t[12];
-        t[15] = TLanes.Clamp(t[15], min, max);
-        t[14] = t[15];
-        TLanes.B(t, 30, 17, 56, flip: true);
-        TLanes.B(t, 29, 18, 120, flip: true);
-        TLanes.B(t, 26, 21, 24, flip: true);
-        TLanes.B(t, 25, 22, 88, flip: true);
-        t[1] = TLanes.MultiplyRound12(t[0], 2896);
-        t[0] = TLanes.MultiplyRound12(t[0], 2896);
-        t[4] = TLanes.Clamp(t[4], min, max);
-        t[5] = t[4];
-        t[7] = TLanes.Clamp(t[7], min, max);
-        t[6] = t[7];
-        TLanes.B(t, 14, 9, 48, flip: true);
-        TLanes.B(t, 13, 10, 112, flip: true);
-        TLanes.H(t, 16, 19, flip: false, min, max);
-        TLanes.H(t, 17, 18, flip: false, min, max);
-        TLanes.H(t, 23, 20, flip: false, min, max);
-        TLanes.H(t, 22, 21, flip: false, min, max);
-        TLanes.H(t, 24, 27, flip: false, min, max);
-        TLanes.H(t, 25, 26, flip: false, min, max);
-        TLanes.H(t, 31, 28, flip: false, min, max);
-        TLanes.H(t, 30, 29, flip: false, min, max);
-        t[0] = TLanes.Clamp(t[0], min, max);
-        t[3] = t[0];
-        t[1] = TLanes.Clamp(t[1], min, max);
-        t[2] = t[1];
-        TLanes.B(t, 6, 5, 32, flip: true);
-        TLanes.H(t, 8, 11, flip: false, min, max);
-        TLanes.H(t, 9, 10, flip: false, min, max);
-        TLanes.H(t, 15, 12, flip: false, min, max);
-        TLanes.H(t, 14, 13, flip: false, min, max);
-        TLanes.B(t, 29, 18, 48, flip: true);
-        TLanes.B(t, 28, 19, 48, flip: true);
-        TLanes.B(t, 27, 20, 112, flip: true);
-        TLanes.B(t, 26, 21, 112, flip: true);
-        TLanes.H(t, 0, 7, flip: false, min, max);
-        TLanes.H(t, 1, 6, flip: false, min, max);
-        TLanes.H(t, 2, 5, flip: false, min, max);
-        TLanes.H(t, 3, 4, flip: false, min, max);
-        TLanes.B(t, 13, 10, 32, flip: true);
-        TLanes.B(t, 12, 11, 32, flip: true);
-        TLanes.H(t, 16, 23, flip: false, min, max);
-        TLanes.H(t, 17, 22, flip: false, min, max);
-        TLanes.H(t, 18, 21, flip: false, min, max);
-        TLanes.H(t, 19, 20, flip: false, min, max);
-        TLanes.H(t, 31, 24, flip: false, min, max);
-        TLanes.H(t, 30, 25, flip: false, min, max);
-        TLanes.H(t, 29, 26, flip: false, min, max);
-        TLanes.H(t, 28, 27, flip: false, min, max);
-        TLanes.H(t, 0, 15, flip: false, min, max);
-        TLanes.H(t, 1, 14, flip: false, min, max);
-        TLanes.H(t, 2, 13, flip: false, min, max);
-        TLanes.H(t, 3, 12, flip: false, min, max);
-        TLanes.H(t, 4, 11, flip: false, min, max);
-        TLanes.H(t, 5, 10, flip: false, min, max);
-        TLanes.H(t, 6, 9, flip: false, min, max);
-        TLanes.H(t, 7, 8, flip: false, min, max);
-        TLanes.B(t, 27, 20, 32, flip: true);
-        TLanes.B(t, 26, 21, 32, flip: true);
-        TLanes.B(t, 25, 22, 32, flip: true);
-        TLanes.B(t, 24, 23, 32, flip: true);
-        TLanes.H(t, 0, 31, flip: false, min, max);
-        TLanes.H(t, 1, 30, flip: false, min, max);
-        TLanes.H(t, 2, 29, flip: false, min, max);
-        TLanes.H(t, 3, 28, flip: false, min, max);
-        TLanes.H(t, 4, 27, flip: false, min, max);
-        TLanes.H(t, 5, 26, flip: false, min, max);
-        TLanes.H(t, 6, 25, flip: false, min, max);
-        TLanes.H(t, 7, 24, flip: false, min, max);
-        TLanes.H(t, 8, 23, flip: false, min, max);
-        TLanes.H(t, 9, 22, flip: false, min, max);
-        TLanes.H(t, 10, 21, flip: false, min, max);
-        TLanes.H(t, 11, 20, flip: false, min, max);
-        TLanes.H(t, 12, 19, flip: false, min, max);
-        TLanes.H(t, 13, 18, flip: false, min, max);
-        TLanes.H(t, 14, 17, flip: false, min, max);
-        TLanes.H(t, 15, 16, flip: false, min, max);
+        var t0 = t[0];
+        var t1 = t[1];
+        var t2 = t[2];
+        var t3 = t[3];
+        var t4 = t[4];
+        var t5 = t[5];
+        var t6 = t[6];
+        var t7 = t[7];
+        TVector t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, t19, t20, t21, t22, t23, t24, t25, t26, t27, t28, t29, t30, t31;
+        t16 = t1;
+        t8 = t2;
+        t24 = t3;
+        t20 = t5;
+        t12 = t6;
+        t28 = t7;
+        t31 = TLanes.MultiplyRound12(t16, 4091);
+        t16 = TLanes.MultiplyRound12(t16, 201);
+        t19 = TLanes.MultiplyRound12(t28, -1380);
+        t28 = TLanes.MultiplyRound12(t28, 3857);
+        t27 = TLanes.MultiplyRound12(t20, 3973);
+        t20 = TLanes.MultiplyRound12(t20, 995);
+        t23 = TLanes.MultiplyRound12(t24, -601);
+        t24 = TLanes.MultiplyRound12(t24, 4052);
+        t15 = TLanes.MultiplyRound12(t8, 4076);
+        t8 = TLanes.MultiplyRound12(t8, 401);
+        t11 = TLanes.MultiplyRound12(t12, -1189);
+        t12 = TLanes.MultiplyRound12(t12, 3920);
+        t16 = TLanes.Clamp(t16, min, max);
+        t17 = t16;
+        t19 = TLanes.Clamp(t19, min, max);
+        t18 = t19;
+        t20 = TLanes.Clamp(t20, min, max);
+        t21 = t20;
+        t23 = TLanes.Clamp(t23, min, max);
+        t22 = t23;
+        t24 = TLanes.Clamp(t24, min, max);
+        t25 = t24;
+        t27 = TLanes.Clamp(t27, min, max);
+        t26 = t27;
+        t28 = TLanes.Clamp(t28, min, max);
+        t29 = t28;
+        t31 = TLanes.Clamp(t31, min, max);
+        t30 = t31;
+        t7 = TLanes.MultiplyRound12(t4, 4017);
+        t4 = TLanes.MultiplyRound12(t4, 799);
+        t8 = TLanes.Clamp(t8, min, max);
+        t9 = t8;
+        t11 = TLanes.Clamp(t11, min, max);
+        t10 = t11;
+        t12 = TLanes.Clamp(t12, min, max);
+        t13 = t12;
+        t15 = TLanes.Clamp(t15, min, max);
+        t14 = t15;
+        (t30, t17) = TLanes.Rotate(t30, t17, 56, flip: true);
+        (t29, t18) = TLanes.Rotate(t29, t18, 120, flip: true);
+        (t26, t21) = TLanes.Rotate(t26, t21, 24, flip: true);
+        (t25, t22) = TLanes.Rotate(t25, t22, 88, flip: true);
+        t1 = TLanes.MultiplyRound12(t0, 2896);
+        t0 = TLanes.MultiplyRound12(t0, 2896);
+        t4 = TLanes.Clamp(t4, min, max);
+        t5 = t4;
+        t7 = TLanes.Clamp(t7, min, max);
+        t6 = t7;
+        (t14, t9) = TLanes.Rotate(t14, t9, 48, flip: true);
+        (t13, t10) = TLanes.Rotate(t13, t10, 112, flip: true);
+        (t16, t19) = TLanes.Hadamard(t16, t19, flip: false, min, max);
+        (t17, t18) = TLanes.Hadamard(t17, t18, flip: false, min, max);
+        (t23, t20) = TLanes.Hadamard(t23, t20, flip: false, min, max);
+        (t22, t21) = TLanes.Hadamard(t22, t21, flip: false, min, max);
+        (t24, t27) = TLanes.Hadamard(t24, t27, flip: false, min, max);
+        (t25, t26) = TLanes.Hadamard(t25, t26, flip: false, min, max);
+        (t31, t28) = TLanes.Hadamard(t31, t28, flip: false, min, max);
+        (t30, t29) = TLanes.Hadamard(t30, t29, flip: false, min, max);
+        t0 = TLanes.Clamp(t0, min, max);
+        t3 = t0;
+        t1 = TLanes.Clamp(t1, min, max);
+        t2 = t1;
+        (t6, t5) = TLanes.Rotate(t6, t5, 32, flip: true);
+        (t8, t11) = TLanes.Hadamard(t8, t11, flip: false, min, max);
+        (t9, t10) = TLanes.Hadamard(t9, t10, flip: false, min, max);
+        (t15, t12) = TLanes.Hadamard(t15, t12, flip: false, min, max);
+        (t14, t13) = TLanes.Hadamard(t14, t13, flip: false, min, max);
+        (t29, t18) = TLanes.Rotate(t29, t18, 48, flip: true);
+        (t28, t19) = TLanes.Rotate(t28, t19, 48, flip: true);
+        (t27, t20) = TLanes.Rotate(t27, t20, 112, flip: true);
+        (t26, t21) = TLanes.Rotate(t26, t21, 112, flip: true);
+        (t0, t7) = TLanes.Hadamard(t0, t7, flip: false, min, max);
+        (t1, t6) = TLanes.Hadamard(t1, t6, flip: false, min, max);
+        (t2, t5) = TLanes.Hadamard(t2, t5, flip: false, min, max);
+        (t3, t4) = TLanes.Hadamard(t3, t4, flip: false, min, max);
+        (t13, t10) = TLanes.Rotate(t13, t10, 32, flip: true);
+        (t12, t11) = TLanes.Rotate(t12, t11, 32, flip: true);
+        (t16, t23) = TLanes.Hadamard(t16, t23, flip: false, min, max);
+        (t17, t22) = TLanes.Hadamard(t17, t22, flip: false, min, max);
+        (t18, t21) = TLanes.Hadamard(t18, t21, flip: false, min, max);
+        (t19, t20) = TLanes.Hadamard(t19, t20, flip: false, min, max);
+        (t31, t24) = TLanes.Hadamard(t31, t24, flip: false, min, max);
+        (t30, t25) = TLanes.Hadamard(t30, t25, flip: false, min, max);
+        (t29, t26) = TLanes.Hadamard(t29, t26, flip: false, min, max);
+        (t28, t27) = TLanes.Hadamard(t28, t27, flip: false, min, max);
+        (t0, t15) = TLanes.Hadamard(t0, t15, flip: false, min, max);
+        (t1, t14) = TLanes.Hadamard(t1, t14, flip: false, min, max);
+        (t2, t13) = TLanes.Hadamard(t2, t13, flip: false, min, max);
+        (t3, t12) = TLanes.Hadamard(t3, t12, flip: false, min, max);
+        (t4, t11) = TLanes.Hadamard(t4, t11, flip: false, min, max);
+        (t5, t10) = TLanes.Hadamard(t5, t10, flip: false, min, max);
+        (t6, t9) = TLanes.Hadamard(t6, t9, flip: false, min, max);
+        (t7, t8) = TLanes.Hadamard(t7, t8, flip: false, min, max);
+        (t27, t20) = TLanes.Rotate(t27, t20, 32, flip: true);
+        (t26, t21) = TLanes.Rotate(t26, t21, 32, flip: true);
+        (t25, t22) = TLanes.Rotate(t25, t22, 32, flip: true);
+        (t24, t23) = TLanes.Rotate(t24, t23, 32, flip: true);
+        (t0, t31) = TLanes.Hadamard(t0, t31, flip: false, min, max);
+        (t1, t30) = TLanes.Hadamard(t1, t30, flip: false, min, max);
+        (t2, t29) = TLanes.Hadamard(t2, t29, flip: false, min, max);
+        (t3, t28) = TLanes.Hadamard(t3, t28, flip: false, min, max);
+        (t4, t27) = TLanes.Hadamard(t4, t27, flip: false, min, max);
+        (t5, t26) = TLanes.Hadamard(t5, t26, flip: false, min, max);
+        (t6, t25) = TLanes.Hadamard(t6, t25, flip: false, min, max);
+        (t7, t24) = TLanes.Hadamard(t7, t24, flip: false, min, max);
+        (t8, t23) = TLanes.Hadamard(t8, t23, flip: false, min, max);
+        (t9, t22) = TLanes.Hadamard(t9, t22, flip: false, min, max);
+        (t10, t21) = TLanes.Hadamard(t10, t21, flip: false, min, max);
+        (t11, t20) = TLanes.Hadamard(t11, t20, flip: false, min, max);
+        (t12, t19) = TLanes.Hadamard(t12, t19, flip: false, min, max);
+        (t13, t18) = TLanes.Hadamard(t13, t18, flip: false, min, max);
+        (t14, t17) = TLanes.Hadamard(t14, t17, flip: false, min, max);
+        (t15, t16) = TLanes.Hadamard(t15, t16, flip: false, min, max);
+        t[0] = t0;
+        t[1] = t1;
+        t[2] = t2;
+        t[3] = t3;
+        t[4] = t4;
+        t[5] = t5;
+        t[6] = t6;
+        t[7] = t7;
+        t[8] = t8;
+        t[9] = t9;
+        t[10] = t10;
+        t[11] = t11;
+        t[12] = t12;
+        t[13] = t13;
+        t[14] = t14;
+        t[15] = t15;
+        t[16] = t16;
+        t[17] = t17;
+        t[18] = t18;
+        t[19] = t19;
+        t[20] = t20;
+        t[21] = t21;
+        t[22] = t22;
+        t[23] = t23;
+        t[24] = t24;
+        t[25] = t25;
+        t[26] = t26;
+        t[27] = t27;
+        t[28] = t28;
+        t[29] = t29;
+        t[30] = t30;
+        t[31] = t31;
     }
 
 
@@ -1173,24 +1534,40 @@ internal static partial class Av1InverseTransform
         var min = TLanes.Create(-(1 << (r - 1)));
         var max = TLanes.Create((1 << (r - 1)) - 1);
         t = t[..8];
-        PermuteAdstInput(t, 3);
-        TLanes.B(t, 0, 1, 60, flip: true);
-        TLanes.B(t, 2, 3, 44, flip: true);
-        TLanes.B(t, 4, 5, 28, flip: true);
-        TLanes.B(t, 6, 7, 12, flip: true);
-        TLanes.H(t, 0, 4, flip: false, min, max);
-        TLanes.H(t, 1, 5, flip: false, min, max);
-        TLanes.H(t, 2, 6, flip: false, min, max);
-        TLanes.H(t, 3, 7, flip: false, min, max);
-        TLanes.B(t, 4, 5, 48, flip: true);
-        TLanes.B(t, 7, 6, 16, flip: true);
-        TLanes.H(t, 0, 2, flip: false, min, max);
-        TLanes.H(t, 4, 6, flip: false, min, max);
-        TLanes.H(t, 1, 3, flip: false, min, max);
-        TLanes.H(t, 5, 7, flip: false, min, max);
-        TLanes.B(t, 2, 3, 32, flip: true);
-        TLanes.B(t, 6, 7, 32, flip: true);
-        PermuteAdstOutput<TLanes, TVector>(t, 3);
+        var t0 = t[0];
+        var t1 = t[1];
+        var t2 = t[2];
+        var t3 = t[3];
+        var t4 = t[4];
+        var t5 = t[5];
+        var t6 = t[6];
+        var t7 = t[7];
+        (t0, t1, t2, t3, t4, t5, t6, t7) = (t7, t0, t5, t2, t3, t4, t1, t6);
+        (t0, t1) = TLanes.Rotate(t0, t1, 60, flip: true);
+        (t2, t3) = TLanes.Rotate(t2, t3, 44, flip: true);
+        (t4, t5) = TLanes.Rotate(t4, t5, 28, flip: true);
+        (t6, t7) = TLanes.Rotate(t6, t7, 12, flip: true);
+        (t0, t4) = TLanes.Hadamard(t0, t4, flip: false, min, max);
+        (t1, t5) = TLanes.Hadamard(t1, t5, flip: false, min, max);
+        (t2, t6) = TLanes.Hadamard(t2, t6, flip: false, min, max);
+        (t3, t7) = TLanes.Hadamard(t3, t7, flip: false, min, max);
+        (t4, t5) = TLanes.Rotate(t4, t5, 48, flip: true);
+        (t7, t6) = TLanes.Rotate(t7, t6, 16, flip: true);
+        (t0, t2) = TLanes.Hadamard(t0, t2, flip: false, min, max);
+        (t4, t6) = TLanes.Hadamard(t4, t6, flip: false, min, max);
+        (t1, t3) = TLanes.Hadamard(t1, t3, flip: false, min, max);
+        (t5, t7) = TLanes.Hadamard(t5, t7, flip: false, min, max);
+        (t2, t3) = TLanes.Rotate(t2, t3, 32, flip: true);
+        (t6, t7) = TLanes.Rotate(t6, t7, 32, flip: true);
+        (t1, t2, t3, t4, t5, t6, t7) = (TLanes.Negate(t4), t6, TLanes.Negate(t2), t3, TLanes.Negate(t7), t5, TLanes.Negate(t1));
+        t[0] = t0;
+        t[1] = t1;
+        t[2] = t2;
+        t[3] = t3;
+        t[4] = t4;
+        t[5] = t5;
+        t[6] = t6;
+        t[7] = t7;
     }
 
     private static void InverseAdst16<TLanes, TVector>(Span<TVector> t, int r)
@@ -1200,83 +1577,84 @@ internal static partial class Av1InverseTransform
         var min = TLanes.Create(-(1 << (r - 1)));
         var max = TLanes.Create((1 << (r - 1)) - 1);
         t = t[..16];
-        PermuteAdstInput(t, 4);
-        TLanes.B(t, 0, 1, 62, flip: true);
-        TLanes.B(t, 2, 3, 54, flip: true);
-        TLanes.B(t, 4, 5, 46, flip: true);
-        TLanes.B(t, 6, 7, 38, flip: true);
-        TLanes.B(t, 8, 9, 30, flip: true);
-        TLanes.B(t, 10, 11, 22, flip: true);
-        TLanes.B(t, 12, 13, 14, flip: true);
-        TLanes.B(t, 14, 15, 6, flip: true);
-        TLanes.H(t, 0, 8, flip: false, min, max);
-        TLanes.H(t, 1, 9, flip: false, min, max);
-        TLanes.H(t, 2, 10, flip: false, min, max);
-        TLanes.H(t, 3, 11, flip: false, min, max);
-        TLanes.H(t, 4, 12, flip: false, min, max);
-        TLanes.H(t, 5, 13, flip: false, min, max);
-        TLanes.H(t, 6, 14, flip: false, min, max);
-        TLanes.H(t, 7, 15, flip: false, min, max);
-        TLanes.B(t, 8, 9, 56, flip: true);
-        TLanes.B(t, 13, 12, 8, flip: true);
-        TLanes.B(t, 10, 11, 24, flip: true);
-        TLanes.B(t, 15, 14, 40, flip: true);
-        TLanes.H(t, 0, 4, flip: false, min, max);
-        TLanes.H(t, 8, 12, flip: false, min, max);
-        TLanes.H(t, 1, 5, flip: false, min, max);
-        TLanes.H(t, 9, 13, flip: false, min, max);
-        TLanes.H(t, 2, 6, flip: false, min, max);
-        TLanes.H(t, 10, 14, flip: false, min, max);
-        TLanes.H(t, 3, 7, flip: false, min, max);
-        TLanes.H(t, 11, 15, flip: false, min, max);
-        TLanes.B(t, 4, 5, 48, flip: true);
-        TLanes.B(t, 12, 13, 48, flip: true);
-        TLanes.B(t, 7, 6, 16, flip: true);
-        TLanes.B(t, 15, 14, 16, flip: true);
-        TLanes.H(t, 0, 2, flip: false, min, max);
-        TLanes.H(t, 4, 6, flip: false, min, max);
-        TLanes.H(t, 8, 10, flip: false, min, max);
-        TLanes.H(t, 12, 14, flip: false, min, max);
-        TLanes.H(t, 1, 3, flip: false, min, max);
-        TLanes.H(t, 5, 7, flip: false, min, max);
-        TLanes.H(t, 9, 11, flip: false, min, max);
-        TLanes.H(t, 13, 15, flip: false, min, max);
-        TLanes.B(t, 2, 3, 32, flip: true);
-        TLanes.B(t, 6, 7, 32, flip: true);
-        TLanes.B(t, 10, 11, 32, flip: true);
-        TLanes.B(t, 14, 15, 32, flip: true);
-        PermuteAdstOutput<TLanes, TVector>(t, 4);
-    }
-
-    private static void PermuteAdstInput<TVector>(Span<TVector> t, int n)
-        where TVector : unmanaged
-    {
-        var n0 = 1 << n;
-        Span<TVector> copy = unsafe(stackalloc TVector[16]);
-        t[..n0].CopyTo(copy);
-        for (var i = 0; i < n0; i++)
-        {
-            var idx = (i & 1) is not 0 ? i - 1 : n0 - i - 1;
-            t[i] = copy[idx];
-        }
-    }
-
-    private static void PermuteAdstOutput<TLanes, TVector>(Span<TVector> t, int n)
-        where TLanes : struct, ILanes<TVector>
-        where TVector : unmanaged
-    {
-        var n0 = 1 << n;
-        Span<TVector> copy = unsafe(stackalloc TVector[16]);
-        t[..n0].CopyTo(copy);
-        for (var i = 0; i < n0; i++)
-        {
-            var a = (i >> 3) & 1;
-            var b = ((i >> 2) & 1) ^ ((i >> 3) & 1);
-            var c = ((i >> 1) & 1) ^ ((i >> 2) & 1);
-            var d = (i & 1) ^ ((i >> 1) & 1);
-            var idx = ((d << 3) | (c << 2) | (b << 1) | a) >> (4 - n);
-            t[i] = (i & 1) is not 0 ? TLanes.Negate(copy[idx]) : copy[idx];
-        }
+        var t0 = t[0];
+        var t1 = t[1];
+        var t2 = t[2];
+        var t3 = t[3];
+        var t4 = t[4];
+        var t5 = t[5];
+        var t6 = t[6];
+        var t7 = t[7];
+        var t8 = t[8];
+        var t9 = t[9];
+        var t10 = t[10];
+        var t11 = t[11];
+        var t12 = t[12];
+        var t13 = t[13];
+        var t14 = t[14];
+        var t15 = t[15];
+        (t0, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15) = (t15, t0, t13, t2, t11, t4, t9, t6, t7, t8, t5, t10, t3, t12, t1, t14);
+        (t0, t1) = TLanes.Rotate(t0, t1, 62, flip: true);
+        (t2, t3) = TLanes.Rotate(t2, t3, 54, flip: true);
+        (t4, t5) = TLanes.Rotate(t4, t5, 46, flip: true);
+        (t6, t7) = TLanes.Rotate(t6, t7, 38, flip: true);
+        (t8, t9) = TLanes.Rotate(t8, t9, 30, flip: true);
+        (t10, t11) = TLanes.Rotate(t10, t11, 22, flip: true);
+        (t12, t13) = TLanes.Rotate(t12, t13, 14, flip: true);
+        (t14, t15) = TLanes.Rotate(t14, t15, 6, flip: true);
+        (t0, t8) = TLanes.Hadamard(t0, t8, flip: false, min, max);
+        (t1, t9) = TLanes.Hadamard(t1, t9, flip: false, min, max);
+        (t2, t10) = TLanes.Hadamard(t2, t10, flip: false, min, max);
+        (t3, t11) = TLanes.Hadamard(t3, t11, flip: false, min, max);
+        (t4, t12) = TLanes.Hadamard(t4, t12, flip: false, min, max);
+        (t5, t13) = TLanes.Hadamard(t5, t13, flip: false, min, max);
+        (t6, t14) = TLanes.Hadamard(t6, t14, flip: false, min, max);
+        (t7, t15) = TLanes.Hadamard(t7, t15, flip: false, min, max);
+        (t8, t9) = TLanes.Rotate(t8, t9, 56, flip: true);
+        (t13, t12) = TLanes.Rotate(t13, t12, 8, flip: true);
+        (t10, t11) = TLanes.Rotate(t10, t11, 24, flip: true);
+        (t15, t14) = TLanes.Rotate(t15, t14, 40, flip: true);
+        (t0, t4) = TLanes.Hadamard(t0, t4, flip: false, min, max);
+        (t8, t12) = TLanes.Hadamard(t8, t12, flip: false, min, max);
+        (t1, t5) = TLanes.Hadamard(t1, t5, flip: false, min, max);
+        (t9, t13) = TLanes.Hadamard(t9, t13, flip: false, min, max);
+        (t2, t6) = TLanes.Hadamard(t2, t6, flip: false, min, max);
+        (t10, t14) = TLanes.Hadamard(t10, t14, flip: false, min, max);
+        (t3, t7) = TLanes.Hadamard(t3, t7, flip: false, min, max);
+        (t11, t15) = TLanes.Hadamard(t11, t15, flip: false, min, max);
+        (t4, t5) = TLanes.Rotate(t4, t5, 48, flip: true);
+        (t12, t13) = TLanes.Rotate(t12, t13, 48, flip: true);
+        (t7, t6) = TLanes.Rotate(t7, t6, 16, flip: true);
+        (t15, t14) = TLanes.Rotate(t15, t14, 16, flip: true);
+        (t0, t2) = TLanes.Hadamard(t0, t2, flip: false, min, max);
+        (t4, t6) = TLanes.Hadamard(t4, t6, flip: false, min, max);
+        (t8, t10) = TLanes.Hadamard(t8, t10, flip: false, min, max);
+        (t12, t14) = TLanes.Hadamard(t12, t14, flip: false, min, max);
+        (t1, t3) = TLanes.Hadamard(t1, t3, flip: false, min, max);
+        (t5, t7) = TLanes.Hadamard(t5, t7, flip: false, min, max);
+        (t9, t11) = TLanes.Hadamard(t9, t11, flip: false, min, max);
+        (t13, t15) = TLanes.Hadamard(t13, t15, flip: false, min, max);
+        (t2, t3) = TLanes.Rotate(t2, t3, 32, flip: true);
+        (t6, t7) = TLanes.Rotate(t6, t7, 32, flip: true);
+        (t10, t11) = TLanes.Rotate(t10, t11, 32, flip: true);
+        (t14, t15) = TLanes.Rotate(t14, t15, 32, flip: true);
+        (t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15) = (TLanes.Negate(t8), t12, TLanes.Negate(t4), t6, TLanes.Negate(t14), t10, TLanes.Negate(t2), t3, TLanes.Negate(t11), t15, TLanes.Negate(t7), t5, TLanes.Negate(t13), t9, TLanes.Negate(t1));
+        t[0] = t0;
+        t[1] = t1;
+        t[2] = t2;
+        t[3] = t3;
+        t[4] = t4;
+        t[5] = t5;
+        t[6] = t6;
+        t[7] = t7;
+        t[8] = t8;
+        t[9] = t9;
+        t[10] = t10;
+        t[11] = t11;
+        t[12] = t12;
+        t[13] = t13;
+        t[14] = t14;
+        t[15] = t15;
     }
 
     private static void InverseIdentity<TLanes, TVector>(Span<TVector> t, int n)
@@ -1322,6 +1700,12 @@ internal static partial class Av1InverseTransform
         /// <summary>The Hadamard rotation <c>H( a, b, flip, r )</c>, whose clamp range is [<paramref name="min"/>, <paramref name="max"/>].</summary>
         static abstract void H(Span<TVector> t, int a, int b, bool flip, TVector min, TVector max);
 
+        /// <summary><see cref="B"/> on the values of <c>T[ a ]</c> and <c>T[ b ]</c>: their new values.</summary>
+        static abstract (TVector A, TVector B) Rotate(TVector a, TVector b, int angle, bool flip);
+
+        /// <summary><see cref="H"/> on the values of <c>T[ a ]</c> and <c>T[ b ]</c>: their new values.</summary>
+        static abstract (TVector A, TVector B) Hadamard(TVector a, TVector b, bool flip, TVector min, TVector max);
+
         /// <summary>The inverse ADST of 4 points.</summary>
         static abstract void InverseAdst4(Span<TVector> t);
     }
@@ -1350,41 +1734,34 @@ internal static partial class Av1InverseTransform
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void B(Span<Vector128<int>> t, int a, int b, int angle, bool flip)
+        public static void B(Span<Vector128<int>> t, int a, int b, int angle, bool flip) => (t[a], t[b]) = Rotate(t[a], t[b], angle, flip);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static (Vector128<int> A, Vector128<int> B) Rotate(Vector128<int> va, Vector128<int> vb, int angle, bool flip)
         {
             var cos = Vector128.Create(Cos128(angle));
             var sin = Vector128.Create(Cos128(angle - 64));
-            var va = t[a];
-            var vb = t[b];
             var x = Av1Simd.RoundNarrow12Split(
                 Av1Simd.MultiplySplitFirstAndSubtract(Av1Simd.MultiplySplitFirst(va, cos), vb, sin),
                 Av1Simd.MultiplySplitSecondAndSubtract(Av1Simd.MultiplySplitSecond(va, cos), vb, sin));
             var y = Av1Simd.RoundNarrow12Split(
                 Av1Simd.MultiplySplitFirstAndAdd(Av1Simd.MultiplySplitFirst(va, sin), vb, cos),
                 Av1Simd.MultiplySplitSecondAndAdd(Av1Simd.MultiplySplitSecond(va, sin), vb, cos));
-            if (flip)
-            {
-                t[b] = x;
-                t[a] = y;
-            }
-            else
-            {
-                t[a] = x;
-                t[b] = y;
-            }
+            return flip ? (y, x) : (x, y);
         }
 
         // Clamp of the 64-bit sum is Clamp of the saturated sum
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void H(Span<Vector128<int>> t, int a, int b, bool flip, Vector128<int> min, Vector128<int> max)
-        {
-            if (flip)
-                (a, b) = (b, a);
+        public static void H(Span<Vector128<int>> t, int a, int b, bool flip, Vector128<int> min, Vector128<int> max) => (t[a], t[b]) = Hadamard(t[a], t[b], flip, min, max);
 
-            var x = t[a];
-            var y = t[b];
-            t[a] = Vector128.Min(Vector128.Max(Av1Simd.AddSaturate(x, y), min), max);
-            t[b] = Vector128.Min(Vector128.Max(Av1Simd.SubtractSaturate(x, y), min), max);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static (Vector128<int> A, Vector128<int> B) Hadamard(Vector128<int> a, Vector128<int> b, bool flip, Vector128<int> min, Vector128<int> max)
+        {
+            // H( b, a ) when flipped: T[ b ] is the clamped sum and T[ a ] the clamped difference of b and a
+            var (x, y) = flip ? (b, a) : (a, b);
+            var sum = Vector128.Min(Vector128.Max(Av1Simd.AddSaturate(x, y), min), max);
+            var difference = Vector128.Min(Vector128.Max(Av1Simd.SubtractSaturate(x, y), min), max);
+            return flip ? (difference, sum) : (sum, difference);
         }
 
         // The 64-bit products and sums of the scalar kernel, for the first then the second lanes of the split.
@@ -1455,36 +1832,29 @@ internal static partial class Av1InverseTransform
         public static Vector128<int> MultiplyRound12(Vector128<int> value, int factor) => Round12(value * factor);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void B(Span<Vector128<int>> t, int a, int b, int angle, bool flip)
+        public static void B(Span<Vector128<int>> t, int a, int b, int angle, bool flip) => (t[a], t[b]) = Rotate(t[a], t[b], angle, flip);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static (Vector128<int> A, Vector128<int> B) Rotate(Vector128<int> va, Vector128<int> vb, int angle, bool flip)
         {
             var cos = Cos128(angle);
             var sin = Cos128(angle - 64);
-            var va = t[a];
-            var vb = t[b];
             var x = Round12((va * cos) - (vb * sin));
             var y = Round12((va * sin) + (vb * cos));
-            if (flip)
-            {
-                t[b] = x;
-                t[a] = y;
-            }
-            else
-            {
-                t[a] = x;
-                t[b] = y;
-            }
+            return flip ? (y, x) : (x, y);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void H(Span<Vector128<int>> t, int a, int b, bool flip, Vector128<int> min, Vector128<int> max)
-        {
-            if (flip)
-                (a, b) = (b, a);
+        public static void H(Span<Vector128<int>> t, int a, int b, bool flip, Vector128<int> min, Vector128<int> max) => (t[a], t[b]) = Hadamard(t[a], t[b], flip, min, max);
 
-            var x = t[a];
-            var y = t[b];
-            t[a] = Vector128.Min(Vector128.Max(x + y, min), max);
-            t[b] = Vector128.Min(Vector128.Max(x - y, min), max);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static (Vector128<int> A, Vector128<int> B) Hadamard(Vector128<int> a, Vector128<int> b, bool flip, Vector128<int> min, Vector128<int> max)
+        {
+            // H( b, a ) when flipped: T[ b ] is the clamped sum and T[ a ] the clamped difference of b and a
+            var (x, y) = flip ? (b, a) : (a, b);
+            var sum = Vector128.Min(Vector128.Max(x + y, min), max);
+            var difference = Vector128.Min(Vector128.Max(x - y, min), max);
+            return flip ? (difference, sum) : (sum, difference);
         }
 
         // The steps of the scalar kernel
@@ -1533,36 +1903,29 @@ internal static partial class Av1InverseTransform
         public static Vector256<int> MultiplyRound12(Vector256<int> value, int factor) => Round12(value * factor);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void B(Span<Vector256<int>> t, int a, int b, int angle, bool flip)
+        public static void B(Span<Vector256<int>> t, int a, int b, int angle, bool flip) => (t[a], t[b]) = Rotate(t[a], t[b], angle, flip);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static (Vector256<int> A, Vector256<int> B) Rotate(Vector256<int> va, Vector256<int> vb, int angle, bool flip)
         {
             var cos = Cos128(angle);
             var sin = Cos128(angle - 64);
-            var va = t[a];
-            var vb = t[b];
             var x = Round12((va * cos) - (vb * sin));
             var y = Round12((va * sin) + (vb * cos));
-            if (flip)
-            {
-                t[b] = x;
-                t[a] = y;
-            }
-            else
-            {
-                t[a] = x;
-                t[b] = y;
-            }
+            return flip ? (y, x) : (x, y);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void H(Span<Vector256<int>> t, int a, int b, bool flip, Vector256<int> min, Vector256<int> max)
-        {
-            if (flip)
-                (a, b) = (b, a);
+        public static void H(Span<Vector256<int>> t, int a, int b, bool flip, Vector256<int> min, Vector256<int> max) => (t[a], t[b]) = Hadamard(t[a], t[b], flip, min, max);
 
-            var x = t[a];
-            var y = t[b];
-            t[a] = Vector256.Min(Vector256.Max(x + y, min), max);
-            t[b] = Vector256.Min(Vector256.Max(x - y, min), max);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static (Vector256<int> A, Vector256<int> B) Hadamard(Vector256<int> a, Vector256<int> b, bool flip, Vector256<int> min, Vector256<int> max)
+        {
+            // H( b, a ) when flipped: T[ b ] is the clamped sum and T[ a ] the clamped difference of b and a
+            var (x, y) = flip ? (b, a) : (a, b);
+            var sum = Vector256.Min(Vector256.Max(x + y, min), max);
+            var difference = Vector256.Min(Vector256.Max(x - y, min), max);
+            return flip ? (difference, sum) : (sum, difference);
         }
 
         // The steps of the scalar kernel
@@ -1610,38 +1973,31 @@ internal static partial class Av1InverseTransform
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void B(Span<Vector256<int>> t, int a, int b, int angle, bool flip)
+        public static void B(Span<Vector256<int>> t, int a, int b, int angle, bool flip) => (t[a], t[b]) = Rotate(t[a], t[b], angle, flip);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static (Vector256<int> A, Vector256<int> B) Rotate(Vector256<int> va, Vector256<int> vb, int angle, bool flip)
         {
             var cos = Vector256.Create(Cos128(angle));
             var sin = Vector256.Create(Cos128(angle - 64));
-            var va = t[a];
-            var vb = t[b];
             var oddA = Odd(va);
             var oddB = Odd(vb);
             var x = RoundNarrow12(Multiply(va, cos) - Multiply(vb, sin), Multiply(oddA, cos) - Multiply(oddB, sin));
             var y = RoundNarrow12(Multiply(va, sin) + Multiply(vb, cos), Multiply(oddA, sin) + Multiply(oddB, cos));
-            if (flip)
-            {
-                t[b] = x;
-                t[a] = y;
-            }
-            else
-            {
-                t[a] = x;
-                t[b] = y;
-            }
+            return flip ? (y, x) : (x, y);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void H(Span<Vector256<int>> t, int a, int b, bool flip, Vector256<int> min, Vector256<int> max)
-        {
-            if (flip)
-                (a, b) = (b, a);
+        public static void H(Span<Vector256<int>> t, int a, int b, bool flip, Vector256<int> min, Vector256<int> max) => (t[a], t[b]) = Hadamard(t[a], t[b], flip, min, max);
 
-            var x = t[a];
-            var y = t[b];
-            t[a] = Vector256.Min(Vector256.Max(Vector256.AddSaturate(x, y), min), max);
-            t[b] = Vector256.Min(Vector256.Max(Vector256.SubtractSaturate(x, y), min), max);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static (Vector256<int> A, Vector256<int> B) Hadamard(Vector256<int> a, Vector256<int> b, bool flip, Vector256<int> min, Vector256<int> max)
+        {
+            // H( b, a ) when flipped: T[ b ] is the clamped sum and T[ a ] the clamped difference of b and a
+            var (x, y) = flip ? (b, a) : (a, b);
+            var sum = Vector256.Min(Vector256.Max(Vector256.AddSaturate(x, y), min), max);
+            var difference = Vector256.Min(Vector256.Max(Vector256.SubtractSaturate(x, y), min), max);
+            return flip ? (difference, sum) : (sum, difference);
         }
 
         // The outputs of the scalar kernel are sums of products of the inputs by constants, exact in 64 bits whatever the

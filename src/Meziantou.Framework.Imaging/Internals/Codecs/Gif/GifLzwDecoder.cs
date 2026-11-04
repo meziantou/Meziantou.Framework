@@ -333,6 +333,7 @@ internal sealed class GifLzwDecoder : IDisposable
         return target[0];
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void GrowCodeSize()
     {
         if (_nextCode >= 1 << _codeSize && _codeSize < MaxCodeSize)

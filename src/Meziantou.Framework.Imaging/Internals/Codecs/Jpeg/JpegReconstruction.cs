@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -139,15 +140,24 @@ internal sealed class JpegReconstruction
 
         var stride = component.Stride;
         var precision = component.Precision;
+        var blocksPerLine = component.CoefficientBlocksPerLine;
+
+        // The buffers are read once: the coefficients of a block row are contiguous, and the 8-bit plane is not reallocated
+        var coefficientBuffer = component.CoefficientBuffer;
+        byte[] samples = precision > 8 ? [] : component.Samples;
         for (var blockRow = mcuRow * component.VerticalSampling; blockRow < (mcuRow + 1) * component.VerticalSampling; blockRow++)
         {
             var rowOffset = component.GetRowOffset(blockRow * 8);
             var coefficientRow = blockRow % component.CoefficientBlockRows;
-            for (var blockColumn = 0; blockColumn < component.CoefficientBlocksPerLine; blockColumn++)
+            var rowCoefficients = unsafe(MemoryMarshal.Cast<byte, short>(coefficientBuffer.AsSpan(coefficientRow * blocksPerLine * 64 * sizeof(short), blocksPerLine * 64 * sizeof(short))));
+            for (var blockColumn = 0; blockColumn < blocksPerLine; blockColumn++)
             {
-                var coefficients = component.GetCoefficients(coefficientRow, blockColumn);
+                var coefficients = rowCoefficients.Slice(blockColumn * 64, 64);
                 var offset = rowOffset + (blockColumn * 8);
-                if (coefficients[1..].IndexOfAnyExcept((short)0) < 0)
+
+                // One pass over the coefficients tells both whether there is an AC coefficient and whether the block is sparse
+                var nonzero = JpegIdct.GetNonzeroMask(coefficients);
+                if ((nonzero & ~1UL) == 0)
                 {
                     var dc = (long)coefficients[0] * quantization[0];
                     if (precision > 8)
@@ -156,21 +166,20 @@ internal sealed class JpegReconstruction
                     }
                     else
                     {
-                        JpegIdct.TransformDcOnly(dc, component.Samples.AsSpan(offset), stride);
+                        JpegIdct.TransformDcOnly(dc, samples.AsSpan(offset), stride);
                     }
 
                     continue;
                 }
 
-                JpegIdct.Dequantize(coefficients, scales, block);
-
                 if (precision > 8)
                 {
+                    JpegIdct.Dequantize(coefficients, scales, block);
                     JpegIdct.TransformDeep(block, component.DeepSamples[offset..], stride, precision);
                 }
                 else
                 {
-                    JpegIdct.Transform(block, component.Samples.AsSpan(offset), stride, JpegIdct.IsSparse(coefficients));
+                    JpegIdct.TransformQuantized(coefficients, scales, block, samples.AsSpan(offset), stride, JpegIdct.IsSparse(nonzero));
                 }
             }
         }
@@ -191,13 +200,14 @@ internal sealed class JpegReconstruction
             {
                 var coefficients = component.GetCoefficients(coefficientRow, blockColumn);
                 var offset = component.GetBlockOffset(blockRow, blockColumn);
-                var hasAc = reduced && coefficients[1..].IndexOfAnyExcept((short)0) >= 0;
+                var nonzero = reduced ? JpegIdct.GetNonzeroMask(coefficients) : 0;
+                var hasAc = (nonzero & ~1UL) != 0;
                 if (hasAc)
                 {
                     JpegIdct.Dequantize(coefficients, scales, block);
                 }
 
-                JpegScanDecoder.TransformScaledBlock(component, offset, block, (long)coefficients[0] * quantization[0], hasAc, hasAc && JpegIdct.IsSparse(coefficients));
+                JpegScanDecoder.TransformScaledBlock(component, offset, block, (long)coefficients[0] * quantization[0], hasAc, hasAc && JpegIdct.IsSparse(nonzero));
             }
         }
     }

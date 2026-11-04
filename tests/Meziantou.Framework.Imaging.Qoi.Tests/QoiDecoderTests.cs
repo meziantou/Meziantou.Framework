@@ -224,6 +224,73 @@ public sealed class QoiDecoderTests
         }
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public async Task WholeAndByteByByteInputsDecodeEveryChunkTypeToTheSourcePixels(bool alpha)
+    {
+        // Flat areas give runs that cross the row ends, gradients QOI_OP_DIFF and QOI_OP_LUMA, a few colors QOI_OP_INDEX, and
+        // noise QOI_OP_RGB and QOI_OP_RGBA: a whole input takes the unchecked chunk loop, a stream read 1 byte at a time the
+        // checked one
+        const int Width = 67;
+        const int Height = 41;
+        var random = new Random(Width * Height);
+        var pixels = new Rgba32[Width * Height];
+        for (var i = 0; i < pixels.Length; i++)
+        {
+            var x = i % Width;
+            var y = i / Width;
+            var a = alpha && y % 3 == 0 ? (byte)(x * 7) : (byte)255;
+            pixels[i] = (y / 4 % 4) switch
+            {
+                0 => new Rgba32(10, 20, 30, 255),
+                1 => new Rgba32((byte)(x * 2), (byte)(x + y), (byte)(200 - x), a),
+                2 => (x / 3 % 4) switch
+                {
+                    0 => new Rgba32(1, 2, 3, a),
+                    1 => new Rgba32(250, 0, 128, 255),
+                    _ => new Rgba32((byte)(x * 9), (byte)(y * 13), (byte)(x * y), a),
+                },
+                _ => new Rgba32((byte)random.Next(256), (byte)random.Next(256), (byte)random.Next(256), alpha ? (byte)random.Next(256) : (byte)255),
+            };
+        }
+
+        using var source = Image.ImportPixelData<Rgba32>(pixels, Width, Height);
+        using var encoded = new MemoryStream();
+        if (alpha)
+        {
+            source.Save(encoded, new Formats.QoiEncoder());
+        }
+        else
+        {
+            using var rgb = source.CloneAs<Rgb24>();
+            rgb.Save(encoded, new Formats.QoiEncoder());
+        }
+
+        var data = encoded.ToArray();
+        using (var whole = Image.Load<Rgba32>(data))
+        {
+            Assert.Equal(pixels, GetPixels(whole.Frames[0]));
+        }
+
+        await using (var stream = new TestInputStream(data) { Seekable = false, MaxBytesPerRead = 1 })
+        {
+            using var streamed = await Image.LoadAsync<Rgba32>(stream, cancellationToken: XunitCancellationToken);
+            Assert.Equal(pixels, GetPixels(streamed.Frames[0]));
+        }
+
+        if (!alpha)
+        {
+            var expected = Array.ConvertAll(pixels, pixel => new Rgb24(pixel.R, pixel.G, pixel.B));
+            using var whole = Image.Load<Rgb24>(data);
+            Assert.Equal(expected, GetPixels(whole.Frames[0]));
+            await using var stream = new TestInputStream(data) { Seekable = false, MaxBytesPerRead = 1 };
+            using var streamed = await Image.LoadAsync<Rgb24>(stream, cancellationToken: XunitCancellationToken);
+            Assert.Equal(expected, GetPixels(streamed.Frames[0]));
+        }
+    }
+
     [Fact]
     public async Task ReadersReturnOneFrameAfterTheEndMarkerIsValidated()
     {

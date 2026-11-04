@@ -55,10 +55,20 @@ where 4x4 prediction gains least switch to cheaper modes, spread over the whole 
 the decoded quality decreases gradually with the image size instead of dropping at a threshold, and every size up to
 16,383 x 16,383 fits.
 
-The managed encoder makes its own prediction and entropy-coding decisions. From effort 3, lossless output compares
-transform choices (color table, prediction of the color indexes, predictor tile sizes, no predictor) by encoding each one
-quickly without storing it, and codes regions with different statistics with their own prefix codes (a spatial entropy
-image); from effort 5 it also chooses its backward references by their estimated cost. Lossy output uses one quantizer
+The managed encoder makes its own prediction and entropy-coding decisions. Lossless output chooses the predictor of each
+tile, and from effort 3 the color transform, by the cost of the residuals they produce. From effort 3, it also compares
+transform choices (color table, prediction of the color indexes, no predictor) by encoding each one quickly without
+storing it, and codes regions with different statistics with their own prefix codes (a spatial entropy image); from
+effort 8, it encodes the two most promising choices and keeps the smaller file. What else the effort adds depends on the
+image:
+
+- Photographs and other images whose pixels rarely repeat get most of their gain from the transforms, by effort 3. Up to
+  effort 5, their backward references only copy the left and top neighbors; from effort 6 they are chosen by their
+  estimated cost. The efforts above 5 make them only slightly smaller.
+- Screenshots, text and flat graphics get most of their gain from the backward references: from effort 4 they are chosen
+  by their estimated cost, with a deeper search at each effort up to 9.
+
+Lossy output uses one quantizer
 for the frame (no adaptive quantization) and one token
 partition. It is not libwebp, and its [Quality](cref:Meziantou.Framework.Imaging.Formats.WebPEncoder.Quality) scale is not `cwebp -q`: the
 same decoded quality usually needs a higher [Quality](cref:Meziantou.Framework.Imaging.Formats.WebPEncoder.Quality) here, and the gap varies
@@ -71,11 +81,11 @@ smallest.
 
 Lossless encoding works on one frame at a time. Its working memory counts against [MaxLiveAllocationBytes](cref:Meziantou.Framework.Imaging.ImageResourceLimits.MaxLiveAllocationBytes): a copy of
 the frame (4 bytes per pixel), the hash chains of the LZ77 parse (4 bytes per pixel, released before the output is
-written), the recorded parse (at most 2 bytes per pixel), from effort 5 a second parse (4 bytes per pixel, released with
-the hash chains), and the compressed stream, whose buffer doubles as it grows. Comparing the transform choices (effort 3
-and above) works on a copy of the frame, or of a sample of about a quarter of it for frames larger than 262,144 pixels.
-That is about 14 bytes per pixel, more for images that hardly compress. Effort 9 adds a second copy of the frame and
-keeps two streams to pick the smaller one. A 16,384 x 16,384 image needs more than the default 512 MiB: raise the limit
+written; photographs need none below effort 6), the recorded parse (at most 2 bytes per pixel), the parse by estimated
+cost (4 bytes per pixel, released with the hash chains), and the compressed stream, whose buffer doubles as it grows.
+Comparing the transform choices (effort 3 and above) works on a copy of the frame, or of a sample of about a quarter of
+it for frames larger than 262,144 pixels. That is about 14 bytes per pixel, more for images that hardly compress.
+Efforts 8 and 9 add a second copy of the frame and keep two streams to pick the smaller one. A 16,384 x 16,384 image needs more than the default 512 MiB: raise the limit
 to encode images of that size.
 
 ## Options

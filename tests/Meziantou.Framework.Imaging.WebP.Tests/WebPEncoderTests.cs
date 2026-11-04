@@ -828,13 +828,15 @@ public sealed class WebPEncoderTests
         var decoded = ReferenceVp8L.Decode(writer.WrittenSpan);
         Assert.True(source.AsSpan().SequenceEqual(decoded.Argb));
 
-        // Transforms: 0 predictor, 1 color, 2 subtract green, 3 color indexing
+        // Transforms: 0 predictor, 1 color, 2 subtract green (before the predictor only when it makes the residuals cheaper),
+        // 3 color indexing
         var structure = ReferenceVp8L.Describe(writer.WrittenSpan);
+        int[] spatial = effort >= 3 ? [0, 1] : [0];
         int[] expected = configuration.Mode switch
         {
             Vp8LTransformMode.Palette => [3],
             Vp8LTransformMode.PredictedPalette => [3, 0],
-            Vp8LTransformMode.Spatial => effort >= 3 ? [2, 0, 1] : [2, 0],
+            Vp8LTransformMode.Spatial => Vp8LEncoder.IsSubtractGreenCheaper(source, Width) ? [2, .. spatial] : spatial,
             _ => [2],
         };
 
@@ -900,6 +902,68 @@ public sealed class WebPEncoderTests
     }
 
     [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void LosslessSubtractGreenOnlyWhenItMakesTheResidualsCheaper()
+    {
+        const int Width = 96;
+        const int Height = 64;
+        var random = new Random(42);
+        var gray = new uint[Width * Height];
+        var independent = new uint[Width * Height];
+        for (var i = 0; i < gray.Length; i++)
+        {
+            // Gray: red and blue follow green exactly; independent: smooth red and blue ramps, noise in green
+            var level = (uint)(((i % Width) + (i / Width)) * 2 + random.Next(16)) & 0xFF;
+            gray[i] = 0xFF000000u | (level * 0x010101u);
+            independent[i] = 0xFF000000u | ((uint)(i % Width) << 16) | ((uint)random.Next(256) << 8) | (uint)(i / Width);
+        }
+
+        Assert.True(Vp8LEncoder.IsSubtractGreenCheaper(gray, Width));
+        Assert.False(Vp8LEncoder.IsSubtractGreenCheaper(independent, Width));
+        Assert.True(Vp8LEncoder.IsSubtractGreenCheaper(gray.AsSpan(0, Width), Width)); // a single row: nothing to measure
+
+        foreach (var (pixels, subtractGreen) in new[] { (gray, true), (independent, false) })
+        {
+            var scope = new AllocationScope(ImageResourceLimits.Default);
+            using var writer = new LsbBitWriter(scope);
+            Vp8LEncoder.Encode(scope, writer, pixels.ToArray(), Width, Height, effort: 5, CancellationToken.None);
+            writer.Finish();
+
+            Assert.True(pixels.AsSpan().SequenceEqual(ReferenceVp8L.Decode(writer.WrittenSpan).Argb));
+            Assert.Equal(subtractGreen, ReferenceVp8L.Describe(writer.WrittenSpan).Transforms.Contains(2));
+        }
+    }
+
+    [Theory]
+    [InlineData(5, false)]
+    [InlineData(6, true)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void LosslessPhotographsSearchFarReferencesFromEffort6(int effort, bool farReferences)
+    {
+        // Rows of noise (not flat: no pixel repeats a neighbor), each a copy of the row 5 rows above it: below effort 6, the
+        // parse of an image that is not flat only tries the left and top neighbors, then the hash chains find the copies
+        const int Width = 160;
+        const int Height = 60;
+        var random = new Random(7);
+        var argb = new uint[Width * Height];
+        for (var i = 0; i < argb.Length; i++)
+        {
+            argb[i] = i < 5 * Width ? 0xFF000000u | (uint)random.Next(1 << 24) : argb[i - (5 * Width)];
+        }
+
+        var scope = new AllocationScope(ImageResourceLimits.Default);
+        var ranked = Vp8LEncoder.RankConfigurations(scope, argb, Width, Height, effort, CancellationToken.None);
+        Assert.False(ranked[0].Flat);
+
+        using var counter = LsbBitWriter.CreateCounter(scope);
+        Vp8LEncoder.Encode(scope, counter, argb.ToArray(), Width, Height, effort, CancellationToken.None, ranked[0]);
+
+        // The 5 rows of noise cost about 24 bits per pixel; the copies almost nothing
+        var bitsPerPixel = (double)counter.BitCount / argb.Length;
+        Assert.Equal(farReferences, bitsPerPixel < 6);
+    }
+
+    [Fact]
     public void LosslessCandidatesFollowTheEffortAndTheImage()
     {
         // Below effort 3: one fixed choice
@@ -914,10 +978,18 @@ public sealed class WebPEncoderTests
         Assert.DoesNotContain(Vp8LEncoder.GetCandidates(5, 257, flat: false), c => c.Mode == Vp8LTransformMode.SubtractGreen);
         Assert.Contains(Vp8LEncoder.GetCandidates(5, 257, flat: true), c => c.Mode == Vp8LTransformMode.SubtractGreen);
 
-        // Effort 9: four tile sizes, each with both predictor criteria
-        var spatial = Vp8LEncoder.GetCandidates(9, 257, flat: false);
+        // Predictor tiles of 64, 32 and 16 pixels below effort 3, then 8, and 4 or 8 from effort 8 (both are encoded)
+        Assert.Equal([new Vp8LConfiguration(Vp8LTransformMode.Spatial, 5, false, Flat: false)], Vp8LEncoder.GetCandidates(1, 257, flat: false));
+        Assert.Equal([new Vp8LConfiguration(Vp8LTransformMode.Spatial, 4, false, Flat: false)], Vp8LEncoder.GetCandidates(2, 257, flat: false));
+        Assert.Equal([new Vp8LConfiguration(Vp8LTransformMode.Spatial, 3, false, Flat: false)], Vp8LEncoder.GetCandidates(7, 257, flat: false));
+        Assert.Equal([new Vp8LConfiguration(Vp8LTransformMode.Spatial, 2, false, Flat: false), new Vp8LConfiguration(Vp8LTransformMode.Spatial, 3, false, Flat: false)], Vp8LEncoder.GetCandidates(8, 257, flat: false));
+        Assert.Equal(Vp8LEncoder.GetCandidates(8, 257, flat: false), Vp8LEncoder.GetCandidates(9, 257, flat: false));
+
+        // The alpha plane of a lossy frame keeps its candidates: at effort 9, four tile sizes, each with both predictor criteria
+        var spatial = Vp8LEncoder.GetCandidates(9, 257, flat: false, alphaPlane: true);
         Assert.HasCount(8, spatial);
         Assert.All(spatial, c => Assert.Equal(Vp8LTransformMode.Spatial, c.Mode));
+        Assert.Equal([new Vp8LConfiguration(Vp8LTransformMode.Spatial, 5, true, Flat: false)], Vp8LEncoder.GetCandidates(6, 257, flat: false, alphaPlane: true));
     }
 
     [Fact]

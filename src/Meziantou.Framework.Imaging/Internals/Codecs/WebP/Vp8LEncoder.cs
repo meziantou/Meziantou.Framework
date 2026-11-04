@@ -10,33 +10,45 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <see cref="Vp8LDecoder"/>). Every sample is preserved exactly.
 /// </summary>
 /// <remarks>
-/// <para>Tools, by effort (0 fastest to 9 smallest):</para>
+/// <para>
+/// Tools, by effort (0 fastest to 9 smallest), in <see cref="Vp8LEncoderTools"/> (the alpha plane of a lossy frame keeps
+/// earlier choices there):
+/// </para>
 /// <list type="bullet">
 /// <item><description>
 /// The transforms (<see cref="Vp8LConfiguration"/>): below effort 3, the color indexing transform for at most 256 colors
-/// (sorted color table, pixel bundling for 16 colors or fewer), otherwise subtract green and the predictor transform on 64x64
-/// tiles. From effort 3, candidates (color indexing, color indexing with predicted indexes, the predictor on tiles of 8 to 64
-/// pixels, subtract green alone) are ranked by encoding them at effort 2 (<see cref="RankConfigurations"/>); effort 9
-/// encodes the two best and keeps the smaller stream.
+/// (sorted color table, pixel bundling for 16 colors or fewer), otherwise the predictor transform on tiles of 64 (effort 0),
+/// 32 (effort 1) or 16 pixels (effort 2). From effort 3, candidates (color indexing, color indexing with predicted indexes,
+/// the predictor on tiles of 8 pixels, and of 4 from effort 8, subtract green alone) are ranked by encoding them at effort
+/// 2 (<see cref="RankConfigurations"/>); from effort 8 the two best are encoded and the smaller stream is kept.
 /// </description></item>
-/// <item><description>The predictor modes: the select predictor everywhere at effort 0, otherwise the best of 4 modes (effort 1 and 2) or of the 14 modes per tile, chosen by the smallest sum of absolute residuals (entropy of the residuals from effort 6; both criteria are candidates at effort 9), then (effort 3 and above) the color transform per tile, each multiplier chosen by the entropy of the transformed channel.</description></item>
 /// <item><description>
-/// The image data is parsed into literals and LZ77 backward references with hash chains (deeper chains and lazy matching
-/// with the effort), within the distance range of the format; the color cache size is chosen among candidates by the
-/// estimated entropy of the result. From effort 5 the main image is parsed again to minimize its estimated size under the
-/// statistics of the first parse (<c>Vp8LEncoder.CostModel.cs</c>). From effort 3 the main image can use several prefix
-/// code groups selected by an entropy image (<c>Vp8LEncoder.EntropyImage.cs</c>). Codes are length-limited Huffman codes.
+/// Subtract green when it makes the residuals cheaper (<see cref="IsSubtractGreenCheaper"/>). The predictor modes: the
+/// select predictor everywhere at effort 0, the best of 4 modes by the sum of absolute residuals at effort 1, then the best
+/// of the 14 modes by the cost of the residuals under the statistics of the tiles chosen before
+/// (<c>Vp8LEncoder.TransformSearch.cs</c>); from effort 3, the color transform on tiles twice as large (16 pixels at least),
+/// its multipliers chosen the same way.
+/// </description></item>
+/// <item><description>
+/// The image data is parsed into literals and LZ77 backward references, within the distance range of the format; the color
+/// cache size is chosen among candidates by the estimated entropy of the result. Flat images (half the pixels repeat their
+/// left or top neighbor) search hash chains (deeper with the effort, lazy matching from effort 3), and from effort 4 the
+/// main image is parsed again to minimize its estimated size under the statistics of the first parse
+/// (<c>Vp8LEncoder.CostModel.cs</c>). Other images (photographs) only search the left and top neighbors, then from effort
+/// 6 the parse with a cost model, its literal prices seeded by an all-literal parse. From effort 3 the main image can use
+/// several prefix code groups selected by an entropy image (<c>Vp8LEncoder.EntropyImage.cs</c>). Codes are length-limited
+/// Huffman codes.
 /// </description></item>
 /// </list>
 /// <para>
 /// Memory (all <see cref="AllocationKind.Temporary"/>, from the writer scope): the ARGB image (transformed in place), the
 /// subresolution images, the recorded LZ77 tokens, the output bit stream, during the parses only the hash chains (4 bytes per
-/// pixel and a table of up to 1 MiB) and, from effort 5, the arrivals of the second parse (4 bytes per pixel), the
-/// histograms of the tiles of the entropy image (at most 8 bytes per pixel), and, while the configurations are ranked, a
-/// copy of the image (or of a sample of it) with the state of one encoding into a counting writer. Each spatial image is
-/// parsed once (twice from effort 5); its tokens are replayed for statistics and then emission. A token is one 32-bit word,
-/// a backward reference or a run of literals, so the reserve is at most 2 bytes per pixel (<see cref="GetTokenCapacity"/>):
-/// 512 MiB at 16,384 x 16,384, within the maximum length of a buffer.
+/// pixel and a table of up to 1 MiB, when they are searched) and, with a parse with a cost model, its arrivals (4 bytes per
+/// pixel), the histograms of the tiles of the entropy image (at most 8 bytes per pixel), and, while the configurations are
+/// ranked, a copy of the image (or of a sample of it) with the state of one encoding into a counting writer. Each spatial
+/// image is parsed once (twice with a cost model); its tokens are replayed for statistics and then emission. A token is one
+/// 32-bit word, a backward reference or a run of literals, so the reserve is at most 2 bytes per pixel
+/// (<see cref="GetTokenCapacity"/>): 512 MiB at 16,384 x 16,384, within the maximum length of a buffer.
 /// </para>
 /// </remarks>
 internal sealed partial class Vp8LEncoder : IDisposable
@@ -58,7 +70,7 @@ internal sealed partial class Vp8LEncoder : IDisposable
 
     private readonly AllocationScope _scope;
     private readonly LsbBitWriter _writer;
-    private readonly int _effort;
+    private readonly Vp8LEncoderTools _tools;
     private readonly bool _entropyPredictors;
     private readonly CancellationToken _cancellationToken;
     private readonly List<PooledBuffer> _buffers = [];
@@ -66,12 +78,12 @@ internal sealed partial class Vp8LEncoder : IDisposable
     /// <summary>Gets a value indicating whether the encoder only measures a configuration (<see cref="RankConfigurations"/>): no entropy image.</summary>
     private bool Ranking { get; init; }
 
-    private Vp8LEncoder(AllocationScope scope, LsbBitWriter writer, int effort, bool entropyPredictors, CancellationToken cancellationToken)
+    private Vp8LEncoder(AllocationScope scope, LsbBitWriter writer, int effort, Vp8LConfiguration configuration, bool alphaPlane, CancellationToken cancellationToken)
     {
         _scope = scope;
         _writer = writer;
-        _effort = effort;
-        _entropyPredictors = entropyPredictors;
+        _tools = Vp8LEncoderTools.Create(effort, alphaPlane, configuration.Flat);
+        _entropyPredictors = configuration.EntropyPredictors;
         _cancellationToken = cancellationToken;
     }
 
@@ -104,15 +116,15 @@ internal sealed partial class Vp8LEncoder : IDisposable
         writer.WriteBits((uint)(height - 1), 14);
         writer.WriteBits(alphaIsUsed ? 1u : 0u, 1);
         writer.WriteBits(0, 3);
-        using var encoder = new Vp8LEncoder(scope, writer, effort, chosen.EntropyPredictors, cancellationToken);
+        using var encoder = new Vp8LEncoder(scope, writer, effort, chosen, alphaPlane: false, cancellationToken);
         encoder.EncodeMainImage(argb, width, height, chosen);
     }
 
     /// <summary>Encodes a headerless image stream of known dimensions (the lossless compression of an <c>ALPH</c> chunk).</summary>
     public static void EncodeImageStream(AllocationScope scope, LsbBitWriter writer, Span<uint> argb, int width, int height, int effort, CancellationToken cancellationToken)
     {
-        var configuration = RankConfigurations(scope, argb, width, height, effort, cancellationToken)[0];
-        using var encoder = new Vp8LEncoder(scope, writer, effort, configuration.EntropyPredictors, cancellationToken);
+        var configuration = RankConfigurations(scope, argb, width, height, effort, cancellationToken, alphaPlane: true)[0];
+        using var encoder = new Vp8LEncoder(scope, writer, effort, configuration, alphaPlane: true, cancellationToken);
         encoder.EncodeMainImage(argb, width, height, configuration);
     }
 
@@ -190,15 +202,24 @@ internal sealed partial class Vp8LEncoder : IDisposable
         }
 
         // Subtract green, then spatial prediction, then the color transform (applied in this order, inverted in reverse)
-        _writer.WriteBits(1, 1);
-        _writer.WriteBits(2, 2);
-        Vp8LTransforms.SubtractGreen(argb);
+        if (configuration.Mode is not Vp8LTransformMode.Spatial || !_tools.SubtractGreenWhenCheaper || IsSubtractGreenCheaper(argb, width))
+        {
+            _writer.WriteBits(1, 1);
+            _writer.WriteBits(2, 2);
+            Vp8LTransforms.SubtractGreen(argb);
+        }
+
         if (configuration.Mode is Vp8LTransformMode.Spatial)
         {
             ApplyPredictor(argb, width, height, configuration.TransformBits);
-            if (_effort >= 3)
+            switch (_tools.Color)
             {
-                ApplyColorTransform(argb, width, height, configuration.TransformBits);
+                case Vp8LColorSearch.Entropy:
+                    ApplyColorTransform(argb, width, height, configuration.TransformBits);
+                    break;
+                case Vp8LColorSearch.Cost:
+                    ApplyColorTransformByCost(argb, width, height, Math.Clamp(configuration.TransformBits + 1, 4, TransformTileBits));
+                    break;
             }
         }
 
@@ -335,7 +356,48 @@ internal sealed partial class Vp8LEncoder : IDisposable
         var tilesX = Vp8LDecoder.DivRoundUp(width, bits);
         var tilesY = Vp8LDecoder.DivRoundUp(height, bits);
         var modes = RentPixels((long)tilesX * tilesY);
-        var candidates = _effort >= 3 ? 14 : _effort >= 1 ? 4 : 1;
+        if (_tools.Predictor is Vp8LPredictorSearch.AllModesByCost)
+        {
+            ChoosePredictorsByCost(argb, width, height, bits, tilesX, tilesY, modes);
+        }
+        else
+        {
+            ChoosePredictors(argb, width, height, bits, tilesX, tilesY, modes);
+        }
+
+        _writer.WriteBits(1, 1);
+        _writer.WriteBits(0, 2);
+        _writer.WriteBits((uint)(bits - 2), 3);
+        EncodeSpatialImage(modes, tilesX, tilesY, isMainImage: false);
+
+        // Residuals from the last row to the first, so that every prediction reads original pixels: a row is computed whole
+        // (from its original pixels and the original row above) before it is replaced
+        Span<uint> residuals = stackalloc uint[1 << TransformTileBits];
+        for (var y = height - 1; y >= 0; y--)
+        {
+            var row = y * width;
+            for (var tx = tilesX - 1; tx >= 0; tx--)
+            {
+                var x0 = tx << bits;
+                var x1 = Math.Min(width, x0 + (1 << bits));
+                var mode = (int)((modes[((y >> bits) * tilesX) + tx] >> 8) & 0xF);
+                var segment = residuals[..(x1 - x0)];
+                PredictionResiduals(argb, width, y, x0, x1, mode, segment);
+                segment.CopyTo(argb.Slice(row + x0, x1 - x0));
+            }
+        }
+    }
+
+    /// <summary>Chooses the mode of each tile by the magnitudes (or the entropy) of its residuals (<see cref="Vp8LPredictorSearch"/>).</summary>
+    private void ChoosePredictors(ReadOnlySpan<uint> argb, int width, int height, int bits, int tilesX, int tilesY, Span<uint> modes)
+    {
+        var candidates = _tools.Predictor switch
+        {
+            Vp8LPredictorSearch.AllModes => 14,
+            Vp8LPredictorSearch.FourModes => 4,
+            _ => 1,
+        };
+
         var useEntropy = _entropyPredictors;
         Span<int> histogram = useEntropy ? new int[4 * 256] : default;
         for (var ty = 0; ty < tilesY; ty++)
@@ -363,28 +425,6 @@ internal sealed partial class Vp8LEncoder : IDisposable
                 }
 
                 modes[(ty * tilesX) + tx] = 0xFF000000u | ((uint)bestMode << 8);
-            }
-        }
-
-        _writer.WriteBits(1, 1);
-        _writer.WriteBits(0, 2);
-        _writer.WriteBits((uint)(bits - 2), 3);
-        EncodeSpatialImage(modes, tilesX, tilesY, isMainImage: false);
-
-        // Residuals from the last row to the first, so that every prediction reads original pixels: a row is computed whole
-        // (from its original pixels and the original row above) before it is replaced
-        Span<uint> residuals = stackalloc uint[1 << TransformTileBits];
-        for (var y = height - 1; y >= 0; y--)
-        {
-            var row = y * width;
-            for (var tx = tilesX - 1; tx >= 0; tx--)
-            {
-                var x0 = tx << bits;
-                var x1 = Math.Min(width, x0 + (1 << bits));
-                var mode = (int)((modes[((y >> bits) * tilesX) + tx] >> 8) & 0xF);
-                var segment = residuals[..(x1 - x0)];
-                PredictionResiduals(argb, width, y, x0, x1, mode, segment);
-                segment.CopyTo(argb.Slice(row + x0, x1 - x0));
             }
         }
     }
@@ -891,7 +931,7 @@ internal sealed partial class Vp8LEncoder : IDisposable
     /// </summary>
     private void EncodeSpatialImage(ReadOnlySpan<uint> pixels, int width, int height, bool isMainImage)
     {
-        int[] candidates = !isMainImage || _effort < 3 ? [0] : _effort < 6 ? [0, 10] : [0, 4, 6, 8, 10];
+        var candidates = isMainImage ? _tools.CacheBits : [0];
         var statistics = new Statistics[candidates.Length];
         for (var i = 0; i < candidates.Length; i++)
         {
@@ -899,11 +939,12 @@ internal sealed partial class Vp8LEncoder : IDisposable
         }
 
         // The parse is recorded once, then replayed for the statistics and for the output. The hash chains of the main image
-        // are only needed by the parses: they are released before the output grows. A subresolution image is small: its
-        // tokens, hash chains and prefix codes share one buffer
+        // are only needed by the parses: they are released before the output grows (and not built when the parses only try
+        // the left and top neighbors). A subresolution image is small: its tokens, hash chains and prefix codes share one buffer
+        var linkTriples = isMainImage && _tools.CostModelRounds > 0;
         var hashBits = Math.Clamp(BitOperations.Log2((uint)Math.Max(pixels.Length, 1)) + 1, 8, 18);
         var tokenCapacity = GetTokenCapacity(pixels.Length);
-        var chainLength = (1L << hashBits) + Math.Max(pixels.Length, 1);
+        var chainLength = linkTriples || _tools.MatcherChainDepth > 0 ? (1L << hashBits) + Math.Max(pixels.Length, 1) : 0;
         var codeWords = isMainImage ? 0 : ((HistogramSize(0) * (sizeof(ushort) + 1)) + 3) / sizeof(uint);
         using var tokenBuffer = RentScratch(tokenCapacity + (isMainImage ? 0 : chainLength + codeWords), out var tokenArea);
         var tokens = tokenArea[..(int)tokenCapacity];
@@ -914,7 +955,11 @@ internal sealed partial class Vp8LEncoder : IDisposable
         try
         {
             Span<uint> chains;
-            if (isMainImage)
+            if (chainLength == 0)
+            {
+                chains = default;
+            }
+            else if (isMainImage)
             {
                 chainBuffer = RentScratch(chainLength, out chains);
             }
@@ -923,14 +968,13 @@ internal sealed partial class Vp8LEncoder : IDisposable
                 chains = tokenArea.Slice((int)tokenCapacity, (int)chainLength);
             }
 
-            var head = chains[..(1 << hashBits)];
-            var previous = chains[(1 << hashBits)..];
+            var head = chainLength == 0 ? default : chains[..(1 << hashBits)];
+            var previous = chainLength == 0 ? default : chains[(1 << hashBits)..];
 
             // The second parse searches the chains at almost every pixel: they are linked by triples of pixels first
-            var linkTriples = isMainImage && CostModelRounds > 0;
             if (linkTriples)
             {
-                LinkTriples(pixels, hashBits, head, previous, Math.Max(MatcherChainDepth, CostModelChainDepth));
+                LinkTriples(pixels, hashBits, head, previous, Math.Max(_tools.MatcherChainDepth, _tools.CostModelChainDepth));
             }
 
             tokenCount = new Matcher(this, pixels, width, hashBits, head, previous, linkTriples).Parse(tokens);
@@ -945,7 +989,7 @@ internal sealed partial class Vp8LEncoder : IDisposable
                 }
             }
 
-            if (isMainImage && CostModelRounds > 0)
+            if (isMainImage && _tools.CostModelRounds > 0)
             {
                 tokenCount = ParseWithCostModel(pixels, width, previous, tokens, tokenCount, ref chosen);
             }
@@ -969,7 +1013,7 @@ internal sealed partial class Vp8LEncoder : IDisposable
         var size = HistogramSize(cacheBits);
         var total = new uint[size];
         chosen.CopyTo(total);
-        using var plan = isMainImage && EntropyImageEnabled ? PlanEntropyImage(pixels, width, height, tokens[..tokenCount], cacheBits, total) : null;
+        using var plan = isMainImage && _tools.EntropyImageBits.Length > 0 && !Ranking ? PlanEntropyImage(pixels, width, height, tokens[..tokenCount], cacheBits, total) : null;
         if (isMainImage)
         {
             if (plan is null)
@@ -1459,6 +1503,10 @@ internal sealed partial class Vp8LEncoder : IDisposable
 
         public double EstimateBits() => Entropy(Green) + Entropy(Red) + Entropy(Blue) + Entropy(Alpha) + Entropy(Distance) + ExtraBits;
 
+        /// <summary>Gets the estimated size of the prefix codes and their symbols (<see cref="EstimateAlphabetBits"/>), extra bits included.</summary>
+        public double EstimateCodedBits() => EstimateAlphabetBits(Green, default) + EstimateAlphabetBits(Red, default) + EstimateAlphabetBits(Blue, default)
+            + EstimateAlphabetBits(Alpha, default) + EstimateAlphabetBits(Distance, default) + ExtraBits;
+
         /// <summary>Copies the five histograms into the layout of <see cref="HistogramSize"/>.</summary>
         public void CopyTo(Span<uint> histogram)
         {
@@ -1514,17 +1562,6 @@ internal sealed partial class Vp8LEncoder : IDisposable
             }
         }
     }
-
-    /// <summary>Gets the number of hash chain entries the first parse searches at a pixel.</summary>
-    private int MatcherChainDepth => _effort switch
-    {
-        0 => 4,
-        <= 2 => 8,
-        <= 4 => 16,
-        <= 6 => 32,
-        <= 8 => 128,
-        _ => 512,
-    };
 
     // A triple link (LinkTriples): the distance to the previous pixel that starts the same three pixels in the low 20 bits,
     // and the number of hash chain entries it is from the pixel in the high bits; zero when there is none in the window
@@ -1675,6 +1712,10 @@ internal sealed partial class Vp8LEncoder : IDisposable
         private readonly Span<uint> _previous;
         private readonly bool _linkedTriples;
 
+        // Whether the parser inserts the pixels in its hash chains: not with triple links, nor without chains (the left and
+        // top neighbors only)
+        private readonly bool _insert;
+
         /// <summary>Creates a parser; with <paramref name="linkedTriples"/>, <paramref name="previous"/> holds the triple links of every pixel (<see cref="LinkTriples"/>) instead of the hash chains the parser builds.</summary>
         public Matcher(Vp8LEncoder encoder, ReadOnlySpan<uint> pixels, int width, int hashBits, Span<uint> head, Span<uint> previous, bool linkedTriples)
         {
@@ -1685,6 +1726,7 @@ internal sealed partial class Vp8LEncoder : IDisposable
             _head = head;
             _previous = previous;
             _linkedTriples = linkedTriples;
+            _insert = !linkedTriples && !head.IsEmpty;
         }
 
         /// <summary>Parses the pixels into <paramref name="tokens"/> (backward references and runs of literals, see <see cref="GetTokenCapacity"/>).</summary>
@@ -1693,10 +1735,9 @@ internal sealed partial class Vp8LEncoder : IDisposable
         {
             var pixels = _pixels;
             var count = pixels.Length;
-            var effort = _encoder._effort;
-            var chainDepth = _encoder.MatcherChainDepth;
-            var lazy = effort >= 3;
-            if (!_linkedTriples)
+            var chainDepth = _encoder._tools.MatcherChainDepth;
+            var lazy = _encoder._tools.Lazy;
+            if (_insert)
             {
                 _head.Fill(uint.MaxValue);
             }
@@ -1780,7 +1821,7 @@ internal sealed partial class Vp8LEncoder : IDisposable
 
         private void Insert(int position)
         {
-            if (_linkedTriples)
+            if (!_insert)
                 return;
 
             if (position + 1 >= _pixels.Length)
@@ -1831,6 +1872,9 @@ internal sealed partial class Vp8LEncoder : IDisposable
 
                 return (bestLength, bestDistance);
             }
+
+            if (_head.IsEmpty)
+                return (bestLength, bestDistance);
 
             var candidate = _head[Hash(position)];
             while (candidate != uint.MaxValue && chainDepth-- > 0 && bestLength < maxLength)

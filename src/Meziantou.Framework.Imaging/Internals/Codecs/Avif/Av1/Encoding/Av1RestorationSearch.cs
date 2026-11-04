@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 
@@ -138,17 +139,7 @@ internal static class Av1RestorationSearch
                     var x0 = Math.Min(planeWidth, unitCol * unitSize);
                     var x1 = unitCol == unitCols - 1 ? planeWidth : Math.Min(planeWidth, x0 + unitSize);
                     var horizontal = units.Slice((((unitRow * unitCols) + unitCol) * Av1FrameState.LoopRestorationUnitLength) + 4, 3);
-                    int h0 = horizontal[0];
-                    int h1 = horizontal[1];
-                    int h2 = horizontal[2];
-                    for (var x = x0; x < x1; x++)
-                    {
-                        var center = row[x + 3];
-                        output[x] = (128 * center)
-                            + (h0 * (row[x] + row[x + 6] - (2 * center)))
-                            + (h1 * (row[x + 1] + row[x + 5] - (2 * center)))
-                            + (h2 * (row[x + 2] + row[x + 4] - (2 * center)));
-                    }
+                    FilterHorizontal(row[x0..(x1 + 6)], output[x0..x1], horizontal[0], horizontal[1], horizontal[2]);
                 }
             }
 
@@ -164,6 +155,45 @@ internal static class Av1RestorationSearch
                     AccumulateVertical(rows[x0..], planeWidth, target[x0..x1], unit);
                 }
             }
+        }
+    }
+
+    /// <summary>
+    /// Writes the samples of a row filtered by the horizontal coefficients of a unit, with 7 fractional bits:
+    /// <paramref name="row"/> holds 3 samples before and 3 after the ones of <paramref name="output"/>.
+    /// </summary>
+    /// <remarks>With vectors, 4 samples at once in 32-bit lanes: the values are below 2^24 for 12-bit samples.</remarks>
+    internal static void FilterHorizontal(ReadOnlySpan<ushort> row, Span<int> output, int h0, int h1, int h2)
+    {
+        var width = output.Length;
+        row = row[..(width + 6)];
+        var x = 0;
+        if (Vector128.IsHardwareAccelerated)
+        {
+            for (; x <= width - 4; x += 4)
+            {
+                var center = Load(row, x + 3);
+                var twice = center + center;
+                var value = (center * 128) + ((Load(row, x) + Load(row, x + 6) - twice) * h0) + ((Load(row, x + 1) + Load(row, x + 5) - twice) * h1) + ((Load(row, x + 2) + Load(row, x + 4) - twice) * h2);
+                value.CopyTo(output[x..]);
+            }
+        }
+
+        FilterHorizontalScalar(row[x..], output[x..], h0, h1, h2);
+
+        static Vector128<int> Load(ReadOnlySpan<ushort> samples, int index) => Vector128.WidenLower(Vector64.Create(samples.Slice(index, 4)).ToVector128()).AsInt32();
+    }
+
+    /// <summary>The scalar reference of <see cref="FilterHorizontal"/>.</summary>
+    internal static void FilterHorizontalScalar(ReadOnlySpan<ushort> row, Span<int> output, int h0, int h1, int h2)
+    {
+        for (var x = 0; x < output.Length; x++)
+        {
+            var center = row[x + 3];
+            output[x] = (128 * center)
+                + (h0 * (row[x] + row[x + 6] - (2 * center)))
+                + (h1 * (row[x + 1] + row[x + 5] - (2 * center)))
+                + (h2 * (row[x + 2] + row[x + 4] - (2 * center)));
         }
     }
 
@@ -307,6 +337,7 @@ internal static class Av1RestorationSearch
         private Vector128<long> _s2eLow;
         private Vector128<long> _s2eHigh;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Add(Vector128<int> d0, Vector128<int> d1, Vector128<int> d2, Vector128<int> error)
         {
             _s00Low = Av1Simd.MultiplyWideningLowerAndAdd(_s00Low, d0, d0);
@@ -454,15 +485,8 @@ internal static class Av1RestorationSearch
                 for (var y = 0; y < height; y++)
                 {
                     var target = original.GetRow(y0 + y).Slice(x, width);
-                    var current = source.Slice(sourceOffset + (y * sourceStride), width);
-                    var candidate = restored.Slice(y * width, width);
-                    for (var i = 0; i < width; i++)
-                    {
-                        var difference = target[i] - current[i];
-                        before += difference * difference;
-                        difference = target[i] - candidate[i];
-                        after += difference * difference;
-                    }
+                    before += Av1EncoderKernels.SumOfSquaredDifferences(target, source.Slice(sourceOffset + (y * sourceStride), width));
+                    after += Av1EncoderKernels.SumOfSquaredDifferences(target, restored.Slice(y * width, width));
                 }
 
                 errors[2 * unit] += before;

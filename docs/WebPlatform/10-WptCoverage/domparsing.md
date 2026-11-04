@@ -18,7 +18,7 @@ description: "The results of the web-platform-tests of domparsing, and why the t
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 3
+- **BUG**: 2
 - **TEST BUG**: 4
 - **NOT IMPLEMENTED**: 3
 

@@ -120,6 +120,9 @@ internal sealed class JpegXlModularEntropyCode : IDisposable
     /// <summary>Gets the estimated size in bits of the code and of the values it codes, once the code is built.</summary>
     public long EstimatedBits { get; private set; }
 
+    /// <summary>Gets the part of <see cref="EstimatedBits"/> that describes the distributions of the clusters, once the code is built.</summary>
+    public long EstimatedDescriptionBits { get; private set; }
+
     /// <summary>Gets the fine token of a value.</summary>
     [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     internal static int GetFineToken(uint value)
@@ -225,20 +228,25 @@ internal sealed class JpegXlModularEntropyCode : IDisposable
         var prefix = ChooseConfigs(fineClusters, lengthClusters, ans: false)!;
         var ans = ChooseConfigs(fineClusters, lengthClusters, ans: true);
         long prefixBits;
+        long prefixDescriptionBits;
         using (var description = new LsbBitWriter(_scope))
         {
             prefixBits = MeasurePrefix(description, fineClusters, lengthClusters, prefix);
+            prefixDescriptionBits = description.BitCount;
         }
 
         var ansBits = long.MaxValue;
+        long ansDescriptionBits = 0;
         if (ans is not null)
         {
             using var description = new LsbBitWriter(_scope);
             ansBits = MeasureAns(description, fineClusters, lengthClusters, ans);
+            ansDescriptionBits = description.BitCount;
         }
 
         _useAns = ansBits < prefixBits;
         EstimatedBits = Math.Min(ansBits, prefixBits);
+        EstimatedDescriptionBits = _useAns ? ansDescriptionBits : prefixDescriptionBits;
         _configIndexes = _useAns ? ans! : prefix;
         _clusterTokens = new (ushort, byte)[clusters][];
         _tokenHistograms = new uint[clusters][];
@@ -333,6 +341,23 @@ internal sealed class JpegXlModularEntropyCode : IDisposable
         Append(stream, ((ulong)cluster << 56) | ((ulong)token << 40) | ((ulong)bitCount << 32) | (GetRawBits(value, bitCount, Configs[_configIndexes[cluster]].LsbInToken)));
     }
 
+    /// <summary>Adds values (<c>context &lt;&lt; 32 | value</c>) to a stream, once the code is built, as <see cref="Add"/> does for each.</summary>
+    public void AddRange(JpegXlEntropyCodeBuilder.StreamBuffer stream, ReadOnlySpan<ulong> values)
+    {
+        EnsureCapacity(stream, values.Length);
+        var map = _map!.Span;
+        var destination = stream.Values!.Span.Slice(stream.Count, values.Length);
+        for (var i = 0; i < values.Length; i++)
+        {
+            var value = (uint)values[i];
+            var cluster = map[(int)(values[i] >> 32)];
+            var (token, bitCount) = _clusterTokens[cluster][GetFineToken(value)];
+            destination[i] = ((ulong)cluster << 56) | ((ulong)token << 40) | ((ulong)bitCount << 32) | GetRawBits(value, bitCount, Configs[_configIndexes[cluster]].LsbInToken);
+        }
+
+        stream.Count += values.Length;
+    }
+
     /// <summary>Adds a copy to a stream, once the code is built: its length with the cluster of <paramref name="context"/>, then its distance.</summary>
     public void AddCopy(JpegXlEntropyCodeBuilder.StreamBuffer stream, int context, int length, uint distance)
     {
@@ -391,15 +416,20 @@ internal sealed class JpegXlModularEntropyCode : IDisposable
 
     private static void Append(JpegXlEntropyCodeBuilder.StreamBuffer stream, ulong value)
     {
-        if (stream.Values is null || stream.Count == stream.Values.Length)
+        EnsureCapacity(stream, 1);
+        stream.Values!.Span[stream.Count++] = value;
+    }
+
+    /// <summary>Makes room for <paramref name="count"/> more values in a stream: its capacity at least doubles.</summary>
+    private static void EnsureCapacity(JpegXlEntropyCodeBuilder.StreamBuffer stream, int count)
+    {
+        if (stream.Values is null || stream.Values.Length - stream.Count < count)
         {
-            var larger = Av1PooledArray<ulong>.Rent(stream.Scope, Math.Max(4096, (long)stream.Count * 2), clear: false);
+            var larger = Av1PooledArray<ulong>.Rent(stream.Scope, Math.Max(4096, Math.Max((long)stream.Count * 2, (long)stream.Count + count)), clear: false);
             stream.Values?.Span[..stream.Count].CopyTo(larger.Span);
             stream.Values?.Dispose();
             stream.Values = larger;
         }
-
-        stream.Values.Span[stream.Count++] = value;
     }
 
     private static int GetAlphabetSize(uint[] histogram)
@@ -842,6 +872,16 @@ internal sealed class JpegXlModularEntropyCode : IDisposable
         /// <summary>Counts a value.</summary>
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         public void Add(int context, uint value) => _fine!.Span[(context * FineAlphabetSize) + GetFineToken(value)]++;
+
+        /// <summary>Counts values (<c>context &lt;&lt; 32 | value</c>), as <see cref="Add(int, uint)"/> does for each.</summary>
+        public void AddRange(ReadOnlySpan<ulong> values)
+        {
+            var fine = _fine!.Span;
+            foreach (var value in values)
+            {
+                fine[((int)(value >> 32) * FineAlphabetSize) + GetFineToken((uint)value)]++;
+            }
+        }
 
         /// <summary>Counts a copy: its length in the context of its first value, its distance in the last context.</summary>
         public void AddCopy(int context, int length, uint distance)

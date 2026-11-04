@@ -14,6 +14,13 @@ description: "The results of the web-platform-tests of svg-aam, and why the test
 | Reftests | 0 | 0 | 0 | – |
 | **All** | **5** | **7** | **0** | **71%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **TEST BUG**: 1
+- **NOT IMPLEMENTED**: 1
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

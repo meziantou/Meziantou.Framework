@@ -33,6 +33,10 @@ internal ref struct Av1LoopFilter
     private int _limit;
     private int _blimit;
     private int _thresh;
+    private int _subX;
+    private int _subY;
+    private int _frameWidth;
+    private int _frameHeight;
 
     private Av1LoopFilter(Av1FrameBuffer frame, Av1FrameState state, Span<byte> levels)
     {
@@ -112,6 +116,10 @@ internal ref struct Av1LoopFilter
         filter._samples = planeBuffer.Samples;
         filter._stride = planeBuffer.Stride;
         filter._txSizes = state.GetLoopFilterTxSizes(plane);
+        filter._subX = plane is 0 ? 0 : sequence.SubsamplingX;
+        filter._subY = plane is 0 ? 0 : sequence.SubsamplingY;
+        filter._frameWidth = frame.Header.FrameWidth;
+        filter._frameHeight = frame.Header.FrameHeight;
         var rowStep = plane is 0 ? 1 : 1 << sequence.SubsamplingY;
         var colStep = plane is 0 ? 1 : 1 << sequence.SubsamplingX;
         var miCols = frame.Header.MiCols;
@@ -127,33 +135,61 @@ internal ref struct Av1LoopFilter
             // Most of the positions are inside a transform block, where TryGetEdge rejects both edges of a pair
             if (pass is 0)
             {
+                // The vertical edges are the left columns of the transform blocks: from a column, the next one of a row is at the
+                // end of its transform block
                 var row2 = row + rowStep;
-                for (var col = 0; col < miCols; col += colStep)
+                var hasRow2 = row2 < miRows;
+                var first = (row >> subY) * miCols;
+                var second = (row2 >> subY) * miCols;
+                for (var col = 0; col < miCols;)
                 {
-                    if (IsTransformEdge(txSizes, miCols, pass: 0, row, col, subX, subY) || (row2 < miRows && IsTransformEdge(txSizes, miCols, pass: 0, row2, col, subX, subY)))
+                    var x = (col * Av1Constants.MiSize) >> subX;
+                    var width = Av1Tables.TxWidth[txSizes[first + (col >> subX)]] - 1;
+                    var isEdge = (x & width) is 0;
+                    var next = (x | width) + 1;
+                    if (hasRow2)
+                    {
+                        var width2 = Av1Tables.TxWidth[txSizes[second + (col >> subX)]] - 1;
+                        isEdge |= (x & width2) is 0;
+                        next = Math.Min(next, (x | width2) + 1);
+                    }
+
+                    if (isEdge)
                         filter.FilterEdgePair(plane, pass: 0, row, col, row2, col);
+
+                    col = (next << subX) >> Av1Constants.MiSizeLog2;
                 }
             }
             else
             {
-                for (var col = 0; col < miCols; col += 2 * colStep)
+                // A transform block has a horizontal edge on the row in all its columns or in none: after a pair without an
+                // edge, the next pair that may have one starts in the next transform block of its second column
+                var rowSizes = (row >> subY) * miCols;
+                var y = (row * Av1Constants.MiSize) >> subY;
+                for (var col = 0; col < miCols;)
                 {
                     var col2 = col + colStep;
-                    if (IsTransformEdge(txSizes, miCols, pass: 1, row, col, subX, subY) || (col2 < miCols && IsTransformEdge(txSizes, miCols, pass: 1, row, col2, subX, subY)))
+                    var isEdge = (y & (Av1Tables.TxHeight[txSizes[rowSizes + (col >> subX)]] - 1)) is 0;
+                    if (col2 < miCols)
+                    {
+                        var txSz2 = txSizes[rowSizes + (col2 >> subX)];
+                        if (!isEdge && (y & (Av1Tables.TxHeight[txSz2] - 1)) is not 0)
+                        {
+                            var next = ((((col2 * Av1Constants.MiSize) >> subX) | (Av1Tables.TxWidth[txSz2] - 1)) + 1) << subX >> Av1Constants.MiSizeLog2;
+                            col = next & ~((2 * colStep) - 1);
+                            continue;
+                        }
+
+                        isEdge = true;
+                    }
+
+                    if (isEdge)
                         filter.FilterEdgePair(plane, pass: 1, row, col, row, col2);
+
+                    col += 2 * colStep;
                 }
             }
         }
-    }
-
-    // Whether the position (row, col) of a plane is on an edge of its transform block, the isTxEdge of TryGetEdge
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static bool IsTransformEdge(ReadOnlySpan<byte> txSizes, int miCols, int pass, int row, int col, int subX, int subY)
-    {
-        var txSz = txSizes[((row >> subY) * miCols) + (col >> subX)];
-        return pass is 0
-            ? (((col * Av1Constants.MiSize) >> subX) & (Av1Tables.TxWidth[txSz] - 1)) is 0
-            : (((row * Av1Constants.MiSize) >> subY) & (Av1Tables.TxHeight[txSz] - 1)) is 0;
     }
 
     // Filters the edge (row, col) and the next one along its lines (row2, col2), outside the frame for the last edge of an odd
@@ -186,15 +222,15 @@ internal ref struct Av1LoopFilter
     {
         position = 0;
         filterSize = 0;
-        var subX = plane is 0 ? 0 : _sequence.SubsamplingX;
-        var subY = plane is 0 ? 0 : _sequence.SubsamplingY;
+        var subX = _subX;
+        var subY = _subY;
         var dx = pass is 0 ? 1 : 0;
         var dy = 1 - dx;
         var x = col * Av1Constants.MiSize;
         var y = row * Av1Constants.MiSize;
         row |= subY;
         col |= subX;
-        if (x >= _header.FrameWidth || y >= _header.FrameHeight || (pass is 0 && x is 0) || (pass is 1 && y is 0))
+        if (x >= _frameWidth || y >= _frameHeight || (pass is 0 && x is 0) || (pass is 1 && y is 0))
             return false;
 
         var xP = x >> subX;
@@ -210,29 +246,26 @@ internal ref struct Av1LoopFilter
         var prevRow = row - (dy << subY);
         var prevCol = col - (dx << subX);
         var index = (row * _miCols) + col;
-        var miSize = _miSizes[index];
-        var planeSize = Av1Tables.SubsampledSize[(((miSize * 2) + subX) * 2) + subY];
-        var skip = (_flags[index] & Av1FrameState.SkipFlag) is not 0;
-        var isIntra = _refFrames.IsEmpty || _refFrames[index * 2] <= Av1Constants.IntraFrame;
         var prevTxSz = txSizes[((prevRow >> subY) * _miCols) + (prevCol >> subX)];
+        var baseSize = pass is 0
+            ? Math.Min(Av1Tables.TxWidth[prevTxSz], Av1Tables.TxWidth[txSz])
+            : Math.Min(Av1Tables.TxHeight[prevTxSz], Av1Tables.TxHeight[txSz]);
 
-        bool isBlockEdge;
-        int baseSize;
-        if (pass is 0)
+        // The edges of intra blocks are filtered: the block edge and the skip flag only matter for the others
+        var isIntra = _refFrames.IsEmpty || _refFrames[index * 2] <= Av1Constants.IntraFrame;
+        if (!isIntra)
         {
+            var miSize = _miSizes[index];
+            var planeSize = Av1Tables.SubsampledSize[(((miSize * 2) + subX) * 2) + subY];
+            var skip = (_flags[index] & Av1FrameState.SkipFlag) is not 0;
+
             // The block and transform sizes are powers of two, and xP is not negative
-            isBlockEdge = (xP & ((4 * Av1Tables.Num4x4BlocksWide[planeSize]) - 1)) is 0;
-            baseSize = Math.Min(Av1Tables.TxWidth[prevTxSz], Av1Tables.TxWidth[txSz]);
+            var isBlockEdge = pass is 0
+                ? (xP & ((4 * Av1Tables.Num4x4BlocksWide[planeSize]) - 1)) is 0
+                : (yP & ((4 * Av1Tables.Num4x4BlocksHigh[planeSize]) - 1)) is 0;
+            if (!isBlockEdge && skip)
+                return false;
         }
-        else
-        {
-            isBlockEdge = (yP & ((4 * Av1Tables.Num4x4BlocksHigh[planeSize]) - 1)) is 0;
-            baseSize = Math.Min(Av1Tables.TxHeight[prevTxSz], Av1Tables.TxHeight[txSz]);
-        }
-
-        var applyFilter = isBlockEdge || !skip || isIntra;
-        if (!applyFilter)
-            return false;
 
         // Section 7.14.3 "Filter size process"
         filterSize = Math.Min(plane is 0 ? 16 : 8, baseSize);

@@ -1,3 +1,4 @@
+using System.Numerics;
 using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -11,6 +12,7 @@ internal ref partial struct Av1TileCoder
     {
         Decode,
         Search,
+        Estimate,
         Replay,
     }
 
@@ -66,6 +68,9 @@ internal ref partial struct Av1TileCoder
                                 case ResidualOperation.Search:
                                     SearchTransformBlock(plane, baseXBlock, baseYBlock, txSz, blockX, blockY);
                                     break;
+                                case ResidualOperation.Estimate:
+                                    EstimateTransformBlock(plane, baseXBlock, baseYBlock, txSz, blockX, blockY);
+                                    break;
                                 default:
                                     ReplayTransformBlock(plane, baseXBlock, baseYBlock, txSz, blockX, blockY);
                                     break;
@@ -109,11 +114,18 @@ internal ref partial struct Av1TileCoder
         PredictTransformBlock(plane, txSz, startX, startY, x, y);
         if (!_skip)
         {
-            var eob = Coeffs(plane, startX, startY, txSz);
+            var eob = Coeffs(plane, startX, startY, txSz, out var coefficientCount, out var rows, out var columns);
             if (eob > 0)
             {
                 var planeBuffer = _frame.GetPlane(plane);
-                Reconstruct(planeBuffer.Samples, planeBuffer.Stride, plane, startX, startY, txSz, eob);
+                var dequant = _scratch.Dequant;
+                Av1Reconstruction.ReconstructDequantized(planeBuffer.Samples, planeBuffer.Stride, startX, startY, dequant, eob, _scratch.Transform, txSz, _planeTxType, _lossless, _bitDepth, rows, columns);
+
+                // Dequant is zero between the blocks
+                foreach (var entry in _scratch.CoefficientList[..coefficientCount])
+                {
+                    dequant[entry & 0xFFFF] = 0;
+                }
             }
         }
 
@@ -210,17 +222,15 @@ internal ref partial struct Av1TileCoder
         var loopFilterTxSizes = _state.GetLoopFilterTxSizes(plane);
         var planeMiCols = _miCols >> subX;
         var planeMiRows = _miRows >> subY;
+        var planeCol = col >> subX;
+        var columns = Math.Clamp(planeMiCols - planeCol, 0, stepX);
         for (var i = 0; i < stepY; i++)
         {
             var planeRow = (row >> subY) + i;
-            for (var j = 0; j < stepX; j++)
-            {
-                var planeCol = (col >> subX) + j;
-                if (planeRow < planeMiRows && planeCol < planeMiCols)
-                    loopFilterTxSizes[(planeRow * _miCols) + planeCol] = (byte)txSz;
+            if (planeRow < planeMiRows && columns > 0)
+                loopFilterTxSizes.Slice((planeRow * _miCols) + planeCol, columns).Fill((byte)txSz);
 
-                blockDecoded[BlockDecodedIndex((subBlockMiRow >> subY) + i, (subBlockMiCol >> subX) + j)] = 1;
-            }
+            blockDecoded.Slice(BlockDecodedIndex((subBlockMiRow >> subY) + i, subBlockMiCol >> subX), stepX).Fill(1);
         }
     }
 
@@ -301,30 +311,36 @@ internal ref partial struct Av1TileCoder
         acQuantizer = Av1Reconstruction.GetAcQuantizer(_qIndex + delta.Item2, _bitDepth);
     }
 
+    // The quantizer matrix of the transform size for the plane, or an empty span when no matrix applies
+    private readonly ReadOnlySpan<byte> GetQuantizerMatrix(int plane, int txSz)
+    {
+        if (!_header.UsingQmatrix || _lossless)
+            return [];
+
+        var level = plane switch
+        {
+            0 => _header.QmY,
+            1 => _header.QmU,
+            _ => _header.QmV,
+        };
+
+        return level < 15 ? Av1Tables.QuantizerMatrix[((((level * 2) + (plane > 0 ? 1 : 0)) * Av1Constants.QmTotalSize) + Av1Tables.QmOffset[txSz])..] : [];
+    }
+
     // Quant holds the coefficients of the eob first positions of the scan order of the transform block; the other entries
     // are not read
     private readonly void Reconstruct(Span<ushort> samples, int stride, int plane, int startX, int startY, int txSz, int eob)
     {
         GetQuantizers(plane, out var dcQuantizer, out var acQuantizer);
-        var quantizerMatrix = ReadOnlySpan<byte>.Empty;
-        if (_header.UsingQmatrix && !_lossless)
-        {
-            var level = plane switch
-            {
-                0 => _header.QmY,
-                1 => _header.QmU,
-                _ => _header.QmV,
-            };
-
-            if (level < 15)
-                quantizerMatrix = Av1Tables.QuantizerMatrix[((((level * 2) + (plane > 0 ? 1 : 0)) * Av1Constants.QmTotalSize) + Av1Tables.QmOffset[txSz])..];
-        }
-
+        var quantizerMatrix = GetQuantizerMatrix(plane, txSz);
         Av1Reconstruction.Reconstruct(samples, stride, startX, startY, _scratch.Quant, GetScan(txSz, _planeTxType), eob, _scratch.Transform, txSz, _planeTxType, _lossless, _bitDepth, dcQuantizer, acQuantizer, quantizerMatrix);
     }
 
-    // Section 5.11.39 "Coefficients syntax"
-    private int Coeffs(int plane, int startX, int startY, int txSz)
+    // Section 5.11.39 "Coefficients syntax". The levels are read with the contexts of a level map that packs each level
+    // with its value clamped to 3 (PackedLevels), the coefficients whose level is not zero are listed in CoefficientList, and
+    // the signs and the Golomb parts are read with their dequantization (section 7.12.3) into Dequant: rows and columns are
+    // bounds of the rows and columns of the coefficients that are not zero
+    private int Coeffs(int plane, int startX, int startY, int txSz, out int coefficientCount, out int rows, out int columns)
     {
         var x4 = startX >> 2;
         var y4 = startY >> 2;
@@ -332,7 +348,6 @@ internal ref partial struct Av1TileCoder
         var h4 = Av1Tables.TxHeight[txSz] >> 2;
         var txSzCtx = (Av1Tables.TxSizeSqr[txSz] + Av1Tables.TxSizeSqrUp[txSz] + 1) >> 1;
         var ptype = plane > 0 ? 1 : 0;
-        var quant = _scratch.Quant;
 
         var aboveLevel = _scratch.GetAboveLevelContext(plane);
         var aboveDc = _scratch.GetAboveDcContext(plane);
@@ -344,6 +359,9 @@ internal ref partial struct Av1TileCoder
         var eob = 0;
         var culLevel = 0;
         var dcCategory = 0;
+        coefficientCount = 0;
+        rows = 0;
+        columns = 0;
         var allZero = ReadSymbol(Av1CdfLayout.TxbSkip + (((txSzCtx * Av1Constants.TxbSkipContexts) + GetAllZeroContext(plane, txSz, x4, y4, w4, h4, maxX4, maxY4)) * Av1CdfLayout.TxbSkipSize), Av1CdfLayout.TxbSkipSize) is not 0;
         if (allZero)
         {
@@ -400,7 +418,8 @@ internal ref partial struct Av1TileCoder
             var coeffBaseOffset = Av1CdfLayout.CoeffBase + ((((txSzCtx * Av1Constants.PlaneTypes) + ptype) * Av1Constants.SigCoefContexts) * Av1CdfLayout.CoeffBaseSize);
             var coeffBaseEobOffset = Av1CdfLayout.CoeffBaseEob + ((((txSzCtx * Av1Constants.PlaneTypes) + ptype) * Av1Constants.SigCoefContextsEob) * Av1CdfLayout.CoeffBaseEobSize);
             var coeffBrOffset = Av1CdfLayout.CoeffBr + ((((Math.Min(txSzCtx, Av1Constants.Tx32x32) * Av1Constants.PlaneTypes) + ptype) * Av1Constants.LevelContexts) * Av1CdfLayout.CoeffBrSize);
-            var levelStride = width + Av1TileScratch.LevelMapPadding;
+            // The rows of the map have the stride of the widest blocks, so the neighbors of a position are at constant offsets
+            var levelStride = Av1CoefficientContexts.LevelStride;
             var levels = _scratch.LevelMap[..((height + Av1TileScratch.LevelMapPadding) * levelStride)];
             levels.Clear();
             var lastPos = scan[eob - 1];
@@ -409,6 +428,7 @@ internal ref partial struct Av1TileCoder
             var lastLevel = ReadSymbol(coeffBaseEobOffset + (GetCoeffBaseEobContext(eob - 1, width, height) * Av1CdfLayout.CoeffBaseEobSize), Av1CdfLayout.CoeffBaseEobSize) + 1;
             if (lastLevel > Av1Constants.NumBaseLevels)
             {
+                // The map is empty: the neighbors read as zero in either form
                 var ctx = GetCoeffBrContext(levels, txClass, levelStride, lastRow, lastCol);
                 for (var idx = 0; idx < Av1Constants.CoeffBaseRange / (Av1Constants.BrCdfSize - 1); idx++)
                 {
@@ -419,61 +439,29 @@ internal ref partial struct Av1TileCoder
                 }
             }
 
-            quant[lastPos] = lastLevel;
-            levels[(lastRow * levelStride) + lastCol] = (byte)lastLevel;
+            levels[(lastRow * levelStride) + lastCol] = PackedLevels[lastLevel];
+            var list = _scratch.CoefficientList;
+            list[0] = lastPos | (lastLevel << 16);
+            coefficientCount = 1;
             if (eob > 1)
-                ReadLevels(_symbols, _cdf, scan, eob - 1, levels, quant, txSz, txClass, bwl, levelStride, coeffBaseOffset, coeffBrOffset);
-
-            for (var c = 0; c < eob; c++)
             {
-                var pos = scan[c];
-                var sign = 0;
-                if (quant[pos] is not 0)
+                if (txClass is not TxClass2D)
                 {
-                    if (c is 0)
-                    {
-                        var ctx = GetDcSignContext(aboveDc, leftDc, x4, y4, w4, h4, maxX4, maxY4);
-                        sign = ReadSymbol(Av1CdfLayout.DcSign + (((ptype * Av1Constants.DcSignContexts) + ctx) * Av1CdfLayout.DcSignSize), Av1CdfLayout.DcSignSize);
-                    }
-                    else
-                    {
-                        sign = ReadLiteral(1);
-                    }
+                    coefficientCount = ReadLevels(_symbols, _cdf, scan, eob - 1, levels, list, txSz, txClass, bwl, coeffBaseOffset, coeffBrOffset);
                 }
-
-                if (quant[pos] > Av1Constants.NumBaseLevels + Av1Constants.CoeffBaseRange)
+                else if (scan.IsWide)
                 {
-                    var length = 0;
-                    int golombLengthBit;
-                    do
-                    {
-                        length++;
-                        golombLengthBit = ReadLiteral(1);
-                    }
-                    while (golombLengthBit is 0 && length < 32);
-
-                    if (golombLengthBit is 0)
-                        throw Av1Errors.Invalid("a coefficient is too large.");
-
-                    var x = 1;
-                    for (var i = length - 2; i >= 0; i--)
-                    {
-                        x = (x << 1) | ReadLiteral(1);
-                    }
-
-                    quant[pos] = x + Av1Constants.CoeffBaseRange + Av1Constants.NumBaseLevels;
+                    coefficientCount = ReadLevels2D(_symbols, _cdf, scan.Wide, eob - 1, levels, list, Av1CoefficientContexts.GetPositions(txSz), txSz, bwl, coeffBaseOffset, coeffBrOffset);
                 }
-
-                if (pos is 0 && quant[pos] > 0)
-                    dcCategory = sign is not 0 ? 1 : 2;
-
-                quant[pos] &= 0xFFFFF;
-                culLevel += quant[pos];
-                if (sign is not 0)
-                    quant[pos] = -quant[pos];
+                else
+                {
+                    coefficientCount = ReadLevels2D(_symbols, _cdf, scan.Narrow, eob - 1, levels, list, Av1CoefficientContexts.GetPositions(txSz), txSz, bwl, coeffBaseOffset, coeffBrOffset);
+                }
             }
 
-            culLevel = Math.Min(63, culLevel);
+            culLevel = Math.Min(63, ReadSignsAndDequantize(plane, txSz, list[..coefficientCount], aboveDc, leftDc, x4, y4, w4, h4, maxX4, maxY4, out dcCategory, out var positions));
+            rows = (positions >> bwl) + 1;
+            columns = (positions & (width - 1)) + 1;
         }
 
         aboveLevel.Slice(x4, w4).Fill((byte)culLevel);
@@ -487,37 +475,244 @@ internal ref partial struct Av1TileCoder
         return eob;
     }
 
-    // The levels of the coefficients before the last one, from the last to the first in the scan order (the coeff_base and
-    // coeff_br symbols of the coefficients syntax), read on a copy of the state of the symbol decoder: a method of its own,
-    // whose few live values let the state stay in registers
-    private static void ReadLevels(Av1SymbolDecoder symbols, Span<ushort> cdf, Av1Scan scan, int count, Span<byte> levels, Span<int> quant, int txSz, int txClass, int bwl, int levelStride, int coeffBaseOffset, int coeffBrOffset)
+    // The signs and the Golomb parts of the coefficients of the list, from the first to the last in the scan order, and their
+    // dequantization into Dequant. Returns the sum of the levels (culLevel before its clamp), the DC category, and the OR of
+    // the positions: its row and column bits bound those of every coefficient
+    private readonly int ReadSignsAndDequantize(int plane, int txSz, ReadOnlySpan<int> list, ReadOnlySpan<byte> aboveDc, ReadOnlySpan<byte> leftDc, int x4, int y4, int w4, int h4, int maxX4, int maxY4, out int dcCategory, out int positions)
     {
-        var state = symbols.Save();
-        var mask = (1 << bwl) - 1;
-        for (var c = count - 1; c >= 0; c--)
+        GetQuantizers(plane, out var dcQuantizer, out var acQuantizer);
+        var quantizerMatrix = GetQuantizerMatrix(plane, txSz);
+        var useMatrix = !quantizerMatrix.IsEmpty && _planeTxType < Av1Constants.Idtx;
+        var dqShift = BitOperations.Log2((uint)Av1Reconstruction.GetDequantizationDenominator(txSz));
+        var min = -(1 << (7 + _bitDepth));
+        var max = (1 << (7 + _bitDepth)) - 1;
+        var dequant = _scratch.Dequant;
+        var culLevel = 0;
+        var or = 0;
+        dcCategory = 0;
+        var k = list.Length - 1;
+        if ((list[k] & 0xFFFF) is 0)
         {
-            var pos = scan[c];
-            var row = pos >> bwl;
-            var col = pos & mask;
-            var level = symbols.ReadSymbol4(ref state, cdf.Slice(coeffBaseOffset + (GetCoeffBaseContext(levels, txSz, txClass, levelStride, row, col) * Av1CdfLayout.CoeffBaseSize), Av1CdfLayout.CoeffBaseSize));
-            if (level > Av1Constants.NumBaseLevels)
+            // The DC coefficient, first in the scan order, has a context for its sign
+            var ctx = GetDcSignContext(aboveDc, leftDc, x4, y4, w4, h4, maxX4, maxY4);
+            var sign = ReadSymbol(Av1CdfLayout.DcSign + (((plane > 0 ? Av1Constants.DcSignContexts : 0) + ctx) * Av1CdfLayout.DcSignSize), Av1CdfLayout.DcSignSize);
+            var value = list[k] >> 16;
+            if (value > Av1Constants.NumBaseLevels + Av1Constants.CoeffBaseRange)
+                value = ReadGolomb();
+
+            if (value > 0)
+                dcCategory = sign is not 0 ? 1 : 2;
+
+            value &= 0xFFFFF;
+            culLevel = value;
+            long q = dcQuantizer;
+            if (useMatrix)
+                q = ((q * quantizerMatrix[0]) + 16) >> 5;
+
+            var magnitude = (int)(((value * q) & 0xFFFFFF) >> dqShift);
+            dequant[0] = Math.Clamp(sign is not 0 ? -magnitude : magnitude, min, max);
+            k--;
+        }
+
+        var state = _symbols.Save();
+        for (; k >= 0; k--)
+        {
+            var entry = list[k];
+            var pos = entry & 0xFFFF;
+            var value = entry >> 16;
+            var sign = _symbols.ReadBoolBranchless(ref state);
+            if (value > Av1Constants.NumBaseLevels + Av1Constants.CoeffBaseRange)
             {
-                var brCdf = cdf.Slice(coeffBrOffset + (GetCoeffBrContext(levels, txClass, levelStride, row, col) * Av1CdfLayout.CoeffBrSize), Av1CdfLayout.CoeffBrSize);
-                for (var idx = 0; idx < Av1Constants.CoeffBaseRange / (Av1Constants.BrCdfSize - 1); idx++)
-                {
-                    var coeffBr = symbols.ReadSymbol4(ref state, brCdf);
-                    level += coeffBr;
-                    if (coeffBr < Av1Constants.BrCdfSize - 1)
-                        break;
-                }
+                _symbols.Restore(state);
+                value = ReadGolomb();
+                state = _symbols.Save();
             }
 
-            quant[pos] = level;
-            levels[(row * levelStride) + col] = (byte)level;
+            value &= 0xFFFFF;
+            culLevel += value;
+            long q = acQuantizer;
+            if (useMatrix)
+                q = ((q * quantizerMatrix[pos]) + 16) >> 5;
+
+            var magnitude = (int)(((value * q) & 0xFFFFFF) >> dqShift);
+            dequant[pos] = Math.Clamp((magnitude ^ -sign) + sign, min, max);
+            or |= pos;
+        }
+
+        _symbols.Restore(state);
+        positions = or;
+        return culLevel;
+    }
+
+    // The Golomb part of a coefficient whose level is above NUM_BASE_LEVELS + COEFF_BASE_RANGE: the coefficient
+    private readonly int ReadGolomb()
+    {
+        var length = 0;
+        int golombLengthBit;
+        do
+        {
+            length++;
+            golombLengthBit = ReadLiteral(1);
+        }
+        while (golombLengthBit is 0 && length < 32);
+
+        if (golombLengthBit is 0)
+            throw Av1Errors.Invalid("a coefficient is too large.");
+
+        var x = 1;
+        for (var i = length - 2; i >= 0; i--)
+        {
+            x = (x << 1) | ReadLiteral(1);
+        }
+
+        return x + Av1Constants.CoeffBaseRange + Av1Constants.NumBaseLevels;
+    }
+
+    // The levels of the coefficients before the last one of a transform block of the 2D class, from the last to the first in
+    // the scan order (the coeff_base and coeff_br symbols of the coefficients syntax), read on a copy of the state of the symbol
+    // decoder: a method of its own, whose few live values let the state stay in registers. The context offsets of the
+    // positions come from a table with their index in the map, and the symbols are read without branches on their values.
+    // Returns the length of the list
+    private static int ReadLevels2D<TPosition>(Av1SymbolDecoder symbols, Span<ushort> cdf, ReadOnlySpan<TPosition> scan, int count, Span<byte> levels, Span<int> list, ReadOnlySpan<ushort> positions, int txSz, int bwl, int coeffBaseOffset, int coeffBrOffset)
+        where TPosition : unmanaged, IBinaryInteger<TPosition>
+    {
+        const int Stride = Av1CoefficientContexts.LevelStride;
+        var state = symbols.Save();
+        var listCount = 1;
+        var baseCdf = cdf.Slice(coeffBaseOffset, Av1Constants.SigCoefContexts * Av1CdfLayout.CoeffBaseSize);
+        for (var c = count - 1; c > 0; c--)
+        {
+            var pos = int.CreateTruncating(scan[c]);
+            var entry = positions[pos];
+            var index = entry >> Av1CoefficientContexts.IndexShift;
+            var neighbors = levels.Slice(index, (2 * Stride) + 1);
+            var mag = (neighbors[1] & 3) + (neighbors[2] & 3) + (neighbors[Stride] & 3) + (neighbors[Stride + 1] & 3) + (neighbors[2 * Stride] & 3);
+            var ctx = BaseMagnitudeContexts[mag] + (entry & Av1CoefficientContexts.OffsetMask);
+            var level = symbols.ReadSymbol4Branchless(ref state, baseCdf.Slice(ctx * Av1CdfLayout.CoeffBaseSize, Av1CdfLayout.CoeffBaseSize));
+            if (level > Av1Constants.NumBaseLevels)
+            {
+                var brMag = (neighbors[1] >> 2) + (neighbors[Stride] >> 2) + (neighbors[Stride + 1] >> 2);
+                var brCtx = BrMagnitudeContexts[brMag] + (((pos >> bwl) | (pos & ((1 << bwl) - 1))) < 2 ? 7 : 14);
+                level += ReadBaseRange(symbols, ref state, cdf.Slice(coeffBrOffset + (brCtx * Av1CdfLayout.CoeffBrSize), Av1CdfLayout.CoeffBrSize));
+            }
+
+            neighbors[0] = PackedLevels[level];
+            list[listCount] = pos | (level << 16);
+            listCount += level is not 0 ? 1 : 0;
+        }
+
+        listCount = ReadLevel(symbols, ref state, cdf, int.CreateTruncating(scan[0]), levels, list, listCount, txSz, TxClass2D, bwl, coeffBaseOffset, coeffBrOffset);
+        symbols.Restore(state);
+        return listCount;
+    }
+
+    // The levels of ReadLevels2D for the horizontal and vertical classes
+    private static int ReadLevels(Av1SymbolDecoder symbols, Span<ushort> cdf, Av1Scan scan, int count, Span<byte> levels, Span<int> list, int txSz, int txClass, int bwl, int coeffBaseOffset, int coeffBrOffset)
+    {
+        var state = symbols.Save();
+        var listCount = 1;
+        for (var c = count - 1; c >= 0; c--)
+        {
+            listCount = ReadLevel(symbols, ref state, cdf, scan[c], levels, list, listCount, txSz, txClass, bwl, coeffBaseOffset, coeffBrOffset);
         }
 
         symbols.Restore(state);
+        return listCount;
     }
+
+    // The level of the coefficient at pos, with the contexts of any class
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int ReadLevel(Av1SymbolDecoder symbols, ref Av1SymbolDecoder.State state, Span<ushort> cdf, int pos, Span<byte> levels, Span<int> list, int listCount, int txSz, int txClass, int bwl, int coeffBaseOffset, int coeffBrOffset)
+    {
+        var stride = Av1CoefficientContexts.LevelStride;
+        var row = pos >> bwl;
+        var col = pos & ((1 << bwl) - 1);
+        var level = symbols.ReadSymbol4Branchless(ref state, cdf.Slice(coeffBaseOffset + (GetPackedCoeffBaseContext(levels, txSz, txClass, stride, row, col) * Av1CdfLayout.CoeffBaseSize), Av1CdfLayout.CoeffBaseSize));
+        if (level > Av1Constants.NumBaseLevels)
+            level += ReadBaseRange(symbols, ref state, cdf.Slice(coeffBrOffset + (GetPackedCoeffBrContext(levels, txClass, stride, row, col) * Av1CdfLayout.CoeffBrSize), Av1CdfLayout.CoeffBrSize));
+
+        levels[(row * stride) + col] = PackedLevels[level];
+        list[listCount] = pos | (level << 16);
+        return listCount + (level is not 0 ? 1 : 0);
+    }
+
+    // The coeff_br symbols of a coefficient: what they add to its level
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int ReadBaseRange(Av1SymbolDecoder symbols, ref Av1SymbolDecoder.State state, Span<ushort> cdf)
+    {
+        var sum = 0;
+        for (var idx = 0; idx < Av1Constants.CoeffBaseRange / (Av1Constants.BrCdfSize - 1); idx++)
+        {
+            var coeffBr = symbols.ReadSymbol4Branchless(ref state, cdf);
+            sum += coeffBr;
+            if (coeffBr < Av1Constants.BrCdfSize - 1)
+                break;
+        }
+
+        return sum;
+    }
+
+    // GetCoeffBaseContext on a map of packed levels, whose two low bits are the level clamped to 3
+    private static int GetPackedCoeffBaseContext(ReadOnlySpan<byte> levels, int txSz, int txClass, int stride, int row, int col)
+    {
+        var neighbors = levels[((row * stride) + col)..];
+        if (txClass is TxClass2D)
+        {
+            if ((row | col) is 0)
+                return 0;
+
+            var mag = (neighbors[1] & 3) + (neighbors[stride] & 3) + (neighbors[stride + 1] & 3) + (neighbors[2] & 3) + (neighbors[2 * stride] & 3);
+            return BaseMagnitudeContexts[mag] + Av1Tables.CoeffBaseCtxOffset[(((txSz * 5) + Math.Min(row, 4)) * 5) + Math.Min(col, 4)];
+        }
+
+        if (txClass is Av1Constants.TxClassHoriz)
+        {
+            var mag = (neighbors[1] & 3) + (neighbors[stride] & 3) + (neighbors[2] & 3) + (neighbors[3] & 3) + (neighbors[4] & 3);
+            return BaseMagnitudeContexts[mag] + Av1Tables.CoeffBasePosCtxOffset[Math.Min(col, 2)];
+        }
+        else
+        {
+            var mag = (neighbors[1] & 3) + (neighbors[stride] & 3) + (neighbors[2 * stride] & 3) + (neighbors[3 * stride] & 3) + (neighbors[4 * stride] & 3);
+            return BaseMagnitudeContexts[mag] + Av1Tables.CoeffBasePosCtxOffset[Math.Min(row, 2)];
+        }
+    }
+
+    // GetCoeffBrContext on a map of packed levels, whose bits from the third one are the level
+    private static int GetPackedCoeffBrContext(ReadOnlySpan<byte> levels, int txClass, int stride, int row, int col)
+    {
+        var neighbors = levels[((row * stride) + col)..];
+        var mag = (neighbors[1] >> 2) + (neighbors[stride] >> 2) + txClass switch
+        {
+            TxClass2D => neighbors[stride + 1] >> 2,
+            Av1Constants.TxClassHoriz => neighbors[2] >> 2,
+            _ => neighbors[2 * stride] >> 2,
+        };
+
+        mag = BrMagnitudeContexts[mag];
+        if ((row | col) is 0)
+            return mag;
+
+        return txClass switch
+        {
+            TxClass2D => row < 2 && col < 2 ? mag + 7 : mag + 14,
+            Av1Constants.TxClassHoriz => col is 0 ? mag + 7 : mag + 14,
+            _ => row is 0 ? mag + 7 : mag + 14,
+        };
+    }
+
+    // The level of a coefficient (0 to 15) and the level clamped to 3, in one byte: Min( level, 3 ) | ( level << 2 )
+    private static ReadOnlySpan<byte> PackedLevels => [0, 5, 10, 15, 19, 23, 27, 31, 35, 39, 43, 47, 51, 55, 59, 63];
+
+    // Min( ( mag + 1 ) >> 1, 4 ) for the sum of 5 levels clamped to 3
+    private static ReadOnlySpan<byte> BaseMagnitudeContexts => [0, 1, 1, 2, 2, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4];
+
+    // Min( ( mag + 1 ) >> 1, 6 ) for the sum of 3 levels (at most 45)
+    private static ReadOnlySpan<byte> BrMagnitudeContexts =>
+    [
+        0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 6, 6, 6,
+        6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+        6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+    ];
 
     // The CDF selection of all_zero (section 8.3.2)
     private readonly int GetAllZeroContext(int plane, int txSz, int x4, int y4, int w4, int h4, int maxX4, int maxY4)

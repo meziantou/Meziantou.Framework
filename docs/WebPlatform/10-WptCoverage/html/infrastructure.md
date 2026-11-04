@@ -14,6 +14,15 @@ description: "The results of the web-platform-tests of html/infrastructure, and 
 | [Reftests](#reftests) | 0 | 1 | 1 | – |
 | **All** | **62** | **70** | **1** | **90%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 1
+- **TEST BUG**: 1
+- **NOT IMPLEMENTED**: 5
+- **TEST RUNNER**: 1
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

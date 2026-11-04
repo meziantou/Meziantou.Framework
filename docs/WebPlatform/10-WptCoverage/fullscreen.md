@@ -14,6 +14,15 @@ description: "The results of the web-platform-tests of fullscreen, and why the t
 | [Reftests](#reftests) | 6 | 6 | 0 | 100% |
 | **All** | **89** | **96** | **0** | **93%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **TEST BUG**: 5
+- **NOT IMPLEMENTED**: 1
+- **REQUIRES**: 1
+  - `media`: 1
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

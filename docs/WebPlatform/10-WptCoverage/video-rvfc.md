@@ -14,6 +14,12 @@ description: "The results of the web-platform-tests of video-rvfc, and why the t
 | Reftests | 0 | 0 | 0 | – |
 | **All** | **0** | **8** | **8** | **–** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **NOT IMPLEMENTED**: 8
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

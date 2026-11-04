@@ -42,7 +42,7 @@ internal static class JpegXlPermutation
             throw JpegXlFormat.Invalid("a permutation is longer than what it permutes.");
 
         // The Lehmer code, then the element of each rank among the unused ones: a Fenwick tree counts them
-        using var work = Av1PooledArray<int>.Rent(scope, (2L * size) + 1, clear: true);
+        using var work = Av1PooledArray<int>.Rent(scope, (3L * size) + 1, clear: true);
         var lehmer = work.Span[..size];
         uint last = 0;
         for (var i = skip; i < end; i++)
@@ -56,14 +56,15 @@ internal static class JpegXlPermutation
                 throw JpegXlFormat.Invalid("a permutation is truncated.");
         }
 
-        var tree = work.Span[size..];
+        var tree = work.Span[size..((2 * size) + 1)];
+        var used = work.Span[((2 * size) + 1)..];
         for (var i = 1; i <= size; i++)
         {
             tree[i] = i & -i;
         }
 
         var highestBit = size == 0 ? 0 : 1 << BitOperations.Log2((uint)size);
-        for (var i = 0; i < size; i++)
+        for (var i = 0; i < end; i++)
         {
             // Find the element that has lehmer[i] unused elements before it
             var rank = lehmer[i];
@@ -79,10 +80,23 @@ internal static class JpegXlPermutation
             }
 
             permutation[i] = position;
+            used[position] = 1;
             for (var j = position + 1; j <= size; j += j & -j)
             {
                 tree[j]--;
             }
+        }
+
+        // The codes after the end are zeros: the unused elements follow in increasing order
+        var unused = 0;
+        for (var i = (int)end; i < size; i++)
+        {
+            while (used[unused] != 0)
+            {
+                unused++;
+            }
+
+            permutation[i] = unused++;
         }
     }
 

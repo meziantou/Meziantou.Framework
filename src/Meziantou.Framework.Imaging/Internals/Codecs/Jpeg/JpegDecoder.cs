@@ -634,7 +634,13 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
         _scan = _arithmetic
             ? new JpegArithmeticSequentialScanDecoder(scanComponents, reader, _mcusX, _mcusY, _restartInterval, _streaming ? OnMcuRowDecoded : null, _context.CancellationToken) { AcceptsGarbledRestartNumbers = IsLenient }
             : new JpegSequentialScanDecoder(scanComponents, reader, _mcusX, _mcusY, _restartInterval, _streaming ? OnMcuRowDecoded : null, _context.CancellationToken, deferTransforms: _reconstruction is not null) { AcceptsGarbledRestartNumbers = IsLenient };
-        PrepareFastAc(scanComponents);
+
+        // The blocks are decoded with FastLookup but the last MCUs of each segment (most of them when the segments are short)
+        // and the stored coefficients of the workers
+        if (_reconstruction is not null || _restartInterval > 0)
+        {
+            PrepareFastAc(scanComponents);
+        }
     }
 
     /// <summary>

@@ -143,6 +143,81 @@ public sealed class HevcCabacDecoderTests
     }
 
     [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void CoeffAbsLevelRemainingIsDecodedAsItWasEncoded()
+    {
+        // The prefix is read with several bins at once: values of every prefix length, between context-coded bins, up to
+        // the end of the data
+        for (var seed = 1; seed <= 40; seed++)
+        {
+            var random = new Random(seed);
+            var encoder = new ReferenceHevcCabacEncoder();
+            var decoder = new HevcCabacDecoder();
+            decoder.InitializeContexts(0, 26);
+            var states = decoder.Contexts.ToArray();
+            var count = random.Next(1, 600);
+            var values = new List<(int Value, int RiceParam, int Bin)>(count);
+            for (var i = 0; i < count; i++)
+            {
+                var riceParam = random.Next(5);
+                var value = random.Next(4) switch
+                {
+                    0 => random.Next(4 << riceParam),
+                    1 => random.Next(64),
+                    2 => random.Next(4096),
+                    _ => random.Next(65537),
+                };
+                var bin = random.Next(2);
+                encoder.EncodeDecision(ref states[0], bin);
+                if (value < 4 << riceParam)
+                {
+                    WriteBypass(encoder, (1 << (value >> riceParam)) - 1, (value >> riceParam) + 1, shift: 1);
+                    WriteBypass(encoder, value & ((1 << riceParam) - 1), riceParam, shift: 0);
+                }
+                else
+                {
+                    var prefix = 4;
+                    while ((((1L << (prefix - 2)) + 2) << riceParam) <= value)
+                    {
+                        prefix++;
+                    }
+
+                    WriteBypass(encoder, (int)((1L << prefix) - 1), prefix + 1, shift: 1);
+                    WriteBypass(encoder, (int)(value - (((1L << (prefix - 3)) + 2) << riceParam)), prefix - 3 + riceParam, shift: 0);
+                }
+
+                values.Add((value, riceParam, bin));
+            }
+
+            encoder.EncodeTerminate(1);
+            encoder.AlignToByte();
+            var data = encoder.ToArray();
+            decoder.Initialize(data, 0, data.Length);
+            foreach (var (value, riceParam, bin) in values)
+            {
+                Assert.Equal(bin, decoder.DecodeDecision(0));
+                Assert.Equal(value, decoder.Engine.DecodeCoeffAbsLevelRemaining(riceParam, decoder));
+            }
+
+            Assert.Equal(1, decoder.DecodeTerminate());
+        }
+
+        // The bins of value, the first one being the most significant, then shift bins equal to 0
+        static void WriteBypass(ReferenceHevcCabacEncoder encoder, int value, int count, int shift)
+        {
+            for (var i = count - 1 - shift; i >= 0; i--)
+            {
+                encoder.EncodeBypass((value >> i) & 1);
+            }
+
+            for (var i = 0; i < shift; i++)
+            {
+                encoder.EncodeBypass(0);
+            }
+        }
+    }
+
+    [Fact]
     public void ACodewordStartsAgainAfterATermination()
     {
         // pcm_flag, the PCM samples on a byte, then a new codeword

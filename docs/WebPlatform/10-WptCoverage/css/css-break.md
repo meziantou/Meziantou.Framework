@@ -14,6 +14,14 @@ description: "The results of the web-platform-tests of css/css-break, and why th
 | [Reftests](#reftests) | 1,131 | 1,145 | 0 | 99% |
 | **All** | **1,179** | **1,193** | **0** | **99%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 9
+- **TEST BUG**: 5
+- **NOT IMPLEMENTED**: 1
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

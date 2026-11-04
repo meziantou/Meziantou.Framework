@@ -117,6 +117,58 @@ public sealed class HevcQuantizerTests
     }
 
     [Fact]
+    public void TheLevelsAreTheQuotientsAroundTheDeadZone()
+    {
+        // Blocks of mostly zero levels, with coefficients just below and at the dead zone, and the extreme values: the
+        // groups of coefficients that are all quantized to zero are skipped by the vector path
+        var random = new Random(42);
+        for (var log2TrafoSize = 2; log2TrafoSize <= 5; log2TrafoSize++)
+        {
+            var count = 1 << (log2TrafoSize << 1);
+            var coefficients = new int[count];
+            var levels = new int[count];
+            foreach (var bitDepth in new[] { 8, 10 })
+            {
+                var bdShift = bitDepth + log2TrafoSize - 5;
+                for (var qP = 0; qP <= 51 + (6 * (bitDepth - 8)); qP += 1 + random.Next(4))
+                {
+                    var rounding = random.Next(256);
+                    var factor = (16L * LevelScale[qP % 6]) << (qP / 6);
+                    var offset = (factor * rounding) / 256;
+
+                    // The smallest magnitude whose level is not zero
+                    var first = (int)Math.Min((factor - offset + (1L << bdShift) - 1) >> bdShift, int.MaxValue);
+                    for (var i = 0; i < count; i++)
+                    {
+                        coefficients[i] = random.Next(10) switch
+                        {
+                            0 => first,
+                            1 => -first,
+                            2 => first - 1,
+                            3 => 1 - first,
+                            4 => random.Next(-40000, 40000),
+                            5 when random.Next(8) is 0 => random.Next(2) is 0 ? int.MinValue : int.MaxValue,
+                            _ => 0,
+                        };
+                    }
+
+                    var nonZero = HevcQuantizer.Quantize(coefficients, levels, log2TrafoSize, qP, bitDepth, [], rounding);
+                    var expectedNonZero = 0;
+                    for (var i = 0; i < count; i++)
+                    {
+                        var magnitude = Math.Abs((long)coefficients[i]) << bdShift;
+                        var level = (int)Math.Min((magnitude + offset) / factor, HevcQuantizer.MaxLevel);
+                        Assert.Equal(coefficients[i] < 0 ? -level : level, levels[i]);
+                        expectedNonZero += level is 0 ? 0 : 1;
+                    }
+
+                    Assert.Equal(expectedNonZero, nonZero);
+                }
+            }
+        }
+    }
+
+    [Fact]
     public void ALevelHasAtMostSixteenBits()
     {
         // 32x32, 12 bits, qP 0: the factor 16 * 40 is less than 2^bdShift = 4096, and the quotient of the largest

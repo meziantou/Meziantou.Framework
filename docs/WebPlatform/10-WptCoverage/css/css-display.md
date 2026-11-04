@@ -14,6 +14,12 @@ description: "The results of the web-platform-tests of css/css-display, and why 
 | [Reftests](#reftests) | 164 | 218 | 0 | 75% |
 | **All** | **208** | **262** | **0** | **79%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **TEST BUG**: 54
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

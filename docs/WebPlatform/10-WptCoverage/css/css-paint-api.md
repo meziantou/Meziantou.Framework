@@ -14,6 +14,13 @@ description: "The results of the web-platform-tests of css/css-paint-api, and wh
 | [Reftests](#reftests) | 114 | 115 | 0 | 99% |
 | **All** | **115** | **117** | **0** | **98%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 1
+- **TEST BUG**: 1
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

@@ -14,6 +14,12 @@ description: "The results of the web-platform-tests of long-animation-frame, and
 | Reftests | 0 | 0 | 0 | – |
 | **All** | **0** | **52** | **52** | **–** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **NOT IMPLEMENTED**: 52
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

@@ -14,6 +14,14 @@ description: "The results of the web-platform-tests of mediacapture-fromelement,
 | Reftests | 0 | 0 | 0 | – |
 | **All** | **0** | **12** | **12** | **–** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **REQUIRES**: 12
+  - `media`: 12
+  - `rendering`: 12
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

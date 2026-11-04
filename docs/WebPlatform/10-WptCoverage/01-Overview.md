@@ -20,7 +20,7 @@ The columns:
 - **Disabled**: the tests that are not run: they are skipped, or their directory is not part of the tested directories. The page of the section gives the reason.
 - **Pass rate**: the passing tests among the tests that are run (the tests that are not disabled).
 
-The pages of the sections give, for each test that does not pass, the **Kind** and the **Description** of the reasons why it does not pass (a test can have several reasons). The kinds:
+The pages of the sections give, for each test that does not pass, the **Kind** and the **Description** of the reasons why it does not pass (a test can have several reasons), and the **Failure reasons** section of each page (this one included) counts the tests that do not pass per kind and per feature. The kinds:
 
 - **BUG**: the implementation is broken.
 - **TEST BUG**: the test is wrong: it does not match the specification.
@@ -53,6 +53,26 @@ The features of `REQUIRES`:
 | [Tentative](#tentative-tests) | 1,176 | 3,074 | 847 | 53% |
 | [Reftests](#reftests) | 27,875 | 29,220 | 180 | 96% |
 | **All** | **54,755** | **61,985** | **3,597** | **94%** |
+
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 484
+- **TEST BUG**: 974
+- **NOT IMPLEMENTED**: 4,401
+- **REQUIRES**: 1,200
+  - `hardware`: 791
+  - `layout`: 38
+  - `media`: 30
+  - `rendering`: 211
+  - `service-workers`: 1
+  - `user-input`: 155
+  - `workers`: 3
+- **TEST RUNNER**: 299
+- **OUT OF SCOPE**: 229
+- **FLAKY**: 14
+- **PERFORMANCE**: 7
 
 ## Stable tests
 

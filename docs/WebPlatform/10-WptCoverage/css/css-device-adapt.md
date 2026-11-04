@@ -14,6 +14,14 @@ description: "The results of the web-platform-tests of css/css-device-adapt, and
 | Reftests | 0 | 0 | 0 | – |
 | **All** | **0** | **7** | **7** | **–** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **NOT IMPLEMENTED**: 7
+- **REQUIRES**: 7
+  - `layout`: 7
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

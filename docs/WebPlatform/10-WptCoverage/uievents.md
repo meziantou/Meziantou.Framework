@@ -14,6 +14,15 @@ description: "The results of the web-platform-tests of uievents, and why the tes
 | Reftests | 0 | 0 | 0 | – |
 | **All** | **63** | **69** | **0** | **91%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 1
+- **NOT IMPLEMENTED**: 4
+- **REQUIRES**: 1
+  - `layout`: 1
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

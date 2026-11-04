@@ -14,6 +14,14 @@ description: "The results of the web-platform-tests of quirks, and why the tests
 | [Reftests](#reftests) | 29 | 30 | 0 | 97% |
 | **All** | **43** | **48** | **0** | **90%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 2
+- **TEST BUG**: 1
+- **NOT IMPLEMENTED**: 3
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

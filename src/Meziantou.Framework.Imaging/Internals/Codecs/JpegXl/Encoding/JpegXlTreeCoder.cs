@@ -1,4 +1,5 @@
 using System.Numerics;
+using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -192,6 +193,7 @@ internal static class JpegXlTreeCoder
         properties[0] = channelIndex;
         properties[1] = streamIndex;
         var isSingleLeaf = nodes[0].IsLeaf;
+        var referenceSpan = referenceProperties is null ? default : referenceProperties.Span;
 
         // The tree is evaluated without a branch per decision when it can be a table: the decisions on the samples are not
         // predictable
@@ -283,9 +285,10 @@ internal static class JpegXlTreeCoder
                     properties[13] = (int)(top - topTop);
                     properties[14] = (int)(left - leftLeft);
                     properties[15] = weightedProperty;
-                    if (referenceProperties is not null)
+                    // The properties of the references, four at a time: a call to copy them would cost more than the copy
+                    for (var i = 0; i < referenceStride; i += PropertiesPerReference)
                     {
-                        referenceProperties.Span.Slice(x * referenceStride, referenceStride).CopyTo(properties[FirstReferenceProperty..]);
+                        Vector128.Create(referenceSpan.Slice((x * referenceStride) + i, PropertiesPerReference)).CopyTo(properties.Slice(FirstReferenceProperty + i, PropertiesPerReference));
                     }
 
                     if (hasTable)

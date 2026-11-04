@@ -828,14 +828,14 @@ internal static class Av1Cdef
             var sum = Vector128<short>.Zero;
             if (priStr is not 0)
             {
-                sum = ((Constrain(p0 - x, priThreshold, priShiftCount) + Constrain(p1 - x, priThreshold, priShiftCount)) * priWeight0)
-                    + ((Constrain(p2 - x, priThreshold, priShiftCount) + Constrain(p3 - x, priThreshold, priShiftCount)) * priWeight1);
+                sum = ((Constrain(p0, x, priThreshold, priShiftCount) + Constrain(p1, x, priThreshold, priShiftCount)) * priWeight0)
+                    + ((Constrain(p2, x, priThreshold, priShiftCount) + Constrain(p3, x, priThreshold, priShiftCount)) * priWeight1);
             }
 
             if (secStr is not 0)
             {
-                sum += ((Constrain(p4 - x, secThreshold, secShiftCount) + Constrain(p5 - x, secThreshold, secShiftCount) + Constrain(p6 - x, secThreshold, secShiftCount) + Constrain(p7 - x, secThreshold, secShiftCount)) * secWeight0)
-                    + ((Constrain(p8 - x, secThreshold, secShiftCount) + Constrain(p9 - x, secThreshold, secShiftCount) + Constrain(p10 - x, secThreshold, secShiftCount) + Constrain(p11 - x, secThreshold, secShiftCount)) * secWeight1);
+                sum += ((Constrain(p4, x, secThreshold, secShiftCount) + Constrain(p5, x, secThreshold, secShiftCount) + Constrain(p6, x, secThreshold, secShiftCount) + Constrain(p7, x, secThreshold, secShiftCount)) * secWeight0)
+                    + ((Constrain(p8, x, secThreshold, secShiftCount) + Constrain(p9, x, secThreshold, secShiftCount) + Constrain(p10, x, secThreshold, secShiftCount) + Constrain(p11, x, secThreshold, secShiftCount)) * secWeight1);
             }
 
             // (8 + sum - (sum < 0 ? 1 : 0)) >> 4: the sign of the sum is -1 or 0
@@ -847,13 +847,26 @@ internal static class Av1Cdef
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static Vector128<short> Load(ref ushort center, int offset) => unsafe(Vector128.LoadUnsafe(ref Unsafe.Add(ref center, offset))).AsInt16();
 
-        // ConstrainVector with the shift of DampingShift
+        // ConstrainVector of p - x with the shift of DampingShift. The samples are 0 to 4095 and the threshold is not negative:
+        // the magnitude is the unsigned absolute difference, and Max( 0, threshold - shifted ) a saturating subtraction
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static Vector128<short> Constrain(Vector128<short> diff, Vector128<short> threshold, Vector128<short> shift)
+        static Vector128<short> Constrain(Vector128<short> p, Vector128<short> x, Vector128<short> threshold, Vector128<short> shift)
         {
-            var absolute = Vector128.Abs(diff);
-            var magnitude = Vector128.Max(Vector128<short>.Zero, Vector128.Min(absolute, threshold - DampingShift.Apply(absolute, shift)));
-            var sign = diff >> 15;
+            Vector128<short> absolute;
+            Vector128<short> sign;
+            if (AdvSimd.IsSupported)
+            {
+                absolute = AdvSimd.AbsoluteDifference(p.AsUInt16(), x.AsUInt16()).AsInt16();
+                sign = Vector128.LessThan(p, x);
+            }
+            else
+            {
+                var diff = p - x;
+                absolute = Vector128.Abs(diff);
+                sign = diff >> 15;
+            }
+
+            var magnitude = Vector128.Min(absolute, Vector128.SubtractSaturate(threshold.AsUInt16(), DampingShift.Apply(absolute, shift).AsUInt16()).AsInt16());
             return (magnitude ^ sign) - sign;
         }
     }

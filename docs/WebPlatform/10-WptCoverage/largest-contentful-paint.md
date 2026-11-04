@@ -14,6 +14,12 @@ description: "The results of the web-platform-tests of largest-contentful-paint,
 | Reftests | 0 | 0 | 0 | – |
 | **All** | **67** | **74** | **0** | **91%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **NOT IMPLEMENTED**: 7
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

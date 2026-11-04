@@ -14,6 +14,12 @@ description: "The results of the web-platform-tests of css/css-box, and why the 
 | [Reftests](#reftests) | 42 | 72 | 0 | 58% |
 | **All** | **95** | **151** | **0** | **63%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **TEST BUG**: 56
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

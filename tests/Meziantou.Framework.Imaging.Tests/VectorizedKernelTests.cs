@@ -1052,16 +1052,94 @@ public sealed class VectorizedKernelTests
     }
 
     [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void JpegQuantizedInverseDctMatchesTheScalarReferenceBitForBit()
+    {
+        var random = new Random(23);
+        const int Stride = 13;
+        var coefficients = new short[64];
+        var quantization = new double[64];
+        for (var round = 0; round < 10_000; round++)
+        {
+            // Sparse or dense blocks of small or extreme coefficients and quantization values (samples beyond the range of
+            // 32-bit integers); every other block only has coefficients in its top-left 4x4 corner (the sparse transform)
+            Array.Clear(coefficients);
+            var density = random.NextDouble();
+            var magnitude = round % 8 == 4 ? short.MaxValue : round % 4 == 0 ? 2047 : round % 4 == 1 ? 255 : 16;
+            var sparse = round % 2 == 1;
+            for (var i = 0; i < 64; i++)
+            {
+                quantization[i] = round % 8 == 4 ? ushort.MaxValue : random.Next(1, 256);
+                if ((i == 0 || random.NextDouble() < density) && (!sparse || ((i & 0b100_100) == 0)))
+                {
+                    coefficients[i] = (short)random.Next(-magnitude, magnitude + 1);
+                }
+            }
+
+            var block = new double[64];
+            JpegIdct.DequantizeScalar(coefficients, quantization, block);
+            var expected = new byte[(8 * Stride) + 8];
+            JpegIdct.TransformScalar(block, expected, Stride);
+            var actual = new byte[expected.Length];
+            JpegIdct.TransformQuantized(coefficients, quantization, new double[64], actual, Stride, sparse);
+            Assert.Equal(expected, actual);
+            if (Avx2.IsSupported)
+            {
+                Array.Clear(actual);
+                JpegIdct.TransformQuantizedAvx2(coefficients, quantization, new double[64], actual, Stride, sparse);
+                Assert.Equal(expected, actual);
+            }
+
+            if (Avx512F.IsSupported)
+            {
+                Array.Clear(actual);
+                JpegIdct.TransformQuantizedAvx512(coefficients, quantization, actual, Stride, sparse);
+                Assert.Equal(expected, actual);
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void JpegNonzeroMaskMatchesTheScalarReference()
+    {
+        var random = new Random(24);
+        var coefficients = new short[64];
+        for (var round = 0; round < 2_000; round++)
+        {
+            var density = round < 64 ? 0 : random.NextDouble();
+            for (var i = 0; i < 64; i++)
+            {
+                coefficients[i] = random.NextDouble() < density ? (short)random.Next(short.MinValue, short.MaxValue + 1) : (short)0;
+            }
+
+            // One coefficient at each position, then random blocks
+            if (round < 64)
+            {
+                coefficients[round] = (short)(round % 2 == 0 ? short.MinValue : 1);
+            }
+
+            var expected = JpegIdct.GetNonzeroMaskScalar(coefficients);
+            for (var i = 0; i < 64; i++)
+            {
+                Assert.Equal(coefficients[i] != 0, (expected & (1UL << i)) != 0);
+            }
+
+            Assert.Equal(expected, JpegIdct.GetNonzeroMask(coefficients));
+        }
+    }
+
+    [Fact]
     public void JpegSparseBlocksAreTheTopLeftQuadrant()
     {
         var coefficients = new short[64];
-        Assert.True(JpegIdct.IsSparse(coefficients));
+        Assert.True(JpegIdct.IsSparse(JpegIdct.GetNonzeroMask(coefficients)));
         for (var i = 0; i < 64; i++)
         {
             Array.Clear(coefficients);
             coefficients[i] = -1;
             var inQuadrant = i / 8 < 4 && i % 8 < 4;
-            Assert.Equal(inQuadrant, JpegIdct.IsSparse(coefficients));
+            Assert.Equal(inQuadrant, JpegIdct.IsSparse(JpegIdct.GetNonzeroMask(coefficients)));
             Assert.Equal(inQuadrant, JpegIdct.IsSparse(i | 64));
         }
 
@@ -1285,6 +1363,17 @@ public sealed class VectorizedKernelTests
                 AssertPath((samples, stride, coefficients) => JpegForwardDct.TransformAndQuantizeAvx2(samples, stride, divisors, scratch, coefficients));
             }
 
+            if (System.Runtime.Intrinsics.Arm.AdvSimd.Arm64.IsSupported)
+            {
+                // The 16-bit coefficients reordered by table lookups, from contiguous rows and from the rows of a plane
+                var stored = new short[64];
+                JpegForwardDct.TransformAndQuantizeArm64(samples, 8, divisors, scratch, stored);
+                Assert.Equal(expected, Array.ConvertAll(stored, value => (int)value));
+                Array.Clear(stored);
+                JpegForwardDct.TransformAndQuantizeArm64(plane, Stride, divisors, scratch, stored);
+                Assert.Equal(expected, Array.ConvertAll(stored, value => (int)value));
+            }
+
             if (Avx512F.IsSupported)
             {
                 AssertPath((samples, stride, coefficients) => JpegForwardDct.TransformAndQuantizeAvx512(samples, stride, divisors, coefficients));
@@ -1308,6 +1397,39 @@ public sealed class VectorizedKernelTests
     }
 
     private delegate void ForwardDct(ReadOnlySpan<float> samples, int stride, Span<int> coefficients);
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void JpegForwardDctRoundingBiasRoundsHalfAwayFromZero()
+    {
+        // The truncation of the value plus the bias is the rounding of Math.Round: halves, the doubles next to them, the
+        // largest double below one half, integers, and random values up to the 16-bit range
+        var values = new List<double> { 0, -0.0, 0.49999999999999994, -0.49999999999999994, 2047.5, -2047.5, 1024, -1024 };
+        for (var k = -2048; k <= 2048; k++)
+        {
+            var half = k + 0.5;
+            values.Add(half);
+            values.Add(Math.BitDecrement(half));
+            values.Add(Math.BitIncrement(half));
+            values.Add(k);
+            values.Add(Math.BitDecrement((double)k));
+            values.Add(Math.BitIncrement((double)k));
+        }
+
+        var random = new Random(86);
+        for (var i = 0; i < 100_000; i++)
+        {
+            values.Add((random.NextDouble() - 0.5) * (i % 2 == 0 ? 4 : 65536));
+        }
+
+        foreach (var value in values)
+        {
+            var expected = (long)Math.Round(value, MidpointRounding.AwayFromZero);
+            Assert.Equal(expected, (long)Math.Truncate(JpegForwardDct.AddRoundingBias(Vector128.Create(value)).ToScalar()));
+            Assert.Equal(expected, (long)Math.Truncate(JpegForwardDct.AddRoundingBias(Vector256.Create(value)).ToScalar()));
+            Assert.Equal(expected, (long)Math.Truncate(JpegForwardDct.AddRoundingBias(Vector512.Create(value)).ToScalar()));
+        }
+    }
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
@@ -1384,6 +1506,8 @@ public sealed class VectorizedKernelTests
             {
                 AssertPath(source, expected, (source, luma, blue, red) => Complete(source, luma, blue, red, JpegEncoderCodec.ConvertRgbToYCbCrAvx512(source, luma, blue, red)));
             }
+
+            AssertRationalPaths(source, expected);
         }
 
         static void AssertPath(byte[] source, float[][] expected, ConvertRgbToYCbCr convert)
@@ -1405,7 +1529,86 @@ public sealed class VectorizedKernelTests
             JpegEncoderCodec.ConvertRgbToYCbCrScalar(source[(3 * done)..], luma[done..], blue[done..], red[done..]);
     }
 
+    [Fact]
+    public void JpegEncoderColorConversionFromFractionsMatchesTheScalarReferenceForEveryColor()
+    {
+        // The 2^16 colors of each red level, those that the fractions convert first (in whole 16-pixel groups), then the
+        // gray levels and the colors whose luma is 128, which are converted in double precision: every color goes through
+        // the computation that converts it in an image
+        var source = new byte[3 * 65536];
+        var expected = new float[3][];
+        for (var c = 0; c < 3; c++)
+        {
+            expected[c] = new float[65536];
+        }
+
+        for (var red = 0; red < 256; red++)
+        {
+            var count = 0;
+            foreach (var fractions in new[] { true, false })
+            {
+                for (var green = 0; green < 256; green++)
+                {
+                    for (var blue = 0; blue < 256; blue++)
+                    {
+                        var converted = (red != green || green != blue) && (299 * red) + (587 * green) + (114 * blue) != 128000;
+                        if (converted == fractions)
+                        {
+                            source[3 * count] = (byte)red;
+                            source[(3 * count) + 1] = (byte)green;
+                            source[(3 * count) + 2] = (byte)blue;
+                            count++;
+                        }
+                    }
+                }
+            }
+
+            JpegEncoderCodec.ConvertRgbToYCbCrScalar(source, expected[0], expected[1], expected[2]);
+            AssertRationalPaths(source, expected);
+        }
+    }
+
+    // Each conversion from the fractions on its own, then the scalar reference for the rest
+    private static void AssertRationalPaths(byte[] source, float[][] expected)
+    {
+        if (System.Runtime.Intrinsics.Arm.AdvSimd.Arm64.IsSupported)
+        {
+            AssertConversionPath(source, expected, JpegEncoderCodec.ConvertRgbToYCbCrRationalArm64);
+        }
+
+        if (Avx2.IsSupported)
+        {
+            AssertConversionPath(source, expected, JpegEncoderCodec.ConvertRgbToYCbCrRationalAvx2);
+        }
+
+        if (Avx512F.IsSupported)
+        {
+            AssertConversionPath(source, expected, JpegEncoderCodec.ConvertRgbToYCbCrRationalAvx512);
+        }
+
+        AssertConversionPath(source, expected, (source, luma, blue, red) =>
+        {
+            JpegEncoderCodec.ConvertRgbToYCbCr(source, luma, blue, red);
+            return luma.Length;
+        });
+    }
+
+    private static void AssertConversionPath(byte[] source, float[][] expected, ConvertRgbToYCbCrGroups convert)
+    {
+        var length = expected[0].Length;
+        var luma = new float[length];
+        var blue = new float[length];
+        var red = new float[length];
+        var done = convert(source, luma, blue, red);
+        JpegEncoderCodec.ConvertRgbToYCbCrScalar(source.AsSpan(3 * done), luma.AsSpan(done), blue.AsSpan(done), red.AsSpan(done));
+        Assert.Equal(expected[0], luma);
+        Assert.Equal(expected[1], blue);
+        Assert.Equal(expected[2], red);
+    }
+
     private delegate void ConvertRgbToYCbCr(ReadOnlySpan<byte> source, Span<float> luma, Span<float> blue, Span<float> red);
+
+    private delegate int ConvertRgbToYCbCrGroups(ReadOnlySpan<byte> source, Span<float> luma, Span<float> blue, Span<float> red);
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
@@ -1484,10 +1687,11 @@ public sealed class VectorizedKernelTests
                     var second = new float[twoRows ? 2 * length : 0];
                     for (var i = 0; i < first.Length; i++)
                     {
-                        first[i] = round % 4 == 0 ? (random.Next(2) == 0 ? -128f : 127f) : (float)((random.NextDouble() * 256) - 128);
+                        // Negative zeros too, whose sums give the sign of the reference
+                        first[i] = round % 4 == 0 ? (random.Next(2) == 0 ? -128f : 127f) : round % 4 == 1 && random.Next(3) == 0 ? -0f : (float)((random.NextDouble() * 256) - 128);
                         if (twoRows)
                         {
-                            second[i] = (float)((random.NextDouble() * 256) - 128);
+                            second[i] = round % 4 == 1 && random.Next(3) == 0 ? -0f : (float)((random.NextDouble() * 256) - 128);
                         }
                     }
 
@@ -1502,6 +1706,11 @@ public sealed class VectorizedKernelTests
                     if (Avx2.IsSupported)
                     {
                         AssertPath(first, second, expected, (first, second, destination) => Complete(first, second, destination, JpegEncoderCodec.DownsampleRowAvx2(first, second, destination)));
+                    }
+
+                    if (System.Runtime.Intrinsics.Arm.AdvSimd.Arm64.IsSupported)
+                    {
+                        AssertPath(first, second, expected, (first, second, destination) => Complete(first, second, destination, JpegEncoderCodec.DownsampleRowArm64(first, second, destination)));
                     }
 
                     if (Avx512F.IsSupported)
@@ -2040,8 +2249,9 @@ public sealed class VectorizedKernelTests
             for (var i = 0; i < length; i++)
             {
                 // Linear samples of both segments and of both signs, with zeros, the limit of the segments, values far out
-                // of range, infinities and subnormal values
-                samples[i] = (round % 6) switch
+                // of range, infinities, subnormal values, and every exponent around the table of the vector paths (2^-9
+                // to 2^6), in runs that leave it
+                samples[i] = (round % 7) switch
                 {
                     0 => random.Next(4) switch
                     {
@@ -2054,6 +2264,7 @@ public sealed class VectorizedKernelTests
                     2 => (float)random.NextDouble() * 1e-40f,
                     3 => BitConverter.Int32BitsToSingle(BitConverter.SingleToInt32Bits(0.0031308f) + random.Next(-3, 4)),
                     4 => (float)((random.NextDouble() - 0.5) * 0.01),
+                    5 => MathF.ScaleB(1 + (float)random.NextDouble(), random.Next(-12, 9)) * (random.Next(2) == 0 ? 1 : -1),
                     _ => (float)((random.NextDouble() * 1.4) - 0.2),
                 };
             }
@@ -4404,6 +4615,66 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void WebPRowConversionMatchesTheScalarSteps()
+    {
+        // Odd and even widths around the groups of 32 pixels, random and extreme samples, RGBA with and without alpha, RGB
+        var random = new Random(603);
+        for (var width = 1; width <= 140; width++)
+        {
+            var chromaWidth = (width + 1) / 2;
+            for (var round = 0; round < 12; round++)
+            {
+                var luma = new byte[width];
+                var alpha = new byte[width];
+                var rows = new byte[4][];
+                random.NextBytes(luma);
+                random.NextBytes(alpha);
+                for (var i = 0; i < rows.Length; i++)
+                {
+                    rows[i] = new byte[chromaWidth];
+                    random.NextBytes(rows[i]);
+                    if (round % 4 == 1)
+                    {
+                        for (var x = 0; x < chromaWidth; x++)
+                        {
+                            rows[i][x] = (byte)(random.Next(2) * 255);
+                        }
+                    }
+                }
+
+                if (round % 4 == 1)
+                {
+                    for (var x = 0; x < width; x++)
+                    {
+                        luma[x] = (byte)(random.Next(2) * 255);
+                    }
+                }
+
+                var upBlue = new byte[width];
+                var upRed = new byte[width];
+                WebPYuvConverter.UpsampleSamplesScalar(rows[0], rows[1], upBlue, 0, chromaWidth);
+                WebPYuvConverter.UpsampleSamplesScalar(rows[2], rows[3], upRed, 0, chromaWidth);
+                var scratch = new byte[2 * width];
+                foreach (var withAlpha in new[] { false, true })
+                {
+                    var expected = new byte[width * 4];
+                    var actual = new byte[width * 4];
+                    WebPYuvConverter.ConvertSamplesScalar(luma, upBlue, upRed, withAlpha ? alpha : [], expected);
+                    WebPYuvConverter.ConvertRowSamples(luma, rows[0], rows[1], rows[2], rows[3], withAlpha ? alpha : [], actual, scratch, bytesPerPixel: 4);
+                    Assert.Equal(expected, actual);
+                }
+
+                var expectedRgb = new byte[width * 3];
+                var actualRgb = new byte[width * 3];
+                WebPYuvConverter.ConvertSamplesRgbScalar(luma, upBlue, upRed, expectedRgb);
+                WebPYuvConverter.ConvertRowSamples(luma, rows[0], rows[1], rows[2], rows[3], [], actualRgb, scratch, bytesPerPixel: 3);
+                Assert.Equal(expectedRgb, actualRgb);
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void WebPBoolDecoderMatchesTheByteAtATimeReference()
     {
         // Partitions of every short length (refills near and past the end, buffers shorter than 8 bytes), at the start, in
@@ -5173,6 +5444,145 @@ public sealed class VectorizedKernelTests
     [InlineData(10)]
     [InlineData(12)]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void Av1ReconstructionOfDequantizedCoefficientsMatchesTheScalarReference(int bitDepth)
+    {
+        // Every transform size and type: the residual of the scalar transform added to the predicted samples (flipped as the
+        // type says) and clamped, on coefficients of the dequantization range, with exact and larger bounds of their extent
+        var random = new Random(bitDepth * 23);
+        var limit = 1 << (7 + bitDepth);
+        var maxSample = (1 << bitDepth) - 1;
+        const int Stride = 80;
+        var residual = new int[64 * 64];
+        var scratch = new int[1024 + 4096];
+        for (var txSz = 0; txSz < Av1Constants.TxSizesAll; txSz++)
+        {
+            var w = 1 << Av1Tables.TxWidthLog2[txSz];
+            var h = 1 << Av1Tables.TxHeightLog2[txSz];
+            var tw = Math.Min(32, w);
+            var th = Math.Min(32, h);
+            var dequant = new int[tw * th];
+            for (var txType = 0; txType < Av1Constants.TxTypes; txType++)
+            {
+                var rowKind = Av1InverseTransform.GetRowKind(txType);
+                var columnKind = Av1InverseTransform.GetColumnKind(txType);
+                if ((rowKind is Av1InverseTransform.Kind.Adst && w > 16) || (rowKind is Av1InverseTransform.Kind.Identity && w > 32)
+                    || (columnKind is Av1InverseTransform.Kind.Adst && h > 16) || (columnKind is Av1InverseTransform.Kind.Identity && h > 32))
+                {
+                    continue;
+                }
+
+                for (var round = 0; round < 12; round++)
+                {
+                    Array.Clear(dequant);
+                    var rows = 0;
+                    var columns = 0;
+                    for (var i = 0; i < dequant.Length; i++)
+                    {
+                        dequant[i] = (round % 5) switch
+                        {
+                            0 => random.Next(-300, 301),
+                            1 => random.Next(6) == 0 ? random.Next(-limit, limit) : 0,
+                            2 => i is 0 ? random.Next(-limit, limit) : 0,
+                            3 => random.Next(2) == 0 ? -limit : limit - 1,
+                            _ => (i % tw) < 4 && (i / tw) < 4 ? random.Next(-limit, limit) : 0,
+                        };
+
+                        if (dequant[i] is not 0)
+                        {
+                            rows = Math.Max(rows, (i / tw) + 1);
+                            columns = Math.Max(columns, (i % tw) + 1);
+                        }
+                    }
+
+                    if (round % 2 is 1)
+                    {
+                        rows = th;
+                        columns = tw;
+                    }
+
+                    var predicted = new ushort[(h + 2) * Stride];
+                    for (var i = 0; i < predicted.Length; i++)
+                    {
+                        predicted[i] = (ushort)random.Next(maxSample + 1);
+                    }
+
+                    var expected = predicted.ToArray();
+                    Av1InverseTransform.TransformScalar(dequant, residual.AsSpan(0, w * h), txSz, txType, lossless: false, bitDepth);
+                    var flipUD = txType is Av1Constants.FlipadstDct or Av1Constants.FlipadstAdst or Av1Constants.VFlipadst or Av1Constants.FlipadstFlipadst;
+                    var flipLR = txType is Av1Constants.DctFlipadst or Av1Constants.AdstFlipadst or Av1Constants.HFlipadst or Av1Constants.FlipadstFlipadst;
+                    for (var i = 0; i < h; i++)
+                    {
+                        for (var j = 0; j < w; j++)
+                        {
+                            var index = ((1 + (flipUD ? h - 1 - i : i)) * Stride) + 3 + (flipLR ? w - 1 - j : j);
+                            expected[index] = (ushort)Math.Clamp(expected[index] + residual[(i * w) + j], 0, maxSample);
+                        }
+                    }
+
+                    var actual = predicted.ToArray();
+                    Av1Reconstruction.ReconstructDequantized(actual, Stride, 3, 1, dequant, eob: 2, scratch, txSz, txType, lossless: false, bitDepth, Math.Max(rows, 1), Math.Max(columns, 1));
+                    Assert.True(expected.AsSpan().SequenceEqual(actual), $"Transform size {txSz}, type {txType}, round {round}.");
+                }
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void Av1FourSymbolDecodingMatchesTheSymbolDecoder()
+    {
+        // The coefficient levels decoded on a copied state (with the adaptation of the distributions in vectors when they are
+        // accelerated) and with the methods of the decoder
+        var random = new Random(41);
+        var distributions = new ushort[16][];
+        for (var i = 0; i < distributions.Length; i++)
+        {
+            var cuts = new SortedSet<int>();
+            while (cuts.Count < 3)
+            {
+                cuts.Add(random.Next(1, 32768));
+            }
+
+            distributions[i] = [.. cuts.Select(cut => (ushort)cut), 32768, 0];
+        }
+
+        var symbols = new (int Distribution, int Value)[20000];
+        var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(Av1FourSymbolDecodingMatchesTheSymbolDecoder));
+        using var output = new PooledPayloadWriter(scope);
+        var encoder = new Av1SymbolEncoder();
+        encoder.Initialize(output, disableCdfUpdate: false);
+        var encoded = distributions.Select(cdf => (ushort[])cdf.Clone()).ToArray();
+        for (var i = 0; i < symbols.Length; i++)
+        {
+            symbols[i] = (random.Next(distributions.Length), random.Next(4));
+            if (random.Next(3) is 0)
+                symbols[i].Value = 0;
+
+            encoder.WriteSymbol(encoded[symbols[i].Distribution], symbols[i].Value);
+        }
+
+        var length = encoder.Finish();
+        var data = output.WrittenSpan[..length].ToArray();
+        var reference = new Av1SymbolDecoder();
+        reference.Initialize(data, 0, data.Length, disableCdfUpdate: false);
+        var referenceDistributions = distributions.Select(cdf => (ushort[])cdf.Clone()).ToArray();
+        var decoder = new Av1SymbolDecoder();
+        decoder.Initialize(data, 0, data.Length, disableCdfUpdate: false);
+        var decoded = distributions.Select(cdf => (ushort[])cdf.Clone()).ToArray();
+        var state = decoder.Save();
+        foreach (var (distribution, value) in symbols)
+        {
+            Assert.Equal(value, reference.ReadSymbol(referenceDistributions[distribution]));
+            Assert.Equal(value, decoder.ReadSymbol4Branchless(ref state, decoded[distribution]));
+            Assert.Equal(referenceDistributions[distribution], decoded[distribution]);
+        }
+    }
+
+    [Theory]
+    [InlineData(8)]
+    [InlineData(10)]
+    [InlineData(12)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void Av1ChromaFromLumaMatchesTheScalarReference(int bitDepth)
     {
         // Every subsampling and transform size of the chroma from luma prediction, with the luma samples clamped at every
@@ -5221,6 +5631,51 @@ public sealed class VectorizedKernelTests
 
     [Theory]
     [InlineData(8)]
+    [InlineData(12)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void Av1DirectionalPredictionOfSmallBlocksMatchesTheScalarReference(int bitDepth)
+    {
+        // Every directional mode and angle delta of the block sizes whose edges are upsampled, with every edge availability,
+        // with and without the edge filter and a smooth neighbor, inside the plane and at its right and bottom limits
+        var random = new Random(bitDepth * 17);
+        var maxSample = (1 << bitDepth) - 1;
+        const int Stride = 64;
+        const int Height = 64;
+        (int Log2W, int Log2H)[] sizes = [(2, 2), (2, 3), (3, 2), (3, 3), (2, 4), (4, 2), (4, 4)];
+        foreach (var (log2W, log2H) in sizes)
+        {
+            for (var mode = Av1Constants.VPred; mode <= Av1Constants.D67Pred; mode++)
+            {
+                for (var angleDelta = -3; angleDelta <= 3; angleDelta++)
+                {
+                    for (var flags = 0; flags < 64; flags++)
+                    {
+                        var expected = new ushort[Stride * Height];
+                        for (var i = 0; i < expected.Length; i++)
+                        {
+                            expected[i] = (ushort)random.Next(maxSample + 1);
+                        }
+
+                        var (x, y) = (flags & 32) is 0 ? (16, 16) : (32, 32);
+                        var maxX = (flags & 32) is 0 ? Stride - 1 : x + (1 << log2W) - 1;
+                        var maxY = (flags & 32) is 0 ? Height - 1 : y + (1 << log2H) - 1;
+                        var parameters = new Av1IntraPredictor.Parameters(bitDepth, mode, angleDelta, -1, (flags & 1) is not 0, (flags & 2) is not 0);
+                        var haveLeft = (flags & 4) is not 0;
+                        var haveAbove = (flags & 8) is not 0;
+                        var haveAboveRight = haveAbove && (flags & 16) is not 0;
+                        var haveBelowLeft = haveLeft && (flags & 16) is not 0;
+                        var actual = expected.ToArray();
+                        Av1IntraPredictor.PredictScalar(expected, Stride, x, y, haveLeft, haveAbove, haveAboveRight, haveBelowLeft, log2W, log2H, maxX, maxY, parameters);
+                        Av1IntraPredictor.Predict(actual, Stride, x, y, haveLeft, haveAbove, haveAboveRight, haveBelowLeft, log2W, log2H, maxX, maxY, parameters);
+                        Assert.True(expected.AsSpan().SequenceEqual(actual), $"{1 << log2W}x{1 << log2H}, {parameters}, flags {flags}.");
+                    }
+                }
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(8)]
     [InlineData(10)]
     [InlineData(12)]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
@@ -5263,9 +5718,23 @@ public sealed class VectorizedKernelTests
             var haveAboveRight = haveAbove && random.Next(2) == 0;
             var haveBelowLeft = haveLeft && random.Next(2) == 0;
             var actual = expected.ToArray();
+            var fromEdges = expected.ToArray();
             Av1IntraPredictor.PredictScalar(expected, Stride, x, y, haveLeft, haveAbove, haveAboveRight, haveBelowLeft, log2W, log2H, maxX, maxY, parameters);
             Av1IntraPredictor.Predict(actual, Stride, x, y, haveLeft, haveAbove, haveAboveRight, haveBelowLeft, log2W, log2H, maxX, maxY, parameters);
             Assert.True(expected.AsSpan().SequenceEqual(actual), $"Round {round}: {w}x{h} at ({x}, {y}), {parameters}, left {haveLeft}, above {haveAbove}, limits ({maxX}, {maxY}).");
+
+            // The edges written once, then predicted from: the modes that are not directional leave them as they are
+            var aboveEdge = new int[Av1IntraPredictor.GetEdgeStorageLength(log2W, log2H)];
+            var leftEdge = new int[aboveEdge.Length];
+            Av1IntraPredictor.PrepareEdges(fromEdges, Stride, x, y, haveLeft, haveAbove, haveAboveRight, haveBelowLeft, log2W, log2H, maxX, maxY, bitDepth, aboveEdge, leftEdge);
+            var (preparedAbove, preparedLeft) = (aboveEdge.ToArray(), leftEdge.ToArray());
+            Av1IntraPredictor.PredictFromEdges(fromEdges, Stride, x, y, haveLeft, haveAbove, log2W, log2H, maxX, maxY, parameters, aboveEdge, leftEdge);
+            Assert.True(expected.AsSpan().SequenceEqual(fromEdges), $"Round {round}: {w}x{h} from the edges, {parameters}.");
+            if (filterIntraMode >= 0 || mode is < Av1Constants.VPred or > Av1Constants.D67Pred)
+            {
+                Assert.Equal(preparedAbove, aboveEdge);
+                Assert.Equal(preparedLeft, leftEdge);
+            }
         }
     }
 
@@ -5415,6 +5884,14 @@ public sealed class VectorizedKernelTests
                 Av1RestorationSearch.AccumulateVerticalScalar(rows, stride, target, expected);
                 Av1RestorationSearch.AccumulateVertical(rows, stride, target, actual);
                 Assert.Equal(expected, actual);
+
+                // The horizontal filter of the rows of the vertical pass, with coefficients of the range of the syntax
+                var (h0, h1, h2) = (random.Next(-5, 11), random.Next(-23, 9), random.Next(-17, 47));
+                var expectedRow = new int[length];
+                var actualRow = new int[length];
+                Av1RestorationSearch.FilterHorizontalScalar(row, expectedRow, h0, h1, h2);
+                Av1RestorationSearch.FilterHorizontal(row, actualRow, h0, h1, h2);
+                Assert.Equal(expectedRow, actualRow);
             }
         }
     }
@@ -5587,6 +6064,77 @@ public sealed class VectorizedKernelTests
         }
     }
 
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void Av1EncoderBlockKernelsMatchTheScalarReferences()
+    {
+        // Blocks of the transform sizes and of visible parts of them (odd heights, widths below 4), of random and extreme
+        // 12-bit samples, in planes whose stride is not the width
+        var random = new Random(11);
+        int[] sizes = [1, 2, 3, 4, 5, 7, 8, 16, 32, 64];
+        foreach (var width in sizes)
+        {
+            foreach (var height in sizes)
+            {
+                for (var round = 0; round < 4; round++)
+                {
+                    var leftStride = width + random.Next(0, 9);
+                    var rightStride = width + random.Next(0, 9);
+                    var left = new ushort[leftStride * height];
+                    var right = new ushort[rightStride * height];
+                    for (var i = 0; i < left.Length; i++)
+                    {
+                        left[i] = round switch
+                        {
+                            0 => (ushort)random.Next(4096),
+                            1 => 4095,
+                            2 => 0,
+                            _ => (ushort)random.Next(256),
+                        };
+                    }
+
+                    for (var i = 0; i < right.Length; i++)
+                    {
+                        right[i] = round switch
+                        {
+                            0 => (ushort)random.Next(4096),
+                            1 => 0,
+                            2 => 4095,
+                            _ => (ushort)random.Next(256),
+                        };
+                    }
+
+                    Assert.Equal(
+                        Av1EncoderKernels.SumOfSquaredDifferencesScalar(left, leftStride, right, rightStride, width, height),
+                        Av1EncoderKernels.SumOfSquaredDifferences(left, leftStride, right, rightStride, width, height));
+
+                    var expected = new int[width * height];
+                    var actual = new int[width * height];
+                    for (var i = 0; i < height; i++)
+                    {
+                        Av1EncoderKernels.SubtractScalar(left.AsSpan(i * leftStride, width), right.AsSpan(i * rightStride, width), expected.AsSpan(i * width, width));
+                    }
+
+                    Av1EncoderKernels.Subtract(left, leftStride, right, rightStride, width, height, actual);
+                    Assert.Equal(expected, actual);
+
+                    var unchanged = right.ToArray();
+                    Assert.Equal(
+                        Av1EncoderKernels.SumOfAbsoluteDifferencesAndCopyScalar(left, leftStride, right.ToArray(), rightStride, width, height),
+                        Av1EncoderKernels.SumOfAbsoluteDifferences(left, leftStride, unchanged, rightStride, width, height));
+                    Assert.Equal(right, unchanged);
+
+                    var expectedCopy = right.ToArray();
+                    var actualCopy = right.ToArray();
+                    Assert.Equal(
+                        Av1EncoderKernels.SumOfAbsoluteDifferencesAndCopyScalar(left, leftStride, expectedCopy, rightStride, width, height),
+                        Av1EncoderKernels.SumOfAbsoluteDifferencesAndCopy(left, leftStride, actualCopy, rightStride, width, height));
+                    Assert.Equal(expectedCopy, actualCopy);
+                }
+            }
+        }
+    }
+
     [Theory]
     [InlineData(PixelFormat.Rgb24, false, false)]
     [InlineData(PixelFormat.Rgba32, false, false)]
@@ -5741,6 +6289,63 @@ public sealed class VectorizedKernelTests
                         converter.UpsampleRowScalar(near, subsamplingY is 0 ? near : other, parity, expected, 0, width);
                         converter.UpsampleRow(near, subsamplingY is 0 ? near : other, parity, actual);
                         Assert.Equal(expected, actual);
+                    }
+                }
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(1, 1, true)]
+    [InlineData(1, 1, false)]
+    [InlineData(1, 0, true)]
+    [InlineData(0, 0, false)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void HeifRgbaConversionMatchesTheReference(int subsamplingX, int subsamplingY, bool cositedColumns)
+    {
+        // The matrices, ranges and bit depths of the fast path for 8-bit RGBA pixels, with transparent pixels, the extremes
+        // of the samples, and widths and heights that are odd
+        var random = new Random((subsamplingX * 4) + (subsamplingY * 2) + (cositedColumns ? 1 : 0));
+        foreach (var matrix in new[] { Av1Constants.McBt601, Av1Constants.McBt709, Av1Constants.McFcc, Av1Constants.McSmpte240, Av1Constants.McBt2020Ncl })
+        {
+            foreach (var bitDepth in new[] { 8, 10, 12 })
+            {
+                foreach (var fullRange in new[] { true, false })
+                {
+                    var converter = new HeifRgbConverter(PixelFormat.Rgba32, bitDepth, subsamplingX, subsamplingY, matrix, fullRange, clearTransparentColors: random.Next(2) is 0, cositedColumns);
+                    foreach (var width in new[] { 1, 2, 3, 16, 17 })
+                    {
+                        var chromaWidth = (width + subsamplingX) >> subsamplingX;
+                        for (var round = 0; round < 8; round++)
+                        {
+                            var rows = new byte[2][];
+                            for (var i = 0; i < 2; i++)
+                            {
+                                rows[i] = new byte[width * 4];
+                                for (var j = 0; j < rows[i].Length; j++)
+                                {
+                                    rows[i][j] = (byte)(round % 3 is 0 ? (random.Next(2) is 0 ? 0 : 255) : random.Next(256));
+                                }
+                            }
+
+                            var hasSecondRow = subsamplingY is 1 && round % 4 is not 3;
+                            var row1 = hasSecondRow ? rows[1] : rows[0];
+                            var expected = new ushort[6][];
+                            var actual = new ushort[6][];
+                            for (var i = 0; i < 6; i++)
+                            {
+                                expected[i] = new ushort[i is 2 or 3 ? chromaWidth : width];
+                                actual[i] = new ushort[i is 2 or 3 ? chromaWidth : width];
+                            }
+
+                            var expectedTransparent = converter.ConvertRowsReference(rows[0], row1, expected[0], expected[1], expected[2], expected[3], expected[4], expected[5], hasSecondRow);
+                            var actualTransparent = converter.ConvertRows(rows[0], row1, actual[0], actual[1], actual[2], actual[3], actual[4], actual[5], hasSecondRow);
+                            Assert.Equal(expectedTransparent, actualTransparent);
+                            for (var i = 0; i < 6; i++)
+                            {
+                                Assert.Equal(expected[i], actual[i]);
+                            }
+                        }
                     }
                 }
             }
@@ -6507,6 +7112,68 @@ public sealed class VectorizedKernelTests
             Vp8LTransforms.AddGreenScalar(expected);
             Vp8LTransforms.AddGreen(actual);
             Assert.Equal(expected, actual);
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void WebPLosslessColorCacheUpdatesMatchAddingEveryPixel()
+    {
+        // Backward references (overlapping or not) and spans of pixels, with values that hash to few entries (runs of the
+        // same values, as in alpha planes) or to many, at lengths around the groups of 4 and 16 pixels
+        var random = new Random(4057);
+        for (var round = 0; round < 3000; round++)
+        {
+            var cacheBits = 1 + (round % 4);
+            var palette = new uint[1 + random.Next(round % 3 == 0 ? 3 : 64)];
+            for (var i = 0; i < palette.Length; i++)
+            {
+                palette[i] = random.Next(4) == 0 ? (uint)random.Next(256) << 8 : (uint)random.Next() ^ ((uint)random.Next() << 16);
+            }
+
+            var pixels = new uint[random.Next(1, 120)];
+            for (var i = 0; i < pixels.Length; i++)
+            {
+                pixels[i] = palette[random.Next(palette.Length)];
+            }
+
+            var initial = new uint[1 << cacheBits];
+            for (var i = 0; i < initial.Length; i++)
+            {
+                initial[i] = (uint)random.Next();
+            }
+
+            // A copy of length pixels at distance, after the first pixels
+            var position = random.Next(1, pixels.Length + 1);
+            var distance = random.Next(1, position + 1);
+            var length = random.Next(0, pixels.Length - position + 1);
+            for (var i = 0; i < length; i++)
+            {
+                pixels[position + i] = pixels[position + i - distance];
+            }
+
+            var expected = initial.ToArray();
+            foreach (var argb in pixels.AsSpan(position, length))
+            {
+                expected[Vp8LDecoder.ColorCacheHash(argb, cacheBits)] = argb;
+            }
+
+            var actual = initial.ToArray();
+            Vp8LDecoder.InsertCopyIntoCache(pixels.AsSpan(position, length), distance, actual, cacheBits);
+            Assert.Equal(expected, actual);
+
+            if (cacheBits == 1)
+            {
+                expected = initial.ToArray();
+                foreach (var argb in pixels)
+                {
+                    expected[Vp8LDecoder.ColorCacheHash(argb, cacheBits)] = argb;
+                }
+
+                actual = initial.ToArray();
+                Vp8LDecoder.InsertIntoTwoEntryCache(pixels, actual);
+                Assert.Equal(expected, actual);
+            }
         }
     }
 

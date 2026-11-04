@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Metadata;
@@ -181,9 +182,18 @@ internal sealed class QoiEncoderCodec : ImageEncoderCodec
             }
         }
 
+        /// <summary>Encodes <paramref name="pixels"/> into <paramref name="destination"/>, which holds at least 5 bytes per pixel and 1 more.</summary>
+        /// <remarks>
+        /// The output is written without checks (the caller sizes it), each difference chunk is chosen with one test of its
+        /// ranges, and the <c>QOI_OP_RGB</c> and <c>QOI_OP_RGBA</c> chunks are written as 32-bit values.
+        /// </remarks>
         private int EncodePixels(ReadOnlySpan<uint> pixels, Span<byte> destination, bool flushRun)
         {
-            var index = _index.AsSpan();
+            if (destination.Length < (pixels.Length * QoiFormat.MaxChunkLength) + 1)
+                throw new ArgumentException("The destination cannot hold the chunks of the pixels.", nameof(destination));
+
+            ref var output = ref unsafe(MemoryMarshal.GetReference(destination));
+            ref var entries = ref unsafe(MemoryMarshal.GetArrayDataReference(_index));
             var previous = _previous;
             var run = _run;
             var o = 0;
@@ -194,7 +204,7 @@ internal sealed class QoiEncoderCodec : ImageEncoderCodec
                     run++;
                     if (run == QoiFormat.MaxRun)
                     {
-                        destination[o++] = QoiFormat.OpRun | (QoiFormat.MaxRun - 1);
+                        unsafe { Unsafe.Add(ref output, o++) = QoiFormat.OpRun | (QoiFormat.MaxRun - 1); }
                         run = 0;
                     }
 
@@ -203,18 +213,19 @@ internal sealed class QoiEncoderCodec : ImageEncoderCodec
 
                 if (run > 0)
                 {
-                    destination[o++] = (byte)(QoiFormat.OpRun | (run - 1));
+                    unsafe { Unsafe.Add(ref output, o++) = (byte)(QoiFormat.OpRun | (run - 1)); }
                     run = 0;
                 }
 
                 var hash = QoiFormat.Hash(pixel);
-                if (index[hash] == pixel)
+                ref var entry = ref unsafe(Unsafe.Add(ref entries, hash));
+                if (entry == pixel)
                 {
-                    destination[o++] = (byte)(QoiFormat.OpIndex | hash);
+                    unsafe { Unsafe.Add(ref output, o++) = (byte)(QoiFormat.OpIndex | hash); }
                 }
                 else
                 {
-                    index[hash] = pixel;
+                    entry = pixel;
                     if ((pixel >> 24) == (previous >> 24))
                     {
                         // Differences wrap around 256 (signed 8-bit)
@@ -223,28 +234,37 @@ internal sealed class QoiEncoderCodec : ImageEncoderCodec
                         var db = (sbyte)(byte)((pixel >> 16) - (previous >> 16));
                         var drDg = dr - dg;
                         var dbDg = db - dg;
-                        if (dr is >= -2 and <= 1 && dg is >= -2 and <= 1 && db is >= -2 and <= 1)
+                        if (((uint)(dr + 2) | (uint)(dg + 2) | (uint)(db + 2)) < 4)
                         {
-                            destination[o++] = (byte)(QoiFormat.OpDiff | ((dr + 2) << 4) | ((dg + 2) << 2) | (db + 2));
+                            unsafe { Unsafe.Add(ref output, o++) = (byte)(QoiFormat.OpDiff | ((dr + 2) << 4) | ((dg + 2) << 2) | (db + 2)); }
                         }
-                        else if (dg is >= -32 and <= 31 && drDg is >= -8 and <= 7 && dbDg is >= -8 and <= 7)
+                        else if ((((uint)(dg + 32) >> 6) | (((uint)(drDg + 8) | (uint)(dbDg + 8)) >> 4)) == 0)
                         {
-                            destination[o++] = (byte)(QoiFormat.OpLuma | (dg + 32));
-                            destination[o++] = (byte)(((drDg + 8) << 4) | (dbDg + 8));
+                            unsafe
+                            {
+                                Unsafe.Add(ref output, o) = (byte)(QoiFormat.OpLuma | (dg + 32));
+                                Unsafe.Add(ref output, o + 1) = (byte)(((drDg + 8) << 4) | (dbDg + 8));
+                            }
+
+                            o += 2;
                         }
                         else
                         {
-                            destination[o++] = QoiFormat.OpRgb;
-                            destination[o++] = (byte)pixel;
-                            destination[o++] = (byte)(pixel >> 8);
-                            destination[o++] = (byte)(pixel >> 16);
+                            // The tag, then the low three bytes of the pixel: R, G, B
+                            var chunk = QoiFormat.OpRgb | (pixel << 8);
+                            unsafe { Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, o), BitConverter.IsLittleEndian ? chunk : BinaryPrimitives.ReverseEndianness(chunk)); }
+                            o += 4;
                         }
                     }
                     else
                     {
-                        destination[o++] = QoiFormat.OpRgba;
-                        BinaryPrimitives.WriteUInt32LittleEndian(destination.Slice(o, 4), pixel);
-                        o += 4;
+                        unsafe
+                        {
+                            Unsafe.Add(ref output, o) = QoiFormat.OpRgba;
+                            Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, o + 1), BitConverter.IsLittleEndian ? pixel : BinaryPrimitives.ReverseEndianness(pixel));
+                        }
+
+                        o += 5;
                     }
                 }
 
@@ -253,7 +273,7 @@ internal sealed class QoiEncoderCodec : ImageEncoderCodec
 
             if (flushRun && run > 0)
             {
-                destination[o++] = (byte)(QoiFormat.OpRun | (run - 1));
+                unsafe { Unsafe.Add(ref output, o++) = (byte)(QoiFormat.OpRun | (run - 1)); }
                 run = 0;
             }
 

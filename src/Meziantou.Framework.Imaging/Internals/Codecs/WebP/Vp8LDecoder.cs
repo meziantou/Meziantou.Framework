@@ -1,5 +1,7 @@
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -290,7 +292,14 @@ internal sealed class Vp8LDecoder : IDisposable
 
         using var cacheBuffer = cacheSize == 0 ? null : _scope.Rent(cacheSize * sizeof(uint), AllocationKind.DecoderState, clear: true);
         var cache = cacheBuffer is null ? default : AsPixels(cacheBuffer, cacheSize);
-        DecodePixels(pixels, width, groups, entropyImage, entropyWidth, prefixBits, cache, cacheBits);
+        if (cacheBits == 1)
+        {
+            DecodePixels<TwoEntryCacheMode>(pixels, width, groups, entropyImage, entropyWidth, prefixBits, cache, cacheBits);
+        }
+        else
+        {
+            DecodePixels<EagerCacheMode>(pixels, width, groups, entropyImage, entropyWidth, prefixBits, cache, cacheBits);
+        }
         _codes.Reset();
     }
 
@@ -453,7 +462,15 @@ internal sealed class Vp8LDecoder : IDisposable
         lengths[symbol] = 1;
     }
 
-    private void DecodePixels(Span<uint> pixels, int width, ReadOnlySpan<Vp8LPrefixCode> groups, ReadOnlySpan<uint> entropyImage, int entropyWidth, int prefixBits, Span<uint> cache, int cacheBits)
+    /// <summary>Decodes the pixels of a spatially coded image.</summary>
+    /// <remarks>
+    /// <typeparamref name="TCacheMode"/> selects how the color cache is updated, so that each mode has its own code: every
+    /// pixel added when it is decoded, or, for a cache of two entries (1 bit), the pixels decoded since the previous update
+    /// added when the cache is read (<see cref="InsertIntoTwoEntryCache"/>), the copies of backward references being
+    /// long and the cache read rarely.
+    /// </remarks>
+    private void DecodePixels<TCacheMode>(Span<uint> pixels, int width, ReadOnlySpan<Vp8LPrefixCode> groups, ReadOnlySpan<uint> entropyImage, int entropyWidth, int prefixBits, Span<uint> cache, int cacheBits)
+        where TCacheMode : struct, ICacheMode
     {
         // The bit reader state is held in locals (registers) and stored back on exit. Pixels and cache entries are addressed
         // by reference: position < total, hashes and keys < cache size; prefix-code tables are addressed by their built offsets
@@ -472,6 +489,7 @@ internal sealed class Vp8LDecoder : IDisposable
         ref readonly var group = ref GetGroup(groups, entropyImage, entropyWidth, prefixBits, 0, 0);
         var literalBase = GetConstantLiteral(in group, ref entries);
         var cacheSize = cache.Length;
+        var cachedEnd = 0;
         while (position < total)
         {
             if ((x & blockMask) == 0)
@@ -521,13 +539,23 @@ internal sealed class Vp8LDecoder : IDisposable
                 var length = ReadPrefixedValue(code - NumLiteralCodes, ref data, end, ref value, ref bits, ref bytePosition);
                 var distanceSymbol = Vp8LPrefixCodes.ReadSymbol(ref entries, in unsafe(Unsafe.Add(ref Unsafe.AsRef(in group), 4)), ref data, end, ref value, ref bits, ref bytePosition);
                 var distance = ToPlaneDistance(ReadPrefixedValue(distanceSymbol, ref data, end, ref value, ref bits, ref bytePosition), width);
-                CopyBackwardReference(pixels, position, distance, length, cache, cacheBits);
+                CopyBackwardReference(pixels, position, distance, length, TCacheMode.IsUpdatedWhenRead ? default : cache, cacheBits);
                 position += length;
                 x += length;
                 if (x >= width)
                 {
-                    y += x / width;
-                    x %= width;
+                    // Most copies end on the next row: no division
+                    if (x < 2 * width)
+                    {
+                        x -= width;
+                        y++;
+                    }
+                    else
+                    {
+                        y += x / width;
+                        x %= width;
+                    }
+
                     _cancellationToken.ThrowIfCancellationRequested();
                 }
 
@@ -543,6 +571,12 @@ internal sealed class Vp8LDecoder : IDisposable
             var key = code - (NumLiteralCodes + NumLengthCodes);
             if (key >= cacheSize)
                 throw Invalid("A WebP lossless color cache code is outside the color cache.");
+
+            if (TCacheMode.IsUpdatedWhenRead)
+            {
+                InsertIntoTwoEntryCache(pixels[cachedEnd..position], cache);
+                cachedEnd = position;
+            }
 
             unsafe
             {
@@ -573,14 +607,32 @@ internal sealed class Vp8LDecoder : IDisposable
         if (length > pixels.Length - position)
             throw Invalid(string.Create(CultureInfo.InvariantCulture, $"A WebP lossless backward reference at pixel {position} copies {length} pixels, past the last pixel."));
 
-        // Overlapping copies repeat the pattern: copy forward, one pixel at a time when they overlap
+        // Overlapping copies repeat the pattern: copy forward, a run of one pixel as a fill, 4 pixels at a time when each
+        // group reads pixels written before it (distance of 4 or more), otherwise one pixel at a time
+        var target = pixels.Slice(position, length);
         if (distance >= length)
         {
-            pixels.Slice(position - distance, length).CopyTo(pixels.Slice(position, length));
+            pixels.Slice(position - distance, length).CopyTo(target);
+        }
+        else if (distance == 1)
+        {
+            target.Fill(pixels[position - 1]);
         }
         else
         {
-            for (var i = 0; i < length; i++)
+            var i = 0;
+            if (Vector128.IsHardwareAccelerated && distance >= Vector128<uint>.Count)
+            {
+                // The pixels read: position - distance to position + length - distance - 1
+                ref var source = ref unsafe(Unsafe.Add(ref MemoryMarshal.GetReference(pixels), position - distance));
+                ref var destination = ref unsafe(MemoryMarshal.GetReference(target));
+                for (; i <= length - Vector128<uint>.Count; i += Vector128<uint>.Count)
+                {
+                    unsafe { Vector128.LoadUnsafe(ref source, (nuint)i).StoreUnsafe(ref destination, (nuint)i); }
+                }
+            }
+
+            for (; i < length; i++)
             {
                 pixels[position + i] = pixels[position + i - distance];
             }
@@ -588,10 +640,111 @@ internal sealed class Vp8LDecoder : IDisposable
 
         if (!cache.IsEmpty)
         {
-            foreach (var argb in pixels.Slice(position, length))
+            InsertCopyIntoCache(pixels.Slice(position, length), distance, cache, cacheBits);
+        }
+    }
+
+    /// <summary>
+    /// Adds the pixels of a backward reference to the color cache, with the result of adding them one after the other: each
+    /// entry ends with the last pixel of the copy that maps to it.
+    /// </summary>
+    /// <remarks>
+    /// A copy that overlaps its source repeats its last <paramref name="distance"/> pixels, which hold the last occurrence of
+    /// every value: only they are added.
+    /// </remarks>
+    internal static void InsertCopyIntoCache(ReadOnlySpan<uint> copied, int distance, Span<uint> cache, int cacheBits)
+    {
+        if (distance < copied.Length)
+        {
+            copied = copied[^distance..];
+        }
+
+        foreach (var argb in copied)
+        {
+            cache[(int)ColorCacheHash(argb, cacheBits)] = argb;
+        }
+    }
+
+    /// <summary>
+    /// Writes the last pixel of each entry of a two-entry color cache (1 bit) among <paramref name="pixels"/>: the cache
+    /// adding them one after the other.
+    /// </summary>
+    /// <remarks>
+    /// The key of a pixel is the sign bit of its hash product. The pixels are searched backward 16 at a time, then 4 at a
+    /// time, with a mask of their keys: the last set bit of the mask is the last pixel of entry 1, its last clear bit the last
+    /// pixel of entry 0, so that the search ends at the first group that has a pixel of each entry, or reads each pixel once.
+    /// </remarks>
+    internal static void InsertIntoTwoEntryCache(ReadOnlySpan<uint> pixels, Span<uint> cache)
+    {
+        const int Count = 4 * 4;
+        _ = cache[1];
+        var hasOne = false;
+        var hasZero = false;
+        var multiplier = Vector128.Create(unchecked((uint)ColorCacheMultiplier));
+        ref var start = ref unsafe(MemoryMarshal.GetReference(pixels));
+        var end = pixels.Length;
+        if (!Vector128.IsHardwareAccelerated)
+        {
+            end = 0;
+            InsertLast(pixels, cache, ref hasOne, ref hasZero);
+        }
+
+        for (; end >= Count; end -= Count)
+        {
+            var first = end - Count;
+            var keys = Keys(ref start, first, multiplier)
+                | (Keys(ref start, first + 4, multiplier) << 4)
+                | (Keys(ref start, first + 8, multiplier) << 8)
+                | (Keys(ref start, first + 12, multiplier) << 12);
+            if (Insert(pixels, first, keys, 0xFFFF, cache, ref hasOne, ref hasZero))
+                return;
+        }
+
+        for (; end >= Vector128<uint>.Count; end -= Vector128<uint>.Count)
+        {
+            var first = end - Vector128<uint>.Count;
+            if (Insert(pixels, first, Keys(ref start, first, multiplier), 0b1111, cache, ref hasOne, ref hasZero))
+                return;
+        }
+
+        InsertLast(pixels[..end], cache, ref hasOne, ref hasZero);
+
+        // One pixel at a time, backward
+        static void InsertLast(ReadOnlySpan<uint> pixels, Span<uint> cache, ref bool hasOne, ref bool hasZero)
+        {
+            for (var i = pixels.Length - 1; i >= 0 && !(hasOne && hasZero); i--)
             {
-                cache[(int)ColorCacheHash(argb, cacheBits)] = argb;
+                var key = ColorCacheHash(pixels[i], 1);
+                ref var has = ref key == 0 ? ref hasZero : ref hasOne;
+                if (!has)
+                {
+                    cache[(int)key] = pixels[i];
+                    has = true;
+                }
             }
+        }
+
+        // The keys of the 4 pixels from first, as the low 4 bits
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static uint Keys(ref uint start, int first, Vector128<uint> multiplier) => (unsafe(Vector128.LoadUnsafe(ref start, (nuint)first)) * multiplier).ExtractMostSignificantBits();
+
+        // Writes the entries still missing from a group of pixels whose keys are the bits of keys; true once both are written
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool Insert(ReadOnlySpan<uint> pixels, int first, uint keys, uint all, Span<uint> cache, ref bool hasOne, ref bool hasZero)
+        {
+            if (!hasOne && keys != 0)
+            {
+                cache[1] = pixels[first + 31 - BitOperations.LeadingZeroCount(keys)];
+                hasOne = true;
+            }
+
+            if (!hasZero && keys != all)
+            {
+                cache[0] = pixels[first + 31 - BitOperations.LeadingZeroCount(~keys & all)];
+                hasZero = true;
+            }
+
+            return hasOne && hasZero;
         }
     }
 
@@ -659,6 +812,23 @@ internal sealed class Vp8LDecoder : IDisposable
     }
 
     private static InvalidImageContentException Invalid(string message) => new(message, ImageFormat.WebP);
+
+    /// <summary>How <see cref="DecodePixels"/> updates the color cache, as a type argument.</summary>
+    private interface ICacheMode
+    {
+        /// <summary>Gets a value indicating whether the cache is a two-entry cache updated when it is read.</summary>
+        static abstract bool IsUpdatedWhenRead { get; }
+    }
+
+    private readonly struct EagerCacheMode : ICacheMode
+    {
+        public static bool IsUpdatedWhenRead => false;
+    }
+
+    private readonly struct TwoEntryCacheMode : ICacheMode
+    {
+        public static bool IsUpdatedWhenRead => true;
+    }
 
     /// <summary>One transform read from the bitstream, applied in reverse order after the image data is decoded.</summary>
     private sealed class Transform(TransformType type, int width, int outputWidth, int bits, PooledBuffer? data, int dataWidth)

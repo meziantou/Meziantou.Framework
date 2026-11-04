@@ -585,7 +585,7 @@ internal sealed class WebPEncoderCodec : ImageEncoderCodec
             var result = new EncodedFrame();
             try
             {
-                result._lossless = effort < 9 ? EncodeStream(scope, argb, width, height, effort, configuration: null, cancellationToken) : EncodeSmallestStream(scope, argb, width, height, cancellationToken);
+                result._lossless = effort < Vp8LEncoder.TwoEncodingsEffort ? EncodeStream(scope, argb, width, height, effort, configuration: null, cancellationToken) : EncodeSmallestStream(scope, argb, width, height, effort, cancellationToken);
                 return result;
             }
             catch
@@ -596,23 +596,23 @@ internal sealed class WebPEncoderCodec : ImageEncoderCodec
         }
 
         /// <summary>
-        /// Effort 9: the size estimates of the configurations are not exact, so the two estimated smallest are both encoded
-        /// and the smaller stream is kept.
+        /// From effort 8 (<see cref="Vp8LEncoder.TwoEncodingsEffort"/>): the size estimates of the configurations are not exact,
+        /// so the two estimated smallest are both encoded and the smaller stream is kept.
         /// </summary>
-        private static LsbBitWriter EncodeSmallestStream(AllocationScope scope, Span<uint> argb, int width, int height, CancellationToken cancellationToken)
+        private static LsbBitWriter EncodeSmallestStream(AllocationScope scope, Span<uint> argb, int width, int height, int effort, CancellationToken cancellationToken)
         {
-            var ranked = Vp8LEncoder.RankConfigurations(scope, argb, width, height, effort: 9, cancellationToken);
+            var ranked = Vp8LEncoder.RankConfigurations(scope, argb, width, height, effort, cancellationToken);
             if (ranked.Length == 1)
-                return EncodeStream(scope, argb, width, height, effort: 9, ranked[0], cancellationToken);
+                return EncodeStream(scope, argb, width, height, effort, ranked[0], cancellationToken);
 
             using var copy = scope.Rent(argb.Length * sizeof(uint), AllocationKind.Temporary, clear: false);
             var second = unsafe(MemoryMarshal.Cast<byte, uint>(copy.RawBuffer.AsSpan(0, argb.Length * sizeof(uint))));
             argb.CopyTo(second);
-            var best = EncodeStream(scope, argb, width, height, effort: 9, ranked[0], cancellationToken);
+            var best = EncodeStream(scope, argb, width, height, effort, ranked[0], cancellationToken);
             LsbBitWriter other;
             try
             {
-                other = EncodeStream(scope, second, width, height, effort: 9, ranked[1], cancellationToken);
+                other = EncodeStream(scope, second, width, height, effort, ranked[1], cancellationToken);
             }
             catch
             {

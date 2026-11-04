@@ -1,5 +1,8 @@
 using System.Diagnostics;
+using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -48,23 +51,38 @@ internal static class HevcQuantizer
         var count = 0;
         if (scalingFactors.IsEmpty)
         {
-            // Most coefficients are quantized to zero: the ones whose magnitude plus the offset is below a step
+            // Most coefficients are quantized to zero: the ones whose magnitude plus the offset is below a step, that is whose
+            // magnitude is below ceil( ( factor - offset ) / 2^bdShift )
             var factor = FlatScalingFactor * levelScale;
             var offset = (factor * rounding) / RoundingScale;
-            var threshold = factor - offset;
-            for (var i = 0; i < coefficients.Length; i++)
+            var zeroLimit = (uint)Math.Min((factor - offset + (1L << bdShift) - 1) >> bdShift, uint.MaxValue);
+            var i = 0;
+            if (Vector128.IsHardwareAccelerated)
             {
-                var coefficient = coefficients[i];
-                var magnitude = Math.Abs((long)coefficient) << bdShift;
-                if (magnitude < threshold)
+                // 8 coefficients at a time are skipped when they are all quantized to zero. The magnitudes are compared as
+                // unsigned values, which is exact for int.MinValue too
+                var limit = Vector128.Create(zeroLimit);
+                for (; i <= coefficients.Length - 8; i += 8)
                 {
-                    levels[i] = 0;
-                    continue;
-                }
+                    var low = Vector128.LessThan(Vector128.Abs(Vector128.Create(coefficients.Slice(i, 4))).AsUInt32(), limit);
+                    var high = Vector128.LessThan(Vector128.Abs(Vector128.Create(coefficients.Slice(i + 4, 4))).AsUInt32(), limit);
+                    if ((low & high) == Vector128<uint>.AllBitsSet)
+                    {
+                        Vector128<int>.Zero.CopyTo(levels.Slice(i, 4));
+                        Vector128<int>.Zero.CopyTo(levels.Slice(i + 4, 4));
+                        continue;
+                    }
 
-                var level = (int)Math.Min((magnitude + offset) / factor, MaxLevel);
-                levels[i] = coefficient < 0 ? -level : level;
-                count++;
+                    for (var k = i; k < i + 8; k++)
+                    {
+                        count += QuantizeFlat(coefficients[k], ref levels[k], bdShift, factor, offset);
+                    }
+                }
+            }
+
+            for (; i < coefficients.Length; i++)
+            {
+                count += QuantizeFlat(coefficients[i], ref levels[i], bdShift, factor, offset);
             }
 
             return count;
@@ -84,6 +102,18 @@ internal static class HevcQuantizer
         }
 
         return count;
+    }
+
+    // The level of a coefficient without scaling list, without branches on its sign or its magnitude, which are hard to
+    // predict: the quotient is 0 for a magnitude below the step. Returns 1 when the level is not zero
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int QuantizeFlat(int coefficient, ref int level, int bdShift, long factor, long offset)
+    {
+        var sign = coefficient >> 31;
+        var magnitude = (long)(uint)((coefficient ^ sign) - sign) << bdShift;
+        var value = (int)Math.Min((magnitude + offset) / factor, MaxLevel);
+        level = (value ^ sign) - sign;
+        return value is 0 ? 0 : 1;
     }
 
     /// <summary>
@@ -110,8 +140,20 @@ internal static class HevcQuantizer
     /// <returns><see langword="true"/> when a level was changed.</returns>
     public static bool HideSign(ReadOnlySpan<int> coefficients, Span<int> levels, int log2TrafoSize, int scanIdx, int xS, int yS, int qP, int bitDepth, ReadOnlySpan<byte> scalingFactors)
     {
-        // The position in the block of the coefficient of each scan position of the sub-block, and the magnitude of its level
+        // A sign is only hidden in a sub-block that has two significant coefficients at least: most sub-blocks have fewer
         var nTbS = 1 << log2TrafoSize;
+        var origin = (yS << (log2TrafoSize + 2)) + (xS << 2);
+        var significantCount = 0;
+        for (var y = 0; y < 4; y++)
+        {
+            var row = Vector128.Create(levels.Slice(origin + (y << log2TrafoSize), 4));
+            significantCount += BitOperations.PopCount(Vector128.ExtractMostSignificantBits(~Vector128.Equals(row, Vector128<int>.Zero)));
+        }
+
+        if (significantCount < 2)
+            return false;
+
+        // The position in the block of the coefficient of each scan position of the sub-block, and the magnitude of its level
         var scan = HevcScanOrder.Get(2, scanIdx);
         Span<int> positions = stackalloc int[16];
         Span<long> magnitudes = stackalloc long[16];

@@ -14,6 +14,13 @@ description: "The results of the web-platform-tests of acid, and why the tests t
 | [Reftests](#reftests) | 0 | 2 | 2 | – |
 | **All** | **0** | **3** | **3** | **–** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **REQUIRES**: 3
+  - `layout`: 3
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

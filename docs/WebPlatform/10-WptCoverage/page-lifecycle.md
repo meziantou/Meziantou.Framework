@@ -14,6 +14,12 @@ description: "The results of the web-platform-tests of page-lifecycle, and why t
 | [Reftests](#reftests) | 0 | 1 | 1 | – |
 | **All** | **0** | **6** | **6** | **–** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **NOT IMPLEMENTED**: 6
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

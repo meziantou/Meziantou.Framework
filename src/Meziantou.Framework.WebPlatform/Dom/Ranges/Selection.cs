@@ -27,9 +27,11 @@ public sealed partial class Selection
     /// <summary>The range of the selection, or null (without the checks of <see cref="GetRangeAt"/>).</summary>
     internal Range? RangeOrNull => _range;
 
-    // The anchor and the focus given to setBaseAndExtent() when they are in different trees (see GetRenderedBoundaryPoints)
-    private (Node Node, uint Offset)? _crossTreeAnchor;
-    private (Node Node, uint Offset)? _crossTreeFocus;
+    // The anchor and the focus of the selection in the composed tree (see GetRenderedBoundaryPoints), as collapsed live ranges
+    // updated by the mutations of the tree: the anchor and the focus given to setBaseAndExtent() when they are in different
+    // trees, or the ones of a range in a shadow tree. Null when they are the boundary points of the range of the selection.
+    private Range? _composedAnchor;
+    private Range? _composedFocus;
 
     // The state of the selection when the last selectionchange event was scheduled, so that an operation that does not
     // change the selection (e.g. calling setBaseAndExtent twice with the same arguments) does not fire an event, as in
@@ -175,11 +177,16 @@ public sealed partial class Selection
     [IdlMember("getComposedRanges", "https://w3c.github.io/selection-api/#dom-selection-getcomposedranges")]
     public IReadOnlyList<StaticRange> GetComposedRanges(GetComposedRangesOptions? options = null)
     {
-        if (_range is null)
+        // The boundary points of the selection, including the anchor and the focus given to setBaseAndExtent() in different
+        // trees (the live range is collapsed at the focus, the composed range is not)
+        // A range moved out of the document (e.g. setStart() with a disconnected node) is no longer a range of the selection
+        if (GetRenderedBoundaryPoints() is not var (startNode, startOffset, endNode, endOffset)
+            || !_document.IsShadowIncludingInclusiveAncestorOf(startNode) || !_document.IsShadowIncludingInclusiveAncestorOf(endNode))
+        {
             return [];
+        }
 
         var shadowRoots = options?.ShadowRoots ?? [];
-        var (startNode, startOffset) = (_range.StartContainer, _range.StartOffset);
         // The loops stop at a shadow host without parent (the specification sets the node to null)
         while (startNode.GetRoot() is ShadowRoot root && root.Host.ParentNode is not null && !IsShadowIncludingInclusiveAncestorOfAny(root, shadowRoots))
         {
@@ -187,7 +194,6 @@ public sealed partial class Selection
             startNode = root.Host.ParentNode;
         }
 
-        var (endNode, endOffset) = (_range.EndContainer, _range.EndOffset);
         while (endNode.GetRoot() is ShadowRoot root && root.Host.ParentNode is not null && !IsShadowIncludingInclusiveAncestorOfAny(root, shadowRoots))
         {
             endOffset = (uint)root.Host.GetIndex() + 1;
@@ -306,10 +312,14 @@ public sealed partial class Selection
         if (!_document.IsShadowIncludingInclusiveAncestorOf(anchorNode) || !_document.IsShadowIncludingInclusiveAncestorOf(focusNode))
             return;
 
-        // The boundary points of different trees cannot be ordered: the range is collapsed at the focus
+        // "If anchor is before focus" (in shadow-including tree order when they are in different trees): the start of the new
+        // range is the anchor and its end is the focus, otherwise the reverse. When they are in different trees, setting the end
+        // collapses the range (https://dom.spec.whatwg.org/#concept-range-bp-set): the live range is collapsed at the last of
+        // them, as in the browsers.
         var sameRoot = ReferenceEquals(anchorNode.GetRoot(), focusNode.GetRoot());
+        var backwards = AbstractRange.CompareComposedPoints(focusNode, focusOffset, anchorNode, anchorOffset) == AbstractRange.BoundaryPointPosition.Before;
         var newRange = new Range(_document);
-        if (!sameRoot || AbstractRange.ComparePoints(anchorNode, anchorOffset, focusNode, focusOffset) == AbstractRange.BoundaryPointPosition.Before)
+        if (!backwards)
         {
             newRange.SetStart(anchorNode, anchorOffset);
             newRange.SetEnd(focusNode, focusOffset);
@@ -320,12 +330,10 @@ public sealed partial class Selection
             newRange.SetEnd(anchorNode, anchorOffset);
         }
 
-        var backwards = sameRoot && AbstractRange.ComparePoints(focusNode, focusOffset, anchorNode, anchorOffset) == AbstractRange.BoundaryPointPosition.Before;
         SetRange(newRange, backwards ? SelectionDirection.Backwards : SelectionDirection.Forwards);
         if (!sameRoot)
         {
-            _crossTreeAnchor = (anchorNode, anchorOffset);
-            _crossTreeFocus = (focusNode, focusOffset);
+            SetComposedPoints(anchorNode, anchorOffset, focusNode, focusOffset);
         }
     }
 
@@ -335,16 +343,16 @@ public sealed partial class Selection
     /// range, or the anchor and the focus given to <see cref="SetBaseAndExtent"/> when they are in different trees ("anchor and
     /// focus [...] can be in a shadow tree of the same document": https://w3c.github.io/selection-api/#dfn-range). The live
     /// range of the selection cannot have boundary points in different trees (it is collapsed at the focus): these points are
-    /// kept until the selection changes, and are ignored once they are no longer in the document.
+    /// kept until the selection changes. They are live: a point whose shadow host (or an ancestor of it) is removed moves to
+    /// the position of the removed node, as in the browsers, while the live range stays in the removed shadow tree.
     /// </summary>
     internal (Node StartNode, uint StartOffset, Node EndNode, uint EndOffset)? GetRenderedBoundaryPoints()
     {
         if (_range is null)
             return null;
 
-        if (_crossTreeAnchor is var (anchorNode, anchorOffset) && _crossTreeFocus is var (focusNode, focusOffset)
-            && _document.IsShadowIncludingInclusiveAncestorOf(anchorNode) && anchorOffset <= AbstractRange.GetNodeLength(anchorNode)
-            && _document.IsShadowIncludingInclusiveAncestorOf(focusNode) && focusOffset <= AbstractRange.GetNodeLength(focusNode))
+        if (_composedAnchor is { StartContainer: var anchorNode, StartOffset: var anchorOffset } && _composedFocus is { StartContainer: var focusNode, StartOffset: var focusOffset }
+            && _document.IsShadowIncludingInclusiveAncestorOf(anchorNode) && _document.IsShadowIncludingInclusiveAncestorOf(focusNode))
         {
             return AbstractRange.CompareComposedPoints(anchorNode, anchorOffset, focusNode, focusOffset) == AbstractRange.BoundaryPointPosition.After
                 ? (focusNode, focusOffset, anchorNode, anchorOffset)
@@ -462,7 +470,7 @@ public sealed partial class Selection
 
         _range = range;
         _direction = direction;
-        _crossTreeAnchor = _crossTreeFocus = null;
+        ResetComposedPoints();
         if (range is not null)
         {
             range.Selection = this;
@@ -512,7 +520,7 @@ public sealed partial class Selection
     /// Called when the selection may have changed: its range was replaced or removed, or the boundary points of its range
     /// were changed by a <see cref="Range"/> method or a mutation of the tree.
     /// </summary>
-    internal void OnChanged()
+    internal void OnChanged(bool byMutation = false)
     {
         var state = _range is null
             ? new SelectionState(null, 0, null, 0, SelectionDirection.Directionless)
@@ -521,7 +529,13 @@ public sealed partial class Selection
             return;
 
         _lastState = state;
-        _crossTreeAnchor = _crossTreeFocus = null;
+
+        // The composed points are updated by the mutations themselves; a change of the range by a script replaces them
+        if (!byMutation)
+        {
+            ResetComposedPoints();
+        }
+
         ScheduleSelectionChangeEvent(_document);
 
         // The selection is highlighted, and its caret is painted
@@ -529,6 +543,58 @@ public sealed partial class Selection
 
         // https://drafts.csswg.org/css-contain-2/#relevant-to-the-user: the selected contents of content-visibility: auto are relevant
         _document.LayoutEngineOrNull?.OnContentRelevancyChanged();
+    }
+
+    /// <summary>
+    /// Resets the composed anchor and focus to the anchor and the focus of the range: they are tracked when the range is in a
+    /// shadow tree, so that they move out of it when its shadow host is removed.
+    /// </summary>
+    private void ResetComposedPoints()
+    {
+        if (_range is not null && _range.StartContainer.GetRoot() is ShadowRoot)
+        {
+            var (anchorNode, anchorOffset) = Anchor;
+            var (focusNode, focusOffset) = Focus;
+            SetComposedPoints(anchorNode, anchorOffset, focusNode, focusOffset);
+        }
+        else
+        {
+            _composedAnchor = _composedFocus = null;
+        }
+    }
+
+    private void SetComposedPoints(Node anchorNode, uint anchorOffset, Node focusNode, uint focusOffset)
+    {
+        _composedAnchor = new Range(anchorNode, anchorOffset, anchorNode, anchorOffset);
+        _composedFocus = new Range(focusNode, focusOffset, focusNode, focusOffset);
+    }
+
+    /// <summary>
+    /// The removing steps of the composed points (see <see cref="GetRenderedBoundaryPoints"/>): a point in a shadow tree whose
+    /// host is a shadow-including inclusive descendant of the removed node moves to the position of the removed node (the
+    /// points in the removed subtree itself are updated as live ranges).
+    /// </summary>
+    /// <param name="node">The removed node.</param>
+    /// <param name="parent">The parent of the removed node.</param>
+    /// <param name="index">The index of the removed node, or -1 when it is not computed yet.</param>
+    internal void OnPreRemove(Node node, Node parent, int index)
+    {
+        if (_composedAnchor is null || _composedFocus is null)
+            return;
+
+        foreach (var point in (ReadOnlySpan<Range>)[_composedAnchor, _composedFocus])
+        {
+            if (node.IsInclusiveAncestorOf(point.StartContainer) || !node.IsShadowIncludingInclusiveAncestorOf(point.StartContainer))
+                continue;
+
+            if (index < 0)
+            {
+                index = node.GetIndex();
+            }
+
+            point.SetStart(parent, (uint)index);
+            point.SetEnd(parent, (uint)index);
+        }
     }
 
     /// <summary>

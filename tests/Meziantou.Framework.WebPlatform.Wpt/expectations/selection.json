@@ -279,10 +279,7 @@
     "total": 2
   },
   "selection/onselectionchange-on-document.html": {
-    "total": 4,
-    "failures": {
-      "has scheduled selectionchange event is set to false at the beginning of a task to fire selectionchange event": "FAIL"
-    }
+    "total": 4
   },
   "selection/onselectstart-on-key-in-contenteditable.html?preventDefault=no": {
     "total": 30
@@ -333,11 +330,7 @@
     "total": 2
   },
   "selection/selection-nested-video.html": {
-    "harness": "ERROR",
-    "total": 1,
-    "failures": {
-      "selection have the same anchor and focus nodes because b and c are in different tree scopes.": "TIMEOUT"
-    }
+    "total": 1
   },
   "selection/selection-range-after-editinghost-removed.html": {
     "total": 4
@@ -461,10 +454,7 @@
     }
   },
   "selection/shadow-dom/tentative/Selection-direction.html": {
-    "total": 7,
-    "failures": {
-      "direction returns \"backward\" when there is a forward selection that crosses shadow boundaries": "FAIL"
-    }
+    "total": 7
   },
   "selection/shadow-dom/tentative/Selection-getComposedRanges-collapsed.html": {
     "total": 1,
@@ -473,22 +463,10 @@
     }
   },
   "selection/shadow-dom/tentative/Selection-getComposedRanges-dom-mutations-removal.html?mode=closed": {
-    "total": 6,
-    "failures": {
-      "Range is across shadow trees. Removing ancestor shadow host rescopes composed range end to parent.": "FAIL",
-      "Range is across shadow trees. Replacing shadowRoot content rescopes new composed range to the shadowRoot.": "FAIL",
-      "Range is fully in shadow tree. Removing parent of shadow host collapses composed StaticRange.": "FAIL",
-      "Range is fully in shadow tree. Removing shadow host collapses composed StaticRange. Note it does not update previously returned composed StaticRange.": "FAIL"
-    }
+    "total": 6
   },
   "selection/shadow-dom/tentative/Selection-getComposedRanges-dom-mutations-removal.html?mode=open": {
-    "total": 6,
-    "failures": {
-      "Range is across shadow trees. Removing ancestor shadow host rescopes composed range end to parent.": "FAIL",
-      "Range is across shadow trees. Replacing shadowRoot content rescopes new composed range to the shadowRoot.": "FAIL",
-      "Range is fully in shadow tree. Removing parent of shadow host collapses composed StaticRange.": "FAIL",
-      "Range is fully in shadow tree. Removing shadow host collapses composed StaticRange. Note it does not update previously returned composed StaticRange.": "FAIL"
-    }
+    "total": 6
   },
   "selection/shadow-dom/tentative/Selection-getComposedRanges-range-update.html": {
     "total": 9,
@@ -498,29 +476,18 @@
       "modify getRangeAt() range: selectNode() innerHost for all ranges.": "FAIL",
       "modify getRangeAt() range: setEnd() crosses shadow boundary into the shadow DOM and after start, which collapses live range. Composed selection range is not collapsed.": "FAIL",
       "modify getRangeAt() range: setStart() crosses shadow boundary into the shadow DOM and after end, which collapses both live range and composed selection range.": "FAIL",
-      "modify getRangeAt() range: setStart() crosses shadow boundary into the shadow DOM and before end, which collapses live range. Composed selection range is not collapsed.": "FAIL",
-      "modify getRangeAt() range: setStart() to disconnected node will collapse and remove the live range from the selection.": "FAIL"
+      "modify getRangeAt() range: setStart() crosses shadow boundary into the shadow DOM and before end, which collapses live range. Composed selection range is not collapsed.": "FAIL"
     }
   },
   "selection/shadow-dom/tentative/Selection-getComposedRanges-slot.html": {
-    "total": 3,
-    "failures": {
-      "Setting the range to start on slotted content and end in shadow tree, should follow DOM tree order.": "FAIL",
-      "Setting the range to start on unslotted content and end in shadow tree, should follow DOM tree order.": "FAIL"
-    }
+    "total": 3
   },
   "selection/shadow-dom/tentative/Selection-getComposedRanges.html": {
-    "total": 12,
-    "failures": {
-      "getComposedRanges a sequence with a static range pointing to the shadow host when there is a forward selection that crosses shadow boundaries and the shadow tree is not specified as an argument": "FAIL",
-      "getComposedRanges a sequence with a static range that crosses shadow boundaries when there is a forward selection that crosses shadow boundaries and the shadow tree is specified as an argument": "FAIL",
-      "getComposedRanges returns a sequence with a static range without rescoping when there is a selection in an outer shadow tree and the inner shadow tree is specified as an argument": "FAIL"
-    }
+    "total": 12
   },
   "selection/shadow-dom/tentative/Selection-isCollapsed.html": {
     "total": 4,
     "failures": {
-      "Selection between light and shadow tree is not valid and is collapsed. Composed range is not collapsed": "FAIL",
       "Selection between two shadow trees is not valid and is collapsed. Composed range is not collapsed": "FAIL",
       "Selection in shadow tree is not collapsed": "FAIL"
     }

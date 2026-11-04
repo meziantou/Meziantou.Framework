@@ -1,6 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
 using Meziantou.Framework.WebPlatform.Dom.FileApi;
-using Meziantou.Framework.WebPlatform.Infra;
 using Meziantou.Framework.WebPlatform.Urls;
 
 namespace Meziantou.Framework.WebPlatform.Dom;
@@ -277,7 +276,7 @@ public sealed class Url
             var input = value.StartsWith('?', StringComparison.Ordinal) ? value[1..] : value;
             _url.Query = "";
             UrlParser.ParseWithStateOverride(input, _url, UrlParserState.Query);
-            SearchParams.SetList(FormUrlEncoded.ParseString(InfraString.ToScalarValueString(input)));
+            SearchParams.SetList(FormUrlEncoded.ParseString(_url.Query ?? ""));
         }
     }
 

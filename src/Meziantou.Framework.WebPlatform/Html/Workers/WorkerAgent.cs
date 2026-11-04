@@ -305,7 +305,7 @@ internal sealed class WorkerAgent
             return;
         }
 
-        var moduleScript = new ModuleScript(global, script.SourceText, script.Url.Serialize()) { Url = script.Url.Serialize(), FetchOptions = new ModuleFetchOptions { IncludeCredentials = script.IncludeCredentials } };
+        var moduleScript = new ModuleScript(global, script.SourceText, script.Url.Serialize()) { Url = script.Url.Serialize(), FetchOptions = new ModuleFetchOptions { CredentialsMode = WorkerScriptFetching.ToCredentialsMode(Credentials) } };
         global.IsFetchingModuleScriptGraph = true;
         engine.LoadModuleScriptGraph(moduleScript, loaded =>
         {
@@ -708,7 +708,7 @@ internal static class WorkerScriptFetching
         return new FetchedWorkerScript(responseUrl, sourceText, internalResponse.HeaderList, includeCredentials);
     }
 
-    private static FetchCredentialsMode ToCredentialsMode(RequestCredentials credentials) => credentials switch
+    internal static FetchCredentialsMode ToCredentialsMode(RequestCredentials credentials) => credentials switch
     {
         RequestCredentials.Omit => FetchCredentialsMode.Omit,
         RequestCredentials.Include => FetchCredentialsMode.Include,

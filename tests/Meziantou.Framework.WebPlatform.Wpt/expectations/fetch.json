@@ -1075,22 +1075,13 @@
     "total": 45
   },
   "fetch/api/request/request-disturbed.any.js": {
-    "total": 9,
-    "failures": {
-      "Input request used for creating new request with a new body is not disturbed": "FAIL"
-    }
+    "total": 9
   },
   "fetch/api/request/request-disturbed.any.js#dedicatedworker": {
-    "total": 9,
-    "failures": {
-      "Input request used for creating new request with a new body is not disturbed": "FAIL"
-    }
+    "total": 9
   },
   "fetch/api/request/request-disturbed.any.js#sharedworker": {
-    "total": 9,
-    "failures": {
-      "Input request used for creating new request with a new body is not disturbed": "FAIL"
-    }
+    "total": 9
   },
   "fetch/api/request/request-error.any.js": {
     "total": 22
@@ -1192,10 +1183,7 @@
     "total": 1
   },
   "fetch/api/response/response-arraybuffer-realm.window.js": {
-    "total": 1,
-    "failures": {
-      "realm of the ArrayBuffer from Response arrayBuffer()": "FAIL"
-    }
+    "total": 1
   },
   "fetch/api/response/response-blob-realm.any.js": {
     "total": 1
@@ -1258,12 +1246,7 @@
     "total": 40,
     "failures": {
       "Consume response's body: from FormData to blob": "FAIL",
-      "Consume response's body: from URLSearchParams to blob": "FAIL",
-      "Consume response's body: from blob with correct multipart type to formData": "FAIL",
-      "Consume response's body: from multipart form data blob to formData": "FAIL",
-      "Consume response's body: from stream with correct multipart type to formData": "FAIL",
-      "Consume response's body: from text with correct multipart type to formData": "FAIL",
-      "Consume response's body: from text with correct multipart type to formData with BOM": "FAIL"
+      "Consume response's body: from URLSearchParams to blob": "FAIL"
     }
   },
   "fetch/api/response/response-error-from-stream.any.js": {

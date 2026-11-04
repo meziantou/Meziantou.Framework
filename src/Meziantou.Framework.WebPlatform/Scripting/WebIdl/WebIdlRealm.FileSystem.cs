@@ -240,7 +240,13 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
     {
         try
         {
-            return GetWrapper(serialized.Deserialize(GlobalScope));
+            // https://html.spec.whatwg.org/multipage/structured-data.html#structureddeserialize: the interface must be exposed in
+            // the realm (FileSystemHandle is [SecureContext])
+            var handle = serialized.Deserialize(GlobalScope);
+            if (WebIdlBindings<TAdapter, TValue>.GetInterface(handle.GetType()) is { } binding && !IsInterfaceExposed(binding))
+                throw new DomException($"The {binding.Name} object cannot be deserialized: its interface is not exposed in the realm", "DataCloneError");
+
+            return GetWrapper(handle);
         }
         catch (DomException ex)
         {

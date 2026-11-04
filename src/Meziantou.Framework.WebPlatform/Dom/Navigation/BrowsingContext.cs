@@ -1434,6 +1434,13 @@ public sealed partial class BrowsingContext : IDisposable
         // navigation loads the blob even if the URL is revoked before the document is loaded
         var blobUrlEntry = url.Scheme == "blob" ? BlobUrls.Resolve(url) : null;
 
+        // A traversal (e.g. a reload) uses the URL of the session history entry, whose blob URL entry was resolved when the
+        // document was loaded: the document is loaded again even if the URL was revoked since
+        if (blobUrlEntry is null && url.Scheme == "blob" && traversalEntry?.DocumentState.Document is { UrlBlobEntry: { } documentBlobUrlEntry } traversedDocument && traversedDocument.Url == url.Serialize())
+        {
+            blobUrlEntry = documentBlobUrlEntry;
+        }
+
         // https://html.spec.whatwg.org/multipage/browsing-the-web.html#snapshotting-target-snapshot-params: the referrer policy
         // of the iframe, which masks the ancestor origins of the new document
         var iframeElementReferrerPolicy = GetIframeElementReferrerPolicy();
@@ -1875,6 +1882,7 @@ public sealed partial class BrowsingContext : IDisposable
             if (blobUrlEntry is { } entry)
             {
                 resource = new DocumentResource(entry.Object.Data) { Headers = [new("Content-Type", entry.Object.Type)] };
+                parameters.BlobUrlEntry = entry;
 
                 // The policy container of the initiator, else of the environment that created the blob URL
                 // (https://html.spec.whatwg.org/multipage/browsers.html#creating-a-policy-container-from-a-fetch-response).
@@ -2469,7 +2477,9 @@ public sealed partial class BrowsingContext : IDisposable
         {
             if (mimeType is { IsXml: true })
             {
-                LoadXmlDocument(url, resource.Content ?? Decode(resource.ContentBytes!.Value.Span, charset), contentType);
+                var encoding = WebEncodingId.Utf8;
+                var content = resource.Content ?? DecodeXml(resource.ContentBytes!.Value.Span, charset, out encoding);
+                LoadXmlDocument(url, content, contentType, encoding);
                 return Document;
             }
 
@@ -2554,9 +2564,10 @@ public sealed partial class BrowsingContext : IDisposable
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/document-lifecycle.html#read-xml</summary>
-    private void LoadXmlDocument(UrlRecord url, string content, string contentType)
+    private void LoadXmlDocument(UrlRecord url, string content, string contentType, WebEncodingId encoding)
     {
         var document = XmlDocumentParser.CreateDocument(new XmlParserOptions { Url = url.Serialize(), ContentType = contentType, BrowsingContext = this });
+        document.Encoding = encoding;
         new Html.Parsing.XmlScriptingParser(document, content, runTheEnd: ReferenceEquals(document.BrowsingContext, this)).Start();
     }
 
@@ -2564,6 +2575,21 @@ public sealed partial class BrowsingContext : IDisposable
 
     /// <summary>Decodes a resource that is not HTML: the byte order mark, then the charset parameter, then UTF-8.</summary>
     private static string Decode(ReadOnlySpan<byte> bytes, string? charset) => Decode(bytes, charset, out _);
+
+    /// <summary>
+    /// Decodes an XML document (https://html.spec.whatwg.org/multipage/document-lifecycle.html#read-xml): the byte order mark,
+    /// then the charset parameter, then the encoding of the XML declaration, then UTF-8.
+    /// </summary>
+    private static string DecodeXml(ReadOnlySpan<byte> bytes, string? charset, out WebEncodingId encoding)
+    {
+        var bomLength = WebEncodingRegistry.SniffBom(bytes, out encoding);
+        if (bomLength == 0 && (charset is null || !WebEncodingRegistry.TryGetEncoding(charset, out encoding)))
+        {
+            encoding = XmlHttpRequest.GetXmlEncoding(bytes) ?? WebEncodingId.Utf8;
+        }
+
+        return WebEncodingRegistry.CreateDecoder(encoding).DecodeToString(bytes[bomLength..]);
+    }
 
     private static string Decode(ReadOnlySpan<byte> bytes, string? charset, out WebEncodingId encoding)
     {
@@ -2727,6 +2753,7 @@ public sealed partial class BrowsingContext : IDisposable
         }
         document.LastModifiedTime = parameters.LastModified;
         document.ProtocolLanguage = parameters.ContentLanguage;
+        document.UrlBlobEntry = parameters.BlobUrlEntry;
 
         // https://html.spec.whatwg.org/multipage/browsing-the-web.html#determining-navigation-params-policy-container: the
         // policies of the response, or the inherited policy container of a document of a local scheme
@@ -3858,6 +3885,9 @@ public sealed partial class BrowsingContext : IDisposable
 
         /// <summary>The language of the <c>Content-Language</c> header of the response (https://html.spec.whatwg.org/multipage/dom.html#language).</summary>
         public string? ContentLanguage { get; set; }
+
+        /// <summary>The blob URL entry of the URL of a document loaded from a <c>blob:</c> URL (see <see cref="Document.UrlBlobEntry"/>).</summary>
+        public FileApi.BlobUrlEntry? BlobUrlEntry { get; set; }
 
         /// <summary>The HTTP status code of the response (the status of the violations of the content security policies, https://w3c.github.io/webappsec-csp/#violation-status).</summary>
         public int Status { get; set; } = 200;

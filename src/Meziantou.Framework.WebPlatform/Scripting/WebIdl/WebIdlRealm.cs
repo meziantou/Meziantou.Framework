@@ -83,6 +83,9 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
     /// <summary>Whether an interface or a member whose exposure set is <paramref name="exposure"/> is exposed in the realm (https://webidl.spec.whatwg.org/#dfn-exposed).</summary>
     internal bool IsExposed(ExposureSet exposure) => (exposure & GlobalExposure) != ExposureSet.None;
 
+    /// <summary>https://webidl.spec.whatwg.org/#dfn-exposed: the exposure set of the interface, and [SecureContext] in a secure context only.</summary>
+    internal bool IsInterfaceExposed(InterfaceBinding<TAdapter, TValue> binding) => IsExposed(binding.Exposure) && (IsSecureContext || !binding.Flags.HasFlag(InterfaceBindingFlags.SecureContext));
+
     /// <summary>Evaluates code in the realm, as an indirect eval. It does not run the pending jobs.</summary>
     public TValue Evaluate(string code) => Adapter.Evaluate(EngineRealm, code);
 

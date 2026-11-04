@@ -82,7 +82,9 @@ internal static class ModuleFetching
         {
             Client = document,
             PolicyClient = policyClient,
-            Origin = document.SerializeOrigin(),
+            // The origin of the fetch client: the environment that created a worker for its static imports (e.g. a worker
+            // created from a data: URL has an opaque origin, but its static imports are same-origin with its creator)
+            Origin = (policyClient ?? document).SerializeOrigin(),
             Destination = destination,
             Mode = RequestMode.Cors,
             CredentialsMode = options.CredentialsMode ?? (options.IncludeCredentials ? FetchCredentialsMode.Include : FetchCredentialsMode.SameOrigin),
@@ -91,7 +93,9 @@ internal static class ModuleFetching
             ParserInserted = options.ParserInserted,
             RenderBlocking = options.RenderBlocking,
             Referrer = referrer ?? "client",
-            ReferrerPolicy = ReferrerPolicies.GetRequestPolicy(options.ReferrerPolicy, document),
+            // The policy container of the fetch client gives the default policy (the environment that created a worker for
+            // its static imports)
+            ReferrerPolicy = ReferrerPolicies.GetRequestPolicy(options.ReferrerPolicy, policyClient ?? document),
 
             // https://html.spec.whatwg.org/multipage/scripting.html#prepare-the-script-element and
             // https://html.spec.whatwg.org/multipage/webappapis.html#hostloadimportedmodule: the integrity metadata of the

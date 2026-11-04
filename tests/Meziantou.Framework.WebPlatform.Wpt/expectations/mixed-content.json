@@ -1,9 +1,6 @@
 {
   "mixed-content/blob.https.sub.html": {
-    "total": 2,
-    "failures": {
-      "Mixed-Content: blob tests 1": "FAIL"
-    }
+    "total": 2
   },
   "mixed-content/csp.https.window.js": {
     "total": 3

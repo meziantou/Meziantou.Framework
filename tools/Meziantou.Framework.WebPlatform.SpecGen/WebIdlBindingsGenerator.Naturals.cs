@@ -407,7 +407,7 @@ internal sealed partial class WebIdlBindingsGenerator
                     return expression;
 
                 if (underlying == typeof(ReadOnlySpan<byte>) || underlying == typeof(Span<byte>))
-                    return isNullable ? $"({expression} is {{ }} buffer ? buffer.Bytes.Span : default)" : $"{expression}.Bytes.Span";
+                    return isNullable ? $"({expression} is {{ }} buffer ? buffer.CurrentBytes.Span : default)" : $"{expression}.CurrentBytes.Span";
 
                 if (underlying == typeof(Memory<byte>) || underlying == typeof(ReadOnlyMemory<byte>))
                     return isNullable && target == underlying ? $"({expression} is {{ }} buffer ? buffer.Bytes : default)" : isNullable ? $"{expression}?.Bytes" : $"{expression}.Bytes";

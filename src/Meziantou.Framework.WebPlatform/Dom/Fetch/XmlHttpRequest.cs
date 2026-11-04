@@ -674,7 +674,8 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
                     _responseObject = _receivedBytes.ToArray();
                     break;
                 case XmlHttpRequestResponseType.Blob:
-                    _responseObject = new Blob([_receivedBytes], new BlobPropertyBag { Type = GetFinalMimeType().ToString() });
+                    // https://xhr.spec.whatwg.org/#blob-response: the type is the serialized final MIME type (not normalized as by the Blob constructor)
+                    _responseObject = Blob.Create(_receivedBytes.ToArray(), GetFinalMimeType().ToString());
                     break;
                 case XmlHttpRequestResponseType.Document:
                     SetDocumentResponse();
@@ -814,7 +815,7 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
     }
 
     /// <summary>The encoding of an XML document (https://html.spec.whatwg.org/multipage/parsing.html#xml-encoding): its byte order mark or the encoding of its XML declaration, or null.</summary>
-    private static WebEncodingId? GetXmlEncoding(ReadOnlySpan<byte> bytes)
+    internal static WebEncodingId? GetXmlEncoding(ReadOnlySpan<byte> bytes)
     {
         if (WebEncodingRegistry.SniffBom(bytes, out var bomEncoding) > 0)
             return bomEncoding;

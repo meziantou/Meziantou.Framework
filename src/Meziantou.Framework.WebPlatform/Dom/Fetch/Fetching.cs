@@ -410,6 +410,12 @@ internal static class Fetching
             if (request.Client is { } mixedContentClient && !(request.Mode == RequestMode.Navigate && request.Destination == RequestDestination.Document) && MixedContent.ShouldBlockFetch(mixedContentClient, url))
                 return true;
         }
+        else if (url.Scheme == "blob" && request.Client is { } blobClient && !(request.Mode == RequestMode.Navigate && request.Destination == RequestDestination.Document) && MixedContent.ShouldBlockFetch(blobClient, url))
+        {
+            // https://w3c.github.io/webappsec-mixed-content/#should-block-fetch: a blob: URL is potentially trustworthy when its
+            // origin is (e.g. a blob created by an http: document is mixed content in a secure context)
+            return true;
+        }
 
         return blocked;
     }

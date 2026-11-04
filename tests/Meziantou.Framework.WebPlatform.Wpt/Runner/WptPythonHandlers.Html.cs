@@ -4,7 +4,7 @@ using Meziantou.Framework.WebPlatform.Dom;
 
 namespace Meziantou.Framework.WebPlatform.Wpt.Runner;
 
-/// <summary>The handlers of the <c>html</c>, <c>dom</c>, <c>encoding</c>, <c>url</c>, <c>workers</c> and <c>FileAPI</c> tests.</summary>
+/// <summary>The handlers of the <c>html</c>, <c>dom</c>, <c>encoding</c>, <c>url</c>, <c>workers</c>, <c>FileAPI</c> and <c>mimesniff</c> tests.</summary>
 internal static partial class WptPythonHandlers
 {
     private static readonly Dictionary<string, Handler> HtmlHandlers = new(StringComparer.Ordinal)
@@ -967,6 +967,14 @@ internal static partial class WptPythonHandlers
                 </body>
 
                 """)));
+        },
+
+        // mimesniff/mime-types/resources/mime-charset.py: a document that writes its character encoding, served with the
+        // type parameter as its Content-Type header (the raw bytes, not normalized)
+        ["/mimesniff/mime-types/resources/mime-charset.py"] = (request, response, _) =>
+        {
+            response.Add("Content-Type", RequiredParameter(request, "type"));
+            response.Content = "<meta charset=utf-8>\n<script>document.write(document.characterSet)</script>";
         },
     };
 

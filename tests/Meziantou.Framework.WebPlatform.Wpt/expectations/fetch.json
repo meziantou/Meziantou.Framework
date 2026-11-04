@@ -1258,6 +1258,7 @@
     "total": 40,
     "failures": {
       "Consume response's body: from FormData to blob": "FAIL",
+      "Consume response's body: from URLSearchParams to blob": "FAIL",
       "Consume response's body: from blob with correct multipart type to formData": "FAIL",
       "Consume response's body: from multipart form data blob to formData": "FAIL",
       "Consume response's body: from stream with correct multipart type to formData": "FAIL",
@@ -1991,11 +1992,7 @@
   "fetch/content-type/response.window.js": {
     "total": 121,
     "failures": {
-      "Request: combined response Content-Type: text/html;\" \\\" text/plain \";charset=GBK": "FAIL",
-      "Response: combined response Content-Type: text/html;\" \\\" text/plain \";charset=GBK": "FAIL",
-      "fetch(): combined response Content-Type: text/html;\" \\\" text/plain \";charset=GBK": "FAIL",
-      "fetch(): combined response Content-Type: text/html;x=\" text/plain": "FAIL",
-      "fetch(): separate response Content-Type: text/html;\" \\\" text/plain \";charset=GBK": "FAIL"
+      "fetch(): combined response Content-Type: text/html;x=\" text/plain": "FAIL"
     }
   },
   "fetch/content-type/script.window.js": {

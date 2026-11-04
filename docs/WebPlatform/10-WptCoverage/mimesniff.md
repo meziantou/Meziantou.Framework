@@ -9,23 +9,23 @@ description: "The results of the web-platform-tests of mimesniff, and why the te
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 4 | 4 | – |
-| [Tentative](#tentative-tests) | 0 | 2 | 2 | – |
+| [Stable](#stable-tests) | 3 | 4 | 0 | 75% |
+| [Tentative](#tentative-tests) | 2 | 2 | 0 | 100% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **0** | **6** | **6** | **–** |
+| **All** | **5** | **6** | **0** | **83%** |
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`media/media-sniff.window.js`](https://wpt.fyi/results/mimesniff/media/media-sniff.window.js) | Disabled | – | REQUIRES(rendering) | the sniffing tests need image and media decoding (MIME type parsing is tested through the fetch and xhr tests) |
-| [`mime-types/charset-parameter.window.js`](https://wpt.fyi/results/mimesniff/mime-types/charset-parameter.window.js) | Disabled | – | REQUIRES(rendering) | the sniffing tests need image and media decoding (MIME type parsing is tested through the fetch and xhr tests) |
-| [`mime-types/parsing.any.js`](https://wpt.fyi/results/mimesniff/mime-types/parsing.any.js) | Disabled | – | REQUIRES(rendering) | the sniffing tests need image and media decoding (MIME type parsing is tested through the fetch and xhr tests) |
-| [`sniffing/html.window.js`](https://wpt.fyi/results/mimesniff/sniffing/html.window.js) | Disabled | – | REQUIRES(rendering) | the sniffing tests need image and media decoding (MIME type parsing is tested through the fetch and xhr tests) |
+| [`media/media-sniff.window.js`](https://wpt.fyi/results/mimesniff/media/media-sniff.window.js) | Pass | 42 / 42 |  |  |
+| [`mime-types/charset-parameter.window.js`](https://wpt.fyi/results/mimesniff/mime-types/charset-parameter.window.js) | Pass | 41 / 41 |  |  |
+| [`mime-types/parsing.any.js`](https://wpt.fyi/results/mimesniff/mime-types/parsing.any.js) | Fail | 2,588 / 3,796 | TEST BUG | the `(Blob/File)` subtests expect the type of a `Blob` and of a `File` to be the parsed and serialized MIME type, as proposed by w3c/FileAPI#43; the File API Standard converts the type to ASCII lowercase, and makes it empty when it contains a character outside U+0020-U+007E (Chromium, Firefox and Safari fail them too). 2 `(Request/Response)` subtests (`x/x;,=x;bonus=x`, `x/x;x=,;bonus=x`) expect the whole header value to be parsed: extracting a MIME type (https://fetch.spec.whatwg.org/#concept-header-extract-mime-type) splits the `Content-Type` at the commas, which gives `x/x` (the browsers fail them too) |
+| [`sniffing/html.window.js`](https://wpt.fyi/results/mimesniff/sniffing/html.window.js) | Pass | 2 / 2 |  |  |
 
 ## Tentative tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`sniffing/html-comment.tentative.window.js`](https://wpt.fyi/results/mimesniff/sniffing/html-comment.tentative.window.js) | Disabled | – | REQUIRES(rendering) | the sniffing tests need image and media decoding (MIME type parsing is tested through the fetch and xhr tests) |
-| [`sniffing/mislabeled-binary-resource.tentative.window.js`](https://wpt.fyi/results/mimesniff/sniffing/mislabeled-binary-resource.tentative.window.js) | Disabled | – | REQUIRES(rendering) | the sniffing tests need image and media decoding (MIME type parsing is tested through the fetch and xhr tests) |
+| [`sniffing/html-comment.tentative.window.js`](https://wpt.fyi/results/mimesniff/sniffing/html-comment.tentative.window.js) | Pass | 1 / 1 |  |  |
+| [`sniffing/mislabeled-binary-resource.tentative.window.js`](https://wpt.fyi/results/mimesniff/sniffing/mislabeled-binary-resource.tentative.window.js) | Pass | 4 / 4 |  |  |

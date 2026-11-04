@@ -767,9 +767,14 @@ of its parent document until the new document is loaded; a reload or a traversal
   byte). As in Gecko, the `<meta>` elements written by `document.write()` do not change the encoding.
 - The body of a document is displayed whatever its status (e.g. a 404 page). A script or a style sheet whose
   status is not in the 200-299 range is a network error, as is a script whose MIME type is an audio, image or video type,
-  or `text/csv`. A response whose status is 204 or 205, or whose
-  `Content-Disposition` is `attachment` (a download, which is not saved), does not create a document: the navigation
-  ends and the active document stays.
+  or `text/csv`. A response whose status is 204 or 205, whose
+  `Content-Disposition` is `attachment`, or whose computed MIME type is `application/octet-stream` (a download, which is
+  not saved), does not create a document: the navigation ends and the active document stays. The computed MIME type of a
+  navigation (https://mimesniff.spec.whatwg.org/#mime-type-sniffing-algorithm) is sniffed from the bytes when the
+  `Content-Type` gives no MIME type, and a `Content-Type` of `text/plain` as Apache sends it (`text/plain`,
+  `text/plain; charset=ISO-8859-1`, `text/plain; charset=iso-8859-1` or `text/plain; charset=UTF-8`, the
+  check-for-apache-bug flag) is `application/octet-stream` when the first 1445 bytes contain a binary data byte, unless the
+  response has `X-Content-Type-Options: nosniff`.
 - The headers used by the library are:
 
   | Header | Effect |

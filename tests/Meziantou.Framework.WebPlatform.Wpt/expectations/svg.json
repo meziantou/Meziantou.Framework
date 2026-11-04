@@ -42,10 +42,7 @@
     "total": 1
   },
   "svg/animations/animate-color-transparent.html": {
-    "total": 1,
-    "failures": {
-      "Tests that 'transparent' is treated as a valid color.": "FAIL"
-    }
+    "total": 1
   },
   "svg/animations/animate-css-xml-attributeType.html": {
     "total": 1
@@ -1549,10 +1546,7 @@
     "total": 8
   },
   "svg/interact/image-load-error-events.html": {
-    "total": 5,
-    "failures": {
-      "'load' and 'error' events for SVG <image>, external reference, existing, detached": "FAIL"
-    }
+    "total": 5
   },
   "svg/interact/inheritance.svg": {
     "total": 2
@@ -1573,11 +1567,7 @@
     "total": 1
   },
   "svg/interact/script-load-error-events.html": {
-    "total": 5,
-    "failures": {
-      "'load' and 'error' events for SVG <script>, external reference, existing": "FAIL",
-      "'load' and 'error' events for SVG <script>, external reference, existing, detached": "FAIL"
-    }
+    "total": 5
   },
   "svg/interact/scripted/async-01.svg": {
     "total": 1,
@@ -1903,23 +1893,7 @@
     "total": 1
   },
   "svg/linking/scripted/a-hyperlinkutils-getter-setter.html": {
-    "total": 45,
-    "failures": {
-      "SVGAElement mutation [Mode: xlink] (0): hash": "FAIL",
-      "SVGAElement mutation [Mode: xlink] (1): hash": "FAIL",
-      "SVGAElement mutation [Mode: xlink] (10): search": "FAIL",
-      "SVGAElement mutation [Mode: xlink] (11): search": "FAIL",
-      "SVGAElement mutation [Mode: xlink] (12): search": "FAIL",
-      "SVGAElement mutation [Mode: xlink] (13): search": "FAIL",
-      "SVGAElement mutation [Mode: xlink] (14): username": "FAIL",
-      "SVGAElement mutation [Mode: xlink] (2): host": "FAIL",
-      "SVGAElement mutation [Mode: xlink] (3): hostname": "FAIL",
-      "SVGAElement mutation [Mode: xlink] (5): password": "FAIL",
-      "SVGAElement mutation [Mode: xlink] (6): pathname": "FAIL",
-      "SVGAElement mutation [Mode: xlink] (7): port": "FAIL",
-      "SVGAElement mutation [Mode: xlink] (8): protocol": "FAIL",
-      "SVGAElement mutation [Mode: xlink] (9): protocol": "FAIL"
-    }
+    "total": 45
   },
   "svg/linking/scripted/a-hyperlinkutils-getter.html": {
     "total": 30
@@ -2597,10 +2571,7 @@
     "total": 1
   },
   "svg/path/interfaces/getPathSegmentAtLength-during-animation.html": {
-    "total": 1,
-    "failures": {
-      "getPathSegmentAtLength() must not use the animated value during SMIL animation": "FAIL"
-    }
+    "total": 1
   },
   "svg/path/interfaces/getPathSegmentAtLength-invalid.html": {
     "total": 5
@@ -2828,7 +2799,7 @@
     "reftest": "PASS"
   },
   "svg/pservers/reftests/radialgradient-basic-003.svg": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "svg/pservers/reftests/radialgradient-fully-overlapping.svg": {
     "reftest": "PASS"
@@ -3279,10 +3250,7 @@
     }
   },
   "svg/struct/scripted/use-script-not-executed.html": {
-    "total": 6,
-    "failures": {
-      "Scripts cloned by a use element while being parsed don't bypass 'strict-dynamic'": "FAIL"
-    }
+    "total": 6
   },
   "svg/struct/systemLanguage-matching.html": {
     "total": 14
@@ -3430,7 +3398,7 @@
     "reftest": "PASS"
   },
   "svg/styling/css-var-on-length-attributes-quirk.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "svg/styling/glyph-orientation-horizontal.historical.html": {
     "total": 3
@@ -4126,10 +4094,7 @@
     "total": 1
   },
   "svg/types/scripted/SVGAnimatedEnumeration-SVGTextPathElement.html": {
-    "total": 3,
-    "failures": {
-      "Use of SVGAnimatedEnumeration within SVGTextPathElement 2": "FAIL"
-    }
+    "total": 3
   },
   "svg/types/scripted/SVGAnimatedEnumeration-initial-values.html": {
     "total": 50

@@ -416,6 +416,21 @@ internal static partial class PresentationalHints
         return declarations is { Count: > 0 } ? declarations : null;
     }
 
+    /// <summary>Whether a declared value is the one of a presentation attribute of the SVG element (see <see cref="GetSvgDeclarations"/>).</summary>
+    public static bool IsSvgPresentationAttributeValue(Element element, CssLonghandValue value)
+    {
+        if (GetSvgDeclarations(element) is not { } declarations)
+            return false;
+
+        foreach (var declaration in declarations)
+        {
+            if (declaration.Value == value)
+                return true;
+        }
+
+        return false;
+    }
+
     /// <summary>Whether an attribute is a presentation attribute of all the SVG elements (the geometry properties only apply to some elements).</summary>
     public static bool IsSvgPresentationAttribute(string name) => SvgPresentationAttributes.Contains(name);
 

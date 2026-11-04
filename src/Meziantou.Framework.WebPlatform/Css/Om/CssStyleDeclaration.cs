@@ -334,18 +334,13 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
     }
 
     /// <summary>
-    /// Sets a property to a computed value (https://drafts.csswg.org/web-animations-1/#dom-animation-commitstyles). The
-    /// declared value keeps the case of the computed value where the serialization of a specified value differs only by the
-    /// case (the names of the transform functions, e.g. <c>scaleX(1.5)</c>, serialized <c>scalex(1.5)</c> when specified), as in
-    /// the browsers, whose declared value is the computed value itself.
-    /// </summary>
-    /// <summary>
-    /// Sets the declarations, then updates the style attribute once, also when no declaration changed
+    /// Sets the declarations, then updates the style attribute once, when a declaration changed
     /// (https://drafts.csswg.org/web-animations-1/#dom-animation-commitstyles: the declarations are set in the declaration
-    /// block, then the style attribute is updated).
+    /// block, then the style attribute is updated; a redundant commit does not mutate the attribute).
     /// </summary>
     internal void SetComputedProperties(IReadOnlyList<(string Property, string Value)> values)
     {
+        var before = SerializeDeclarationBlock(Declarations);
         _deferStyleAttributeUpdate = true;
         try
         {
@@ -359,9 +354,18 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
             _deferStyleAttributeUpdate = false;
         }
 
-        UpdateStyleAttribute();
+        if (!string.Equals(before, SerializeDeclarationBlock(Declarations), StringComparison.Ordinal))
+        {
+            UpdateStyleAttribute();
+        }
     }
 
+    /// <summary>
+    /// Sets a property to a computed value (https://drafts.csswg.org/web-animations-1/#dom-animation-commitstyles). The
+    /// declared value keeps the case of the computed value where the serialization of a specified value differs only by the
+    /// case (the names of the transform functions, e.g. <c>scaleX(1.5)</c>, serialized <c>scalex(1.5)</c> when specified), as in
+    /// the browsers, whose declared value is the computed value itself.
+    /// </summary>
     internal void SetComputedProperty(string property, string value)
     {
         SetProperty(property, value);

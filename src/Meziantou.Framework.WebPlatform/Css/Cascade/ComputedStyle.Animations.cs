@@ -228,8 +228,16 @@ internal sealed partial class ComputedStyle
     /// </summary>
     internal string? ComputeCommittedValue(string property, Animation animation)
     {
+        // The effect of the animation is committed even when it is not in the effect stack of the target (e.g. an effect of zero
+        // duration, which is not in effect at its end, but is with the endpoint-inclusive active interval)
+        var candidates = _effects ?? [];
+        if (animation.EffectValue is KeyframeEffect own && !candidates.Contains(own))
+        {
+            candidates = [.. candidates, own];
+        }
+
         var effects = new List<KeyframeEffect>();
-        foreach (var effect in _effects ?? [])
+        foreach (var effect in candidates)
         {
             if (effect.Animation is not { } effectAnimation || !Animates(effect, property) || effect.GetIterationProgress() is null)
                 continue;

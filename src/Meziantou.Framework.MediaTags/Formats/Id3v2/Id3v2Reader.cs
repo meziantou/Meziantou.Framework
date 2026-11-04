@@ -435,8 +435,8 @@ internal static class Id3v2Reader
                 {
                     // Lenient: a malformed part does not discard the part that could be read.
                     _ = TagFieldMapping.TryParseNumberPair(ReadTextFrame(data), out var number, out var total);
-                    tags.TrackNumber = GetPosition(number, total);
                     tags.TrackTotal ??= total;
+                    tags.TrackNumber = GetPosition(number, tags.TrackTotal);
                 }
                 break;
 
@@ -444,8 +444,8 @@ internal static class Id3v2Reader
                 if (tags.DiscNumber is null)
                 {
                     _ = TagFieldMapping.TryParseNumberPair(ReadTextFrame(data), out var number, out var total);
-                    tags.DiscNumber = GetPosition(number, total);
                     tags.DiscTotal ??= total;
+                    tags.DiscNumber = GetPosition(number, tags.DiscTotal);
                 }
                 break;
 
@@ -511,6 +511,8 @@ internal static class Id3v2Reader
     /// Gets the position part of a TRCK or TPOS frame. "0/total" is how Id3v2Writer stores a known total with an
     /// unknown position, so reading it as position 0 would invent a value on every read-modify-write.
     /// </summary>
+    // A frame skipped because its position is unknown ("0/12") lets a later frame provide the position, whose total
+    // may be missing: the total of the first frame still applies, so a 0 there is an unknown position too.
     private static int? GetPosition(int? number, int? total) => number is 0 && total is not null ? null : number;
 
     private static string ReadTextFrame(ReadOnlySpan<byte> data)

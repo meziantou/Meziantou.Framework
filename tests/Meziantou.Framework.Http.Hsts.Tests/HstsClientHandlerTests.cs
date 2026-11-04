@@ -98,6 +98,8 @@ public sealed class HstsClientHandlerTests
     [InlineData("max-age=31536000; max-age=0")]
     [InlineData("max-age=0; max-age=31536000")]
     [InlineData("max-age=31536000; includeSubDomains; includeSubDomains")]
+    [InlineData("max-age=31536000; includeSubDomains=1; includeSubDomains")]
+    [InlineData("max-age=31536000; includeSubDomains; includeSubDomains=1")]
     public async Task RepeatedDirective_IsIgnored(string headerResponse)
     {
         var hsts = new HstsDomainPolicyCollection(includePreloadDomains: false);

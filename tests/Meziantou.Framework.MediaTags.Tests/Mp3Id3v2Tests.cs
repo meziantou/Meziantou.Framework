@@ -432,6 +432,31 @@ public sealed class Mp3Id3v2Tests
     }
 
     [Fact]
+    public void ReadTags_UnknownPositionThenPositionWithoutTotal_KeepsThePositionUnknown()
+    {
+        // The first frame gives the total and an unknown position, so the second one is read for the position. A 0
+        // there is still an unknown position for the total of the first frame: the writer writes it as "0/12",
+        // which reads back as no position.
+        var bytes = BuildId3v24Tag(
+            ("TRCK", TextBody("0/12")),
+            ("TRCK", TextBody("0")),
+            ("TPOS", TextBody("0/3")),
+            ("TPOS", TextBody("0")));
+
+        var tags = ReadMp3(bytes);
+        Assert.Null(tags.TrackNumber);
+        Assert.Equal(12, tags.TrackTotal);
+        Assert.Null(tags.DiscNumber);
+        Assert.Equal(3, tags.DiscTotal);
+
+        var readBack = ReadMp3(WriteMp3(bytes, tags));
+        Assert.Null(readBack.TrackNumber);
+        Assert.Equal(12, readBack.TrackTotal);
+        Assert.Null(readBack.DiscNumber);
+        Assert.Equal(3, readBack.DiscTotal);
+    }
+
+    [Fact]
     public void RemoveTags_StackedId3v2Tags_RemovesThemAll()
     {
         // Some taggers prepend a new tag without removing the old one. Only the first is read, so removing it

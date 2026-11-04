@@ -431,18 +431,13 @@
     }
   },
   "permissions-policy/reporting/geolocation-report-only.https.html": {
-    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
-      "Geolocation report only mode": "TIMEOUT"
+      "Geolocation report only mode": "FAIL"
     }
   },
   "permissions-policy/reporting/geolocation-reporting.https.html": {
-    "harness": "ERROR",
-    "total": 1,
-    "failures": {
-      "Geolocation Report Format": "NOTRUN"
-    }
+    "total": 1
   },
   "permissions-policy/reporting/microphone-report-only.https.html": {
     "total": 1,

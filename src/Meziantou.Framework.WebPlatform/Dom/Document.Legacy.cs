@@ -428,9 +428,21 @@ public partial class Document
         if (!visible)
         {
             RunViewTransitionPageVisibilityChangeSteps();
+
+            // https://w3c.github.io/vibration/#dfn-perform-vibration: the vibration of a hidden document is canceled
+            if (RelevantWindow is { NavigatorOrNull: { } navigator } navigatorWindow && ReferenceEquals(navigatorWindow.Document, this))
+            {
+                navigator.CancelVibration();
+            }
         }
 
         FireEvent(new Event("visibilitychange", new EventInit { Bubbles = true }));
+
+        // https://w3c.github.io/geolocation/#dfn-request-a-position: the requests of a hidden document wait until it is visible
+        if (visible && RelevantWindow is { NavigatorOrNull.GeolocationOrNull: { } geolocation } geolocationWindow && ReferenceEquals(geolocationWindow.Document, this))
+        {
+            geolocation.OnDocumentVisible();
+        }
     }
 
     /// <summary>Does nothing; this obsolete method is kept for compatibility.</summary>

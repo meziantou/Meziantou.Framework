@@ -3165,6 +3165,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.ClientHintsOptions? ClientHints { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.SystemClipboard? Clipboard { get => throw null; init { } }
         public System.Func<Meziantou.Framework.WebPlatform.Dom.CallbackContext, Meziantou.Framework.WebPlatform.Dom.ClipboardAccess, bool>? ClipboardPermission { get => throw null; init { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.CallbackContext, Meziantou.Framework.WebPlatform.Dom.Notification>? CloseNotification { get => throw null; init { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.CallbackContext, Meziantou.Framework.WebPlatform.Scripting.ConsoleMessage>? ConsoleMessage { get => throw null; init { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.CallbackContext, Meziantou.Framework.WebPlatform.Dom.ContentSecurityPolicyViolationReport>? ContentSecurityPolicyViolation { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.CookieJar? CookieJar { get => throw null; init { } }
@@ -3178,6 +3179,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public System.Action<Meziantou.Framework.WebPlatform.Dom.CallbackContext>? ExitPointerLock { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.WebPlatformFeatures? Features { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.FileSystemBackend? FileSystem { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.GeolocationProvider? Geolocation { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.IndexedDBBackend? IndexedDB { get => throw null; init { } }
         public System.Collections.Generic.IReadOnlyList<string>? Languages { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.StorageShed? LocalStorage { get => throw null; init { } }
@@ -3185,12 +3187,15 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Media.MediaBackend? MediaBackend { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.PermissionStore? Permissions { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Rendering.RenderingBackend? RenderingBackend { get => throw null; init { } }
+        public System.Func<Meziantou.Framework.WebPlatform.Dom.CallbackContext, string, Meziantou.Framework.WebPlatform.Dom.PermissionState>? RequestPermission { get => throw null; init { } }
         public System.Func<Meziantou.Framework.WebPlatform.Dom.CallbackContext, Meziantou.Framework.WebPlatform.Dom.PointerLockOptions, bool>? RequestPointerLock { get => throw null; init { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.CallbackContext>? SameDocumentNavigated { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Scripting.ScriptEngine? ScriptEngine { get => throw null; init { } }
         public bool ScriptingEnabled { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.ServiceWorkerBackend? ServiceWorkers { get => throw null; init { } }
+        public System.Func<Meziantou.Framework.WebPlatform.Dom.CallbackContext, Meziantou.Framework.WebPlatform.Dom.ShareRequest, System.Threading.Tasks.ValueTask<bool>>? Share { get => throw null; init { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.CallbackContext, Meziantou.Framework.WebPlatform.Dom.HtmlInputElement>? ShowFilePicker { get => throw null; init { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.CallbackContext, Meziantou.Framework.WebPlatform.Dom.Notification>? ShowNotification { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.SpeculativeLoadingOptions SpeculativeLoading { get => throw null; init { } }
         public bool SpeculativeParsing { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.StorageOptions? Storage { get => throw null; init { } }
@@ -3199,6 +3204,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool UseSystemFonts { get => throw null; init { } }
         public string? UserAgent { get => throw null; init { } }
         public System.Func<Meziantou.Framework.WebPlatform.Dom.CallbackContext, Meziantou.Framework.WebPlatform.Dom.UserPrompt, Meziantou.Framework.WebPlatform.Dom.UserPromptResult>? UserPromptHandler { get => throw null; init { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.CallbackContext, System.Collections.Generic.IReadOnlyList<System.TimeSpan>>? Vibrate { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.ViewportOptions? Viewport { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.VisitedLinkStore? VisitedLinks { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.WebAssembly.WebAssemblyRuntime? WebAssemblyRuntime { get => throw null; init { } }
@@ -5584,6 +5590,64 @@ namespace Meziantou.Framework.WebPlatform.Dom
     public delegate object? FunctionCallback(params object?[] arguments);
 
     public delegate void FunctionStringCallback(string data);
+
+    public sealed class Geolocation
+    {
+        public void ClearWatch(int watchId) { }
+        public void GetCurrentPosition(Meziantou.Framework.WebPlatform.Dom.PositionCallback successCallback, Meziantou.Framework.WebPlatform.Dom.PositionErrorCallback? errorCallback = null, Meziantou.Framework.WebPlatform.Dom.PositionOptions? options = null) { }
+        public int WatchPosition(Meziantou.Framework.WebPlatform.Dom.PositionCallback successCallback, Meziantou.Framework.WebPlatform.Dom.PositionErrorCallback? errorCallback = null, Meziantou.Framework.WebPlatform.Dom.PositionOptions? options = null) => throw null;
+    }
+
+    public sealed class GeolocationCoordinates
+    {
+        public double Accuracy { get => throw null; }
+        public double? Altitude { get => throw null; }
+        public double? AltitudeAccuracy { get => throw null; }
+        public double? Heading { get => throw null; }
+        public double Latitude { get => throw null; }
+        public double Longitude { get => throw null; }
+        public double? Speed { get => throw null; }
+    }
+
+    public sealed class GeolocationPosition
+    {
+        public Meziantou.Framework.WebPlatform.Dom.GeolocationCoordinates Coords { get => throw null; }
+        public ulong Timestamp { get => throw null; }
+    }
+
+    public sealed class GeolocationPositionError
+    {
+        public const ushort PermissionDenied = 1;
+        public const ushort PositionUnavailable = 2;
+        public const ushort Timeout = 3;
+        public ushort Code { get => throw null; }
+        public string Message { get => throw null; }
+    }
+
+    public class GeolocationProvider
+    {
+        public Meziantou.Framework.WebPlatform.Dom.GeolocationReading? Position { get => throw null; set { } }
+        public event System.EventHandler? PositionChanged;
+        public virtual System.Threading.Tasks.ValueTask<Meziantou.Framework.WebPlatform.Dom.GeolocationReading?> GetPositionAsync(Meziantou.Framework.WebPlatform.Dom.GeolocationRequest request, System.Threading.CancellationToken cancellationToken) => throw null;
+        protected void OnPositionChanged() { }
+    }
+
+    public sealed class GeolocationReading
+    {
+        public double Accuracy { get => throw null; }
+        public double? Altitude { get => throw null; init { } }
+        public double? AltitudeAccuracy { get => throw null; init { } }
+        public double? Heading { get => throw null; init { } }
+        public double Latitude { get => throw null; }
+        public double Longitude { get => throw null; }
+        public double? Speed { get => throw null; init { } }
+        public GeolocationReading(double latitude, double longitude, double accuracy) { }
+    }
+
+    public sealed class GeolocationRequest
+    {
+        public bool EnableHighAccuracy { get => throw null; }
+    }
 
     public readonly struct GeometryNode : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.GeometryNode>
     {
@@ -8300,6 +8364,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public string AppVersion { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.Clipboard Clipboard { get => throw null; }
         public bool CookieEnabled { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.Geolocation Geolocation { get => throw null; }
         public ulong HardwareConcurrency { get => throw null; }
         public string Language { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<string> Languages { get => throw null; }
@@ -8321,11 +8386,15 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.NavigatorUAData UserAgentData { get => throw null; }
         public string Vendor { get => throw null; }
         public string VendorSub { get => throw null; }
+        public bool CanShare(Meziantou.Framework.WebPlatform.Dom.ShareData? data = null) => throw null;
         public bool JavaEnabled() => throw null;
         public void RegisterProtocolHandler(string scheme, string url) { }
         public bool SendBeacon(string url, object? data = null) => throw null;
+        public System.Threading.Tasks.Task Share(Meziantou.Framework.WebPlatform.Dom.ShareData? data = null) => throw null;
         public bool TaintEnabled() => throw null;
         public void UnregisterProtocolHandler(string scheme, string url) { }
+        public bool Vibrate(System.Collections.Generic.IReadOnlyList<uint> pattern) => throw null;
+        public bool Vibrate(uint pattern) => throw null;
     }
 
     public sealed class NavigatorUABrandVersion
@@ -8470,6 +8539,79 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public static implicit operator Meziantou.Framework.WebPlatform.Dom.NodeOrString(Meziantou.Framework.WebPlatform.Dom.Node node) => throw null;
         public static implicit operator Meziantou.Framework.WebPlatform.Dom.NodeOrString(string value) => throw null;
     }
+
+    public sealed class Notification : Meziantou.Framework.WebPlatform.Dom.EventTarget
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.NotificationAction> Actions { get => throw null; }
+        public string Badge { get => throw null; }
+        public string Body { get => throw null; }
+        public object? Data { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.NotificationDirection Dir { get => throw null; }
+        public string Icon { get => throw null; }
+        public string Image { get => throw null; }
+        public bool IsShown { get => throw null; }
+        public string Lang { get => throw null; }
+        public static uint MaxActions { get => throw null; }
+        public string Navigate { get => throw null; }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnClick { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnClose { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnError { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnShow { get => throw null; set { } }
+        public static Meziantou.Framework.WebPlatform.Dom.NotificationPermission Permission { get => throw null; }
+        public bool Renotify { get => throw null; }
+        public bool RequireInteraction { get => throw null; }
+        public bool? Silent { get => throw null; }
+        public string Tag { get => throw null; }
+        public ulong Timestamp { get => throw null; }
+        public string Title { get => throw null; }
+        public Notification(string title, Meziantou.Framework.WebPlatform.Dom.NotificationOptions? options = null) { }
+        public void Click() { }
+        public void Close() { }
+        public void Dismiss() { }
+        public static System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.NotificationPermission> RequestPermission(Meziantou.Framework.WebPlatform.Dom.NotificationPermissionCallback? deprecatedCallback = null) => throw null;
+    }
+
+    public sealed class NotificationAction
+    {
+        public required string Action { get => throw null; init { } }
+        public string? Icon { get => throw null; init { } }
+        public string? Navigate { get => throw null; init { } }
+        public required string Title { get => throw null; init { } }
+    }
+
+    public enum NotificationDirection
+    {
+        Auto = 0,
+        Ltr = 1,
+        Rtl = 2,
+    }
+
+    public sealed class NotificationOptions
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.NotificationAction> Actions { get => throw null; init { } }
+        public string? Badge { get => throw null; init { } }
+        public string Body { get => throw null; init { } }
+        public object? Data { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.NotificationDirection Dir { get => throw null; init { } }
+        public string? Icon { get => throw null; init { } }
+        public string? Image { get => throw null; init { } }
+        public string Lang { get => throw null; init { } }
+        public string? Navigate { get => throw null; init { } }
+        public bool Renotify { get => throw null; init { } }
+        public bool RequireInteraction { get => throw null; init { } }
+        public bool? Silent { get => throw null; init { } }
+        public string Tag { get => throw null; init { } }
+        public ulong? Timestamp { get => throw null; init { } }
+    }
+
+    public enum NotificationPermission
+    {
+        Default = 0,
+        Denied = 1,
+        Granted = 2,
+    }
+
+    public delegate void NotificationPermissionCallback(Meziantou.Framework.WebPlatform.Dom.NotificationPermission permission);
 
     public sealed class OffscreenCanvas : Meziantou.Framework.WebPlatform.Dom.EventTarget
     {
@@ -8990,6 +9132,17 @@ namespace Meziantou.Framework.WebPlatform.Dom
         Center = 1,
         LineRight = 2,
         Auto = 3,
+    }
+
+    public delegate void PositionCallback(Meziantou.Framework.WebPlatform.Dom.GeolocationPosition position);
+
+    public delegate void PositionErrorCallback(Meziantou.Framework.WebPlatform.Dom.GeolocationPositionError positionError);
+
+    public sealed class PositionOptions
+    {
+        public bool EnableHighAccuracy { get => throw null; init { } }
+        public uint MaximumAge { get => throw null; init { } }
+        public uint Timeout { get => throw null; init { } }
     }
 
     public enum PredefinedColorSpace
@@ -9817,6 +9970,22 @@ namespace Meziantou.Framework.WebPlatform.Dom
     {
         Open = 0,
         Closed = 1,
+    }
+
+    public sealed class ShareData
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.FileApi.File>? Files { get => throw null; init { } }
+        public string? Text { get => throw null; init { } }
+        public string? Title { get => throw null; init { } }
+        public string? Url { get => throw null; init { } }
+    }
+
+    public sealed class ShareRequest
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.FileApi.File> Files { get => throw null; }
+        public string? Text { get => throw null; }
+        public string? Title { get => throw null; }
+        public string? Url { get => throw null; }
     }
 
     public sealed class SharedWorker : Meziantou.Framework.WebPlatform.Dom.EventTarget
@@ -12113,6 +12282,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool FetchLaterEnabled { get => throw null; init { } }
         public bool FileSystemEnabled { get => throw null; init { } }
         public bool FullscreenEnabled { get => throw null; init { } }
+        public bool GeolocationEnabled { get => throw null; init { } }
         public bool IndexedDBEnabled { get => throw null; init { } }
         public bool IntersectionObserverEnabled { get => throw null; init { } }
         public bool LargestContentfulPaintEnabled { get => throw null; init { } }
@@ -12122,6 +12292,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool MediaSourceEnabled { get => throw null; init { } }
         public bool NavigationApiEnabled { get => throw null; init { } }
         public bool NavigationTimingEnabled { get => throw null; init { } }
+        public bool NotificationsEnabled { get => throw null; init { } }
         public bool ObservableEnabled { get => throw null; init { } }
         public bool PaintTimingEnabled { get => throw null; init { } }
         public bool PaintWorkletEnabled { get => throw null; init { } }
@@ -12141,11 +12312,13 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool TouchEventsEnabled { get => throw null; init { } }
         public bool UrlPatternEnabled { get => throw null; init { } }
         public bool UserTimingEnabled { get => throw null; init { } }
+        public bool VibrationEnabled { get => throw null; init { } }
         public bool ViewTransitionsEnabled { get => throw null; init { } }
         public bool VisibilityStateEntryEnabled { get => throw null; init { } }
         public bool WebAssemblyEnabled { get => throw null; init { } }
         public bool WebCryptoEnabled { get => throw null; init { } }
         public bool WebLocksEnabled { get => throw null; init { } }
+        public bool WebShareEnabled { get => throw null; init { } }
         public bool WebSocketEnabled { get => throw null; init { } }
         public bool WebStorageEnabled { get => throw null; init { } }
         public bool XmlHttpRequestEnabled { get => throw null; init { } }

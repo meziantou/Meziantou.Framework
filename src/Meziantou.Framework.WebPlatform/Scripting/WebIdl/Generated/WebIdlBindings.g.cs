@@ -230,6 +230,10 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["FragmentDirective"] = Binding_FragmentDirective<TAdapter, TValue>.Binding,
             ["FragmentResult"] = Binding_FragmentResult<TAdapter, TValue>.Binding,
             ["GainNode"] = Binding_GainNode<TAdapter, TValue>.Binding,
+            ["Geolocation"] = Binding_Geolocation<TAdapter, TValue>.Binding,
+            ["GeolocationCoordinates"] = Binding_GeolocationCoordinates<TAdapter, TValue>.Binding,
+            ["GeolocationPosition"] = Binding_GeolocationPosition<TAdapter, TValue>.Binding,
+            ["GeolocationPositionError"] = Binding_GeolocationPositionError<TAdapter, TValue>.Binding,
             ["HTMLAllCollection"] = Binding_HTMLAllCollection<TAdapter, TValue>.Binding,
             ["HTMLAnchorElement"] = Binding_HTMLAnchorElement<TAdapter, TValue>.Binding,
             ["HTMLAreaElement"] = Binding_HTMLAreaElement<TAdapter, TValue>.Binding,
@@ -379,6 +383,7 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["Node"] = Binding_Node<TAdapter, TValue>.Binding,
             ["NodeIterator"] = Binding_NodeIterator<TAdapter, TValue>.Binding,
             ["NodeList"] = Binding_NodeList<TAdapter, TValue>.Binding,
+            ["Notification"] = Binding_Notification<TAdapter, TValue>.Binding,
             ["OfflineAudioCompletionEvent"] = Binding_OfflineAudioCompletionEvent<TAdapter, TValue>.Binding,
             ["OfflineAudioContext"] = Binding_OfflineAudioContext<TAdapter, TValue>.Binding,
             ["OffscreenCanvas"] = Binding_OffscreenCanvas<TAdapter, TValue>.Binding,
@@ -1128,6 +1133,12 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.NavigatorUABrandVersion dictionaryDom_NavigatorUABrandVersion:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_NavigatorUABrandVersion(r, dictionaryDom_NavigatorUABrandVersion);
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.NotificationAction dictionaryDom_NotificationAction:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_NotificationAction(r, dictionaryDom_NotificationAction);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.NotificationOptions dictionaryDom_NotificationOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_NotificationOptions(r, dictionaryDom_NotificationOptions);
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.ParseHtmlUnsafeOptions dictionaryDom_ParseHtmlUnsafeOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_ParseHtmlUnsafeOptions(r, dictionaryDom_ParseHtmlUnsafeOptions);
                 return true;
@@ -1148,6 +1159,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.PointerLockOptions dictionaryDom_PointerLockOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_PointerLockOptions(r, dictionaryDom_PointerLockOptions);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.PositionOptions dictionaryDom_PositionOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_PositionOptions(r, dictionaryDom_PositionOptions);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.QuotaExceededErrorOptions dictionaryDom_QuotaExceededErrorOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_QuotaExceededErrorOptions(r, dictionaryDom_QuotaExceededErrorOptions);
@@ -1199,6 +1213,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.ShadowRootInit dictionaryDom_ShadowRootInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_ShadowRootInit(r, dictionaryDom_ShadowRootInit);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.ShareData dictionaryDom_ShareData:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_ShareData(r, dictionaryDom_ShareData);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.ShowPopoverOptions dictionaryDom_ShowPopoverOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_ShowPopoverOptions(r, dictionaryDom_ShowPopoverOptions);
@@ -1476,6 +1493,12 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.NavigationType enumDom_NavigationType:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_NavigationType(enumDom_NavigationType));
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.NotificationDirection enumDom_NotificationDirection:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_NotificationDirection(enumDom_NotificationDirection));
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.NotificationPermission enumDom_NotificationPermission:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_NotificationPermission(enumDom_NotificationPermission));
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.OffscreenRenderingContextId enumDom_OffscreenRenderingContextId:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_OffscreenRenderingContextId(enumDom_OffscreenRenderingContextId));
                 return true;
@@ -1652,6 +1675,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.NavigationPreloadState> taskSystem_Threading_Tasks_Task_Dom_NavigationPreloadState_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_NavigationPreloadState_, static (r, v) => (v is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_NavigationPreloadState(r, dictionaryValue) : r.Adapter.Null));
+                return true;
+            case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.NotificationPermission> taskSystem_Threading_Tasks_Task_Dom_NotificationPermission_:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_NotificationPermission_, static (r, v) => r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_NotificationPermission(v)));
                 return true;
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.PermissionStatus> taskSystem_Threading_Tasks_Task_Dom_PermissionStatus_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_PermissionStatus_, static (r, v) => r.Wrap(v));

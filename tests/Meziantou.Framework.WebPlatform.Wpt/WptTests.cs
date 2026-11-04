@@ -210,6 +210,14 @@ public sealed class WptTests
 
     public static TheoryData<string> ClipboardApisTests => GetTests("clipboard-apis");
 
+    public static TheoryData<string> GeolocationTests => GetTests("geolocation");
+
+    public static TheoryData<string> NotificationsTests => GetTests("notifications");
+
+    public static TheoryData<string> VibrationTests => GetTests("vibration");
+
+    public static TheoryData<string> WebShareTests => GetTests("web-share");
+
     public static TheoryData<string> ClientHintsTests => GetTests("client-hints");
 
     public static TheoryData<string> UAClientHintsTests => GetTests("ua-client-hints");
@@ -1038,6 +1046,22 @@ public sealed class WptTests
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(ClipboardApisTests))]
     public void ClipboardApis(string test) => Run("clipboard-apis", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(GeolocationTests))]
+    public void Geolocation(string test) => Run("geolocation", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(NotificationsTests))]
+    public void Notifications(string test) => Run("notifications", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(VibrationTests))]
+    public void Vibration(string test) => Run("vibration", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(WebShareTests))]
+    public void WebShare(string test) => Run("web-share", test);
 
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(ClientHintsTests))]

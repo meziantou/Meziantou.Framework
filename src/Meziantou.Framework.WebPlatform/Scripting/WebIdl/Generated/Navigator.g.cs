@@ -19,6 +19,7 @@ internal static class Binding_Navigator<TAdapter, TValue> where TAdapter : struc
     };
 
     private static TValue Get_clipboard(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.Clipboard); }
+    private static TValue Get_geolocation(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.Geolocation); }
     private static TValue Get_userActivation(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.UserActivation); }
     private static TValue Get_permissions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.Permissions); }
     private static TValue Get_maxTouchPoints(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.FromNumber((double)o.MaxTouchPoints); }
@@ -52,6 +53,27 @@ internal static class Binding_Navigator<TAdapter, TValue> where TAdapter : struc
         var a1 = r.IsMissing(a, 1) ? (object?)(object?)null : WebIdlHelpers<TAdapter, TValue>.ToUnion_7b4e93c7(r, a[1]);
         var result = o.SendBeacon(a0, a1); return r.FromBoolean(result);
     }
+    private static TValue Op_vibrate(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding);
+        if (a.Length < 1) throw r.NotEnoughArguments("vibrate", 1, a.Length);
+        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_4bfa8986(r, a[0]);
+        if ((a0 is uint)) { var result = o.Vibrate((uint)a0!); return r.FromBoolean(result); }
+        if ((a0 is null or global::System.Collections.Generic.IReadOnlyList<uint>)) { var result = o.Vibrate((global::System.Collections.Generic.IReadOnlyList<uint>)a0!); return r.FromBoolean(result); }
+        throw r.CreateTypeError("Failed to execute 'vibrate': the arguments are not supported");
+    }
+    private static TValue Op_share(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding);
+        var a0 = r.IsMissing(a, 0) ? (global::Meziantou.Framework.WebPlatform.Dom.ShareData)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_ShareData(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_ShareData(r, a[0]);
+        var result = o.Share(a0); return r.ToPromise(result);
+    }
+    private static TValue Op_canShare(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding);
+        var a0 = r.IsMissing(a, 0) ? (global::Meziantou.Framework.WebPlatform.Dom.ShareData)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_ShareData(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_ShareData(r, a[0]);
+        var result = o.CanShare(a0); return r.FromBoolean(result);
+    }
     private static TValue Op_taintEnabled(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding);
@@ -81,6 +103,7 @@ internal static class Binding_Navigator<TAdapter, TValue> where TAdapter : struc
     private static void DefineMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue interfaceObject, TValue prototype, TValue instanceTarget)
     {
         if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "clipboard", Get_clipboard, null);
+        r.DefineAttribute(instanceTarget, "geolocation", Get_geolocation, null);
         r.DefineAttribute(instanceTarget, "userActivation", Get_userActivation, null);
         r.DefineAttribute(instanceTarget, "permissions", Get_permissions, null);
         r.DefineAttribute(instanceTarget, "maxTouchPoints", Get_maxTouchPoints, null);
@@ -107,6 +130,9 @@ internal static class Binding_Navigator<TAdapter, TValue> where TAdapter : struc
         if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "userAgentData", Get_userAgentData, null);
         if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "locks", Get_locks, null);
         r.DefineOperation(instanceTarget, "sendBeacon", 1, Op_sendBeacon);
+        r.DefineOperation(instanceTarget, "vibrate", 1, Op_vibrate);
+        if (r.IsSecureContext) r.DefineOperation(instanceTarget, "share", 0, Op_share, returnsPromise: true);
+        if (r.IsSecureContext) r.DefineOperation(instanceTarget, "canShare", 0, Op_canShare);
         r.DefineOperation(instanceTarget, "taintEnabled", 0, Op_taintEnabled);
         if (r.IsSecureContext) r.DefineOperation(instanceTarget, "registerProtocolHandler", 2, Op_registerProtocolHandler);
         if (r.IsSecureContext) r.DefineOperation(instanceTarget, "unregisterProtocolHandler", 2, Op_unregisterProtocolHandler);

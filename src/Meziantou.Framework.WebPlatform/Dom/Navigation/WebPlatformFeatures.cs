@@ -169,6 +169,31 @@ public sealed record WebPlatformFeatures
     public bool CookieStoreEnabled { get; init; } = true;
 
     /// <summary>
+    /// Gets or sets whether the Web Share API is exposed (https://w3c.github.io/web-share/): <c>navigator.share()</c> and
+    /// <c>navigator.canShare()</c> (see <see cref="BrowsingContextOptions.Share"/>). The default is true.
+    /// </summary>
+    public bool WebShareEnabled { get; init; } = true;
+
+    /// <summary>
+    /// Gets or sets whether the Vibration API is exposed (https://w3c.github.io/vibration/): <c>navigator.vibrate()</c> (see
+    /// <see cref="BrowsingContextOptions.Vibrate"/>). The default is true.
+    /// </summary>
+    public bool VibrationEnabled { get; init; } = true;
+
+    /// <summary>
+    /// Gets or sets whether the Geolocation API is exposed (https://w3c.github.io/geolocation/): <c>navigator.geolocation</c>
+    /// and the <c>Geolocation</c>, <c>GeolocationPosition</c>, <c>GeolocationCoordinates</c> and <c>GeolocationPositionError</c>
+    /// interfaces (see <see cref="BrowsingContextOptions.Geolocation"/>). The default is true.
+    /// </summary>
+    public bool GeolocationEnabled { get; init; } = true;
+
+    /// <summary>
+    /// Gets or sets whether the Notifications API is exposed (https://notifications.spec.whatwg.org/): the <c>Notification</c>
+    /// interface (see <see cref="BrowsingContextOptions.ShowNotification"/>). The default is true.
+    /// </summary>
+    public bool NotificationsEnabled { get; init; } = true;
+
+    /// <summary>
     /// Gets or sets whether the Web Storage API is exposed (https://html.spec.whatwg.org/multipage/webstorage.html):
     /// <c>localStorage</c>, <c>sessionStorage</c>, <c>Storage</c> and <c>StorageEvent</c>. The default is true.
     /// </summary>

@@ -40,6 +40,29 @@ public sealed class PermissionsTests : IDisposable
     }
 
     [Fact]
+    public void RequestPermission_AnswerIsStoredAndFiresTheChangeEvent()
+    {
+        var context = _contexts.Create(new BrowsingContextOptions
+        {
+            ScriptEngine = _engine,
+            UnhandledScriptError = (_, error) => _errors.Add(error),
+            RequestPermission = (_, _) => PermissionState.Granted,
+        });
+        var document = context.Navigate("https://example.com/", _ => """
+            <script>
+              navigator.permissions.query({ name: 'notifications' }).then(status => {
+                document.title = status.state;
+                status.onchange = () => document.title += ',' + status.state;
+                Notification.requestPermission();
+              });
+            </script>
+            """);
+
+        Assert.Equal("prompt,granted", Run(document));
+        Assert.Equal(PermissionState.Granted, context.Options.EffectivePermissions.GetState("notifications", "https://example.com"));
+    }
+
+    [Fact]
     public void Query_ReturnsTheStateOfThePermissionStore()
     {
         var permissions = new PermissionStore();

@@ -497,6 +497,73 @@ public sealed partial class BrowsingContextOptions
 
     /// <summary>The permission store of the browsing contexts: <see cref="Permissions"/>, or the store of the options.</summary>
     internal PermissionStore EffectivePermissions => Permissions ?? LazyInitializer.EnsureInitialized(ref _defaultPermissions);
+
+    /// <summary>
+    /// Gets or sets the callback that asks the user for a permission (https://w3c.github.io/permissions/#dfn-request-permission-to-use),
+    /// with the name of the powerful feature (e.g. <c>geolocation</c>, <c>notifications</c>): it plays the role of the
+    /// permission prompt of a browser. It is only called when the state of the permission in <see cref="Permissions"/> is
+    /// <see cref="PermissionState.Prompt"/>; the answer (<see cref="PermissionState.Granted"/> or
+    /// <see cref="PermissionState.Denied"/>) is stored in the permission store for the top-level origin, so the user is
+    /// asked once. The callback blocks the event loop until the user answers. The default is null: the requests are
+    /// denied, and nothing is stored (as when the user dismisses the prompt).
+    /// The first argument is the context of the global object that requests the permission (see <see cref="CallbackContext"/>).
+    /// </summary>
+    public Func<CallbackContext, string, PermissionState>? RequestPermission { get; init; }
+
+    /// <summary>
+    /// Gets or sets the callback that shares data with a target chosen by the user (https://w3c.github.io/web-share/,
+    /// <c>navigator.share()</c>), e.g. the share sheet of the operating system. It returns true when the data is shared, and
+    /// false when the user cancels (the promise is rejected with an <c>AbortError</c>). The library checks the document
+    /// (a secure context, fully active, allowed by the <c>web-share</c> permissions policy, with a transient activation)
+    /// and validates the data before calling it. The callback is invoked on the thread of the event loop; the share
+    /// completes when the returned task completes. The default is null: there is no share target, so
+    /// <c>navigator.share()</c> is rejected with an <c>AbortError</c> (<c>navigator.canShare()</c> still validates the data).
+    /// The first argument is the context of the window (see <see cref="CallbackContext"/>): its <see cref="CallbackContext.Window"/> is never null.
+    /// </summary>
+    public Func<CallbackContext, ShareRequest, ValueTask<bool>>? Share { get; init; }
+
+    /// <summary>
+    /// Gets or sets the callback that vibrates the device (https://w3c.github.io/vibration/, <c>navigator.vibrate()</c>), with
+    /// the normalized pattern: the durations alternate between the vibrations and the pauses, starting with a vibration.
+    /// An empty pattern cancels the current vibration; it is also used when the document becomes hidden. The callback is
+    /// invoked on the thread of the event loop, and must not block it. The default is null: nothing vibrates, and
+    /// <c>navigator.vibrate()</c> returns true (as a device without vibration hardware).
+    /// The first argument is the context of the window (see <see cref="CallbackContext"/>): its <see cref="CallbackContext.Window"/> is never null.
+    /// </summary>
+    public Action<CallbackContext, IReadOnlyList<TimeSpan>>? Vibrate { get; init; }
+
+    /// <summary>
+    /// Gets or sets the source of the positions of the device (https://w3c.github.io/geolocation/,
+    /// <c>navigator.geolocation</c>), e.g. a <see cref="GeolocationProvider"/> whose <see cref="GeolocationProvider.Position"/>
+    /// is set by the application, or a subclass that reads the location of the operating system. The library checks the
+    /// <c>geolocation</c> permission (see <see cref="Permissions"/> and <see cref="RequestPermission"/>) and the permissions
+    /// policy, and handles the timeouts, the cached positions and the watches. A provider can be shared by several browsing
+    /// contexts. The default is null: the position is unavailable (<c>POSITION_UNAVAILABLE</c>).
+    /// </summary>
+    public GeolocationProvider? Geolocation { get; init; }
+
+    /// <summary>
+    /// Gets or sets the callback that shows a notification to the user (https://notifications.spec.whatwg.org/,
+    /// <c>new Notification()</c>), once the <c>notifications</c> permission is granted (see <see cref="Permissions"/> and
+    /// <see cref="RequestPermission"/>): its properties are the title, the body, the icon... The host calls
+    /// <see cref="Notification.Click"/> when the user activates it and <see cref="Notification.Dismiss"/> when the user
+    /// closes it. The callback is invoked on the thread of the event loop, before the <c>show</c> event is fired. The
+    /// default is null: the notifications are not displayed, but they behave as if they were (the <c>show</c> event is fired).
+    /// The first argument is the context of the global object that created the notification (see <see cref="CallbackContext"/>): its <see cref="CallbackContext.Global"/> is the window or the worker, and its <see cref="CallbackContext.BrowsingContext"/> is null for a worker.
+    /// </summary>
+    public Action<CallbackContext, Notification>? ShowNotification { get; init; }
+
+    /// <summary>
+    /// Gets or sets the callback that removes a notification shown by <see cref="ShowNotification"/>: the script called
+    /// <c>close()</c>, or a new notification with the same tag replaces it. It is not called when the host closes the
+    /// notification itself (<see cref="Notification.Dismiss"/>). The callback is invoked on the thread of the event loop.
+    /// The default is null.
+    /// The first argument is the context of the global object that created the notification (see <see cref="CallbackContext"/>): its <see cref="CallbackContext.Global"/> is the window or the worker, and its <see cref="CallbackContext.BrowsingContext"/> is null for a worker.
+    /// </summary>
+    public Action<CallbackContext, Notification>? CloseNotification { get; init; }
+
+    /// <summary>The list of notifications (https://notifications.spec.whatwg.org/#list-of-notifications) of the browsing contexts. Lock it to use it.</summary>
+    internal List<Notification> ShownNotifications { get; } = [];
 }
 
 /// <summary>

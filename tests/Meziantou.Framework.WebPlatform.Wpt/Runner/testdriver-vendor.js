@@ -154,6 +154,30 @@
     return () => { logListeners.delete(listener); };
   };
 
+  // permissions.setPermission (https://w3c.github.io/permissions/#webdriver-bidi-command-permissions-setPermission): as
+  // set_permission, the state is set for every origin
+  internal.bidi.permissions.set_permission = function (params) {
+    return internal.set_permission({ descriptor: params && params.descriptor, state: params && params.state });
+  };
+
+  // emulation.setGeolocationOverride (https://w3c.github.io/webdriver-bidi/#command-emulation-setGeolocationOverride): the
+  // position of the GeolocationProvider of the runner (an error makes it unavailable; no coordinates nor error restores it)
+  internal.bidi.emulation.set_geolocation_override = function (params) {
+    const coordinates = params && params.coordinates;
+    const optional = value => (value === null || value === undefined ? NaN : Number(value));
+    return new Promise(resolve => __wpt_set_geolocation_override(
+      !!coordinates,
+      coordinates ? Number(coordinates.latitude) : 0,
+      coordinates ? Number(coordinates.longitude) : 0,
+      coordinates && coordinates.accuracy !== undefined ? Number(coordinates.accuracy) : 1,
+      coordinates ? optional(coordinates.altitude) : NaN,
+      coordinates ? optional(coordinates.altitudeAccuracy) : NaN,
+      coordinates ? optional(coordinates.heading) : NaN,
+      coordinates ? optional(coordinates.speed) : NaN,
+      !!(params && params.error),
+      resolve));
+  };
+
   // The properties of the contact of a pointer action (https://w3c.github.io/webdriver/#dfn-process-pointer-parameters)
   const pointerProperties = ['width', 'height', 'pressure', 'tangentialPressure', 'tiltX', 'tiltY', 'twist', 'altitudeAngle', 'azimuthAngle'];
 

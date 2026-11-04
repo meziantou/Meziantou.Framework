@@ -38,6 +38,8 @@ internal sealed partial class PolicyControlledFeature
 
     public static PolicyControlledFeature Fullscreen { get; } = new("fullscreen", isAllowedForAllByDefault: false);
 
+    public static PolicyControlledFeature Geolocation { get; } = new("geolocation", isAllowedForAllByDefault: false);
+
     /// <summary>https://fetch.spec.whatwg.org/#policy-controlled-feature-deferred-fetch: its default allowlist is 'self'.</summary>
     public static PolicyControlledFeature DeferredFetch { get; } = new("deferred-fetch", isAllowedForAllByDefault: false);
 
@@ -51,6 +53,8 @@ internal sealed partial class PolicyControlledFeature
     public static PolicyControlledFeature SyncXhr { get; } = new("sync-xhr", isAllowedForAllByDefault: true);
 
     public static PolicyControlledFeature Unload { get; } = new("unload", isAllowedForAllByDefault: true);
+
+    public static PolicyControlledFeature WebShare { get; } = new("web-share", isAllowedForAllByDefault: false);
 
     /// <summary>
     /// The supported features (https://w3c.github.io/webappsec-permissions-policy/#supported-features), in the order of
@@ -75,7 +79,7 @@ internal sealed partial class PolicyControlledFeature
         new("encrypted-media", isAllowedForAllByDefault: false),
         FocusWithoutUserActivation,
         Fullscreen,
-        new("geolocation", isAllowedForAllByDefault: false),
+        Geolocation,
         new("gyroscope", isAllowedForAllByDefault: false),
         new("local-fonts", isAllowedForAllByDefault: false),
         new("magnetometer", isAllowedForAllByDefault: false),
@@ -92,6 +96,7 @@ internal sealed partial class PolicyControlledFeature
         SyncXhr,
         Unload,
         new("usb", isAllowedForAllByDefault: false),
+        WebShare,
         new("xr-spatial-tracking", isAllowedForAllByDefault: false),
     ];
 

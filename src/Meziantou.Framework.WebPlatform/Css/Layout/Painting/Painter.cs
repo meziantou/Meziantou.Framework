@@ -280,6 +280,13 @@ internal sealed partial class Painter
         /// one with <c>will-change</c>: the fixed backgrounds in it are not fixed to the viewport.
         /// </summary>
         public bool IsTransformed { get; init; }
+
+        /// <summary>
+        /// The clips of the ancestors of the root of the stacking context that are not applied to the whole group, because some
+        /// of its out-of-flow positioned descendants are not clipped by them (their containing block is outside of the clipping
+        /// boxes), from the outermost: they are applied in the group to the other descendants and to the root, or null.
+        /// </summary>
+        public List<ClipEntry>? DeferredClips { get; init; }
     }
 
     /// <summary>
@@ -605,7 +612,7 @@ internal sealed partial class Painter
                         break;
                     }
 
-                    BeginStackingContext(fragment);
+                    BeginStackingContext(fragment, items: matrix is null ? items : null, itemIndex: i);
                     break;
                 }
 
@@ -736,14 +743,48 @@ internal sealed partial class Painter
     /// the group of what is painted for a box apart from its stacking context (the pseudo-element tree of a scoped view
     /// transition, the frame of its root element while its rendering is suppressed).
     /// </param>
-    private void BeginStackingContext(BoxFragment fragment, double[]? planeMatrix = null, bool transformOnly = false)
+    /// <param name="items">
+    /// The paint items of the stacking context of an untransformed root (its begin marker is at <paramref name="itemIndex"/>), to find
+    /// its out-of-flow positioned descendants that are not clipped by the clips of its ancestors, or null.
+    /// </param>
+    /// <param name="itemIndex">The index of the begin marker of the stacking context in <paramref name="items"/>.</param>
+    private void BeginStackingContext(BoxFragment fragment, double[]? planeMatrix = null, bool transformOnly = false, List<PaintItem>? items = null, int itemIndex = -1)
     {
         // The image of an element captured by a view transition: "if the referenced element has a transform applied to it (or its
         // ancestors), then the transform is ignored", "effects applied to the element from its ancestors are ignored"
         var isCaptureRoot = ReferenceEquals(fragment, _captureRoot);
+        List<ClipEntry>? deferredClips = null;
         if (!isCaptureRoot)
         {
-            SyncClips(GetClipChain(fragment, includeSelf: false, includeSelfCssClip: false));
+            var chain = GetClipChain(fragment, includeSelf: false, includeSelfCssClip: false);
+            if (items is not null && chain.Count > 0 && GetEscapingDescendants(items, itemIndex) is { } escaping)
+            {
+                // https://drafts.csswg.org/css-overflow-3/#overflow-control: an overflow clip applies to the descendants whose
+                // containing block chain goes through the clipping box. The group of the stacking context is clipped by the clips
+                // that also apply to its out-of-flow positioned descendants whose containing block is outside of it; the other
+                // clips are applied in the group (the effects, e.g. the opacity, still apply to all its descendants as one group)
+                chain = [.. chain];
+                var shared = chain.Count;
+                foreach (var descendant in escaping)
+                {
+                    var other = GetClipChain(descendant, includeSelf: false, includeSelfCssClip: false);
+                    var common = 0;
+                    while (common < shared && common < other.Count && chain[common] == other[common])
+                    {
+                        common++;
+                    }
+
+                    shared = common;
+                }
+
+                if (shared < chain.Count)
+                {
+                    deferredClips = chain.GetRange(shared, chain.Count - shared);
+                    chain.RemoveRange(shared, chain.Count - shared);
+                }
+            }
+
+            SyncClips(chain);
         }
 
         var baseSaveCount = _builder.SaveCount;
@@ -754,6 +795,17 @@ internal sealed partial class Painter
         var box = fragment.Box;
         var has3D = _group.Has3DTransform;
         var isTransformed = false;
+
+        // https://drafts.csswg.org/css-transforms-2/#3d-rendering-contexts: a 3D rendering context established by a box whose parent
+        // does not participate in it is flattened into the plane of its parent, even when that plane is itself in a 3D transform
+        // (e.g. a plane of another 3D rendering context): the depth of the planes of the inner context must not compose with it
+        var isFlattened = false;
+        if (planeMatrix is null && has3D && !isCaptureRoot && box.Kind != ContainerBoxKind.Viewport && LayoutTransforms.UsesPreserve3D(box))
+        {
+            _builder.Transform(Flattening);
+            isFlattened = true;
+        }
+
         if (planeMatrix is not null)
         {
             _builder.Transform(DisplayMatrix.FromMatrix4x4(planeMatrix));
@@ -779,7 +831,7 @@ internal sealed partial class Painter
                 // context is flattened into the plane of its parent (the depth of the points of its parent is dropped); the
                 // stacking contexts of the 3D rendering contexts are painted with their accumulated transform (planeMatrix)
                 var is3D = LayoutTransforms.HasZOutput(matrix);
-                if (is3D && has3D)
+                if (is3D && has3D && !isFlattened)
                 {
                     _builder.Transform(Flattening);
                 }
@@ -801,7 +853,7 @@ internal sealed partial class Painter
             isTransformed = true;
         }
 
-        var group = new Group(fragment, origin, _group, baseSaveCount, _builder.SaveCount) { IsTransformed = isTransformed, Has3DTransform = has3D };
+        var group = new Group(fragment, origin, _group, baseSaveCount, _builder.SaveCount) { IsTransformed = isTransformed, Has3DTransform = has3D, DeferredClips = deferredClips };
         _group = group;
         if (transformOnly)
             return;
@@ -1226,7 +1278,8 @@ internal sealed partial class Painter
             chain.Add(new ClipEntry(selfClip, IsCssClip: true));
         }
 
-        if (!ReferenceEquals(fragment, groupFragment))
+        var reachesGroup = ReferenceEquals(fragment, groupFragment);
+        if (!reachesGroup)
         {
             // https://drafts.csswg.org/css-overflow-4/#line-clamp: the floats of a line-clamp container (that are not hidden) are
             // clipped to its block-end content edge (WPT css/css-overflow/line-clamp/line-clamp-with-floats-005.html)
@@ -1250,7 +1303,10 @@ internal sealed partial class Painter
                 }
 
                 if (ReferenceEquals(ancestor, groupFragment))
+                {
+                    reachesGroup = true;
                     break;
+                }
 
                 if (ancestor is BoxFragment cssClipper && HasCssClip(cssClipper))
                 {
@@ -1272,8 +1328,64 @@ internal sealed partial class Painter
             }
         }
 
+        // The clips of the ancestors of the root of the stacking context that apply to the descendants in its containing block
+        // chain (see BeginStackingContext), outside of the other clips
+        if (reachesGroup && _group.DeferredClips is { } deferredClips)
+        {
+            for (var i = deferredClips.Count - 1; i >= 0; i--)
+            {
+                chain.Add(deferredClips[i]);
+            }
+        }
+
         chain.Reverse();
         return chain;
+    }
+
+    /// <summary>
+    /// Returns the out-of-flow positioned descendants of a stacking context (the fragments of its items) whose containing block
+    /// is outside of it (e.g. an absolutely positioned descendant of a box with an opacity and no position), or null.
+    /// </summary>
+    private static List<BoxFragment>? GetEscapingDescendants(List<PaintItem> items, int begin)
+    {
+        var root = items[begin].Fragment;
+        List<BoxFragment>? result = null;
+        var depth = 0;
+        for (var i = begin + 1; i < items.Count; i++)
+        {
+            var item = items[i];
+            if (item.Marker == PaintItemMarker.BeginStackingContext)
+            {
+                depth++;
+            }
+            else if (item.Marker == PaintItemMarker.EndStackingContext)
+            {
+                if (depth == 0)
+                    break;
+
+                depth--;
+                continue;
+            }
+
+            if (item.Fragment is BoxFragment { Box.IsOutOfFlow: true } fragment && PositionedLayout.IsAbsolutelyPositioned(fragment.Box) && !IsInFragmentSubtree(fragment, root)
+                && (result is null || !result.Contains(fragment)))
+            {
+                (result ??= []).Add(fragment);
+            }
+        }
+
+        return result;
+
+        static bool IsInFragmentSubtree(Fragment fragment, Fragment root)
+        {
+            for (var ancestor = fragment.Parent; ancestor is not null; ancestor = ancestor.Parent)
+            {
+                if (ReferenceEquals(ancestor, root))
+                    return true;
+            }
+
+            return false;
+        }
     }
 
     /// <summary>Restores the clips of the current group that are not in <paramref name="chain"/>, and applies the missing ones.</summary>

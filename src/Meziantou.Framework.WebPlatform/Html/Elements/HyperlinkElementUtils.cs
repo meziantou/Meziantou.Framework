@@ -95,7 +95,7 @@ internal static class HyperlinkElementUtils
         {
             if (response.ToDocumentResource() is { } resource && !navigable.IsDestroyed)
             {
-                downloadStarted(navigable, new Download(resource.Url ?? url.Serialize(), filename, resource));
+                downloadStarted(CallbackContext.For(navigable), new Download(resource.Url ?? url.Serialize(), filename, resource));
             }
         }, document.QueueElementTask);
     }

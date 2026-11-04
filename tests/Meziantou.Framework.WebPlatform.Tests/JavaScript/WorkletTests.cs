@@ -12,7 +12,7 @@ public sealed class WorkletTests : IDisposable
 {
     private readonly BrowsingContextScope _contexts = new();
     private readonly List<ScriptError> _errors = [];
-    private readonly List<(GlobalScope Global, string Text)> _messages = [];
+    private readonly List<(GlobalScope? Global, string Text)> _messages = [];
     private readonly RecordingLoader _loader = new();
     private readonly ScriptEngine _engine = TestScriptEngines.Create();
 
@@ -30,7 +30,7 @@ public sealed class WorkletTests : IDisposable
             DocumentLoader = _loader,
             Features = features,
             UnhandledScriptError = (_, error) => _errors.Add(error),
-            ConsoleMessage = (global, message) => _messages.Add((global, message.Text)),
+            ConsoleMessage = (context, message) => _messages.Add((context.Global, message.Text)),
         });
 
         var document = context.Navigate("https://example.com/dir/page.html", _ => html);

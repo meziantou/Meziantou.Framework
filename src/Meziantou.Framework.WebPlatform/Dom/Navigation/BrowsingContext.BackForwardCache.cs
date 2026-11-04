@@ -401,7 +401,7 @@ public sealed partial class BrowsingContext
         }
 
         DocumentActivated?.Invoke(document);
-        Options.DocumentActivated?.Invoke(this, document);
+        Options.DocumentActivated?.Invoke(CallbackContext.For(this), document);
     }
 
     /// <summary>

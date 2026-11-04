@@ -265,7 +265,7 @@ internal sealed class ContentSecurityPolicyViolation
         if (global?.Options.ContentSecurityPolicyViolation is not { } callback)
             return;
 
-        callback(global, new ContentSecurityPolicyViolationReport(
+        callback(CallbackContext.For(global), new ContentSecurityPolicyViolationReport(
             StripUrlForUseInReports(Url),
             GetStrippedReferrer(),
             GetBlockedUri(),

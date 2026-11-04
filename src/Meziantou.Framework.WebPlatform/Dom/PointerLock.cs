@@ -165,7 +165,7 @@ internal static class PointerLockModel
             if (current is null || top.PointerLockOptions is not { } currentOptions || currentOptions.UnadjustedMovement != options.UnadjustedMovement)
             {
                 // "process the lock request": the host locks its pointer, with or without the adjustments of the platform
-                if (top.Options.RequestPointerLock is { } request && !request(top, options))
+                if (top.Options.RequestPointerLock is { } request && !request(CallbackContext.For(top), options))
                 {
                     FailNow(document, promise, DomException.NotSupported(options.UnadjustedMovement ? "The pointer cannot be locked without the adjustments of the platform" : "The pointer cannot be locked"));
                     return;
@@ -251,7 +251,7 @@ internal static class PointerLockModel
         top.InputOrNull?.OnPointerUnlocked();
         if (!top.IsDestroyed)
         {
-            top.Options.ExitPointerLock?.Invoke(top);
+            top.Options.ExitPointerLock?.Invoke(CallbackContext.For(top));
         }
 
         var document = target.NodeDocument;

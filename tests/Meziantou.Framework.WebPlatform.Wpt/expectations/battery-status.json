@@ -1,0 +1,78 @@
+{
+  "battery-status/api-defined.https.html": {
+    "total": 1,
+    "failures": {
+      "verify basic getBattery API support": "FAIL"
+    }
+  },
+  "battery-status/battery-allowed-by-permissions-policy-attribute-redirect-on-load.https.sub.html": {
+    "total": 2
+  },
+  "battery-status/battery-allowed-by-permissions-policy-attribute.https.sub.html": {
+    "total": 2
+  },
+  "battery-status/battery-allowed-by-permissions-policy.https.sub.html": {
+    "total": 3
+  },
+  "battery-status/battery-allowed-in-same-origin-iframe.https.html": {
+    "total": 1
+  },
+  "battery-status/battery-default-permissions-policy.https.sub.html": {
+    "total": 3
+  },
+  "battery-status/battery-disabled-by-permissions-policy.https.sub.html": {
+    "total": 3
+  },
+  "battery-status/battery-disallowed-in-cross-origin-iframe.https.sub.html": {
+    "total": 1,
+    "failures": {
+      "throw a 'NotAllowedError' when invoking navigator.getBattery() within cross-origin iframe": "FAIL"
+    }
+  },
+  "battery-status/battery-promise-window.https.html": {
+    "total": 1
+  },
+  "battery-status/battery-promise.https.html": {
+    "total": 2
+  },
+  "battery-status/idlharness.https.window.js": {
+    "total": 39
+  },
+  "battery-status/multiple-promises-after-resolve.https.html": {
+    "total": 1,
+    "failures": {
+      "multiple consecutive invocations of navigator.getBattery()": "FAIL"
+    }
+  },
+  "battery-status/multiple-promises.https.html": {
+    "total": 1,
+    "failures": {
+      "multiple parallel invocations of navigator.getBattery()": "FAIL"
+    }
+  },
+  "battery-status/no-leak-on-detached-use.https.html": {
+    "total": 2,
+    "failures": {
+      "navigator.getBattery() does not operate on a closed window": "FAIL",
+      "navigator.getBattery() on a detached frame does not leak or crash": "FAIL"
+    }
+  },
+  "battery-status/page-visibility.https.html": {
+    "total": 1,
+    "failures": {
+      "battery status events only fire on visible pages": "FAIL"
+    }
+  },
+  "battery-status/promise-with-eventlisteners.https.html": {
+    "total": 1,
+    "failures": {
+      "event listeners fire as specified": "FAIL"
+    }
+  },
+  "battery-status/restricted-level-precision.https.html": {
+    "total": 1,
+    "failures": {
+      "battery level is reported with restricted precision": "FAIL"
+    }
+  }
+}

@@ -22,8 +22,10 @@ internal static class Binding_Navigator<TAdapter, TValue> where TAdapter : struc
     private static TValue Get_geolocation(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.Geolocation); }
     private static TValue Get_userActivation(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.UserActivation); }
     private static TValue Get_ink(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.Ink); }
+    private static TValue Get_keyboard(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.Keyboard); }
     private static TValue Get_permissions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.Permissions); }
     private static TValue Get_maxTouchPoints(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.FromNumber((double)o.MaxTouchPoints); }
+    private static TValue Get_wakeLock(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.WakeLock); }
     private static TValue Get_serviceWorker(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.ServiceWorker); }
     private static TValue Get_appCodeName(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.FromString(o.AppCodeName); }
     private static TValue Get_appName(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.FromString(o.AppName); }
@@ -46,6 +48,11 @@ internal static class Binding_Navigator<TAdapter, TValue> where TAdapter : struc
     private static TValue Get_storage(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.Storage); }
     private static TValue Get_userAgentData(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.UserAgentData); }
     private static TValue Get_locks(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.Locks); }
+    private static TValue Op_getBattery(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding);
+        var result = o.GetBattery(); return r.ToPromise(result, static (r, value) => r.Wrap(value));
+    }
     private static TValue Op_sendBeacon(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding);
@@ -74,6 +81,17 @@ internal static class Binding_Navigator<TAdapter, TValue> where TAdapter : struc
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding);
         var a0 = r.IsMissing(a, 0) ? (global::Meziantou.Framework.WebPlatform.Dom.ShareData)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_ShareData(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_ShareData(r, a[0]);
         var result = o.CanShare(a0); return r.FromBoolean(result);
+    }
+    private static TValue Op_setAppBadge(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding);
+        var has0 = !r.IsMissing(a, 0); var a0 = has0 ? (ulong?)r.ToUnsignedLongLong(a[0], global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.EnforceRange) : default;
+        var result = o.SetAppBadge((has0 ? a0 : default(ulong?))); return r.ToPromise(result);
+    }
+    private static TValue Op_clearAppBadge(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding);
+        var result = o.ClearAppBadge(); return r.ToPromise(result);
     }
     private static TValue Op_taintEnabled(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
@@ -107,8 +125,10 @@ internal static class Binding_Navigator<TAdapter, TValue> where TAdapter : struc
         r.DefineAttribute(instanceTarget, "geolocation", Get_geolocation, null);
         r.DefineAttribute(instanceTarget, "userActivation", Get_userActivation, null);
         r.DefineAttribute(instanceTarget, "ink", Get_ink, null);
+        if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "keyboard", Get_keyboard, null);
         r.DefineAttribute(instanceTarget, "permissions", Get_permissions, null);
         r.DefineAttribute(instanceTarget, "maxTouchPoints", Get_maxTouchPoints, null);
+        if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "wakeLock", Get_wakeLock, null);
         if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "serviceWorker", Get_serviceWorker, null);
         r.DefineAttribute(instanceTarget, "appCodeName", Get_appCodeName, null);
         r.DefineAttribute(instanceTarget, "appName", Get_appName, null);
@@ -131,10 +151,13 @@ internal static class Binding_Navigator<TAdapter, TValue> where TAdapter : struc
         if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "storage", Get_storage, null);
         if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "userAgentData", Get_userAgentData, null);
         if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "locks", Get_locks, null);
+        if (r.IsSecureContext) r.DefineOperation(instanceTarget, "getBattery", 0, Op_getBattery, returnsPromise: true);
         r.DefineOperation(instanceTarget, "sendBeacon", 1, Op_sendBeacon);
         r.DefineOperation(instanceTarget, "vibrate", 1, Op_vibrate);
         if (r.IsSecureContext) r.DefineOperation(instanceTarget, "share", 0, Op_share, returnsPromise: true);
         if (r.IsSecureContext) r.DefineOperation(instanceTarget, "canShare", 0, Op_canShare);
+        if (r.IsSecureContext) r.DefineOperation(instanceTarget, "setAppBadge", 0, Op_setAppBadge, returnsPromise: true);
+        if (r.IsSecureContext) r.DefineOperation(instanceTarget, "clearAppBadge", 0, Op_clearAppBadge, returnsPromise: true);
         r.DefineOperation(instanceTarget, "taintEnabled", 0, Op_taintEnabled);
         if (r.IsSecureContext) r.DefineOperation(instanceTarget, "registerProtocolHandler", 2, Op_registerProtocolHandler);
         if (r.IsSecureContext) r.DefineOperation(instanceTarget, "unregisterProtocolHandler", 2, Op_unregisterProtocolHandler);

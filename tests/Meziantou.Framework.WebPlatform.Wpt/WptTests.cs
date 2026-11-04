@@ -220,6 +220,14 @@ public sealed class WptTests
 
     public static TheoryData<string> WebShareTests => GetTests("web-share");
 
+    public static TheoryData<string> BadgingTests => GetTests("badging");
+
+    public static TheoryData<string> BatteryStatusTests => GetTests("battery-status");
+
+    public static TheoryData<string> ScreenWakeLockTests => GetTests("screen-wake-lock");
+
+    public static TheoryData<string> KeyboardLockTests => GetTests("keyboard-lock");
+
     public static TheoryData<string> ClientHintsTests => GetTests("client-hints");
 
     public static TheoryData<string> UAClientHintsTests => GetTests("ua-client-hints");
@@ -1084,6 +1092,22 @@ public sealed class WptTests
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(WebShareTests))]
     public void WebShare(string test) => Run("web-share", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(BadgingTests))]
+    public void Badging(string test) => Run("badging", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(BatteryStatusTests))]
+    public void BatteryStatus(string test) => Run("battery-status", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(ScreenWakeLockTests))]
+    public void ScreenWakeLock(string test) => Run("screen-wake-lock", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(KeyboardLockTests))]
+    public void KeyboardLock(string test) => Run("keyboard-lock", test);
 
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(ClientHintsTests))]

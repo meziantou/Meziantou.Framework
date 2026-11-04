@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of permissions-policy, and w
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 40 | 94 | 0 | 43% |
+| [Stable](#stable-tests) | 41 | 94 | 0 | 44% |
 | [Tentative](#tentative-tests) | 14 | 23 | 0 | 61% |
 | [Reftests](#reftests) | 0 | 1 | 0 | 0% |
-| **All** | **54** | **118** | **0** | **46%** |
+| **All** | **55** | **118** | **0** | **47%** |
 
 ## Failure reasons
 
@@ -20,7 +20,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 1
 - **TEST BUG**: 10
-- **NOT IMPLEMENTED**: 52
+- **NOT IMPLEMENTED**: 51
 - **TEST RUNNER**: 1
 
 ## Stable tests
@@ -110,7 +110,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`reporting/report-only-single-endpoint.https.sub.html`](https://wpt.fyi/results/permissions-policy/reporting/report-only-single-endpoint.https.sub.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Media Capture and Streams: the test uses the `camera`/`microphone` features with `navigator.mediaDevices.getUserMedia()` (and `/mediacapture-streams/permission-helper.js`, which is not fetched); the reports of the features that the library implements are tested by `reporting/sync-xhr-report-only.html` |
 | [`reporting/report-to-multiple-endpoints.https.sub.html`](https://wpt.fyi/results/permissions-policy/reporting/report-to-multiple-endpoints.https.sub.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Media Capture and Streams: the test uses the `camera`/`microphone` features with `navigator.mediaDevices.getUserMedia()` (and `/mediacapture-streams/permission-helper.js`, which is not fetched); the reports of the features that the library implements are tested by `reporting/sync-xhr-report-only.html` |
 | [`reporting/report-to-single-endpoint.https.sub.html`](https://wpt.fyi/results/permissions-policy/reporting/report-to-single-endpoint.https.sub.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Media Capture and Streams: the test uses the `camera`/`microphone` features with `navigator.mediaDevices.getUserMedia()` (and `/mediacapture-streams/permission-helper.js`, which is not fetched); the reports of the features that the library implements are tested by `reporting/sync-xhr-report-only.html` |
-| [`reporting/screen-wake-lock-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/screen-wake-lock-reporting.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the Screen Wake Lock API (`navigator.wakeLock`) |
+| [`reporting/screen-wake-lock-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/screen-wake-lock-reporting.https.html) | Pass | 1 / 1 |  |  |
 | [`reporting/serial-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/serial-report-only.https.html) | Fail | 0 / 2 | NOT IMPLEMENTED | the Web Serial API (`navigator.serial`) |
 | [`reporting/serial-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/serial-reporting.https.html) | Fail | 0 / 2 | NOT IMPLEMENTED | the Web Serial API (`navigator.serial`) |
 | [`reporting/sync-xhr-report-only.html`](https://wpt.fyi/results/permissions-policy/reporting/sync-xhr-report-only.html) | Pass | 1 / 1 |  |  |

@@ -515,10 +515,7 @@
     }
   },
   "permissions-policy/reporting/screen-wake-lock-reporting.https.html": {
-    "total": 1,
-    "failures": {
-      "Screen Wake Lock Report Format": "FAIL"
-    }
+    "total": 1
   },
   "permissions-policy/reporting/serial-report-only.https.html": {
     "total": 2,

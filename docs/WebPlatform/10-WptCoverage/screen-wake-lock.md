@@ -9,36 +9,35 @@ description: "The results of the web-platform-tests of screen-wake-lock, and why
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 17 | 17 | – |
+| [Stable](#stable-tests) | 16 | 17 | 0 | 94% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **0** | **17** | **17** | **–** |
+| **All** | **16** | **17** | **0** | **94%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **REQUIRES**: 17
-  - `hardware`: 17
+- **TEST BUG**: 1
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`chrome-bug-1348019.https.html`](https://wpt.fyi/results/screen-wake-lock/chrome-bug-1348019.https.html) | Disabled | – | REQUIRES(hardware) | Screen Wake Lock API |
-| [`idlharness.https.window.js`](https://wpt.fyi/results/screen-wake-lock/idlharness.https.window.js) | Disabled | – | REQUIRES(hardware) | Screen Wake Lock API |
-| [`wakelock-active-document.https.window.js`](https://wpt.fyi/results/screen-wake-lock/wakelock-active-document.https.window.js) | Disabled | – | REQUIRES(hardware) | Screen Wake Lock API |
-| [`wakelock-disabled-by-permissions-policy.https.html`](https://wpt.fyi/results/screen-wake-lock/wakelock-disabled-by-permissions-policy.https.html) | Disabled | – | REQUIRES(hardware) | Screen Wake Lock API |
-| [`wakelock-document-hidden.https.html`](https://wpt.fyi/results/screen-wake-lock/wakelock-document-hidden.https.html) | Disabled | – | REQUIRES(hardware) | Screen Wake Lock API |
-| [`wakelock-enabled-by-permissions-policy-attribute-redirect-on-load.https.html`](https://wpt.fyi/results/screen-wake-lock/wakelock-enabled-by-permissions-policy-attribute-redirect-on-load.https.html) | Disabled | – | REQUIRES(hardware) | Screen Wake Lock API |
-| [`wakelock-enabled-by-permissions-policy-attribute.https.html`](https://wpt.fyi/results/screen-wake-lock/wakelock-enabled-by-permissions-policy-attribute.https.html) | Disabled | – | REQUIRES(hardware) | Screen Wake Lock API |
-| [`wakelock-enabled-by-permissions-policy.https.html`](https://wpt.fyi/results/screen-wake-lock/wakelock-enabled-by-permissions-policy.https.html) | Disabled | – | REQUIRES(hardware) | Screen Wake Lock API |
-| [`wakelock-enabled-on-self-origin-by-permissions-policy.https.html`](https://wpt.fyi/results/screen-wake-lock/wakelock-enabled-on-self-origin-by-permissions-policy.https.html) | Disabled | – | REQUIRES(hardware) | Screen Wake Lock API |
-| [`wakelock-insecure-context.any.js`](https://wpt.fyi/results/screen-wake-lock/wakelock-insecure-context.any.js) | Disabled | – | REQUIRES(hardware) | Screen Wake Lock API |
-| [`wakelock-onrelease.https.html`](https://wpt.fyi/results/screen-wake-lock/wakelock-onrelease.https.html) | Disabled | – | REQUIRES(hardware) | Screen Wake Lock API |
-| [`wakelock-released.https.html`](https://wpt.fyi/results/screen-wake-lock/wakelock-released.https.html) | Disabled | – | REQUIRES(hardware) | Screen Wake Lock API |
-| [`wakelock-request-denied.https.html`](https://wpt.fyi/results/screen-wake-lock/wakelock-request-denied.https.html) | Disabled | – | REQUIRES(hardware) | Screen Wake Lock API |
-| [`wakelock-screen-type-on-worker.https.worker.js`](https://wpt.fyi/results/screen-wake-lock/wakelock-screen-type-on-worker.https.worker.js) | Disabled | – | REQUIRES(hardware) | Screen Wake Lock API |
-| [`wakelock-supported-by-permissions-policy.html`](https://wpt.fyi/results/screen-wake-lock/wakelock-supported-by-permissions-policy.html) | Disabled | – | REQUIRES(hardware) | Screen Wake Lock API |
-| [`wakelock-type.https.window.js`](https://wpt.fyi/results/screen-wake-lock/wakelock-type.https.window.js) | Disabled | – | REQUIRES(hardware) | Screen Wake Lock API |
-| [`wakelockpermissiondescriptor.https.html`](https://wpt.fyi/results/screen-wake-lock/wakelockpermissiondescriptor.https.html) | Disabled | – | REQUIRES(hardware) | Screen Wake Lock API |
+| [`chrome-bug-1348019.https.html`](https://wpt.fyi/results/screen-wake-lock/chrome-bug-1348019.https.html) | Pass | 1 / 1 |  |  |
+| [`idlharness.https.window.js`](https://wpt.fyi/results/screen-wake-lock/idlharness.https.window.js) | Pass | 42 / 42 |  |  |
+| [`wakelock-active-document.https.window.js`](https://wpt.fyi/results/screen-wake-lock/wakelock-active-document.https.window.js) | Pass | 3 / 3 |  |  |
+| [`wakelock-disabled-by-permissions-policy.https.html`](https://wpt.fyi/results/screen-wake-lock/wakelock-disabled-by-permissions-policy.https.html) | Pass | 3 / 3 |  |  |
+| [`wakelock-document-hidden.https.html`](https://wpt.fyi/results/screen-wake-lock/wakelock-document-hidden.https.html) | Pass | 2 / 2 |  |  |
+| [`wakelock-enabled-by-permissions-policy-attribute-redirect-on-load.https.html`](https://wpt.fyi/results/screen-wake-lock/wakelock-enabled-by-permissions-policy-attribute-redirect-on-load.https.html) | Pass | 2 / 2 |  |  |
+| [`wakelock-enabled-by-permissions-policy-attribute.https.html`](https://wpt.fyi/results/screen-wake-lock/wakelock-enabled-by-permissions-policy-attribute.https.html) | Pass | 2 / 2 |  |  |
+| [`wakelock-enabled-by-permissions-policy.https.html`](https://wpt.fyi/results/screen-wake-lock/wakelock-enabled-by-permissions-policy.https.html) | Pass | 3 / 3 |  |  |
+| [`wakelock-enabled-on-self-origin-by-permissions-policy.https.html`](https://wpt.fyi/results/screen-wake-lock/wakelock-enabled-on-self-origin-by-permissions-policy.https.html) | Pass | 3 / 3 |  |  |
+| [`wakelock-insecure-context.any.js`](https://wpt.fyi/results/screen-wake-lock/wakelock-insecure-context.any.js) | Pass | 2 / 2 |  |  |
+| [`wakelock-onrelease.https.html`](https://wpt.fyi/results/screen-wake-lock/wakelock-onrelease.https.html) | Pass | 3 / 3 |  |  |
+| [`wakelock-released.https.html`](https://wpt.fyi/results/screen-wake-lock/wakelock-released.https.html) | Pass | 1 / 1 |  |  |
+| [`wakelock-request-denied.https.html`](https://wpt.fyi/results/screen-wake-lock/wakelock-request-denied.https.html) | Pass | 1 / 1 |  |  |
+| [`wakelock-screen-type-on-worker.https.worker.js`](https://wpt.fyi/results/screen-wake-lock/wakelock-screen-type-on-worker.https.worker.js) | Fail | 0 / 1 | TEST BUG | `WakeLock` is only exposed to the windows (`Exposed=Window`): `navigator.wakeLock` is undefined in a dedicated worker, so the test throws a `TypeError` instead of rejecting with a `NotAllowedError` |
+| [`wakelock-supported-by-permissions-policy.html`](https://wpt.fyi/results/screen-wake-lock/wakelock-supported-by-permissions-policy.html) | Pass | 1 / 1 |  |  |
+| [`wakelock-type.https.window.js`](https://wpt.fyi/results/screen-wake-lock/wakelock-type.https.window.js) | Pass | 2 / 2 |  |  |
+| [`wakelockpermissiondescriptor.https.html`](https://wpt.fyi/results/screen-wake-lock/wakelockpermissiondescriptor.https.html) | Pass | 1 / 1 |  |  |

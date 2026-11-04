@@ -183,6 +183,9 @@ internal sealed partial class WptTestRunner
                 Permissions = _permissionStore,
                 ClipboardPermission = (_, access) => !_permissions.TryGetValue(access == ClipboardAccess.Read ? "clipboard-read" : "clipboard-write", out var state) || state != "denied",
 
+                // As in Chromium, the screen wake lock is granted without asking the user; the other prompts are dismissed
+                RequestPermission = (_, name) => name == "screen-wake-lock" ? PermissionState.Granted : PermissionState.Prompt,
+
                 // The device knows its position (overridden by test_driver.bidi.emulation.set_geolocation_override)
                 Geolocation = _geolocation,
 

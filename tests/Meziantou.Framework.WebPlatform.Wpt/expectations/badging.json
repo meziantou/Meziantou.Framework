@@ -1,0 +1,40 @@
+{
+  "badging/badge-error.https.any.js": {
+    "total": 2,
+    "failures": {
+      "Test various invalid input cases for setAppBadge()": "FAIL"
+    }
+  },
+  "badging/badge-error.https.any.js#dedicatedworker": {
+    "total": 2,
+    "failures": {
+      "Test various invalid input cases for setAppBadge()": "FAIL"
+    }
+  },
+  "badging/badge-success.https.any.js": {
+    "total": 6
+  },
+  "badging/badge-success.https.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "badging/idlharness.https.any.js": {
+    "total": 22
+  },
+  "badging/idlharness.https.any.js#dedicatedworker": {
+    "total": 22
+  },
+  "badging/non-fully-active.https.html": {
+    "total": 1
+  },
+  "badging/setAppBadge_cross_origin.sub.https.html": {
+    "total": 6,
+    "failures": {
+      "Test badge behavior in multiple same-origin iframes": "FAIL",
+      "Test calling setAppBadge and clearAppBadge in a same-origin iframe after setting badge on the top level frame": "FAIL",
+      "Test that calling clearAppBadge in a cross-origin iframe throws a SecurityError": "FAIL",
+      "Test that calling clearAppBadge in a same-origin iframe succeeds": "FAIL",
+      "Test that calling setAppBadge in a cross-origin iframe throws a SecurityError": "FAIL",
+      "Test that calling setAppBadge in a same-origin iframe succeeds": "FAIL"
+    }
+  }
+}

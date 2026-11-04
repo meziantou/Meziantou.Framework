@@ -3292,6 +3292,7 @@ public sealed partial class BrowsingContext : IDisposable
             // released and its lock requests are aborted)
             FullscreenModel.FullyExit(document);
             PointerLockModel.OnDocumentUnloaded(document);
+            ReleaseDeviceLocks(document);
             if (persisted)
                 return;
 
@@ -3303,12 +3304,26 @@ public sealed partial class BrowsingContext : IDisposable
         }
     }
 
+    /// <summary>
+    /// The document is no longer fully active: its wake locks are released (https://w3c.github.io/screen-wake-lock/#handling-document-loss-of-full-activity),
+    /// and its keyboard is unlocked (https://wicg.github.io/keyboard-lock/#h-keyboard-unlock).
+    /// </summary>
+    private static void ReleaseDeviceLocks(Document document)
+    {
+        if (document.RelevantWindow is { NavigatorOrNull: { } navigator } window && ReferenceEquals(window.Document, document))
+        {
+            navigator.WakeLockOrNull?.ReleaseAll();
+            navigator.KeyboardOrNull?.OnDocumentUnloaded();
+        }
+    }
+
     /// <summary>https://html.spec.whatwg.org/multipage/document-lifecycle.html#destroy-a-document-and-its-descendants</summary>
     private static void DestroyDocument(Document document)
     {
         // The pointer lock of an element of the document is exited (https://w3c.github.io/pointerlock/#requirements), and
         // the locks of its window are released (https://w3c.github.io/web-locks/#lock-termination)
         PointerLockModel.OnDocumentUnloaded(document);
+        ReleaseDeviceLocks(document);
         if (document.RelevantWindow is { } destroyedWindow && ReferenceEquals(destroyedWindow.Document, document))
         {
             WebLocks.OnEnvironmentDiscarded(destroyedWindow);

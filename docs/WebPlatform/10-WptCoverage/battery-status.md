@@ -9,36 +9,36 @@ description: "The results of the web-platform-tests of battery-status, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 17 | 17 | – |
+| [Stable](#stable-tests) | 9 | 17 | 0 | 53% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **0** | **17** | **17** | **–** |
+| **All** | **9** | **17** | **0** | **53%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **REQUIRES**: 17
-  - `hardware`: 17
+- **TEST BUG**: 2
+- **TEST RUNNER**: 6
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`api-defined.https.html`](https://wpt.fyi/results/battery-status/api-defined.https.html) | Disabled | – | REQUIRES(hardware) | Battery Status API |
-| [`battery-allowed-by-permissions-policy-attribute-redirect-on-load.https.sub.html`](https://wpt.fyi/results/battery-status/battery-allowed-by-permissions-policy-attribute-redirect-on-load.https.sub.html) | Disabled | – | REQUIRES(hardware) | Battery Status API |
-| [`battery-allowed-by-permissions-policy-attribute.https.sub.html`](https://wpt.fyi/results/battery-status/battery-allowed-by-permissions-policy-attribute.https.sub.html) | Disabled | – | REQUIRES(hardware) | Battery Status API |
-| [`battery-allowed-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/battery-status/battery-allowed-by-permissions-policy.https.sub.html) | Disabled | – | REQUIRES(hardware) | Battery Status API |
-| [`battery-allowed-in-same-origin-iframe.https.html`](https://wpt.fyi/results/battery-status/battery-allowed-in-same-origin-iframe.https.html) | Disabled | – | REQUIRES(hardware) | Battery Status API |
-| [`battery-default-permissions-policy.https.sub.html`](https://wpt.fyi/results/battery-status/battery-default-permissions-policy.https.sub.html) | Disabled | – | REQUIRES(hardware) | Battery Status API |
-| [`battery-disabled-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/battery-status/battery-disabled-by-permissions-policy.https.sub.html) | Disabled | – | REQUIRES(hardware) | Battery Status API |
-| [`battery-disallowed-in-cross-origin-iframe.https.sub.html`](https://wpt.fyi/results/battery-status/battery-disallowed-in-cross-origin-iframe.https.sub.html) | Disabled | – | REQUIRES(hardware) | Battery Status API |
-| [`battery-promise-window.https.html`](https://wpt.fyi/results/battery-status/battery-promise-window.https.html) | Disabled | – | REQUIRES(hardware) | Battery Status API |
-| [`battery-promise.https.html`](https://wpt.fyi/results/battery-status/battery-promise.https.html) | Disabled | – | REQUIRES(hardware) | Battery Status API |
-| [`idlharness.https.window.js`](https://wpt.fyi/results/battery-status/idlharness.https.window.js) | Disabled | – | REQUIRES(hardware) | Battery Status API |
-| [`multiple-promises-after-resolve.https.html`](https://wpt.fyi/results/battery-status/multiple-promises-after-resolve.https.html) | Disabled | – | REQUIRES(hardware) | Battery Status API |
-| [`multiple-promises.https.html`](https://wpt.fyi/results/battery-status/multiple-promises.https.html) | Disabled | – | REQUIRES(hardware) | Battery Status API |
-| [`no-leak-on-detached-use.https.html`](https://wpt.fyi/results/battery-status/no-leak-on-detached-use.https.html) | Disabled | – | REQUIRES(hardware) | Battery Status API |
-| [`page-visibility.https.html`](https://wpt.fyi/results/battery-status/page-visibility.https.html) | Disabled | – | REQUIRES(hardware) | Battery Status API |
-| [`promise-with-eventlisteners.https.html`](https://wpt.fyi/results/battery-status/promise-with-eventlisteners.https.html) | Disabled | – | REQUIRES(hardware) | Battery Status API |
-| [`restricted-level-precision.https.html`](https://wpt.fyi/results/battery-status/restricted-level-precision.https.html) | Disabled | – | REQUIRES(hardware) | Battery Status API |
+| [`api-defined.https.html`](https://wpt.fyi/results/battery-status/api-defined.https.html) | Fail | 0 / 1 | TEST RUNNER | needs the Chromium MojoJS mock of the battery monitor (`/resources/chromium/mock-battery-monitor.js`); the battery status of the library is set by the host with `BatteryStatusProvider`, which the unit tests cover |
+| [`battery-allowed-by-permissions-policy-attribute-redirect-on-load.https.sub.html`](https://wpt.fyi/results/battery-status/battery-allowed-by-permissions-policy-attribute-redirect-on-load.https.sub.html) | Pass | 2 / 2 |  |  |
+| [`battery-allowed-by-permissions-policy-attribute.https.sub.html`](https://wpt.fyi/results/battery-status/battery-allowed-by-permissions-policy-attribute.https.sub.html) | Pass | 2 / 2 |  |  |
+| [`battery-allowed-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/battery-status/battery-allowed-by-permissions-policy.https.sub.html) | Pass | 3 / 3 |  |  |
+| [`battery-allowed-in-same-origin-iframe.https.html`](https://wpt.fyi/results/battery-status/battery-allowed-in-same-origin-iframe.https.html) | Pass | 1 / 1 |  |  |
+| [`battery-default-permissions-policy.https.sub.html`](https://wpt.fyi/results/battery-status/battery-default-permissions-policy.https.sub.html) | Pass | 3 / 3 |  |  |
+| [`battery-disabled-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/battery-status/battery-disabled-by-permissions-policy.https.sub.html) | Pass | 3 / 3 |  |  |
+| [`battery-disallowed-in-cross-origin-iframe.https.sub.html`](https://wpt.fyi/results/battery-status/battery-disallowed-in-cross-origin-iframe.https.sub.html) | Fail | 0 / 1 | TEST BUG | reads the `navigator` of a cross-origin iframe through its `WindowProxy`, which throws a `SecurityError` before `getBattery()` is called |
+| [`battery-promise-window.https.html`](https://wpt.fyi/results/battery-status/battery-promise-window.https.html) | Pass | 1 / 1 |  |  |
+| [`battery-promise.https.html`](https://wpt.fyi/results/battery-status/battery-promise.https.html) | Pass | 2 / 2 |  |  |
+| [`idlharness.https.window.js`](https://wpt.fyi/results/battery-status/idlharness.https.window.js) | Pass | 39 / 39 |  |  |
+| [`multiple-promises-after-resolve.https.html`](https://wpt.fyi/results/battery-status/multiple-promises-after-resolve.https.html) | Fail | 0 / 1 | TEST RUNNER | needs the Chromium MojoJS mock of the battery monitor (`/resources/chromium/mock-battery-monitor.js`); the battery status of the library is set by the host with `BatteryStatusProvider`, which the unit tests cover |
+| [`multiple-promises.https.html`](https://wpt.fyi/results/battery-status/multiple-promises.https.html) | Fail | 0 / 1 | TEST RUNNER | needs the Chromium MojoJS mock of the battery monitor (`/resources/chromium/mock-battery-monitor.js`); the battery status of the library is set by the host with `BatteryStatusProvider`, which the unit tests cover |
+| [`no-leak-on-detached-use.https.html`](https://wpt.fyi/results/battery-status/no-leak-on-detached-use.https.html) | Fail | 0 / 2 | TEST BUG | expects the behavior of Chromium: `getBattery()` returns `undefined` for a closed window, and a promise resolved with `undefined` for a detached frame; the specification returns a promise, rejected with a `NotAllowedError` for the document of a detached frame (it is not allowed to use the `battery` feature) |
+| [`page-visibility.https.html`](https://wpt.fyi/results/battery-status/page-visibility.https.html) | Fail | 0 / 1 | TEST RUNNER | needs the Chromium MojoJS mock of the battery monitor (`/resources/chromium/mock-battery-monitor.js`); the battery status of the library is set by the host with `BatteryStatusProvider`, which the unit tests cover |
+| [`promise-with-eventlisteners.https.html`](https://wpt.fyi/results/battery-status/promise-with-eventlisteners.https.html) | Fail | 0 / 1 | TEST RUNNER | needs the Chromium MojoJS mock of the battery monitor (`/resources/chromium/mock-battery-monitor.js`); the battery status of the library is set by the host with `BatteryStatusProvider`, which the unit tests cover |
+| [`restricted-level-precision.https.html`](https://wpt.fyi/results/battery-status/restricted-level-precision.https.html) | Fail | 0 / 1 | TEST RUNNER | needs the Chromium MojoJS mock of the battery monitor (`/resources/chromium/mock-battery-monitor.js`); the battery status of the library is set by the host with `BatteryStatusProvider`, which the unit tests cover |

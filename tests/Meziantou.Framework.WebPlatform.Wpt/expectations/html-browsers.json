@@ -62,10 +62,7 @@
     "total": 1
   },
   "html/browsers/browsing-the-web/back-forward-cache/pushstate.https.html": {
-    "total": 2,
-    "failures": {
-      "back navigation to pushState()d page (not in BFCache)": "FAIL"
-    }
+    "total": 2
   },
   "html/browsers/browsing-the-web/back-forward-cache/service-worker-client-postmessage.https.html": {
     "total": 1
@@ -245,18 +242,10 @@
     "total": 1
   },
   "html/browsers/browsing-the-web/history-traversal/pageswap/pageswap-traverse-navigation-cross-origin-redirect-no-bfcache.https.sub.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "pageswap on traverse navigation from script": "TIMEOUT"
-    }
+    "total": 1
   },
   "html/browsers/browsing-the-web/history-traversal/pageswap/pageswap-traverse-navigation-no-bfcache.https.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "pageswap on traverse navigation from script": "TIMEOUT"
-    }
+    "total": 1
   },
   "html/browsers/browsing-the-web/history-traversal/persisted-user-state-restoration/resume-timer-on-history-back.html": {
     "total": 2

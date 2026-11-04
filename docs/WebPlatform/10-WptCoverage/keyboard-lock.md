@@ -9,25 +9,19 @@ description: "The results of the web-platform-tests of keyboard-lock, and why th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 7 | 7 | – |
+| [Stable](#stable-tests) | 7 | 7 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **0** | **7** | **7** | **–** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **NOT IMPLEMENTED**: 7
+| **All** | **7** | **7** | **0** | **100%** |
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`idlharness.https.window.js`](https://wpt.fyi/results/keyboard-lock/idlharness.https.window.js) | Disabled | – | NOT IMPLEMENTED | Keyboard Lock API |
-| [`navigator-keyboard-lock-blocked-from-cross-origin-iframe.https.html`](https://wpt.fyi/results/keyboard-lock/navigator-keyboard-lock-blocked-from-cross-origin-iframe.https.html) | Disabled | – | NOT IMPLEMENTED | Keyboard Lock API |
-| [`navigator-keyboard-lock-blocked-from-iframe.https.html`](https://wpt.fyi/results/keyboard-lock/navigator-keyboard-lock-blocked-from-iframe.https.html) | Disabled | – | NOT IMPLEMENTED | Keyboard Lock API |
-| [`navigator-keyboard-lock-two-parallel-requests.https.html`](https://wpt.fyi/results/keyboard-lock/navigator-keyboard-lock-two-parallel-requests.https.html) | Disabled | – | NOT IMPLEMENTED | Keyboard Lock API |
-| [`navigator-keyboard-lock-two-sequential-requests.https.html`](https://wpt.fyi/results/keyboard-lock/navigator-keyboard-lock-two-sequential-requests.https.html) | Disabled | – | NOT IMPLEMENTED | Keyboard Lock API |
-| [`navigator-keyboard-lock.https.html`](https://wpt.fyi/results/keyboard-lock/navigator-keyboard-lock.https.html) | Disabled | – | NOT IMPLEMENTED | Keyboard Lock API |
-| [`navigator-keyboard-unlock.https.html`](https://wpt.fyi/results/keyboard-lock/navigator-keyboard-unlock.https.html) | Disabled | – | NOT IMPLEMENTED | Keyboard Lock API |
+| [`idlharness.https.window.js`](https://wpt.fyi/results/keyboard-lock/idlharness.https.window.js) | Pass | 28 / 28 |  |  |
+| [`navigator-keyboard-lock-blocked-from-cross-origin-iframe.https.html`](https://wpt.fyi/results/keyboard-lock/navigator-keyboard-lock-blocked-from-cross-origin-iframe.https.html) | Pass | 1 / 1 |  |  |
+| [`navigator-keyboard-lock-blocked-from-iframe.https.html`](https://wpt.fyi/results/keyboard-lock/navigator-keyboard-lock-blocked-from-iframe.https.html) | Pass | 1 / 1 |  |  |
+| [`navigator-keyboard-lock-two-parallel-requests.https.html`](https://wpt.fyi/results/keyboard-lock/navigator-keyboard-lock-two-parallel-requests.https.html) | Pass | 1 / 1 |  |  |
+| [`navigator-keyboard-lock-two-sequential-requests.https.html`](https://wpt.fyi/results/keyboard-lock/navigator-keyboard-lock-two-sequential-requests.https.html) | Pass | 1 / 1 |  |  |
+| [`navigator-keyboard-lock.https.html`](https://wpt.fyi/results/keyboard-lock/navigator-keyboard-lock.https.html) | Pass | 5 / 5 |  |  |
+| [`navigator-keyboard-unlock.https.html`](https://wpt.fyi/results/keyboard-lock/navigator-keyboard-unlock.https.html) | Pass | 1 / 1 |  |  |

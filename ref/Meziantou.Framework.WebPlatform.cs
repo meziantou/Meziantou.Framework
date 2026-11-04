@@ -2981,6 +2981,32 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public void RegisterAnimator(string name, Meziantou.Framework.WebPlatform.Dom.WorkletClassConstructor animatorCtor) { }
     }
 
+    public readonly struct AppBadge : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.AppBadge>
+    {
+        public ulong Count { get => throw null; }
+        public static Meziantou.Framework.WebPlatform.Dom.AppBadge Flag { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.AppBadgeKind Kind { get => throw null; }
+        public static Meziantou.Framework.WebPlatform.Dom.AppBadge Nothing { get => throw null; }
+        public bool Equals(Meziantou.Framework.WebPlatform.Dom.AppBadge other) => throw null;
+        #nullable disable
+        public override bool Equals(object obj) => throw null;
+        #nullable restore
+        public static Meziantou.Framework.WebPlatform.Dom.AppBadge FromCount(ulong count) => throw null;
+        public override int GetHashCode() => throw null;
+        #nullable disable
+        public override string ToString() => throw null;
+        #nullable restore
+        public static bool operator ==(Meziantou.Framework.WebPlatform.Dom.AppBadge left, Meziantou.Framework.WebPlatform.Dom.AppBadge right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WebPlatform.Dom.AppBadge left, Meziantou.Framework.WebPlatform.Dom.AppBadge right) => throw null;
+    }
+
+    public enum AppBadgeKind
+    {
+        Nothing = 0,
+        Flag = 1,
+        Count = 2,
+    }
+
     public enum AppendMode
     {
         Segments = 0,
@@ -3037,9 +3063,55 @@ namespace Meziantou.Framework.WebPlatform.Dom
         Auto = 0,
     }
 
+    public sealed class BadgingOptions
+    {
+        public bool RequiresNotificationsPermission { get => throw null; init { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.CallbackContext, Meziantou.Framework.WebPlatform.Dom.AppBadge>? SetBadge { get => throw null; init { } }
+    }
+
     public sealed class BarProp
     {
         public bool Visible { get => throw null; }
+    }
+
+    public sealed class BatteryManager : Meziantou.Framework.WebPlatform.Dom.EventTarget
+    {
+        public bool Charging { get => throw null; }
+        public double ChargingTime { get => throw null; }
+        public double DischargingTime { get => throw null; }
+        public double Level { get => throw null; }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnChargingChange { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnChargingTimeChange { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnDischargingTimeChange { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnLevelChange { get => throw null; set { } }
+    }
+
+    public sealed class BatteryStatus : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.BatteryStatus>
+    {
+        public bool Charging { get => throw null; init { } }
+        public System.TimeSpan? ChargingTime { get => throw null; init { } }
+        public static Meziantou.Framework.WebPlatform.Dom.BatteryStatus Default { get => throw null; }
+        public System.TimeSpan? DischargingTime { get => throw null; init { } }
+        public double Level { get => throw null; init { } }
+        public bool Equals(Meziantou.Framework.WebPlatform.Dom.BatteryStatus? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.WebPlatform.Dom.BatteryStatus? left, Meziantou.Framework.WebPlatform.Dom.BatteryStatus? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WebPlatform.Dom.BatteryStatus? left, Meziantou.Framework.WebPlatform.Dom.BatteryStatus? right) => throw null;
+    }
+
+    public sealed class BatteryStatusOptions
+    {
+        public Meziantou.Framework.WebPlatform.Dom.BatteryStatusProvider? Provider { get => throw null; init { } }
+    }
+
+    public class BatteryStatusProvider
+    {
+        public Meziantou.Framework.WebPlatform.Dom.BatteryStatus Status { get => throw null; set { } }
+        public event System.EventHandler? StatusChanged;
+        public virtual Meziantou.Framework.WebPlatform.Dom.BatteryStatus GetStatus() => throw null;
+        protected void OnStatusChanged() { }
     }
 
     public sealed class BeforeUnloadEvent : Meziantou.Framework.WebPlatform.Dom.Event
@@ -3159,6 +3231,8 @@ namespace Meziantou.Framework.WebPlatform.Dom
     {
         public Meziantou.Framework.WebPlatform.Dom.AcceptCHCache? AcceptCHCache { get => throw null; init { } }
         public int BackForwardCacheSize { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.BadgingOptions? Badging { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.BatteryStatusOptions? BatteryStatus { get => throw null; init { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.CallbackContext>? BrowsingContextCreated { get => throw null; init { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.CallbackContext>? BrowsingContextDestroyed { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.CacheStorageBackend? CacheStorage { get => throw null; init { } }
@@ -3181,6 +3255,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.FileSystemBackend? FileSystem { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.GeolocationProvider? Geolocation { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.IndexedDBBackend? IndexedDB { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.KeyboardLockOptions? KeyboardLock { get => throw null; init { } }
         public System.Collections.Generic.IReadOnlyList<string>? Languages { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.StorageShed? LocalStorage { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Media.MediaAutoplayPolicy MediaAutoplayPolicy { get => throw null; init { } }
@@ -3207,6 +3282,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public System.Action<Meziantou.Framework.WebPlatform.Dom.CallbackContext, System.Collections.Generic.IReadOnlyList<System.TimeSpan>>? Vibrate { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.ViewportOptions? Viewport { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.VisitedLinkStore? VisitedLinks { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.WakeLockOptions? WakeLock { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.WebAssembly.WebAssemblyRuntime? WebAssemblyRuntime { get => throw null; init { } }
     }
 
@@ -7628,6 +7704,12 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public JavaScriptSyntaxErrorException(string? message, System.Exception? innerException) { }
     }
 
+    public sealed class Keyboard : Meziantou.Framework.WebPlatform.Dom.EventTarget
+    {
+        public System.Threading.Tasks.Task Lock(System.Collections.Generic.IReadOnlyList<string>? keyCodes = null) => throw null;
+        public void Unlock() { }
+    }
+
     public sealed class KeyboardEvent : Meziantou.Framework.WebPlatform.Dom.UIEvent
     {
         public const uint DomKeyLocationLeft = 1U;
@@ -7687,6 +7769,12 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public override string ToString() => throw null;
         public static bool operator ==(Meziantou.Framework.WebPlatform.Dom.KeyboardKey? left, Meziantou.Framework.WebPlatform.Dom.KeyboardKey? right) => throw null;
         public static bool operator !=(Meziantou.Framework.WebPlatform.Dom.KeyboardKey? left, Meziantou.Framework.WebPlatform.Dom.KeyboardKey? right) => throw null;
+    }
+
+    public sealed class KeyboardLockOptions
+    {
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.CallbackContext, System.Collections.Generic.IReadOnlyList<string>>? Lock { get => throw null; init { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.CallbackContext>? Unlock { get => throw null; init { } }
     }
 
     public sealed class KeyframeAnimationOptions : Meziantou.Framework.WebPlatform.Animations.KeyframeEffectOptions
@@ -8399,6 +8487,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.Geolocation Geolocation { get => throw null; }
         public ulong HardwareConcurrency { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.Ink Ink { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.Keyboard Keyboard { get => throw null; }
         public string Language { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<string> Languages { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.LockManager Locks { get => throw null; }
@@ -8419,10 +8508,14 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.NavigatorUAData UserAgentData { get => throw null; }
         public string Vendor { get => throw null; }
         public string VendorSub { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.WakeLock WakeLock { get => throw null; }
         public bool CanShare(Meziantou.Framework.WebPlatform.Dom.ShareData? data = null) => throw null;
+        public System.Threading.Tasks.Task ClearAppBadge() => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.BatteryManager> GetBattery() => throw null;
         public bool JavaEnabled() => throw null;
         public void RegisterProtocolHandler(string scheme, string url) { }
         public bool SendBeacon(string url, object? data = null) => throw null;
+        public System.Threading.Tasks.Task SetAppBadge(ulong? contents = null) => throw null;
         public System.Threading.Tasks.Task Share(Meziantou.Framework.WebPlatform.Dom.ShareData? data = null) => throw null;
         public bool TaintEnabled() => throw null;
         public void UnregisterProtocolHandler(string scheme, string url) { }
@@ -12306,6 +12399,30 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public double Width { get => throw null; set { } }
     }
 
+    public sealed class WakeLock
+    {
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.WakeLockSentinel> Request(Meziantou.Framework.WebPlatform.Dom.WakeLockType type = Meziantou.Framework.WebPlatform.Dom.WakeLockType.Screen) => throw null;
+    }
+
+    public sealed class WakeLockOptions
+    {
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.CallbackContext, Meziantou.Framework.WebPlatform.Dom.WakeLockType>? Acquire { get => throw null; init { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.CallbackContext, Meziantou.Framework.WebPlatform.Dom.WakeLockType>? Release { get => throw null; init { } }
+    }
+
+    public sealed class WakeLockSentinel : Meziantou.Framework.WebPlatform.Dom.EventTarget
+    {
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnRelease { get => throw null; set { } }
+        public bool Released { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.WakeLockType Type { get => throw null; }
+        public System.Threading.Tasks.Task Release() => throw null;
+    }
+
+    public enum WakeLockType
+    {
+        Screen = 0,
+    }
+
     public sealed class WebLock
     {
         public Meziantou.Framework.WebPlatform.Dom.LockMode Mode { get => throw null; }
@@ -12316,6 +12433,8 @@ namespace Meziantou.Framework.WebPlatform.Dom
     {
         public bool AnimationWorkletEnabled { get => throw null; init { } }
         public bool AsyncClipboardEnabled { get => throw null; init { } }
+        public bool BadgingEnabled { get => throw null; init { } }
+        public bool BatteryStatusEnabled { get => throw null; init { } }
         public bool BeaconEnabled { get => throw null; init { } }
         public bool BroadcastChannelEnabled { get => throw null; init { } }
         public bool CacheStorageEnabled { get => throw null; init { } }
@@ -12340,6 +12459,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool GeolocationEnabled { get => throw null; init { } }
         public bool IndexedDBEnabled { get => throw null; init { } }
         public bool IntersectionObserverEnabled { get => throw null; init { } }
+        public bool KeyboardLockEnabled { get => throw null; init { } }
         public bool LargestContentfulPaintEnabled { get => throw null; init { } }
         public bool LayoutInstabilityEnabled { get => throw null; init { } }
         public bool LayoutWorkletEnabled { get => throw null; init { } }
@@ -12371,6 +12491,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool VibrationEnabled { get => throw null; init { } }
         public bool ViewTransitionsEnabled { get => throw null; init { } }
         public bool VisibilityStateEntryEnabled { get => throw null; init { } }
+        public bool WakeLockEnabled { get => throw null; init { } }
         public bool WebAssemblyEnabled { get => throw null; init { } }
         public bool WebCryptoEnabled { get => throw null; init { } }
         public bool WebLocksEnabled { get => throw null; init { } }
@@ -12723,6 +12844,8 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.NavigatorUAData UserAgentData { get => throw null; }
         public string Vendor { get => throw null; }
         public string VendorSub { get => throw null; }
+        public System.Threading.Tasks.Task ClearAppBadge() => throw null;
+        public System.Threading.Tasks.Task SetAppBadge(ulong? contents = null) => throw null;
     }
 
     public class WorkerOptions

@@ -433,6 +433,9 @@ public partial class Document
             if (RelevantWindow is { NavigatorOrNull: { } navigator } navigatorWindow && ReferenceEquals(navigatorWindow.Document, this))
             {
                 navigator.CancelVibration();
+
+                // https://w3c.github.io/screen-wake-lock/#handling-document-loss-of-visibility: the wake locks are released
+                navigator.WakeLockOrNull?.ReleaseAll();
             }
         }
 
@@ -442,6 +445,12 @@ public partial class Document
         if (visible && RelevantWindow is { NavigatorOrNull.GeolocationOrNull: { } geolocation } geolocationWindow && ReferenceEquals(geolocationWindow.Document, this))
         {
             geolocation.OnDocumentVisible();
+        }
+
+        // The battery status that changed while the document was hidden is read again
+        if (visible && RelevantWindow is { NavigatorOrNull.BatteryManagerOrNull: { } batteryManager } batteryWindow && ReferenceEquals(batteryWindow.Document, this))
+        {
+            batteryManager.OnDocumentVisible();
         }
     }
 

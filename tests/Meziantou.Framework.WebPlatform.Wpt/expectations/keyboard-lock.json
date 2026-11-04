@@ -1,0 +1,23 @@
+{
+  "keyboard-lock/idlharness.https.window.js": {
+    "total": 28
+  },
+  "keyboard-lock/navigator-keyboard-lock-blocked-from-cross-origin-iframe.https.html": {
+    "total": 1
+  },
+  "keyboard-lock/navigator-keyboard-lock-blocked-from-iframe.https.html": {
+    "total": 1
+  },
+  "keyboard-lock/navigator-keyboard-lock-two-parallel-requests.https.html": {
+    "total": 1
+  },
+  "keyboard-lock/navigator-keyboard-lock-two-sequential-requests.https.html": {
+    "total": 1
+  },
+  "keyboard-lock/navigator-keyboard-lock.https.html": {
+    "total": 5
+  },
+  "keyboard-lock/navigator-keyboard-unlock.https.html": {
+    "total": 1
+  }
+}

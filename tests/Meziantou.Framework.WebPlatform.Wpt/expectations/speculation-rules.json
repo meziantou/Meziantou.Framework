@@ -1456,18 +1456,10 @@
     }
   },
   "speculation-rules/prerender/restriction-battery-status.https.html?target_hint=_blank": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "the access to the Battery Status API should be deferred until the\n   prerendered page is activated": "TIMEOUT"
-    }
+    "total": 1
   },
   "speculation-rules/prerender/restriction-battery-status.https.html?target_hint=_self": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "the access to the Battery Status API should be deferred until the\n   prerendered page is activated": "TIMEOUT"
-    }
+    "total": 1
   },
   "speculation-rules/prerender/restriction-bluetooth.tentative.https.html": {
     "harness": "TIMEOUT",
@@ -1750,10 +1742,7 @@
     "total": 1
   },
   "speculation-rules/prerender/restriction-wake-lock.https.html": {
-    "total": 1,
-    "failures": {
-      "the access to the Wake Lock API should be deferred until the prerendered\n    page is activated": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prerender/restriction-web-hid.https.html": {
     "harness": "TIMEOUT",

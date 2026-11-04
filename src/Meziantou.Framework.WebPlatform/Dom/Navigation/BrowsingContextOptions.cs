@@ -563,6 +563,36 @@ public sealed partial class BrowsingContextOptions
     /// </summary>
     public Action<CallbackContext, Notification>? CloseNotification { get; init; }
 
+    /// <summary>
+    /// Gets or sets the host hooks of the Badging API (https://w3c.github.io/badging/, <c>navigator.setAppBadge()</c> and
+    /// <c>navigator.clearAppBadge()</c>): <see cref="BadgingOptions.SetBadge"/> shows the badge of the application. The
+    /// default is null: the badge is not shown anywhere, and the promises are resolved.
+    /// </summary>
+    public BadgingOptions? Badging { get; init; }
+
+    /// <summary>
+    /// Gets or sets the host hooks of the Battery Status API (https://w3c.github.io/battery/, <c>navigator.getBattery()</c>):
+    /// <see cref="BatteryStatusOptions.Provider"/> is the source of the battery status. The default is null: the
+    /// <c>BatteryManager</c> reports a fully charged battery that is plugged in (as a user agent that cannot report the
+    /// battery status).
+    /// </summary>
+    public BatteryStatusOptions? BatteryStatus { get; init; }
+
+    /// <summary>
+    /// Gets or sets the host hooks of the Screen Wake Lock API (https://w3c.github.io/screen-wake-lock/,
+    /// <c>navigator.wakeLock</c>): <see cref="WakeLockOptions.Acquire"/> and <see cref="WakeLockOptions.Release"/> keep the
+    /// screen on. The <c>screen-wake-lock</c> permission is checked with <see cref="Permissions"/> and
+    /// <see cref="RequestPermission"/>. The default is null: nothing is kept on, but the documents get their locks.
+    /// </summary>
+    public WakeLockOptions? WakeLock { get; init; }
+
+    /// <summary>
+    /// Gets or sets the host hooks of the Keyboard Lock API (https://wicg.github.io/keyboard-lock/, <c>navigator.keyboard.lock()</c>):
+    /// <see cref="KeyboardLockOptions.Lock"/> and <see cref="KeyboardLockOptions.Unlock"/> capture the keys that the system
+    /// or the browser handle. The default is null: no key is captured, but the promises are resolved.
+    /// </summary>
+    public KeyboardLockOptions? KeyboardLock { get; init; }
+
     /// <summary>The list of notifications (https://notifications.spec.whatwg.org/#list-of-notifications) of the browsing contexts. Lock it to use it.</summary>
     internal List<Notification> ShownNotifications { get; } = [];
 }

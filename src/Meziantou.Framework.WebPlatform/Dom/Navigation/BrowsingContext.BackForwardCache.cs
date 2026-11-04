@@ -92,6 +92,12 @@ public sealed partial class BrowsingContext
             {
                 AddReason(reasons, "masked");
             }
+
+            // As in Chromium, a document whose keyboard is locked is not cached (the tests use it to disable the cache)
+            if (window.NavigatorOrNull?.KeyboardOrNull is { IsLocked: true })
+            {
+                AddReason(reasons, "keyboardlock");
+            }
         }
 
         if (document.ChildNavigables is { } children)

@@ -3727,6 +3727,9 @@ public sealed partial class BrowsingContext : IDisposable
             }
         }
 
+        // https://wicg.github.io/soft-navigations/#sec-html-history: the URL change of the current interaction
+        document.ProcessSameDocumentCommit(oldUrl, entry.Url, navigationType);
+
         document.LatestEntry = entry;
         var window = document.RelevantWindow!;
         window.History.RestoreState(entry);
@@ -3769,8 +3772,12 @@ public sealed partial class BrowsingContext : IDisposable
             document.RelevantWindow!.History.RestoreState(newEntry);
         }
 
+        var oldUrl = document.UrlRecord;
         document.SetUrl(newUrl, keepTargetElement: true);
         document.LatestEntry = newEntry;
+
+        // https://wicg.github.io/soft-navigations/#sec-html-history: the URL change of the current interaction
+        document.ProcessSameDocumentCommit(oldUrl, newUrl, historyHandling == NavigationHistoryBehavior.Push ? NavigationType.Push : NavigationType.Replace);
         document.RelevantWindow?.Navigation.UpdateEntriesForSameDocumentNavigation(newEntry, historyHandling == NavigationHistoryBehavior.Push ? NavigationType.Push : NavigationType.Replace);
         Options.SameDocumentNavigated?.Invoke(CallbackContext.For(this));
     }

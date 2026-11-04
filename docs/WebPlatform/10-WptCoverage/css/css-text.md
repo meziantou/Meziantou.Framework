@@ -21,9 +21,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 - **BUG**: 1
 - **TEST BUG**: 46
 - **NOT IMPLEMENTED**: 4
-- **REQUIRES**: 1
-  - `rendering`: 1
-- **TEST RUNNER**: 2
+- **TEST RUNNER**: 3
 
 ## Stable tests
 
@@ -456,7 +454,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`hyphens/hyphens-auto-004.html`](https://wpt.fyi/results/css/css-text/hyphens/hyphens-auto-004.html) | Fail | 0 / 1 | TEST BUG | the reference puts the ideographic spaces (U+3000) after `regulation` on a line of their own, as Chrome and Safari do; with `white-space: normal`, "if there remains any sequence of white space, other space separators, and/or preserved tabs at the end of a line", "the UA must hang this sequence (unconditionally)" (https://drafts.csswg.org/css-text-3/#white-space-phase-2): they hang at the end of the second line, after `lation`, as `css/css-text/white-space/trailing-ideographic-space-001.html` and `-002` require (which this engine passes and every browser fails); Firefox fails this test too |
 | [`hyphens/hyphens-auto-005.html`](https://wpt.fyi/results/css/css-text/hyphens/hyphens-auto-005.html) | Pass | 1 / 1 |  |  |
 | [`hyphens/hyphens-auto-010.html`](https://wpt.fyi/results/css/css-text/hyphens/hyphens-auto-010.html) | Pass | 1 / 1 |  |  |
-| [`hyphens/hyphens-auto-control.html`](https://wpt.fyi/results/css/css-text/hyphens/hyphens-auto-control.html) | Fail | 0 / 1 | REQUIRES(rendering) | a monospace font with a U+2010 HYPHEN glyph like its U+002D: the bundled monospace font (Cousine) has no U+2010, the hyphen is the U+2010 of a fallback font (Tinos), the reference uses U+002D |
+| [`hyphens/hyphens-auto-control.html`](https://wpt.fyi/results/css/css-text/hyphens/hyphens-auto-control.html) | Fail | 0 / 1 | TEST RUNNER | the runner has no monospace font with a U+2010 HYPHEN glyph like its U+002D: the bundled monospace font (Cousine) has no U+2010, the hyphen is the U+2010 of a fallback font (Tinos), the reference uses U+002D |
 | [`hyphens/hyphens-auto-inline-010.html`](https://wpt.fyi/results/css/css-text/hyphens/hyphens-auto-inline-010.html) | Pass | 1 / 1 |  |  |
 | [`hyphens/hyphens-auto-last-word-001.html`](https://wpt.fyi/results/css/css-text/hyphens/hyphens-auto-last-word-001.html) | Pass | 1 / 1 |  |  |
 | [`hyphens/hyphens-auto-min-content.html`](https://wpt.fyi/results/css/css-text/hyphens/hyphens-auto-min-content.html) | Pass | 1 / 1 |  |  |

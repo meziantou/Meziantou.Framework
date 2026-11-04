@@ -9,29 +9,22 @@ description: "The results of the web-platform-tests of delegated-ink, and why th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 1 | 1 | – |
-| [Tentative](#tentative-tests) | 0 | 4 | 4 | – |
+| [Stable](#stable-tests) | 1 | 1 | 0 | 100% |
+| [Tentative](#tentative-tests) | 4 | 4 | 0 | 100% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **0** | **5** | **5** | **–** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **REQUIRES**: 5
-  - `rendering`: 5
+| **All** | **5** | **5** | **0** | **100%** |
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`delete-presentation-area.html`](https://wpt.fyi/results/delegated-ink/delete-presentation-area.html) | Disabled | – | REQUIRES(rendering) | Delegated Ink Trail |
+| [`delete-presentation-area.html`](https://wpt.fyi/results/delegated-ink/delete-presentation-area.html) | Pass | 1 / 1 |  |  |
 
 ## Tentative tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`exception-thrown-bad-color.tentative.html`](https://wpt.fyi/results/delegated-ink/exception-thrown-bad-color.tentative.html) | Disabled | – | REQUIRES(rendering) | Delegated Ink Trail |
-| [`exception-thrown-diameter-less-than-or-equal-to-0.tentative.html`](https://wpt.fyi/results/delegated-ink/exception-thrown-diameter-less-than-or-equal-to-0.tentative.html) | Disabled | – | REQUIRES(rendering) | Delegated Ink Trail |
-| [`exception-thrown-untrusted-event.tentative.window.js`](https://wpt.fyi/results/delegated-ink/exception-thrown-untrusted-event.tentative.window.js) | Disabled | – | REQUIRES(rendering) | Delegated Ink Trail |
-| [`requestPresenter-returns-valid-promise.tentative.window.js`](https://wpt.fyi/results/delegated-ink/requestPresenter-returns-valid-promise.tentative.window.js) | Disabled | – | REQUIRES(rendering) | Delegated Ink Trail |
+| [`exception-thrown-bad-color.tentative.html`](https://wpt.fyi/results/delegated-ink/exception-thrown-bad-color.tentative.html) | Pass | 1 / 1 |  |  |
+| [`exception-thrown-diameter-less-than-or-equal-to-0.tentative.html`](https://wpt.fyi/results/delegated-ink/exception-thrown-diameter-less-than-or-equal-to-0.tentative.html) | Pass | 4 / 4 |  |  |
+| [`exception-thrown-untrusted-event.tentative.window.js`](https://wpt.fyi/results/delegated-ink/exception-thrown-untrusted-event.tentative.window.js) | Pass | 1 / 1 |  |  |
+| [`requestPresenter-returns-valid-promise.tentative.window.js`](https://wpt.fyi/results/delegated-ink/requestPresenter-returns-valid-promise.tentative.window.js) | Pass | 7 / 7 |  |  |

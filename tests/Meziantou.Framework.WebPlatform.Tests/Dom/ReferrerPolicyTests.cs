@@ -83,6 +83,8 @@ public sealed class ReferrerPolicyTests
     [InlineData("unsafe-url, invalid", "https://other.example/", "https://example.com/dir/page.html?query")]
     [InlineData("unsafe-url, no-referrer", "https://other.example/", null)]
     [InlineData("invalid", "https://other.example/", "https://example.com/")]
+    [InlineData("origin, origin no-referrer", "https://example.com/other.html", "https://example.com/dir/page.html?query")]
+    [InlineData("origin, , unsafe-url", "https://other.example/", "https://example.com/dir/page.html?query")]
     public void ReferrerPolicyHeader(string header, string url, string? expected)
     {
         var (request, document) = FollowLink(url, headers: [new("Referrer-Policy", header)]);

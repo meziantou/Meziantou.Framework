@@ -243,7 +243,6 @@ internal static partial class WptCoverage
         ("hardware", "devices and OS integration: sensors, cameras, screens, Bluetooth, USB"),
         ("layout", "a layout engine: boxes, scrolling, hit testing"),
         ("media", "audio and video playback, media decoders and encoders"),
-        ("rendering", "painting, image decoding, canvas, paint timing"),
         ("service-workers", "service workers"),
         ("user-input", "user input: pointer, keyboard and wheel actions, user activation"),
         ("web-storage", "Web Storage (`localStorage`, `sessionStorage`)"),

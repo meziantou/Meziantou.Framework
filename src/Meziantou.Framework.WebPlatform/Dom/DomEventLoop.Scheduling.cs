@@ -43,16 +43,18 @@ public sealed partial class DomEventLoop
     internal SchedulerContinuationState? CurrentContinuationState { get; set; }
 
     /// <summary>
-    /// Returns the current continuation state, captured by a job callback (https://wicg.github.io/scheduling-apis/#sec-patches-html-hostmakejobcallback).
-    /// A continuation state is immutable: the snapshot is its clone.
+    /// Returns the current continuation state, captured by a job callback (https://wicg.github.io/scheduling-apis/#sec-patches-html-hostmakejobcallback),
+    /// with the current interaction context (https://wicg.github.io/soft-navigations/#sec-interaction-context-intro: the promise
+    /// reactions propagate it as an AsyncContext variable). A continuation state is immutable: the snapshot is its clone.
     /// </summary>
     internal ContinuationStateSnapshot CaptureContinuationState()
     {
         var state = CurrentContinuationState;
+        var interactionContext = InteractionContext.Current;
         var snapshot = _continuationStateSnapshot;
-        if (snapshot is null || !ReferenceEquals(snapshot.State, state))
+        if (snapshot is null || !ReferenceEquals(snapshot.State, state) || !ReferenceEquals(snapshot.InteractionContext, interactionContext))
         {
-            _continuationStateSnapshot = snapshot = new ContinuationStateSnapshot(this, state);
+            _continuationStateSnapshot = snapshot = new ContinuationStateSnapshot(this, state, interactionContext);
         }
 
         return snapshot;
@@ -138,9 +140,12 @@ public sealed partial class DomEventLoop
 }
 
 /// <summary>The continuation state captured by a job callback, and the event loop whose state it restores when the callback is called.</summary>
-internal sealed class ContinuationStateSnapshot(DomEventLoop eventLoop, SchedulerContinuationState? state)
+internal sealed class ContinuationStateSnapshot(DomEventLoop eventLoop, SchedulerContinuationState? state, InteractionContext? interactionContext)
 {
     public DomEventLoop EventLoop { get; } = eventLoop;
 
     public SchedulerContinuationState? State { get; } = state;
+
+    /// <summary>The interaction context, restored with the continuation state.</summary>
+    public InteractionContext? InteractionContext { get; } = interactionContext;
 }

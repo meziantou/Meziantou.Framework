@@ -37,13 +37,16 @@ public sealed class ImageElementTests : IDisposable
         return document;
     }
 
-    /// <summary>Serves a PNG for the URLs ending with .png and a text file for the other ones.</summary>
+    /// <summary>Serves a PNG for the URLs ending with .png (with the Content-DPR header of their <c>dpr</c> query parameter) and a text file for the other ones.</summary>
     private sealed class ImageLoader(ImageElementTests test) : DocumentLoader
     {
         public override ValueTask<DocumentResource?> LoadAsync(DocumentRequest request, CancellationToken cancellationToken)
         {
             test._requests.Add(request.Destination + " " + request.Url);
-            var resource = request.Url.Contains(".png", StringComparison.Ordinal) ? new DocumentResource(Png) { Headers = [new("Content-Type", "image/png")] } : new DocumentResource("not an image") { Headers = [new("Content-Type", "text/plain")] };
+            var dpr = request.Url.IndexOf("?dpr=", StringComparison.Ordinal) is var index and >= 0 ? request.Url[(index + 5)..] : null;
+            var resource = request.Url.Contains(".png", StringComparison.Ordinal)
+                ? new DocumentResource(Png) { Headers = dpr is null ? [new("Content-Type", "image/png")] : [new("Content-Type", "image/png"), new("Content-DPR", dpr)] }
+                : new DocumentResource("not an image") { Headers = [new("Content-Type", "text/plain")] };
             return ValueTask.FromResult<DocumentResource?>(resource);
         }
     }
@@ -60,6 +63,21 @@ public sealed class ImageElementTests : IDisposable
         Assert.Equal((2u, 3u), (image.NaturalWidth, image.NaturalHeight));
         Assert.True(image.Complete);
         Assert.Equal(["Image https://example.com/a.png"], _requests);
+    }
+
+    [Theory]
+    [InlineData("<img src=a.png?dpr=0.5>", 4u, 6u)]
+    [InlineData("<img src=a.png?dpr=2>", 1u, 2u)]
+    [InlineData("<img srcset='a.png?dpr=0.5 2x'>", 4u, 6u)]
+    [InlineData("<img src=a.png?dpr=0>", 2u, 3u)]
+    [InlineData("<img src=a.png?dpr=-1>", 2u, 3u)]
+    [InlineData("<img srcset='a.png?dpr=x 2x'>", 1u, 2u)]
+    public void ContentDpr_DividesTheNaturalSize(string html, uint width, uint height)
+    {
+        // A valid Content-DPR header replaces the density of the srcset candidate; an invalid one is ignored
+        var image = Image(Load(html));
+        Assert.True(image.Complete);
+        Assert.Equal((width, height), (image.NaturalWidth, image.NaturalHeight));
     }
 
     [Theory]

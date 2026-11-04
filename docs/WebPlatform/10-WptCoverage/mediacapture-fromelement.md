@@ -9,37 +9,35 @@ description: "The results of the web-platform-tests of mediacapture-fromelement,
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 11 | 11 | – |
-| [Tentative](#tentative-tests) | 0 | 1 | 1 | – |
+| [Stable](#stable-tests) | 0 | 11 | 0 | 0% |
+| [Tentative](#tentative-tests) | 0 | 1 | 0 | 0% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **0** | **12** | **12** | **–** |
+| **All** | **0** | **12** | **0** | **0%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **REQUIRES**: 12
-  - `media`: 12
-  - `rendering`: 12
+- **NOT IMPLEMENTED**: 12
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`HTMLCanvasElement-getImageData-noframe.html`](https://wpt.fyi/results/mediacapture-fromelement/HTMLCanvasElement-getImageData-noframe.html) | Disabled | – | REQUIRES(media, rendering) | captureStream() of media and canvas elements |
-| [`capture-audio-unaffected-volume.html`](https://wpt.fyi/results/mediacapture-fromelement/capture-audio-unaffected-volume.html) | Disabled | – | REQUIRES(media, rendering) | captureStream() of media and canvas elements |
-| [`capture-muted.html`](https://wpt.fyi/results/mediacapture-fromelement/capture-muted.html) | Disabled | – | REQUIRES(media, rendering) | captureStream() of media and canvas elements |
-| [`capture.html`](https://wpt.fyi/results/mediacapture-fromelement/capture.html) | Disabled | – | REQUIRES(media, rendering) | captureStream() of media and canvas elements |
-| [`creation.html`](https://wpt.fyi/results/mediacapture-fromelement/creation.html) | Disabled | – | REQUIRES(media, rendering) | captureStream() of media and canvas elements |
-| [`cross-origin.html`](https://wpt.fyi/results/mediacapture-fromelement/cross-origin.html) | Disabled | – | REQUIRES(media, rendering) | captureStream() of media and canvas elements |
-| [`ended.html`](https://wpt.fyi/results/mediacapture-fromelement/ended.html) | Disabled | – | REQUIRES(media, rendering) | captureStream() of media and canvas elements |
-| [`historical.html`](https://wpt.fyi/results/mediacapture-fromelement/historical.html) | Disabled | – | REQUIRES(media, rendering) | captureStream() of media and canvas elements |
-| [`idlharness.window.js`](https://wpt.fyi/results/mediacapture-fromelement/idlharness.window.js) | Disabled | – | REQUIRES(media, rendering) | captureStream() of media and canvas elements |
-| [`restart-after-ended.html`](https://wpt.fyi/results/mediacapture-fromelement/restart-after-ended.html) | Disabled | – | REQUIRES(media, rendering) | captureStream() of media and canvas elements |
-| [`src-reset.html`](https://wpt.fyi/results/mediacapture-fromelement/src-reset.html) | Disabled | – | REQUIRES(media, rendering) | captureStream() of media and canvas elements |
+| [`HTMLCanvasElement-getImageData-noframe.html`](https://wpt.fyi/results/mediacapture-fromelement/HTMLCanvasElement-getImageData-noframe.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Media Capture from DOM Elements (`captureStream()` of the media and canvas elements, `CanvasCaptureMediaStreamTrack`): `MediaStream` is not implemented |
+| [`capture-audio-unaffected-volume.html`](https://wpt.fyi/results/mediacapture-fromelement/capture-audio-unaffected-volume.html) | Fail | 0 / 4 | NOT IMPLEMENTED | Media Capture from DOM Elements (`captureStream()` of the media and canvas elements, `CanvasCaptureMediaStreamTrack`): `MediaStream` is not implemented |
+| [`capture-muted.html`](https://wpt.fyi/results/mediacapture-fromelement/capture-muted.html) | Fail | 0 / 3 | NOT IMPLEMENTED | Media Capture from DOM Elements (`captureStream()` of the media and canvas elements, `CanvasCaptureMediaStreamTrack`): `MediaStream` is not implemented |
+| [`capture.html`](https://wpt.fyi/results/mediacapture-fromelement/capture.html) | Fail | 3 / 6 | NOT IMPLEMENTED | Media Capture from DOM Elements (`captureStream()` of the media and canvas elements, `CanvasCaptureMediaStreamTrack`): `MediaStream` is not implemented |
+| [`creation.html`](https://wpt.fyi/results/mediacapture-fromelement/creation.html) | Fail | 3 / 6 | NOT IMPLEMENTED | Media Capture from DOM Elements (`captureStream()` of the media and canvas elements, `CanvasCaptureMediaStreamTrack`): `MediaStream` is not implemented |
+| [`cross-origin.html`](https://wpt.fyi/results/mediacapture-fromelement/cross-origin.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Media Capture from DOM Elements (`captureStream()` of the media and canvas elements, `CanvasCaptureMediaStreamTrack`): `MediaStream` is not implemented |
+| [`ended.html`](https://wpt.fyi/results/mediacapture-fromelement/ended.html) | Fail | 3 / 6 | NOT IMPLEMENTED | Media Capture from DOM Elements (`captureStream()` of the media and canvas elements, `CanvasCaptureMediaStreamTrack`): `MediaStream` is not implemented |
+| [`historical.html`](https://wpt.fyi/results/mediacapture-fromelement/historical.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Media Capture from DOM Elements (`captureStream()` of the media and canvas elements, `CanvasCaptureMediaStreamTrack`): `MediaStream` is not implemented |
+| [`idlharness.window.js`](https://wpt.fyi/results/mediacapture-fromelement/idlharness.window.js) | Fail | 14 / 30 | NOT IMPLEMENTED | Media Capture from DOM Elements (`captureStream()` of the media and canvas elements, `CanvasCaptureMediaStreamTrack`): `MediaStream` is not implemented |
+| [`restart-after-ended.html`](https://wpt.fyi/results/mediacapture-fromelement/restart-after-ended.html) | Fail | 0 / 3 | NOT IMPLEMENTED | Media Capture from DOM Elements (`captureStream()` of the media and canvas elements, `CanvasCaptureMediaStreamTrack`): `MediaStream` is not implemented |
+| [`src-reset.html`](https://wpt.fyi/results/mediacapture-fromelement/src-reset.html) | Error | 0 / 0 | NOT IMPLEMENTED | Media Capture from DOM Elements (`captureStream()` of the media and canvas elements, `CanvasCaptureMediaStreamTrack`): `MediaStream` is not implemented |
 
 ## Tentative tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`HTMLCanvasElement-captureStream-settings.tentative.html`](https://wpt.fyi/results/mediacapture-fromelement/HTMLCanvasElement-captureStream-settings.tentative.html) | Disabled | – | REQUIRES(media, rendering) | captureStream() of media and canvas elements |
+| [`HTMLCanvasElement-captureStream-settings.tentative.html`](https://wpt.fyi/results/mediacapture-fromelement/HTMLCanvasElement-captureStream-settings.tentative.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Media Capture from DOM Elements (`captureStream()` of the media and canvas elements, `CanvasCaptureMediaStreamTrack`): `MediaStream` is not implemented |

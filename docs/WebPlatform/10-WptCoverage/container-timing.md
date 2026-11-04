@@ -10,47 +10,40 @@ description: "The results of the web-platform-tests of container-timing, and why
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | Stable | 0 | 0 | 0 | – |
-| [Tentative](#tentative-tests) | 0 | 29 | 29 | – |
+| [Tentative](#tentative-tests) | 29 | 29 | 0 | 100% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **0** | **29** | **29** | **–** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **REQUIRES**: 29
-  - `rendering`: 29
+| **All** | **29** | **29** | **0** | **100%** |
 
 ## Tentative tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`tentative/containertiming-and-ignore-on-img-itself.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-and-ignore-on-img-itself.html) | Disabled | – | REQUIRES(rendering) | Container Timing |
-| [`tentative/containertiming-and-ignore-on-text-itself.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-and-ignore-on-text-itself.html) | Disabled | – | REQUIRES(rendering) | Container Timing |
-| [`tentative/containertiming-body-with-child-img.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-body-with-child-img.html) | Disabled | – | REQUIRES(rendering) | Container Timing |
-| [`tentative/containertiming-img-already-loaded.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-img-already-loaded.html) | Disabled | – | REQUIRES(rendering) | Container Timing |
-| [`tentative/containertiming-img-itself.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-img-itself.html) | Disabled | – | REQUIRES(rendering) | Container Timing |
-| [`tentative/containertiming-largest-painted-element-own-area.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-largest-painted-element-own-area.html) | Disabled | – | REQUIRES(rendering) | Container Timing |
-| [`tentative/containertiming-largest-painted-element.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-largest-painted-element.html) | Disabled | – | REQUIRES(rendering) | Container Timing |
-| [`tentative/containertiming-observe-after-paint-with-buffering.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-observe-after-paint-with-buffering.html) | Disabled | – | REQUIRES(rendering) | Container Timing |
-| [`tentative/containertiming-observe-after-paint-without-buffering.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-observe-after-paint-without-buffering.html) | Disabled | – | REQUIRES(rendering) | Container Timing |
-| [`tentative/containertiming-observe-no-paint.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-observe-no-paint.html) | Disabled | – | REQUIRES(rendering) | Container Timing |
-| [`tentative/containertiming-text-itself.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-text-itself.html) | Disabled | – | REQUIRES(rendering) | Container Timing |
-| [`tentative/containertiming-two-overlapping-imgs.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-two-overlapping-imgs.html) | Disabled | – | REQUIRES(rendering) | Container Timing |
-| [`tentative/containertiming-with-child-ignore-and-child-img.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-with-child-ignore-and-child-img.html) | Disabled | – | REQUIRES(rendering) | Container Timing |
-| [`tentative/containertiming-with-child-img.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-with-child-img.html) | Disabled | – | REQUIRES(rendering) | Container Timing |
-| [`tentative/containertiming-with-child-text.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-with-child-text.html) | Disabled | – | REQUIRES(rendering) | Container Timing |
-| [`tentative/containertiming-with-ignore-and-child-img.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-with-ignore-and-child-img.html) | Disabled | – | REQUIRES(rendering) | Container Timing |
-| [`tentative/iframe-isolation-cross-origin.sub.html`](https://wpt.fyi/results/container-timing/tentative/iframe-isolation-cross-origin.sub.html) | Disabled | – | REQUIRES(rendering) | Container Timing |
-| [`tentative/iframe-isolation-same-origin.html`](https://wpt.fyi/results/container-timing/tentative/iframe-isolation-same-origin.html) | Disabled | – | REQUIRES(rendering) | Container Timing |
-| [`tentative/ignore-with-containertiming-and-child-img.html`](https://wpt.fyi/results/container-timing/tentative/ignore-with-containertiming-and-child-img.html) | Disabled | – | REQUIRES(rendering) | Container Timing |
-| [`tentative/img-not-child-of-container-timing.html`](https://wpt.fyi/results/container-timing/tentative/img-not-child-of-container-timing.html) | Disabled | – | REQUIRES(rendering) | Container Timing |
-| [`tentative/nested-containertiming-and-ignore-on-img.html`](https://wpt.fyi/results/container-timing/tentative/nested-containertiming-and-ignore-on-img.html) | Disabled | – | REQUIRES(rendering) | Container Timing |
-| [`tentative/nested-containertiming-and-ignore-on-text.html`](https://wpt.fyi/results/container-timing/tentative/nested-containertiming-and-ignore-on-text.html) | Disabled | – | REQUIRES(rendering) | Container Timing |
-| [`tentative/nested-containertiming-child-img-with-ignore.html`](https://wpt.fyi/results/container-timing/tentative/nested-containertiming-child-img-with-ignore.html) | Disabled | – | REQUIRES(rendering) | Container Timing |
-| [`tentative/nested-containertiming-child-img.html`](https://wpt.fyi/results/container-timing/tentative/nested-containertiming-child-img.html) | Disabled | – | REQUIRES(rendering) | Container Timing |
-| [`tentative/nested-containertiming-on-img-without-ignore.html`](https://wpt.fyi/results/container-timing/tentative/nested-containertiming-on-img-without-ignore.html) | Disabled | – | REQUIRES(rendering) | Container Timing |
-| [`tentative/nested-containertiming-with-ignore.html`](https://wpt.fyi/results/container-timing/tentative/nested-containertiming-with-ignore.html) | Disabled | – | REQUIRES(rendering) | Container Timing |
-| [`tentative/pseudo-background-image-before-in-container-timing.html`](https://wpt.fyi/results/container-timing/tentative/pseudo-background-image-before-in-container-timing.html) | Disabled | – | REQUIRES(rendering) | Container Timing |
-| [`tentative/pseudo-with-image-content-in-container-timing.html`](https://wpt.fyi/results/container-timing/tentative/pseudo-with-image-content-in-container-timing.html) | Disabled | – | REQUIRES(rendering) | Container Timing |
-| [`tentative/pseudo-with-text-content-in-container-timing.html`](https://wpt.fyi/results/container-timing/tentative/pseudo-with-text-content-in-container-timing.html) | Disabled | – | REQUIRES(rendering) | Container Timing |
+| [`tentative/containertiming-and-ignore-on-img-itself.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-and-ignore-on-img-itself.html) | Pass | 1 / 1 |  |  |
+| [`tentative/containertiming-and-ignore-on-text-itself.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-and-ignore-on-text-itself.html) | Pass | 1 / 1 |  |  |
+| [`tentative/containertiming-body-with-child-img.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-body-with-child-img.html) | Pass | 1 / 1 |  |  |
+| [`tentative/containertiming-img-already-loaded.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-img-already-loaded.html) | Pass | 1 / 1 |  |  |
+| [`tentative/containertiming-img-itself.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-img-itself.html) | Pass | 1 / 1 |  |  |
+| [`tentative/containertiming-largest-painted-element-own-area.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-largest-painted-element-own-area.html) | Pass | 1 / 1 |  |  |
+| [`tentative/containertiming-largest-painted-element.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-largest-painted-element.html) | Pass | 1 / 1 |  |  |
+| [`tentative/containertiming-observe-after-paint-with-buffering.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-observe-after-paint-with-buffering.html) | Pass | 1 / 1 |  |  |
+| [`tentative/containertiming-observe-after-paint-without-buffering.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-observe-after-paint-without-buffering.html) | Pass | 1 / 1 |  |  |
+| [`tentative/containertiming-observe-no-paint.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-observe-no-paint.html) | Pass | 1 / 1 |  |  |
+| [`tentative/containertiming-text-itself.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-text-itself.html) | Pass | 1 / 1 |  |  |
+| [`tentative/containertiming-two-overlapping-imgs.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-two-overlapping-imgs.html) | Pass | 1 / 1 |  |  |
+| [`tentative/containertiming-with-child-ignore-and-child-img.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-with-child-ignore-and-child-img.html) | Pass | 1 / 1 |  |  |
+| [`tentative/containertiming-with-child-img.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-with-child-img.html) | Pass | 1 / 1 |  |  |
+| [`tentative/containertiming-with-child-text.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-with-child-text.html) | Pass | 1 / 1 |  |  |
+| [`tentative/containertiming-with-ignore-and-child-img.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-with-ignore-and-child-img.html) | Pass | 1 / 1 |  |  |
+| [`tentative/iframe-isolation-cross-origin.sub.html`](https://wpt.fyi/results/container-timing/tentative/iframe-isolation-cross-origin.sub.html) | Pass | 1 / 1 |  |  |
+| [`tentative/iframe-isolation-same-origin.html`](https://wpt.fyi/results/container-timing/tentative/iframe-isolation-same-origin.html) | Pass | 1 / 1 |  |  |
+| [`tentative/ignore-with-containertiming-and-child-img.html`](https://wpt.fyi/results/container-timing/tentative/ignore-with-containertiming-and-child-img.html) | Pass | 1 / 1 |  |  |
+| [`tentative/img-not-child-of-container-timing.html`](https://wpt.fyi/results/container-timing/tentative/img-not-child-of-container-timing.html) | Pass | 1 / 1 |  |  |
+| [`tentative/nested-containertiming-and-ignore-on-img.html`](https://wpt.fyi/results/container-timing/tentative/nested-containertiming-and-ignore-on-img.html) | Pass | 1 / 1 |  |  |
+| [`tentative/nested-containertiming-and-ignore-on-text.html`](https://wpt.fyi/results/container-timing/tentative/nested-containertiming-and-ignore-on-text.html) | Pass | 1 / 1 |  |  |
+| [`tentative/nested-containertiming-child-img-with-ignore.html`](https://wpt.fyi/results/container-timing/tentative/nested-containertiming-child-img-with-ignore.html) | Pass | 1 / 1 |  |  |
+| [`tentative/nested-containertiming-child-img.html`](https://wpt.fyi/results/container-timing/tentative/nested-containertiming-child-img.html) | Pass | 1 / 1 |  |  |
+| [`tentative/nested-containertiming-on-img-without-ignore.html`](https://wpt.fyi/results/container-timing/tentative/nested-containertiming-on-img-without-ignore.html) | Pass | 1 / 1 |  |  |
+| [`tentative/nested-containertiming-with-ignore.html`](https://wpt.fyi/results/container-timing/tentative/nested-containertiming-with-ignore.html) | Pass | 1 / 1 |  |  |
+| [`tentative/pseudo-background-image-before-in-container-timing.html`](https://wpt.fyi/results/container-timing/tentative/pseudo-background-image-before-in-container-timing.html) | Pass | 1 / 1 |  |  |
+| [`tentative/pseudo-with-image-content-in-container-timing.html`](https://wpt.fyi/results/container-timing/tentative/pseudo-with-image-content-in-container-timing.html) | Pass | 1 / 1 |  |  |
+| [`tentative/pseudo-with-text-content-in-container-timing.html`](https://wpt.fyi/results/container-timing/tentative/pseudo-with-text-content-in-container-timing.html) | Pass | 1 / 1 |  |  |

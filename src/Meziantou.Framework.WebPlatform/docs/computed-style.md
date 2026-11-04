@@ -1332,8 +1332,8 @@ contents of a replaced element or a form control, and it is not a never-rendered
   and text nodes between two rendering updates, once a `PerformanceObserver` of the window observes them: the layout is
   compared frame by frame from then on (the transforms, the scrolls and the newly appeared boxes are not shifts), and the
   sources are the 5 nodes with the largest impact (see [Layout shifts](layout.md#layout-shifts-csslayoutlayoutshifttrackercs)).
-- The `paint`, `largest-contentful-paint` and `element` performance entries (Paint Timing, Largest Contentful Paint, Element
-  Timing) report the paints found in the display list painted by the rendering updates, once a script of the window observes
+- The `paint`, `largest-contentful-paint`, `element` and `container` performance entries (Paint Timing, Largest Contentful
+  Paint, Element Timing, Container Timing) report the paints found in the display list painted by the rendering updates, once a script of the window observes
   or reads them (see [Paint timing](rendering.md#paint-timing)).
 - `getTotalLength()` and `getPointAtLength()` use the path equivalent to the shape (SVG 2: a rectangle starts at `(x + rx, y)`,
   a circle and an ellipse at `(cx + rx, cy)`, clockwise); `isPointInFill()` (with `fill-rule`) and `isPointInStroke()` (the

@@ -49,6 +49,11 @@ the hit testing of the layout) gets the events, also in the document of an `ifra
 | `Input.Modifiers` | The modifier keys ([InputModifiers.Shift](cref:Meziantou.Framework.WebPlatform.Dom.InputModifiers.Shift), [Control](cref:Meziantou.Framework.WebPlatform.Dom.InputModifiers.Control)...) of the next events |
 | `Input.HitTest(x, y)` | The element at a position, without firing anything |
 
+The pen and touch events can be given to `navigator.ink` (the [Delegated Ink Trail API](https://wicg.github.io/ink-enhancement/)):
+`requestPresenter()` and `updateInkTrailStartPoint()` validate their arguments as in Chromium (a trusted pointer event, a
+valid CSS color, a diameter greater than 0), but the engine does not draw the predicted trail: the page draws its own
+trail in its next frame.
+
 To click an element, click the center of its [GetBoundingClientRect()](cref:Meziantou.Framework.WebPlatform.Dom.Element.GetBoundingClientRect). `Input.MapToTopLevel(document, x, y)` converts a
 position of the viewport of an `iframe` to the top-level viewport.
 

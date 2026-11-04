@@ -218,6 +218,13 @@ public sealed partial class Navigator
     [IdlMember("permissions", "https://w3c.github.io/permissions/#dom-navigator-permissions")]
     public Permissions Permissions => _permissions ??= new Permissions(_window);
 
+    private Ink? _ink;
+
+    /// <summary>Gets the Ink API of the window (https://wicg.github.io/ink-enhancement/#dom-navigator-ink): the presenters of delegated ink trails.</summary>
+    /// <seealso href="https://wicg.github.io/ink-enhancement/#dom-navigator-ink"/>
+    [IdlMember("ink", "https://wicg.github.io/ink-enhancement/#dom-navigator-ink")]
+    public Ink Ink => _ink ??= new Ink(_window);
+
     /// <summary>The clipboard of the window, if it was created.</summary>
     internal Clipboard? ClipboardOrNull => _clipboard;
 

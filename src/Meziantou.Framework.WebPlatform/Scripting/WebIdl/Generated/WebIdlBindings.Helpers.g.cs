@@ -1368,6 +1368,21 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return result;
     }
 
+    internal static TValue FromDictionary_Dom_InkPresenterParam(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.InkPresenterParam value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "presentationArea", r.Wrap(value.PresentationArea));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_InkTrailStyle(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.InkTrailStyle value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "color", r.FromString(value.Color));
+        r.SetMember(result, "diameter", r.FromNumber((double)value.Diameter));
+        return result;
+    }
+
     internal static TValue FromDictionary_Dom_InputEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.InputEventInit value)
     {
         var result = r.CreateObject();
@@ -5469,6 +5484,33 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return new global::Meziantou.Framework.WebPlatform.Dom.ImportNodeOptions
         {
             SelfOnly = m1,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.InkPresenterParam ToDictionary_Dom_InkPresenterParam(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "InkPresenterParam");
+        var m0_value = r.GetDictionaryMember(value, "presentationArea");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (global::Meziantou.Framework.WebPlatform.Dom.Element?)(global::Meziantou.Framework.WebPlatform.Dom.Element?)null : (r.IsNullOrUndefined(m0_value) ? (global::Meziantou.Framework.WebPlatform.Dom.Element?)null : r.ToInterface<global::Meziantou.Framework.WebPlatform.Dom.Element>(m0_value, "Element"));
+        return new global::Meziantou.Framework.WebPlatform.Dom.InkPresenterParam
+        {
+            PresentationArea = m0,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.InkTrailStyle ToDictionary_Dom_InkTrailStyle(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "InkTrailStyle");
+        var m0_value = r.GetDictionaryMember(value, "color");
+        if (r.Adapter.IsUndefined(m0_value)) throw r.MissingRequiredDictionaryMember("InkTrailStyle", "color");
+        var m0 = r.ToDomString(m0_value);
+        var m1_value = r.GetDictionaryMember(value, "diameter");
+        if (r.Adapter.IsUndefined(m1_value)) throw r.MissingRequiredDictionaryMember("InkTrailStyle", "diameter");
+        var m1 = r.ToDouble(m1_value, restricted: false);
+        return new global::Meziantou.Framework.WebPlatform.Dom.InkTrailStyle
+        {
+            Color = m0,
+            Diameter = m1,
         };
     }
 

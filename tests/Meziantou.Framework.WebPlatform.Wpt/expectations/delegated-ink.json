@@ -1,0 +1,17 @@
+{
+  "delegated-ink/delete-presentation-area.html": {
+    "total": 1
+  },
+  "delegated-ink/exception-thrown-bad-color.tentative.html": {
+    "total": 1
+  },
+  "delegated-ink/exception-thrown-diameter-less-than-or-equal-to-0.tentative.html": {
+    "total": 4
+  },
+  "delegated-ink/exception-thrown-untrusted-event.tentative.window.js": {
+    "total": 1
+  },
+  "delegated-ink/requestPresenter-returns-valid-promise.tentative.window.js": {
+    "total": 7
+  }
+}

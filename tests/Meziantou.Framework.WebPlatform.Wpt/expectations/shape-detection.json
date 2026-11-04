@@ -1,0 +1,344 @@
+{
+  "shape-detection/detected-boundingBox-read-only.https.html": {
+    "harness": "ERROR",
+    "total": 3,
+    "failures": {
+      "Barcode - detectedBarcode.boundingBox should be DOMRectReadOnly": "FAIL",
+      "Face - detectedFace.boundingBox should be DOMRectReadOnly": "FAIL",
+      "Text - detectedText.boundingBox should be DOMRectReadOnly": "FAIL"
+    }
+  },
+  "shape-detection/detected-postMessage.https.html": {
+    "harness": "ERROR",
+    "total": 3,
+    "failures": {
+      "Barcode - DetectedBarcode can be passed to postMessage()": "FAIL",
+      "Face - DetectedFace can be passed to postMessage()": "FAIL",
+      "Text - DetectedText can be passed to postMessage()": "FAIL"
+    }
+  },
+  "shape-detection/detection-Blob.https.window.js": {
+    "total": 3,
+    "failures": {
+      "BarcodeDetector.detect() rejects on a Blob": "FAIL",
+      "FaceDetector.detect() rejects on a Blob": "FAIL",
+      "TextDetector.detect() rejects on a Blob": "FAIL"
+    }
+  },
+  "shape-detection/detection-HTMLCanvasElement.https.html": {
+    "harness": "ERROR",
+    "total": 9,
+    "failures": {
+      "Barcode - detect(HTMLCanvasElement)": "FAIL",
+      "Barcode - detect(HTMLCanvasElementF16Format)": "FAIL",
+      "Barcode - detect(OffscreenCanvas)": "FAIL",
+      "Face - detect(HTMLCanvasElement)": "FAIL",
+      "Face - detect(HTMLCanvasElementF16Format)": "FAIL",
+      "Face - detect(OffscreenCanvas)": "FAIL",
+      "Text - detect(HTMLCanvasElement)": "FAIL",
+      "Text - detect(HTMLCanvasElementF16Format)": "FAIL",
+      "Text - detect(OffscreenCanvas)": "FAIL"
+    }
+  },
+  "shape-detection/detection-HTMLImageElement-empty-src.https.html": {
+    "total": 3,
+    "failures": {
+      "Barcode - detect(empty src)": "FAIL",
+      "Face - detect(empty src)": "FAIL",
+      "Text - detect(empty src)": "FAIL"
+    }
+  },
+  "shape-detection/detection-HTMLImageElement-zero-dimension-image.https.html": {
+    "total": 3,
+    "failures": {
+      "Barcode - detect(0x0)": "FAIL",
+      "Face - detect(0x0)": "FAIL",
+      "Text - detect(0x0)": "FAIL"
+    }
+  },
+  "shape-detection/detection-HTMLImageElement.https.html": {
+    "harness": "ERROR",
+    "total": 3,
+    "failures": {
+      "Barcode - detect(HTMLImageElement)": "FAIL",
+      "Face - detect(HTMLImageElement)": "FAIL",
+      "Text - detect(HTMLImageElement)": "FAIL"
+    }
+  },
+  "shape-detection/detection-HTMLVideoElement.https.html": {
+    "harness": "ERROR",
+    "total": 3,
+    "failures": {
+      "Barcode - detect(HTMLVideoElement)": "FAIL",
+      "Face - detect(HTMLVideoElement)": "FAIL",
+      "Text - detect(HTMLVideoElement)": "FAIL"
+    }
+  },
+  "shape-detection/detection-ImageBitmap-closed.https.window.js": {
+    "total": 3,
+    "failures": {
+      "BarcodeDetector.detect() rejects on a closed ImageBitmap": "FAIL",
+      "FaceDetector.detect() rejects on a closed ImageBitmap": "FAIL",
+      "TextDetector.detect() rejects on a closed ImageBitmap": "FAIL"
+    }
+  },
+  "shape-detection/detection-ImageBitmap.https.html": {
+    "harness": "ERROR",
+    "total": 3,
+    "failures": {
+      "Barcode - detect(ImageBitmap)": "FAIL",
+      "Face - detect(ImageBitmap)": "FAIL",
+      "Text - detect(ImageBitmap)": "FAIL"
+    }
+  },
+  "shape-detection/detection-ImageData-detached.https.html": {
+    "total": 3,
+    "failures": {
+      "BarcodeDetector.detect() rejects on a detached buffer": "FAIL",
+      "FaceDetector.detect() rejects on a detached buffer": "FAIL",
+      "TextDetector.detect() rejects on a detached buffer": "FAIL"
+    }
+  },
+  "shape-detection/detection-ImageData.https.html": {
+    "harness": "ERROR",
+    "total": 3,
+    "failures": {
+      "Barcode - detect(ImageData)": "FAIL",
+      "Face - detect(ImageData)": "FAIL",
+      "Text - detect(ImageData)": "FAIL"
+    }
+  },
+  "shape-detection/detection-SVGImageElement.https.window.js": {
+    "total": 3,
+    "failures": {
+      "BarcodeDetector.detect() rejects on an SVGImageElement": "FAIL",
+      "FaceDetector.detect() rejects on an SVGImageElement": "FAIL",
+      "TextDetector.detect() rejects on an SVGImageElement": "FAIL"
+    }
+  },
+  "shape-detection/detection-VideoFrame.https.window.js": {
+    "total": 3,
+    "failures": {
+      "BarcodeDetector.detect() rejects on a VideoFrame": "FAIL",
+      "FaceDetector.detect() rejects on a VideoFrame": "FAIL",
+      "TextDetector.detect() rejects on a VideoFrame": "FAIL"
+    }
+  },
+  "shape-detection/detection-getSupportedFormats.https.html": {
+    "harness": "ERROR",
+    "total": 2,
+    "failures": {
+      "get supported barcode formats": "FAIL",
+      "getSupportedFormats() resolves with empty list when unsupported": "FAIL"
+    }
+  },
+  "shape-detection/detection-on-worker.https.worker.js": {
+    "total": 3,
+    "failures": {
+      "Barcode Detector detect(ImageBitmap) on worker": "FAIL",
+      "Face Detector detect(ImageBitmap) on worker": "FAIL",
+      "Text Detector detect(ImageBitmap) on worker": "FAIL"
+    }
+  },
+  "shape-detection/detection-options.https.html": {
+    "harness": "ERROR",
+    "total": 2,
+    "failures": {
+      "Test that BarcodeDetectorOptions are correctly propagated": "FAIL",
+      "Test that FaceDetectionOptions are correctly propagated": "FAIL"
+    }
+  },
+  "shape-detection/detection-security-test.https.html": {
+    "harness": "ERROR",
+    "total": 6,
+    "failures": {
+      "Barcode - detect(broken image)": "NOTRUN",
+      "Barcode - detect(broken video)": "NOTRUN",
+      "Face - detect(broken image)": "TIMEOUT",
+      "Face - detect(broken video)": "NOTRUN",
+      "Text - detect(broken image)": "NOTRUN",
+      "Text - detect(broken video)": "NOTRUN"
+    }
+  },
+  "shape-detection/detector-same-object.https.html": {
+    "harness": "ERROR",
+    "total": 3,
+    "failures": {
+      "Barcode - detect(ImageData), [SameObject]": "FAIL",
+      "Face - detect(ImageData), [SameObject]": "FAIL",
+      "Text - detect(ImageData), [SameObject]": "FAIL"
+    }
+  },
+  "shape-detection/idlharness.https.any.js": {
+    "total": 43,
+    "failures": {
+      "BarcodeDetector interface object length": "FAIL",
+      "BarcodeDetector interface object name": "FAIL",
+      "BarcodeDetector interface: calling detect(ImageBitmapSource) on new BarcodeDetector() with too few arguments must throw TypeError": "FAIL",
+      "BarcodeDetector interface: existence and properties of interface object": "FAIL",
+      "BarcodeDetector interface: existence and properties of interface prototype object": "FAIL",
+      "BarcodeDetector interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "BarcodeDetector interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "BarcodeDetector interface: new BarcodeDetector() must inherit property \"detect(ImageBitmapSource)\" with the proper type": "FAIL",
+      "BarcodeDetector interface: new BarcodeDetector() must inherit property \"getSupportedFormats()\" with the proper type": "FAIL",
+      "BarcodeDetector interface: operation detect(ImageBitmapSource)": "FAIL",
+      "BarcodeDetector interface: operation getSupportedFormats()": "FAIL",
+      "BarcodeDetector must be primary interface of new BarcodeDetector()": "FAIL",
+      "FaceDetector interface object length": "FAIL",
+      "FaceDetector interface object name": "FAIL",
+      "FaceDetector interface: calling detect(ImageBitmapSource) on new FaceDetector() with too few arguments must throw TypeError": "FAIL",
+      "FaceDetector interface: existence and properties of interface object": "FAIL",
+      "FaceDetector interface: existence and properties of interface prototype object": "FAIL",
+      "FaceDetector interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "FaceDetector interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "FaceDetector interface: new FaceDetector() must inherit property \"detect(ImageBitmapSource)\" with the proper type": "FAIL",
+      "FaceDetector interface: operation detect(ImageBitmapSource)": "FAIL",
+      "FaceDetector must be primary interface of new FaceDetector()": "FAIL",
+      "Stringification of new BarcodeDetector()": "FAIL",
+      "Stringification of new FaceDetector()": "FAIL",
+      "Stringification of new TextDetector()": "FAIL",
+      "TextDetector interface object length": "FAIL",
+      "TextDetector interface object name": "FAIL",
+      "TextDetector interface: calling availability(TextDetectorOptions) on new TextDetector() with too few arguments must throw TypeError": "FAIL",
+      "TextDetector interface: calling create(optional TextDetectorCreateOptions) on new TextDetector() with too few arguments must throw TypeError": "FAIL",
+      "TextDetector interface: calling detect(ImageBitmapSource) on new TextDetector() with too few arguments must throw TypeError": "FAIL",
+      "TextDetector interface: existence and properties of interface object": "FAIL",
+      "TextDetector interface: existence and properties of interface prototype object": "FAIL",
+      "TextDetector interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "TextDetector interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "TextDetector interface: new TextDetector() must inherit property \"availability(TextDetectorOptions)\" with the proper type": "FAIL",
+      "TextDetector interface: new TextDetector() must inherit property \"create(optional TextDetectorCreateOptions)\" with the proper type": "FAIL",
+      "TextDetector interface: new TextDetector() must inherit property \"detect(ImageBitmapSource)\" with the proper type": "FAIL",
+      "TextDetector interface: operation availability(TextDetectorOptions)": "FAIL",
+      "TextDetector interface: operation create(optional TextDetectorCreateOptions)": "FAIL",
+      "TextDetector interface: operation detect(ImageBitmapSource)": "FAIL",
+      "TextDetector must be primary interface of new TextDetector()": "FAIL"
+    }
+  },
+  "shape-detection/idlharness.https.any.js#dedicatedworker": {
+    "total": 43,
+    "failures": {
+      "BarcodeDetector interface object length": "FAIL",
+      "BarcodeDetector interface object name": "FAIL",
+      "BarcodeDetector interface: calling detect(ImageBitmapSource) on new BarcodeDetector() with too few arguments must throw TypeError": "FAIL",
+      "BarcodeDetector interface: existence and properties of interface object": "FAIL",
+      "BarcodeDetector interface: existence and properties of interface prototype object": "FAIL",
+      "BarcodeDetector interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "BarcodeDetector interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "BarcodeDetector interface: new BarcodeDetector() must inherit property \"detect(ImageBitmapSource)\" with the proper type": "FAIL",
+      "BarcodeDetector interface: new BarcodeDetector() must inherit property \"getSupportedFormats()\" with the proper type": "FAIL",
+      "BarcodeDetector interface: operation detect(ImageBitmapSource)": "FAIL",
+      "BarcodeDetector interface: operation getSupportedFormats()": "FAIL",
+      "BarcodeDetector must be primary interface of new BarcodeDetector()": "FAIL",
+      "FaceDetector interface object length": "FAIL",
+      "FaceDetector interface object name": "FAIL",
+      "FaceDetector interface: calling detect(ImageBitmapSource) on new FaceDetector() with too few arguments must throw TypeError": "FAIL",
+      "FaceDetector interface: existence and properties of interface object": "FAIL",
+      "FaceDetector interface: existence and properties of interface prototype object": "FAIL",
+      "FaceDetector interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "FaceDetector interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "FaceDetector interface: new FaceDetector() must inherit property \"detect(ImageBitmapSource)\" with the proper type": "FAIL",
+      "FaceDetector interface: operation detect(ImageBitmapSource)": "FAIL",
+      "FaceDetector must be primary interface of new FaceDetector()": "FAIL",
+      "Stringification of new BarcodeDetector()": "FAIL",
+      "Stringification of new FaceDetector()": "FAIL",
+      "Stringification of new TextDetector()": "FAIL",
+      "TextDetector interface object length": "FAIL",
+      "TextDetector interface object name": "FAIL",
+      "TextDetector interface: calling availability(TextDetectorOptions) on new TextDetector() with too few arguments must throw TypeError": "FAIL",
+      "TextDetector interface: calling create(optional TextDetectorCreateOptions) on new TextDetector() with too few arguments must throw TypeError": "FAIL",
+      "TextDetector interface: calling detect(ImageBitmapSource) on new TextDetector() with too few arguments must throw TypeError": "FAIL",
+      "TextDetector interface: existence and properties of interface object": "FAIL",
+      "TextDetector interface: existence and properties of interface prototype object": "FAIL",
+      "TextDetector interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "TextDetector interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "TextDetector interface: new TextDetector() must inherit property \"availability(TextDetectorOptions)\" with the proper type": "FAIL",
+      "TextDetector interface: new TextDetector() must inherit property \"create(optional TextDetectorCreateOptions)\" with the proper type": "FAIL",
+      "TextDetector interface: new TextDetector() must inherit property \"detect(ImageBitmapSource)\" with the proper type": "FAIL",
+      "TextDetector interface: operation availability(TextDetectorOptions)": "FAIL",
+      "TextDetector interface: operation create(optional TextDetectorCreateOptions)": "FAIL",
+      "TextDetector interface: operation detect(ImageBitmapSource)": "FAIL",
+      "TextDetector must be primary interface of new TextDetector()": "FAIL"
+    }
+  },
+  "shape-detection/idlharness.https.any.js#sharedworker": {
+    "total": 43,
+    "failures": {
+      "BarcodeDetector interface object length": "FAIL",
+      "BarcodeDetector interface object name": "FAIL",
+      "BarcodeDetector interface: calling detect(ImageBitmapSource) on new BarcodeDetector() with too few arguments must throw TypeError": "FAIL",
+      "BarcodeDetector interface: existence and properties of interface object": "FAIL",
+      "BarcodeDetector interface: existence and properties of interface prototype object": "FAIL",
+      "BarcodeDetector interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "BarcodeDetector interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "BarcodeDetector interface: new BarcodeDetector() must inherit property \"detect(ImageBitmapSource)\" with the proper type": "FAIL",
+      "BarcodeDetector interface: new BarcodeDetector() must inherit property \"getSupportedFormats()\" with the proper type": "FAIL",
+      "BarcodeDetector interface: operation detect(ImageBitmapSource)": "FAIL",
+      "BarcodeDetector interface: operation getSupportedFormats()": "FAIL",
+      "BarcodeDetector must be primary interface of new BarcodeDetector()": "FAIL",
+      "FaceDetector interface object length": "FAIL",
+      "FaceDetector interface object name": "FAIL",
+      "FaceDetector interface: calling detect(ImageBitmapSource) on new FaceDetector() with too few arguments must throw TypeError": "FAIL",
+      "FaceDetector interface: existence and properties of interface object": "FAIL",
+      "FaceDetector interface: existence and properties of interface prototype object": "FAIL",
+      "FaceDetector interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "FaceDetector interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "FaceDetector interface: new FaceDetector() must inherit property \"detect(ImageBitmapSource)\" with the proper type": "FAIL",
+      "FaceDetector interface: operation detect(ImageBitmapSource)": "FAIL",
+      "FaceDetector must be primary interface of new FaceDetector()": "FAIL",
+      "Stringification of new BarcodeDetector()": "FAIL",
+      "Stringification of new FaceDetector()": "FAIL",
+      "Stringification of new TextDetector()": "FAIL",
+      "TextDetector interface object length": "FAIL",
+      "TextDetector interface object name": "FAIL",
+      "TextDetector interface: calling availability(TextDetectorOptions) on new TextDetector() with too few arguments must throw TypeError": "FAIL",
+      "TextDetector interface: calling create(optional TextDetectorCreateOptions) on new TextDetector() with too few arguments must throw TypeError": "FAIL",
+      "TextDetector interface: calling detect(ImageBitmapSource) on new TextDetector() with too few arguments must throw TypeError": "FAIL",
+      "TextDetector interface: existence and properties of interface object": "FAIL",
+      "TextDetector interface: existence and properties of interface prototype object": "FAIL",
+      "TextDetector interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "TextDetector interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "TextDetector interface: new TextDetector() must inherit property \"availability(TextDetectorOptions)\" with the proper type": "FAIL",
+      "TextDetector interface: new TextDetector() must inherit property \"create(optional TextDetectorCreateOptions)\" with the proper type": "FAIL",
+      "TextDetector interface: new TextDetector() must inherit property \"detect(ImageBitmapSource)\" with the proper type": "FAIL",
+      "TextDetector interface: operation availability(TextDetectorOptions)": "FAIL",
+      "TextDetector interface: operation create(optional TextDetectorCreateOptions)": "FAIL",
+      "TextDetector interface: operation detect(ImageBitmapSource)": "FAIL",
+      "TextDetector must be primary interface of new TextDetector()": "FAIL"
+    }
+  },
+  "shape-detection/shapedetection-cross-origin.sub.https.html": {
+    "total": 9,
+    "failures": {
+      "BarcodeDetector should reject cross-origin HTMLImageElements with a SecurityError.": "FAIL",
+      "BarcodeDetector should reject cross-origin HTMLVideoElements with a SecurityError.": "FAIL",
+      "BarcodeDetector should reject cross-origin ImageBitmaps with a SecurityError.": "FAIL",
+      "FaceDetector should reject cross-origin HTMLImageElements with a SecurityError.": "FAIL",
+      "FaceDetector should reject cross-origin HTMLVideoElements with a SecurityError.": "FAIL",
+      "FaceDetector should reject cross-origin ImageBitmaps with a SecurityError.": "FAIL",
+      "TextDetector should reject cross-origin HTMLImageElements with a SecurityError.": "FAIL",
+      "TextDetector should reject cross-origin HTMLVideoElements with a SecurityError.": "FAIL",
+      "TextDetector should reject cross-origin ImageBitmaps with a SecurityError.": "FAIL"
+    }
+  },
+  "shape-detection/single-barcode-detection.https.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "shape-detection/single-face-detection.https.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "shape-detection/single-text-detection.https.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "shape-detection/text-detector-create.https.html": {
+    "harness": "ERROR",
+    "total": 2,
+    "failures": {
+      "TextDetector.create() rejects with NotSupportedError when backend initialization fails": "FAIL",
+      "TextDetector.create() resolves with a working TextDetector instance when ready": "FAIL"
+    }
+  }
+}

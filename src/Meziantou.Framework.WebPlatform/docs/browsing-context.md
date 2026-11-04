@@ -885,8 +885,9 @@ Each window and each worker has a performance timeline ([Performance Timeline](h
 `droppedEntriesCount` of the first callback; the callback this value is the observer). The entry types are `navigation`,
 `resource`, `mark` and `measure`, described below, `visibility-state` (see [Page visibility](#page-visibility)), and the entry types of the rendering: `layout-shift`, observed only by
 the performance observers of the windows (see [Layout shifts](layout.md#layout-shifts-csslayoutlayoutshifttrackercs)), and
-`paint`, `largest-contentful-paint` and `element` (see [Paint timing](rendering.md#paint-timing)), and the entry types of
-the user input of the windows, `event` and `first-input`, described below. The times are measured
+`paint`, `largest-contentful-paint`, `element`, `container`, `soft-navigation` and `interaction-contentful-paint` (see
+[Paint timing](rendering.md#paint-timing)), and the entry types of the user input of the windows, `event` and `first-input`,
+described below. The `navigationId` of the entries is the one of the document, or of its last soft navigation. The times are measured
 with the `TimeProvider` of the event loop, relative to the time origin of the global object, and coarsened to 100 µs.
 
 **[Resource Timing](https://w3c.github.io/resource-timing/)**: the requests sent to the loader for the subresources (the
@@ -3848,7 +3849,9 @@ using var context = new BrowsingContext(new BrowsingContextOptions
 | `PaintTimingEnabled` | `PerformancePaintTiming` and the `paint` entry type |
 | `LargestContentfulPaintEnabled` | `LargestContentfulPaint` and the `largest-contentful-paint` entry type |
 | `ElementTimingEnabled` | `PerformanceElementTiming`, the `element` entry type and `Element.elementTiming` |
+| `ContainerTimingEnabled` | `PerformanceContainerTiming`, the `container` entry type and `HTMLElement.containerTiming` and `containerTimingIgnore` |
 | `EventTimingEnabled` | `PerformanceEventTiming`, `EventCounts`, `performance.eventCounts`, `performance.interactionCount` and the `event` and `first-input` entry types; the events of the user input are not timed (they request no rendering opportunity) |
+| `SoftNavigationsEnabled` | `PerformanceSoftNavigation`, `InteractionContentfulPaint` and the `soft-navigation` and `interaction-contentful-paint` entry types; the interactions are not tracked |
 | `UserTimingEnabled` | `PerformanceMark`, `PerformanceMeasure`, `performance.mark()`, `measure()`, `clearMarks()`, `clearMeasures()` and the `mark` and `measure` entry types |
 | `NavigationTimingEnabled` | `PerformanceNavigationTiming`, `PerformanceTiming`, `PerformanceNavigation`, `performance.timing`, `performance.navigation` and the `navigation` entry type |
 | `ScrollDrivenAnimationsEnabled` | `ScrollTimeline`, `ViewTimeline`, `Animation.rangeStart` and `Animation.rangeEnd`; the scroll and view timelines of `animation-timeline` are then no timeline |

@@ -54,6 +54,10 @@ internal static class Binding_HTMLElement<TAdapter, TValue> where TAdapter : str
     private static void Set_headingOffset(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlElement>(t, Binding); var x = r.ToUnsignedLong(v, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None); o.HeadingOffset = x; }
     private static TValue Get_headingReset(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlElement>(t, Binding); return r.FromBoolean(o.HeadingReset); }
     private static void Set_headingReset(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlElement>(t, Binding); var x = r.ToBoolean(v); o.HeadingReset = x; }
+    private static TValue Get_containerTiming(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlElement>(t, Binding); return r.FromString(o.ContainerTiming); }
+    private static void Set_containerTiming(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlElement>(t, Binding); var x = r.ToDomString(v); o.ContainerTiming = x; }
+    private static TValue Get_containerTimingIgnore(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlElement>(t, Binding); return r.FromBoolean(o.ContainerTimingIgnore); }
+    private static void Set_containerTimingIgnore(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlElement>(t, Binding); var x = r.ToBoolean(v); o.ContainerTimingIgnore = x; }
     private static TValue Get_scrollParent(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlElement>(t, Binding); return r.Wrap(o.ScrollParent); }
     private static TValue Get_offsetParent(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlElement>(t, Binding); return r.Wrap(o.OffsetParent); }
     private static TValue Get_offsetTop(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlElement>(t, Binding); return r.FromNumber((double)o.OffsetTop); }
@@ -336,6 +340,8 @@ internal static class Binding_HTMLElement<TAdapter, TValue> where TAdapter : str
         r.DefineAttribute(instanceTarget, "popover", Get_popover, Set_popover);
         r.DefineAttribute(instanceTarget, "headingOffset", Get_headingOffset, Set_headingOffset);
         r.DefineAttribute(instanceTarget, "headingReset", Get_headingReset, Set_headingReset);
+        r.DefineAttribute(instanceTarget, "containerTiming", Get_containerTiming, Set_containerTiming);
+        r.DefineAttribute(instanceTarget, "containerTimingIgnore", Get_containerTimingIgnore, Set_containerTimingIgnore);
         r.DefineAttribute(instanceTarget, "scrollParent", Get_scrollParent, null);
         r.DefineAttribute(instanceTarget, "offsetParent", Get_offsetParent, null);
         r.DefineAttribute(instanceTarget, "offsetTop", Get_offsetTop, null);

@@ -21,6 +21,18 @@ public partial class Window
     public uint RequestAnimationFrame(FrameRequestCallback callback)
     {
         ArgumentNullException.ThrowIfNull(callback);
+
+        // https://wicg.github.io/soft-navigations/#sec-interaction-context-intro: the callback runs in the interaction context of the caller
+        if (InteractionContext.Current is { } interactionContext)
+        {
+            var innerCallback = callback;
+            callback = time =>
+            {
+                using var scope = InteractionContext.Enter(interactionContext);
+                innerCallback(time);
+            };
+        }
+
         _animationFrameCallbackIdentifier++;
         _animationFrameCallbacks[_animationFrameCallbackIdentifier] = callback;
         EventLoop.RequestAnimationFrame(this);

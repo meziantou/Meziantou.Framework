@@ -63,6 +63,7 @@ internal sealed class JavaScriptHost(JavaScriptScriptEngine owner) : JsHost
             continuationState.EventLoop.CurrentContinuationState = continuationState.State;
         }
 
+        using var interactionContextScope = InteractionContext.Enter(continuationState is null ? InteractionContext.Current : continuationState.InteractionContext);
         try
         {
             if (state.ActiveScript is null)
@@ -96,6 +97,7 @@ internal sealed class JavaScriptHost(JavaScriptScriptEngine owner) : JsHost
         var eventLoop = snapshot.EventLoop;
         var previousContinuationState = eventLoop.CurrentContinuationState;
         eventLoop.CurrentContinuationState = snapshot.State;
+        using var interactionContextScope = InteractionContext.Enter(snapshot.InteractionContext);
         try
         {
             continuation.Invoke();

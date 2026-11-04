@@ -48,10 +48,6 @@ public partial class Animation
         }
 
         using var scope = CEReactionsScope.Enter();
-        var inlineStyle = target.GetInlineStyle();
-        foreach (var (property, value) in values)
-        {
-            inlineStyle.SetComputedProperty(property, value);
-        }
+        target.GetInlineStyle().SetComputedProperties(values);
     }
 }

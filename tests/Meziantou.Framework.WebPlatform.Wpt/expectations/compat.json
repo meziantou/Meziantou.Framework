@@ -23,7 +23,7 @@
     "reftest": "PASS"
   },
   "compat/webkit-box-blockify.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "compat/webkit-box-clamp-bottom-border.html": {
     "reftest": "PASS"

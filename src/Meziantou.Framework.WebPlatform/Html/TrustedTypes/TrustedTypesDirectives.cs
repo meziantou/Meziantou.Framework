@@ -53,10 +53,15 @@ public sealed class TrustedTypesDirectives
         foreach (var token in serializedPolicy.Split(';'))
         {
             var strippedToken = InfraAscii.StripLeadingAndTrailingAsciiWhitespace(token).ToString();
-            if (strippedToken.Length == 0)
+            // A token that is not ASCII is ignored, and so is a directive that contains a control character (as in
+            // ContentSecurityPolicy.Parse)
+            if (strippedToken.Length == 0 || !System.Text.Ascii.IsValid(strippedToken))
                 continue;
 
             var values = SplitOnAsciiWhitespace(strippedToken);
+            if (values.Exists(value => value.AsSpan().ContainsAnyInRange('\0', ' ') || value.Contains('\x7F', StringComparison.Ordinal)))
+                continue;
+
             var directiveName = InfraAscii.ToAsciiLowercase(values[0]);
 
             // The first directive with a given name is used, the duplicates are ignored

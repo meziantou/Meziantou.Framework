@@ -1471,15 +1471,45 @@ public sealed partial class BrowsingContext : IDisposable
     /// <returns>Whether the user canceled the unloading.</returns>
     private bool FireBeforeUnload()
     {
-        var unloadPromptShown = false;
+        // A document whose beforeunload, pagehide or unload event handlers are running does not get the event again. As in the
+        // browsers, document.open() is ignored on all the documents while the event is fired at any of them (the unload counter).
+        var documents = new List<(Document Document, Window Window)>();
         foreach (var navigable in GetDescendantNavigables().Prepend(this).ToList())
         {
-            // A document whose beforeunload, pagehide or unload event handlers are running does not get the event again
             var document = navigable.Document;
             if (document.UnloadCounter > 0 || document.RelevantWindow is not { } window || !ReferenceEquals(window.Document, document))
                 continue;
 
+            documents.Add((document, window));
+        }
+
+        foreach (var (document, _) in documents)
+        {
             document.UnloadCounter++;
+        }
+
+        try
+        {
+            return FireBeforeUnloadEvents(documents);
+        }
+        finally
+        {
+            foreach (var (document, _) in documents)
+            {
+                document.UnloadCounter--;
+            }
+        }
+    }
+
+    private bool FireBeforeUnloadEvents(List<(Document Document, Window Window)> documents)
+    {
+        var unloadPromptShown = false;
+        foreach (var (document, window) in documents)
+        {
+            // The document is unloaded by a handler of the event of another document
+            if (!ReferenceEquals(window.Document, document))
+                continue;
+
             EventLoop.TerminationNestingLevel++;
             try
             {
@@ -1502,7 +1532,6 @@ public sealed partial class BrowsingContext : IDisposable
             finally
             {
                 EventLoop.TerminationNestingLevel--;
-                document.UnloadCounter--;
             }
         }
 
@@ -3175,14 +3204,24 @@ public sealed partial class BrowsingContext : IDisposable
         if (document.IsUnloaded)
             return;
 
-        if (document.ChildNavigables is { } children)
+        if (document.ChildNavigables is { Count: > 0 } children)
         {
-            foreach (var child in children.ToArray())
+            // As in the browsers, document.open() is also ignored on the document while the documents of its descendant
+            // navigables are unloaded
+            document.UnloadCounter++;
+            try
             {
-                if (!child.IsDestroyed)
+                foreach (var child in children.ToArray())
                 {
-                    UnloadDocumentAndDescendants(child.Document, includeInitialAboutBlank: true, persisted);
+                    if (!child.IsDestroyed)
+                    {
+                        UnloadDocumentAndDescendants(child.Document, includeInitialAboutBlank: true, persisted);
+                    }
                 }
+            }
+            finally
+            {
+                document.UnloadCounter--;
             }
         }
 

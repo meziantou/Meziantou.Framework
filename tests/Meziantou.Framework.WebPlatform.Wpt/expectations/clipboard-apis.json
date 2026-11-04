@@ -12,10 +12,7 @@
     "total": 1
   },
   "clipboard-apis/async-custom-formats-write-fail.tentative.https.html": {
-    "total": 5,
-    "failures": {
-      "navigator.clipboard.write() fails for more than 100 custom formats": "FAIL"
-    }
+    "total": 5
   },
   "clipboard-apis/async-custom-formats-write-read-web-prefix.tentative.https.html": {
     "total": 1
@@ -33,7 +30,6 @@
     "total": 17,
     "failures": {
       "navigator.clipboard.readText() succeeds": "FAIL",
-      "navigator.clipboard.write([>1 ClipboardItems]) fails (not implemented)": "FAIL",
       "navigator.clipboard.write(image/png DOMString) fails": "FAIL"
     }
   },

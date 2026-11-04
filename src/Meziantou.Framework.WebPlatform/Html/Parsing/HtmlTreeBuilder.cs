@@ -1109,6 +1109,16 @@ internal sealed partial class HtmlTreeBuilder
         if (element.ParentNode is not null || element.IsHostIncludingInclusiveAncestorOf(targetParent) || (targetParent is Document document && document.DocumentElement is not null) || IsDisplaced(targetParent, referenceChild))
             return;
 
+        // https://html.spec.whatwg.org/multipage/parsing.html#insert-an-element-at-the-adjusted-insertion-location: the parser
+        // that is not created by the fragment parsing algorithm pushes an element queue around the insertion, so the
+        // reactions (e.g. connectedCallback) run before the children are appended, also when document.write() runs the parser
+        if ((ContextElement is null || IsStreaming) && CustomElementRegistry.HasDefinitions)
+        {
+            using var scope = CEReactionsScope.EnterAndPush();
+            targetParent.InsertBeforeCore(element, referenceChild);
+            return;
+        }
+
         targetParent.InsertBeforeCore(element, referenceChild);
     }
 
@@ -1133,6 +1143,8 @@ internal sealed partial class HtmlTreeBuilder
             {
                 svgScript.MarkAsAlreadyProcessed();
             }
+
+            BeginParsedScriptText(svgScript);
         }
 
         if (!onlyAddToElementStack)
@@ -1150,6 +1162,10 @@ internal sealed partial class HtmlTreeBuilder
     }
 
     private Element? _elementBeingInserted;
+
+    // The script element whose content the parser is inserting, and the characters inserted in it (see TakeParsedScriptText)
+    private Element? _parsedScript;
+    private readonly System.Text.StringBuilder _parsedScriptText = new();
 
     /// <summary>
     /// Whether the element is on the stack of open elements, or is being inserted by the parser, which then pushes it onto the
@@ -1174,6 +1190,11 @@ internal sealed partial class HtmlTreeBuilder
         if (targetParent is Document || IsDisplaced(targetParent, referenceChild))
             return;
 
+        if (_parsedScript is not null && ReferenceEquals(targetParent, _parsedScript))
+        {
+            _parsedScriptText.Append(data);
+        }
+
         var previousSibling = referenceChild is not null ? referenceChild.PreviousSibling : targetParent.LastChild;
         if (previousSibling is Text text)
         {
@@ -1189,6 +1210,30 @@ internal sealed partial class HtmlTreeBuilder
         }
 
         targetParent.InsertBeforeCore(new Text(targetParent.NodeDocument, _tokenizer.NameTable.GetText(data)), referenceChild);
+    }
+
+    /// <summary>Starts recording the characters that the parser inserts in a script element (see <see cref="TakeParsedScriptText"/>).</summary>
+    private void BeginParsedScriptText(Element script)
+    {
+        _parsedScript = script;
+        _parsedScriptText.Clear();
+    }
+
+    /// <summary>
+    /// The script text set by the parser at the end tag of a script element
+    /// (https://w3c.github.io/trusted-types/dist/spec/#setting-slot-values-from-parser): the characters that the parser
+    /// inserted in it, so that a change of its children by the DOM while it is parsed (which the specification does not
+    /// account for) does not make the modified text trusted: the text then differs from its child text content.
+    /// </summary>
+    private string TakeParsedScriptText(Element script)
+    {
+        if (!ReferenceEquals(script, _parsedScript))
+            return script.GetChildTextContent();
+
+        _parsedScript = null;
+        var text = _parsedScriptText.ToString();
+        _parsedScriptText.Clear();
+        return text;
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/parsing.html#insert-a-comment</summary>

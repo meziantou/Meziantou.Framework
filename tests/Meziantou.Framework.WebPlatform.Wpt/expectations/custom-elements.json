@@ -214,10 +214,7 @@
     "total": 4
   },
   "custom-elements/parser/parser-constructs-custom-element-in-document-write.html": {
-    "total": 2,
-    "failures": {
-      "HTML parser should call connectedCallback before appending child nodes inside document.write": "FAIL"
-    }
+    "total": 2
   },
   "custom-elements/parser/parser-constructs-custom-element-synchronously.html": {
     "total": 1
@@ -283,11 +280,7 @@
     "total": 3
   },
   "custom-elements/reactions/Animation.html": {
-    "total": 3,
-    "failures": {
-      "Animation.animate must enqueue an attributeChanged reaction when it adds the observed style attribute": "FAIL",
-      "Animation.animate must enqueue an attributeChanged reaction when it mutates the observed style attribute": "FAIL"
-    }
+    "total": 3
   },
   "custom-elements/reactions/AriaMixin-element-attributes.html": {
     "total": 16

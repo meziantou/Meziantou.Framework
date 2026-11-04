@@ -217,7 +217,7 @@ internal static class Accessibility
             case TagId.Hr:
                 return "separator";
             case TagId.Img:
-                return element.GetAttributeValue("alt") is { Length: 0 } && string.IsNullOrWhiteSpace(element.GetAttributeValue("aria-label")) && GetLabelledByElements(element).Count == 0 ? "none" : "image";
+                return GetImageRole(element);
             case TagId.Input:
                 return GetInputRole(element);
             case TagId.Ins:
@@ -255,17 +255,22 @@ internal static class Accessibility
             case TagId.Table:
                 return "table";
             case TagId.Tbody or TagId.Thead or TagId.Tfoot:
-                return "rowgroup";
+                return GetTableRole(element) == "none" ? "none" : "rowgroup";
             case TagId.Td:
-                return GetTableRole(element) is "grid" or "treegrid" ? "gridcell" : "cell";
+                return GetTableRole(element) switch
+                {
+                    "grid" or "treegrid" => "gridcell",
+                    "none" => "none",
+                    _ => "cell",
+                };
             case TagId.Th:
-                return GetHeaderCellRole(element);
+                return GetTableRole(element) == "none" ? "none" : GetHeaderCellRole(element);
             case TagId.Textarea:
                 return "textbox";
             case TagId.Time:
                 return "time";
             case TagId.Tr:
-                return "row";
+                return GetTableRole(element) == "none" ? "none" : "row";
             default:
                 // An autonomous custom element without default role, and the elements without corresponding role
                 return element.CustomElementState == CustomElementState.Custom ? "generic" : "";
@@ -296,6 +301,26 @@ internal static class Accessibility
         return false;
     }
 
+    /// <summary>
+    /// https://w3c.github.io/html-aam/#el-img: an image whose alt attribute is empty (or only white space,
+    /// https://github.com/w3c/aria/pull/2706) is presentational, unless it has an ARIA name; an image without src or
+    /// srcset (or whose value is empty) represents nothing (https://html.spec.whatwg.org/multipage/embedded-content.html#the-img-element:
+    /// "the element represents nothing"), so it is presentational unless it has an accessible name.
+    /// </summary>
+    private static string GetImageRole(Element element)
+    {
+        var alt = element.GetAttributeValue("alt");
+        var hasAriaName = !string.IsNullOrWhiteSpace(element.GetAttributeValue("aria-label"))
+            || GetLabelledByElements(element).Exists(labelledBy => !string.IsNullOrWhiteSpace(labelledBy.TextContent));
+        if (alt is not null && string.IsNullOrWhiteSpace(alt))
+            return hasAriaName ? "image" : "none";
+
+        if (string.IsNullOrEmpty(element.GetAttributeValue("src")) && string.IsNullOrEmpty(element.GetAttributeValue("srcset")))
+            return hasAriaName || !string.IsNullOrWhiteSpace(alt) || !string.IsNullOrWhiteSpace(element.GetAttributeValue("title")) ? "image" : "none";
+
+        return "image";
+    }
+
     private static string GetInputRole(Element element)
     {
         var type = InfraAscii.ToAsciiLowercase(element.GetAttributeValue("type") ?? "text");
@@ -314,15 +339,36 @@ internal static class Accessibility
         };
     }
 
-    /// <summary>https://w3c.github.io/html-aam/#el-li: a listitem in a list, generic otherwise (a presentational list makes its items presentational).</summary>
+    /// <summary>
+    /// https://w3c.github.io/html-aam/#el-li: a listitem when its parent in the accessibility tree is a list (the generic
+    /// ancestors are skipped, and an element that owns it with aria-owns is its parent), generic otherwise (a presentational
+    /// list makes its items presentational).
+    /// </summary>
     private static string GetListItemRole(Element element)
     {
-        if (element.ParentElement is not { } parent || !parent.IsHtmlNamespace || parent.TagId is not (TagId.Ol or TagId.Ul or TagId.Menu))
-            return "generic";
+        if (element.ParentElement is { IsHtmlNamespace: true, TagId: TagId.Ol or TagId.Ul or TagId.Menu } listParent
+            && GetExplicitRole(listParent, listParent.GetAttributeValue("role")) == "none" && !IsPresentationalConflict(listParent))
+        {
+            return "none";
+        }
 
-        return GetExplicitRole(parent, parent.GetAttributeValue("role")) == "none" && !IsPresentationalConflict(parent) ? "none" : "listitem";
+        var parent = element.ParentElement;
+        while (parent is not null && GetRole(parent) == "generic")
+        {
+            parent = parent.ParentElement;
+        }
+
+        if (parent is not null && GetRole(parent) == "list")
+            return "listitem";
+
+        return AriaOwns.Compute(element).GetOwner(element) is { } owner && GetRole(owner) == "list" ? "listitem" : "generic";
     }
 
+    /// <summary>
+    /// The role of the table of a part of a table (a row group, a row or a cell): the parts of a presentational table inherit
+    /// its presentational role (https://w3c.github.io/aria/#presentational-role-inheritance), even when they have a global
+    /// ARIA attribute.
+    /// </summary>
     private static string? GetTableRole(Element cell)
     {
         for (var ancestor = cell.ParentElement; ancestor is not null; ancestor = ancestor.ParentElement)

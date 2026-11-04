@@ -141,11 +141,7 @@
     }
   },
   "wai-aria/role/role_none_conflict_resolution_spec_ambiguities.tentative.html": {
-    "total": 3,
-    "failures": {
-      "presentational roles conflict - table.with-style[role=none] td[aria-describedby]": "FAIL",
-      "presentational roles conflict - table[role=none] td[aria-describedby]": "FAIL"
-    }
+    "total": 3
   },
   "wai-aria/role/roles.html": {
     "total": 162

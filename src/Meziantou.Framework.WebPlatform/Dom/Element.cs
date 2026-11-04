@@ -598,8 +598,11 @@ public partial class Element : Node
         if (!IsHtmlNamespace || TagId is not (Html.TagId.Body or Html.TagId.Frameset) || !Html.EventHandlerNames.WindowReflecting.Contains(type))
             return this;
 
-        // The Window-reflecting body element event handlers are the event handlers of the Window of an active document
-        return ReferenceEquals(NodeDocument.BrowsingContext?.Document, NodeDocument) ? NodeDocument.RelevantWindow : null;
+        // The Window-reflecting body element event handlers are the event handlers of the Window of an active document. The
+        // nodes of the fragment parsing algorithm (e.g. outerHTML) are created in a document of the parser: the document where
+        // they are inserted is used, as the browsers create them in that document.
+        var document = NodeDocument.FragmentParsingDestination ?? NodeDocument;
+        return ReferenceEquals(document.BrowsingContext?.Document, document) ? document.RelevantWindow : null;
     }
 
     /// <summary>

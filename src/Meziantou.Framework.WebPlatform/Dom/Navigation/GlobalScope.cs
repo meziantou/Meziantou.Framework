@@ -457,12 +457,27 @@ public abstract partial class GlobalScope : EventTarget
     /// https://html.spec.whatwg.org/multipage/webappapis.html#dom-reporterror: reports an exception, as if it was thrown by a
     /// script and not caught (an <see cref="ErrorEvent"/> is fired at the global object).
     /// </summary>
-    /// <param name="e">The exception: a value of the script engine, or a .NET exception.</param>
+    /// <param name="e">The exception: a value of the script engine, or a .NET exception (null is the value undefined).</param>
     /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#dom-reporterror"/>
     [IdlMember("reportError", "https://html.spec.whatwg.org/multipage/webappapis.html#dom-reporterror")]
     public void ReportError(object? e)
     {
-        var error = ScriptEngine?.ExtractErrorInformation(e) ?? (e is Exception exception ? new ScriptError(exception.Message, exception) : new ScriptError(e?.ToString() ?? "null", e));
+        // The bindings give the value undefined as null (https://webidl.spec.whatwg.org/#js-any)
+        e ??= UndefinedValue.Instance;
+        var error = ScriptEngine?.ExtractErrorInformation(e) ?? (e switch
+        {
+            Exception exception => new ScriptError(exception.Message, exception),
+            UndefinedValue => new ScriptError("undefined", e),
+            _ => new ScriptError(e.ToString() ?? "null", e),
+        });
+
+        // A value that has no location (e.g. a value that is not an error object) is located where reportError() is called,
+        // as in the browsers
+        if (error.Filename.Length == 0 && ScriptEngine?.GetCurrentScriptLocation() is { } location)
+        {
+            error = new ScriptError(error.Message, error.Error) { Filename = location.Url, LineNumber = location.LineNumber, ColumnNumber = location.ColumnNumber };
+        }
+
         ReportException(error);
     }
 

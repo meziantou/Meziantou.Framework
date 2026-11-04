@@ -282,6 +282,7 @@ internal sealed partial class HtmlTreeBuilder
                         InsertElementAtAdjustedInsertionLocation(element, location.Parent);
                         _speculativeElementInserted?.Invoke(element);
                         PushOpenElement(element);
+                        BeginParsedScriptText(element);
                         _tokenizer.State = TokenizerState.ScriptData;
                         _originalMode = _mode;
                         _mode = InsertionMode.Text;
@@ -800,6 +801,14 @@ internal sealed partial class HtmlTreeBuilder
 
             case TokenKind.EndOfFile:
                 ParseError("eof-in-text");
+
+                // "If the current node is a script element, then set its already started to true": an unclosed script never
+                // runs, also when it is created by the fragment parser and inserted later
+                if (CurrentNode is HtmlScriptElement unclosedScript)
+                {
+                    unclosedScript.AlreadyStarted = true;
+                }
+
                 PopCurrentNode();
                 _mode = _originalMode;
                 return ProcessResult.Reprocess;
@@ -818,7 +827,7 @@ internal sealed partial class HtmlTreeBuilder
                 if (element is HtmlScriptElement script)
                 {
                     // https://w3c.github.io/trusted-types/dist/spec/#setting-slot-values-from-parser
-                    script.ScriptText = script.GetChildTextContent();
+                    script.ScriptText = TakeParsedScriptText(script);
 
                     // The scripts streamed with runScripts run when their end tag is parsed, as the scripts inserted by a script
                     // (approximating https://whatpr.org/html/12758/parsing.html#scriptEndTag, which pauses the parser)

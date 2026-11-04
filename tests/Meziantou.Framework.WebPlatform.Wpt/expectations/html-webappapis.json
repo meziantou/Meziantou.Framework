@@ -495,13 +495,7 @@
     "total": 1
   },
   "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/ignore-opens-during-unload.window.js": {
-    "total": 12,
-    "failures": {
-      "document.open should bail out when ignore-opens-during-unload is greater than 0 during beforeunload event (open(parent) while unloading parent and child)": "FAIL",
-      "document.open should bail out when ignore-opens-during-unload is greater than 0 during pagehide event (open(parent) while unloading parent and child)": "FAIL",
-      "document.open should bail out when ignore-opens-during-unload is greater than 0 during unload event (open(parent) while unloading parent and child)": "FAIL",
-      "document.open should bail out when ignore-opens-during-unload is greater than 0 during visibilitychange event (open(parent) while unloading parent and child)": "FAIL"
-    }
+    "total": 12
   },
   "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/location-set-and-document-open.html": {
     "total": 1
@@ -791,12 +785,7 @@
     "total": 9
   },
   "html/webappapis/scripting/events/onerroreventhandler.html": {
-    "harness": "TIMEOUT",
-    "total": 3,
-    "failures": {
-      "onerror + !ErrorEvent + Window": "TIMEOUT",
-      "onerror + ErrorEvent + Window": "TIMEOUT"
-    }
+    "total": 3
   },
   "html/webappapis/scripting/events/uncompiled_event_handler_with_scripting_disabled.html": {
     "total": 1
@@ -930,10 +919,7 @@
     "total": 1
   },
   "html/webappapis/scripting/processing-model-2/unhandled-promise-rejections/disallow-crossorigin.html": {
-    "total": 3,
-    "failures": {
-      "Promise rejection event should be muted for cross-origin non-CORS script": "FAIL"
-    }
+    "total": 3
   },
   "html/webappapis/scripting/processing-model-2/unhandled-promise-rejections/promise-rejection-event-constructor.html": {
     "total": 1
@@ -1006,20 +992,10 @@
     "total": 1
   },
   "html/webappapis/scripting/reporterror.any.js": {
-    "total": 5,
-    "failures": {
-      "self.reportError() doesn't invoke getters": "FAIL",
-      "self.reportError(1)": "FAIL",
-      "self.reportError(undefined)": "FAIL"
-    }
+    "total": 5
   },
   "html/webappapis/scripting/reporterror.any.js#dedicatedworker": {
-    "total": 5,
-    "failures": {
-      "self.reportError() doesn't invoke getters": "FAIL",
-      "self.reportError(1)": "FAIL",
-      "self.reportError(undefined)": "FAIL"
-    }
+    "total": 5
   },
   "html/webappapis/structured-clone/structured-clone-cross-realm-method.html": {
     "total": 4
@@ -1102,11 +1078,7 @@
     "total": 0
   },
   "html/webappapis/system-state-and-capabilities/the-navigator-object/protocol.https.html": {
-    "total": 244,
-    "failures": {
-      "registerProtocolHandler: Attempting to override the \"web+Kelvinsign\" protocol should throw SECURITY_ERR.": "FAIL",
-      "unregisterProtocolHandler: Attempting to override the \"web+Kelvinsign\" protocol should throw SECURITY_ERR.": "FAIL"
-    }
+    "total": 244
   },
   "html/webappapis/system-state-and-capabilities/the-navigator-object/protocol.tentative.https.html": {
     "total": 18,
@@ -1219,10 +1191,7 @@
     "total": 1
   },
   "html/webappapis/update-rendering/child-document-raf-order.html": {
-    "total": 1,
-    "failures": {
-      "Ordering of steps in \"Update the Rendering\" - child document requestAnimationFrame order": "FAIL"
-    }
+    "total": 1
   },
   "html/webappapis/user-prompts/print-during-beforeunload.html": {
     "total": 1

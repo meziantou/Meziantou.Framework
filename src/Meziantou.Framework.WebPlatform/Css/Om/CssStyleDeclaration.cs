@@ -55,6 +55,9 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
     /// <summary>The value of the style attribute the declarations were parsed from (the owner node's declarations are updated lazily).</summary>
     private string? _source;
 
+    // Whether the updates of the style attribute are deferred (see SetComputedProperties)
+    private bool _deferStyleAttributeUpdate;
+
     /// <summary>Creates the declarations of the style attribute of an element (https://drafts.csswg.org/cssom/#dom-elementcssinlinestyle-style).</summary>
     internal CssStyleDeclaration(Element ownerNode)
     {
@@ -336,6 +339,29 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
     /// case (the names of the transform functions, e.g. <c>scaleX(1.5)</c>, serialized <c>scalex(1.5)</c> when specified), as in
     /// the browsers, whose declared value is the computed value itself.
     /// </summary>
+    /// <summary>
+    /// Sets the declarations, then updates the style attribute once, also when no declaration changed
+    /// (https://drafts.csswg.org/web-animations-1/#dom-animation-commitstyles: the declarations are set in the declaration
+    /// block, then the style attribute is updated).
+    /// </summary>
+    internal void SetComputedProperties(IReadOnlyList<(string Property, string Value)> values)
+    {
+        _deferStyleAttributeUpdate = true;
+        try
+        {
+            foreach (var (property, value) in values)
+            {
+                SetComputedProperty(property, value);
+            }
+        }
+        finally
+        {
+            _deferStyleAttributeUpdate = false;
+        }
+
+        UpdateStyleAttribute();
+    }
+
     internal void SetComputedProperty(string property, string value)
     {
         SetProperty(property, value);
@@ -946,6 +972,9 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
     /// <summary>https://drafts.csswg.org/cssom/#update-style-attribute-for</summary>
     private void UpdateStyleAttribute()
     {
+        if (_deferStyleAttributeUpdate)
+            return;
+
         // The declarations of a style attribute are updated with the attribute, which invalidates the computed styles
         if (_ownerNode is null)
         {

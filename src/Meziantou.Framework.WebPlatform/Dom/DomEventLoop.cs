@@ -566,6 +566,51 @@ public sealed partial class DomEventLoop
     }
 
     /// <summary>
+    /// The order of the documents in "docs" (https://html.spec.whatwg.org/multipage/webappapis.html#update-the-rendering): a
+    /// document nested through another one is after it, and the documents whose containers are in the same document are in the
+    /// tree order of their containers. The documents of different top-level traversables are not ordered (0).
+    /// </summary>
+    private static int CompareDocsOrder(Document a, Document b)
+    {
+        if (ReferenceEquals(a, b))
+            return 0;
+
+        var chainA = GetContainerChain(a);
+        var chainB = GetContainerChain(b);
+        for (var i = 0; i < Math.Min(chainA.Count, chainB.Count); i++)
+        {
+            var nodeA = chainA[i];
+            var nodeB = chainB[i];
+            if (ReferenceEquals(nodeA, nodeB))
+                continue;
+
+            // Two containers in the same document are in tree order; anything else is not ordered
+            if (nodeA is Element && nodeB is Element && ReferenceEquals(nodeA.NodeDocument, nodeB.NodeDocument))
+                return nodeA.IsPreceding(nodeB) ? -1 : 1;
+
+            return 0;
+        }
+
+        return chainA.Count.CompareTo(chainB.Count);
+
+        // The top-level document, then the containers of the navigables from the top to the document
+        static List<Node> GetContainerChain(Document document)
+        {
+            var chain = new List<Node>();
+            var current = document;
+            while (current.BrowsingContext?.Container is { } container)
+            {
+                chain.Add(container);
+                current = container.NodeDocument;
+            }
+
+            chain.Add(current);
+            chain.Reverse();
+            return chain;
+        }
+    }
+
+    /// <summary>
     /// https://html.spec.whatwg.org/multipage/webappapis.html#update-the-rendering. There is no list of the documents of the
     /// event loop: each step runs for the documents that registered for it. The render-blocked documents
     /// (https://html.spec.whatwg.org/multipage/dom.html#render-blocked) are skipped by every step.
@@ -758,6 +803,13 @@ public sealed partial class DomEventLoop
             {
                 animations.UpdateAnimationsAndSendEvents(window.ToRelativeHighResolutionTime(frameTimestamp));
             }
+        }
+
+        // "docs" is in tree order: the document of a container before the documents of its navigable, and the documents of the
+        // navigables of the same document in the tree order of their containers
+        if (windows.Length > 1)
+        {
+            windows = [.. windows.Order(Comparer<Window>.Create(static (a, b) => CompareDocsOrder(a.Document, b.Document)))];
         }
 
         foreach (var window in windows)

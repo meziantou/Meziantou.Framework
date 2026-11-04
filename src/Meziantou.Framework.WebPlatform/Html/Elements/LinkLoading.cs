@@ -159,7 +159,8 @@ public partial class HtmlLinkElement
     /// <summary>Whether the element may be the element that the link expects: its id, or its name for an a element, is the fragment of the link.</summary>
     internal bool MayExpect(Element element)
     {
-        if (_expectedFragment is not { } fragment)
+        // An empty fragment indicates the top of the document, which is not an element: the link blocks until the parsing finishes
+        if (_expectedFragment is not { Length: > 0 } fragment)
             return false;
 
         if (element.IdValue is { } id && (id == fragment || id == _expectedDecodedFragment))
@@ -180,7 +181,8 @@ public partial class HtmlLinkElement
     /// https://html.spec.whatwg.org/multipage/links.html#process-internal-resource-link: the link blocks the rendering of its
     /// document while the document is loading and the element indicated by its URL is not found, or is still on the stack of
     /// open elements of the parser (its content is not completely parsed). As in the browsers, a URL without fragment does not
-    /// block (the specification would block until the document is parsed, as its indicated part is not an element).
+    /// block (the specification would block until the document is parsed, as its indicated part is not an element). An empty
+    /// fragment (<c>#</c>) indicates the top of the document, which is not an element: the link blocks until the parsing finishes.
     /// </summary>
     internal void ProcessInternalResourceLink()
     {
@@ -189,14 +191,14 @@ public partial class HtmlLinkElement
         _expectedDecodedFragment = null;
         var blocks = false;
         if (document.ReadyState == DocumentReadyState.Loading && IsConnected && document.BrowsingContext is not null && IsExpectLink
-            && GetAttributeValue("href") is { } href && Reflection.EncodingParseUrl(document, href) is { Fragment: { Length: > 0 } fragment } url
+            && GetAttributeValue("href") is { } href && Reflection.EncodingParseUrl(document, href) is { Fragment: { } fragment } url
             && BrowsingContext.UrlEquals(url, document.UrlRecord, excludeFragments: true)
             && Document.HasRenderBlockingToken(this)
             && (GetAttributeValue("media") is not { } media || MediaQueryEvaluator.Matches(media, StyleEngine.CreateEnvironment(document))))
         {
             _expectedFragment = fragment;
             _expectedDecodedFragment = System.Text.Encoding.UTF8.GetString(Urls.PercentEncoding.PercentDecode(fragment));
-            blocks = Css.Selectors.HtmlElementStates.GetIndicatedElement(document, fragment) is not { } indicatedElement || document.IsOnStackOfOpenElements(indicatedElement);
+            blocks = fragment.Length == 0 || Css.Selectors.HtmlElementStates.GetIndicatedElement(document, fragment) is not { } indicatedElement || document.IsOnStackOfOpenElements(indicatedElement);
         }
 
         if (blocks)

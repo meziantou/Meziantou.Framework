@@ -2310,10 +2310,7 @@
     "total": 1
   },
   "html/dom/render-blocking/element-render-blocking-top-of-document.html?empty": {
-    "total": 1,
-    "failures": {
-      "rel=expect blocks for the top-of-document value from #": "FAIL"
-    }
+    "total": 1
   },
   "html/dom/render-blocking/element-render-blocking-top-of-document.html?top": {
     "total": 1

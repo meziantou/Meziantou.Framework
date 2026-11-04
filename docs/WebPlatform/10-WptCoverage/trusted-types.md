@@ -9,18 +9,18 @@ description: "The results of the web-platform-tests of trusted-types, and why th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 214 | 224 | 0 | 96% |
+| [Stable](#stable-tests) | 216 | 224 | 0 | 96% |
 | [Tentative](#tentative-tests) | 6 | 9 | 0 | 67% |
 | [Reftests](#reftests) | 1 | 1 | 0 | 100% |
-| **All** | **221** | **234** | **0** | **94%** |
+| **All** | **223** | **234** | **0** | **95%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 4
+- **BUG**: 1
 - **NOT IMPLEMENTED**: 8
-- **TEST RUNNER**: 1
+- **TEST RUNNER**: 2
 
 ## Stable tests
 
@@ -49,11 +49,11 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`Element-toggleAttribute.html`](https://wpt.fyi/results/trusted-types/Element-toggleAttribute.html) | Pass | 2 / 2 |  |  |
 | [`GlobalEventHandlers-onclick.html`](https://wpt.fyi/results/trusted-types/GlobalEventHandlers-onclick.html) | Pass | 3 / 3 |  |  |
 | [`HTMLElement-generic.html`](https://wpt.fyi/results/trusted-types/HTMLElement-generic.html) | Pass | 72 / 72 |  |  |
-| [`HTMLScriptElement-internal-slot.html`](https://wpt.fyi/results/trusted-types/HTMLScriptElement-internal-slot.html) | Fail | 8 / 9 | BUG | a text node appended by the DOM to a `<script>` that the parser is still inserting does not invalidate its trusted script text, so the modified script runs |
+| [`HTMLScriptElement-internal-slot.html`](https://wpt.fyi/results/trusted-types/HTMLScriptElement-internal-slot.html) | Pass | 9 / 9 |  |  |
 | [`Node-multiple-arguments-tt-enforced.html`](https://wpt.fyi/results/trusted-types/Node-multiple-arguments-tt-enforced.html) | Pass | 90 / 90 |  |  |
 | [`Node-multiple-arguments.html`](https://wpt.fyi/results/trusted-types/Node-multiple-arguments.html) | Pass | 90 / 90 |  |  |
 | [`Range-createContextualFragment.html`](https://wpt.fyi/results/trusted-types/Range-createContextualFragment.html) | Pass | 1 / 1 |  |  |
-| [`SVGScriptElement-internal-slot.html`](https://wpt.fyi/results/trusted-types/SVGScriptElement-internal-slot.html) | Fail | 0 / 1 | BUG | a text node appended by the DOM to a `<script>` that the parser is still inserting does not invalidate its trusted script text, so the modified script runs |
+| [`SVGScriptElement-internal-slot.html`](https://wpt.fyi/results/trusted-types/SVGScriptElement-internal-slot.html) | Pass | 1 / 1 |  |  |
 | [`ServiceWorker-block-eval-function-constructor.https.html`](https://wpt.fyi/results/trusted-types/ServiceWorker-block-eval-function-constructor.https.html) | Pass | 6 / 6 |  |  |
 | [`ServiceWorker-eval.https.html`](https://wpt.fyi/results/trusted-types/ServiceWorker-eval.https.html) | Pass | 8 / 8 |  |  |
 | [`ServiceWorker-importScripts.https.html`](https://wpt.fyi/results/trusted-types/ServiceWorker-importScripts.https.html) | Pass | 8 / 8 |  |  |
@@ -181,7 +181,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`should-sink-type-mismatch-violation-be-blocked-by-csp-002-worker.html`](https://wpt.fyi/results/trusted-types/should-sink-type-mismatch-violation-be-blocked-by-csp-002-worker.html) | Pass | 2 / 2 |  |  |
 | [`should-sink-type-mismatch-violation-be-blocked-by-csp-003.html`](https://wpt.fyi/results/trusted-types/should-sink-type-mismatch-violation-be-blocked-by-csp-003.html) | Pass | 1 / 1 |  |  |
 | [`should-trusted-type-policy-creation-be-blocked-by-csp-001.html`](https://wpt.fyi/results/trusted-types/should-trusted-type-policy-creation-be-blocked-by-csp-001.html) | Pass | 24 / 24 |  |  |
-| [`should-trusted-type-policy-creation-be-blocked-by-csp-002.html`](https://wpt.fyi/results/trusted-types/should-trusted-type-policy-creation-be-blocked-by-csp-002.html) | Fail | 19 / 21 | BUG | the values of the `trusted-types` directive separated by ASCII whitespace other than spaces, and the non-ASCII directives, are not parsed as the specification says: the creation of the policy is blocked |
+| [`should-trusted-type-policy-creation-be-blocked-by-csp-002.html`](https://wpt.fyi/results/trusted-types/should-trusted-type-policy-creation-be-blocked-by-csp-002.html) | Fail | 20 / 21 | TEST RUNNER | the `required-ascii-whitespace` subtest folds the `Content-Security-Policy` header with a line break followed by a space (`%0A%20`, an obsolete line folding): the runner ends the header value at the line break, as wptserve writes it, so `_TTP3_` and the next names are not in the directive and their creation is blocked |
 | [`should-trusted-type-policy-creation-be-blocked-by-csp-003.html`](https://wpt.fyi/results/trusted-types/should-trusted-type-policy-creation-be-blocked-by-csp-003.html) | Pass | 6 / 6 |  |  |
 | [`should-trusted-type-policy-creation-be-blocked-by-csp-004-worker.html`](https://wpt.fyi/results/trusted-types/should-trusted-type-policy-creation-be-blocked-by-csp-004-worker.html) | Pass | 16 / 16 |  |  |
 | [`should-trusted-type-policy-creation-be-blocked-by-csp-005.html`](https://wpt.fyi/results/trusted-types/should-trusted-type-policy-creation-be-blocked-by-csp-005.html) | Pass | 1 / 1 |  |  |

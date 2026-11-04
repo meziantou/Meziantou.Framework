@@ -10,15 +10,15 @@ description: "The results of the web-platform-tests of css/css-animations, and w
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 94 | 98 | 0 | 96% |
-| [Tentative](#tentative-tests) | 22 | 29 | 0 | 76% |
+| [Tentative](#tentative-tests) | 27 | 29 | 0 | 93% |
 | [Reftests](#reftests) | 36 | 36 | 0 | 100% |
-| **All** | **152** | **163** | **0** | **93%** |
+| **All** | **157** | **163** | **0** | **96%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 7
+- **BUG**: 2
 - **NOT IMPLEMENTED**: 4
 
 ## Stable tests
@@ -131,17 +131,17 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`AnimationEffect-getComputedTiming.tentative.html`](https://wpt.fyi/results/css/css-animations/AnimationEffect-getComputedTiming.tentative.html) | Pass | 43 / 43 |  |  |
 | [`AnimationEffect-updateTiming.tentative.html`](https://wpt.fyi/results/css/css-animations/AnimationEffect-updateTiming.tentative.html) | Pass | 5 / 5 |  |  |
 | [`CSSAnimation-animationName.tentative.html`](https://wpt.fyi/results/css/css-animations/CSSAnimation-animationName.tentative.html) | Pass | 3 / 3 |  |  |
-| [`CSSAnimation-canceling.tentative.html`](https://wpt.fyi/results/css/css-animations/CSSAnimation-canceling.tentative.html) | Fail | 8 / 9 | BUG | after `cancel()`, a change of `animation-play-state` makes the CSS animation live again (it should stay idle) |
+| [`CSSAnimation-canceling.tentative.html`](https://wpt.fyi/results/css/css-animations/CSSAnimation-canceling.tentative.html) | Pass | 9 / 9 |  |  |
 | [`CSSAnimation-compositeOrder.tentative.html`](https://wpt.fyi/results/css/css-animations/CSSAnimation-compositeOrder.tentative.html) | Pass | 2 / 2 |  |  |
-| [`CSSAnimation-effect.tentative.html`](https://wpt.fyi/results/css/css-animations/CSSAnimation-effect.tentative.html) | Fail | 6 / 8 | BUG | setting a null effect on a running CSS animation does not fire `animationend`, and the timing set by script on a replacement effect is overridden by the animation properties |
+| [`CSSAnimation-effect.tentative.html`](https://wpt.fyi/results/css/css-animations/CSSAnimation-effect.tentative.html) | Pass | 8 / 8 |  |  |
 | [`CSSAnimation-finished.tentative.html`](https://wpt.fyi/results/css/css-animations/CSSAnimation-finished.tentative.html) | Pass | 3 / 3 |  |  |
 | [`CSSAnimation-getCurrentTime.tentative.html`](https://wpt.fyi/results/css/css-animations/CSSAnimation-getCurrentTime.tentative.html) | Pass | 2 / 2 |  |  |
 | [`CSSAnimation-id.tentative.html`](https://wpt.fyi/results/css/css-animations/CSSAnimation-id.tentative.html) | Pass | 1 / 1 |  |  |
-| [`CSSAnimation-pausing.tentative.html`](https://wpt.fyi/results/css/css-animations/CSSAnimation-pausing.tentative.html) | Fail | 8 / 9 | BUG | setting `startTime` on a CSS animation prevents a later `animation-play-state: paused` from pausing it |
+| [`CSSAnimation-pausing.tentative.html`](https://wpt.fyi/results/css/css-animations/CSSAnimation-pausing.tentative.html) | Pass | 9 / 9 |  |  |
 | [`CSSAnimation-playState.tentative.html`](https://wpt.fyi/results/css/css-animations/CSSAnimation-playState.tentative.html) | Pass | 5 / 5 |  |  |
 | [`CSSAnimation-ready.tentative.html`](https://wpt.fyi/results/css/css-animations/CSSAnimation-ready.tentative.html) | Pass | 5 / 5 |  |  |
 | [`CSSAnimation-startTime.tentative.html`](https://wpt.fyi/results/css/css-animations/CSSAnimation-startTime.tentative.html) | Pass | 3 / 3 |  |  |
-| [`Document-getAnimations.tentative.html`](https://wpt.fyi/results/css/css-animations/Document-getAnimations.tentative.html) | Fail | 17 / 18 | BUG | the free CSS animations (whose owning element was cleared) are not returned in the order they were started |
+| [`Document-getAnimations.tentative.html`](https://wpt.fyi/results/css/css-animations/Document-getAnimations.tentative.html) | Pass | 18 / 18 |  |  |
 | [`Element-getAnimations-dynamic-changes.tentative.html`](https://wpt.fyi/results/css/css-animations/Element-getAnimations-dynamic-changes.tentative.html) | Pass | 5 / 5 |  |  |
 | [`Element-getAnimations.tentative.html`](https://wpt.fyi/results/css/css-animations/Element-getAnimations.tentative.html) | Pass | 22 / 22 |  |  |
 | [`KeyframeEffect-getKeyframes.tentative.html`](https://wpt.fyi/results/css/css-animations/KeyframeEffect-getKeyframes.tentative.html) | Fail | 27 / 32 | NOT IMPLEMENTED | `getKeyframes()` of a CSS animation returns the specified values of the `@keyframes` rule (`var()` is not substituted, the custom properties are listed) instead of computed values |
@@ -152,7 +152,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`display-none-dont-cancel.tentative.html`](https://wpt.fyi/results/css/css-animations/display-none-dont-cancel.tentative.html) | Fail | 4 / 5 | BUG | a `display: none` computed from an animated custom property cancels the animation |
 | [`display-none-to-display-block-dont-cancel.tentative.html`](https://wpt.fyi/results/css/css-animations/display-none-to-display-block-dont-cancel.tentative.html) | Pass | 1 / 1 |  |  |
 | [`display-none-to-display-block-while-running.tentative.html`](https://wpt.fyi/results/css/css-animations/display-none-to-display-block-while-running.tentative.html) | Pass | 1 / 1 |  |  |
-| [`event-dispatch.tentative.html`](https://wpt.fyi/results/css/css-animations/event-dispatch.tentative.html) | Fail | 27 / 32 | BUG | the elapsed time of `animationcancel` is 0 when the timeline is set to null or `cancel()` is called, and seeking from the after phase to the before phase fires `animationend` instead of `animationstart` |
+| [`event-dispatch.tentative.html`](https://wpt.fyi/results/css/css-animations/event-dispatch.tentative.html) | Pass | 32 / 32 |  |  |
 | [`event-order.tentative.html`](https://wpt.fyi/results/css/css-animations/event-order.tentative.html) | Pass | 6 / 6 |  |  |
 | [`parsing/animation-composition-computed.tentative.html`](https://wpt.fyi/results/css/css-animations/parsing/animation-composition-computed.tentative.html) | Pass | 1 / 1 |  |  |
 | [`parsing/animation-composition-invalid.tentative.html`](https://wpt.fyi/results/css/css-animations/parsing/animation-composition-invalid.tentative.html) | Pass | 4 / 4 |  |  |

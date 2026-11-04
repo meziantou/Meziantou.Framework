@@ -9,16 +9,16 @@ description: "The results of the web-platform-tests of svg, and why the tests th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 703 | 742 | 2 | 95% |
+| [Stable](#stable-tests) | 710 | 742 | 2 | 96% |
 | [Tentative](#tentative-tests) | 46 | 47 | 0 | 98% |
-| [Reftests](#reftests) | 555 | 629 | 2 | 89% |
-| **All** | **1,304** | **1,418** | **4** | **92%** |
+| [Reftests](#reftests) | 557 | 629 | 2 | 89% |
+| **All** | **1,313** | **1,418** | **4** | **93%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 22
+- **BUG**: 13
 - **TEST BUG**: 9
 - **NOT IMPLEMENTED**: 74
 - **TEST RUNNER**: 7
@@ -42,7 +42,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`animations/animate-color-calcMode-discrete.html`](https://wpt.fyi/results/svg/animations/animate-color-calcMode-discrete.html) | Pass | 1 / 1 |  |  |
 | [`animations/animate-color-fill-currentColor.html`](https://wpt.fyi/results/svg/animations/animate-color-fill-currentColor.html) | Pass | 1 / 1 |  |  |
 | [`animations/animate-color-fill-from-by.html`](https://wpt.fyi/results/svg/animations/animate-color-fill-from-by.html) | Pass | 1 / 1 |  |  |
-| [`animations/animate-color-transparent.html`](https://wpt.fyi/results/svg/animations/animate-color-transparent.html) | Fail | 0 / 1 | BUG | the colors of the SMIL animations are interpolated as CSS colors, with premultiplied alpha (as in Firefox): halfway of a from-by animation from `transparent` by `red`, the fill is `rgba(255, 0, 0, 0.5)`, and the test expects the channels to be interpolated independently (`rgba(127, 0, 0, 0.5)`, as in Chrome and Safari) |
+| [`animations/animate-color-transparent.html`](https://wpt.fyi/results/svg/animations/animate-color-transparent.html) | Pass | 1 / 1 |  |  |
 | [`animations/animate-css-xml-attributeType.html`](https://wpt.fyi/results/svg/animations/animate-css-xml-attributeType.html) | Pass | 1 / 1 |  |  |
 | [`animations/animate-currentColor.html`](https://wpt.fyi/results/svg/animations/animate-currentColor.html) | Pass | 1 / 1 |  |  |
 | [`animations/animate-currentcolor-in-visited-link.html`](https://wpt.fyi/results/svg/animations/animate-currentcolor-in-visited-link.html) | Pass | 1 / 1 |  |  |
@@ -380,14 +380,14 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`interact/focus-inside-hidden-svg-containers-02.html`](https://wpt.fyi/results/svg/interact/focus-inside-hidden-svg-containers-02.html) | Pass | 1 / 1 |  |  |
 | [`interact/focus-inside-hidden-svg-containers-03.html`](https://wpt.fyi/results/svg/interact/focus-inside-hidden-svg-containers-03.html) | Pass | 1 / 1 |  |  |
 | [`interact/focus-inside-hidden-svg-containers-04.html`](https://wpt.fyi/results/svg/interact/focus-inside-hidden-svg-containers-04.html) | Pass | 8 / 8 |  |  |
-| [`interact/image-load-error-events.html`](https://wpt.fyi/results/svg/interact/image-load-error-events.html) | Fail | 4 / 5 | BUG | an SVG `<image>` detached during its load fires `error` instead of `load` |
+| [`interact/image-load-error-events.html`](https://wpt.fyi/results/svg/interact/image-load-error-events.html) | Pass | 5 / 5 |  |  |
 | [`interact/inheritance.svg`](https://wpt.fyi/results/svg/interact/inheritance.svg) | Pass | 2 / 2 |  |  |
 | [`interact/parsing/pointer-events-computed.svg`](https://wpt.fyi/results/svg/interact/parsing/pointer-events-computed.svg) | Pass | 11 / 11 |  |  |
 | [`interact/parsing/pointer-events-invalid.svg`](https://wpt.fyi/results/svg/interact/parsing/pointer-events-invalid.svg) | Pass | 3 / 3 |  |  |
 | [`interact/parsing/pointer-events-valid.svg`](https://wpt.fyi/results/svg/interact/parsing/pointer-events-valid.svg) | Pass | 11 / 11 |  |  |
 | [`interact/script-common.html`](https://wpt.fyi/results/svg/interact/script-common.html) | Pass | 1 / 1 |  |  |
 | [`interact/script-content.svg`](https://wpt.fyi/results/svg/interact/script-content.svg) | Pass | 1 / 1 |  |  |
-| [`interact/script-load-error-events.html`](https://wpt.fyi/results/svg/interact/script-load-error-events.html) | Fail | 3 / 5 | BUG | an external SVG `<script>` whose element is detached or reattached fires `error` instead of `load` |
+| [`interact/script-load-error-events.html`](https://wpt.fyi/results/svg/interact/script-load-error-events.html) | Pass | 5 / 5 |  |  |
 | [`interact/scripted/async-01.svg`](https://wpt.fyi/results/svg/interact/scripted/async-01.svg) | Fail | 0 / 1 | NOT IMPLEMENTED | the `async` and module scripts of SVG (`<script async>`, `<script type=module>` in an SVG document) |
 | [`interact/scripted/async-02.html`](https://wpt.fyi/results/svg/interact/scripted/async-02.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the `async` and module scripts of SVG (`<script async>`, `<script type=module>` in an SVG document) |
 | [`interact/scripted/async-03.html`](https://wpt.fyi/results/svg/interact/scripted/async-03.html) | Pass | 1 / 1 |  |  |
@@ -410,13 +410,13 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`interact/scripted/svg-pointer-events-bbox.html`](https://wpt.fyi/results/svg/interact/scripted/svg-pointer-events-bbox.html) | Pass | 31 / 31 |  |  |
 | [`interact/scripted/svg-root-border-radius.html`](https://wpt.fyi/results/svg/interact/scripted/svg-root-border-radius.html) | Pass | 1 / 1 |  |  |
 | [`interact/scripted/svg-small-big-path.html`](https://wpt.fyi/results/svg/interact/scripted/svg-small-big-path.html) | Pass | 5 / 5 |  |  |
-| [`interact/scripted/tabindex-focus-flag.svg`](https://wpt.fyi/results/svg/interact/scripted/tabindex-focus-flag.svg) | Fail | 36 / 39 | BUG | `audio[controls]`, `video[controls]` and `canvas[tabindex]` in a `foreignObject` are not focusable |
+| [`interact/scripted/tabindex-focus-flag.svg`](https://wpt.fyi/results/svg/interact/scripted/tabindex-focus-flag.svg) | Fail | 36 / 39 | BUG | `audio[controls]`, `video[controls]` and `canvas[tabindex]`, children of a `g` element (HTML elements in SVG content, which generate no box), are not focusable: the test expects them focusable as if they were rendered (the `iframe` passes because focusing it focuses its document) |
 | [`interact/scripted/text-hittest-001.html`](https://wpt.fyi/results/svg/interact/scripted/text-hittest-001.html) | Pass | 1 / 1 |  |  |
 | [`interact/scripted/text-hittest-002.html`](https://wpt.fyi/results/svg/interact/scripted/text-hittest-002.html) | Pass | 1 / 1 |  |  |
 | [`interact/scripted/text-hittest-003.html`](https://wpt.fyi/results/svg/interact/scripted/text-hittest-003.html) | Pass | 1 / 1 |  |  |
 | [`interact/scripted/transformed-group-hittest.html`](https://wpt.fyi/results/svg/interact/scripted/transformed-group-hittest.html) | Pass | 21 / 21 |  |  |
 | [`linking/scripted/a-download-click.svg`](https://wpt.fyi/results/svg/linking/scripted/a-download-click.svg) | Pass | 1 / 1 |  |  |
-| [`linking/scripted/a-hyperlinkutils-getter-setter.html`](https://wpt.fyi/results/svg/linking/scripted/a-hyperlinkutils-getter-setter.html) | Fail | 31 / 45 | BUG | the `HyperlinkElementUtils` setters of `SVGAElement` do not update the `xlink:href` attribute when there is no `href` attribute |
+| [`linking/scripted/a-hyperlinkutils-getter-setter.html`](https://wpt.fyi/results/svg/linking/scripted/a-hyperlinkutils-getter-setter.html) | Pass | 45 / 45 |  |  |
 | [`linking/scripted/a-hyperlinkutils-getter.html`](https://wpt.fyi/results/svg/linking/scripted/a-hyperlinkutils-getter.html) | Pass | 30 / 30 |  |  |
 | [`linking/scripted/a-referrerpolicy-navigation.html`](https://wpt.fyi/results/svg/linking/scripted/a-referrerpolicy-navigation.html) | Pass | 5 / 5 |  |  |
 | [`linking/scripted/a-referrerpolicy-reflection.html`](https://wpt.fyi/results/svg/linking/scripted/a-referrerpolicy-reflection.html) | Pass | 11 / 11 |  |  |
@@ -525,7 +525,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`path/interfaces/getPathSegmentAtLength-boundaries.html`](https://wpt.fyi/results/svg/path/interfaces/getPathSegmentAtLength-boundaries.html) | Pass | 3 / 3 |  |  |
 | [`path/interfaces/getPathSegmentAtLength-clamping.html`](https://wpt.fyi/results/svg/path/interfaces/getPathSegmentAtLength-clamping.html) | Pass | 2 / 2 |  |  |
 | [`path/interfaces/getPathSegmentAtLength-detached-element.html`](https://wpt.fyi/results/svg/path/interfaces/getPathSegmentAtLength-detached-element.html) | Pass | 1 / 1 |  |  |
-| [`path/interfaces/getPathSegmentAtLength-during-animation.html`](https://wpt.fyi/results/svg/path/interfaces/getPathSegmentAtLength-during-animation.html) | Fail | 0 / 1 | BUG | `getPathSegmentAtLength()` uses the animated path data during a SMIL animation instead of the base value |
+| [`path/interfaces/getPathSegmentAtLength-during-animation.html`](https://wpt.fyi/results/svg/path/interfaces/getPathSegmentAtLength-during-animation.html) | Pass | 1 / 1 |  |  |
 | [`path/interfaces/getPathSegmentAtLength-invalid.html`](https://wpt.fyi/results/svg/path/interfaces/getPathSegmentAtLength-invalid.html) | Pass | 5 / 5 |  |  |
 | [`path/interfaces/getPathSegmentAtLength-segments.html`](https://wpt.fyi/results/svg/path/interfaces/getPathSegmentAtLength-segments.html) | Pass | 9 / 9 |  |  |
 | [`path/interfaces/setPathData-during-animation.html`](https://wpt.fyi/results/svg/path/interfaces/setPathData-during-animation.html) | Pass | 1 / 1 |  |  |
@@ -607,7 +607,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`struct/scripted/use-external-reload-in-iframe.html`](https://wpt.fyi/results/svg/struct/scripted/use-external-reload-in-iframe.html) | Pass | 1 / 1 |  |  |
 | [`struct/scripted/use-iframe-onload.html`](https://wpt.fyi/results/svg/struct/scripted/use-iframe-onload.html) | Pass | 1 / 1 |  |  |
 | [`struct/scripted/use-inline-event-handlers.html`](https://wpt.fyi/results/svg/struct/scripted/use-inline-event-handlers.html) | Pass | 2 / 2 |  |  |
-| [`struct/scripted/use-script-not-executed.html`](https://wpt.fyi/results/svg/struct/scripted/use-script-not-executed.html) | Fail | 5 / 6 | BUG | `'strict-dynamic'` does not block a parser-inserted external SVG `<script href>` (written by `document.write()`): the parser-inserted flag is cleared before the request is created, so the request is not marked parser-inserted |
+| [`struct/scripted/use-script-not-executed.html`](https://wpt.fyi/results/svg/struct/scripted/use-script-not-executed.html) | Pass | 6 / 6 |  |  |
 | [`struct/systemLanguage-matching.html`](https://wpt.fyi/results/svg/struct/systemLanguage-matching.html) | Pass | 14 / 14 |  |  |
 | [`struct/systemLanguage-parsing.html`](https://wpt.fyi/results/svg/struct/systemLanguage-parsing.html) | Pass | 13 / 13 |  |  |
 | [`struct/use-getComputedStyle.html`](https://wpt.fyi/results/svg/struct/use-getComputedStyle.html) | Pass | 1 / 1 |  |  |
@@ -691,7 +691,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`types/scripted/SVGAnimatedEnumeration-SVGMaskElement.html`](https://wpt.fyi/results/svg/types/scripted/SVGAnimatedEnumeration-SVGMaskElement.html) | Pass | 1 / 1 |  |  |
 | [`types/scripted/SVGAnimatedEnumeration-SVGPatternElement.html`](https://wpt.fyi/results/svg/types/scripted/SVGAnimatedEnumeration-SVGPatternElement.html) | Pass | 1 / 1 |  |  |
 | [`types/scripted/SVGAnimatedEnumeration-SVGTextContentElement.html`](https://wpt.fyi/results/svg/types/scripted/SVGAnimatedEnumeration-SVGTextContentElement.html) | Pass | 1 / 1 |  |  |
-| [`types/scripted/SVGAnimatedEnumeration-SVGTextPathElement.html`](https://wpt.fyi/results/svg/types/scripted/SVGAnimatedEnumeration-SVGTextPathElement.html) | Fail | 2 / 3 | BUG | `SVGTextPathElement.spacing` is not an `SVGAnimatedEnumeration` instance (the `instanceof` check fails) |
+| [`types/scripted/SVGAnimatedEnumeration-SVGTextPathElement.html`](https://wpt.fyi/results/svg/types/scripted/SVGAnimatedEnumeration-SVGTextPathElement.html) | Pass | 3 / 3 |  |  |
 | [`types/scripted/SVGAnimatedEnumeration-initial-values.html`](https://wpt.fyi/results/svg/types/scripted/SVGAnimatedEnumeration-initial-values.html) | Pass | 50 / 50 |  |  |
 | [`types/scripted/SVGAnimatedEnumeration-invalid-values.html`](https://wpt.fyi/results/svg/types/scripted/SVGAnimatedEnumeration-invalid-values.html) | Pass | 52 / 52 |  |  |
 | [`types/scripted/SVGAnimatedEnumeration-keywords.html`](https://wpt.fyi/results/svg/types/scripted/SVGAnimatedEnumeration-keywords.html) | Pass | 32 / 32 |  |  |
@@ -1172,7 +1172,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`pservers/reftests/percent-encoded-fragment-fill-stroke.html`](https://wpt.fyi/results/svg/pservers/reftests/percent-encoded-fragment-fill-stroke.html) | Pass | 1 / 1 |  |  |
 | [`pservers/reftests/radial-gradient-transform-empty-attr.svg`](https://wpt.fyi/results/svg/pservers/reftests/radial-gradient-transform-empty-attr.svg) | Pass | 1 / 1 |  |  |
 | [`pservers/reftests/radialgradient-basic-002.svg`](https://wpt.fyi/results/svg/pservers/reftests/radialgradient-basic-002.svg) | Pass | 1 / 1 |  |  |
-| [`pservers/reftests/radialgradient-basic-003.svg`](https://wpt.fyi/results/svg/pservers/reftests/radialgradient-basic-003.svg) | Fail | 0 / 1 | BUG | a radial gradient with a negative `fr` is not painted as the reference |
+| [`pservers/reftests/radialgradient-basic-003.svg`](https://wpt.fyi/results/svg/pservers/reftests/radialgradient-basic-003.svg) | Pass | 1 / 1 |  |  |
 | [`pservers/reftests/radialgradient-fully-overlapping.svg`](https://wpt.fyi/results/svg/pservers/reftests/radialgradient-fully-overlapping.svg) | Pass | 1 / 1 |  |  |
 | [`pservers/reftests/stop-color-currentcolor-dynamic-001.svg`](https://wpt.fyi/results/svg/pservers/reftests/stop-color-currentcolor-dynamic-001.svg) | Pass | 1 / 1 |  |  |
 | [`pservers/reftests/stroke-fallback-invalid-uri.svg`](https://wpt.fyi/results/svg/pservers/reftests/stroke-fallback-invalid-uri.svg) | Pass | 1 / 1 |  |  |
@@ -1309,7 +1309,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`styling/css-var-on-length-attributes-04.svg`](https://wpt.fyi/results/svg/styling/css-var-on-length-attributes-04.svg) | Pass | 1 / 1 |  |  |
 | [`styling/css-var-on-length-attributes-05.svg`](https://wpt.fyi/results/svg/styling/css-var-on-length-attributes-05.svg) | Pass | 1 / 1 |  |  |
 | [`styling/css-var-on-length-attributes-06.html`](https://wpt.fyi/results/svg/styling/css-var-on-length-attributes-06.html) | Pass | 1 / 1 |  |  |
-| [`styling/css-var-on-length-attributes-quirk.html`](https://wpt.fyi/results/svg/styling/css-var-on-length-attributes-quirk.html) | Fail | 0 / 1 | BUG | a unitless number substituted by `var()` in a presentation attribute (`r="var(--radii)"` with `--radii: 48`) is invalid at computed-value time: the unitless lengths of the presentation attributes are only accepted when the attribute is parsed (Gecko fails too) |
+| [`styling/css-var-on-length-attributes-quirk.html`](https://wpt.fyi/results/svg/styling/css-var-on-length-attributes-quirk.html) | Pass | 1 / 1 |  |  |
 | [`styling/image-sizing-min-content.tentative.svg`](https://wpt.fyi/results/svg/styling/image-sizing-min-content.tentative.svg) | Pass | 1 / 1 |  |  |
 | [`styling/invalidation/nth-child-of-class.svg`](https://wpt.fyi/results/svg/styling/invalidation/nth-child-of-class.svg) | Pass | 1 / 1 |  |  |
 | [`styling/invalidation/nth-last-child-of-class.svg`](https://wpt.fyi/results/svg/styling/invalidation/nth-last-child-of-class.svg) | Pass | 1 / 1 |  |  |

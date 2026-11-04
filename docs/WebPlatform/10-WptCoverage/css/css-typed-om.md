@@ -10,15 +10,14 @@ description: "The results of the web-platform-tests of css/css-typed-om, and why
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 290 | 319 | 0 | 91% |
-| [Tentative](#tentative-tests) | 37 | 43 | 0 | 86% |
+| [Tentative](#tentative-tests) | 39 | 43 | 0 | 91% |
 | [Reftests](#reftests) | 5 | 5 | 0 | 100% |
-| **All** | **332** | **367** | **0** | **90%** |
+| **All** | **334** | **367** | **0** | **91%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 2
 - **TEST BUG**: 31
 - **NOT IMPLEMENTED**: 1
 - **TEST RUNNER**: 1
@@ -383,13 +382,13 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`the-stylepropertymap/computed/getAll.tentative.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/computed/getAll.tentative.html) | Pass | 6 / 6 |  |  |
 | [`the-stylepropertymap/computed/has.tentative.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/computed/has.tentative.html) | Pass | 7 / 7 |  |  |
 | [`the-stylepropertymap/computed/iterable.tentative.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/computed/iterable.tentative.html) | Pass | 5 / 5 |  |  |
-| [`the-stylepropertymap/declared/append.tentative.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/declared/append.tentative.html) | Fail | 21 / 25 | BUG | `StylePropertyMap.append()` accepts a CSS-wide keyword among the appended values instead of throwing a TypeError, and with no values it throws a TypeError when the current value is a CSS-wide keyword instead of doing nothing |
+| [`the-stylepropertymap/declared/append.tentative.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/declared/append.tentative.html) | Pass | 25 / 25 |  |  |
 | [`the-stylepropertymap/declared/declared.tentative.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/declared/declared.tentative.html) | Pass | 7 / 7 |  |  |
 | [`the-stylepropertymap/declared/getAll.tentative.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/declared/getAll.tentative.html) | Pass | 7 / 7 |  |  |
 | [`the-stylepropertymap/declared/has.tentative.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/declared/has.tentative.html) | Pass | 9 / 9 |  |  |
 | [`the-stylepropertymap/declared/iterable.tentative.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/declared/iterable.tentative.html) | Pass | 5 / 5 |  |  |
 | [`the-stylepropertymap/declared/set.tentative.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/declared/set.tentative.html) | Pass | 15 / 15 |  |  |
-| [`the-stylepropertymap/inline/append.tentative.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/inline/append.tentative.html) | Fail | 21 / 25 | BUG | `StylePropertyMap.append()` accepts a CSS-wide keyword among the appended values instead of throwing a TypeError, and with no values it throws a TypeError when the current value is a CSS-wide keyword instead of doing nothing |
+| [`the-stylepropertymap/inline/append.tentative.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/inline/append.tentative.html) | Pass | 25 / 25 |  |  |
 | [`the-stylepropertymap/inline/getAll.tentative.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/inline/getAll.tentative.html) | Pass | 7 / 7 |  |  |
 | [`the-stylepropertymap/inline/has.tentative.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/inline/has.tentative.html) | Pass | 8 / 8 |  |  |
 | [`the-stylepropertymap/inline/iterable.tentative.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/inline/iterable.tentative.html) | Pass | 5 / 5 |  |  |

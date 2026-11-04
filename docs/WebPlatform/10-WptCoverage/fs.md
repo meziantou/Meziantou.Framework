@@ -9,16 +9,15 @@ description: "The results of the web-platform-tests of fs, and why the tests tha
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 31 | 35 | 0 | 89% |
+| [Stable](#stable-tests) | 32 | 35 | 0 | 91% |
 | [Tentative](#tentative-tests) | 2 | 8 | 0 | 25% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **33** | **43** | **0** | **77%** |
+| **All** | **34** | **43** | **0** | **79%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
 - **TEST BUG**: 1
 - **NOT IMPLEMENTED**: 8
 
@@ -37,7 +36,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`FileSystemBaseHandle-postMessage-MessagePort-windows.https.window.js`](https://wpt.fyi/results/fs/FileSystemBaseHandle-postMessage-MessagePort-windows.https.window.js) | Pass | 3 / 3 |  |  |
 | [`FileSystemBaseHandle-postMessage-MessagePort-workers.https.window.js`](https://wpt.fyi/results/fs/FileSystemBaseHandle-postMessage-MessagePort-workers.https.window.js) | Pass | 3 / 3 |  |  |
 | [`FileSystemBaseHandle-postMessage-frames.https.window.js`](https://wpt.fyi/results/fs/FileSystemBaseHandle-postMessage-frames.https.window.js) | Pass | 4 / 4 |  |  |
-| [`FileSystemBaseHandle-postMessage-insecure-context.https.window.js`](https://wpt.fyi/results/fs/FileSystemBaseHandle-postMessage-insecure-context.https.window.js) | Fail | 1 / 3 | BUG | a `FileSystemHandle` posted to a non-secure context of the same origin is deserialized (`message`) instead of failing (`messageerror`) |
+| [`FileSystemBaseHandle-postMessage-insecure-context.https.window.js`](https://wpt.fyi/results/fs/FileSystemBaseHandle-postMessage-insecure-context.https.window.js) | Pass | 3 / 3 |  |  |
 | [`FileSystemBaseHandle-postMessage-windows.https.window.js`](https://wpt.fyi/results/fs/FileSystemBaseHandle-postMessage-windows.https.window.js) | Pass | 3 / 3 |  |  |
 | [`FileSystemBaseHandle-postMessage-workers.https.window.js`](https://wpt.fyi/results/fs/FileSystemBaseHandle-postMessage-workers.https.window.js) | Pass | 3 / 3 |  |  |
 | [`FileSystemBaseHandle-remove.https.any.js`](https://wpt.fyi/results/fs/FileSystemBaseHandle-remove.https.any.js) | Pass | 27 / 27 |  |  |

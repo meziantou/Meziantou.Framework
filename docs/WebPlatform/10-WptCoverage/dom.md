@@ -9,16 +9,15 @@ description: "The results of the web-platform-tests of dom, and why the tests th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 661 | 684 | 6 | 97% |
+| [Stable](#stable-tests) | 664 | 684 | 6 | 98% |
 | [Tentative](#tentative-tests) | 30 | 55 | 2 | 57% |
 | [Reftests](#reftests) | 4 | 4 | 0 | 100% |
-| **All** | **695** | **743** | **8** | **95%** |
+| **All** | **698** | **743** | **8** | **95%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 3
 - **TEST BUG**: 7
 - **NOT IMPLEMENTED**: 29
 - **REQUIRES**: 1
@@ -382,7 +381,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`nodes/Element-webkitMatchesSelector.html`](https://wpt.fyi/results/dom/nodes/Element-webkitMatchesSelector.html) | Pass | 669 / 669 |  |  |
 | [`nodes/MutationObserver-attributes.html`](https://wpt.fyi/results/dom/nodes/MutationObserver-attributes.html) | Pass | 42 / 42 |  |  |
 | [`nodes/MutationObserver-callback-arguments.html`](https://wpt.fyi/results/dom/nodes/MutationObserver-callback-arguments.html) | Pass | 1 / 1 |  |  |
-| [`nodes/MutationObserver-callback-order.window.js`](https://wpt.fyi/results/dom/nodes/MutationObserver-callback-order.window.js) | Fail | 2 / 3 | BUG | the mutation observers are not always notified in the order of their creation (the second observer is notified first) |
+| [`nodes/MutationObserver-callback-order.window.js`](https://wpt.fyi/results/dom/nodes/MutationObserver-callback-order.window.js) | Pass | 3 / 3 |  |  |
 | [`nodes/MutationObserver-callback-tricky.html`](https://wpt.fyi/results/dom/nodes/MutationObserver-callback-tricky.html) | Pass | 2 / 2 |  |  |
 | [`nodes/MutationObserver-characterData.html`](https://wpt.fyi/results/dom/nodes/MutationObserver-characterData.html) | Pass | 23 / 23 |  |  |
 | [`nodes/MutationObserver-childList.html`](https://wpt.fyi/results/dom/nodes/MutationObserver-childList.html) | Pass | 40 / 40 |  |  |
@@ -394,7 +393,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`nodes/MutationObserver-sanity.html`](https://wpt.fyi/results/dom/nodes/MutationObserver-sanity.html) | Pass | 16 / 16 |  |  |
 | [`nodes/MutationObserver-takeRecords.html`](https://wpt.fyi/results/dom/nodes/MutationObserver-takeRecords.html) | Pass | 3 / 3 |  |  |
 | [`nodes/MutationObserver-textContent.html`](https://wpt.fyi/results/dom/nodes/MutationObserver-textContent.html) | Pass | 4 / 4 |  |  |
-| [`nodes/MutationObserver-transient-registered-observers.window.js`](https://wpt.fyi/results/dom/nodes/MutationObserver-transient-registered-observers.window.js) | Fail | 11 / 15 | BUG | the transient registered observers: removing a node from an observed subtree does not queue the mutation observer microtask, and the transient observers of a removed subtree are not removed after the notification when no record was queued |
+| [`nodes/MutationObserver-transient-registered-observers.window.js`](https://wpt.fyi/results/dom/nodes/MutationObserver-transient-registered-observers.window.js) | Pass | 15 / 15 |  |  |
 | [`nodes/MutationObserver-xml-parser.xhtml`](https://wpt.fyi/results/dom/nodes/MutationObserver-xml-parser.xhtml) | Pass | 1 / 1 |  |  |
 | [`nodes/Node-appendChild-cereactions-vs-script.window.js`](https://wpt.fyi/results/dom/nodes/Node-appendChild-cereactions-vs-script.window.js) | Pass | 1 / 1 |  |  |
 | [`nodes/Node-appendChild.html`](https://wpt.fyi/results/dom/nodes/Node-appendChild.html) | Pass | 11 / 11 |  |  |
@@ -611,7 +610,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`nodes/moveBefore/moveBefore-shadow-inside.html`](https://wpt.fyi/results/dom/nodes/moveBefore/moveBefore-shadow-inside.html) | Pass | 1 / 1 |  |  |
 | [`nodes/moveBefore/moveBefore-shadow-root.html`](https://wpt.fyi/results/dom/nodes/moveBefore/moveBefore-shadow-root.html) | Pass | 1 / 1 |  |  |
 | [`nodes/moveBefore/moveBefore-size-query.html`](https://wpt.fyi/results/dom/nodes/moveBefore/moveBefore-size-query.html) | Pass | 1 / 1 |  |  |
-| [`nodes/moveBefore/mutation-observer-moved-subtree.window.js`](https://wpt.fyi/results/dom/nodes/moveBefore/mutation-observer-moved-subtree.window.js) | Fail | 0 / 1 | BUG | `moveBefore()` does not add transient registered observers to a subtree moved out of an observed subtree |
+| [`nodes/moveBefore/mutation-observer-moved-subtree.window.js`](https://wpt.fyi/results/dom/nodes/moveBefore/mutation-observer-moved-subtree.window.js) | Pass | 1 / 1 |  |  |
 | [`nodes/moveBefore/mutation-observer.html`](https://wpt.fyi/results/dom/nodes/moveBefore/mutation-observer.html) | Pass | 2 / 2 |  |  |
 | [`nodes/moveBefore/nonce.html`](https://wpt.fyi/results/dom/nodes/moveBefore/nonce.html) | Pass | 1 / 1 |  |  |
 | [`nodes/moveBefore/object-crash-regression.html`](https://wpt.fyi/results/dom/nodes/moveBefore/object-crash-regression.html) | Pass | 1 / 1 |  |  |

@@ -11,14 +11,14 @@ description: "The results of the web-platform-tests of css/css-inline, and why t
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 52 | 53 | 0 | 98% |
 | [Tentative](#tentative-tests) | 5 | 6 | 0 | 83% |
-| [Reftests](#reftests) | 184 | 199 | 0 | 92% |
-| **All** | **241** | **258** | **0** | **93%** |
+| [Reftests](#reftests) | 189 | 199 | 0 | 95% |
+| **All** | **246** | **258** | **0** | **95%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 12
+- **BUG**: 7
 - **TEST BUG**: 5
 
 ## Stable tests
@@ -133,8 +133,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`initial-letter/initial-letter-block-position-drop-over-ruby.html`](https://wpt.fyi/results/css/css-inline/initial-letter/initial-letter-block-position-drop-over-ruby.html) | Pass | 1 / 1 |  |  |
 | [`initial-letter/initial-letter-block-position-drop-under-ruby-tall.html`](https://wpt.fyi/results/css/css-inline/initial-letter/initial-letter-block-position-drop-under-ruby-tall.html) | Pass | 1 / 1 |  |  |
 | [`initial-letter/initial-letter-block-position-drop-under-ruby.html`](https://wpt.fyi/results/css/css-inline/initial-letter/initial-letter-block-position-drop-under-ruby.html) | Pass | 1 / 1 |  |  |
-| [`initial-letter/initial-letter-block-position-fractional-drop-vlr.html`](https://wpt.fyi/results/css/css-inline/initial-letter/initial-letter-block-position-fractional-drop-vlr.html) | Fail | 0 / 1 | BUG | in vertical writing modes, an initial letter of non-integer size whose sink is the size floored to 1 (`initial-letter: 1.5`) is placed at the block-start edge of the first line instead of being centered in the 1.5 lines (the 2.5 sizes and the horizontal variant pass) |
-| [`initial-letter/initial-letter-block-position-fractional-drop-vrl.html`](https://wpt.fyi/results/css/css-inline/initial-letter/initial-letter-block-position-fractional-drop-vrl.html) | Fail | 0 / 1 | BUG | in vertical writing modes, an initial letter of non-integer size whose sink is the size floored to 1 (`initial-letter: 1.5`) is placed at the block-start edge of the first line instead of being centered in the 1.5 lines (the 2.5 sizes and the horizontal variant pass) |
+| [`initial-letter/initial-letter-block-position-fractional-drop-vlr.html`](https://wpt.fyi/results/css/css-inline/initial-letter/initial-letter-block-position-fractional-drop-vlr.html) | Pass | 1 / 1 |  |  |
+| [`initial-letter/initial-letter-block-position-fractional-drop-vrl.html`](https://wpt.fyi/results/css/css-inline/initial-letter/initial-letter-block-position-fractional-drop-vrl.html) | Pass | 1 / 1 |  |  |
 | [`initial-letter/initial-letter-block-position-fractional-drop.html`](https://wpt.fyi/results/css/css-inline/initial-letter/initial-letter-block-position-fractional-drop.html) | Pass | 1 / 1 |  |  |
 | [`initial-letter/initial-letter-block-position-fractional-size-vlr.html`](https://wpt.fyi/results/css/css-inline/initial-letter/initial-letter-block-position-fractional-size-vlr.html) | Pass | 1 / 1 |  |  |
 | [`initial-letter/initial-letter-block-position-fractional-size-vrl.html`](https://wpt.fyi/results/css/css-inline/initial-letter/initial-letter-block-position-fractional-size-vrl.html) | Pass | 1 / 1 |  |  |
@@ -145,9 +145,9 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`initial-letter/initial-letter-block-position-margins-vlr.html`](https://wpt.fyi/results/css/css-inline/initial-letter/initial-letter-block-position-margins-vlr.html) | Pass | 1 / 1 |  |  |
 | [`initial-letter/initial-letter-block-position-margins-vrl.html`](https://wpt.fyi/results/css/css-inline/initial-letter/initial-letter-block-position-margins-vrl.html) | Pass | 1 / 1 |  |  |
 | [`initial-letter/initial-letter-block-position-margins.html`](https://wpt.fyi/results/css/css-inline/initial-letter/initial-letter-block-position-margins.html) | Pass | 1 / 1 |  |  |
-| [`initial-letter/initial-letter-block-position-over-sunk-vlr.html`](https://wpt.fyi/results/css/css-inline/initial-letter/initial-letter-block-position-over-sunk-vlr.html) | Fail | 0 / 1 | BUG | an initial letter smaller than its sink is not positioned to satisfy its over alignment |
-| [`initial-letter/initial-letter-block-position-over-sunk-vrl.html`](https://wpt.fyi/results/css/css-inline/initial-letter/initial-letter-block-position-over-sunk-vrl.html) | Fail | 0 / 1 | BUG | an initial letter smaller than its sink is not positioned to satisfy its over alignment |
-| [`initial-letter/initial-letter-block-position-over-sunk.html`](https://wpt.fyi/results/css/css-inline/initial-letter/initial-letter-block-position-over-sunk.html) | Fail | 0 / 1 | BUG | an initial letter smaller than its sink is not positioned to satisfy its over alignment |
+| [`initial-letter/initial-letter-block-position-over-sunk-vlr.html`](https://wpt.fyi/results/css/css-inline/initial-letter/initial-letter-block-position-over-sunk-vlr.html) | Pass | 1 / 1 |  |  |
+| [`initial-letter/initial-letter-block-position-over-sunk-vrl.html`](https://wpt.fyi/results/css/css-inline/initial-letter/initial-letter-block-position-over-sunk-vrl.html) | Pass | 1 / 1 |  |  |
+| [`initial-letter/initial-letter-block-position-over-sunk.html`](https://wpt.fyi/results/css/css-inline/initial-letter/initial-letter-block-position-over-sunk.html) | Pass | 1 / 1 |  |  |
 | [`initial-letter/initial-letter-block-position-raise-over-ruby-tall.html`](https://wpt.fyi/results/css/css-inline/initial-letter/initial-letter-block-position-raise-over-ruby-tall.html) | Pass | 1 / 1 |  |  |
 | [`initial-letter/initial-letter-block-position-raise-over-ruby.html`](https://wpt.fyi/results/css/css-inline/initial-letter/initial-letter-block-position-raise-over-ruby.html) | Pass | 1 / 1 |  |  |
 | [`initial-letter/initial-letter-block-position-raise-under-ruby-tall.html`](https://wpt.fyi/results/css/css-inline/initial-letter/initial-letter-block-position-raise-under-ruby-tall.html) | Pass | 1 / 1 |  |  |

@@ -18,8 +18,8 @@ description: "The results of the web-platform-tests of css/css-masking, and why 
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 8
-- **TEST BUG**: 1
+- **BUG**: 7
+- **TEST BUG**: 2
 - **NOT IMPLEMENTED**: 3
 - **FLAKY**: 1
 
@@ -467,7 +467,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`clip/clip-transform-order.html`](https://wpt.fyi/results/css/css-masking/clip/clip-transform-order.html) | Pass | 1 / 1 |  |  |
 | [`mask-image/backdrop-filter-bad-mask-image.html`](https://wpt.fyi/results/css/css-masking/mask-image/backdrop-filter-bad-mask-image.html) | Pass | 1 / 1 |  |  |
 | [`mask-image/backdrop-filter-good-and-bad-mask-image.html`](https://wpt.fyi/results/css/css-masking/mask-image/backdrop-filter-good-and-bad-mask-image.html) | Pass | 1 / 1 |  |  |
-| [`mask-image/backdrop-filter-mask-image-multi-layer-after-load.tentative.html`](https://wpt.fyi/results/css/css-masking/mask-image/backdrop-filter-mask-image-multi-layer-after-load.tentative.html) | Timeout | 0 / 1 | BUG | the page never removes the `reftest-wait` class of its root element (an error of its scripts, or an event that is not fired) |
+| [`mask-image/backdrop-filter-mask-image-multi-layer-after-load.tentative.html`](https://wpt.fyi/results/css/css-masking/mask-image/backdrop-filter-mask-image-multi-layer-after-load.tentative.html) | Timeout | 0 / 1 | TEST BUG | the mask image and the probe image that ends the test are served after 10 s (`pipe=trickle(d10)`), the timeout of a reftest without `<meta name=timeout content=long>`: the `reftest-wait` class is removed after the timeout |
 | [`mask-image/backdrop-filter-mask-image-multi-layer-while-loading.tentative.html`](https://wpt.fyi/results/css/css-masking/mask-image/backdrop-filter-mask-image-multi-layer-while-loading.tentative.html) | Fail | 0 / 1 | NOT IMPLEMENTED | an element with several `mask-image` layers is expected to be entirely masked while one of the mask images is still loading (`url(...?pipe=trickle(d1000))`), a behavior that CSS Masking does not specify (tentative test); the library ignores the pending layer and paints the element with the other layer (`linear-gradient(black, black)`), so it is fully visible; only Chrome passes |
 | [`mask-image/backdrop-filter-mask-image-while-loading.html`](https://wpt.fyi/results/css/css-masking/mask-image/backdrop-filter-mask-image-while-loading.html) | Pass | 1 / 1 |  |  |
 | [`mask-image/bad-mask-image-svg-2.html`](https://wpt.fyi/results/css/css-masking/mask-image/bad-mask-image-svg-2.html) | Pass | 1 / 1 |  |  |

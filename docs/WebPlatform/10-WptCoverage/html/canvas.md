@@ -9,16 +9,16 @@ description: "The results of the web-platform-tests of html/canvas, and why the 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 3,072 | 3,165 | 0 | 97% |
+| [Stable](#stable-tests) | 3,076 | 3,165 | 0 | 97% |
 | [Tentative](#tentative-tests) | 7 | 259 | 0 | 3% |
 | [Reftests](#reftests) | 213 | 552 | 0 | 39% |
-| **All** | **3,292** | **3,976** | **0** | **83%** |
+| **All** | **3,296** | **3,976** | **0** | **83%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 18
+- **BUG**: 14
 - **TEST BUG**: 4
 - **NOT IMPLEMENTED**: 658
 - **REQUIRES**: 3
@@ -628,7 +628,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`element/manual/imagebitmap/createImageBitmap-invalid-args.html`](https://wpt.fyi/results/html/canvas/element/manual/imagebitmap/createImageBitmap-invalid-args.html) | Pass | 93 / 93 |  |  |
 | [`element/manual/imagebitmap/createImageBitmap-origin.sub.html`](https://wpt.fyi/results/html/canvas/element/manual/imagebitmap/createImageBitmap-origin.sub.html) | Pass | 27 / 27 |  |  |
 | [`element/manual/imagebitmap/createImageBitmap-premultiplyAlpha.html`](https://wpt.fyi/results/html/canvas/element/manual/imagebitmap/createImageBitmap-premultiplyAlpha.html) | Pass | 12 / 12 |  |  |
-| [`element/manual/imagebitmap/createImageBitmap-resolves-in-task.any.js`](https://wpt.fyi/results/html/canvas/element/manual/imagebitmap/createImageBitmap-resolves-in-task.any.js) | Fail | 45 / 47 | BUG | a `createImageBitmap()` of an invalid source is rejected synchronously in the workers |
+| [`element/manual/imagebitmap/createImageBitmap-resolves-in-task.any.js`](https://wpt.fyi/results/html/canvas/element/manual/imagebitmap/createImageBitmap-resolves-in-task.any.js) | Pass | 47 / 47 |  |  |
 | [`element/manual/imagebitmap/createImageBitmap-serializable.html`](https://wpt.fyi/results/html/canvas/element/manual/imagebitmap/createImageBitmap-serializable.html) | Pass | 12 / 12 |  |  |
 | [`element/manual/imagebitmap/createImageBitmap-sizeOverflow.html`](https://wpt.fyi/results/html/canvas/element/manual/imagebitmap/createImageBitmap-sizeOverflow.html) | Pass | 7 / 7 |  |  |
 | [`element/manual/imagebitmap/createImageBitmap-transfer.html`](https://wpt.fyi/results/html/canvas/element/manual/imagebitmap/createImageBitmap-transfer.html) | Pass | 12 / 12 |  |  |
@@ -1085,7 +1085,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`element/text/2d.text.font.parse.complex.html`](https://wpt.fyi/results/html/canvas/element/text/2d.text.font.parse.complex.html) | Pass | 1 / 1 |  |  |
 | [`element/text/2d.text.font.parse.complex2.html`](https://wpt.fyi/results/html/canvas/element/text/2d.text.font.parse.complex2.html) | Pass | 1 / 1 |  |  |
 | [`element/text/2d.text.font.parse.family.html`](https://wpt.fyi/results/html/canvas/element/text/2d.text.font.parse.family.html) | Pass | 1 / 1 |  |  |
-| [`element/text/2d.text.font.parse.invalid.html`](https://wpt.fyi/results/html/canvas/element/text/2d.text.font.parse.invalid.html) | Fail | 0 / 1 | BUG | `ctx.font` accepts a value with an `if()` function (an arbitrary substitution function, which is not valid in the font of a canvas) |
+| [`element/text/2d.text.font.parse.invalid.html`](https://wpt.fyi/results/html/canvas/element/text/2d.text.font.parse.invalid.html) | Pass | 1 / 1 |  |  |
 | [`element/text/2d.text.font.parse.size.percentage.default.html`](https://wpt.fyi/results/html/canvas/element/text/2d.text.font.parse.size.percentage.default.html) | Pass | 1 / 1 |  |  |
 | [`element/text/2d.text.font.parse.size.percentage.html`](https://wpt.fyi/results/html/canvas/element/text/2d.text.font.parse.size.percentage.html) | Pass | 1 / 1 |  |  |
 | [`element/text/2d.text.font.parse.system.html`](https://wpt.fyi/results/html/canvas/element/text/2d.text.font.parse.system.html) | Pass | 1 / 1 |  |  |
@@ -3055,8 +3055,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`offscreen/text/2d.text.font.parse.complex2.worker.js`](https://wpt.fyi/results/html/canvas/offscreen/text/2d.text.font.parse.complex2.worker.js) | Pass | 1 / 1 |  |  |
 | [`offscreen/text/2d.text.font.parse.family.html`](https://wpt.fyi/results/html/canvas/offscreen/text/2d.text.font.parse.family.html) | Pass | 1 / 1 |  |  |
 | [`offscreen/text/2d.text.font.parse.family.worker.js`](https://wpt.fyi/results/html/canvas/offscreen/text/2d.text.font.parse.family.worker.js) | Pass | 1 / 1 |  |  |
-| [`offscreen/text/2d.text.font.parse.invalid.html`](https://wpt.fyi/results/html/canvas/offscreen/text/2d.text.font.parse.invalid.html) | Fail | 0 / 1 | BUG | `ctx.font` accepts a value with an `if()` function (an arbitrary substitution function, which is not valid in the font of a canvas) |
-| [`offscreen/text/2d.text.font.parse.invalid.worker.js`](https://wpt.fyi/results/html/canvas/offscreen/text/2d.text.font.parse.invalid.worker.js) | Fail | 0 / 1 | BUG | `ctx.font` accepts a value with an `if()` function (an arbitrary substitution function, which is not valid in the font of a canvas) |
+| [`offscreen/text/2d.text.font.parse.invalid.html`](https://wpt.fyi/results/html/canvas/offscreen/text/2d.text.font.parse.invalid.html) | Pass | 1 / 1 |  |  |
+| [`offscreen/text/2d.text.font.parse.invalid.worker.js`](https://wpt.fyi/results/html/canvas/offscreen/text/2d.text.font.parse.invalid.worker.js) | Pass | 1 / 1 |  |  |
 | [`offscreen/text/2d.text.font.parse.system.html`](https://wpt.fyi/results/html/canvas/offscreen/text/2d.text.font.parse.system.html) | Pass | 1 / 1 |  |  |
 | [`offscreen/text/2d.text.font.parse.system.worker.js`](https://wpt.fyi/results/html/canvas/offscreen/text/2d.text.font.parse.system.worker.js) | Pass | 1 / 1 |  |  |
 | [`offscreen/text/2d.text.font.parse.tiny.html`](https://wpt.fyi/results/html/canvas/offscreen/text/2d.text.font.parse.tiny.html) | Pass | 1 / 1 |  |  |

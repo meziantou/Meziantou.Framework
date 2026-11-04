@@ -11,14 +11,14 @@ description: "The results of the web-platform-tests of compat, and why the tests
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 13 | 14 | 0 | 93% |
 | Tentative | 0 | 0 | 0 | – |
-| [Reftests](#reftests) | 24 | 27 | 0 | 89% |
-| **All** | **37** | **41** | **0** | **90%** |
+| [Reftests](#reftests) | 25 | 27 | 0 | 93% |
+| **All** | **38** | **41** | **0** | **93%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 2
+- **BUG**: 1
 - **NOT IMPLEMENTED**: 1
 - **OUT OF SCOPE**: 1
 
@@ -47,7 +47,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 |---|---|--:|---|---|
 | [`webkit-background-origin-text.html`](https://wpt.fyi/results/compat/webkit-background-origin-text.html) | Pass | 1 / 1 |  |  |
 | [`webkit-box-align-001.html`](https://wpt.fyi/results/compat/webkit-box-align-001.html) | Pass | 1 / 1 |  |  |
-| [`webkit-box-blockify.html`](https://wpt.fyi/results/compat/webkit-box-blockify.html) | Fail | 0 / 1 | BUG | the inline-level children of a `display: -webkit-box` container are not blockified (only the children of flex and grid containers are): the `<span>` with `-webkit-box-flex: 1` is wrapped in an anonymous item and its green background covers 47x17px instead of the 100x100px of the box; fails in every browser too (they keep the legacy behavior) |
+| [`webkit-box-blockify.html`](https://wpt.fyi/results/compat/webkit-box-blockify.html) | Pass | 1 / 1 |  |  |
 | [`webkit-box-clamp-bottom-border.html`](https://wpt.fyi/results/compat/webkit-box-clamp-bottom-border.html) | Pass | 1 / 1 |  |  |
 | [`webkit-box-clamp-visibility-change.html`](https://wpt.fyi/results/compat/webkit-box-clamp-visibility-change.html) | Pass | 1 / 1 |  |  |
 | [`webkit-box-fieldset.html`](https://wpt.fyi/results/compat/webkit-box-fieldset.html) | Pass | 1 / 1 |  |  |

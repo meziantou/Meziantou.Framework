@@ -9,18 +9,18 @@ description: "The results of the web-platform-tests of web-animations, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 117 | 136 | 0 | 86% |
+| [Stable](#stable-tests) | 124 | 136 | 0 | 91% |
 | [Tentative](#tentative-tests) | 3 | 8 | 0 | 38% |
 | [Reftests](#reftests) | 18 | 18 | 0 | 100% |
-| **All** | **138** | **162** | **0** | **85%** |
+| **All** | **145** | **162** | **0** | **90%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 12
+- **BUG**: 5
 - **TEST BUG**: 3
-- **NOT IMPLEMENTED**: 9
+- **NOT IMPLEMENTED**: 8
 - **TEST RUNNER**: 1
 
 ## Stable tests
@@ -45,7 +45,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`animation-model/keyframe-effects/effect-value-context.html`](https://wpt.fyi/results/web-animations/animation-model/keyframe-effects/effect-value-context.html) | Pass | 5 / 5 |  |  |
 | [`animation-model/keyframe-effects/effect-value-easing-on-keyframe-without-property.html`](https://wpt.fyi/results/web-animations/animation-model/keyframe-effects/effect-value-easing-on-keyframe-without-property.html) | Pass | 2 / 2 |  |  |
 | [`animation-model/keyframe-effects/effect-value-interval-distance.html`](https://wpt.fyi/results/web-animations/animation-model/keyframe-effects/effect-value-interval-distance.html) | Pass | 1 / 1 |  |  |
-| [`animation-model/keyframe-effects/effect-value-iteration-composite-operation.html`](https://wpt.fyi/results/web-animations/animation-model/keyframe-effects/effect-value-iteration-composite-operation.html) | Fail | 30 / 38 | BUG | the iteration composite operation of mismatched filter and transform lists, intrinsic size keywords, `calc-size()`, `line-height` numbers and lengths, and `clip` rectangles with `auto` |
+| [`animation-model/keyframe-effects/effect-value-iteration-composite-operation.html`](https://wpt.fyi/results/web-animations/animation-model/keyframe-effects/effect-value-iteration-composite-operation.html) | Fail | 35 / 38 | BUG | the iteration composite operation of transform lists whose functions are mismatched, and the operand order of the accumulated math functions (`2 * max(...)` before the current term) |
 | [`animation-model/keyframe-effects/effect-value-overlapping-keyframes.html`](https://wpt.fyi/results/web-animations/animation-model/keyframe-effects/effect-value-overlapping-keyframes.html) | Pass | 2 / 2 |  |  |
 | [`animation-model/keyframe-effects/effect-value-replaced-animations.html`](https://wpt.fyi/results/web-animations/animation-model/keyframe-effects/effect-value-replaced-animations.html) | Pass | 5 / 5 |  |  |
 | [`animation-model/keyframe-effects/effect-value-step-easing-reversed-direction.html`](https://wpt.fyi/results/web-animations/animation-model/keyframe-effects/effect-value-step-easing-reversed-direction.html) | Pass | 2 / 2 |  |  |
@@ -56,12 +56,12 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`interfaces/Animatable/animate.html`](https://wpt.fyi/results/web-animations/interfaces/Animatable/animate.html) | Pass | 153 / 153 |  |  |
 | [`interfaces/Animatable/getAnimations-iframe.html`](https://wpt.fyi/results/web-animations/interfaces/Animatable/getAnimations-iframe.html) | Pass | 2 / 2 |  |  |
 | [`interfaces/Animatable/getAnimations-pseudoElement-option-on-view-transition.html`](https://wpt.fyi/results/web-animations/interfaces/Animatable/getAnimations-pseudoElement-option-on-view-transition.html) | Pass | 1 / 1 |  |  |
-| [`interfaces/Animatable/getAnimations.html`](https://wpt.fyi/results/web-animations/interfaces/Animatable/getAnimations.html) | Fail | 31 / 34 | BUG | `getAnimations({ pseudoElement: '::part()' })` throws, `subtree: true` on a shadow host returns the animations of its shadow tree, and the removed animations are returned |
+| [`interfaces/Animatable/getAnimations.html`](https://wpt.fyi/results/web-animations/interfaces/Animatable/getAnimations.html) | Fail | 33 / 34 | BUG | `getAnimations({ pseudoElement: '::part()' })` throws |
 | [`interfaces/Animation/animation-range-invalid.html`](https://wpt.fyi/results/web-animations/interfaces/Animation/animation-range-invalid.html) | Fail | 10 / 11 | NOT IMPLEMENTED | the `rangeStart` and `rangeEnd` options of `animate()` (scroll-driven animations) are not validated |
 | [`interfaces/Animation/cancel-event-on-element-removal.html`](https://wpt.fyi/results/web-animations/interfaces/Animation/cancel-event-on-element-removal.html) | Pass | 1 / 1 |  |  |
 | [`interfaces/Animation/cancel.html`](https://wpt.fyi/results/web-animations/interfaces/Animation/cancel.html) | Pass | 4 / 4 |  |  |
 | [`interfaces/Animation/commitStyles.html`](https://wpt.fyi/results/web-animations/interfaces/Animation/commitStyles.html) | Pass | 36 / 36 |  |  |
-| [`interfaces/Animation/constructor.html`](https://wpt.fyi/results/web-animations/interfaces/Animation/constructor.html) | Fail | 8 / 9 | BUG | an animation whose effect is taken by another animation stays paused instead of finishing |
+| [`interfaces/Animation/constructor.html`](https://wpt.fyi/results/web-animations/interfaces/Animation/constructor.html) | Pass | 9 / 9 |  |  |
 | [`interfaces/Animation/effect.html`](https://wpt.fyi/results/web-animations/interfaces/Animation/effect.html) | Pass | 2 / 2 |  |  |
 | [`interfaces/Animation/finished.html`](https://wpt.fyi/results/web-animations/interfaces/Animation/finished.html) | Pass | 22 / 22 |  |  |
 | [`interfaces/Animation/id.html`](https://wpt.fyi/results/web-animations/interfaces/Animation/id.html) | Pass | 2 / 2 |  |  |
@@ -75,7 +75,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`interfaces/Animation/play.html`](https://wpt.fyi/results/web-animations/interfaces/Animation/play.html) | Pass | 1 / 1 |  |  |
 | [`interfaces/Animation/ready.html`](https://wpt.fyi/results/web-animations/interfaces/Animation/ready.html) | Pass | 4 / 4 |  |  |
 | [`interfaces/Animation/startTime.html`](https://wpt.fyi/results/web-animations/interfaces/Animation/startTime.html) | Pass | 6 / 6 |  |  |
-| [`interfaces/Animation/style-change-events.html`](https://wpt.fyi/results/web-animations/interfaces/Animation/style-change-events.html) | Fail | 26 / 27 | BUG, NOT IMPLEMENTED | `commitStyles()` does not start a transition; `Animation.rangeStart` and `Animation.rangeEnd` (scroll-driven animations) |
+| [`interfaces/Animation/style-change-events.html`](https://wpt.fyi/results/web-animations/interfaces/Animation/style-change-events.html) | Pass | 27 / 27 |  |  |
 | [`interfaces/AnimationEffect/getComputedTiming.html`](https://wpt.fyi/results/web-animations/interfaces/AnimationEffect/getComputedTiming.html) | Pass | 41 / 41 |  |  |
 | [`interfaces/AnimationEffect/updateTiming.html`](https://wpt.fyi/results/web-animations/interfaces/AnimationEffect/updateTiming.html) | Pass | 68 / 68 |  |  |
 | [`interfaces/AnimationPlaybackEvent/constructor.html`](https://wpt.fyi/results/web-animations/interfaces/AnimationPlaybackEvent/constructor.html) | Pass | 2 / 2 |  |  |
@@ -87,7 +87,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`interfaces/KeyframeEffect/constructor.html`](https://wpt.fyi/results/web-animations/interfaces/KeyframeEffect/constructor.html) | Pass | 175 / 175 |  |  |
 | [`interfaces/KeyframeEffect/copy-constructor-revert-layer.html`](https://wpt.fyi/results/web-animations/interfaces/KeyframeEffect/copy-constructor-revert-layer.html) | Pass | 2 / 2 |  |  |
 | [`interfaces/KeyframeEffect/copy-constructor.html`](https://wpt.fyi/results/web-animations/interfaces/KeyframeEffect/copy-constructor.html) | Pass | 5 / 5 |  |  |
-| [`interfaces/KeyframeEffect/getKeyframes.html`](https://wpt.fyi/results/web-animations/interfaces/KeyframeEffect/getKeyframes.html) | Fail | 0 / 1 | BUG | `getKeyframes()` returns the values as specified instead of serialized (`rgb(1,2,3)`) |
+| [`interfaces/KeyframeEffect/getKeyframes.html`](https://wpt.fyi/results/web-animations/interfaces/KeyframeEffect/getKeyframes.html) | Pass | 1 / 1 |  |  |
 | [`interfaces/KeyframeEffect/iterationComposite.html`](https://wpt.fyi/results/web-animations/interfaces/KeyframeEffect/iterationComposite.html) | Pass | 1 / 1 |  |  |
 | [`interfaces/KeyframeEffect/processing-a-keyframes-argument-001.html`](https://wpt.fyi/results/web-animations/interfaces/KeyframeEffect/processing-a-keyframes-argument-001.html) | Pass | 73 / 73 |  |  |
 | [`interfaces/KeyframeEffect/processing-a-keyframes-argument-002.html`](https://wpt.fyi/results/web-animations/interfaces/KeyframeEffect/processing-a-keyframes-argument-002.html) | Pass | 7 / 7 |  |  |
@@ -112,7 +112,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`responsive/d.html`](https://wpt.fyi/results/web-animations/responsive/d.html) | Pass | 1 / 1 |  |  |
 | [`responsive/fill-forwards-viewport-units.html`](https://wpt.fyi/results/web-animations/responsive/fill-forwards-viewport-units.html) | Pass | 1 / 1 |  |  |
 | [`responsive/font-size-adjust.html`](https://wpt.fyi/results/web-animations/responsive/font-size-adjust.html) | Pass | 1 / 1 |  |  |
-| [`responsive/fontSize.html`](https://wpt.fyi/results/web-animations/responsive/fontSize.html) | Fail | 2 / 4 | BUG | the `font-size` keyword keyframes (e.g. `medium`) do not respond to the style changes |
+| [`responsive/fontSize.html`](https://wpt.fyi/results/web-animations/responsive/fontSize.html) | Pass | 4 / 4 |  |  |
 | [`responsive/fontWeight.html`](https://wpt.fyi/results/web-animations/responsive/fontWeight.html) | Pass | 2 / 2 |  |  |
 | [`responsive/lineHeight.html`](https://wpt.fyi/results/web-animations/responsive/lineHeight.html) | Pass | 5 / 5 |  |  |
 | [`responsive/minHeight.html`](https://wpt.fyi/results/web-animations/responsive/minHeight.html) | Pass | 2 / 2 |  |  |
@@ -152,7 +152,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`timing-model/animations/setting-the-current-time-of-an-animation.html`](https://wpt.fyi/results/web-animations/timing-model/animations/setting-the-current-time-of-an-animation.html) | Pass | 10 / 10 |  |  |
 | [`timing-model/animations/setting-the-playback-rate-of-an-animation.html`](https://wpt.fyi/results/web-animations/timing-model/animations/setting-the-playback-rate-of-an-animation.html) | Pass | 8 / 8 |  |  |
 | [`timing-model/animations/setting-the-start-time-of-an-animation.html`](https://wpt.fyi/results/web-animations/timing-model/animations/setting-the-start-time-of-an-animation.html) | Pass | 13 / 13 |  |  |
-| [`timing-model/animations/setting-the-target-effect-of-an-animation.html`](https://wpt.fyi/results/web-animations/timing-model/animations/setting-the-target-effect-of-an-animation.html) | Error | 5 / 7 | BUG | setting a null effect does not make the animation finish-pending, and the original `ready` promise is rejected |
+| [`timing-model/animations/setting-the-target-effect-of-an-animation.html`](https://wpt.fyi/results/web-animations/timing-model/animations/setting-the-target-effect-of-an-animation.html) | Pass | 7 / 7 |  |  |
 | [`timing-model/animations/setting-the-timeline-of-an-animation.html`](https://wpt.fyi/results/web-animations/timing-model/animations/setting-the-timeline-of-an-animation.html) | Pass | 16 / 16 |  |  |
 | [`timing-model/animations/start-time-compat.html`](https://wpt.fyi/results/web-animations/timing-model/animations/start-time-compat.html) | Error | 0 / 1 | BUG | the start time of the animations started between two rendering updates does not match the expected frame times |
 | [`timing-model/animations/the-current-time-of-an-animation.html`](https://wpt.fyi/results/web-animations/timing-model/animations/the-current-time-of-an-animation.html) | Pass | 5 / 5 |  |  |
@@ -161,8 +161,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`timing-model/timelines/document-timelines.html`](https://wpt.fyi/results/web-animations/timing-model/timelines/document-timelines.html) | Pass | 3 / 3 |  |  |
 | [`timing-model/timelines/sibling-iframe-timeline.html`](https://wpt.fyi/results/web-animations/timing-model/timelines/sibling-iframe-timeline.html) | Pass | 1 / 1 |  |  |
 | [`timing-model/timelines/timelines.html`](https://wpt.fyi/results/web-animations/timing-model/timelines/timelines.html) | Pass | 5 / 5 |  |  |
-| [`timing-model/timelines/update-and-send-events-replacement.html`](https://wpt.fyi/results/web-animations/timing-model/timelines/update-and-send-events-replacement.html) | Fail | 35 / 42 | BUG | the removal of the replaced animations after a seek, after a redundant change, and with logical properties |
-| [`timing-model/timelines/update-and-send-events.html`](https://wpt.fyi/results/web-animations/timing-model/timelines/update-and-send-events.html) | Fail | 8 / 9 | BUG | the cancel events are not sorted by composite order, and a finish event queued synchronously is not dispatched before the cancel event |
+| [`timing-model/timelines/update-and-send-events-replacement.html`](https://wpt.fyi/results/web-animations/timing-model/timelines/update-and-send-events-replacement.html) | Pass | 42 / 42 |  |  |
+| [`timing-model/timelines/update-and-send-events.html`](https://wpt.fyi/results/web-animations/timing-model/timelines/update-and-send-events.html) | Pass | 9 / 9 |  |  |
 
 ## Tentative tests
 

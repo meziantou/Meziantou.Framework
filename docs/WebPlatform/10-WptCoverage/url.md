@@ -9,16 +9,10 @@ description: "The results of the web-platform-tests of url, and why the tests th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 33 | 34 | 0 | 97% |
+| [Stable](#stable-tests) | 34 | 34 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **33** | **34** | **0** | **97%** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **BUG**: 1
+| **All** | **34** | **34** | **0** | **100%** |
 
 ## Stable tests
 
@@ -41,7 +35,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`url-origin.any.js`](https://wpt.fyi/results/url/url-origin.any.js) | Pass | 832 / 832 |  |  |
 | [`url-searchparams.any.js`](https://wpt.fyi/results/url/url-searchparams.any.js) | Pass | 8 / 8 |  |  |
 | [`url-setters-a-area.window.js`](https://wpt.fyi/results/url/url-setters-a-area.window.js) | Pass | 560 / 560 |  |  |
-| [`url-setters-stripping.any.js`](https://wpt.fyi/results/url/url-setters-stripping.any.js) | Fail | 568 / 640 | BUG | setting `search` to a value with a tab or a newline does not update `searchParams` with the stripped value (the characters are kept in the keys) |
+| [`url-setters-stripping.any.js`](https://wpt.fyi/results/url/url-setters-stripping.any.js) | Pass | 640 / 640 |  |  |
 | [`url-setters.any.js`](https://wpt.fyi/results/url/url-setters.any.js) | Pass | 564 / 564 |  |  |
 | [`url-statics-canparse.any.js`](https://wpt.fyi/results/url/url-statics-canparse.any.js) | Pass | 16 / 16 |  |  |
 | [`url-statics-parse.any.js`](https://wpt.fyi/results/url/url-statics-parse.any.js) | Pass | 16 / 16 |  |  |

@@ -18,8 +18,8 @@ description: "The results of the web-platform-tests of service-workers, and why 
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 13
-- **TEST BUG**: 7
+- **BUG**: 12
+- **TEST BUG**: 8
 - **NOT IMPLEMENTED**: 24
 - **REQUIRES**: 2
   - `service-workers`: 1
@@ -32,7 +32,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
 | [`cache-storage/cache-abort.https.any.js`](https://wpt.fyi/results/service-workers/cache-storage/cache-abort.https.any.js) | Pass | 36 / 36 |  |  |
-| [`cache-storage/cache-add.https.any.js`](https://wpt.fyi/results/service-workers/cache-storage/cache-add.https.any.js) | Fail | 92 / 96 | BUG | `Cache.addAll()` rejects with an `InvalidStateError` two requests that only match under the `Vary` header of the response of one of them |
+| [`cache-storage/cache-add.https.any.js`](https://wpt.fyi/results/service-workers/cache-storage/cache-add.https.any.js) | Fail | 92 / 96 | TEST BUG | "Cache.addAll should succeed when an entry matches an earlier entry only under its own vary header": `vary.py` sets the `Vary` header from the cookie with `str()` of bytes (Python 3), i.e. `Vary: b'x-shape'`, a header that neither request has: the two requests match under the `Vary` of the first response, so `addAll()` rejects with an `InvalidStateError` (https://w3c.github.io/ServiceWorker/#batch-cache-operations) |
 | [`cache-storage/cache-api-nested-worker.https.html`](https://wpt.fyi/results/service-workers/cache-storage/cache-api-nested-worker.https.html) | Pass | 1 / 1 |  |  |
 | [`cache-storage/cache-delete.https.any.js`](https://wpt.fyi/results/service-workers/cache-storage/cache-delete.https.any.js) | Pass | 36 / 36 |  |  |
 | [`cache-storage/cache-keys-attributes-for-service-worker.https.html`](https://wpt.fyi/results/service-workers/cache-storage/cache-keys-attributes-for-service-worker.https.html) | Fail | 0 / 2 | BUG | the reload navigation and history navigation flags of a request are not stored by the Cache API: `isReloadNavigation` and `isHistoryNavigation` of the request read back from the cache are false (Firefox and Safari fail the test too) |

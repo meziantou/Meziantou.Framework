@@ -18,8 +18,7 @@ description: "The results of the web-platform-tests of svg-aam, and why the test
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **TEST BUG**: 1
-- **NOT IMPLEMENTED**: 1
+- **TEST BUG**: 2
 
 ## Stable tests
 
@@ -35,5 +34,5 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`role/role-img.tentative.html`](https://wpt.fyi/results/svg-aam/role/role-img.tentative.html) | Fail | 5 / 7 | NOT IMPLEMENTED | the `<title>` child of an SVG `<image>` as its accessible name (an empty title should make it generic) |
+| [`role/role-img.tentative.html`](https://wpt.fyi/results/svg-aam/role/role-img.tentative.html) | Fail | 4 / 7 | TEST BUG | the `<image>` elements are not in an `<svg>` element: the HTML parser creates `<img>` elements ("Change the token's tag name to img"), which are void, so the `<title>` elements are their siblings. As HTML-AAM says (and `html-aam/img-src-srcset-roles.tentative.html` tests), an `<img>` without `src`, `srcset` nor accessible name represents nothing and is generic, not an image |
 | [`role/roles.tentative.html`](https://wpt.fyi/results/svg-aam/role/roles.tentative.html) | Fail | 0 / 3 | TEST BUG | the tentative test expects the placeholder role `UNDEFINED in SVG-AAM, but possibly graphics-document`, which no engine returns |

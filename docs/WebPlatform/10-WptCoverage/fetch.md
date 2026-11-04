@@ -9,17 +9,17 @@ description: "The results of the web-platform-tests of fetch, and why the tests 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 328 | 408 | 1 | 81% |
+| [Stable](#stable-tests) | 330 | 408 | 1 | 81% |
 | [Tentative](#tentative-tests) | 13 | 77 | 1 | 17% |
 | [Reftests](#reftests) | 9 | 11 | 0 | 82% |
-| **All** | **350** | **496** | **2** | **71%** |
+| **All** | **352** | **496** | **2** | **71%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 13
-- **TEST BUG**: 19
+- **BUG**: 8
+- **TEST BUG**: 21
 - **NOT IMPLEMENTED**: 91
 - **REQUIRES**: 3
   - `layout`: 2
@@ -128,7 +128,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`api/policies/referrer-no-referrer-worker.html`](https://wpt.fyi/results/fetch/api/policies/referrer-no-referrer-worker.html) | Pass | 1 / 1 |  |  |
 | [`api/policies/referrer-no-referrer.html`](https://wpt.fyi/results/fetch/api/policies/referrer-no-referrer.html) | Pass | 1 / 1 |  |  |
 | [`api/policies/referrer-origin-service-worker.https.html`](https://wpt.fyi/results/fetch/api/policies/referrer-origin-service-worker.https.html) | Pass | 3 / 3 |  |  |
-| [`api/policies/referrer-origin-when-cross-origin-service-worker.https.html`](https://wpt.fyi/results/fetch/api/policies/referrer-origin-when-cross-origin-service-worker.https.html) | Fail | 1 / 2 | BUG | `fetch(event.request)` of a request whose referrer is a URL of another origin fails |
+| [`api/policies/referrer-origin-when-cross-origin-service-worker.https.html`](https://wpt.fyi/results/fetch/api/policies/referrer-origin-when-cross-origin-service-worker.https.html) | Fail | 1 / 2 | TEST BUG | the service worker (an `https:` context) fetches `HTTP_REMOTE_ORIGIN`, an `http:` URL: the request is blocked as mixed content (https://w3c.github.io/webappsec-mixed-content/#should-block-fetch), so `fetch()` rejects |
 | [`api/policies/referrer-origin-when-cross-origin-worker.html`](https://wpt.fyi/results/fetch/api/policies/referrer-origin-when-cross-origin-worker.html) | Pass | 1 / 1 |  |  |
 | [`api/policies/referrer-origin-when-cross-origin.html`](https://wpt.fyi/results/fetch/api/policies/referrer-origin-when-cross-origin.html) | Pass | 1 / 1 |  |  |
 | [`api/policies/referrer-origin-worker.html`](https://wpt.fyi/results/fetch/api/policies/referrer-origin-worker.html) | Pass | 2 / 2 |  |  |
@@ -172,7 +172,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`api/request/request-constructor-init-body-override.any.js`](https://wpt.fyi/results/fetch/api/request/request-constructor-init-body-override.any.js) | Pass | 4 / 4 |  |  |
 | [`api/request/request-consume-empty.any.js`](https://wpt.fyi/results/fetch/api/request/request-consume-empty.any.js) | Fail | 39 / 42 | TEST BUG | the FormData subtest ("Consume empty FormData request body as text") expects an empty `FormData` to be serialized as an empty body, which the test itself marks as unclear (FIXME, web-platform-tests/wpt#3950). The multipart/form-data encoding (RFC 7578) writes the close delimiter `--boundary--` even without entries, which `fetch/api/response/response-form-data.html` ("Empty form data") and the round trips of `fetch/api/body/formdata.any.js` require: the two expectations cannot both be met |
 | [`api/request/request-consume.any.js`](https://wpt.fyi/results/fetch/api/request/request-consume.any.js) | Pass | 135 / 135 |  |  |
-| [`api/request/request-disturbed.any.js`](https://wpt.fyi/results/fetch/api/request/request-disturbed.any.js) | Fail | 24 / 27 | BUG | `new Request(input, { body })` marks the body of the input request as used although the init has a new body |
+| [`api/request/request-disturbed.any.js`](https://wpt.fyi/results/fetch/api/request/request-disturbed.any.js) | Pass | 27 / 27 |  |  |
 | [`api/request/request-error.any.js`](https://wpt.fyi/results/fetch/api/request/request-error.any.js) | Pass | 66 / 66 |  |  |
 | [`api/request/request-headers.any.js`](https://wpt.fyi/results/fetch/api/request/request-headers.any.js) | Pass | 183 / 183 |  |  |
 | [`api/request/request-init-001.sub.html`](https://wpt.fyi/results/fetch/api/request/request-init-001.sub.html) | Pass | 53 / 53 |  |  |
@@ -188,7 +188,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`api/request/url-encoding.html`](https://wpt.fyi/results/fetch/api/request/url-encoding.html) | Pass | 2 / 2 |  |  |
 | [`api/response/json.any.js`](https://wpt.fyi/results/fetch/api/response/json.any.js) | Pass | 4 / 4 |  |  |
 | [`api/response/multi-globals/url-parsing.html`](https://wpt.fyi/results/fetch/api/response/multi-globals/url-parsing.html) | Pass | 1 / 1 |  |  |
-| [`api/response/response-arraybuffer-realm.window.js`](https://wpt.fyi/results/fetch/api/response/response-arraybuffer-realm.window.js) | Fail | 0 / 1 | BUG | `Response.prototype.arrayBuffer` called on another realm's `Response` creates the `ArrayBuffer` in the method's realm instead of the receiver's |
+| [`api/response/response-arraybuffer-realm.window.js`](https://wpt.fyi/results/fetch/api/response/response-arraybuffer-realm.window.js) | Pass | 1 / 1 |  |  |
 | [`api/response/response-blob-realm.any.js`](https://wpt.fyi/results/fetch/api/response/response-blob-realm.any.js) | Pass | 1 / 1 |  |  |
 | [`api/response/response-body-read-task-handling.html`](https://wpt.fyi/results/fetch/api/response/response-body-read-task-handling.html) | Pass | 2 / 2 |  |  |
 | [`api/response/response-body-stashed-chunk.html`](https://wpt.fyi/results/fetch/api/response/response-body-stashed-chunk.html) | Pass | 1 / 1 |  |  |
@@ -197,7 +197,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`api/response/response-clone.any.js`](https://wpt.fyi/results/fetch/api/response/response-clone.any.js) | Pass | 63 / 63 |  |  |
 | [`api/response/response-consume-empty.any.js`](https://wpt.fyi/results/fetch/api/response/response-consume-empty.any.js) | Fail | 39 / 42 | TEST BUG | the FormData subtest ("Consume empty FormData response body as text") expects an empty `FormData` to be serialized as an empty body, which the test itself marks as unclear (FIXME, web-platform-tests/wpt#3950). The multipart/form-data encoding (RFC 7578) writes the close delimiter `--boundary--` even without entries, which `fetch/api/response/response-form-data.html` ("Empty form data") and the round trips of `fetch/api/body/formdata.any.js` require: the two expectations cannot both be met |
 | [`api/response/response-consume-stream.any.js`](https://wpt.fyi/results/fetch/api/response/response-consume-stream.any.js) | Pass | 45 / 45 |  |  |
-| [`api/response/response-consume.html`](https://wpt.fyi/results/fetch/api/response/response-consume.html) | Fail | 33 / 40 | BUG, TEST BUG | the multipart/form-data parser only accepts `Content-Disposition: form-data; name="..."` exactly (rejects `form-data;name=` and unquoted values); the Blob type of a FormData body lacks the space after `;`; `from URLSearchParams to blob` expects the type of the blob to be `application/x-www-form-urlencoded;charset=utf-8`: the type of the blob of `blob()` is the serialized MIME type of the `Content-Type` of the body (https://fetch.spec.whatwg.org/#concept-body-package-data), which is `application/x-www-form-urlencoded;charset=UTF-8` (https://fetch.spec.whatwg.org/#concept-bodyinit-extract); the browsers pass it because they lowercase the type, and fail the subtests of `fetch/content-type/response.window.js` and `mimesniff/mime-types/parsing.any.js` that expect the case of the parameters to be kept |
+| [`api/response/response-consume.html`](https://wpt.fyi/results/fetch/api/response/response-consume.html) | Fail | 38 / 40 | TEST BUG | `from FormData to blob` and `from URLSearchParams to blob` expect the type of the blob to be the `Content-Type` of the body as is (lowercased by the test): the type of the blob of `blob()` is the serialized MIME type of the `Content-Type` of the body (https://fetch.spec.whatwg.org/#concept-body-package-data), which is `multipart/form-data;boundary=…` (without the space) and `application/x-www-form-urlencoded;charset=UTF-8` (https://fetch.spec.whatwg.org/#concept-bodyinit-extract); the browsers pass them because they keep the header and lowercase the type, and fail the subtests of `fetch/content-type/response.window.js` and `mimesniff/mime-types/parsing.any.js` that expect the case of the parameters to be kept |
 | [`api/response/response-error-from-stream.any.js`](https://wpt.fyi/results/fetch/api/response/response-error-from-stream.any.js) | Pass | 42 / 42 |  |  |
 | [`api/response/response-error.any.js`](https://wpt.fyi/results/fetch/api/response/response-error.any.js) | Pass | 30 / 30 |  |  |
 | [`api/response/response-form-data.html`](https://wpt.fyi/results/fetch/api/response/response-form-data.html) | Pass | 14 / 14 |  |  |
@@ -237,7 +237,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`content-length/too-long.window.js`](https://wpt.fyi/results/fetch/content-length/too-long.window.js) | Fail | 0 / 1 | TEST RUNNER | `fetch/content-length/resources/content-length.py` is not emulated (404) |
 | [`content-type/multipart-malformed.any.js`](https://wpt.fyi/results/fetch/content-type/multipart-malformed.any.js) | Pass | 2 / 2 |  |  |
 | [`content-type/multipart.window.js`](https://wpt.fyi/results/fetch/content-type/multipart.window.js) | Pass | 1 / 1 |  |  |
-| [`content-type/response.window.js`](https://wpt.fyi/results/fetch/content-type/response.window.js) | Fail | 120 / 121 | BUG | the test expects `text/html;x=", text/plain"` for the combined header, which `content-type.py` sends as `text/html;x=",text/plain"`; the other subtests pass |
+| [`content-type/response.window.js`](https://wpt.fyi/results/fetch/content-type/response.window.js) | Fail | 120 / 121 | TEST BUG | the combined-header variant of `text/html;x="` + `text/plain` expects `text/html;x=", text/plain"`, but `content-type.py` joins the values of `single_header` with `,` (no space): the response has the single header `text/html;x=",text/plain"`, whose MIME type keeps the comma without the space; the other subtests pass |
 | [`content-type/script.window.js`](https://wpt.fyi/results/fetch/content-type/script.window.js) | Pass | 31 / 31 |  |  |
 | [`corb/script-html-js-polyglot.sub.html`](https://wpt.fyi/results/fetch/corb/script-html-js-polyglot.sub.html) | Pass | 2 / 2 |  |  |
 | [`corb/script-html-via-cross-origin-blob-url.sub.html`](https://wpt.fyi/results/fetch/corb/script-html-via-cross-origin-blob-url.sub.html) | Error | 0 / 1 | BUG | a `blob:` URL created by a cross-origin frame is loaded by `<script>` (it should be a network error) |
@@ -534,6 +534,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`corb/img-svg-labeled-as-dash.sub.html`](https://wpt.fyi/results/fetch/corb/img-svg-labeled-as-dash.sub.html) | Pass | 1 / 1 |  |  |
 | [`corb/img-svg-labeled-as-svg-xml.sub.html`](https://wpt.fyi/results/fetch/corb/img-svg-labeled-as-svg-xml.sub.html) | Pass | 1 / 1 |  |  |
 | [`corb/img-svg-xml-decl.sub.html`](https://wpt.fyi/results/fetch/corb/img-svg-xml-decl.sub.html) | Pass | 1 / 1 |  |  |
-| [`http-cache/basic-auth-cache-test.html`](https://wpt.fyi/results/fetch/http-cache/basic-auth-cache-test.html) | Timeout | 0 / 1 | BUG | the page never removes the `reftest-wait` class of its root element (an error of its scripts, or an event that is not fired) |
+| [`http-cache/basic-auth-cache-test.html`](https://wpt.fyi/results/fetch/http-cache/basic-auth-cache-test.html) | Timeout | 0 / 1 | BUG | the page never removes the `reftest-wait` class of its root element: the `load` event of one of the images (requested with the credentials of the URL, then without credentials, which must reuse the authentication entry) is not fired; not analyzed further (`securedimage.py` is emulated by the test server) |
 | [`orb/tentative/img-png-mislabeled-as-html.sub.html`](https://wpt.fyi/results/fetch/orb/tentative/img-png-mislabeled-as-html.sub.html) | Pass | 1 / 1 |  |  |
 | [`orb/tentative/img-png-unlabeled.sub.html`](https://wpt.fyi/results/fetch/orb/tentative/img-png-unlabeled.sub.html) | Pass | 1 / 1 |  |  |

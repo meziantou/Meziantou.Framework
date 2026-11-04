@@ -9,16 +9,16 @@ description: "The results of the web-platform-tests of css/css-transitions, and 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 98 | 107 | 0 | 92% |
-| [Tentative](#tentative-tests) | 13 | 18 | 0 | 72% |
+| [Stable](#stable-tests) | 99 | 107 | 0 | 93% |
+| [Tentative](#tentative-tests) | 16 | 18 | 0 | 89% |
 | [Reftests](#reftests) | 6 | 6 | 0 | 100% |
-| **All** | **117** | **131** | **0** | **89%** |
+| **All** | **121** | **131** | **0** | **92%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 7
+- **BUG**: 3
 - **TEST BUG**: 6
 - **NOT IMPLEMENTED**: 1
 
@@ -91,7 +91,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`properties-value-implicit-001.html`](https://wpt.fyi/results/css/css-transitions/properties-value-implicit-001.html) | Fail | 61 / 62 | TEST BUG | `vertical-align` is a shorthand of `baseline-shift` and `alignment-baseline` in css-inline-3, so the transition events name `baseline-shift` and its keywords transition discretely; the test expects a longhand |
 | [`properties-value-inherit-001.html`](https://wpt.fyi/results/css/css-transitions/properties-value-inherit-001.html) | Fail | 571 / 580 | TEST BUG | `vertical-align` is a shorthand of `baseline-shift` and `alignment-baseline` in css-inline-3, so the transition events name `baseline-shift` and its keywords transition discretely; the test expects a longhand |
 | [`properties-value-inherit-002.html`](https://wpt.fyi/results/css/css-transitions/properties-value-inherit-002.html) | Fail | 571 / 580 | TEST BUG | `vertical-align` is a shorthand of `baseline-shift` and `alignment-baseline` in css-inline-3, so the transition events name `baseline-shift` and its keywords transition discretely; the test expects a longhand |
-| [`properties-value-inherit-003.html`](https://wpt.fyi/results/css/css-transitions/properties-value-inherit-003.html) | Fail | 31 / 62 | BUG | a transition starts on an element whose `em` value is inherited from a parent whose font size transitions |
+| [`properties-value-inherit-003.html`](https://wpt.fyi/results/css/css-transitions/properties-value-inherit-003.html) | Pass | 62 / 62 |  |  |
 | [`pseudo-elements-001.html`](https://wpt.fyi/results/css/css-transitions/pseudo-elements-001.html) | Pass | 4 / 4 |  |  |
 | [`pseudo-elements-002.html`](https://wpt.fyi/results/css/css-transitions/pseudo-elements-002.html) | Pass | 1 / 1 |  |  |
 | [`retargetted-transition-with-box-sizing.html`](https://wpt.fyi/results/css/css-transitions/retargetted-transition-with-box-sizing.html) | Pass | 1 / 1 |  |  |
@@ -141,7 +141,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`AnimationEffect-getComputedTiming.tentative.html`](https://wpt.fyi/results/css/css-transitions/AnimationEffect-getComputedTiming.tentative.html) | Pass | 22 / 22 |  |  |
 | [`CSSTransition-canceling.tentative.html`](https://wpt.fyi/results/css/css-transitions/CSSTransition-canceling.tentative.html) | Pass | 11 / 11 |  |  |
 | [`CSSTransition-currentTime.tentative.html`](https://wpt.fyi/results/css/css-transitions/CSSTransition-currentTime.tentative.html) | Pass | 5 / 5 |  |  |
-| [`CSSTransition-effect.tentative.html`](https://wpt.fyi/results/css/css-transitions/CSSTransition-effect.tentative.html) | Fail | 9 / 10 | BUG | a transition whose effect or keyframes were replaced by script does not reverse like a regular transition |
+| [`CSSTransition-effect.tentative.html`](https://wpt.fyi/results/css/css-transitions/CSSTransition-effect.tentative.html) | Pass | 10 / 10 |  |  |
 | [`CSSTransition-finished.tentative.html`](https://wpt.fyi/results/css/css-transitions/CSSTransition-finished.tentative.html) | Pass | 1 / 1 |  |  |
 | [`CSSTransition-not-canceling.tentative.html`](https://wpt.fyi/results/css/css-transitions/CSSTransition-not-canceling.tentative.html) | Pass | 2 / 2 |  |  |
 | [`CSSTransition-ready.tentative.html`](https://wpt.fyi/results/css/css-transitions/CSSTransition-ready.tentative.html) | Pass | 2 / 2 |  |  |
@@ -151,11 +151,11 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`Element-getAnimations.tentative.html`](https://wpt.fyi/results/css/css-transitions/Element-getAnimations.tentative.html) | Pass | 7 / 7 |  |  |
 | [`KeyframeEffect-getKeyframes-width-and-height-transition.tentative.html`](https://wpt.fyi/results/css/css-transitions/KeyframeEffect-getKeyframes-width-and-height-transition.tentative.html) | Pass | 2 / 2 |  |  |
 | [`KeyframeEffect-getKeyframes.tentative.html`](https://wpt.fyi/results/css/css-transitions/KeyframeEffect-getKeyframes.tentative.html) | Pass | 5 / 5 |  |  |
-| [`KeyframeEffect-setKeyframes.tentative.html`](https://wpt.fyi/results/css/css-transitions/KeyframeEffect-setKeyframes.tentative.html) | Fail | 4 / 8 | BUG | a transition whose effect or keyframes were replaced by script does not reverse like a regular transition |
+| [`KeyframeEffect-setKeyframes.tentative.html`](https://wpt.fyi/results/css/css-transitions/KeyframeEffect-setKeyframes.tentative.html) | Fail | 7 / 8 | BUG | the setters of `Animation` (`currentTime`) flush the pending style changes: the change of `left` is applied before the second `currentTime` is set, so the keyframes of the other transition that animate `left` are sampled at their old time and no reversed transition starts |
 | [`KeyframeEffect-target.tentative.html`](https://wpt.fyi/results/css/css-transitions/KeyframeEffect-target.tentative.html) | Pass | 3 / 3 |  |  |
-| [`event-dispatch.tentative.html`](https://wpt.fyi/results/css/css-transitions/event-dispatch.tentative.html) | Fail | 21 / 30 | BUG | `transitionstart` is not fired when a pending transition becomes active, the elapsed time of `transitioncancel` ignores a negative delay, and seeking from the after phase to the before phase fires `transitionend` instead of `transitionstart` |
-| [`non-rendered-element-004.tentative.html`](https://wpt.fyi/results/css/css-transitions/non-rendered-element-004.tentative.html) | Timeout | 0 / 1 | BUG | the transitions of `::marker` are not canceled when the parent is no longer a list item |
-| [`ua-important.tentative.html`](https://wpt.fyi/results/css/css-transitions/ua-important.tentative.html) | Fail | 0 / 1 | BUG | a transition overrides the `!important` declarations of the user agent style sheet (`overflow` of `<marquee>`) |
+| [`event-dispatch.tentative.html`](https://wpt.fyi/results/css/css-transitions/event-dispatch.tentative.html) | Fail | 29 / 30 | BUG | the elapsed time of `transitioncancel` when the timeline of a transition with a negative delay is set to null just after seeking it to its end is its active time with a fill mode of both (100 s), the test expects 0 |
+| [`non-rendered-element-004.tentative.html`](https://wpt.fyi/results/css/css-transitions/non-rendered-element-004.tentative.html) | Pass | 1 / 1 |  |  |
+| [`ua-important.tentative.html`](https://wpt.fyi/results/css/css-transitions/ua-important.tentative.html) | Pass | 1 / 1 |  |  |
 
 ## Reftests
 

@@ -55,12 +55,7 @@
     "total": 9
   },
   "sanitizer-api/sanitizer-in-adoption-agency.html": {
-    "total": 55,
-    "failures": {
-      "Testcase #29, \"<table><b><div>x</b>y\", config: \"{ \"replaceWithChildrenElements\": [\"div\"] }\".": "FAIL",
-      "Testcase #48, \"<table><b><div>x</b><input type=\"hidden\">\", config: \"{ \"replaceWithChildrenElements\": [\"div\"] }\".": "FAIL",
-      "Testcase #50, \"<article><b><i><section><div><div><div><div><div><div><div><div>x</b>y</article>z\", config: \"{ \"replaceWithChildrenElements\": [\"section\"] }\".": "FAIL"
-    }
+    "total": 55
   },
   "sanitizer-api/sanitizer-in-noahs-ark.html": {
     "total": 22
@@ -81,10 +76,7 @@
     "total": 27
   },
   "sanitizer-api/sanitizer-parseHTML.html": {
-    "total": 49,
-    "failures": {
-      "parseHTMLUnsafe testcase 23, \"<div></div><frameset>\"": "FAIL"
-    }
+    "total": 49
   },
   "sanitizer-api/sanitizer-processing-instructions.html": {
     "total": 63
@@ -96,14 +88,7 @@
     "total": 10
   },
   "sanitizer-api/sanitizer-svg-animate.html": {
-    "total": 22,
-    "failures": {
-      "setHTML testcase should not retain attributeName and should not animate: \"<svg xmlns:zlink=\"https://www.w3.org/1999/xlink\"><a href=\"about:blank\"><set attributeName=\"zlink:href\" to=\"https://example.org/\" begin=\"0s\">\".": "FAIL",
-      "setHTML testcase should not retain attributeName and should not animate: \"<svg xmlns:zlink=\"https://www.w3.org/1999/xlink\"><a xlink:href=\"about:blank\"><set attributeName=\"zlink:href\" to=\"https://example.org/\" begin=\"0s\">\".": "FAIL",
-      "setHTML testcase should not retain attributeName and should not animate: \"<svg><a href=\"about:blank\"><set attributeName=\"ylink:href\" to=\"https://example.org/\" begin=\"0s\">\".": "FAIL",
-      "setHTML testcase should not retain attributeName and should not animate: \"<svg><a xmlns:zlink=\"https://www.w3.org/1999/xlink\" href=\"about:blank\"><set attributeName=\"zlink:href\" to=\"https://example.org/\" begin=\"0s\">\".": "FAIL",
-      "setHTML testcase should not retain attributeName and should not animate: \"<svg><a xmlns:zlink=\"https://www.w3.org/1999/xlink\" xlink:href=\"about:blank\"><set attributeName=\"zlink:href\" to=\"https://example.org/\" begin=\"0s\">\".": "FAIL"
-    }
+    "total": 22
   },
   "sanitizer-api/sanitizer-unknown.html": {
     "total": 4
@@ -121,11 +106,7 @@
     "total": 6
   },
   "sanitizer-api/sethtml-replace-with-children.html": {
-    "total": 6,
-    "failures": {
-      "setHTMLUnsafe: a custom element inside a foster-parented replaced element is connected before the table": "FAIL",
-      "setHTMLUnsafe: a declarative shadow root inside a replaced element is not attached": "FAIL"
-    }
+    "total": 6
   },
   "sanitizer-api/sethtml-safety.html": {
     "total": 33
@@ -134,16 +115,7 @@
     "total": 9
   },
   "sanitizer-api/sethtml-tree-construction.html": {
-    "total": 126,
-    "failures": {
-      "Testcase #101, \"<table><div><input type=\"hidden\"><td>x\", config: \"{ \"replaceWithChildrenElements\": [\"div\"] }\".": "FAIL",
-      "Testcase #102, \"<table><div><template>t</template><td>x\", config: \"{ \"replaceWithChildrenElements\": [\"div\"] }\".": "FAIL",
-      "Testcase #103, \"<table><div><!-- c --><td>x\", config: \"{ \"replaceWithChildrenElements\": [\"div\"], \"comments\": true }\".": "FAIL",
-      "Testcase #85, \"<table><div><span>Content</span></div><td>cell</td></table>\", config: \"{ \"replaceWithChildrenElements\": [\"div\"] }\".": "FAIL",
-      "Testcase #86, \"<table><tr><div><span>Content</span></div><td>cell</td></tr></table>\", config: \"{ \"replaceWithChildrenElements\": [\"div\"] }\".": "FAIL",
-      "Testcase #92, \"<table><tr><div>x</div><td>y\", config: \"{ \"replaceWithChildrenElements\": [\"div\"] }\".": "FAIL",
-      "Testcase #93, \"<table>a<b>y</b>c<tr><td>z\", config: \"{ \"replaceWithChildrenElements\": [\"b\"] }\".": "FAIL"
-    }
+    "total": 126
   },
   "sanitizer-api/sethtml-with-custom-elements.html": {
     "total": 24
@@ -151,7 +123,6 @@
   "sanitizer-api/sethtml-with-declarative-shadow-root.html": {
     "total": 14,
     "failures": {
-      "declarative shadow root on a host replaced with its children is not attached to the parent; the template is kept as a regular template": "FAIL",
       "shadowRoot.referenceTarget does not propagate to the shadow root when shadowrootreferencetarget is removed by sanitizer": "FAIL"
     }
   },

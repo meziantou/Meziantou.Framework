@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of sanitizer-api, and why th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 43 | 50 | 0 | 86% |
+| [Stable](#stable-tests) | 48 | 50 | 0 | 96% |
 | [Tentative](#tentative-tests) | 8 | 14 | 0 | 57% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **51** | **64** | **0** | **80%** |
+| **All** | **56** | **64** | **0** | **88%** |
 
 ## Stable tests
 
@@ -31,28 +31,28 @@ description: "The results of the web-platform-tests of sanitizer-api, and why th
 | [`sanitizer-default-config.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-default-config.html) | Pass | 1 / 1 |  |  |
 | [`sanitizer-duplicate-html-body.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-duplicate-html-body.html) | Pass | 12 / 12 |  |  |
 | [`sanitizer-get.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-get.html) | Pass | 9 / 9 |  |  |
-| [`sanitizer-in-adoption-agency.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-in-adoption-agency.html) | Fail | 52 / 55 | BUG | the sanitizer replaces the `replaceWithChildrenElements` elements with their children after the tree construction: the tests expect the children of a foster-parented element to be inserted before the table, the adoption agency algorithm not to see the replaced element, and a declarative shadow root of a replaced element not to be attached |
+| [`sanitizer-in-adoption-agency.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-in-adoption-agency.html) | Pass | 55 / 55 |  |  |
 | [`sanitizer-in-noahs-ark.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-in-noahs-ark.html) | Pass | 22 / 22 |  |  |
 | [`sanitizer-inert-document.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-inert-document.html) | Pass | 4 / 4 |  |  |
 | [`sanitizer-javascript-url.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-javascript-url.html) | Pass | 1,334 / 1,334 |  |  |
 | [`sanitizer-mathml-elements.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-mathml-elements.html) | Pass | 84 / 84 |  |  |
 | [`sanitizer-modifiers.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-modifiers.html) | Pass | 22 / 22 |  |  |
 | [`sanitizer-names.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-names.html) | Pass | 27 / 27 |  |  |
-| [`sanitizer-parseHTML.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-parseHTML.html) | Fail | 48 / 49 | BUG | `Document.parseHTMLUnsafe("<div></div><frameset>")` does not build the expected tree |
+| [`sanitizer-parseHTML.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-parseHTML.html) | Pass | 49 / 49 |  |  |
 | [`sanitizer-processing-instructions.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-processing-instructions.html) | Pass | 63 / 63 |  |  |
 | [`sanitizer-removeUnsafe.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-removeUnsafe.html) | Pass | 8 / 8 |  |  |
 | [`sanitizer-script-tokenizer.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-script-tokenizer.html) | Pass | 10 / 10 |  |  |
-| [`sanitizer-svg-animate.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-svg-animate.html) | Fail | 17 / 22 | BUG | `setHTML()` only removes the `attributeName` attribute of the SVG animation elements whose value is `href` or `xlink:href` (the animating URL attributes of the sanitizer); the test expects the values with another prefix (`ylink:href`, `zlink:href`), which do not animate, to be removed too |
+| [`sanitizer-svg-animate.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-svg-animate.html) | Pass | 22 / 22 |  |  |
 | [`sanitizer-unknown.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-unknown.html) | Pass | 4 / 4 |  |  |
 | [`sethtml-custom-element-reactions.html`](https://wpt.fyi/results/sanitizer-api/sethtml-custom-element-reactions.html) | Pass | 8 / 8 |  |  |
 | [`sethtml-form-owner.html`](https://wpt.fyi/results/sanitizer-api/sethtml-form-owner.html) | Pass | 4 / 4 |  |  |
 | [`sethtml-noscript.html`](https://wpt.fyi/results/sanitizer-api/sethtml-noscript.html) | Pass | 6 / 6 |  |  |
-| [`sethtml-replace-with-children.html`](https://wpt.fyi/results/sanitizer-api/sethtml-replace-with-children.html) | Fail | 4 / 6 | BUG | the sanitizer replaces the `replaceWithChildrenElements` elements with their children after the tree construction: the tests expect the children of a foster-parented element to be inserted before the table, the adoption agency algorithm not to see the replaced element, and a declarative shadow root of a replaced element not to be attached |
+| [`sethtml-replace-with-children.html`](https://wpt.fyi/results/sanitizer-api/sethtml-replace-with-children.html) | Pass | 6 / 6 |  |  |
 | [`sethtml-safety.html`](https://wpt.fyi/results/sanitizer-api/sethtml-safety.html) | Pass | 33 / 33 |  |  |
 | [`sethtml-scoped-custom-element-registry.html`](https://wpt.fyi/results/sanitizer-api/sethtml-scoped-custom-element-registry.html) | Pass | 9 / 9 |  |  |
-| [`sethtml-tree-construction.html`](https://wpt.fyi/results/sanitizer-api/sethtml-tree-construction.html) | Fail | 119 / 126 | BUG | the sanitizer replaces the `replaceWithChildrenElements` elements with their children after the tree construction: the tests expect the children of a foster-parented element to be inserted before the table, the adoption agency algorithm not to see the replaced element, and a declarative shadow root of a replaced element not to be attached |
+| [`sethtml-tree-construction.html`](https://wpt.fyi/results/sanitizer-api/sethtml-tree-construction.html) | Pass | 126 / 126 |  |  |
 | [`sethtml-with-custom-elements.html`](https://wpt.fyi/results/sanitizer-api/sethtml-with-custom-elements.html) | Pass | 24 / 24 |  |  |
-| [`sethtml-with-declarative-shadow-root.html`](https://wpt.fyi/results/sanitizer-api/sethtml-with-declarative-shadow-root.html) | Fail | 12 / 14 | BUG, NOT IMPLEMENTED | the sanitizer replaces the `replaceWithChildrenElements` elements with their children after the tree construction: the tests expect the children of a foster-parented element to be inserted before the table, the adoption agency algorithm not to see the replaced element, and a declarative shadow root of a replaced element not to be attached; `ShadowRoot.referenceTarget` |
+| [`sethtml-with-declarative-shadow-root.html`](https://wpt.fyi/results/sanitizer-api/sethtml-with-declarative-shadow-root.html) | Fail | 13 / 14 | NOT IMPLEMENTED | `ShadowRoot.referenceTarget` (the `shadowrootreferencetarget` attribute) |
 | [`sethtml-with-trustedhtml-createParserOptions.html`](https://wpt.fyi/results/sanitizer-api/sethtml-with-trustedhtml-createParserOptions.html) | Pass | 166 / 166 |  |  |
 | [`sethtml-with-trustedtypes-createParserOptions-null.html`](https://wpt.fyi/results/sanitizer-api/sethtml-with-trustedtypes-createParserOptions-null.html) | Pass | 2 / 2 |  |  |
 | [`sethtml-with-trustedtypes-createParserOptions-report-only.html`](https://wpt.fyi/results/sanitizer-api/sethtml-with-trustedtypes-createParserOptions-report-only.html) | Pass | 134 / 134 |  |  |

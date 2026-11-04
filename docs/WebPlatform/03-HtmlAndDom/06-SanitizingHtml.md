@@ -54,6 +54,11 @@ from it to reuse it:
 | [ReplaceWithChildrenElements](cref:Meziantou.Framework.WebPlatform.Dom.SanitizerConfig.ReplaceWithChildrenElements) | The elements that are replaced by their content (keep the text of a `b`, without the `b`) |
 | [Comments](cref:Meziantou.Framework.WebPlatform.Dom.SanitizerConfig.Comments), [DataAttributes](cref:Meziantou.Framework.WebPlatform.Dom.SanitizerConfig.DataAttributes) | Whether the comments and the `data-*` attributes are kept |
 
+The markup is sanitized while it is parsed, as in the browsers. A removed element is never created in the page, so it
+runs no custom element constructor and attaches no declarative shadow root. The content of a replaced element goes
+where the element would have gone: with `div` in [ReplaceWithChildrenElements](cref:Meziantou.Framework.WebPlatform.Dom.SanitizerConfig.ReplaceWithChildrenElements), `<table><div>x</div><tr><td>y</table>` gives
+`x<table><tbody><tr><td>y</td></tr></tbody></table>`, because the parser moves a `div` out of a table.
+
 A [Sanitizer](cref:Meziantou.Framework.WebPlatform.Dom.Sanitizer) can also be changed with its methods ([AllowElement](cref:Meziantou.Framework.WebPlatform.Dom.Sanitizer.AllowElement), [RemoveElement](cref:Meziantou.Framework.WebPlatform.Dom.Sanitizer.RemoveElement), [AllowAttribute](cref:Meziantou.Framework.WebPlatform.Dom.Sanitizer.AllowAttribute), [SetComments](cref:Meziantou.Framework.WebPlatform.Dom.Sanitizer.SetComments)...),
 and [Get()](cref:Meziantou.Framework.WebPlatform.Dom.Sanitizer.Get) returns its configuration. A configuration that has both [Elements](cref:Meziantou.Framework.WebPlatform.Dom.SanitizerConfig.Elements) and [RemoveElements](cref:Meziantou.Framework.WebPlatform.Dom.SanitizerConfig.RemoveElements), or that lists an
 element twice, is invalid: the [Sanitizer](cref:Meziantou.Framework.WebPlatform.Dom.Sanitizer) constructor throws a [TypeErrorException](cref:Meziantou.Framework.WebPlatform.Dom.TypeErrorException).

@@ -10,9 +10,9 @@ namespace Meziantou.Framework.WebPlatform.Playwright.Dispatchers;
 // The callbacks of the browsing contexts of the pages (they run on the thread of the context)
 internal sealed partial class BrowserContextDispatcher
 {
-    private void OnBrowsingContextCreated(BrowsingContext browsingContext)
+    private void OnBrowsingContextCreated(CallbackContext callbackContext)
     {
-        if (IsClosed)
+        if (IsClosed || callbackContext.BrowsingContext is not { } browsingContext)
             return;
 
         if (browsingContext.Parent is { } parent)
@@ -51,9 +51,9 @@ internal sealed partial class BrowserContextDispatcher
         }
     }
 
-    private void OnBrowsingContextDestroyed(BrowsingContext browsingContext)
+    private void OnBrowsingContextDestroyed(CallbackContext callbackContext)
     {
-        if (FindFrame(browsingContext) is not { } frame)
+        if (FindFrame(callbackContext.BrowsingContext) is not { } frame)
             return;
 
         if (frame.ParentFrame is null)
@@ -66,13 +66,13 @@ internal sealed partial class BrowserContextDispatcher
         }
     }
 
-    private void OnDocumentActivated(BrowsingContext browsingContext, Document document) => FindFrame(browsingContext)?.OnDocumentActivated(document);
+    private void OnDocumentActivated(CallbackContext callbackContext, Document document) => FindFrame(callbackContext.BrowsingContext)?.OnDocumentActivated(document);
 
-    private void OnSameDocumentNavigated(BrowsingContext browsingContext) => FindFrame(browsingContext)?.OnSameDocumentNavigated();
+    private void OnSameDocumentNavigated(CallbackContext callbackContext) => FindFrame(callbackContext.BrowsingContext)?.OnSameDocumentNavigated();
 
-    private void OnConsoleMessage(GlobalScope global, ConsoleMessage message)
+    private void OnConsoleMessage(CallbackContext callbackContext, ConsoleMessage message)
     {
-        if (global is not Window { BrowsingContext: { } browsingContext } || FindFrame(browsingContext) is not { } frame)
+        if (FindFrame(callbackContext.BrowsingContext) is not { } frame)
             return;
 
         var page = frame.Page;
@@ -124,9 +124,9 @@ internal sealed partial class BrowserContextDispatcher
         });
     }
 
-    private void OnUnhandledScriptError(GlobalScope global, ScriptError error)
+    private void OnUnhandledScriptError(CallbackContext callbackContext, ScriptError error)
     {
-        if (global is not Window { BrowsingContext: { } browsingContext } || FindFrame(browsingContext) is not { } frame)
+        if (FindFrame(callbackContext.BrowsingContext) is not { } frame)
             return;
 
         var page = frame.Page;
@@ -148,9 +148,9 @@ internal sealed partial class BrowserContextDispatcher
         });
     }
 
-    private UserPromptResult OnUserPrompt(Window window, UserPrompt prompt)
+    private UserPromptResult OnUserPrompt(CallbackContext callbackContext, UserPrompt prompt)
     {
-        var page = FindPage(window.BrowsingContext);
+        var page = FindPage(callbackContext.BrowsingContext);
         var type = prompt.Type switch
         {
             UserPromptType.Alert => "alert",
@@ -182,9 +182,9 @@ internal sealed partial class BrowserContextDispatcher
         }
     }
 
-    private void OnShowFilePicker(HtmlInputElement input)
+    private void OnShowFilePicker(CallbackContext callbackContext, HtmlInputElement input)
     {
-        if (input.OwnerDocument?.DefaultView?.BrowsingContext is not { } browsingContext || FindFrame(browsingContext) is not { } frame)
+        if (FindFrame(callbackContext.BrowsingContext) is not { } frame)
             return;
 
         frame.Page.OnFileChooser(frame, input);

@@ -49,8 +49,8 @@ public sealed class JavaScriptScriptEngineTests : IDisposable
         {
             ScriptEngine = engine,
             DocumentLoader = DocumentLoader.Create(), // optional: external scripts, modules, fetch, XMLHttpRequest, WebSocket, EventSource...
-            UnhandledScriptError = (window, error) => Console.Error.WriteLine(error),
-            ConsoleMessage = (window, message) => Console.WriteLine(message.Text), // console.log(), console.count()...
+            UnhandledScriptError = (_, error) => Console.Error.WriteLine(error),
+            ConsoleMessage = (_, message) => Console.WriteLine(message.Text), // console.log(), console.count()...
         });
 
         var document = await context.NavigateAsync("https://example.com/", _ => """
@@ -140,7 +140,7 @@ public sealed class JavaScriptScriptEngineTests : IDisposable
         {
             ScriptEngine = _engine,
             UnhandledScriptError = (_, error) => _errors.Add(error),
-            UserPromptHandler = (window, prompt) =>
+            UserPromptHandler = (_, prompt) =>
             {
                 prompts.Add($"{prompt.Type}:{prompt.Message}:{prompt.DefaultValue}");
                 return prompt.Type switch

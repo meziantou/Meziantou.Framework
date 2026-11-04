@@ -1049,7 +1049,7 @@ public partial class HtmlInputElement : IEditableTextControl
         window.ConsumeUserActivation();
         if (_type == InputType.File)
         {
-            window.Options.ShowFilePicker?.Invoke(this);
+            window.Options.ShowFilePicker?.Invoke(CallbackContext.For(window), this);
             return;
         }
 

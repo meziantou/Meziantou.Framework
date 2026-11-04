@@ -39,6 +39,27 @@ public sealed class ConsoleTests : IDisposable
     private string[] Texts => [.. _messages.Select(m => m.Text)];
 
     [Fact]
+    public void Messages_HaveTheContextOfTheWindow()
+    {
+        var contexts = new List<CallbackContext>();
+        var options = new BrowsingContextOptions
+        {
+            ScriptEngine = _engine,
+            ConsoleMessage = (callbackContext, _) => contexts.Add(callbackContext),
+        };
+        var context = _contexts.Create(options);
+        var document = context.Navigate("https://example.com/", _ => "<script>console.log('a')</script>");
+        _contexts.EventLoop.RunUntilIdle();
+
+        var callbackContext = Assert.Single(contexts);
+        Assert.Same(options, callbackContext.Options);
+        Assert.Same(context, callbackContext.BrowsingContext);
+        Assert.Same(document.DefaultView, callbackContext.Global);
+        Assert.Same(document.DefaultView, callbackContext.Window);
+        Assert.Same(document, callbackContext.Document);
+    }
+
+    [Fact]
     public void Messages_HaveTheLocationOfTheCode()
     {
         Run("\nconsole.log('a');");

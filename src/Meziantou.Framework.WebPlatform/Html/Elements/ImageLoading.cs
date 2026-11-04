@@ -49,6 +49,26 @@ internal readonly record struct ImageNaturalSize(double? Width, double? Height, 
     /// </summary>
     public bool OrientationSwapsAxes { get; init; }
 
+    /// <summary>
+    /// The density of the <c>Content-DPR</c> header of the response the natural size is divided by (see <see cref="WithContentDpr"/>),
+    /// or null: the density of the response replaces the pixel density of the selected source of an <c>img</c> element.
+    /// </summary>
+    public double? ContentDpr { get; init; }
+
+    /// <summary>
+    /// Returns the natural size divided by the valid <c>Content-DPR</c> header of the image response (the image density of the
+    /// response, a header of the first drafts of Client Hints that Chromium implemented, replaced by the EXIF resolution of the
+    /// image in https://wicg.github.io/responsive-image-client-hints/), or the natural size when the response has no such
+    /// header. The header is a positive number; with several values, the last one applies (as in Chromium).
+    /// </summary>
+    public ImageNaturalSize WithContentDpr(DocumentResource response)
+    {
+        if (HeaderList.GetDecodeAndSplit(response.Headers, "Content-DPR") is not [.., var value] || !Microsyntaxes.TryParseFloat(value, out var density) || density <= 0 || !double.IsFinite(density))
+            return this;
+
+        return Scale(1 / density) with { ContentDpr = density };
+    }
+
     /// <summary>Returns the natural size without the EXIF orientation (<c>image-orientation: none</c>).</summary>
     public ImageNaturalSize WithoutOrientation() => OrientationSwapsAxes ? new ImageNaturalSize(Height, Width, AspectRatio is { } ratio ? 1 / ratio : null) : this;
 
@@ -84,6 +104,9 @@ internal sealed class ImageRequest(string currentUrl, double currentPixelDensity
     public string CurrentUrl { get; set; } = currentUrl;
 
     public double CurrentPixelDensity { get; } = currentPixelDensity;
+
+    /// <summary>The pixel density the natural size is divided by: 1 when the response gives the density of the image (its <c>Content-DPR</c> header, already applied to the natural size), else <see cref="CurrentPixelDensity"/>.</summary>
+    public double EffectivePixelDensity => NaturalSize.ContentDpr is null ? CurrentPixelDensity : 1;
 
     /// <summary>The natural size of the image data, read from the header of the image (nothing is decoded).</summary>
     public ImageNaturalSize NaturalSize { get; set; }
@@ -216,7 +239,7 @@ public partial class HtmlImageElement
         if (_currentRequest is not { State: ImageRequestState.CompletelyAvailable or ImageRequestState.PartiallyAvailable } request)
             return null;
 
-        var density = request.CurrentPixelDensity;
+        var density = request.EffectivePixelDensity;
         var natural = request.NaturalSize;
         return (natural with { Width = natural.Width / density, Height = natural.Height / density }).GetConcreteSize();
     }
@@ -855,6 +878,8 @@ public partial class HtmlImageElement
         if (resource is null || !ImageHeaders.TryGetImageInfo(bytes.Span, mimeType ?? "", out naturalSize))
             return false;
 
+        naturalSize = naturalSize.WithContentDpr(resource);
+
         image = document.CreatePaintImage(url, naturalSize, bytes, mimeType, corsSameOrigin);
 
         // https://html.spec.whatwg.org/multipage/images.html#img-req-data: with a rendering backend, the image is broken when the
@@ -870,7 +895,7 @@ public partial class HtmlImageElement
             {
                 // The natural size the header parser could not read (e.g. a format it does not know)
                 var swap = image.Orientation.SwapsAxes();
-                naturalSize = ImageNaturalSize.FromPixels((uint)(swap ? decoder.Height : decoder.Width), (uint)(swap ? decoder.Width : decoder.Height)) with { OrientationSwapsAxes = swap };
+                naturalSize = (ImageNaturalSize.FromPixels((uint)(swap ? decoder.Height : decoder.Width), (uint)(swap ? decoder.Width : decoder.Height)) with { OrientationSwapsAxes = swap }).WithContentDpr(resource);
                 image = document.CreatePaintImage(url, naturalSize, bytes, mimeType, corsSameOrigin);
             }
         }

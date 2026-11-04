@@ -125,6 +125,17 @@ internal sealed class PaintImage
     }
 
     /// <summary>
+    /// The density of the image given by the <c>Content-DPR</c> header of its response (see <see cref="Dom.ImageNaturalSize.WithContentDpr"/>),
+    /// or 1: the natural size of an SVG image, given by its document, is divided by it (the natural size of a raster image,
+    /// <see cref="Width"/> and <see cref="Height"/>, is already divided by it).
+    /// </summary>
+    public double ContentDpr
+    {
+        get => _resource.ContentDpr;
+        init => _resource.ContentDpr = value;
+    }
+
+    /// <summary>
     /// The clock of the animation of an animated image and the timestamp of its start (when the image became available), or
     /// null: the first frame is displayed.
     /// </summary>
@@ -324,6 +335,8 @@ internal sealed class PaintImage
         public PaintImage? Root { get; set; }
 
         public bool IsCorsSameOrigin { get; set; } = true;
+
+        public double ContentDpr { get; set; } = 1;
 
         public (TimeProvider Clock, long Start)? AnimationClock { get; set; }
 

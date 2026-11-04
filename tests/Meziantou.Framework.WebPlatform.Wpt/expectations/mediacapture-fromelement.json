@@ -1,0 +1,100 @@
+{
+  "mediacapture-fromelement/HTMLCanvasElement-captureStream-settings.tentative.html": {
+    "total": 1,
+    "failures": {
+      "HTMLCanvasElement.captureStream() creates tracks that populate resolution settings": "FAIL"
+    }
+  },
+  "mediacapture-fromelement/HTMLCanvasElement-getImageData-noframe.html": {
+    "total": 1,
+    "failures": {
+      "CanvasRenderingContext2D.getImageData() does not lead to a frame being captured": "FAIL"
+    }
+  },
+  "mediacapture-fromelement/capture-audio-unaffected-volume.html": {
+    "total": 4,
+    "failures": {
+      "captureStream captured audio is independent of source element volume/muted state : src-audio-only-file": "FAIL",
+      "captureStream captured audio is independent of source element volume/muted state : src-audio-only-stream": "FAIL",
+      "captureStream captured audio is independent of source element volume/muted state : src-video-and-audio-file": "FAIL",
+      "captureStream captured audio is independent of source element volume/muted state : src-video-and-audio-stream": "FAIL"
+    }
+  },
+  "mediacapture-fromelement/capture-muted.html": {
+    "total": 3,
+    "failures": {
+      "audio-only": "FAIL",
+      "video+audio": "FAIL",
+      "video-only.": "FAIL"
+    }
+  },
+  "mediacapture-fromelement/capture.html": {
+    "total": 6,
+    "failures": {
+      "capture": "FAIL",
+      "capture 1": "FAIL",
+      "capture 2": "FAIL"
+    }
+  },
+  "mediacapture-fromelement/creation.html": {
+    "total": 6,
+    "failures": {
+      "creation": "FAIL",
+      "creation 1": "FAIL",
+      "creation 2": "FAIL"
+    }
+  },
+  "mediacapture-fromelement/cross-origin.html": {
+    "total": 1,
+    "failures": {
+      "Capturing stream from cross-origin video": "FAIL"
+    }
+  },
+  "mediacapture-fromelement/ended.html": {
+    "total": 6,
+    "failures": {
+      "ended": "FAIL",
+      "ended 1": "FAIL",
+      "ended 2": "FAIL"
+    }
+  },
+  "mediacapture-fromelement/historical.html": {
+    "total": 1,
+    "failures": {
+      "the deprecated MediaStream `onactive` event handler property is not available": "FAIL"
+    }
+  },
+  "mediacapture-fromelement/idlharness.window.js": {
+    "total": 30,
+    "failures": {
+      "CanvasCaptureMediaStreamTrack interface object length": "FAIL",
+      "CanvasCaptureMediaStreamTrack interface object name": "FAIL",
+      "CanvasCaptureMediaStreamTrack interface: attribute canvas": "FAIL",
+      "CanvasCaptureMediaStreamTrack interface: existence and properties of interface object": "FAIL",
+      "CanvasCaptureMediaStreamTrack interface: existence and properties of interface prototype object": "FAIL",
+      "CanvasCaptureMediaStreamTrack interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "CanvasCaptureMediaStreamTrack interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "CanvasCaptureMediaStreamTrack interface: operation requestFrame()": "FAIL",
+      "CanvasCaptureMediaStreamTrack interface: track must inherit property \"canvas\" with the proper type": "FAIL",
+      "CanvasCaptureMediaStreamTrack interface: track must inherit property \"requestFrame()\" with the proper type": "FAIL",
+      "CanvasCaptureMediaStreamTrack must be primary interface of track": "FAIL",
+      "HTMLCanvasElement interface: calling captureStream(optional double) on canvas with too few arguments must throw TypeError": "FAIL",
+      "HTMLCanvasElement interface: canvas must inherit property \"captureStream(optional double)\" with the proper type": "FAIL",
+      "HTMLCanvasElement interface: operation captureStream(optional double)": "FAIL",
+      "HTMLMediaElement interface: operation captureStream()": "FAIL",
+      "Stringification of track": "FAIL"
+    }
+  },
+  "mediacapture-fromelement/restart-after-ended.html": {
+    "total": 3,
+    "failures": {
+      "audio-only: captureStream() tracks end and are re-added after restart": "FAIL",
+      "video+audio: captureStream() tracks end and are re-added after restart": "FAIL",
+      "video-only: captureStream() tracks end and are re-added after restart": "FAIL"
+    }
+  },
+  "mediacapture-fromelement/src-reset.html": {
+    "harness": "ERROR",
+    "total": 0
+  }
+}

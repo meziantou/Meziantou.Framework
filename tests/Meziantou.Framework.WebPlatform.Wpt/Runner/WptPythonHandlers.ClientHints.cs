@@ -4,7 +4,8 @@ namespace Meziantou.Framework.WebPlatform.Wpt.Runner;
 
 /// <summary>
 /// The handlers of the <c>client-hints</c> tests, which echo the client hints of the requests (the <c>Sec-CH-*</c> headers
-/// and the legacy ones) or opt into them (<c>Accept-CH</c>, <c>Critical-CH</c>, <c>Clear-Site-Data</c>).
+/// and the legacy ones) or opt into them (<c>Accept-CH</c>, <c>Critical-CH</c>, <c>Clear-Site-Data</c>), and the ones of
+/// the <c>content-dpr</c> tests (the <c>Content-DPR</c> header of the image responses).
 /// </summary>
 internal static partial class WptPythonHandlers
 {
@@ -207,6 +208,23 @@ internal static partial class WptPythonHandlers
         // critical-ch directory asks for them as critical hints
         ["/client-hints/service-workers/resources/echo-hint-in-html.py"] = (request, response, _) => EchoHintInHtml(request, response, critical: false),
         ["/client-hints/service-workers/critical-ch/echo-hint-in-html.py"] = (request, response, _) => EchoHintInHtml(request, response, critical: true),
+
+        // content-dpr/resources/dpr.py: an image of the resources directory with the Content-DPR header of the dpr parameter
+        // (and a second Content-DPR header with the value of the double parameter)
+        ["/content-dpr/resources/dpr.py"] = (request, response, _) =>
+        {
+            response.Add("Access-Control-Allow-Origin", "*");
+            var body = ReadWptFile("content-dpr/resources/" + request.Get("name"));
+            response.Set("Content-Type", request.Get("mimeType"));
+            response.Set("Content-DPR", request.Get("dpr"));
+            if (request.Get("double") is { } dpr)
+            {
+                response.Add("Content-DPR", dpr);
+            }
+
+            response.Set("Content-Length", body.Length.ToString(CultureInfo.InvariantCulture));
+            response.Body = body;
+        },
     };
 
     private static void AddClientHintsCorsHeaders(WptHandlerResponse response)

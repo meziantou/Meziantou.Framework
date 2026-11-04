@@ -183,6 +183,8 @@ internal static class EmbeddedResources
         if (!ImageHeaders.TryGetImageInfo(GetBytes(response), type, out naturalSize))
             return false;
 
+        naturalSize = naturalSize.WithContentDpr(response);
+
         ReadOnlyMemory<byte> bytes = response.ContentBytes ?? System.Text.Encoding.UTF8.GetBytes(response.Content ?? "");
         image = element.NodeDocument.CreatePaintImage(response.Url ?? url.Serialize(), naturalSize, bytes, MimeType.Parse(type)?.Essence);
         return true;

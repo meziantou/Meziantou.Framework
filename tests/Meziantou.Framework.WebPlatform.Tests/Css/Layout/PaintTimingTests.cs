@@ -6,9 +6,9 @@ using Microsoft.Extensions.Time.Testing;
 namespace Meziantou.Framework.WebPlatform.Tests.Css.Layout;
 
 /// <summary>
-/// Paint Timing (https://w3c.github.io/paint-timing/), Largest Contentful Paint (https://w3c.github.io/largest-contentful-paint/)
-/// and Element Timing (https://w3c.github.io/element-timing/): the paints are found in the display list painted by the rendering
-/// updates once the entries are observed.
+/// Paint Timing (https://w3c.github.io/paint-timing/), Largest Contentful Paint (https://w3c.github.io/largest-contentful-paint/),
+/// Element Timing (https://w3c.github.io/element-timing/) and Container Timing (https://w3c.github.io/container-timing/): the paints
+/// are found in the display list painted by the rendering updates once the entries are observed.
 /// </summary>
 public sealed class PaintTimingTests : IDisposable
 {
@@ -229,9 +229,52 @@ public sealed class PaintTimingTests : IDisposable
     }
 
     [Fact]
+    public void ContainerTiming_RegionOfTheSubtree()
+    {
+        var document = Parse("<div id=root containertiming=main><img id=a src='/40x30.png' style='position: absolute; left: 0; top: 0'><img id=b src='/40x30.png' style='position: absolute; left: 20px; top: 10px'><p id=text style='position: absolute; left: 100px; top: 0; margin: 0'>abc</p><div containertimingignore><img src='/50x50.png' style='position: absolute; left: 200px; top: 0'></div></div>");
+        RunFrames(3);
+
+        // The container root is tracked from its creation: its paints are buffered before they are observed
+        var entries = Observe<PerformanceContainerTiming>(document, "container", buffered: true);
+        RunFrames(2);
+
+        var entry = Assert.Single(entries);
+        Assert.Equal("container", entry.EntryType);
+        Assert.Equal("", entry.Name);
+        Assert.Equal("main", entry.Identifier);
+        Assert.Same(Get(document, "root"), entry.RootElement);
+        Assert.Same(Get(document, "a"), entry.LastPaintedElement);
+        Assert.Equal((40 * 30) + (40 * 30) - (20 * 20) + (30 * 10), (int)entry.Size);
+        Assert.Equal((0, 0, 130, 40), (entry.IntersectionRect.X, entry.IntersectionRect.Y, entry.IntersectionRect.Width, entry.IntersectionRect.Height));
+        Assert.Equal(entry.FirstRenderTime, entry.StartTime);
+        Assert.Equal(entry.PaintTime, entry.StartTime);
+
+        // A paint that is covered by the region does not report a new entry
+        var image = document.CreateElement("img");
+        image.SetAttribute("src", "/10x10.png");
+        image.SetAttribute("style", "position: absolute; left: 0; top: 0");
+        Get(document, "root").AppendChild(image);
+        RunFrames(3);
+        Assert.Single(entries);
+    }
+
+    [Fact]
+    public void ContainerTiming_Attributes_AreReflected()
+    {
+        var document = Parse("<div id=a></div>");
+        var element = Get(document, "a");
+        Assert.Equal("", element.ContainerTiming);
+        Assert.False(element.ContainerTimingIgnore);
+        element.ContainerTiming = "id";
+        element.ContainerTimingIgnore = true;
+        Assert.Equal("id", element.GetAttribute("containertiming"));
+        Assert.Equal("", element.GetAttribute("containertimingignore"));
+    }
+
+    [Fact]
     public void DisabledFeatures_AreNotSupportedEntryTypes()
     {
-        var document = Parse("<p>Text</p>", new WebPlatformFeatures { PaintTimingEnabled = false, LargestContentfulPaintEnabled = false, ElementTimingEnabled = false });
+        var document = Parse("<p>Text</p>", new WebPlatformFeatures { PaintTimingEnabled = false, LargestContentfulPaintEnabled = false, ElementTimingEnabled = false, ContainerTimingEnabled = false });
         var entries = Observe<PerformanceEntry>(document, "paint");
         RunFrames(2);
 

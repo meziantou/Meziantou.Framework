@@ -4401,10 +4401,7 @@
     "total": 1
   },
   "referrer-policy/generic/multiple-headers-one-invalid.html": {
-    "total": 1,
-    "failures": {
-      "Referrer policy header parsing fails if one header is invalid": "FAIL"
-    }
+    "total": 1
   },
   "referrer-policy/generic/multiple-headers-one-unknown-token.html": {
     "total": 1

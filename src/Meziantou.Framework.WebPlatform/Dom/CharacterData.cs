@@ -101,6 +101,14 @@ public abstract partial class CharacterData : Node
 
         DataChangedSteps();
         document.OnCharacterDataChangedForStyles(this);
+
+        // The data of the node is modified by the current interaction (as in the browsers: the specification only records the
+        // inserted nodes and the attribute changes)
+        if (InteractionContext.Current is not null)
+        {
+            document.RecordNodeModifiedForInteractionPaintTiming(this);
+        }
+
         document.EventLoop?.OnOperationCompleted();
     }
 

@@ -10,20 +10,18 @@ description: "The results of the web-platform-tests of scroll-performance-timing
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | Stable | 0 | 0 | 0 | – |
-| [Tentative](#tentative-tests) | 0 | 1 | 1 | – |
+| [Tentative](#tentative-tests) | 0 | 1 | 0 | 0% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **0** | **1** | **1** | **–** |
+| **All** | **0** | **1** | **0** | **0%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **REQUIRES**: 1
-  - `layout`: 1
-  - `rendering`: 1
+- **NOT IMPLEMENTED**: 1
 
 ## Tentative tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`tentative/supported-entry-types.window.js`](https://wpt.fyi/results/scroll-performance-timing/tentative/supported-entry-types.window.js) | Disabled | – | REQUIRES(layout, rendering) | scroll performance timing |
+| [`tentative/supported-entry-types.window.js`](https://wpt.fyi/results/scroll-performance-timing/tentative/supported-entry-types.window.js) | Fail | 0 / 2 | NOT IMPLEMENTED | `PerformanceScrollTiming` and the `scroll` entry type: a tentative Microsoft Edge explainer (https://github.com/MicrosoftEdge/MSEdgeExplainers/blob/main/PerformanceScrollTiming/explainer.md) without specification nor webref IDL, and no browser ships it; the engine does not measure the frames of a scroll (frames expected and produced, checkerboarding) |

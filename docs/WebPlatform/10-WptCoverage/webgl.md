@@ -9,46 +9,45 @@ description: "The results of the web-platform-tests of webgl, and why the tests 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 20 | 20 | – |
+| [Stable](#stable-tests) | 0 | 20 | 0 | 0% |
 | Tentative | 0 | 0 | 0 | – |
-| [Reftests](#reftests) | 0 | 2 | 2 | – |
-| **All** | **0** | **22** | **22** | **–** |
+| [Reftests](#reftests) | 0 | 2 | 0 | 0% |
+| **All** | **0** | **22** | **0** | **0%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **REQUIRES**: 22
-  - `rendering`: 22
+- **NOT IMPLEMENTED**: 22
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`bufferSubData.html`](https://wpt.fyi/results/webgl/bufferSubData.html) | Disabled | – | REQUIRES(rendering) | WebGL |
-| [`compressed-tex-sub-image-2d-without-base-image.html`](https://wpt.fyi/results/webgl/compressed-tex-sub-image-2d-without-base-image.html) | Disabled | – | REQUIRES(rendering) | WebGL |
-| [`compressedTexImage2D.html`](https://wpt.fyi/results/webgl/compressedTexImage2D.html) | Disabled | – | REQUIRES(rendering) | WebGL |
-| [`compressedTexSubImage2D.html`](https://wpt.fyi/results/webgl/compressedTexSubImage2D.html) | Disabled | – | REQUIRES(rendering) | WebGL |
-| [`drawingBufferToneMapping.html`](https://wpt.fyi/results/webgl/drawingBufferToneMapping.html) | Disabled | – | REQUIRES(rendering) | WebGL |
-| [`framebuffer-initial-state.html`](https://wpt.fyi/results/webgl/framebuffer-initial-state.html) | Disabled | – | REQUIRES(rendering) | WebGL |
-| [`framebuffer-without-color-attachment.html`](https://wpt.fyi/results/webgl/framebuffer-without-color-attachment.html) | Disabled | – | REQUIRES(rendering) | WebGL |
-| [`getParameter-stencil-masks.html`](https://wpt.fyi/results/webgl/getParameter-stencil-masks.html) | Disabled | – | REQUIRES(rendering) | WebGL |
-| [`getUniformLocation-uniform-block-member.html`](https://wpt.fyi/results/webgl/getUniformLocation-uniform-block-member.html) | Disabled | – | REQUIRES(rendering) | WebGL |
-| [`idlharness.any.js`](https://wpt.fyi/results/webgl/idlharness.any.js) | Disabled | – | REQUIRES(rendering) | WebGL |
-| [`stencilMaskSeparate-front-and-back.html`](https://wpt.fyi/results/webgl/stencilMaskSeparate-front-and-back.html) | Disabled | – | REQUIRES(rendering) | WebGL |
-| [`texImage-half-float-type.html`](https://wpt.fyi/results/webgl/texImage-half-float-type.html) | Disabled | – | REQUIRES(rendering) | WebGL |
-| [`texImage2D-image-not-loaded.html`](https://wpt.fyi/results/webgl/texImage2D-image-not-loaded.html) | Disabled | – | REQUIRES(rendering) | WebGL |
-| [`texImage2D-source-ignores-unpack-alignment.html`](https://wpt.fyi/results/webgl/texImage2D-source-ignores-unpack-alignment.html) | Disabled | – | REQUIRES(rendering) | WebGL |
-| [`texImage2D.html`](https://wpt.fyi/results/webgl/texImage2D.html) | Disabled | – | REQUIRES(rendering) | WebGL |
-| [`texImage3D-size-limits.html`](https://wpt.fyi/results/webgl/texImage3D-size-limits.html) | Disabled | – | REQUIRES(rendering) | WebGL |
-| [`texSubImage2D.html`](https://wpt.fyi/results/webgl/texSubImage2D.html) | Disabled | – | REQUIRES(rendering) | WebGL |
-| [`uniformMatrixNfv.html`](https://wpt.fyi/results/webgl/uniformMatrixNfv.html) | Disabled | – | REQUIRES(rendering) | WebGL |
-| [`vertexAttrib-keeps-array-type.html`](https://wpt.fyi/results/webgl/vertexAttrib-keeps-array-type.html) | Disabled | – | REQUIRES(rendering) | WebGL |
-| [`webgl2-drawing-buffer-bits.html`](https://wpt.fyi/results/webgl/webgl2-drawing-buffer-bits.html) | Disabled | – | REQUIRES(rendering) | WebGL |
+| [`bufferSubData.html`](https://wpt.fyi/results/webgl/bufferSubData.html) | Fail | 0 / 1 | NOT IMPLEMENTED | WebGL: `getContext('webgl')` and `getContext('webgl2')` return null |
+| [`compressed-tex-sub-image-2d-without-base-image.html`](https://wpt.fyi/results/webgl/compressed-tex-sub-image-2d-without-base-image.html) | Fail | 0 / 1 | NOT IMPLEMENTED | WebGL: `getContext('webgl')` and `getContext('webgl2')` return null |
+| [`compressedTexImage2D.html`](https://wpt.fyi/results/webgl/compressedTexImage2D.html) | Fail | 0 / 1 | NOT IMPLEMENTED | WebGL: `getContext('webgl')` and `getContext('webgl2')` return null |
+| [`compressedTexSubImage2D.html`](https://wpt.fyi/results/webgl/compressedTexSubImage2D.html) | Fail | 0 / 1 | NOT IMPLEMENTED | WebGL: `getContext('webgl')` and `getContext('webgl2')` return null |
+| [`drawingBufferToneMapping.html`](https://wpt.fyi/results/webgl/drawingBufferToneMapping.html) | Fail | 0 / 8 | NOT IMPLEMENTED | WebGL: `getContext('webgl')` and `getContext('webgl2')` return null |
+| [`framebuffer-initial-state.html`](https://wpt.fyi/results/webgl/framebuffer-initial-state.html) | Fail | 0 / 4 | NOT IMPLEMENTED | WebGL: `getContext('webgl')` and `getContext('webgl2')` return null |
+| [`framebuffer-without-color-attachment.html`](https://wpt.fyi/results/webgl/framebuffer-without-color-attachment.html) | Fail | 0 / 6 | NOT IMPLEMENTED | WebGL: `getContext('webgl')` and `getContext('webgl2')` return null |
+| [`getParameter-stencil-masks.html`](https://wpt.fyi/results/webgl/getParameter-stencil-masks.html) | Fail | 0 / 5 | NOT IMPLEMENTED | WebGL: `getContext('webgl')` and `getContext('webgl2')` return null |
+| [`getUniformLocation-uniform-block-member.html`](https://wpt.fyi/results/webgl/getUniformLocation-uniform-block-member.html) | Fail | 0 / 2 | NOT IMPLEMENTED | WebGL: `getContext('webgl')` and `getContext('webgl2')` return null |
+| [`idlharness.any.js`](https://wpt.fyi/results/webgl/idlharness.any.js) | Fail | 8 / 4,198 | NOT IMPLEMENTED | WebGL: `getContext('webgl')` and `getContext('webgl2')` return null |
+| [`stencilMaskSeparate-front-and-back.html`](https://wpt.fyi/results/webgl/stencilMaskSeparate-front-and-back.html) | Fail | 0 / 2 | NOT IMPLEMENTED | WebGL: `getContext('webgl')` and `getContext('webgl2')` return null |
+| [`texImage-half-float-type.html`](https://wpt.fyi/results/webgl/texImage-half-float-type.html) | Fail | 0 / 4 | NOT IMPLEMENTED | WebGL: `getContext('webgl')` and `getContext('webgl2')` return null |
+| [`texImage2D-image-not-loaded.html`](https://wpt.fyi/results/webgl/texImage2D-image-not-loaded.html) | Fail | 0 / 1 | NOT IMPLEMENTED | WebGL: `getContext('webgl')` and `getContext('webgl2')` return null |
+| [`texImage2D-source-ignores-unpack-alignment.html`](https://wpt.fyi/results/webgl/texImage2D-source-ignores-unpack-alignment.html) | Fail | 0 / 2 | NOT IMPLEMENTED | WebGL: `getContext('webgl')` and `getContext('webgl2')` return null |
+| [`texImage2D.html`](https://wpt.fyi/results/webgl/texImage2D.html) | Fail | 0 / 1 | NOT IMPLEMENTED | WebGL: `getContext('webgl')` and `getContext('webgl2')` return null |
+| [`texImage3D-size-limits.html`](https://wpt.fyi/results/webgl/texImage3D-size-limits.html) | Fail | 0 / 4 | NOT IMPLEMENTED | WebGL: `getContext('webgl')` and `getContext('webgl2')` return null |
+| [`texSubImage2D.html`](https://wpt.fyi/results/webgl/texSubImage2D.html) | Fail | 0 / 1 | NOT IMPLEMENTED | WebGL: `getContext('webgl')` and `getContext('webgl2')` return null |
+| [`uniformMatrixNfv.html`](https://wpt.fyi/results/webgl/uniformMatrixNfv.html) | Fail | 0 / 3 | NOT IMPLEMENTED | WebGL: `getContext('webgl')` and `getContext('webgl2')` return null |
+| [`vertexAttrib-keeps-array-type.html`](https://wpt.fyi/results/webgl/vertexAttrib-keeps-array-type.html) | Fail | 0 / 16 | NOT IMPLEMENTED | WebGL: `getContext('webgl')` and `getContext('webgl2')` return null |
+| [`webgl2-drawing-buffer-bits.html`](https://wpt.fyi/results/webgl/webgl2-drawing-buffer-bits.html) | Fail | 0 / 2 | NOT IMPLEMENTED | WebGL: `getContext('webgl')` and `getContext('webgl2')` return null |
 
 ## Reftests
 
 | Test | Result | Variants | Kind | Description |
 |---|---|--:|---|---|
-| [`blitFramebuffer-presents-drawing-buffer.html`](https://wpt.fyi/results/webgl/blitFramebuffer-presents-drawing-buffer.html) | Disabled | – | REQUIRES(rendering) | WebGL |
-| [`clearBufferfv-presents-drawing-buffer.html`](https://wpt.fyi/results/webgl/clearBufferfv-presents-drawing-buffer.html) | Disabled | – | REQUIRES(rendering) | WebGL |
+| [`blitFramebuffer-presents-drawing-buffer.html`](https://wpt.fyi/results/webgl/blitFramebuffer-presents-drawing-buffer.html) | Fail | 0 / 1 | NOT IMPLEMENTED | WebGL: `getContext('webgl2')` returns null, so nothing is drawn |
+| [`clearBufferfv-presents-drawing-buffer.html`](https://wpt.fyi/results/webgl/clearBufferfv-presents-drawing-buffer.html) | Fail | 0 / 1 | NOT IMPLEMENTED | WebGL: `getContext('webgl2')` returns null, so nothing is drawn |

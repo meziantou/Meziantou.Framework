@@ -18,8 +18,7 @@ description: "The results of the web-platform-tests of paint-timing, and why the
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **REQUIRES**: 1
-  - `rendering`: 1
+- **NOT IMPLEMENTED**: 1
 
 ## Stable tests
 
@@ -66,7 +65,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`fcp-only/replaced-content-image.html`](https://wpt.fyi/results/paint-timing/fcp-only/replaced-content-image.html) | Pass | 1 / 1 |  |  |
 | [`fcp-only/svg-in-iframe.html`](https://wpt.fyi/results/paint-timing/fcp-only/svg-in-iframe.html) | Pass | 1 / 1 |  |  |
 | [`first-contentful-bg-image.html`](https://wpt.fyi/results/paint-timing/first-contentful-bg-image.html) | Pass | 1 / 1 |  |  |
-| [`first-contentful-canvas-webgl2.html`](https://wpt.fyi/results/paint-timing/first-contentful-canvas-webgl2.html) | Fail | 0 / 1 | REQUIRES(rendering) | WebGL |
+| [`first-contentful-canvas-webgl2.html`](https://wpt.fyi/results/paint-timing/first-contentful-canvas-webgl2.html) | Fail | 0 / 1 | NOT IMPLEMENTED | WebGL: `getContext('webgl2')` returns null |
 | [`first-contentful-canvas.html`](https://wpt.fyi/results/paint-timing/first-contentful-canvas.html) | Pass | 1 / 1 |  |  |
 | [`first-contentful-image.html`](https://wpt.fyi/results/paint-timing/first-contentful-image.html) | Pass | 1 / 1 |  |  |
 | [`first-contentful-paint.html`](https://wpt.fyi/results/paint-timing/first-contentful-paint.html) | Pass | 1 / 1 |  |  |

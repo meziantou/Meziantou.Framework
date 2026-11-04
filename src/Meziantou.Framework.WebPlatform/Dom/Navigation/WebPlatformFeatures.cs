@@ -329,12 +329,28 @@ public sealed record WebPlatformFeatures
     public bool ElementTimingEnabled { get; init; } = true;
 
     /// <summary>
+    /// Gets or sets whether the Container Timing API is exposed (https://w3c.github.io/container-timing/): the
+    /// <c>PerformanceContainerTiming</c> interface, the <c>container</c> entry type and <c>HTMLElement.containerTiming</c> and
+    /// <c>containerTimingIgnore</c>. The paints of a document are computed once one of its elements has a <c>containertiming</c>
+    /// attribute. The default is true.
+    /// </summary>
+    public bool ContainerTimingEnabled { get; init; } = true;
+
+    /// <summary>
     /// Gets or sets whether the Event Timing API is exposed (https://w3c.github.io/event-timing/): the <c>PerformanceEventTiming</c>
     /// and <c>EventCounts</c> interfaces, <c>performance.eventCounts</c>, <c>performance.interactionCount</c> and the <c>event</c>
     /// and <c>first-input</c> entry types. When it is disabled, the trusted events of the user input are not timed (and they
     /// schedule no rendering update of the event loop). The default is true.
     /// </summary>
     public bool EventTimingEnabled { get; init; } = true;
+
+    /// <summary>
+    /// Gets or sets whether the soft navigations are detected (https://wicg.github.io/soft-navigations/): the
+    /// <c>PerformanceSoftNavigation</c> and <c>InteractionContentfulPaint</c> interfaces and the <c>soft-navigation</c> and
+    /// <c>interaction-contentful-paint</c> entry types. The interactions of the user are the ones of the Event Timing API: the
+    /// soft navigations are only detected when <see cref="EventTimingEnabled"/> is true. The default is true.
+    /// </summary>
+    public bool SoftNavigationsEnabled { get; init; } = true;
 
     /// <summary>
     /// Gets or sets whether the User Timing API is exposed (https://w3c.github.io/user-timing/): the <c>PerformanceMark</c> and

@@ -118,6 +118,8 @@ public sealed partial class DomEventLoop
             delay = TimeSpan.Zero;
         }
 
+        // https://wicg.github.io/soft-navigations/#sec-interaction-context-intro: the timer runs in the interaction context of the code that queued it
+        callback = InteractionContext.Wrap(callback);
         var due = TimeProvider.GetTimestamp() + (long)(delay.TotalSeconds * TimeProvider.TimestampFrequency);
         lock (_timersLock)
         {
@@ -1007,6 +1009,8 @@ public sealed partial class DomEventLoop
         if (IsDisposed)
             return;
 
+        // https://wicg.github.io/soft-navigations/#sec-interaction-context-intro: the microtask runs in the interaction context of the code that queued it
+        callback = InteractionContext.Wrap(callback);
         if (_scriptEngines.Count > 0 && GetScriptEngine() is { } engine)
         {
             engine.QueueMicrotask(callback);
@@ -1026,7 +1030,10 @@ public sealed partial class DomEventLoop
     public void QueueTask(Action callback)
     {
         ArgumentNullException.ThrowIfNull(callback);
-        QueueTask(callback, schedulerTaskSlot: null);
+
+        // https://wicg.github.io/soft-navigations/#sec-interaction-context-intro: the task runs in the interaction context of the
+        // code that queued it (e.g. an asynchronous operation started by an event listener of an interaction)
+        QueueTask(InteractionContext.Wrap(callback), schedulerTaskSlot: null);
     }
 
     /// <summary>Queues a task, or the slot of a task of a scheduler (see <see cref="SchedulerTaskSlot"/>).</summary>
@@ -1211,9 +1218,11 @@ public sealed partial class DomEventLoop
                 return true;
             }
 
-            // A task that is not a task of a scheduler has no scheduling state (it is set while a task of a scheduler spins the event loop)
+            // A task that is not a task of a scheduler has no scheduling state (it is set while a task of a scheduler spins the event loop),
+            // and no interaction context unless it was queued in one
             var continuationState = CurrentContinuationState;
             CurrentContinuationState = null;
+            using var interactionContextScope = InteractionContext.Enter(null);
             EndIdlePeriod();
             try
             {

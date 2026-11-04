@@ -299,6 +299,8 @@ internal static class CssImageFetching
         ImageNaturalSize? naturalSize = null;
         if (resource is not null && ImageHeaders.TryGetImageInfo(EmbeddedResources.GetBytes(resource), resource.MimeType?.Essence ?? "", out var size))
         {
+            size = size.WithContentDpr(resource);
+
             // The natural size of an image that is not CORS-same-origin keeps its EXIF orientation with image-orientation: none
             naturalSize = corsSameOrigin ? size : size with { OrientationSwapsAxes = false };
 

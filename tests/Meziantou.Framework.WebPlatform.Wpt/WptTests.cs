@@ -260,6 +260,22 @@ public sealed class WptTests
 
     public static TheoryData<string> ElementTimingTests => GetTests("element-timing");
 
+    public static TheoryData<string> ContainerTimingTests => GetTests("container-timing");
+
+    public static TheoryData<string> SoftNavigationHeuristicsTests => GetTests("soft-navigation-heuristics");
+
+    public static TheoryData<string> ScrollPerformanceTimingTests => GetTests("scroll-performance-timing");
+
+    public static TheoryData<string> ContentDprTests => GetTests("content-dpr");
+
+    public static TheoryData<string> DelegatedInkTests => GetTests("delegated-ink");
+
+    public static TheoryData<string> MediaCaptureFromElementTests => GetTests("mediacapture-fromelement");
+
+    public static TheoryData<string> ShapeDetectionTests => GetTests("shape-detection");
+
+    public static TheoryData<string> WebGLTests => GetTests("webgl");
+
     public static TheoryData<string> EventTimingTests => GetTests("event-timing");
 
     public static TheoryData<string> ForcedColorsModeTests => GetTests("forced-colors-mode");
@@ -1148,6 +1164,38 @@ public sealed class WptTests
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(ElementTimingTests))]
     public void ElementTiming(string test) => Run("element-timing", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(ContainerTimingTests))]
+    public void ContainerTiming(string test) => Run("container-timing", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(SoftNavigationHeuristicsTests))]
+    public void SoftNavigationHeuristics(string test) => Run("soft-navigation-heuristics", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(ScrollPerformanceTimingTests))]
+    public void ScrollPerformanceTiming(string test) => Run("scroll-performance-timing", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(ContentDprTests))]
+    public void ContentDpr(string test) => Run("content-dpr", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(DelegatedInkTests))]
+    public void DelegatedInk(string test) => Run("delegated-ink", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(MediaCaptureFromElementTests))]
+    public void MediaCaptureFromElement(string test) => Run("mediacapture-fromelement", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(ShapeDetectionTests))]
+    public void ShapeDetection(string test) => Run("shape-detection", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(WebGLTests))]
+    public void WebGL(string test) => Run("webgl", test);
 
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(EventTimingTests))]

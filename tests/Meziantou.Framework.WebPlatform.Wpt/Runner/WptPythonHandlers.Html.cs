@@ -9,6 +9,24 @@ internal static partial class WptPythonHandlers
 {
     private static readonly Dictionary<string, Handler> HtmlHandlers = new(StringComparer.Ordinal)
     {
+        // mimesniff/mime-types: a document that writes its character encoding, served with the Content-Type of the type
+        // parameter as is (the parameter is a byte sequence, decoded as Latin-1 as the header values)
+        // html/dom/elements/images: a green image the first time an id is requested, then a red one, cacheable but to be revalidated
+        ["/html/dom/elements/images/image.py"] = (request, response, stash) =>
+        {
+            var key = request.Get("id") ?? "";
+            var alreadyServed = stash.TakeValue(key) is not null;
+            if (!alreadyServed)
+            {
+                stash.Put(key, true);
+            }
+
+            response.Set("ETag", "abcdef");
+            response.Set("Content-Type", "image/png");
+            response.Set("Cache-Control", "public, max-age=31536000, no-cache");
+            response.Body = ReadWptFile(alreadyServed ? "images/red.png" : "images/green.png");
+        },
+
         // html/browsers/browsing-the-web: a slow empty HTML document (2 seconds), a redirect to the location parameter, a
         // redirect followed once per uuid, and documents with a Refresh header
         ["/html/browsers/browsing-the-web/overlapping-navigations-and-traversals/resources/slow.py"] = (_, response, _) =>

@@ -20,8 +20,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 2
 - **NOT IMPLEMENTED**: 14
-- **REQUIRES**: 1
-  - `rendering`: 1
 - **TEST RUNNER**: 14
 
 ## Stable tests
@@ -119,6 +117,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
 | [`readable-streams/owning-type-message-port.tentative.any.js`](https://wpt.fyi/results/streams/readable-streams/owning-type-message-port.tentative.any.js) | Fail | 0 / 6 | NOT IMPLEMENTED | `ReadableStream` of type `owning` (and transferring `MessagePort`s) |
-| [`readable-streams/owning-type-video-frame.tentative.any.js`](https://wpt.fyi/results/streams/readable-streams/owning-type-video-frame.tentative.any.js) | Fail | 0 / 15 | NOT IMPLEMENTED, REQUIRES(rendering) | `ReadableStream` of type `owning`; `VideoFrame` (WebCodecs) |
+| [`readable-streams/owning-type-video-frame.tentative.any.js`](https://wpt.fyi/results/streams/readable-streams/owning-type-video-frame.tentative.any.js) | Fail | 0 / 15 | NOT IMPLEMENTED | `ReadableStream` of type `owning`, and `VideoFrame` (WebCodecs) |
 | [`readable-streams/owning-type.tentative.any.js`](https://wpt.fyi/results/streams/readable-streams/owning-type.tentative.any.js) | Fail | 0 / 15 | NOT IMPLEMENTED | `ReadableStream` of type `owning` (and the `transfer` option of `enqueue()`) |
 | [`transform-streams/invalid-realm.tentative.window.js`](https://wpt.fyi/results/streams/transform-streams/invalid-realm.tentative.window.js) | Pass | 1 / 1 |  |  |

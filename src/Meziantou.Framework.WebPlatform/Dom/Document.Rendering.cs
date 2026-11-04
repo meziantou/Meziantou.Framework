@@ -63,12 +63,13 @@ public partial class Document
     internal PaintImage CreatePaintImage(string url, ImageNaturalSize naturalSize, ReadOnlyMemory<byte> data, string? mimeType, bool isCorsSameOrigin = true)
     {
         if (RenderingBackend is null)
-            return new(url, naturalSize.Width ?? 0, naturalSize.Height ?? 0, mimeType == "image/svg+xml" ? data : default, mimeType) { IsCorsSameOrigin = isCorsSameOrigin };
+            return new(url, naturalSize.Width ?? 0, naturalSize.Height ?? 0, mimeType == "image/svg+xml" ? data : default, mimeType) { IsCorsSameOrigin = isCorsSameOrigin, ContentDpr = naturalSize.ContentDpr ?? 1 };
 
         var clock = EventLoop?.TimeProvider;
         return new(url, naturalSize.Width ?? 0, naturalSize.Height ?? 0, data, mimeType, ImageMetadata.GetExifOrientation(data.Span))
         {
             IsCorsSameOrigin = isCorsSameOrigin,
+            ContentDpr = naturalSize.ContentDpr ?? 1,
             AnimationClock = clock is null ? null : (clock, clock.GetTimestamp()),
         };
     }

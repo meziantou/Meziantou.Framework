@@ -647,6 +647,14 @@ public partial class Element : Node
         }
 
         AttributeChangeSteps(localName, oldValue, newValue, @namespace);
+
+        // https://wicg.github.io/soft-navigations/#sec-html-node: the class, the style or a resource attribute of the element is
+        // modified by the current interaction
+        if (InteractionContext.Current is not null && (@namespace is null ? localName is "class" or "style" or "src" or "srcset" or "poster" or "href" or "data" : localName == "href"))
+        {
+            NodeDocument.RecordNodeModifiedForInteractionPaintTiming(this);
+        }
+
         if (newValue is not null && @namespace is null && localName == "name" && IsHtmlNamespace && TagId is TagId.Embed or TagId.Form or TagId.Img or TagId.Object)
         {
             NodeDocument.HasNamedObjectElements = true;
@@ -701,6 +709,12 @@ public partial class Element : Node
         if (localName == "style" && this is HtmlElement or SvgElement or MathMLElement && (value is not null || RareDataOrNull is ElementRareData { BlockedStyleAttribute: not null }))
         {
             CheckStyleAttribute(value);
+        }
+
+        if (localName == "containertiming" && value is not null && this is HtmlElement)
+        {
+            // https://w3c.github.io/container-timing/: the element is a container root
+            NodeDocument.OnContainerTimingRootRegistered();
         }
 
         if (localName == "nonce" && this is HtmlElement or SvgElement or MathMLElement)

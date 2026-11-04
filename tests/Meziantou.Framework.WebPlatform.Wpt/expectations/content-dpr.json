@@ -1,0 +1,20 @@
+{
+  "content-dpr/content-dpr-various-elements.html": {
+    "reftest": "PASS"
+  },
+  "content-dpr/image-pseudo-element-content-dpr.html": {
+    "reftest": "PASS"
+  },
+  "content-dpr/image-with-content-dpr-and-explicit-dimensions.html": {
+    "reftest": "PASS"
+  },
+  "content-dpr/image-with-dpr-header.html": {
+    "total": 1
+  },
+  "content-dpr/tiled-background-image-with-content-dpr.html": {
+    "reftest": "PASS"
+  },
+  "content-dpr/tiled-background-svg-image-with-content-dpr.html": {
+    "reftest": "PASS"
+  }
+}

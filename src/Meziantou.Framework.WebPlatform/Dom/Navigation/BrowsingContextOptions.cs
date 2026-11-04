@@ -581,6 +581,7 @@ public sealed partial class BrowsingContextOptions
 /// <item><c>Accept-CH</c>, <c>Critical-CH</c> and <c>Clear-Site-Data</c>: the client hints that the origin of a top-level document opts into (see <see cref="BrowsingContextOptions.AcceptCHCache"/>).</item>
 /// <item><c>Content-Type</c>: the MIME type and the encoding of the resource.</item>
 /// <item><c>Content-Disposition</c>: a navigation to an <c>attachment</c> does not create a document.</item>
+/// <item><c>Content-DPR</c>: the density of an image, which divides its natural size (as in Chromium).</item>
 /// <item><c>Last-Modified</c>: <see cref="Document.LastModified"/>.</item>
 /// <item><c>Content-Language</c>: the default language of the elements (e.g. <c>:lang()</c>): its first language.</item>
 /// <item><c>Document-Policy</c>: <c>expect-no-linked-resources</c> disables the speculative parsing of the document (see <see cref="BrowsingContextOptions.SpeculativeParsing"/>).</item>

@@ -21,10 +21,9 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 - **BUG**: 5
 - **TEST BUG**: 19
 - **NOT IMPLEMENTED**: 3
-- **REQUIRES**: 3
+- **REQUIRES**: 1
   - `layout`: 1
-  - `rendering`: 2
-- **TEST RUNNER**: 4
+- **TEST RUNNER**: 6
 - **FLAKY**: 1
 
 ## Stable tests
@@ -455,8 +454,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`font-variant-east-asian.html`](https://wpt.fyi/results/css/css-fonts/font-variant-east-asian.html) | Pass | 1 / 1 |  |  |
 | [`font-variant-emoji-003.html`](https://wpt.fyi/results/css/css-fonts/font-variant-emoji-003.html) | Pass | 1 / 1 |  |  |
 | [`font-variant-emoji-004.html`](https://wpt.fyi/results/css/css-fonts/font-variant-emoji-004.html) | Pass | 1 / 1 |  |  |
-| [`font-variant-emoji-005.html`](https://wpt.fyi/results/css/css-fonts/font-variant-emoji-005.html) | Fail | 0 / 1 | REQUIRES(rendering) | an emoji font (the keycap sequences in color): the bundled fonts have no color emoji |
-| [`font-variant-emoji-1.html`](https://wpt.fyi/results/css/css-fonts/font-variant-emoji-1.html) | Fail | 0 / 1 | REQUIRES(rendering) | an emoji font (U+263A with the text and emoji presentation selectors): the bundled fonts have no color emoji, so the two presentations use the same glyph |
+| [`font-variant-emoji-005.html`](https://wpt.fyi/results/css/css-fonts/font-variant-emoji-005.html) | Fail | 0 / 1 | TEST RUNNER | the runner has no emoji font (the keycap sequences in color): the bundled fonts have no color emoji |
+| [`font-variant-emoji-1.html`](https://wpt.fyi/results/css/css-fonts/font-variant-emoji-1.html) | Fail | 0 / 1 | TEST RUNNER | the runner has no emoji font (U+263A with the text and emoji presentation selectors): the bundled fonts have no color emoji, so the two presentations use the same glyph |
 | [`font-variant-emoji-2.html`](https://wpt.fyi/results/css/css-fonts/font-variant-emoji-2.html) | Pass | 1 / 1 |  |  |
 | [`font-variant-ligatures-01.html`](https://wpt.fyi/results/css/css-fonts/font-variant-ligatures-01.html) | Pass | 1 / 1 |  |  |
 | [`font-variant-ligatures-02.html`](https://wpt.fyi/results/css/css-fonts/font-variant-ligatures-02.html) | Pass | 1 / 1 |  |  |

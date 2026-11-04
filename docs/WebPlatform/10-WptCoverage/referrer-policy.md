@@ -9,18 +9,16 @@ description: "The results of the web-platform-tests of referrer-policy, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 1,474 | 1,478 | 0 | 99.7% |
+| [Stable](#stable-tests) | 1,475 | 1,478 | 0 | 99.7% |
 | [Tentative](#tentative-tests) | 4 | 4 | 0 | 100% |
 | [Reftests](#reftests) | 0 | 1 | 0 | 0% |
-| **All** | **1,478** | **1,483** | **0** | **99.6%** |
+| **All** | **1,479** | **1,483** | **0** | **99.7%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **BUG**: 2
-- **REQUIRES**: 1
-  - `rendering`: 1
 - **TEST RUNNER**: 2
 
 ## Stable tests
@@ -1486,7 +1484,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`generic/meta-tag-in-svg-image.html`](https://wpt.fyi/results/referrer-policy/generic/meta-tag-in-svg-image.html) | Pass | 1 / 1 |  |  |
 | [`generic/multiple-headers-and-values.html`](https://wpt.fyi/results/referrer-policy/generic/multiple-headers-and-values.html) | Pass | 1 / 1 |  |  |
 | [`generic/multiple-headers-combined.html`](https://wpt.fyi/results/referrer-policy/generic/multiple-headers-combined.html) | Pass | 1 / 1 |  |  |
-| [`generic/multiple-headers-one-invalid.html`](https://wpt.fyi/results/referrer-policy/generic/multiple-headers-one-invalid.html) | Fail | 0 / 1 | REQUIRES(rendering) | `requestViaImage()` reads the referrer encoded in the image pixels with canvas `drawImage()`/`getImageData()`, and `getContext('2d')` returns null |
+| [`generic/multiple-headers-one-invalid.html`](https://wpt.fyi/results/referrer-policy/generic/multiple-headers-one-invalid.html) | Pass | 1 / 1 |  |  |
 | [`generic/multiple-headers-one-unknown-token.html`](https://wpt.fyi/results/referrer-policy/generic/multiple-headers-one-unknown-token.html) | Pass | 1 / 1 |  |  |
 | [`generic/multiple-headers.html`](https://wpt.fyi/results/referrer-policy/generic/multiple-headers.html) | Pass | 1 / 1 |  |  |
 | [`generic/refresh-cross-origin.sub.html`](https://wpt.fyi/results/referrer-policy/generic/refresh-cross-origin.sub.html) | Pass | 18 / 18 |  |  |

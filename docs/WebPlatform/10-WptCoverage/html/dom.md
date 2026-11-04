@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of html/dom, and why the tes
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 210 | 216 | 0 | 97% |
+| [Stable](#stable-tests) | 211 | 216 | 0 | 98% |
 | [Tentative](#tentative-tests) | 27 | 33 | 0 | 82% |
 | [Reftests](#reftests) | 127 | 127 | 0 | 100% |
-| **All** | **364** | **376** | **0** | **97%** |
+| **All** | **365** | **376** | **0** | **97%** |
 
 ## Failure reasons
 
@@ -21,10 +21,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 - **BUG**: 1
 - **TEST BUG**: 7
 - **NOT IMPLEMENTED**: 3
-- **REQUIRES**: 2
+- **REQUIRES**: 1
   - `layout`: 1
-  - `rendering`: 1
-- **TEST RUNNER**: 1
 
 ## Stable tests
 
@@ -151,7 +149,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`elements/global-attributes/translate-enumerated-ascii-case-insensitive.html`](https://wpt.fyi/results/html/dom/elements/global-attributes/translate-enumerated-ascii-case-insensitive.html) | Pass | 1 / 1 |  |  |
 | [`elements/global-attributes/translate-inherit-no-parent-element.html`](https://wpt.fyi/results/html/dom/elements/global-attributes/translate-inherit-no-parent-element.html) | Pass | 5 / 5 |  |  |
 | [`elements/global-attributes/translate-non-html-translation-mode.html`](https://wpt.fyi/results/html/dom/elements/global-attributes/translate-non-html-translation-mode.html) | Pass | 3 / 3 |  |  |
-| [`elements/images/bypass-cache-revalidation.html`](https://wpt.fyi/results/html/dom/elements/images/bypass-cache-revalidation.html) | Timeout | 0 / 1 | REQUIRES(rendering), TEST RUNNER | image loading/caching of decoded images; the `/html/dom/elements/images/image.py` handler is not emulated |
+| [`elements/images/bypass-cache-revalidation.html`](https://wpt.fyi/results/html/dom/elements/images/bypass-cache-revalidation.html) | Pass | 1 / 1 |  |  |
 | [`elements/name-content-attribute-and-property.html`](https://wpt.fyi/results/html/dom/elements/name-content-attribute-and-property.html) | Pass | 141 / 141 |  |  |
 | [`elements/the-innertext-and-outertext-properties/dynamic-getter.html`](https://wpt.fyi/results/html/dom/elements/the-innertext-and-outertext-properties/dynamic-getter.html) | Pass | 9 / 9 |  |  |
 | [`elements/the-innertext-and-outertext-properties/getter-first-letter-marker-multicol.html`](https://wpt.fyi/results/html/dom/elements/the-innertext-and-outertext-properties/getter-first-letter-marker-multicol.html) | Pass | 1 / 1 |  |  |

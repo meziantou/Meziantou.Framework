@@ -58,14 +58,40 @@ public sealed class DragAndDropOperation
     public static DragAndDropOperation? TryStart(Node node, DragPointerState pointerState, bool dragSelection = true)
     {
         ArgumentNullException.ThrowIfNull(node);
-        if (!node.IsConnected)
+        return TryStartCore(node, FindDraggableElement(node), pointerState, dragSelection);
+    }
+
+    /// <summary>
+    /// The draggable element that a press on <paramref name="node"/> would drag: the first draggable inclusive ancestor in
+    /// the flat tree, or null when there is none or when the node is in a text control, a select element or editable content.
+    /// </summary>
+    /// <remarks>The pointer determines it when the button is pressed, before the mousedown handlers can move the node.</remarks>
+    internal static Element? FindDraggableElement(Node node)
+    {
+        // As in the browsers, a press in a text control, a select element or editable content selects text or an
+        // option instead of dragging the element or an ancestor
+        for (var current = node as Element ?? HtmlElement.GetFlatTreeParent(node) as Element; current is not null; current = HtmlElement.GetFlatTreeParent(current) as Element)
+        {
+            if (IsTextControl(current) || current is HtmlSelectElement || current is HtmlElement { IsContentEditable: true })
+                return null;
+
+            if (current is HtmlElement { Draggable: true })
+                return current;
+        }
+
+        return null;
+    }
+
+    internal static DragAndDropOperation? TryStartCore(Node node, Element? draggableElement, DragPointerState pointerState, bool dragSelection)
+    {
+        if (!node.IsConnected && draggableElement is not { IsConnected: true })
             return null;
 
         // Determine what is being dragged: the selection when the node is selected, else the first draggable inclusive ancestor
         Node? sourceNode = null;
         var sourceKind = DragSourceKind.Element;
         var store = new DragDataStore();
-        if (dragSelection && node.NodeDocument.GetSelection() is { IsCollapsed: false } selection && selection.ContainsNode(node) && GetFirstSelectedText(selection) is { } text)
+        if (dragSelection && node.IsConnected && node.NodeDocument.GetSelection() is { IsCollapsed: false } selection && selection.ContainsNode(node) && GetFirstSelectedText(selection) is { } text)
         {
             sourceNode = text;
             sourceKind = DragSourceKind.Selection;
@@ -73,22 +99,10 @@ public sealed class DragAndDropOperation
         }
         else
         {
-            // As in the browsers, a press in a text control, a select element or editable content selects text or an
-            // option instead of dragging the element or an ancestor
-            for (var current = node as Element ?? node.ParentElement; current is not null; current = current.ParentElement)
-            {
-                if (IsTextControl(current) || current is HtmlSelectElement || current is HtmlElement { IsContentEditable: true })
-                    return null;
-
-                if (current is HtmlElement { Draggable: true })
-                {
-                    sourceNode = current;
-                    break;
-                }
-            }
-
-            if (sourceNode is not Element element)
+            if (draggableElement is not { IsConnected: true } element)
                 return null;
+
+            sourceNode = element;
 
             // The URLs of the dragged nodes (links and images)
             string? url = null;

@@ -443,8 +443,6 @@
   "editing/other/editable-state-and-focus-in-shadow-dom-in-designMode.tentative.html": {
     "total": 29,
     "failures": {
-      "Focus after Collapse selection into text in <div contenteditable> in the closed shadow DOM": "FAIL",
-      "Focus after Collapse selection into text in <div contenteditable> in the open shadow DOM": "FAIL",
       "SelectAll in the <div contenteditable> in the closed shadow DOM": "FAIL",
       "SelectAll in the <div contenteditable> in the open shadow DOM": "FAIL",
       "SelectAll in the closed shadow DOM": "FAIL",
@@ -2190,20 +2188,7 @@
     "total": 2
   },
   "editing/other/select-all-and-delete-in-html-element-having-contenteditable.html": {
-    "total": 12,
-    "failures": {
-      "Select All, then, Backspace": "FAIL",
-      "Select All, then, Delete": "FAIL",
-      "Select All, then, execCommand(\"delete\")": "FAIL",
-      "Select All, then, execCommand(\"forwarddelete\")": "FAIL",
-      "execCommand(\"selectall\"), then, Backspace": "FAIL",
-      "execCommand(\"selectall\"), then, Delete": "FAIL",
-      "execCommand(\"selectall\"), then, execCommand(\"delete\")": "FAIL",
-      "getSelection().selectAllChildren(document.documentElement), then, Backspace": "FAIL",
-      "getSelection().selectAllChildren(document.documentElement), then, Delete": "FAIL",
-      "getSelection().selectAllChildren(document.documentElement), then, execCommand(\"delete\")": "FAIL",
-      "getSelection().selectAllChildren(document.documentElement), then, execCommand(\"forwarddelete\")": "FAIL"
-    }
+    "total": 12
   },
   "editing/other/selectall-in-editinghost.html": {
     "total": 4,
@@ -2215,10 +2200,7 @@
     "total": 3
   },
   "editing/other/selection-change-not-fired-if-selection-set-to-root.html": {
-    "total": 1,
-    "failures": {
-      "Selectionchange event should not get fired when the selection is already set to the beginning of the root ": "FAIL"
-    }
+    "total": 1
   },
   "editing/other/setting-value-of-textcontrol-immediately-after-hidden.html?editor=input&hide-target=editor": {
     "total": 7
@@ -3886,17 +3868,7 @@
     "total": 69
   },
   "editing/run/unlink.html": {
-    "total": 395,
-    "failures": {
-      "[[\"stylewithcss\",\"false\"],[\"unlink\",\"\"]] \"[foo<a href=https://example.com class=bold>bar</a>baz]\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"false\"],[\"unlink\",\"\"]] \"[foo<a href=https://example.com style=font-weight:bold>bar</a>baz]\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"false\"],[\"unlink\",\"\"]] \"foo<a href=https://example.com class=bold>[bar]</a>baz\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"false\"],[\"unlink\",\"\"]] \"foo<a href=https://example.com style=font-weight:bold>[bar]</a>baz\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"unlink\",\"\"]] \"[foo<a href=https://example.com class=bold>bar</a>baz]\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"unlink\",\"\"]] \"[foo<a href=https://example.com style=font-weight:bold>bar</a>baz]\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"unlink\",\"\"]] \"foo<a href=https://example.com class=bold>[bar]</a>baz\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"unlink\",\"\"]] \"foo<a href=https://example.com style=font-weight:bold>[bar]</a>baz\" compare innerHTML": "FAIL"
-    }
+    "total": 395
   },
   "editing/whitespaces/chrome-compat/delete-img.tentative.html": {
     "total": 7

@@ -2653,7 +2653,8 @@ context.ExitPointerLock();           // the unlock gesture of the host, or the s
 The editing hosts (`contenteditable` in the True or Plaintext-Only state, the document element in design mode) and the
 editable nodes follow https://w3c.github.io/editing/docs/execCommand/#editable: they define `isContentEditable` and
 `:read-write`. Turning `designMode` on puts the caret at the start of the document element when the selection is empty
-and focuses the document element.
+and focuses the document element. The design mode does not apply to the shadow trees: their `contenteditable` elements
+are editing hosts that can be focused.
 
 `document.execCommand()`, `queryCommandEnabled()`, `queryCommandIndeterm()`, `queryCommandState()`,
 `queryCommandSupported()` and `queryCommandValue()` implement the editing specification
@@ -2769,7 +2770,17 @@ specification, the browsers are followed, as the tests expect:
   inline elements (`<font size="5"><b>`).
 - the states and the values of a collapsed selection that is after an inline element are the ones of the end of this
   element (the caret of the browsers);
-- a color that is not valid is black, as in the reference implementation.
+- a color that is not valid is black, as in the reference implementation. The `data` of the `input` event of `foreColor`,
+  `backColor` and `hiliteColor` is the serialized color (`#FF0000` gives `rgb(255, 0, 0)`), or the CSS-wide keyword in
+  lowercase (`inherit`); a value that is not a color is given as is;
+- `unlink` removes a link that only has a `style` or a `class` attribute besides `href`, and restores the values of its
+  `style` attribute on its contents (`foo<a href=x style=font-weight:bold>bar</a>baz` gives `foo<b>bar</b>baz`); the
+  specification only removes its `href` attribute. The `div` that the `justify*` commands create has the CSSOM
+  serialization of its declaration (`<div style="text-align: center;">`);
+- the head and the body elements are never deleted: a boundary point of the range that is in the document element
+  (`selectAllChildren(document.documentElement)` in an editable `html` element) is moved into the body element, and
+  `delete` does nothing at the start of an editing host (the caret does not leave it, e.g. when the host only contains
+  collapsed white space).
 
 An inert node behaves as a node that is not editable (https://html.spec.whatwg.org/multipage/interaction.html#inert): the
 subtree of an element with the `inert` attribute is not editable, the commands are not enabled in an inert editing host,
@@ -3193,8 +3204,9 @@ operation?.Update(target, new DragPointerState(10, 10, Buttons: 1));  // drag, d
 operation?.End(new DragPointerState(10, 10, Buttons: 0));           // drag, drop, dragend
 ```
 
-- What is dragged: the selection when the pressed node is selected, else the first draggable inclusive ancestor
-  (`draggable="true"`, the images and the links). As in the browsers, a press in a text control, a `select` element or
+- What is dragged: the selection when the pressed node is selected, else the first draggable inclusive ancestor in the
+  flat tree (`draggable="true"`, the images and the links). `BrowsingContext.Input` determines this ancestor when the
+  button is pressed, before the `mousedown` listeners run (a listener that moves the pressed node does not cancel the drag). As in the browsers, a press in a text control, a `select` element or
   editable content does not drag. The links and the images add their URL as `text/uri-list` data.
 - `dragstart` can cancel the operation; `pointercancel`, `pointerout` and `pointerleave` are then fired at the source
   node, and the host suppresses the pointer events until the drop.

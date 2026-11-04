@@ -888,6 +888,23 @@ internal sealed partial class EditingAlgorithms
         if (IsHtmlElement(element, "a") && command is "createlink" or "unlink")
         {
             element.RemoveAttribute("href");
+
+            // The specification keeps the a element when it has other attributes. As in the browsers, the unlink command
+            // removes a link that only has a style or a class attribute: the values of its style attribute are restored
+            // on its contents (foo<a href style=font-weight:bold>bar</a> gives foo<b>bar</b>)
+            if (command == "unlink" && element.Attributes.All(attribute => attribute.Name is "style" or "class"))
+            {
+                var children = GetChildren(element);
+                var values = RecordValues(children);
+                foreach (var child in children)
+                {
+                    MovePreservingRanges(child, element.ParentNode!, NodeIndex(element));
+                }
+
+                RemoveNode(element);
+                RestoreValues(values);
+                return children;
+            }
         }
 
         if (GetSpecifiedCommandValue(element, command) is null)

@@ -272,4 +272,27 @@ public sealed class EditingDeletionTests : IDisposable
         Assert.Equal($"{NoBreakSpace} {NoBreakSpace} c", second.Data);
         Assert.Equal($"\"{first.Data}\":4", DescribeSelection(document));
     }
+
+    // As in the browsers, the delete command at the start of an editing host that only contains collapsed white space
+    // changes neither the content nor the selection
+    [Fact]
+    public void DeleteInEditingHostWithOnlyCollapsedWhiteSpaceDoesNothing()
+    {
+        var (document, host) = Load("[]\n  ");
+        document.ExecCommand("delete");
+        Assert.Equal("\n  ", host.InnerHtml);
+        Assert.Equal("\"\n  \":0", DescribeSelection(document));
+    }
+
+    // As in the browsers, the head and the body elements of an editable html element are never deleted
+    [Fact]
+    public void DeleteChildrenOfEditableDocumentElementOnlyEmptiesTheBody()
+    {
+        var document = _contexts.Create().Navigate("https://example.com/", _ => "<!DOCTYPE html><html contenteditable><head><title>t</title></head><body>abc</body></html>");
+        _contexts.EventLoop.RunUntilIdle();
+        document.GetSelection()!.SelectAllChildren(document.DocumentElement!);
+        Assert.True(document.ExecCommand("delete"));
+        Assert.NotNull(document.Head);
+        Assert.Equal("<br>", document.Body!.InnerHtml);
+    }
 }

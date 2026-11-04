@@ -584,18 +584,10 @@
     "total": 3
   },
   "html/editing/dnd/platform/mousedown-move-inner-when-dragging-1.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "dragstart should still fire when the mousedown event moves the inner element around": "TIMEOUT"
-    }
+    "total": 1
   },
   "html/editing/dnd/platform/mousedown-move-inner-when-dragging-2.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "dragstart should still fire when the mousedown event moves the container of the inner element around": "TIMEOUT"
-    }
+    "total": 1
   },
   "html/editing/dnd/platform/pointerdown-add-display-none.html": {
     "total": 1

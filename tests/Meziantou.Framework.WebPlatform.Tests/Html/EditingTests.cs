@@ -107,4 +107,17 @@ public sealed class EditingTests : IDisposable
         Assert.False(document.GetElementById("outer")!.HasAttribute("hidden"));
         Assert.True(document.GetElementById("details")!.HasAttribute("open"));
     }
+
+    // The design mode does not apply to the shadow trees: their contenteditable elements are editing hosts, which can be focused
+    [Fact]
+    public void DesignMode_ContentEditableInShadowTreeIsFocusable()
+    {
+        var document = Load("<!DOCTYPE html><div id=host><template shadowrootmode=open><div>text<div contenteditable>editable</div></div></template></div>");
+        document.DesignMode = "on";
+        var shadowRoot = document.GetElementById("host")!.ShadowRoot!;
+        var editingHost = (HtmlElement)shadowRoot.QuerySelector("div[contenteditable]")!;
+        editingHost.Focus();
+        Assert.Same(editingHost, shadowRoot.ActiveElement);
+        Assert.Same(document.GetElementById("host"), document.ActiveElement);
+    }
 }

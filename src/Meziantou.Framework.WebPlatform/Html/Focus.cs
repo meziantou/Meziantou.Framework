@@ -380,7 +380,9 @@ internal static class FocusModel
     /// <summary>Whether the element is an editing host (https://html.spec.whatwg.org/multipage/interaction.html#editing-host): its contenteditable state is true and its parent is not editable.</summary>
     private static bool IsEditingHost(Element element)
     {
-        if (element.NodeDocument.IsDesignModeEnabled)
+        // The design mode makes the document element an editing host, and the rest of the document tree editable; the
+        // shadow trees are not in the document tree, so their own contenteditable elements are editing hosts
+        if (element.NodeDocument.IsDesignModeEnabled && element.GetRootNode() is Document)
             return ReferenceEquals(element, element.NodeDocument.DocumentElement);
 
         var value = element.GetAttributeValue("contenteditable");

@@ -681,7 +681,7 @@ internal static partial class CssPropertyRegistry
         new("scrollbar-gutter", "auto | stable && both-edges?", "auto", false, [], null, null, CssAnimationTypeKind.Discrete),
         new("scrollbar-width", "auto | thin | none", "auto", false, [], null, null, CssAnimationTypeKind.Discrete),
         new("shape-image-threshold", "<opacity-value>", "0", false, [], null, null, CssAnimationTypeKind.ByComputedValue),
-        new("shape-inside", "auto | outside-shape | [ <basic-shape> || shape-box ] | <image> | display", "auto", false, [], null, null, CssAnimationTypeKind.Special), // as defined for <basic-shape>, otherwise discrete
+        new("shape-inside", "auto | outside-shape | [ <basic-shape> || shape-box ] | <image> | display | [ <basic-shape> | <url> ]+", "auto", false, [], null, null, CssAnimationTypeKind.Special), // as defined for <basic-shape>, otherwise discrete
         new("shape-margin", "<length-percentage [0,\u221E]>", "0", false, [], null, null, CssAnimationTypeKind.ByComputedValue),
         new("shape-outside", "none | [ <basic-shape> || <shape-box> ] | <image>", "none", false, [], null, null, CssAnimationTypeKind.Special), // as defined for <basic-shape>, otherwise discrete
         new("shape-padding", "<length-percentage [0,\u221E]>", "0", false, [], null, null, CssAnimationTypeKind.ByComputedValue),

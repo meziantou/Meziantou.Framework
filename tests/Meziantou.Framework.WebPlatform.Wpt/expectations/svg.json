@@ -3628,10 +3628,7 @@
     }
   },
   "svg/text/parsing/shape-inside-valid.svg": {
-    "total": 6,
-    "failures": {
-      "e.style['shape-inside'] = \"circle(10px at 20px -30px) url(\\\"https://example.com/\\\") ellipse(10px 20px at -30px 40px)\" should set the property value": "FAIL"
-    }
+    "total": 6
   },
   "svg/text/parsing/shape-margin-invalid.svg": {
     "total": 5

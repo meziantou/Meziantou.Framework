@@ -333,6 +333,10 @@ internal static partial class CssPropertiesGenerator
         // https://drafts.csswg.org/css-anchor-position-2/#container-type-anchored: "This specification extends the container-type
         // property [...] with a new anchored keyword"
         ["container-type"] = "normal | [ [ size | inline-size ] || scroll-state || anchored ]",
+
+        // https://svgwg.org/svg2-draft/text.html#ShapeInsideProperty: SVG 2 also defines shape-inside, as a list of shapes
+        // ("auto | [ <basic-shape> | <uri> ]+"), whose union is the content area of an SVG text
+        ["shape-inside"] = "auto | outside-shape | [ <basic-shape> || shape-box ] | <image> | display | [ <basic-shape> | <url> ]+",
     };
 
     /// <summary>The shorthands whose property definition is not marked as a shorthand (webref has no longhands for them).</summary>

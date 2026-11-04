@@ -1,0 +1,82 @@
+{
+  "geolocation/PositionOptions.https.html": {
+    "total": 6
+  },
+  "geolocation/clearWatch_TypeError.https.html": {
+    "total": 7
+  },
+  "geolocation/disabled-by-permissions-policy.https.sub.html": {
+    "total": 3
+  },
+  "geolocation/enabled-by-permission-policy-attribute-redirect-on-load.https.sub.html": {
+    "total": 2
+  },
+  "geolocation/enabled-by-permission-policy-attribute.https.sub.html": {
+    "total": 2
+  },
+  "geolocation/enabled-by-permissions-policy.https.sub.html": {
+    "total": 3
+  },
+  "geolocation/enabled-on-self-origin-by-permissions-policy.https.sub.html": {
+    "total": 3
+  },
+  "geolocation/getCurrentPosition-accuracyMode-cache.https.html": {
+    "total": 2,
+    "failures": {
+      "A cached approximate position is not reused for a precise request": "FAIL",
+      "A cached precise position is not reused for an approximate request": "FAIL"
+    }
+  },
+  "geolocation/getCurrentPosition-accuracyMode.https.html": {
+    "total": 2,
+    "failures": {
+      "getCurrentPosition with accuracyMode: \"approximate\"": "FAIL"
+    }
+  },
+  "geolocation/getCurrentPosition-error.https.html": {
+    "total": 1
+  },
+  "geolocation/getCurrentPosition-success.https.html": {
+    "total": 2
+  },
+  "geolocation/getCurrentPosition_TypeError.https.html": {
+    "total": 7
+  },
+  "geolocation/getCurrentPosition_permission_deny.https.html": {
+    "total": 1
+  },
+  "geolocation/heading-stationary.https.html": {
+    "total": 2
+  },
+  "geolocation/idlharness.https.window.js": {
+    "total": 68
+  },
+  "geolocation/non-fully-active.https.html": {
+    "total": 4,
+    "failures": {
+      "getCurrentPosition calls errorCallback with POSITION_UNAVAILABLE for non-fully-active document": "FAIL",
+      "watchPosition calls errorCallback with POSITION_UNAVAILABLE for non-fully-active document": "FAIL"
+    }
+  },
+  "geolocation/non-secure-context-https-iframe.http.sub.html": {
+    "total": 1
+  },
+  "geolocation/non-secure-contexts.http.html": {
+    "total": 4
+  },
+  "geolocation/permission.https.html": {
+    "total": 1
+  },
+  "geolocation/tojson.https.window.js": {
+    "total": 1
+  },
+  "geolocation/watchPosition_TypeError.https.html": {
+    "total": 7
+  },
+  "geolocation/watchPosition_permission_deny.https.html": {
+    "total": 2
+  },
+  "geolocation/watchposition-timeout.https.window.js": {
+    "total": 1
+  }
+}

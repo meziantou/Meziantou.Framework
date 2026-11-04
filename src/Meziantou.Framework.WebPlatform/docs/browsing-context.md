@@ -1887,8 +1887,13 @@ using var context = new BrowsingContext(new BrowsingContextOptions { Permissions
 - **Changes.** `PermissionStore.SetState()` fires the `change` event of the `PermissionStatus` objects whose state
   changed, from a task of their event loop, while their document is fully active. A status that has `change` listeners
   lives as long as its global object.
-- **Not done.** `request()` and `revoke()` (proposals that no browser ships). The permission store only decides the
-  states that `query()` returns: the clipboard is decided by `BrowsingContextOptions.ClipboardPermission`.
+- **Prompts.** The APIs that ask the user for a permission (`navigator.geolocation`, `Notification.requestPermission()`)
+  call `BrowsingContextOptions.RequestPermission` when the state is `prompt`: it plays the role of the permission prompt
+  and returns `granted` or `denied`, which is stored in the permission store for the top-level origin (so the user is
+  asked once, and `PermissionStatus.onchange` is fired). Without callback, the request is denied and nothing is stored
+  (the user dismissed the prompt).
+- **Not done.** `request()` and `revoke()` (proposals that no browser ships). The clipboard is decided by
+  `BrowsingContextOptions.ClipboardPermission`, not by the permission store.
 
 ## Client hints
 
@@ -3253,6 +3258,45 @@ text).
   document has the focus, else when it gains the focus.
 - `navigator` only implements `clipboard` and `platform` (the empty string): the user agent information is not exposed.
 
+## Device APIs
+
+The APIs whose behavior depends on the device or on the user are answered by the host, with callbacks of
+`BrowsingContextOptions`. Each one has a default that works without a host, and a flag of `WebPlatformFeatures` that
+hides it (see [Disabling features](#disabling-features)).
+
+- **Web Share** ([Web Share API](https://w3c.github.io/web-share/)): `navigator.share()` and `navigator.canShare()`, in
+  secure contexts. The library checks the document (fully active, allowed by the `web-share` permissions policy, with a
+  transient activation, which is consumed, and one share at a time) and validates the data (the URL is resolved against
+  the base URL of the document; the local, `file:`, `javascript:` and WebSocket URLs, and the schemes that are neither
+  HTTP(S) nor safelisted, are rejected), then calls `Share` with a `ShareRequest`. The callback returns true when the
+  data is shared, false when the user cancels (`AbortError`); an exception gives a `DataError`. Without callback, there
+  is no share target: `share()` is rejected with an `AbortError`.
+- **Vibration** ([Vibration API](https://w3c.github.io/vibration/)): `navigator.vibrate()` returns false when the
+  document is hidden or has no sticky activation. The pattern is normalized as Chromium does (at most 99 entries of at
+  most 10 seconds, no trailing pause) and given to `Vibrate` as a list of `TimeSpan` (vibrations and pauses); an empty
+  list cancels the vibration, also when the document becomes hidden. Without callback, nothing vibrates and
+  `vibrate()` returns true.
+- **Geolocation** ([Geolocation](https://w3c.github.io/geolocation/)): `navigator.geolocation` reads the positions of
+  the `GeolocationProvider` of `BrowsingContextOptions.Geolocation`. Set its `Position` (a `GeolocationReading`, or null
+  when the position is unavailable) to simulate a location; setting it updates the `watchPosition()` callbacks. Override
+  `GetPositionAsync()` to read another source, and call `OnPositionChanged()` when the position changes. The library
+  handles the `geolocation` permission (denied in insecure contexts and by the permissions policy, else asked with
+  `RequestPermission`), the `timeout` (measured with the clock of the event loop; the token given to the provider is
+  canceled when it elapses) and `maximumAge` options, and the watches; the requests of a hidden document wait until it
+  is visible, and those of a prerendering document until it is activated. Without provider, the position is unavailable
+  (`POSITION_UNAVAILABLE`). The `accuracyMode` option is not implemented.
+- **Notifications** ([Notifications API](https://notifications.spec.whatwg.org/)): `new Notification()` (in the windows
+  and the dedicated and shared workers), `Notification.permission`, `Notification.requestPermission()` (answered by
+  `RequestPermission`), `close()` and the `show`, `click`, `close` and `error` events. Once the `notifications`
+  permission is granted, `ShowNotification` displays the notification (its title, body, icon URL...), then `show` is
+  fired; the host calls `Notification.Click()` when the user activates it (the window gets the focus unless the `click`
+  event is canceled) and `Notification.Dismiss()` when the user closes it. `CloseNotification` removes a notification
+  closed by the script or replaced by a notification of the same origin with the same tag. Without `ShowNotification`,
+  the notifications are displayed nowhere but behave as if they were. As in the browsers, the documents that are not
+  same origin with all their ancestors cannot show notifications, and a prerendering document shows them once
+  activated. Not done: the persistent notifications of the service workers (`ServiceWorkerRegistration.showNotification()`,
+  `getNotifications()`, `NotificationEvent`) and the actions.
+
 ## Cross-document messaging
 
 `window.postMessage(message, targetOrigin, transfer)` and `window.postMessage(message, { targetOrigin, transfer })`
@@ -3827,6 +3871,10 @@ using var context = new BrowsingContext(new BrowsingContextOptions
 | `ServiceWorkersEnabled` | `navigator.serviceWorker`, `ServiceWorker`, `ServiceWorkerRegistration`, `ServiceWorkerContainer`, `NavigationPreloadManager`; no service worker runs or handles the requests |
 | `AsyncClipboardEnabled` | `navigator.clipboard`, `Clipboard`, `ClipboardItem`, `ClipboardChangeEvent` (the copy, cut and paste actions still work) |
 | `CookieStoreEnabled` | `cookieStore`, `CookieStore`, `CookieChangeEvent` (`document.cookie` still works) |
+| `WebShareEnabled` | The [Web Share API](#device-apis): `navigator.share()` and `navigator.canShare()` |
+| `VibrationEnabled` | The [Vibration API](#device-apis): `navigator.vibrate()` |
+| `GeolocationEnabled` | The [Geolocation API](#device-apis): `navigator.geolocation`, `Geolocation`, `GeolocationPosition`, `GeolocationCoordinates`, `GeolocationPositionError` |
+| `NotificationsEnabled` | The [Notifications API](#device-apis): `Notification` |
 | `WebStorageEnabled` | `localStorage`, `sessionStorage`, `Storage`, `StorageEvent` |
 | `IndexedDBEnabled` | `indexedDB` and the `IDB*` interfaces |
 | `CacheStorageEnabled` | `caches`, `Cache`, `CacheStorage` (also hidden when `FetchEnabled` is false) |

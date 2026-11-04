@@ -1,0 +1,14 @@
+{
+  "vibration/api-is-present.html": {
+    "total": 1
+  },
+  "vibration/idlharness.window.js": {
+    "total": 16
+  },
+  "vibration/invalid-values.html": {
+    "total": 8
+  },
+  "vibration/silent-ignore.html": {
+    "total": 1
+  }
+}

@@ -1628,12 +1628,7 @@
     }
   },
   "speculation-rules/prerender/restriction-notification.https.html": {
-    "harness": "TIMEOUT",
-    "total": 2,
-    "failures": {
-      "Displaying Notification should be deferred until the prerendered page is\n activated": "NOTRUN",
-      "it is allowed to access the notification API in the prerenderingchange\n    event": "TIMEOUT"
-    }
+    "total": 2
   },
   "speculation-rules/prerender/restriction-presentation-request.https.html": {
     "harness": "TIMEOUT",
@@ -1785,10 +1780,7 @@
     }
   },
   "speculation-rules/prerender/restriction-web-share.https.html": {
-    "total": 1,
-    "failures": {
-      "prerendering pages should not be able to invoke the Web Share API": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prerender/restriction-web-usb.https.html": {
     "harness": "TIMEOUT",

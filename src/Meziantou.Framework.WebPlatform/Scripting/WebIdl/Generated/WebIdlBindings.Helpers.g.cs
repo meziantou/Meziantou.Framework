@@ -103,6 +103,10 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.NavigationReloadOptions Defaults_Dom_NavigationReloadOptions = new();
 
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.NotificationAction Defaults_Dom_NotificationAction = new() { Action = default!, Title = default! };
+
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.NotificationOptions Defaults_Dom_NotificationOptions = new();
+
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.ParseHtmlUnsafeOptions Defaults_Dom_ParseHtmlUnsafeOptions = new();
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.PerformanceMarkOptions Defaults_Dom_PerformanceMarkOptions = new();
@@ -134,6 +138,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.ScrollToOptions Defaults_Dom_ScrollToOptions = new();
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.SetHtmlUnsafeOptions Defaults_Dom_SetHtmlUnsafeOptions = new();
+
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.ShareData Defaults_Dom_ShareData = new();
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.ShowPopoverOptions Defaults_Dom_ShowPopoverOptions = new();
 
@@ -282,6 +288,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     internal static readonly string[] Enum_NavigationScrollBehavior_Values = new[] { "after-transition", "manual" };
 
     internal static readonly string[] Enum_NavigationType_Values = new[] { "push", "replace", "reload", "traverse" };
+
+    internal static readonly string[] Enum_NotificationDirection_Values = new[] { "auto", "ltr", "rtl" };
 
     internal static readonly string[] Enum_OffscreenRenderingContextId_Values = new[] { "2d", "bitmaprenderer", "webgl", "webgl2", "webgpu" };
 
@@ -1699,6 +1707,36 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return result;
     }
 
+    internal static TValue FromDictionary_Dom_NotificationAction(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.NotificationAction value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "action", r.FromString(value.Action));
+        if (value.Icon is not null) r.SetMember(result, "icon", r.FromString(value.Icon));
+        if (value.Navigate is not null) r.SetMember(result, "navigate", r.FromString(value.Navigate));
+        r.SetMember(result, "title", r.FromString(value.Title));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_NotificationOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.NotificationOptions value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "actions", r.FromSequence(value.Actions, static (r, e) => (e is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_NotificationAction(r, dictionaryValue) : r.Adapter.Null)));
+        if (value.Badge is not null) r.SetMember(result, "badge", r.FromString(value.Badge));
+        r.SetMember(result, "body", r.FromString(value.Body));
+        r.SetMember(result, "data", r.ToJs((object?)value.Data));
+        r.SetMember(result, "dir", r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_NotificationDirection(value.Dir)));
+        if (value.Icon is not null) r.SetMember(result, "icon", r.FromString(value.Icon));
+        if (value.Image is not null) r.SetMember(result, "image", r.FromString(value.Image));
+        r.SetMember(result, "lang", r.FromString(value.Lang));
+        if (value.Navigate is not null) r.SetMember(result, "navigate", r.FromString(value.Navigate));
+        r.SetMember(result, "renotify", r.FromBoolean(value.Renotify));
+        r.SetMember(result, "requireInteraction", r.FromBoolean(value.RequireInteraction));
+        r.SetMember(result, "silent", r.FromBoolean(value.Silent));
+        r.SetMember(result, "tag", r.FromString(value.Tag));
+        if (value.Timestamp is not null) r.SetMember(result, "timestamp", (value.Timestamp.HasValue ? r.FromNumber((double)value.Timestamp.GetValueOrDefault()) : r.Adapter.Null));
+        return result;
+    }
+
     internal static TValue FromDictionary_Dom_PageRevealEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.PageRevealEventInit value)
     {
         var result = r.CreateObject();
@@ -1858,6 +1896,15 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         r.SetMember(result, "composed", r.FromBoolean(value.Composed));
         r.SetMember(result, "hasUAVisualTransition", r.FromBoolean(value.HasUAVisualTransition));
         r.SetMember(result, "state", r.ToJs((object?)value.State));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_PositionOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.PositionOptions value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "enableHighAccuracy", r.FromBoolean(value.EnableHighAccuracy));
+        r.SetMember(result, "maximumAge", r.FromNumber((double)value.MaximumAge));
+        r.SetMember(result, "timeout", r.FromNumber((double)value.Timeout));
         return result;
     }
 
@@ -2082,6 +2129,16 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         r.SetMember(result, "mode", r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_ShadowRootMode(value.Mode)));
         r.SetMember(result, "serializable", r.FromBoolean(value.Serializable));
         r.SetMember(result, "slotAssignment", r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_SlotAssignmentMode(value.SlotAssignment)));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_ShareData(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.ShareData value)
+    {
+        var result = r.CreateObject();
+        if (value.Files is not null) r.SetMember(result, "files", r.FromSequence(value.Files, static (r, e) => r.Wrap(e)));
+        if (value.Text is not null) r.SetMember(result, "text", r.FromString(value.Text));
+        if (value.Title is not null) r.SetMember(result, "title", r.FromString(value.Title));
+        if (value.Url is not null) r.SetMember(result, "url", r.FromString(value.Url));
         return result;
     }
 
@@ -3285,6 +3342,22 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         _ => value.ToString(),
     };
 
+    internal static string FromEnum_Dom_NotificationDirection(global::Meziantou.Framework.WebPlatform.Dom.NotificationDirection value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.NotificationDirection.Auto => "auto",
+        global::Meziantou.Framework.WebPlatform.Dom.NotificationDirection.Ltr => "ltr",
+        global::Meziantou.Framework.WebPlatform.Dom.NotificationDirection.Rtl => "rtl",
+        _ => value.ToString(),
+    };
+
+    internal static string FromEnum_Dom_NotificationPermission(global::Meziantou.Framework.WebPlatform.Dom.NotificationPermission value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.NotificationPermission.Default => "default",
+        global::Meziantou.Framework.WebPlatform.Dom.NotificationPermission.Denied => "denied",
+        global::Meziantou.Framework.WebPlatform.Dom.NotificationPermission.Granted => "granted",
+        _ => value.ToString(),
+    };
+
     internal static string FromEnum_Dom_OffscreenRenderingContextId(global::Meziantou.Framework.WebPlatform.Dom.OffscreenRenderingContextId value) => value switch
     {
         global::Meziantou.Framework.WebPlatform.Dom.OffscreenRenderingContextId.TwoD => "2d",
@@ -3639,7 +3712,13 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
 
     internal static global::Meziantou.Framework.WebPlatform.Dom.NavigationPrecommitHandler ToDelegate_Dom_NavigationPrecommitHandler(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.NavigationPrecommitHandler((p0) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.Wrap(p0)); var result = r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None); return result; }));
 
+    internal static global::Meziantou.Framework.WebPlatform.Dom.NotificationPermissionCallback ToDelegate_Dom_NotificationPermissionCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.NotificationPermissionCallback((p0) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_NotificationPermission(p0))); r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None); }));
+
     internal static global::Meziantou.Framework.WebPlatform.Dom.PerformanceObserverCallback ToDelegate_Dom_PerformanceObserverCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.PerformanceObserverCallback((p0, p1, p2) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.Wrap(p0)); arguments.Add(r.Wrap(p1)); arguments.Add((p2 is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_PerformanceObserverCallbackOptions(r, dictionaryValue) : r.Adapter.Null)); r.InvokeCallback(function, r.ToJs(p1), global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None); }));
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.PositionCallback ToDelegate_Dom_PositionCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.PositionCallback((p0) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.Wrap(p0)); r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None); }));
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.PositionErrorCallback ToDelegate_Dom_PositionErrorCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.PositionErrorCallback((p0) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.Wrap(p0)); r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None); }));
 
     internal static global::Meziantou.Framework.WebPlatform.Dom.ReportingObserverCallback ToDelegate_Dom_ReportingObserverCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.ReportingObserverCallback((p0, p1) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.FromSequence(p0, static (r, e) => (e is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_Report(r, dictionaryValue) : r.Adapter.Null))); arguments.Add(r.Wrap(p1)); r.InvokeCallback(function, r.ToJs(p1), global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None); }));
 
@@ -6201,6 +6280,85 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         };
     }
 
+    internal static global::Meziantou.Framework.WebPlatform.Dom.NotificationAction ToDictionary_Dom_NotificationAction(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "NotificationAction");
+        var m0_value = r.GetDictionaryMember(value, "action");
+        if (r.Adapter.IsUndefined(m0_value)) throw r.MissingRequiredDictionaryMember("NotificationAction", "action");
+        var m0 = r.ToDomString(m0_value);
+        var m1_value = r.GetDictionaryMember(value, "icon");
+        var m1_present = !r.Adapter.IsUndefined(m1_value);
+        var m1 = m1_present ? (string?)r.ToUsvString(m1_value) : default;
+        var m2_value = r.GetDictionaryMember(value, "navigate");
+        var m2_present = !r.Adapter.IsUndefined(m2_value);
+        var m2 = m2_present ? (string?)r.ToUsvString(m2_value) : default;
+        var m3_value = r.GetDictionaryMember(value, "title");
+        if (r.Adapter.IsUndefined(m3_value)) throw r.MissingRequiredDictionaryMember("NotificationAction", "title");
+        var m3 = r.ToDomString(m3_value);
+        return new global::Meziantou.Framework.WebPlatform.Dom.NotificationAction
+        {
+            Action = m0,
+            Icon = m1_present ? m1 : Defaults_Dom_NotificationAction.Icon,
+            Navigate = m2_present ? m2 : Defaults_Dom_NotificationAction.Navigate,
+            Title = m3,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.NotificationOptions ToDictionary_Dom_NotificationOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "NotificationOptions");
+        var m0_value = r.GetDictionaryMember(value, "actions");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (global::System.Collections.Generic.List<global::Meziantou.Framework.WebPlatform.Dom.NotificationAction>)new global::System.Collections.Generic.List<global::Meziantou.Framework.WebPlatform.Dom.NotificationAction>() : r.ToSequence<global::Meziantou.Framework.WebPlatform.Dom.NotificationAction>(m0_value, static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_NotificationAction(r, e));
+        var m1_value = r.GetDictionaryMember(value, "badge");
+        var m1_present = !r.Adapter.IsUndefined(m1_value);
+        var m1 = m1_present ? (string?)r.ToUsvString(m1_value) : default;
+        var m2_value = r.GetDictionaryMember(value, "body");
+        var m2 = r.Adapter.IsUndefined(m2_value) ? (string)"" : r.ToDomString(m2_value);
+        var m3_value = r.GetDictionaryMember(value, "data");
+        var m3 = r.Adapter.IsUndefined(m3_value) ? (object?)(object?)null : r.ToAny(m3_value);
+        var m4_value = r.GetDictionaryMember(value, "dir");
+        var m4 = r.Adapter.IsUndefined(m4_value) ? (string)"auto" : r.ToEnumerationValue(m4_value, "NotificationDirection", WebIdlHelpers<TAdapter, TValue>.Enum_NotificationDirection_Values);
+        var m5_value = r.GetDictionaryMember(value, "icon");
+        var m5_present = !r.Adapter.IsUndefined(m5_value);
+        var m5 = m5_present ? (string?)r.ToUsvString(m5_value) : default;
+        var m6_value = r.GetDictionaryMember(value, "image");
+        var m6_present = !r.Adapter.IsUndefined(m6_value);
+        var m6 = m6_present ? (string?)r.ToUsvString(m6_value) : default;
+        var m7_value = r.GetDictionaryMember(value, "lang");
+        var m7 = r.Adapter.IsUndefined(m7_value) ? (string)"" : r.ToDomString(m7_value);
+        var m8_value = r.GetDictionaryMember(value, "navigate");
+        var m8_present = !r.Adapter.IsUndefined(m8_value);
+        var m8 = m8_present ? (string?)r.ToUsvString(m8_value) : default;
+        var m9_value = r.GetDictionaryMember(value, "renotify");
+        var m9 = r.Adapter.IsUndefined(m9_value) ? (bool)false : r.ToBoolean(m9_value);
+        var m10_value = r.GetDictionaryMember(value, "requireInteraction");
+        var m10 = r.Adapter.IsUndefined(m10_value) ? (bool)false : r.ToBoolean(m10_value);
+        var m11_value = r.GetDictionaryMember(value, "silent");
+        var m11 = r.Adapter.IsUndefined(m11_value) ? (bool?)(bool?)null : (r.IsNullOrUndefined(m11_value) ? (bool?)null : r.ToBoolean(m11_value));
+        var m12_value = r.GetDictionaryMember(value, "tag");
+        var m12 = r.Adapter.IsUndefined(m12_value) ? (string)"" : r.ToDomString(m12_value);
+        var m13_value = r.GetDictionaryMember(value, "timestamp");
+        var m13_present = !r.Adapter.IsUndefined(m13_value);
+        var m13 = m13_present ? (ulong?)r.ToUnsignedLongLong(m13_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None) : default;
+        return new global::Meziantou.Framework.WebPlatform.Dom.NotificationOptions
+        {
+            Actions = m0,
+            Badge = m1_present ? m1 : Defaults_Dom_NotificationOptions.Badge,
+            Body = m2,
+            Data = m3,
+            Dir = WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_NotificationDirection(m4),
+            Icon = m5_present ? m5 : Defaults_Dom_NotificationOptions.Icon,
+            Image = m6_present ? m6 : Defaults_Dom_NotificationOptions.Image,
+            Lang = m7,
+            Navigate = m8_present ? m8 : Defaults_Dom_NotificationOptions.Navigate,
+            Renotify = m9,
+            RequireInteraction = m10,
+            Silent = m11,
+            Tag = m12,
+            Timestamp = m13_present ? m13 : Defaults_Dom_NotificationOptions.Timestamp,
+        };
+    }
+
     internal static global::Meziantou.Framework.WebPlatform.Dom.PageRevealEventInit ToDictionary_Dom_PageRevealEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
     {
         r.CheckDictionary(value, "PageRevealEventInit");
@@ -6519,6 +6677,23 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
             Composed = m2,
             HasUAVisualTransition = m3,
             State = m4,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.PositionOptions ToDictionary_Dom_PositionOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "PositionOptions");
+        var m0_value = r.GetDictionaryMember(value, "enableHighAccuracy");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (bool)false : r.ToBoolean(m0_value);
+        var m1_value = r.GetDictionaryMember(value, "maximumAge");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (uint)(uint)(0d) : r.ToUnsignedLong(m1_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.Clamp);
+        var m2_value = r.GetDictionaryMember(value, "timeout");
+        var m2 = r.Adapter.IsUndefined(m2_value) ? (uint)(uint)(4294967295d) : r.ToUnsignedLong(m2_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.Clamp);
+        return new global::Meziantou.Framework.WebPlatform.Dom.PositionOptions
+        {
+            EnableHighAccuracy = m0,
+            MaximumAge = m1,
+            Timeout = m2,
         };
     }
 
@@ -6984,6 +7159,30 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
             Mode = WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_ShadowRootMode(m3),
             Serializable = m4,
             SlotAssignment = WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_SlotAssignmentMode(m5),
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.ShareData ToDictionary_Dom_ShareData(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "ShareData");
+        var m0_value = r.GetDictionaryMember(value, "files");
+        var m0_present = !r.Adapter.IsUndefined(m0_value);
+        var m0 = m0_present ? (global::System.Collections.Generic.List<global::Meziantou.Framework.WebPlatform.Dom.FileApi.File>?)r.ToSequence<global::Meziantou.Framework.WebPlatform.Dom.FileApi.File>(m0_value, static (r, e) => r.ToInterface<global::Meziantou.Framework.WebPlatform.Dom.FileApi.File>(e, "File")) : default;
+        var m1_value = r.GetDictionaryMember(value, "text");
+        var m1_present = !r.Adapter.IsUndefined(m1_value);
+        var m1 = m1_present ? (string?)r.ToUsvString(m1_value) : default;
+        var m2_value = r.GetDictionaryMember(value, "title");
+        var m2_present = !r.Adapter.IsUndefined(m2_value);
+        var m2 = m2_present ? (string?)r.ToUsvString(m2_value) : default;
+        var m3_value = r.GetDictionaryMember(value, "url");
+        var m3_present = !r.Adapter.IsUndefined(m3_value);
+        var m3 = m3_present ? (string?)r.ToUsvString(m3_value) : default;
+        return new global::Meziantou.Framework.WebPlatform.Dom.ShareData
+        {
+            Files = m0_present ? m0 : Defaults_Dom_ShareData.Files,
+            Text = m1_present ? m1 : Defaults_Dom_ShareData.Text,
+            Title = m2_present ? m2 : Defaults_Dom_ShareData.Title,
+            Url = m3_present ? m3 : Defaults_Dom_ShareData.Url,
         };
     }
 
@@ -8718,6 +8917,14 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         "replace" => global::Meziantou.Framework.WebPlatform.Dom.NavigationType.Replace,
         "reload" => global::Meziantou.Framework.WebPlatform.Dom.NavigationType.Reload,
         "traverse" => global::Meziantou.Framework.WebPlatform.Dom.NavigationType.Traverse,
+        _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
+    };
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.NotificationDirection ToEnum_Dom_NotificationDirection(string value) => value switch
+    {
+        "auto" => global::Meziantou.Framework.WebPlatform.Dom.NotificationDirection.Auto,
+        "ltr" => global::Meziantou.Framework.WebPlatform.Dom.NotificationDirection.Ltr,
+        "rtl" => global::Meziantou.Framework.WebPlatform.Dom.NotificationDirection.Rtl,
         _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
     };
 

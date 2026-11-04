@@ -195,23 +195,33 @@ internal sealed class JpegHuffmanTable
                 var shift = FastLookupBits - length;
                 var first = code << shift;
                 var partial = length | (symbol << FastLookupSymbolShift);
-                for (var j = 0; j < (1 << shift); j++)
+                if (size == 0)
                 {
-                    if (size == 0)
+                    lookup.AsSpan(first, 1 << shift).Fill(partial | FastLookupComplete);
+                }
+                else if (size <= shift)
+                {
+                    // The magnitude bits follow the code: EXTEND gives the coefficient, the same for the entries whose next
+                    // 'size' bits are the same
+                    var repeat = 1 << (shift - size);
+                    var complete = (length + size) | FastLookupComplete | (symbol << FastLookupSymbolShift);
+                    for (var magnitude = 0; magnitude < (1 << size); magnitude++)
                     {
-                        lookup[first + j] = partial | FastLookupComplete;
-                    }
-                    else if (size <= shift)
-                    {
-                        // The magnitude bits follow the code: EXTEND gives the coefficient
-                        var magnitude = (j >> (shift - size)) & ((1 << size) - 1);
                         var coefficient = magnitude < (1 << (size - 1)) ? magnitude - (1 << size) + 1 : magnitude;
-                        lookup[first + j] = (length + size) | FastLookupComplete | (symbol << FastLookupSymbolShift) | (coefficient << FastLookupValueShift);
+                        var entry = complete | (coefficient << FastLookupValueShift);
+                        if (repeat == 1)
+                        {
+                            lookup[first + magnitude] = entry;
+                        }
+                        else
+                        {
+                            lookup.AsSpan(first + (magnitude * repeat), repeat).Fill(entry);
+                        }
                     }
-                    else
-                    {
-                        lookup[first + j] = partial;
-                    }
+                }
+                else
+                {
+                    lookup.AsSpan(first, 1 << shift).Fill(partial);
                 }
 
                 code++;

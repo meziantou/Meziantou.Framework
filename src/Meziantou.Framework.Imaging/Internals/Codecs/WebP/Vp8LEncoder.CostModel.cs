@@ -14,13 +14,14 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// top neighbors and the longest match of the hash chains of the first parse; a candidate covers the lengths that no cheaper
 /// distance covers. Lengths up to 32 are tried one by one, longer ones only at the end of each length prefix and at the full
 /// length (the length cost is constant within a prefix). A match is extended from the previous pixel instead of searched
-/// again, and the chains (64 entries at efforts 5 and 6, 128 at 7 and 8, 512 at 9) are not searched while a match of 16
+/// again, and the chains (<see cref="Vp8LEncoderTools.CostModelChainDepth"/> entries) are not searched while a match of 16
 /// pixels or more is known. Below effort 9, a match of 128 pixels or more is taken as it is: the pixels it covers start no
 /// reference (visiting them made the parse of flat images several times slower for 0.2 % of size).
 /// </para>
 /// <para>
-/// The parse is kept when its statistics are estimated smaller than those of the previous one; a second round uses the
-/// statistics of the first at effort 9. Memory: the arrival of each pixel (4 bytes per pixel), into which the tokens are
+/// The parse is kept when its statistics are estimated smaller than those of the previous one (main images: by the estimated
+/// size of their prefix codes, at least one bit per symbol; the entropy of the symbols kept parses that made photographs
+/// larger); a second round uses the statistics of the first at effort 9. Memory: the arrival of each pixel (4 bytes per pixel), into which the tokens are
 /// traced; the costs are a ring of 8,192 entries (a reference is at most 4,096 pixels long).
 /// </para>
 /// </remarks>
@@ -30,21 +31,6 @@ internal sealed partial class Vp8LEncoder
     private const int ShortLengths = 32;
     private const int CommitLength = 128;
     private const int SkipLength = 16;
-
-    private int CostModelRounds => _effort switch
-    {
-        < 5 => 0,
-        < 9 => 1,
-        _ => 2,
-    };
-
-    /// <summary>Gets the number of hash chain entries the second parse searches at a pixel.</summary>
-    private int CostModelChainDepth => _effort switch
-    {
-        <= 6 => 64,
-        <= 8 => 128,
-        _ => 512,
-    };
 
     /// <summary>
     /// Parses the pixels again with the costs of <paramref name="statistics"/>, and keeps the parse when it is estimated smaller.
@@ -58,17 +44,17 @@ internal sealed partial class Vp8LEncoder
             return tokenCount;
 
         using var arrivalBuffer = RentScratch(count + 1L, out var arrivals);
-        var bestBits = statistics.EstimateBits();
-        for (var round = 0; round < CostModelRounds; round++)
+        var bestBits = Estimate(statistics);
+        for (var round = 0; round < _tools.CostModelRounds; round++)
         {
-            var model = new CostModel(statistics);
+            var model = new CostModel(round == 0 && _tools.SeedLiterals ? SeedLiterals(pixels, statistics) : statistics);
             FindShortestPath(pixels, width, links, model, statistics.CacheBits, arrivals);
             var candidates = TraceArrivals(arrivals);
             var candidateCount = candidates.Length;
             var candidateStatistics = new Statistics(statistics.CacheBits);
             var sink = new StatisticsSink([candidateStatistics]);
             Replay(pixels, candidates, candidateCount, ref sink);
-            var bits = candidateStatistics.EstimateBits();
+            var bits = Estimate(candidateStatistics);
             if (bits >= bestBits)
                 break;
 
@@ -79,6 +65,29 @@ internal sealed partial class Vp8LEncoder
         }
 
         return tokenCount;
+
+        double Estimate(Statistics value) => _tools.PrefixCodeEstimates ? value.EstimateCodedBits() : value.EstimateBits();
+    }
+
+    /// <summary>
+    /// The statistics of an all-literal parse (with the color cache), and the length and distance statistics of
+    /// <paramref name="statistics"/>.
+    /// </summary>
+    /// <remarks>
+    /// A greedy parse takes the short matches of a photograph, so few pixels are literals: its literal prices are too high,
+    /// and the parse with its costs keeps references that cost more than the literals.
+    /// </remarks>
+    private static Statistics SeedLiterals(ReadOnlySpan<uint> pixels, Statistics statistics)
+    {
+        var seeded = new Statistics(statistics.CacheBits);
+        statistics.Green.AsSpan(NumLiteralCodes, NumLengthCodes).CopyTo(seeded.Green.AsSpan(NumLiteralCodes));
+        statistics.Distance.CopyTo(seeded.Distance.AsSpan());
+        foreach (var pixel in pixels)
+        {
+            seeded.Literal(pixel);
+        }
+
+        return seeded;
     }
 
     private void FindShortestPath(ReadOnlySpan<uint> pixels, int width, ReadOnlySpan<uint> links, CostModel model, int cacheBits, Span<uint> arrivals)
@@ -89,9 +98,9 @@ internal sealed partial class Vp8LEncoder
         ring[0] = 0;
         var cache = new uint[cacheBits == 0 ? 0 : 1 << cacheBits];
         var neighborCodes = NeighborCodes;
-        var chainDepth = CostModelChainDepth;
+        var chainDepth = _tools.CostModelChainDepth;
 
-        var commitLength = _effort >= 9 ? int.MaxValue : CommitLength;
+        var commitLength = _tools.CommitLongMatches ? CommitLength : int.MaxValue;
         Span<(int Distance, int Length, double Cost, int Code)> matches = stackalloc (int, int, double, int)[3];
         var leftLength = 0;
         var topLength = 0;

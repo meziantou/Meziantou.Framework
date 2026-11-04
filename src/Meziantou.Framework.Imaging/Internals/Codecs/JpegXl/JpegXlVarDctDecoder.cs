@@ -1327,6 +1327,31 @@ internal sealed class JpegXlVarDctDecoder : IDisposable
     {
         var size = dequantizedY.Length;
         var k = 0;
+        if (Vector256.IsHardwareAccelerated)
+        {
+            var stepY = Vector256.Create(steps.StepY);
+            var stepX = Vector256.Create(steps.StepX);
+            var stepB = Vector256.Create(steps.StepB);
+            var correlationX = Vector256.Create(steps.CorrelationX);
+            var correlationB = Vector256.Create(steps.CorrelationB);
+            var numerator = Vector256.Create(steps.BiasNumerator);
+            var biasX = Vector256.Create(steps.BiasX);
+            var biasY = Vector256.Create(steps.BiasY);
+            var biasB = Vector256.Create(steps.BiasB);
+            var negativeBiasX = Vector256.Create(-steps.BiasX);
+            var negativeBiasY = Vector256.Create(-steps.BiasY);
+            var negativeBiasB = Vector256.Create(-steps.BiasB);
+            for (; k <= size - Vector256<float>.Count; k += Vector256<float>.Count)
+            {
+                var valueY = AdjustBias(Vector256.Create(quantizedY.Slice(k, 8)), biasY, negativeBiasY, numerator) * (Vector256.Create(matrixY.Slice(k, 8)) * stepY);
+                valueY.CopyTo(dequantizedY.Slice(k, 8));
+                var valueX = (correlationX * valueY) + (AdjustBias(Vector256.Create(quantizedX.Slice(k, 8)), biasX, negativeBiasX, numerator) * (Vector256.Create(matrixX.Slice(k, 8)) * stepX));
+                valueX.CopyTo(dequantizedX.Slice(k, 8));
+                var valueB = (correlationB * valueY) + (AdjustBias(Vector256.Create(quantizedB.Slice(k, 8)), biasB, negativeBiasB, numerator) * (Vector256.Create(matrixB.Slice(k, 8)) * stepB));
+                valueB.CopyTo(dequantizedB.Slice(k, 8));
+            }
+        }
+
         if (Vector128.IsHardwareAccelerated)
         {
             // The operations of the scalar loop, lane by lane; each case of the bias is a selection
@@ -1405,6 +1430,17 @@ internal sealed class JpegXlVarDctDecoder : IDisposable
         {
             dequantized[k] = AdjustBias(quantized[k], bias, biasNumerator) * (matrix[k] * step);
         }
+    }
+
+    /// <summary><see cref="AdjustBias(int, float, float)"/> on eight coefficients: each case is a selection.</summary>
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+    private static Vector256<float> AdjustBias(Vector256<int> quantized, Vector256<float> bias, Vector256<float> negativeBias, Vector256<float> biasNumerator)
+    {
+        var value = Vector256.ConvertToSingle(quantized);
+        var result = value - (biasNumerator / value);
+        result = Vector256.ConditionalSelect(Vector256.Equals(quantized, Vector256<int>.One).AsSingle(), bias, result);
+        result = Vector256.ConditionalSelect(Vector256.Equals(quantized, Vector256<int>.AllBitsSet).AsSingle(), negativeBias, result);
+        return Vector256.ConditionalSelect(Vector256.Equals(quantized, Vector256<int>.Zero).AsSingle(), Vector256<float>.Zero, result);
     }
 
     /// <summary><see cref="AdjustBias(int, float, float)"/> on four coefficients: each case is a selection.</summary>

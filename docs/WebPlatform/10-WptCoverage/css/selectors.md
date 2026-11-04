@@ -14,6 +14,12 @@ description: "The results of the web-platform-tests of css/selectors, and why th
 | [Reftests](#reftests) | 341 | 342 | 0 | 99.7% |
 | **All** | **811** | **816** | **0** | **99%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **NOT IMPLEMENTED**: 5
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

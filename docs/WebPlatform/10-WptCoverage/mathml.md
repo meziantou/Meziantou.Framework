@@ -14,6 +14,15 @@ description: "The results of the web-platform-tests of mathml, and why the tests
 | [Reftests](#reftests) | 269 | 282 | 1 | 96% |
 | **All** | **470** | **492** | **1** | **96%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 2
+- **TEST BUG**: 12
+- **NOT IMPLEMENTED**: 7
+- **FLAKY**: 1
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

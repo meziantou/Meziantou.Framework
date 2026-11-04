@@ -14,6 +14,12 @@ description: "The results of the web-platform-tests of encoding, and why the tes
 | [Reftests](#reftests) | 4 | 4 | 0 | 100% |
 | **All** | **152** | **156** | **0** | **97%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 4
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

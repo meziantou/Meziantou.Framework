@@ -320,6 +320,10 @@ internal sealed class Av1Encoder : IDisposable
         var contrast = 1 << (bitDepth - 3);
         Span<ushort> values = stackalloc ushort[MaxValues];
         Span<int> counts = stackalloc int[MaxValues];
+
+        // The index plus one of each value of the block in values, 0 for a value that the block does not have yet: the values
+        // keep the order in which the block has them. The entries of the values of a block are cleared after the block
+        Span<byte> positions = stackalloc byte[1 << bitDepth];
         var blocks = 0;
         var qualified = 0;
         for (var y0 = 0; y0 < plane.Height; y0 += BlockSize)
@@ -334,7 +338,7 @@ internal sealed class Av1Encoder : IDisposable
                 {
                     foreach (var sample in samples.Slice(((y0 + y) * stride) + x0, width))
                     {
-                        var index = values[..count].IndexOf(sample);
+                        var index = positions[sample] - 1;
                         if (index < 0)
                         {
                             if (count is MaxValues)
@@ -346,10 +350,16 @@ internal sealed class Av1Encoder : IDisposable
                             index = count++;
                             values[index] = sample;
                             counts[index] = 0;
+                            positions[sample] = (byte)count;
                         }
 
                         counts[index]++;
                     }
+                }
+
+                foreach (var value in values[..count])
+                {
+                    positions[value] = 0;
                 }
 
                 if (count < 2)

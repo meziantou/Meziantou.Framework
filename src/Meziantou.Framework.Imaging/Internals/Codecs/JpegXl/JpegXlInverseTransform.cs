@@ -31,9 +31,9 @@ internal static class JpegXlInverseTransform
 
     /// <summary>
     /// The number of float values of scratch memory the transforms of at most <see cref="MaxSize"/> samples per side need:
-    /// the vectorized DCT keeps four lines of the largest side and as much scratch memory.
+    /// the vectorized DCT keeps up to eight lines of the largest side, their transform, and as much scratch memory.
     /// </summary>
-    public const int ScratchLength = 8 * MaxSize;
+    public const int ScratchLength = 24 * MaxSize;
 
     // For a transform of N samples, at N / 2 + i: 1 / (2 * cos((i + 1/2) * pi / N))
     private static readonly float[] HalfSecants = CreateHalfSecants();
@@ -88,15 +88,22 @@ internal static class JpegXlInverseTransform
     /// <param name="columns">The number of columns of samples.</param>
     /// <param name="output">Receives the samples.</param>
     /// <param name="stride">The distance between two rows of <paramref name="output"/>.</param>
-    /// <param name="scratch">Scratch memory of at least eight times the larger side.</param>
+    /// <param name="scratch">Scratch memory of at least 24 times the larger side.</param>
     public static void InverseDct(Span<float> coefficients, int rows, int columns, Span<float> output, int stride, Span<float> scratch)
     {
-        // Four one-dimensional transforms at once, one per lane, each with the operations of the scalar one in the same order
+        // Four (or eight) one-dimensional transforms at once, one per lane, each with the operations of the scalar one in the
+        // same order
         if (Vector128.IsHardwareAccelerated && rows >= 4 && columns >= 4)
         {
             if (rows == 8 && columns == 8)
             {
                 InverseDct8x8(coefficients, output, stride);
+                return;
+            }
+
+            if (Vector256.IsHardwareAccelerated && Avx.IsSupported && rows >= 8 && columns >= 8)
+            {
+                InverseDctVector256(coefficients, rows, columns, output, stride, scratch);
                 return;
             }
 
@@ -202,71 +209,481 @@ internal static class JpegXlInverseTransform
     /// <summary>
     /// The inverse DCT of a block whose sides are multiples of 4: the one-dimensional transforms are computed four at a
     /// time, one per lane of a vector. The lines that are contiguous in memory are transposed 4x4 values at a time on the
-    /// way in or out; the others are loaded and stored as vectors.
+    /// way in or out; the others are read in place, and their samples stored as vectors.
     /// </summary>
     private static void InverseDctVector(Span<float> coefficients, int rows, int columns, Span<float> output, int stride, Span<float> scratch)
     {
+        // Every position read or written is checked here, once for the block
         var size = Math.Max(rows, columns);
+        if (coefficients.Length < rows * columns || output.Length < ((rows - 1) * stride) + columns || scratch.Length < 12 * size)
+            throw new ArgumentOutOfRangeException(nameof(output));
+
         var vectors = unsafe(MemoryMarshal.Cast<float, Vector128<float>>(scratch));
-        var lines = vectors[..size];
-        var work = vectors.Slice(size, size);
+        var line = vectors[..size];
+        var samples = vectors.Slice(size, size);
+        ref var work = ref vectors[2 * size];
+        ref var target = ref unsafe(MemoryMarshal.GetReference(output));
+        ref var first = ref unsafe(MemoryMarshal.GetReference(samples));
+        ref var lineStart = ref unsafe(Unsafe.As<Vector128<float>, float>(ref MemoryMarshal.GetReference(line)));
         if (rows < columns)
         {
             // Rows of horizontal frequencies, four at a time, then the columns of vertical frequencies, four at a time
-            var line = lines[..columns];
             for (var v = 0; v < rows; v += 4)
             {
                 var block = coefficients.Slice(v * columns, 4 * columns);
                 LoadTransposed(block, columns, line);
-                InverseDct(line, work);
-                StoreTransposed(line, block, columns);
+                InverseDctLines(ref lineStart, 4, ref first, ref work, columns);
+                StoreTransposed(samples, block, columns);
             }
 
-            var column = lines[..rows];
             for (var x = 0; x < columns; x += 4)
             {
-                for (var v = 0; v < rows; v++)
-                {
-                    column[v] = Vector128.Create(coefficients.Slice((v * columns) + x, 4));
-                }
-
-                InverseDct(column, work);
+                InverseDctLines(ref coefficients[x], columns, ref first, ref work, rows);
                 for (var y = 0; y < rows; y++)
                 {
-                    column[y].CopyTo(output.Slice((y * stride) + x, 4));
+                    unsafe
+                    {
+                        Unsafe.Add(ref first, y).StoreUnsafe(ref target, (nuint)((y * stride) + x));
+                    }
                 }
             }
         }
         else
         {
             // Transposed: rows of vertical frequencies, four at a time, then the rows of samples, four at a time
-            var line = lines[..rows];
             for (var u = 0; u < columns; u += 4)
             {
                 var block = coefficients.Slice(u * rows, 4 * rows);
                 LoadTransposed(block, rows, line);
-                InverseDct(line, work);
-                StoreTransposed(line, block, rows);
+                InverseDctLines(ref lineStart, 4, ref first, ref work, rows);
+                StoreTransposed(samples, block, rows);
             }
 
-            var row = lines[..columns];
             for (var y = 0; y < rows; y += 4)
             {
-                for (var u = 0; u < columns; u++)
-                {
-                    row[u] = Vector128.Create(coefficients.Slice((u * rows) + y, 4));
-                }
-
-                InverseDct(row, work);
+                InverseDctLines(ref coefficients[y], rows, ref first, ref work, columns);
                 for (var x = 0; x < columns; x += 4)
                 {
-                    Transpose(row[x], row[x + 1], row[x + 2], row[x + 3], out var r0, out var r1, out var r2, out var r3);
-                    r0.CopyTo(output.Slice((y * stride) + x, 4));
-                    r1.CopyTo(output.Slice(((y + 1) * stride) + x, 4));
-                    r2.CopyTo(output.Slice(((y + 2) * stride) + x, 4));
-                    r3.CopyTo(output.Slice(((y + 3) * stride) + x, 4));
+                    unsafe
+                    {
+                        ref var column = ref Unsafe.Add(ref first, x);
+                        StoreRows(column, Unsafe.Add(ref column, 1), Unsafe.Add(ref column, 2), Unsafe.Add(ref column, 3), ref Unsafe.Add(ref target, y * stride), (nuint)stride, (nuint)x);
+                    }
                 }
             }
+        }
+    }
+
+    /// <summary>
+    /// The operations of <see cref="InverseDctVector"/> on eight lines at a time, for a block whose sides are multiples of 8:
+    /// the lines that are contiguous in memory are transposed 8x8 values at a time.
+    /// </summary>
+    private static void InverseDctVector256(Span<float> coefficients, int rows, int columns, Span<float> output, int stride, Span<float> scratch)
+    {
+        var size = Math.Max(rows, columns);
+        if (coefficients.Length < rows * columns || output.Length < ((rows - 1) * stride) + columns || scratch.Length < 24 * size)
+            throw new ArgumentOutOfRangeException(nameof(output));
+
+        var vectors = unsafe(MemoryMarshal.Cast<float, Vector256<float>>(scratch));
+        ref var line = ref vectors[0];
+        ref var first = ref vectors[size];
+        ref var work = ref vectors[2 * size];
+        ref var source = ref unsafe(MemoryMarshal.GetReference(coefficients));
+        ref var target = ref unsafe(MemoryMarshal.GetReference(output));
+        ref var lineStart = ref unsafe(Unsafe.As<Vector256<float>, float>(ref line));
+        unsafe
+        {
+            if (rows < columns)
+            {
+                // Rows of horizontal frequencies, eight at a time, then the columns of vertical frequencies, eight at a time
+                for (var v = 0; v < rows; v += 8)
+                {
+                    ref var block = ref Unsafe.Add(ref source, v * columns);
+                    LoadTransposed(ref block, columns, ref line);
+                    InverseDctLines(ref lineStart, 8, ref first, ref work, columns);
+                    StoreTransposed(ref first, ref block, columns);
+                }
+
+                for (var x = 0; x < columns; x += 8)
+                {
+                    InverseDctLines(ref Unsafe.Add(ref source, x), columns, ref first, ref work, rows);
+                    for (var y = 0; y < rows; y++)
+                    {
+                        Unsafe.Add(ref first, y).StoreUnsafe(ref target, (nuint)((y * stride) + x));
+                    }
+                }
+            }
+            else
+            {
+                // Transposed: rows of vertical frequencies, eight at a time, then the rows of samples, eight at a time
+                for (var u = 0; u < columns; u += 8)
+                {
+                    ref var block = ref Unsafe.Add(ref source, u * rows);
+                    LoadTransposed(ref block, rows, ref line);
+                    InverseDctLines(ref lineStart, 8, ref first, ref work, rows);
+                    StoreTransposed(ref first, ref block, rows);
+                }
+
+                for (var y = 0; y < rows; y += 8)
+                {
+                    InverseDctLines(ref Unsafe.Add(ref source, y), rows, ref first, ref work, columns);
+                    for (var x = 0; x < columns; x += 8)
+                    {
+                        ref var column = ref Unsafe.Add(ref first, x);
+                        var r0 = column;
+                        var r1 = Unsafe.Add(ref column, 1);
+                        var r2 = Unsafe.Add(ref column, 2);
+                        var r3 = Unsafe.Add(ref column, 3);
+                        var r4 = Unsafe.Add(ref column, 4);
+                        var r5 = Unsafe.Add(ref column, 5);
+                        var r6 = Unsafe.Add(ref column, 6);
+                        var r7 = Unsafe.Add(ref column, 7);
+                        Transpose(ref r0, ref r1, ref r2, ref r3, ref r4, ref r5, ref r6, ref r7);
+                        ref var row = ref Unsafe.Add(ref target, (y * stride) + x);
+                        r0.StoreUnsafe(ref row);
+                        r1.StoreUnsafe(ref row, (nuint)stride);
+                        r2.StoreUnsafe(ref row, (nuint)(2 * stride));
+                        r3.StoreUnsafe(ref row, (nuint)(3 * stride));
+                        r4.StoreUnsafe(ref row, (nuint)(4 * stride));
+                        r5.StoreUnsafe(ref row, (nuint)(5 * stride));
+                        r6.StoreUnsafe(ref row, (nuint)(6 * stride));
+                        r7.StoreUnsafe(ref row, (nuint)(7 * stride));
+                    }
+                }
+            }
+        }
+    }
+
+    /// <summary>Loads eight lines of <paramref name="length"/> values, one after the other, as the lanes of <paramref name="destination"/>.</summary>
+    private static void LoadTransposed(ref float source, int length, ref Vector256<float> destination)
+    {
+        unsafe
+        {
+            for (var k = 0; k < length; k += 8)
+            {
+                ref var start = ref Unsafe.Add(ref source, k);
+                var r0 = Vector256.LoadUnsafe(ref start);
+                var r1 = Vector256.LoadUnsafe(ref start, (nuint)length);
+                var r2 = Vector256.LoadUnsafe(ref start, (nuint)(2 * length));
+                var r3 = Vector256.LoadUnsafe(ref start, (nuint)(3 * length));
+                var r4 = Vector256.LoadUnsafe(ref start, (nuint)(4 * length));
+                var r5 = Vector256.LoadUnsafe(ref start, (nuint)(5 * length));
+                var r6 = Vector256.LoadUnsafe(ref start, (nuint)(6 * length));
+                var r7 = Vector256.LoadUnsafe(ref start, (nuint)(7 * length));
+                Transpose(ref r0, ref r1, ref r2, ref r3, ref r4, ref r5, ref r6, ref r7);
+                ref var vectors = ref Unsafe.Add(ref destination, k);
+                vectors = r0;
+                Unsafe.Add(ref vectors, 1) = r1;
+                Unsafe.Add(ref vectors, 2) = r2;
+                Unsafe.Add(ref vectors, 3) = r3;
+                Unsafe.Add(ref vectors, 4) = r4;
+                Unsafe.Add(ref vectors, 5) = r5;
+                Unsafe.Add(ref vectors, 6) = r6;
+                Unsafe.Add(ref vectors, 7) = r7;
+            }
+        }
+    }
+
+    /// <summary>Stores the lanes of <paramref name="source"/> as eight lines of <paramref name="length"/> values, one after the other.</summary>
+    private static void StoreTransposed(ref Vector256<float> source, ref float destination, int length)
+    {
+        unsafe
+        {
+            for (var k = 0; k < length; k += 8)
+            {
+                ref var vectors = ref Unsafe.Add(ref source, k);
+                var r0 = vectors;
+                var r1 = Unsafe.Add(ref vectors, 1);
+                var r2 = Unsafe.Add(ref vectors, 2);
+                var r3 = Unsafe.Add(ref vectors, 3);
+                var r4 = Unsafe.Add(ref vectors, 4);
+                var r5 = Unsafe.Add(ref vectors, 5);
+                var r6 = Unsafe.Add(ref vectors, 6);
+                var r7 = Unsafe.Add(ref vectors, 7);
+                Transpose(ref r0, ref r1, ref r2, ref r3, ref r4, ref r5, ref r6, ref r7);
+                ref var start = ref Unsafe.Add(ref destination, k);
+                r0.StoreUnsafe(ref start);
+                r1.StoreUnsafe(ref start, (nuint)length);
+                r2.StoreUnsafe(ref start, (nuint)(2 * length));
+                r3.StoreUnsafe(ref start, (nuint)(3 * length));
+                r4.StoreUnsafe(ref start, (nuint)(4 * length));
+                r5.StoreUnsafe(ref start, (nuint)(5 * length));
+                r6.StoreUnsafe(ref start, (nuint)(6 * length));
+                r7.StoreUnsafe(ref start, (nuint)(7 * length));
+            }
+        }
+    }
+
+    /// <summary>The operations of <see cref="InverseDctLines(ref float, nint, ref Vector128{float}, ref Vector128{float}, int)"/> on eight lines at a time.</summary>
+    private static void InverseDctLines(ref float source, nint sourceStride, ref Vector256<float> destination, ref Vector256<float> scratch, int count)
+    {
+        unsafe
+        {
+            switch (count)
+            {
+                case 8:
+                {
+                    var v0 = Vector256.LoadUnsafe(ref source);
+                    var v1 = Vector256.LoadUnsafe(ref source, (nuint)sourceStride);
+                    var v2 = Vector256.LoadUnsafe(ref source, (nuint)(2 * sourceStride));
+                    var v3 = Vector256.LoadUnsafe(ref source, (nuint)(3 * sourceStride));
+                    var v4 = Vector256.LoadUnsafe(ref source, (nuint)(4 * sourceStride));
+                    var v5 = Vector256.LoadUnsafe(ref source, (nuint)(5 * sourceStride));
+                    var v6 = Vector256.LoadUnsafe(ref source, (nuint)(6 * sourceStride));
+                    var v7 = Vector256.LoadUnsafe(ref source, (nuint)(7 * sourceStride));
+                    InverseDct8(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7);
+                    destination = v0;
+                    Unsafe.Add(ref destination, 1) = v1;
+                    Unsafe.Add(ref destination, 2) = v2;
+                    Unsafe.Add(ref destination, 3) = v3;
+                    Unsafe.Add(ref destination, 4) = v4;
+                    Unsafe.Add(ref destination, 5) = v5;
+                    Unsafe.Add(ref destination, 6) = v6;
+                    Unsafe.Add(ref destination, 7) = v7;
+                    return;
+                }
+
+                case 16:
+                    InverseDct16(ref source, sourceStride, ref destination);
+                    return;
+            }
+
+            var half = count / 2;
+            var previous = Vector256.LoadUnsafe(ref source, (nuint)sourceStride);
+            scratch = Vector256.Create(MathF.Sqrt(2)) * previous;
+            for (var i = 1; i < half; i++)
+            {
+                var next = Vector256.LoadUnsafe(ref source, (nuint)(((2 * i) + 1) * sourceStride));
+                Unsafe.Add(ref scratch, i) = previous + next;
+                previous = next;
+            }
+
+            ref var odd = ref Unsafe.Add(ref destination, half);
+            ref var rest = ref Unsafe.Add(ref scratch, half);
+            InverseDctLines(ref source, 2 * sourceStride, ref destination, ref rest, half);
+            InverseDctLines(ref Unsafe.As<Vector256<float>, float>(ref scratch), 8, ref odd, ref rest, half);
+            ref var secants = ref MemoryMarshal.GetArrayDataReference(HalfSecants);
+            for (var i = 0; i < half / 2; i++)
+            {
+                var j = half - 1 - i;
+                var evenI = Unsafe.Add(ref destination, i);
+                var evenJ = Unsafe.Add(ref destination, j);
+                var scaledI = Unsafe.Add(ref odd, i) * Vector256.Create(Unsafe.Add(ref secants, half + i));
+                var scaledJ = Unsafe.Add(ref odd, j) * Vector256.Create(Unsafe.Add(ref secants, half + j));
+                Unsafe.Add(ref destination, i) = evenI + scaledI;
+                Unsafe.Add(ref odd, j) = evenI - scaledI;
+                Unsafe.Add(ref destination, j) = evenJ + scaledJ;
+                Unsafe.Add(ref odd, i) = evenJ - scaledJ;
+            }
+        }
+    }
+
+    /// <summary>The leaf of <see cref="InverseDctLines(ref float, nint, ref Vector256{float}, ref Vector256{float}, int)"/>: eight inverse DCTs of 16 values.</summary>
+    private static void InverseDct16(ref float source, nint stride, ref Vector256<float> destination)
+    {
+        unsafe
+        {
+            var e0 = Vector256.LoadUnsafe(ref source);
+            var v1 = Vector256.LoadUnsafe(ref source, (nuint)stride);
+            var e1 = Vector256.LoadUnsafe(ref source, (nuint)(2 * stride));
+            var v3 = Vector256.LoadUnsafe(ref source, (nuint)(3 * stride));
+            var e2 = Vector256.LoadUnsafe(ref source, (nuint)(4 * stride));
+            var v5 = Vector256.LoadUnsafe(ref source, (nuint)(5 * stride));
+            var e3 = Vector256.LoadUnsafe(ref source, (nuint)(6 * stride));
+            var v7 = Vector256.LoadUnsafe(ref source, (nuint)(7 * stride));
+            var e4 = Vector256.LoadUnsafe(ref source, (nuint)(8 * stride));
+            var v9 = Vector256.LoadUnsafe(ref source, (nuint)(9 * stride));
+            var e5 = Vector256.LoadUnsafe(ref source, (nuint)(10 * stride));
+            var v11 = Vector256.LoadUnsafe(ref source, (nuint)(11 * stride));
+            var e6 = Vector256.LoadUnsafe(ref source, (nuint)(12 * stride));
+            var v13 = Vector256.LoadUnsafe(ref source, (nuint)(13 * stride));
+            var e7 = Vector256.LoadUnsafe(ref source, (nuint)(14 * stride));
+            var v15 = Vector256.LoadUnsafe(ref source, (nuint)(15 * stride));
+            var o0 = Vector256.Create(MathF.Sqrt(2)) * v1;
+            var o1 = v1 + v3;
+            var o2 = v3 + v5;
+            var o3 = v5 + v7;
+            var o4 = v7 + v9;
+            var o5 = v9 + v11;
+            var o6 = v11 + v13;
+            var o7 = v13 + v15;
+            InverseDct8(ref e0, ref e1, ref e2, ref e3, ref e4, ref e5, ref e6, ref e7);
+            InverseDct8(ref o0, ref o1, ref o2, ref o3, ref o4, ref o5, ref o6, ref o7);
+            var secants = HalfSecants;
+            var scaled = o0 * Vector256.Create(secants[8]);
+            destination = e0 + scaled;
+            Unsafe.Add(ref destination, 15) = e0 - scaled;
+            scaled = o1 * Vector256.Create(secants[9]);
+            Unsafe.Add(ref destination, 1) = e1 + scaled;
+            Unsafe.Add(ref destination, 14) = e1 - scaled;
+            scaled = o2 * Vector256.Create(secants[10]);
+            Unsafe.Add(ref destination, 2) = e2 + scaled;
+            Unsafe.Add(ref destination, 13) = e2 - scaled;
+            scaled = o3 * Vector256.Create(secants[11]);
+            Unsafe.Add(ref destination, 3) = e3 + scaled;
+            Unsafe.Add(ref destination, 12) = e3 - scaled;
+            scaled = o4 * Vector256.Create(secants[12]);
+            Unsafe.Add(ref destination, 4) = e4 + scaled;
+            Unsafe.Add(ref destination, 11) = e4 - scaled;
+            scaled = o5 * Vector256.Create(secants[13]);
+            Unsafe.Add(ref destination, 5) = e5 + scaled;
+            Unsafe.Add(ref destination, 10) = e5 - scaled;
+            scaled = o6 * Vector256.Create(secants[14]);
+            Unsafe.Add(ref destination, 6) = e6 + scaled;
+            Unsafe.Add(ref destination, 9) = e6 - scaled;
+            scaled = o7 * Vector256.Create(secants[15]);
+            Unsafe.Add(ref destination, 7) = e7 + scaled;
+            Unsafe.Add(ref destination, 8) = e7 - scaled;
+        }
+    }
+
+    /// <summary>
+    /// Four one-dimensional inverse DCTs of a power-of-two number of values (4 or more), one per lane: the operations of
+    /// <see cref="InverseDct(Span{float}, Span{float})"/>, in the same order. The values are read in place, a vector of four
+    /// lines every <paramref name="sourceStride"/> floats, and the samples written one vector after the other.
+    /// </summary>
+    /// <param name="source">The first vector of coefficients.</param>
+    /// <param name="sourceStride">The distance between two vectors of coefficients, in floats.</param>
+    /// <param name="destination">Receives the <paramref name="count"/> vectors of samples; it does not overlap the coefficients.</param>
+    /// <param name="scratch">Scratch memory of <paramref name="count"/> vectors.</param>
+    /// <param name="count">The number of values of a line.</param>
+    private static void InverseDctLines(ref float source, nint sourceStride, ref Vector128<float> destination, ref Vector128<float> scratch, int count)
+    {
+        unsafe
+        {
+            switch (count)
+            {
+                case 4:
+                {
+                    var v0 = Vector128.LoadUnsafe(ref source);
+                    var v1 = Vector128.LoadUnsafe(ref source, (nuint)sourceStride);
+                    var v2 = Vector128.LoadUnsafe(ref source, (nuint)(2 * sourceStride));
+                    var v3 = Vector128.LoadUnsafe(ref source, (nuint)(3 * sourceStride));
+                    InverseDct4(ref v0, ref v1, ref v2, ref v3);
+                    destination = v0;
+                    Unsafe.Add(ref destination, 1) = v1;
+                    Unsafe.Add(ref destination, 2) = v2;
+                    Unsafe.Add(ref destination, 3) = v3;
+                    return;
+                }
+
+                case 8:
+                {
+                    var v0 = Vector128.LoadUnsafe(ref source);
+                    var v1 = Vector128.LoadUnsafe(ref source, (nuint)sourceStride);
+                    var v2 = Vector128.LoadUnsafe(ref source, (nuint)(2 * sourceStride));
+                    var v3 = Vector128.LoadUnsafe(ref source, (nuint)(3 * sourceStride));
+                    var v4 = Vector128.LoadUnsafe(ref source, (nuint)(4 * sourceStride));
+                    var v5 = Vector128.LoadUnsafe(ref source, (nuint)(5 * sourceStride));
+                    var v6 = Vector128.LoadUnsafe(ref source, (nuint)(6 * sourceStride));
+                    var v7 = Vector128.LoadUnsafe(ref source, (nuint)(7 * sourceStride));
+                    InverseDct8(ref v0, ref v1, ref v2, ref v3, ref v4, ref v5, ref v6, ref v7);
+                    destination = v0;
+                    Unsafe.Add(ref destination, 1) = v1;
+                    Unsafe.Add(ref destination, 2) = v2;
+                    Unsafe.Add(ref destination, 3) = v3;
+                    Unsafe.Add(ref destination, 4) = v4;
+                    Unsafe.Add(ref destination, 5) = v5;
+                    Unsafe.Add(ref destination, 6) = v6;
+                    Unsafe.Add(ref destination, 7) = v7;
+                    return;
+                }
+
+                case 16:
+                    InverseDct16(ref source, sourceStride, ref destination);
+                    return;
+            }
+
+            // The odd coefficients, each added to the previous one, go to the scratch memory; the even ones are read in place
+            var half = count / 2;
+            var previous = Vector128.LoadUnsafe(ref source, (nuint)sourceStride);
+            scratch = Vector128.Create(MathF.Sqrt(2)) * previous;
+            for (var i = 1; i < half; i++)
+            {
+                var next = Vector128.LoadUnsafe(ref source, (nuint)(((2 * i) + 1) * sourceStride));
+                Unsafe.Add(ref scratch, i) = previous + next;
+                previous = next;
+            }
+
+            ref var odd = ref Unsafe.Add(ref destination, half);
+            ref var rest = ref Unsafe.Add(ref scratch, half);
+            InverseDctLines(ref source, 2 * sourceStride, ref destination, ref rest, half);
+            InverseDctLines(ref Unsafe.As<Vector128<float>, float>(ref scratch), 4, ref odd, ref rest, half);
+
+            // The samples i and count - 1 - i are written over the even and odd transforms at i and half - 1 - i, which the
+            // pair at half - 1 - i reads: both pairs are computed together
+            ref var secants = ref MemoryMarshal.GetArrayDataReference(HalfSecants);
+            for (var i = 0; i < half / 2; i++)
+            {
+                var j = half - 1 - i;
+                var evenI = Unsafe.Add(ref destination, i);
+                var evenJ = Unsafe.Add(ref destination, j);
+                var scaledI = Unsafe.Add(ref odd, i) * Vector128.Create(Unsafe.Add(ref secants, half + i));
+                var scaledJ = Unsafe.Add(ref odd, j) * Vector128.Create(Unsafe.Add(ref secants, half + j));
+                Unsafe.Add(ref destination, i) = evenI + scaledI;
+                Unsafe.Add(ref odd, j) = evenI - scaledI;
+                Unsafe.Add(ref destination, j) = evenJ + scaledJ;
+                Unsafe.Add(ref odd, i) = evenJ - scaledJ;
+            }
+        }
+    }
+
+    /// <summary>The leaf of <see cref="InverseDctLines(ref float, nint, ref Vector128{float}, ref Vector128{float}, int)"/>: four inverse DCTs of 16 values, in registers.</summary>
+    private static void InverseDct16(ref float source, nint stride, ref Vector128<float> destination)
+    {
+        unsafe
+        {
+            var e0 = Vector128.LoadUnsafe(ref source);
+            var v1 = Vector128.LoadUnsafe(ref source, (nuint)stride);
+            var e1 = Vector128.LoadUnsafe(ref source, (nuint)(2 * stride));
+            var v3 = Vector128.LoadUnsafe(ref source, (nuint)(3 * stride));
+            var e2 = Vector128.LoadUnsafe(ref source, (nuint)(4 * stride));
+            var v5 = Vector128.LoadUnsafe(ref source, (nuint)(5 * stride));
+            var e3 = Vector128.LoadUnsafe(ref source, (nuint)(6 * stride));
+            var v7 = Vector128.LoadUnsafe(ref source, (nuint)(7 * stride));
+            var e4 = Vector128.LoadUnsafe(ref source, (nuint)(8 * stride));
+            var v9 = Vector128.LoadUnsafe(ref source, (nuint)(9 * stride));
+            var e5 = Vector128.LoadUnsafe(ref source, (nuint)(10 * stride));
+            var v11 = Vector128.LoadUnsafe(ref source, (nuint)(11 * stride));
+            var e6 = Vector128.LoadUnsafe(ref source, (nuint)(12 * stride));
+            var v13 = Vector128.LoadUnsafe(ref source, (nuint)(13 * stride));
+            var e7 = Vector128.LoadUnsafe(ref source, (nuint)(14 * stride));
+            var v15 = Vector128.LoadUnsafe(ref source, (nuint)(15 * stride));
+            var o0 = Vector128.Create(MathF.Sqrt(2)) * v1;
+            var o1 = v1 + v3;
+            var o2 = v3 + v5;
+            var o3 = v5 + v7;
+            var o4 = v7 + v9;
+            var o5 = v9 + v11;
+            var o6 = v11 + v13;
+            var o7 = v13 + v15;
+            InverseDct8(ref e0, ref e1, ref e2, ref e3, ref e4, ref e5, ref e6, ref e7);
+            InverseDct8(ref o0, ref o1, ref o2, ref o3, ref o4, ref o5, ref o6, ref o7);
+            var secants = HalfSecants;
+            var scaled = o0 * Vector128.Create(secants[8]);
+            destination = e0 + scaled;
+            Unsafe.Add(ref destination, 15) = e0 - scaled;
+            scaled = o1 * Vector128.Create(secants[9]);
+            Unsafe.Add(ref destination, 1) = e1 + scaled;
+            Unsafe.Add(ref destination, 14) = e1 - scaled;
+            scaled = o2 * Vector128.Create(secants[10]);
+            Unsafe.Add(ref destination, 2) = e2 + scaled;
+            Unsafe.Add(ref destination, 13) = e2 - scaled;
+            scaled = o3 * Vector128.Create(secants[11]);
+            Unsafe.Add(ref destination, 3) = e3 + scaled;
+            Unsafe.Add(ref destination, 12) = e3 - scaled;
+            scaled = o4 * Vector128.Create(secants[12]);
+            Unsafe.Add(ref destination, 4) = e4 + scaled;
+            Unsafe.Add(ref destination, 11) = e4 - scaled;
+            scaled = o5 * Vector128.Create(secants[13]);
+            Unsafe.Add(ref destination, 5) = e5 + scaled;
+            Unsafe.Add(ref destination, 10) = e5 - scaled;
+            scaled = o6 * Vector128.Create(secants[14]);
+            Unsafe.Add(ref destination, 6) = e6 + scaled;
+            Unsafe.Add(ref destination, 9) = e6 - scaled;
+            scaled = o7 * Vector128.Create(secants[15]);
+            Unsafe.Add(ref destination, 7) = e7 + scaled;
+            Unsafe.Add(ref destination, 8) = e7 - scaled;
         }
     }
 
@@ -401,7 +818,7 @@ internal static class JpegXlInverseTransform
         r7 = Avx.Permute2x128(s3, s7, 0x31);
     }
 
-    /// <summary>Four one-dimensional inverse DCTs of eight values, one per lane, in place: the operations of <see cref="InverseDct8(Span{Vector128{float}})"/>.</summary>
+    /// <summary>Four one-dimensional inverse DCTs of eight values, one per lane, in place: the operations of the transform of eight values.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void InverseDct8(ref Vector128<float> v0, ref Vector128<float> v1, ref Vector128<float> v2, ref Vector128<float> v3, ref Vector128<float> v4, ref Vector128<float> v5, ref Vector128<float> v6, ref Vector128<float> v7)
     {
@@ -430,7 +847,7 @@ internal static class JpegXlInverseTransform
         v4 = e3 - scaled;
     }
 
-    /// <summary>Eight one-dimensional inverse DCTs of eight values, one per lane, in place: the operations of <see cref="InverseDct8(Span{Vector128{float}})"/>.</summary>
+    /// <summary>Eight one-dimensional inverse DCTs of eight values, one per lane, in place: the operations of the transform of eight values.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void InverseDct8(ref Vector256<float> v0, ref Vector256<float> v1, ref Vector256<float> v2, ref Vector256<float> v3, ref Vector256<float> v4, ref Vector256<float> v5, ref Vector256<float> v6, ref Vector256<float> v7)
     {
@@ -526,77 +943,6 @@ internal static class JpegXlInverseTransform
             r2 = Vector128.Create(a.GetElement(2), b.GetElement(2), c.GetElement(2), d.GetElement(2));
             r3 = Vector128.Create(a.GetElement(3), b.GetElement(3), c.GetElement(3), d.GetElement(3));
         }
-    }
-
-    /// <summary>
-    /// Four one-dimensional inverse DCTs of a power-of-two number of values (4 or more), one per lane, in place: the
-    /// operations of <see cref="InverseDct(Span{float}, Span{float})"/>, in the same order.
-    /// </summary>
-    private static void InverseDct(Span<Vector128<float>> values, Span<Vector128<float>> scratch)
-    {
-        var count = values.Length;
-        switch (count)
-        {
-            case 4:
-                InverseDct4(ref values[0], ref values[1], ref values[2], ref values[3]);
-                return;
-
-            case 8:
-                InverseDct8(values);
-                return;
-        }
-
-        var half = count / 2;
-        var even = scratch[..half];
-        var odd = scratch.Slice(half, half);
-        for (var i = 0; i < half; i++)
-        {
-            even[i] = values[2 * i];
-        }
-
-        odd[0] = Vector128.Create(MathF.Sqrt(2)) * values[1];
-        for (var i = 1; i < half; i++)
-        {
-            odd[i] = values[(2 * i) - 1] + values[(2 * i) + 1];
-        }
-
-        InverseDct(even, values[..half]);
-        InverseDct(odd, values.Slice(half, half));
-        var secants = HalfSecants.AsSpan(half, half);
-        for (var i = 0; i < half; i++)
-        {
-            var scaled = odd[i] * Vector128.Create(secants[i]);
-            values[i] = even[i] + scaled;
-            values[count - 1 - i] = even[i] - scaled;
-        }
-    }
-
-    private static void InverseDct8(Span<Vector128<float>> values)
-    {
-        values = values[..8];
-        var e0 = values[0];
-        var e1 = values[2];
-        var e2 = values[4];
-        var e3 = values[6];
-        var o0 = Vector128.Create(MathF.Sqrt(2)) * values[1];
-        var o1 = values[1] + values[3];
-        var o2 = values[3] + values[5];
-        var o3 = values[5] + values[7];
-        InverseDct4(ref e0, ref e1, ref e2, ref e3);
-        InverseDct4(ref o0, ref o1, ref o2, ref o3);
-        var secants = HalfSecants.AsSpan(4, 4);
-        var scaled = o0 * Vector128.Create(secants[0]);
-        values[0] = e0 + scaled;
-        values[7] = e0 - scaled;
-        scaled = o1 * Vector128.Create(secants[1]);
-        values[1] = e1 + scaled;
-        values[6] = e1 - scaled;
-        scaled = o2 * Vector128.Create(secants[2]);
-        values[2] = e2 + scaled;
-        values[5] = e2 - scaled;
-        scaled = o3 * Vector128.Create(secants[3]);
-        values[3] = e3 + scaled;
-        values[4] = e3 - scaled;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

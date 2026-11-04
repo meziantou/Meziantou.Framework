@@ -376,7 +376,7 @@ internal static partial class WptCoverage
             Line("- **Pass rate**: the passing tests among the tests that are run (the tests that are not disabled).");
             Line();
             Line("The pages of the sections give, for each test that does not pass, the **Kind** and the **Description** of the reasons why it does not pass " +
-                "(a test can have several reasons). The kinds:");
+                "(a test can have several reasons), and the **Failure reasons** section of each page (this one included) counts the tests that do not pass per kind and per feature. The kinds:");
             Line();
             foreach (var (name, description) in Kinds)
             {
@@ -400,6 +400,8 @@ internal static partial class WptCoverage
             Line(Row("[Tentative](#tentative-tests)", Stats.From(tests.Where(t => t.Group is TestGroup.Tentative))));
             Line(Row("[Reftests](#reftests)", Stats.From(tests.Where(t => t.Group is TestGroup.Reftest))));
             Line(Row("**All**", Stats.From(tests), bold: true));
+
+            WriteFailureReasons(Line, tests);
 
             WriteIndexTable(Line, "Stable tests", sections, TestGroup.Stable);
             WriteIndexTable(Line, "Tentative tests", sections, TestGroup.Tentative);
@@ -437,6 +439,48 @@ internal static partial class WptCoverage
             line(Row($"**Total ({Number(rows.Count)} sections)**", Stats.From(rows.SelectMany(r => r.Tests)), bold: true));
         }
 
+        /// <summary>
+        /// Writes the number of tests that do not pass (failing or disabled) per kind of reason, and per feature for the
+        /// <see cref="RequiresKind"/> reasons. A test with several reasons counts once per kind and once per feature.
+        /// </summary>
+        private static void WriteFailureReasons(Action<string> line, IEnumerable<TestEntry> tests)
+        {
+            var failingTests = tests.Where(t => !t.IsPassing).ToList();
+            if (failingTests.Count == 0)
+                return;
+
+            line("");
+            line("## Failure reasons");
+            line("");
+            line("The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.");
+            line("");
+            foreach (var (kind, _) in Kinds)
+            {
+                var kindTests = failingTests.Where(t => t.Reasons is not null && t.Reasons.Any(r => r.Kind == kind)).ToList();
+                if (kindTests.Count == 0)
+                    continue;
+
+                line($"- **{kind}**: {Number(kindTests.Count)}");
+                if (kind is RequiresKind)
+                {
+                    foreach (var (feature, _) in Features)
+                    {
+                        var count = kindTests.Count(t => t.Reasons!.Any(r => r.Kind is RequiresKind && r.Features.Contains(feature, StringComparer.Ordinal)));
+                        if (count > 0)
+                        {
+                            line($"  - `{feature}`: {Number(count)}");
+                        }
+                    }
+                }
+            }
+
+            var missing = failingTests.Count(t => t.Reasons is null);
+            if (missing > 0)
+            {
+                line($"- *No reason documented*: {Number(missing)}");
+            }
+        }
+
         private void WriteSection(string pagePath, string section, List<TestEntry> sectionTests)
         {
             var output = new StringBuilder();
@@ -463,6 +507,8 @@ internal static partial class WptCoverage
             Line(Row(tentativeTests.Count > 0 ? "[Tentative](#tentative-tests)" : "Tentative", Stats.From(tentativeTests)));
             Line(Row(reftests.Count > 0 ? "[Reftests](#reftests)" : "Reftests", Stats.From(reftests)));
             Line(Row("**All**", Stats.From(sectionTests), bold: true));
+
+            WriteFailureReasons(Line, sectionTests);
 
             WriteTestTable("Stable tests", stableTests, "Subtests");
             WriteTestTable("Tentative tests", tentativeTests, "Subtests");

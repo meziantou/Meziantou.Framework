@@ -14,6 +14,12 @@ description: "The results of the web-platform-tests of css/css-color-adjust, and
 | [Reftests](#reftests) | 23 | 25 | 0 | 92% |
 | **All** | **37** | **40** | **0** | **93%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **NOT IMPLEMENTED**: 3
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

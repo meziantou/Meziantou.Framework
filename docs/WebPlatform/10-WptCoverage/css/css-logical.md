@@ -14,6 +14,13 @@ description: "The results of the web-platform-tests of css/css-logical, and why 
 | [Reftests](#reftests) | 6 | 6 | 0 | 100% |
 | **All** | **88** | **92** | **0** | **96%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 1
+- **TEST RUNNER**: 3
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

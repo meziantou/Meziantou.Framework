@@ -14,6 +14,15 @@ description: "The results of the web-platform-tests of scroll-animations, and wh
 | [Reftests](#reftests) | 30 | 37 | 0 | 81% |
 | **All** | **201** | **261** | **0** | **77%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 6
+- **TEST BUG**: 1
+- **NOT IMPLEMENTED**: 52
+- **OUT OF SCOPE**: 1
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

@@ -14,6 +14,13 @@ description: "The results of the web-platform-tests of custom-elements, and why 
 | [Reftests](#reftests) | 1 | 3 | 0 | 33% |
 | **All** | **181** | **199** | **0** | **91%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 9
+- **NOT IMPLEMENTED**: 9
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

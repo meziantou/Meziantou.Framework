@@ -219,6 +219,26 @@ internal static class Av1Simd
         return Vector128.SubtractSaturate(left, right);
     }
 
+    /// <summary>The even lanes of <paramref name="first"/> then of <paramref name="second"/>: 0, 2, 4 and 6 of the 8 lanes.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Vector128<int> UnzipEven(Vector128<int> first, Vector128<int> second)
+    {
+        if (AdvSimd.Arm64.IsSupported)
+            return AdvSimd.Arm64.UnzipEven(first, second);
+
+        return Sse.Shuffle(first.AsSingle(), second.AsSingle(), 0b10_00_10_00).AsInt32();
+    }
+
+    /// <summary>The odd lanes of <paramref name="first"/> then of <paramref name="second"/>: 1, 3, 5 and 7 of the 8 lanes.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Vector128<int> UnzipOdd(Vector128<int> first, Vector128<int> second)
+    {
+        if (AdvSimd.Arm64.IsSupported)
+            return AdvSimd.Arm64.UnzipOdd(first, second);
+
+        return Sse.Shuffle(first.AsSingle(), second.AsSingle(), 0b11_01_11_01).AsInt32();
+    }
+
     /// <summary>A 4x4 transposition: the lane i of the output j is the lane j of the input i.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void Transpose(Vector128<int> v0, Vector128<int> v1, Vector128<int> v2, Vector128<int> v3, out Vector128<int> r0, out Vector128<int> r1, out Vector128<int> r2, out Vector128<int> r3)

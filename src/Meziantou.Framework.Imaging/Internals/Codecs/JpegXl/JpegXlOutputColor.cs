@@ -200,7 +200,7 @@ internal sealed class JpegXlOutputColor
     }
 
     /// <summary>
-    /// Converts rows of XYB samples to linear samples in place, four at a time: each lane performs the operations of
+    /// Converts rows of XYB samples to linear samples in place, four or eight at a time: each lane performs the operations of
     /// <see cref="XybToLinearScalar"/> in the same order.
     /// </summary>
     /// <param name="x">The X samples, replaced with the first linear channel.</param>
@@ -212,6 +212,39 @@ internal sealed class JpegXlOutputColor
     internal static void XybToLinear(Span<float> x, Span<float> y, Span<float> b, ReadOnlySpan<float> matrix, ReadOnlySpan<float> biasRoot, ReadOnlySpan<float> bias)
     {
         var i = 0;
+        if (Vector256.IsHardwareAccelerated)
+        {
+            var m0 = Vector256.Create(matrix[0]);
+            var m1 = Vector256.Create(matrix[1]);
+            var m2 = Vector256.Create(matrix[2]);
+            var m3 = Vector256.Create(matrix[3]);
+            var m4 = Vector256.Create(matrix[4]);
+            var m5 = Vector256.Create(matrix[5]);
+            var m6 = Vector256.Create(matrix[6]);
+            var m7 = Vector256.Create(matrix[7]);
+            var m8 = Vector256.Create(matrix[8]);
+            var rootR = Vector256.Create(biasRoot[0]);
+            var rootG = Vector256.Create(biasRoot[1]);
+            var rootB = Vector256.Create(biasRoot[2]);
+            var biasR = Vector256.Create(bias[0]);
+            var biasG = Vector256.Create(bias[1]);
+            var biasB = Vector256.Create(bias[2]);
+            for (; i <= x.Length - 8; i += 8)
+            {
+                var valueX = Vector256.Create(x.Slice(i, 8));
+                var valueY = Vector256.Create(y.Slice(i, 8));
+                var gammaR = (valueY + valueX) - rootR;
+                var gammaG = (valueY - valueX) - rootG;
+                var gammaB = Vector256.Create(b.Slice(i, 8)) - rootB;
+                var mixedR = (gammaR * gammaR * gammaR) + biasR;
+                var mixedG = (gammaG * gammaG * gammaG) + biasG;
+                var mixedB = (gammaB * gammaB * gammaB) + biasB;
+                ((m0 * mixedR) + (m1 * mixedG) + (m2 * mixedB)).CopyTo(x.Slice(i, 8));
+                ((m3 * mixedR) + (m4 * mixedG) + (m5 * mixedB)).CopyTo(y.Slice(i, 8));
+                ((m6 * mixedR) + (m7 * mixedG) + (m8 * mixedB)).CopyTo(b.Slice(i, 8));
+            }
+        }
+
         if (Vector128.IsHardwareAccelerated)
         {
             var m0 = Vector128.Create(matrix[0]);

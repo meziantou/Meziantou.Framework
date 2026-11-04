@@ -14,6 +14,13 @@ description: "The results of the web-platform-tests of orientation-event, and wh
 | Reftests | 0 | 0 | 0 | – |
 | **All** | **0** | **27** | **27** | **–** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **REQUIRES**: 27
+  - `hardware`: 27
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

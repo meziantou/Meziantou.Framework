@@ -14,6 +14,14 @@ description: "The results of the web-platform-tests of intersection-observer, an
 | [Reftests](#reftests) | 1 | 1 | 0 | 100% |
 | **All** | **140** | **154** | **0** | **91%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 1
+- **NOT IMPLEMENTED**: 12
+- **TEST RUNNER**: 1
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

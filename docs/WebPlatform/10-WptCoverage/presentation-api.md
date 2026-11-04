@@ -14,6 +14,13 @@ description: "The results of the web-platform-tests of presentation-api, and why
 | Reftests | 0 | 0 | 0 | – |
 | **All** | **0** | **13** | **13** | **–** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **REQUIRES**: 13
+  - `hardware`: 13
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

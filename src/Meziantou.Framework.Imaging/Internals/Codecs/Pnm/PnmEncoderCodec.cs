@@ -210,6 +210,12 @@ internal sealed class PnmEncoderCodec : ImageEncoderCodec
             var frame = _frame ?? throw new InvalidOperationException("No frame was begun.");
             using var lease = frame.GetStorage().AcquireLease();
             var rows = Math.Min(RowsPerCall, _height - _rowsWritten);
+            if (!_bitmap && !_plain)
+            {
+                // The output grows once for the whole band, instead of doubling (and copying) as the rows are appended
+                output.GetSpan(rows * _width * _channels * (_is16Bit ? 2 : 1));
+            }
+
             for (var i = 0; i < rows; i++)
             {
                 CancellationToken.ThrowIfCancellationRequested();

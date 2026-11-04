@@ -481,12 +481,35 @@ internal sealed class JpegXlDecoder : JpegXlDecodeObserver
 
     /// <summary>
     /// Writes a row of Rgb24 or Rgba32 pixels from floating-point samples (opaque when the image has no alpha channel),
-    /// four pixels at a time: each lane rounds and clamps as <see cref="ToInteger"/> does, and the bytes are those of
+    /// four or eight pixels at a time: each lane rounds and clamps as <see cref="ToInteger"/> does, and the bytes are those of
     /// <see cref="WriteCanvasRowScalar"/>.
     /// </summary>
     internal static void WriteCanvasRow(ReadOnlySpan<float> first, ReadOnlySpan<float> second, ReadOnlySpan<float> third, ReadOnlySpan<float> alpha, bool hasAlphaFormat, bool hasAlpha, Span<byte> row)
     {
         var x = 0;
+        if (Vector256.IsHardwareAccelerated)
+        {
+            // Eight pixels at a time; three-byte pixels are written as two halves of four, the second one over the unused
+            // bytes of the first
+            var opaque = Vector256.Create(byte.MaxValue << 24);
+            var indices = Vector128.Create((byte)0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14, 15, 15, 15, 15);
+            var pixelSize = hasAlphaFormat ? 4 : 3;
+            for (; x <= first.Length - 8 && (x * pixelSize) + 32 <= row.Length; x += 8)
+            {
+                var high = hasAlphaFormat && hasAlpha ? ToByte256(Vector256.Create(alpha.Slice(x, 8))) << 24 : opaque;
+                var pixels = ToByte256(Vector256.Create(first.Slice(x, 8))) | (ToByte256(Vector256.Create(second.Slice(x, 8))) << 8) | (ToByte256(Vector256.Create(third.Slice(x, 8))) << 16) | high;
+                if (hasAlphaFormat)
+                {
+                    pixels.AsByte().CopyTo(row.Slice(x * 4, 32));
+                }
+                else
+                {
+                    Vector128.Shuffle(pixels.GetLower().AsByte(), indices).CopyTo(row.Slice(x * 3, 16));
+                    Vector128.Shuffle(pixels.GetUpper().AsByte(), indices).CopyTo(row.Slice((x * 3) + 12, 16));
+                }
+            }
+        }
+
         if (Vector128.IsHardwareAccelerated)
         {
             var opaque = Vector128.Create(byte.MaxValue << 24);
@@ -510,6 +533,14 @@ internal sealed class JpegXlDecoder : JpegXlDecodeObserver
             var scaled = (value * max) + Vector128.Create(0.5f);
             var result = Vector128.ConditionalSelect(Vector128.GreaterThanOrEqual(scaled, max).AsInt32(), Vector128.Create((int)byte.MaxValue), Vector128.ConvertToInt32(scaled));
             return Vector128.ConditionalSelect(Vector128.GreaterThan(scaled, Vector128<float>.Zero).AsInt32(), result, Vector128<int>.Zero);
+        }
+
+        static Vector256<int> ToByte256(Vector256<float> value)
+        {
+            var max = Vector256.Create((float)byte.MaxValue);
+            var scaled = (value * max) + Vector256.Create(0.5f);
+            var result = Vector256.ConditionalSelect(Vector256.GreaterThanOrEqual(scaled, max).AsInt32(), Vector256.Create((int)byte.MaxValue), Vector256.ConvertToInt32(scaled));
+            return Vector256.ConditionalSelect(Vector256.GreaterThan(scaled, Vector256<float>.Zero).AsInt32(), result, Vector256<int>.Zero);
         }
     }
 

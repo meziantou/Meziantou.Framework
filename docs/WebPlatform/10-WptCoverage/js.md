@@ -14,6 +14,12 @@ description: "The results of the web-platform-tests of js, and why the tests tha
 | Reftests | 0 | 0 | 0 | – |
 | **All** | **0** | **26** | **26** | **–** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **OUT OF SCOPE**: 26
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

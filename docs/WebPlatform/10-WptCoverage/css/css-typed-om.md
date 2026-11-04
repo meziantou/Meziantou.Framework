@@ -14,6 +14,15 @@ description: "The results of the web-platform-tests of css/css-typed-om, and why
 | [Reftests](#reftests) | 5 | 5 | 0 | 100% |
 | **All** | **332** | **367** | **0** | **90%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 2
+- **TEST BUG**: 31
+- **NOT IMPLEMENTED**: 1
+- **TEST RUNNER**: 1
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

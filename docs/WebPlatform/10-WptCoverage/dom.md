@@ -14,6 +14,18 @@ description: "The results of the web-platform-tests of dom, and why the tests th
 | [Reftests](#reftests) | 4 | 4 | 0 | 100% |
 | **All** | **695** | **743** | **8** | **95%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 3
+- **TEST BUG**: 7
+- **NOT IMPLEMENTED**: 29
+- **REQUIRES**: 1
+  - `user-input`: 1
+- **TEST RUNNER**: 2
+- **PERFORMANCE**: 6
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

@@ -14,6 +14,12 @@ description: "The results of the web-platform-tests of css/css-layout-api, and w
 | [Reftests](#reftests) | 128 | 135 | 0 | 95% |
 | **All** | **135** | **142** | **0** | **95%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **TEST BUG**: 7
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

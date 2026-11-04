@@ -14,6 +14,13 @@ description: "The results of the web-platform-tests of css/css-inline, and why t
 | [Reftests](#reftests) | 184 | 199 | 0 | 92% |
 | **All** | **241** | **258** | **0** | **93%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 12
+- **TEST BUG**: 5
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

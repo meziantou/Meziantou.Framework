@@ -115,10 +115,10 @@ internal static class Av1ForwardTransform
                 column[r] = residual[((layout.FlipUD ? h - 1 - r : r) * w) + c] << layout.ColumnShift;
             }
 
-            Apply<ScalarLanes, int>(layout.ColumnKind, column, layout.Log2H);
+            var order = Apply<ScalarLanes, int>(layout.ColumnKind, column, layout.Log2H);
             for (var k = 0; k < th; k++)
             {
-                intermediate[(k * w) + c] = ScalarLanes.ShiftRightRounded(column[k], layout.MiddleShift);
+                intermediate[(k * w) + c] = ScalarLanes.ShiftRightRounded(column[GetPosition(order, k)], layout.MiddleShift);
             }
         }
 
@@ -131,10 +131,10 @@ internal static class Av1ForwardTransform
                 row[c] = source[layout.FlipLR ? w - 1 - c : c];
             }
 
-            Apply<ScalarLanes, int>(layout.RowKind, row, layout.Log2W);
+            var order = Apply<ScalarLanes, int>(layout.RowKind, row, layout.Log2W);
             for (var l = 0; l < tw; l++)
             {
-                coefficients[(k * tw) + l] = Finish<ScalarLanes, int>(row[l], layout.IsRectangular2To1);
+                coefficients[(k * tw) + l] = Finish<ScalarLanes, int>(row[GetPosition(order, l)], layout.IsRectangular2To1);
             }
         }
     }
@@ -172,15 +172,15 @@ internal static class Av1ForwardTransform
                 column[r] = unsafe(Vector128.LoadUnsafe(ref samples, (nuint)offset)) << layout.ColumnShift;
             }
 
-            Apply<VectorLanes, Vector128<int>>(layout.ColumnKind, column, layout.Log2H);
+            var order = Apply<VectorLanes, Vector128<int>>(layout.ColumnKind, column, layout.Log2H);
             for (var k = 0; k < th; k += 4)
             {
                 var group = intermediate.Slice((k >> 2) * w, w);
                 Av1Simd.Transpose(
-                    VectorLanes.ShiftRightRounded(column[k], layout.MiddleShift),
-                    VectorLanes.ShiftRightRounded(column[k + 1], layout.MiddleShift),
-                    VectorLanes.ShiftRightRounded(column[k + 2], layout.MiddleShift),
-                    VectorLanes.ShiftRightRounded(column[k + 3], layout.MiddleShift),
+                    VectorLanes.ShiftRightRounded(column[GetPosition(order, k)], layout.MiddleShift),
+                    VectorLanes.ShiftRightRounded(column[GetPosition(order, k + 1)], layout.MiddleShift),
+                    VectorLanes.ShiftRightRounded(column[GetPosition(order, k + 2)], layout.MiddleShift),
+                    VectorLanes.ShiftRightRounded(column[GetPosition(order, k + 3)], layout.MiddleShift),
                     out group[c],
                     out group[c + 1],
                     out group[c + 2],
@@ -199,15 +199,15 @@ internal static class Av1ForwardTransform
                 }
             }
 
-            Apply<VectorLanes, Vector128<int>>(layout.RowKind, row, layout.Log2W);
+            var order = Apply<VectorLanes, Vector128<int>>(layout.RowKind, row, layout.Log2W);
             var output = coefficients.Slice(k * tw, 4 * tw);
             for (var l = 0; l < tw; l += 4)
             {
                 Av1Simd.Transpose(
-                    Finish<VectorLanes, Vector128<int>>(row[l], layout.IsRectangular2To1),
-                    Finish<VectorLanes, Vector128<int>>(row[l + 1], layout.IsRectangular2To1),
-                    Finish<VectorLanes, Vector128<int>>(row[l + 2], layout.IsRectangular2To1),
-                    Finish<VectorLanes, Vector128<int>>(row[l + 3], layout.IsRectangular2To1),
+                    Finish<VectorLanes, Vector128<int>>(row[GetPosition(order, l)], layout.IsRectangular2To1),
+                    Finish<VectorLanes, Vector128<int>>(row[GetPosition(order, l + 1)], layout.IsRectangular2To1),
+                    Finish<VectorLanes, Vector128<int>>(row[GetPosition(order, l + 2)], layout.IsRectangular2To1),
+                    Finish<VectorLanes, Vector128<int>>(row[GetPosition(order, l + 3)], layout.IsRectangular2To1),
                     out var row0,
                     out var row1,
                     out var row2,
@@ -233,7 +233,8 @@ internal static class Av1ForwardTransform
         return TLanes.ShiftRightRounded(value, FractionBits);
     }
 
-    private static void Apply<TLanes, T>(Av1InverseTransform.Kind kind, Span<T> t, int n)
+    // The transform of a line, in place. Returns the position in t of each output: empty when the outputs are in order
+    private static ReadOnlySpan<byte> Apply<TLanes, T>(Av1InverseTransform.Kind kind, Span<T> t, int n)
         where TLanes : struct, ILanes<T>
         where T : unmanaged
     {
@@ -252,8 +253,22 @@ internal static class Av1ForwardTransform
                         ForwardDct16<TLanes, T>(t);
                         break;
                     default:
-                        ForwardDct<TLanes, T>(t, n);
-                        break;
+                        // The scalar reference runs the steps of the kernels of 32 and 64 points, the vector path their
+                        // written-out copies
+                        if (typeof(TLanes) == typeof(ScalarLanes))
+                        {
+                            ForwardDct<TLanes, T>(t, n);
+                        }
+                        else if (n is 5)
+                        {
+                            ForwardDct32<TLanes, T>(t);
+                        }
+                        else
+                        {
+                            ForwardDct64<TLanes, T>(t);
+                        }
+
+                        return n is 5 ? BitReverse5 : BitReverse6;
                 }
 
                 break;
@@ -276,7 +291,13 @@ internal static class Av1ForwardTransform
                 ForwardIdentity<TLanes, T>(t, n);
                 break;
         }
+
+        return default;
     }
+
+    // The position of the output i of a line transform, from the positions that Apply returns
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int GetPosition(ReadOnlySpan<byte> order, int i) => order.IsEmpty ? i : order[i];
 
     // The Hadamard rotation H( a, b, flip, r ) without its clamp: the matrix of the rotation is symmetric, so it is its own
     // transpose
@@ -425,8 +446,427 @@ internal static class Av1ForwardTransform
         (t[11], t[13]) = (t[13], t[11]);
     }
 
-    // The kernels of 32 and 64 points: every step of InverseDct, from the last to the first, with the bit reversal of its
-    // first step last
+    // ForwardDct for 32 points, written out: its steps with constant indices and angles, generated from the loops of
+    // ForwardDct. The steps are split in two methods so that the compiler inlines every one of them
+    private static void ForwardDct32<TLanes, T>(Span<T> t)
+        where TLanes : struct, ILanes<T>
+        where T : unmanaged
+    {
+        t = t[..32];
+        ForwardDct32First<TLanes, T>(t);
+        ForwardDct32Last<TLanes, T>(t);
+    }
+
+    private static void ForwardDct32First<TLanes, T>(Span<T> t)
+        where TLanes : struct, ILanes<T>
+        where T : unmanaged
+    {
+        t = t[..32];
+        H<TLanes, T>(t, 0, 31, flip: false);
+        H<TLanes, T>(t, 1, 30, flip: false);
+        H<TLanes, T>(t, 2, 29, flip: false);
+        H<TLanes, T>(t, 3, 28, flip: false);
+        H<TLanes, T>(t, 4, 27, flip: false);
+        H<TLanes, T>(t, 5, 26, flip: false);
+        H<TLanes, T>(t, 6, 25, flip: false);
+        H<TLanes, T>(t, 7, 24, flip: false);
+        H<TLanes, T>(t, 8, 23, flip: false);
+        H<TLanes, T>(t, 9, 22, flip: false);
+        H<TLanes, T>(t, 10, 21, flip: false);
+        H<TLanes, T>(t, 11, 20, flip: false);
+        H<TLanes, T>(t, 12, 19, flip: false);
+        H<TLanes, T>(t, 13, 18, flip: false);
+        H<TLanes, T>(t, 14, 17, flip: false);
+        H<TLanes, T>(t, 15, 16, flip: false);
+        B<TLanes, T>(t, 27, 20, 32, flip: true);
+        B<TLanes, T>(t, 26, 21, 32, flip: true);
+        B<TLanes, T>(t, 25, 22, 32, flip: true);
+        B<TLanes, T>(t, 24, 23, 32, flip: true);
+        H<TLanes, T>(t, 0, 15, flip: false);
+        H<TLanes, T>(t, 1, 14, flip: false);
+        H<TLanes, T>(t, 2, 13, flip: false);
+        H<TLanes, T>(t, 3, 12, flip: false);
+        H<TLanes, T>(t, 4, 11, flip: false);
+        H<TLanes, T>(t, 5, 10, flip: false);
+        H<TLanes, T>(t, 6, 9, flip: false);
+        H<TLanes, T>(t, 7, 8, flip: false);
+        H<TLanes, T>(t, 16, 23, flip: false);
+        H<TLanes, T>(t, 17, 22, flip: false);
+        H<TLanes, T>(t, 18, 21, flip: false);
+        H<TLanes, T>(t, 19, 20, flip: false);
+        H<TLanes, T>(t, 24, 31, flip: true);
+        H<TLanes, T>(t, 25, 30, flip: true);
+        H<TLanes, T>(t, 26, 29, flip: true);
+        H<TLanes, T>(t, 27, 28, flip: true);
+        B<TLanes, T>(t, 13, 10, 32, flip: true);
+        B<TLanes, T>(t, 12, 11, 32, flip: true);
+        H<TLanes, T>(t, 0, 7, flip: false);
+        H<TLanes, T>(t, 1, 6, flip: false);
+        H<TLanes, T>(t, 2, 5, flip: false);
+        H<TLanes, T>(t, 3, 4, flip: false);
+        B<TLanes, T>(t, 29, 18, 48, flip: true);
+        B<TLanes, T>(t, 28, 19, 48, flip: true);
+        B<TLanes, T>(t, 27, 20, 112, flip: true);
+        B<TLanes, T>(t, 26, 21, 112, flip: true);
+        H<TLanes, T>(t, 8, 11, flip: false);
+        H<TLanes, T>(t, 9, 10, flip: false);
+    }
+
+    private static void ForwardDct32Last<TLanes, T>(Span<T> t)
+        where TLanes : struct, ILanes<T>
+        where T : unmanaged
+    {
+        t = t[..32];
+        H<TLanes, T>(t, 12, 15, flip: true);
+        H<TLanes, T>(t, 13, 14, flip: true);
+        B<TLanes, T>(t, 6, 5, 32, flip: true);
+        H<TLanes, T>(t, 0, 3, flip: false);
+        H<TLanes, T>(t, 1, 2, flip: false);
+        H<TLanes, T>(t, 16, 19, flip: false);
+        H<TLanes, T>(t, 17, 18, flip: false);
+        H<TLanes, T>(t, 20, 23, flip: true);
+        H<TLanes, T>(t, 21, 22, flip: true);
+        H<TLanes, T>(t, 24, 27, flip: false);
+        H<TLanes, T>(t, 25, 26, flip: false);
+        H<TLanes, T>(t, 28, 31, flip: true);
+        H<TLanes, T>(t, 29, 30, flip: true);
+        B<TLanes, T>(t, 14, 9, 48, flip: true);
+        B<TLanes, T>(t, 13, 10, 112, flip: true);
+        H<TLanes, T>(t, 4, 5, flip: false);
+        H<TLanes, T>(t, 6, 7, flip: true);
+        B<TLanes, T>(t, 0, 1, 32, flip: true);
+        B<TLanes, T>(t, 2, 3, -48, flip: false);
+        B<TLanes, T>(t, 30, 17, 56, flip: true);
+        B<TLanes, T>(t, 29, 18, 120, flip: true);
+        B<TLanes, T>(t, 26, 21, 24, flip: true);
+        B<TLanes, T>(t, 25, 22, 88, flip: true);
+        H<TLanes, T>(t, 8, 9, flip: false);
+        H<TLanes, T>(t, 10, 11, flip: true);
+        H<TLanes, T>(t, 12, 13, flip: false);
+        H<TLanes, T>(t, 14, 15, flip: true);
+        B<TLanes, T>(t, 4, 7, -56, flip: false);
+        B<TLanes, T>(t, 5, 6, -24, flip: false);
+        H<TLanes, T>(t, 16, 17, flip: false);
+        H<TLanes, T>(t, 18, 19, flip: true);
+        H<TLanes, T>(t, 20, 21, flip: false);
+        H<TLanes, T>(t, 22, 23, flip: true);
+        H<TLanes, T>(t, 24, 25, flip: false);
+        H<TLanes, T>(t, 26, 27, flip: true);
+        H<TLanes, T>(t, 28, 29, flip: false);
+        H<TLanes, T>(t, 30, 31, flip: true);
+        B<TLanes, T>(t, 8, 15, -60, flip: false);
+        B<TLanes, T>(t, 9, 14, -28, flip: false);
+        B<TLanes, T>(t, 10, 13, -44, flip: false);
+        B<TLanes, T>(t, 11, 12, -12, flip: false);
+        B<TLanes, T>(t, 16, 31, -62, flip: false);
+        B<TLanes, T>(t, 17, 30, -30, flip: false);
+        B<TLanes, T>(t, 18, 29, -46, flip: false);
+        B<TLanes, T>(t, 19, 28, -14, flip: false);
+        B<TLanes, T>(t, 20, 27, -54, flip: false);
+        B<TLanes, T>(t, 21, 26, -22, flip: false);
+        B<TLanes, T>(t, 22, 25, -38, flip: false);
+        B<TLanes, T>(t, 23, 24, -6, flip: false);
+    }
+
+    // ForwardDct for 64 points, written out like ForwardDct32 in six methods
+    private static void ForwardDct64<TLanes, T>(Span<T> t)
+        where TLanes : struct, ILanes<T>
+        where T : unmanaged
+    {
+        t = t[..64];
+        ForwardDct64First<TLanes, T>(t);
+        ForwardDct64Second<TLanes, T>(t);
+        ForwardDct64Third<TLanes, T>(t);
+        ForwardDct64Fourth<TLanes, T>(t);
+        ForwardDct64Fifth<TLanes, T>(t);
+        ForwardDct64Sixth<TLanes, T>(t);
+    }
+
+    private static void ForwardDct64First<TLanes, T>(Span<T> t)
+        where TLanes : struct, ILanes<T>
+        where T : unmanaged
+    {
+        t = t[..64];
+        H<TLanes, T>(t, 0, 63, flip: false);
+        H<TLanes, T>(t, 1, 62, flip: false);
+        H<TLanes, T>(t, 2, 61, flip: false);
+        H<TLanes, T>(t, 3, 60, flip: false);
+        H<TLanes, T>(t, 4, 59, flip: false);
+        H<TLanes, T>(t, 5, 58, flip: false);
+        H<TLanes, T>(t, 6, 57, flip: false);
+        H<TLanes, T>(t, 7, 56, flip: false);
+        H<TLanes, T>(t, 8, 55, flip: false);
+        H<TLanes, T>(t, 9, 54, flip: false);
+        H<TLanes, T>(t, 10, 53, flip: false);
+        H<TLanes, T>(t, 11, 52, flip: false);
+        H<TLanes, T>(t, 12, 51, flip: false);
+        H<TLanes, T>(t, 13, 50, flip: false);
+        H<TLanes, T>(t, 14, 49, flip: false);
+        H<TLanes, T>(t, 15, 48, flip: false);
+        H<TLanes, T>(t, 16, 47, flip: false);
+        H<TLanes, T>(t, 17, 46, flip: false);
+        H<TLanes, T>(t, 18, 45, flip: false);
+        H<TLanes, T>(t, 19, 44, flip: false);
+        H<TLanes, T>(t, 20, 43, flip: false);
+        H<TLanes, T>(t, 21, 42, flip: false);
+        H<TLanes, T>(t, 22, 41, flip: false);
+        H<TLanes, T>(t, 23, 40, flip: false);
+        H<TLanes, T>(t, 24, 39, flip: false);
+        H<TLanes, T>(t, 25, 38, flip: false);
+        H<TLanes, T>(t, 26, 37, flip: false);
+        H<TLanes, T>(t, 27, 36, flip: false);
+        H<TLanes, T>(t, 28, 35, flip: false);
+        H<TLanes, T>(t, 29, 34, flip: false);
+        H<TLanes, T>(t, 30, 33, flip: false);
+        H<TLanes, T>(t, 31, 32, flip: false);
+        B<TLanes, T>(t, 55, 40, 32, flip: true);
+        B<TLanes, T>(t, 54, 41, 32, flip: true);
+        B<TLanes, T>(t, 53, 42, 32, flip: true);
+        B<TLanes, T>(t, 52, 43, 32, flip: true);
+        B<TLanes, T>(t, 51, 44, 32, flip: true);
+        B<TLanes, T>(t, 50, 45, 32, flip: true);
+        B<TLanes, T>(t, 49, 46, 32, flip: true);
+        B<TLanes, T>(t, 48, 47, 32, flip: true);
+        H<TLanes, T>(t, 0, 31, flip: false);
+        H<TLanes, T>(t, 1, 30, flip: false);
+        H<TLanes, T>(t, 2, 29, flip: false);
+        H<TLanes, T>(t, 3, 28, flip: false);
+        H<TLanes, T>(t, 4, 27, flip: false);
+        H<TLanes, T>(t, 5, 26, flip: false);
+        H<TLanes, T>(t, 6, 25, flip: false);
+        H<TLanes, T>(t, 7, 24, flip: false);
+        H<TLanes, T>(t, 8, 23, flip: false);
+    }
+
+    private static void ForwardDct64Second<TLanes, T>(Span<T> t)
+        where TLanes : struct, ILanes<T>
+        where T : unmanaged
+    {
+        t = t[..64];
+        H<TLanes, T>(t, 9, 22, flip: false);
+        H<TLanes, T>(t, 10, 21, flip: false);
+        H<TLanes, T>(t, 11, 20, flip: false);
+        H<TLanes, T>(t, 12, 19, flip: false);
+        H<TLanes, T>(t, 13, 18, flip: false);
+        H<TLanes, T>(t, 14, 17, flip: false);
+        H<TLanes, T>(t, 15, 16, flip: false);
+        H<TLanes, T>(t, 32, 47, flip: false);
+        H<TLanes, T>(t, 48, 63, flip: true);
+        H<TLanes, T>(t, 33, 46, flip: false);
+        H<TLanes, T>(t, 49, 62, flip: true);
+        H<TLanes, T>(t, 34, 45, flip: false);
+        H<TLanes, T>(t, 50, 61, flip: true);
+        H<TLanes, T>(t, 35, 44, flip: false);
+        H<TLanes, T>(t, 51, 60, flip: true);
+        H<TLanes, T>(t, 36, 43, flip: false);
+        H<TLanes, T>(t, 52, 59, flip: true);
+        H<TLanes, T>(t, 37, 42, flip: false);
+        H<TLanes, T>(t, 53, 58, flip: true);
+        H<TLanes, T>(t, 38, 41, flip: false);
+        H<TLanes, T>(t, 54, 57, flip: true);
+        H<TLanes, T>(t, 39, 40, flip: false);
+        H<TLanes, T>(t, 55, 56, flip: true);
+        B<TLanes, T>(t, 27, 20, 32, flip: true);
+        B<TLanes, T>(t, 26, 21, 32, flip: true);
+        B<TLanes, T>(t, 25, 22, 32, flip: true);
+        B<TLanes, T>(t, 24, 23, 32, flip: true);
+        H<TLanes, T>(t, 0, 15, flip: false);
+        H<TLanes, T>(t, 1, 14, flip: false);
+        H<TLanes, T>(t, 2, 13, flip: false);
+        H<TLanes, T>(t, 3, 12, flip: false);
+        H<TLanes, T>(t, 4, 11, flip: false);
+        H<TLanes, T>(t, 5, 10, flip: false);
+        H<TLanes, T>(t, 6, 9, flip: false);
+        H<TLanes, T>(t, 7, 8, flip: false);
+        B<TLanes, T>(t, 59, 36, 48, flip: true);
+        B<TLanes, T>(t, 58, 37, 48, flip: true);
+        B<TLanes, T>(t, 57, 38, 48, flip: true);
+        B<TLanes, T>(t, 56, 39, 48, flip: true);
+        B<TLanes, T>(t, 55, 40, 112, flip: true);
+        B<TLanes, T>(t, 54, 41, 112, flip: true);
+        B<TLanes, T>(t, 53, 42, 112, flip: true);
+        B<TLanes, T>(t, 52, 43, 112, flip: true);
+        H<TLanes, T>(t, 16, 23, flip: false);
+        H<TLanes, T>(t, 17, 22, flip: false);
+        H<TLanes, T>(t, 18, 21, flip: false);
+        H<TLanes, T>(t, 19, 20, flip: false);
+        H<TLanes, T>(t, 24, 31, flip: true);
+        H<TLanes, T>(t, 25, 30, flip: true);
+    }
+
+    private static void ForwardDct64Third<TLanes, T>(Span<T> t)
+        where TLanes : struct, ILanes<T>
+        where T : unmanaged
+    {
+        t = t[..64];
+        H<TLanes, T>(t, 26, 29, flip: true);
+        H<TLanes, T>(t, 27, 28, flip: true);
+        B<TLanes, T>(t, 13, 10, 32, flip: true);
+        B<TLanes, T>(t, 12, 11, 32, flip: true);
+        H<TLanes, T>(t, 0, 7, flip: false);
+        H<TLanes, T>(t, 1, 6, flip: false);
+        H<TLanes, T>(t, 2, 5, flip: false);
+        H<TLanes, T>(t, 3, 4, flip: false);
+        H<TLanes, T>(t, 32, 39, flip: false);
+        H<TLanes, T>(t, 33, 38, flip: false);
+        H<TLanes, T>(t, 34, 37, flip: false);
+        H<TLanes, T>(t, 35, 36, flip: false);
+        H<TLanes, T>(t, 40, 47, flip: true);
+        H<TLanes, T>(t, 41, 46, flip: true);
+        H<TLanes, T>(t, 42, 45, flip: true);
+        H<TLanes, T>(t, 43, 44, flip: true);
+        H<TLanes, T>(t, 48, 55, flip: false);
+        H<TLanes, T>(t, 49, 54, flip: false);
+        H<TLanes, T>(t, 50, 53, flip: false);
+        H<TLanes, T>(t, 51, 52, flip: false);
+        H<TLanes, T>(t, 56, 63, flip: true);
+        H<TLanes, T>(t, 57, 62, flip: true);
+        H<TLanes, T>(t, 58, 61, flip: true);
+        H<TLanes, T>(t, 59, 60, flip: true);
+        B<TLanes, T>(t, 29, 18, 48, flip: true);
+        B<TLanes, T>(t, 28, 19, 48, flip: true);
+        B<TLanes, T>(t, 27, 20, 112, flip: true);
+        B<TLanes, T>(t, 26, 21, 112, flip: true);
+        H<TLanes, T>(t, 8, 11, flip: false);
+        H<TLanes, T>(t, 9, 10, flip: false);
+        H<TLanes, T>(t, 12, 15, flip: true);
+        H<TLanes, T>(t, 13, 14, flip: true);
+        B<TLanes, T>(t, 6, 5, 32, flip: true);
+        H<TLanes, T>(t, 0, 3, flip: false);
+        H<TLanes, T>(t, 1, 2, flip: false);
+        B<TLanes, T>(t, 61, 34, 56, flip: true);
+        B<TLanes, T>(t, 60, 35, 56, flip: true);
+        B<TLanes, T>(t, 59, 36, 120, flip: true);
+        B<TLanes, T>(t, 58, 37, 120, flip: true);
+        B<TLanes, T>(t, 53, 42, 24, flip: true);
+        B<TLanes, T>(t, 52, 43, 24, flip: true);
+        B<TLanes, T>(t, 51, 44, 88, flip: true);
+        B<TLanes, T>(t, 50, 45, 88, flip: true);
+        H<TLanes, T>(t, 16, 19, flip: false);
+        H<TLanes, T>(t, 17, 18, flip: false);
+        H<TLanes, T>(t, 20, 23, flip: true);
+        H<TLanes, T>(t, 21, 22, flip: true);
+        H<TLanes, T>(t, 24, 27, flip: false);
+        H<TLanes, T>(t, 25, 26, flip: false);
+    }
+
+    private static void ForwardDct64Fourth<TLanes, T>(Span<T> t)
+        where TLanes : struct, ILanes<T>
+        where T : unmanaged
+    {
+        t = t[..64];
+        H<TLanes, T>(t, 28, 31, flip: true);
+        H<TLanes, T>(t, 29, 30, flip: true);
+        B<TLanes, T>(t, 14, 9, 48, flip: true);
+        B<TLanes, T>(t, 13, 10, 112, flip: true);
+        H<TLanes, T>(t, 4, 5, flip: false);
+        H<TLanes, T>(t, 6, 7, flip: true);
+        B<TLanes, T>(t, 0, 1, 32, flip: true);
+        B<TLanes, T>(t, 2, 3, -48, flip: false);
+        H<TLanes, T>(t, 32, 35, flip: false);
+        H<TLanes, T>(t, 33, 34, flip: false);
+        H<TLanes, T>(t, 36, 39, flip: true);
+        H<TLanes, T>(t, 37, 38, flip: true);
+        H<TLanes, T>(t, 40, 43, flip: false);
+        H<TLanes, T>(t, 41, 42, flip: false);
+        H<TLanes, T>(t, 44, 47, flip: true);
+        H<TLanes, T>(t, 45, 46, flip: true);
+        H<TLanes, T>(t, 48, 51, flip: false);
+        H<TLanes, T>(t, 49, 50, flip: false);
+        H<TLanes, T>(t, 52, 55, flip: true);
+        H<TLanes, T>(t, 53, 54, flip: true);
+        H<TLanes, T>(t, 56, 59, flip: false);
+        H<TLanes, T>(t, 57, 58, flip: false);
+        H<TLanes, T>(t, 60, 63, flip: true);
+        H<TLanes, T>(t, 61, 62, flip: true);
+        B<TLanes, T>(t, 30, 17, 56, flip: true);
+        B<TLanes, T>(t, 29, 18, 120, flip: true);
+        B<TLanes, T>(t, 26, 21, 24, flip: true);
+        B<TLanes, T>(t, 25, 22, 88, flip: true);
+        H<TLanes, T>(t, 8, 9, flip: false);
+        H<TLanes, T>(t, 10, 11, flip: true);
+        H<TLanes, T>(t, 12, 13, flip: false);
+        H<TLanes, T>(t, 14, 15, flip: true);
+        B<TLanes, T>(t, 4, 7, -56, flip: false);
+        B<TLanes, T>(t, 5, 6, -24, flip: false);
+        B<TLanes, T>(t, 62, 33, 60, flip: true);
+        B<TLanes, T>(t, 61, 34, 124, flip: true);
+        B<TLanes, T>(t, 58, 37, 28, flip: true);
+        B<TLanes, T>(t, 57, 38, 92, flip: true);
+        B<TLanes, T>(t, 54, 41, 44, flip: true);
+        B<TLanes, T>(t, 53, 42, 108, flip: true);
+        B<TLanes, T>(t, 50, 45, 12, flip: true);
+        B<TLanes, T>(t, 49, 46, 76, flip: true);
+        H<TLanes, T>(t, 16, 17, flip: false);
+        H<TLanes, T>(t, 18, 19, flip: true);
+        H<TLanes, T>(t, 20, 21, flip: false);
+        H<TLanes, T>(t, 22, 23, flip: true);
+        H<TLanes, T>(t, 24, 25, flip: false);
+        H<TLanes, T>(t, 26, 27, flip: true);
+        H<TLanes, T>(t, 28, 29, flip: false);
+    }
+
+    private static void ForwardDct64Fifth<TLanes, T>(Span<T> t)
+        where TLanes : struct, ILanes<T>
+        where T : unmanaged
+    {
+        t = t[..64];
+        H<TLanes, T>(t, 30, 31, flip: true);
+        B<TLanes, T>(t, 8, 15, -60, flip: false);
+        B<TLanes, T>(t, 9, 14, -28, flip: false);
+        B<TLanes, T>(t, 10, 13, -44, flip: false);
+        B<TLanes, T>(t, 11, 12, -12, flip: false);
+        H<TLanes, T>(t, 32, 33, flip: false);
+        H<TLanes, T>(t, 34, 35, flip: true);
+        H<TLanes, T>(t, 36, 37, flip: false);
+        H<TLanes, T>(t, 38, 39, flip: true);
+        H<TLanes, T>(t, 40, 41, flip: false);
+        H<TLanes, T>(t, 42, 43, flip: true);
+        H<TLanes, T>(t, 44, 45, flip: false);
+        H<TLanes, T>(t, 46, 47, flip: true);
+        H<TLanes, T>(t, 48, 49, flip: false);
+        H<TLanes, T>(t, 50, 51, flip: true);
+        H<TLanes, T>(t, 52, 53, flip: false);
+        H<TLanes, T>(t, 54, 55, flip: true);
+        H<TLanes, T>(t, 56, 57, flip: false);
+        H<TLanes, T>(t, 58, 59, flip: true);
+        H<TLanes, T>(t, 60, 61, flip: false);
+        H<TLanes, T>(t, 62, 63, flip: true);
+        B<TLanes, T>(t, 16, 31, -62, flip: false);
+        B<TLanes, T>(t, 17, 30, -30, flip: false);
+    }
+
+    private static void ForwardDct64Sixth<TLanes, T>(Span<T> t)
+        where TLanes : struct, ILanes<T>
+        where T : unmanaged
+    {
+        t = t[..64];
+        B<TLanes, T>(t, 18, 29, -46, flip: false);
+        B<TLanes, T>(t, 19, 28, -14, flip: false);
+        B<TLanes, T>(t, 20, 27, -54, flip: false);
+        B<TLanes, T>(t, 21, 26, -22, flip: false);
+        B<TLanes, T>(t, 22, 25, -38, flip: false);
+        B<TLanes, T>(t, 23, 24, -6, flip: false);
+        B<TLanes, T>(t, 32, 63, -63, flip: false);
+        B<TLanes, T>(t, 33, 62, -31, flip: false);
+        B<TLanes, T>(t, 34, 61, -47, flip: false);
+        B<TLanes, T>(t, 35, 60, -15, flip: false);
+        B<TLanes, T>(t, 36, 59, -55, flip: false);
+        B<TLanes, T>(t, 37, 58, -23, flip: false);
+        B<TLanes, T>(t, 38, 57, -39, flip: false);
+        B<TLanes, T>(t, 39, 56, -7, flip: false);
+        B<TLanes, T>(t, 40, 55, -59, flip: false);
+        B<TLanes, T>(t, 41, 54, -27, flip: false);
+        B<TLanes, T>(t, 42, 53, -43, flip: false);
+        B<TLanes, T>(t, 43, 52, -11, flip: false);
+        B<TLanes, T>(t, 44, 51, -51, flip: false);
+        B<TLanes, T>(t, 45, 50, -19, flip: false);
+        B<TLanes, T>(t, 46, 49, -35, flip: false);
+        B<TLanes, T>(t, 47, 48, -3, flip: false);
+    }
+
+    // The kernels of 32 and 64 points: every step of InverseDct, from the last to the first, but the bit reversal of its
+    // first step: the output i is left at the position BitReverse( n, i ), which Apply returns
     private static void ForwardDct<TLanes, T>(Span<T> t, int n)
         where TLanes : struct, ILanes<T>
         where T : unmanaged
@@ -678,14 +1118,6 @@ internal static class Av1ForwardTransform
                 B<TLanes, T>(t, 32 + i, 63 - i, -(63 - (4 * BitReverse(4, i))), flip: false);
             }
         }
-
-        var length = 1 << n;
-        for (var i = 0; i < length; i++)
-        {
-            var j = BitReverse(n, i);
-            if (j > i)
-                (t[i], t[j]) = (t[j], t[i]);
-        }
     }
 
     // The transpose of InverseAdst8 (section 7.13.2.7): every rotation is flipped
@@ -888,6 +1320,12 @@ internal static class Av1ForwardTransform
     // The low n bits of x in the reverse order
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static int BitReverse(int n, int x) => BitReverse6[x] >> (6 - n);
+
+    // The low 5 bits of the indexes 0 to 31 in the reverse order
+    private static ReadOnlySpan<byte> BitReverse5 =>
+    [
+        0, 16, 8, 24, 4, 20, 12, 28, 2, 18, 10, 26, 6, 22, 14, 30, 1, 17, 9, 25, 5, 21, 13, 29, 3, 19, 11, 27, 7, 23, 15, 31,
+    ];
 
     private static ReadOnlySpan<byte> BitReverse6 =>
     [

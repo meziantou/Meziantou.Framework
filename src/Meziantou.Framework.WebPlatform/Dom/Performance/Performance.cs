@@ -28,14 +28,20 @@ public sealed class Performance : EventTarget
     private List<PerformanceEntry>? _visibilityStateBuffer;
     private List<PerformanceEntry>? _largestContentfulPaintBuffer;
     private List<PerformanceEntry>? _elementTimingBuffer;
+    private List<PerformanceEntry>? _containerTimingBuffer;
     private List<PerformanceEntry>? _eventTimingBuffer;
     private List<PerformanceEntry>? _firstInputBuffer;
+    private List<PerformanceEntry>? _interactionContentfulPaintBuffer;
+    private List<PerformanceEntry>? _softNavigationBuffer;
     private EventCounts? _eventCounts;
     private ulong _paintDroppedEntriesCount;
     private ulong _largestContentfulPaintDroppedEntriesCount;
     private ulong _elementTimingDroppedEntriesCount;
+    private ulong _containerTimingDroppedEntriesCount;
     private ulong _eventTimingDroppedEntriesCount;
     private ulong _firstInputDroppedEntriesCount;
+    private ulong _interactionContentfulPaintDroppedEntriesCount;
+    private ulong _softNavigationDroppedEntriesCount;
     private IReadOnlyList<string>? _supportedEntryTypes;
     private ulong _lastEntryId = (ulong)System.Security.Cryptography.RandomNumberGenerator.GetInt32(1, 10_000);
     private int _resourceTimingBufferSizeLimit = DefaultResourceTimingBufferSize;
@@ -51,9 +57,9 @@ public sealed class Performance : EventTarget
 
     /// <summary>
     /// The frozen array of supported entry types of the global object (https://w3c.github.io/performance-timeline/#dfn-frozen-array-of-supported-entry-types),
-    /// in alphabetical order: for a window, <c>element</c> (see <see cref="WebPlatformFeatures.ElementTimingEnabled"/>),
-    /// <c>event</c> and <c>first-input</c> (see <see cref="WebPlatformFeatures.EventTimingEnabled"/>),
-    /// <c>largest-contentful-paint</c> (see <see cref="WebPlatformFeatures.LargestContentfulPaintEnabled"/>), <c>layout-shift</c>
+    /// in alphabetical order: for a window, <c>container</c> (see <see cref="WebPlatformFeatures.ContainerTimingEnabled"/>), <c>element</c> (see <see cref="WebPlatformFeatures.ElementTimingEnabled"/>),
+    /// <c>event</c> and <c>first-input</c> (see <see cref="WebPlatformFeatures.EventTimingEnabled"/>), <c>interaction-contentful-paint</c>
+    /// and <c>soft-navigation</c> (see <see cref="WebPlatformFeatures.SoftNavigationsEnabled"/>), <c>largest-contentful-paint</c> (see <see cref="WebPlatformFeatures.LargestContentfulPaintEnabled"/>), <c>layout-shift</c>
     /// (see <see cref="WebPlatformFeatures.LayoutInstabilityEnabled"/>), <c>navigation</c> (see <see cref="WebPlatformFeatures.NavigationTimingEnabled"/>)
     /// <c>paint</c> (see <see cref="WebPlatformFeatures.PaintTimingEnabled"/>) and <c>visibility-state</c> (see
     /// <see cref="WebPlatformFeatures.VisibilityStateEntryEnabled"/>); <c>mark</c> and <c>measure</c> (see
@@ -66,6 +72,11 @@ public sealed class Performance : EventTarget
         var types = new List<string>();
         var features = _global.Options.EffectiveFeatures;
         var isWindow = _global is Window;
+        if (isWindow && features.ContainerTimingEnabled)
+        {
+            types.Add(PerformanceContainerTiming.ContainerEntryType);
+        }
+
         if (isWindow && features.ElementTimingEnabled)
         {
             types.Add(PerformanceElementTiming.ElementEntryType);
@@ -75,6 +86,11 @@ public sealed class Performance : EventTarget
         {
             types.Add(PerformanceEventTiming.EventEntryType);
             types.Add(PerformanceEventTiming.FirstInputEntryType);
+        }
+
+        if (isWindow && features.SoftNavigationsEnabled)
+        {
+            types.Add(InteractionContentfulPaint.InteractionContentfulPaintEntryType);
         }
 
         if (isWindow && features.LargestContentfulPaintEnabled)
@@ -104,6 +120,11 @@ public sealed class Performance : EventTarget
         }
 
         types.Add(PerformanceResourceTiming.ResourceEntryType);
+        if (isWindow && features.SoftNavigationsEnabled)
+        {
+            types.Add(PerformanceSoftNavigation.SoftNavigationEntryType);
+        }
+
         if (isWindow && features.VisibilityStateEntryEnabled)
         {
             types.Add(VisibilityStateEntry.VisibilityStateEntryType);
@@ -354,7 +375,8 @@ public sealed class Performance : EventTarget
 
     /// <summary>
     /// https://w3c.github.io/performance-timeline/#dfn-navigation-id: the document of the window is restored from the
-    /// back/forward cache, which is a new navigation of the document: the entries queued from then on have a new navigation id.
+    /// back/forward cache, or a soft navigation is emitted (https://wicg.github.io/soft-navigations/#emit-a-soft-navigation-entry),
+    /// which is a new navigation of the document: the entries queued from then on have a new navigation id.
     /// </summary>
     internal void IncrementNavigationId() => _navigationId++;
 
@@ -435,8 +457,11 @@ public sealed class Performance : EventTarget
         VisibilityStateEntry.VisibilityStateEntryType => _visibilityStateBuffer ?? [],
         LargestContentfulPaint.LargestContentfulPaintEntryType => _largestContentfulPaintBuffer ?? [],
         PerformanceElementTiming.ElementEntryType => _elementTimingBuffer ?? [],
+        PerformanceContainerTiming.ContainerEntryType => _containerTimingBuffer ?? [],
         PerformanceEventTiming.EventEntryType => _eventTimingBuffer ?? [],
         PerformanceEventTiming.FirstInputEntryType => _firstInputBuffer ?? [],
+        InteractionContentfulPaint.InteractionContentfulPaintEntryType => _interactionContentfulPaintBuffer ?? [],
+        PerformanceSoftNavigation.SoftNavigationEntryType => _softNavigationBuffer ?? [],
         _ => [],
     };
 
@@ -448,8 +473,11 @@ public sealed class Performance : EventTarget
         PerformancePaintTiming.PaintEntryType => _paintDroppedEntriesCount,
         LargestContentfulPaint.LargestContentfulPaintEntryType => _largestContentfulPaintDroppedEntriesCount,
         PerformanceElementTiming.ElementEntryType => _elementTimingDroppedEntriesCount,
+        PerformanceContainerTiming.ContainerEntryType => _containerTimingDroppedEntriesCount,
         PerformanceEventTiming.EventEntryType => _eventTimingDroppedEntriesCount,
         PerformanceEventTiming.FirstInputEntryType => _firstInputDroppedEntriesCount,
+        InteractionContentfulPaint.InteractionContentfulPaintEntryType => _interactionContentfulPaintDroppedEntriesCount,
+        PerformanceSoftNavigation.SoftNavigationEntryType => _softNavigationDroppedEntriesCount,
         _ => 0,
     };
 
@@ -464,7 +492,7 @@ public sealed class Performance : EventTarget
         {
             document.StartLayoutShiftTracking();
         }
-        else if (type is PerformancePaintTiming.PaintEntryType or LargestContentfulPaint.LargestContentfulPaintEntryType or PerformanceElementTiming.ElementEntryType)
+        else if (type is PerformancePaintTiming.PaintEntryType or LargestContentfulPaint.LargestContentfulPaintEntryType or PerformanceElementTiming.ElementEntryType or PerformanceContainerTiming.ContainerEntryType or InteractionContentfulPaint.InteractionContentfulPaintEntryType or PerformanceSoftNavigation.SoftNavigationEntryType)
         {
             _global.AssociatedDocument?.StartPaintTiming();
         }
@@ -489,8 +517,9 @@ public sealed class Performance : EventTarget
     private List<PerformanceEntry> FilterBufferMap(string? name, string? type)
     {
         // The buffers of the performance entry buffer map whose entries are available from the timeline: the navigation timing,
-        // the resource timing, the marks, the measures, the paint timing, the first input and the visibility states (the layout shifts, the largest
-        // contentful paints, the element timings and the event timings are not: https://w3c.github.io/timing-entrytypes-registry/#registry)
+        // the resource timing, the marks, the measures, the paint timing, the first input, the visibility states and, as in the browsers, the
+        // soft navigations (the layout shifts, the largest contentful paints, the element timings, the event timings and the interaction
+        // contentful paints are not: https://w3c.github.io/timing-entrytypes-registry/#registry)
         var result = new List<PerformanceEntry>();
         AddBuffer(NavigationBuffer, PerformanceNavigationTiming.NavigationEntryType);
         AddBuffer(_resourceTimingBuffer, PerformanceResourceTiming.ResourceEntryType);
@@ -509,6 +538,11 @@ public sealed class Performance : EventTarget
         if (_visibilityStateBuffer is not null)
         {
             AddBuffer(_visibilityStateBuffer, VisibilityStateEntry.VisibilityStateEntryType);
+        }
+
+        if (_softNavigationBuffer is not null)
+        {
+            AddBuffer(_softNavigationBuffer, PerformanceSoftNavigation.SoftNavigationEntryType);
         }
 
         SortByStartTime(result);
@@ -627,8 +661,17 @@ public sealed class Performance : EventTarget
     /// <summary>A largest contentful paint entry: queued to the observers and added to the buffer of the <c>largest-contentful-paint</c> type.</summary>
     internal void QueueLargestContentfulPaintEntry(LargestContentfulPaint entry) => QueueBufferedEntry(entry, ref _largestContentfulPaintBuffer, LargestContentfulPaint.MaxBufferSize, ref _largestContentfulPaintDroppedEntriesCount);
 
+    /// <summary>An interaction contentful paint entry: queued to the observers and added to the buffer of the <c>interaction-contentful-paint</c> type.</summary>
+    internal void QueueInteractionContentfulPaintEntry(InteractionContentfulPaint entry) => QueueBufferedEntry(entry, ref _interactionContentfulPaintBuffer, InteractionContentfulPaint.MaxBufferSize, ref _interactionContentfulPaintDroppedEntriesCount);
+
+    /// <summary>A soft navigation entry: queued to the observers and added to the buffer of the <c>soft-navigation</c> type.</summary>
+    internal void QueueSoftNavigationEntry(PerformanceSoftNavigation entry) => QueueBufferedEntry(entry, ref _softNavigationBuffer, PerformanceSoftNavigation.MaxBufferSize, ref _softNavigationDroppedEntriesCount);
+
     /// <summary>An element timing entry: queued to the observers and added to the buffer of the <c>element</c> type.</summary>
     internal void QueueElementTimingEntry(PerformanceElementTiming entry) => QueueBufferedEntry(entry, ref _elementTimingBuffer, PerformanceElementTiming.MaxBufferSize, ref _elementTimingDroppedEntriesCount);
+
+    /// <summary>A container timing entry: queued to the observers and added to the buffer of the <c>container</c> type.</summary>
+    internal void QueueContainerTimingEntry(PerformanceContainerTiming entry) => QueueBufferedEntry(entry, ref _containerTimingBuffer, PerformanceContainerTiming.MaxBufferSize, ref _containerTimingDroppedEntriesCount);
 
     /// <summary>
     /// An event timing entry (https://w3c.github.io/event-timing/#dispatch-pending-event-timing-entries): queued to the observers

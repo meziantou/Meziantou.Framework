@@ -257,6 +257,12 @@ public abstract partial class Node
             }
 
             n.RunInsertionStepsForSubtree();
+
+            // https://wicg.github.io/soft-navigations/#sec-html-node: the inserted node is modified by the current interaction
+            if (InteractionContext.Current is not null)
+            {
+                document.RecordNodeModifiedForInteractionPaintTiming(n);
+            }
         }
 
         if (!suppressObservers)

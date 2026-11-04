@@ -3998,6 +3998,12 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public uint RequestAnimationFrame(Meziantou.Framework.WebPlatform.Dom.FrameRequestCallback callback) => throw null;
     }
 
+    public sealed class DelegatedInkTrailPresenter
+    {
+        public Meziantou.Framework.WebPlatform.Dom.Element? PresentationArea { get => throw null; }
+        public void UpdateInkTrailStartPoint(Meziantou.Framework.WebPlatform.Dom.PointerEvent @event, Meziantou.Framework.WebPlatform.Dom.InkTrailStyle style) { }
+    }
+
     public sealed class DeviceDescriptor : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.DeviceDescriptor>
     {
         public double DevicePixelRatio { get => throw null; init { } }
@@ -5920,6 +5926,8 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public string Autocapitalize { get => throw null; set { } }
         public bool Autocorrect { get => throw null; set { } }
         public bool Autofocus { get => throw null; set { } }
+        public string ContainerTiming { get => throw null; set { } }
+        public bool ContainerTimingIgnore { get => throw null; set { } }
         public string ContentEditable { get => throw null; set { } }
         public Meziantou.Framework.WebPlatform.Dom.CustomElement? CustomElement { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.DomStringMap Dataset { get => throw null; }
@@ -7432,6 +7440,22 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public static bool operator !=(Meziantou.Framework.WebPlatform.Dom.IndexedDBRecord left, Meziantou.Framework.WebPlatform.Dom.IndexedDBRecord right) => throw null;
     }
 
+    public sealed class Ink
+    {
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.DelegatedInkTrailPresenter> RequestPresenter(Meziantou.Framework.WebPlatform.Dom.InkPresenterParam? param = null) => throw null;
+    }
+
+    public sealed class InkPresenterParam
+    {
+        public Meziantou.Framework.WebPlatform.Dom.Element? PresentationArea { get => throw null; init { } }
+    }
+
+    public sealed class InkTrailStyle
+    {
+        public required string Color { get => throw null; init { } }
+        public required double Diameter { get => throw null; init { } }
+    }
+
     public sealed class InputEvent : Meziantou.Framework.WebPlatform.Dom.UIEvent
     {
         public string? Data { get => throw null; }
@@ -7466,6 +7490,14 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public InstallEvent(string type, Meziantou.Framework.WebPlatform.Dom.ExtendableEventInit? eventInitDict = null) : base(default(string), default(Meziantou.Framework.WebPlatform.Dom.ExtendableEventInit)) { }
         public System.Threading.Tasks.Task AddRoutes(Meziantou.Framework.WebPlatform.Dom.RouterRule rules) => throw null;
         public System.Threading.Tasks.Task AddRoutes(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.RouterRule> rules) => throw null;
+    }
+
+    public sealed class InteractionContentfulPaint : Meziantou.Framework.WebPlatform.Dom.PerformanceEntry
+    {
+        public ulong InteractionId { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.LargestContentfulPaint LargestContentfulPaint { get => throw null; }
+        public double PaintTime { get => throw null; }
+        public double? PresentationTime { get => throw null; }
     }
 
     public sealed class IntersectionObserver
@@ -8301,6 +8333,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.Clipboard Clipboard { get => throw null; }
         public bool CookieEnabled { get => throw null; }
         public ulong HardwareConcurrency { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.Ink Ink { get => throw null; }
         public string Language { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<string> Languages { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.LockManager Locks { get => throw null; }
@@ -8614,6 +8647,18 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public void SetResourceTimingBufferSize(uint maxSize) { }
     }
 
+    public sealed class PerformanceContainerTiming : Meziantou.Framework.WebPlatform.Dom.PerformanceEntry
+    {
+        public double FirstRenderTime { get => throw null; }
+        public string Identifier { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.DomRectReadOnly IntersectionRect { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.HtmlElement? LastPaintedElement { get => throw null; }
+        public double PaintTime { get => throw null; }
+        public double? PresentationTime { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.HtmlElement? RootElement { get => throw null; }
+        public ulong Size { get => throw null; }
+    }
+
     public sealed class PerformanceElementTiming : Meziantou.Framework.WebPlatform.Dom.PerformanceEntry
     {
         public Meziantou.Framework.WebPlatform.Dom.Element? Element { get => throw null; }
@@ -8777,6 +8822,15 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public string Description { get => throw null; }
         public double Duration { get => throw null; }
         public string Name { get => throw null; }
+    }
+
+    public sealed class PerformanceSoftNavigation : Meziantou.Framework.WebPlatform.Dom.PerformanceEntry
+    {
+        public ulong InteractionId { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.NavigationType NavigationType { get => throw null; }
+        public double PaintTime { get => throw null; }
+        public double? PresentationTime { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.InteractionContentfulPaint? GetLargestInteractionContentfulPaint() => throw null;
     }
 
     public sealed class PerformanceTiming
@@ -12100,6 +12154,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool ClientHintsEnabled { get => throw null; init { } }
         public bool CloseWatcherEnabled { get => throw null; init { } }
         public bool CompressionStreamsEnabled { get => throw null; init { } }
+        public bool ContainerTimingEnabled { get => throw null; init { } }
         public bool CookieStoreEnabled { get => throw null; init { } }
         public bool CssParserApiEnabled { get => throw null; init { } }
         [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0003", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
@@ -12133,6 +12188,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool ScrollDrivenAnimationsEnabled { get => throw null; init { } }
         public bool ServiceWorkersEnabled { get => throw null; init { } }
         public bool SharedWorkersEnabled { get => throw null; init { } }
+        public bool SoftNavigationsEnabled { get => throw null; init { } }
         public bool SpeculationRulesEnabled { get => throw null; init { } }
         public bool StorageManagerEnabled { get => throw null; init { } }
         public bool SvgAnimationsEnabled { get => throw null; init { } }

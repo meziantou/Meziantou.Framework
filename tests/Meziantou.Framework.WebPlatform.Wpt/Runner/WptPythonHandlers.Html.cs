@@ -4,11 +4,33 @@ using Meziantou.Framework.WebPlatform.Dom;
 
 namespace Meziantou.Framework.WebPlatform.Wpt.Runner;
 
-/// <summary>The handlers of the <c>html</c>, <c>dom</c>, <c>encoding</c>, <c>url</c>, <c>workers</c> and <c>FileAPI</c> tests.</summary>
+/// <summary>The handlers of the <c>html</c>, <c>dom</c>, <c>encoding</c>, <c>url</c>, <c>workers</c>, <c>FileAPI</c> and <c>mimesniff</c> tests.</summary>
 internal static partial class WptPythonHandlers
 {
     private static readonly Dictionary<string, Handler> HtmlHandlers = new(StringComparer.Ordinal)
     {
+        // mimesniff/mime-types: a document that writes its character encoding, served with the Content-Type of the type
+        // parameter as is (the parameter is a byte sequence, decoded as Latin-1 as the header values)
+        // html/dom/elements/images: a green image the first time an id is requested, then a red one, cacheable but to be revalidated
+        ["/html/dom/elements/images/image.py"] = (request, response, stash) =>
+        {
+            var key = request.Get("id") ?? "";
+            var alreadyServed = stash.TakeValue(key) is not null;
+            if (!alreadyServed)
+            {
+                stash.Put(key, true);
+            }
+
+            response.Set("ETag", "abcdef");
+            response.Set("Content-Type", "image/png");
+            response.Set("Cache-Control", "public, max-age=31536000, no-cache");
+            response.Body = ReadWptFile(alreadyServed ? "images/red.png" : "images/green.png");
+        },
+        ["/mimesniff/mime-types/resources/mime-charset.py"] = (request, response, _) =>
+        {
+            response.Set("Content-Type", request.Get("type"));
+            response.Content = "<meta charset=utf-8>\n<script>document.write(document.characterSet)</script>";
+        },
         // html/browsers/browsing-the-web: a slow empty HTML document (2 seconds), a redirect to the location parameter, a
         // redirect followed once per uuid, and documents with a Refresh header
         ["/html/browsers/browsing-the-web/overlapping-navigations-and-traversals/resources/slow.py"] = (_, response, _) =>

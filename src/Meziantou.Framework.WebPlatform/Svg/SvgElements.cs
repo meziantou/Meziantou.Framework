@@ -746,6 +746,11 @@ public partial class SvgImageElement
             var bytes = resource is null || !resource.IsOkStatus ? (ReadOnlyMemory<byte>?)null : resource.ContentBytes ?? System.Text.Encoding.UTF8.GetBytes(resource.Content ?? "");
             var naturalSize = default(ImageNaturalSize);
             var isImage = bytes is { } data && ImageHeaders.TryGetImageInfo(data.Span, resource!.MimeType?.Essence ?? "", out naturalSize);
+            if (isImage)
+            {
+                naturalSize = naturalSize.WithContentDpr(resource!);
+            }
+
             NaturalSize = isImage ? naturalSize : null;
             IsImageBroken = !isImage;
 
@@ -839,6 +844,8 @@ public partial class SvgFEImageElement
             var naturalSize = default(ImageNaturalSize);
             if (bytes is not { } data || !ImageHeaders.TryGetImageInfo(data.Span, resource!.MimeType?.Essence ?? "", out naturalSize))
                 return;
+
+            naturalSize = naturalSize.WithContentDpr(resource);
 
             var corsSameOrigin = resource.ResponseType is not (FetchResponseType.Opaque or FetchResponseType.OpaqueRedirect);
             Image = document.CreatePaintImage(url.Serialize(), naturalSize, data, resource.MimeType?.Essence, corsSameOrigin);

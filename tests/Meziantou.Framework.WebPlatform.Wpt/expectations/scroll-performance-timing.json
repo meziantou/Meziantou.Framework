@@ -1,0 +1,9 @@
+{
+  "scroll-performance-timing/tentative/supported-entry-types.window.js": {
+    "total": 2,
+    "failures": {
+      "\"scroll\" is a supported entry type for PerformanceObserver": "FAIL",
+      "PerformanceScrollTiming interface is exposed on window": "FAIL"
+    }
+  }
+}

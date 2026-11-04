@@ -147,7 +147,14 @@ internal abstract class PaintedImage
             return null;
 
         if (image.IsSvg)
-            return SvgImage.Get(image, document) is { } svgImage ? SvgPaintedImage.Create(svgImage, style) : null;
+        {
+            if (SvgImage.Get(image, document) is not { } svgImage)
+                return null;
+
+            // The natural size of the document is divided by the density of the Content-DPR header of the response
+            var svgPaintedImage = SvgPaintedImage.Create(svgImage, style);
+            return image.ContentDpr == 1 ? svgPaintedImage : new ScaledImage(svgPaintedImage, 1 / image.ContentDpr);
+        }
 
         if (image.Width <= 0 || image.Height <= 0)
             return null;

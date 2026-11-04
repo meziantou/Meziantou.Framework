@@ -1,0 +1,304 @@
+{
+  "soft-navigation-heuristics/back.tentative.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/click-event-bubbles.tentative.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/detection/tentative/change-class-attribute-1.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/detection/tentative/change-class-attribute-2.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/detection/tentative/change-style-attribute-display-1.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/detection/tentative/change-style-attribute-display-2.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/detection/tentative/change-style-attribute-display-3.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/detection/tentative/change-style-attribute-display-4.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/detection/tentative/change-style-attribute-fontsize.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/detection/tentative/modify-non-aggregating-node.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/detection/tentative/navigation-api-precommit-handler.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/detection/tentative/overwriting-text-once-per-interaction.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/detection/tentative/overwriting-text.html": {
+    "total": 2
+  },
+  "soft-navigation-heuristics/detection/tentative/racing-soft-navigations.html": {
+    "total": 5
+  },
+  "soft-navigation-heuristics/detection/tentative/text-node-modifications.html": {
+    "total": 5,
+    "failures": {
+      "Soft Navigation Detection supports replacing input text via .input": "FAIL",
+      "Soft Navigation Detection supports replacing input text via setAttribute(value)": "FAIL"
+    }
+  },
+  "soft-navigation-heuristics/detection/tentative/video-srcObject-change.html": {
+    "total": 1,
+    "failures": {
+      "Soft Navigation Detection supports HTMLVideoElment.srcObject": "FAIL"
+    }
+  },
+  "soft-navigation-heuristics/dom/tentative/distant-leaf-image.window.js": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/dom/tentative/distant-leaf-text.window.js": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/dropped-entries.tentative.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/first-interaction-not-softnav.tentative.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/hash.tentative.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/history/tentative/navigation-api-prevent-default.window.js": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/icp/tentative/character-data-append.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/icp/tentative/character-data-delete.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/icp/tentative/character-data-insert.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/icp/tentative/character-data-replace.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/icp/tentative/pseudo-element-background-image-with-text-mult-paints.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/icp/tentative/pseudo-element-background-image-with-text.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/icp/tentative/pseudo-element-background-image.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/icp/tentative/pseudo-element-content-image-with-text.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/icp/tentative/pseudo-element-content-image.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/icp/tentative/pseudo-element-content-text.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/icp/tentative/text-area-typing.html": {
+    "total": 1,
+    "failures": {
+      "InteractionContentfulPaint supports textarea typing": "FAIL"
+    }
+  },
+  "soft-navigation-heuristics/icp/tentative/text-node-append-does-not-affect-siblings.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/icp/tentative/text-node-modification-does-not-affect-siblings.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/image-lcp-followed-by-image-softnav-lcp.tentative.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/image-lcp-followed-by-text-softnav-lcp.tentative.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/image-lcp-followed-by-two-image-softnavs-lcp.tentative.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/interaction-with-paint-before-back.tentative.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/largest-painted-element-dynamic-change.tentative.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/largest-painted-element-multiple-paints-before-url.tentative.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/largest-painted-element-paint-first.tentative.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/largest-painted-element-url-first.tentative.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/lcp/tentative/background-image-set-image.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/lcp/tentative/broken-image-icon.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/lcp/tentative/contracted-image.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/lcp/tentative/cross-origin-image.sub.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/lcp/tentative/element-only-when-fully-active.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/lcp/tentative/expanded-image.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/lcp/tentative/first-paint-equals-lcp-text.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/lcp/tentative/iframe-content-not-observed.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/lcp/tentative/raf-loop.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/load-classic-script-history-push.tentative.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/load-module-script-history-push.tentative.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/multiple-nested-events.tentative.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/multiple-paint-entries-buffered.tentative.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/navigate-child.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/navigation-api-back.tentative.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/navigation-api-forward.tentative.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/navigation-api-hash.tentative.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/navigation-api-precommit.tentative.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/navigation-api-rejected.tentative.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/navigation-api-traverseto.tentative.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/navigation-api-view-transition.tentative.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/navigation-api.tentative.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/navigation-type.tentative.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/navigationId-attributions.tentative.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/pointerup-soft-navigation-detection.tentative.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/popstate-multiple-backs.tentative.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/popstate.tentative.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/replace.tentative.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/replacestate-null-then-push.tentative.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/second-interaction-not-softnav.tentative.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/smoke/tentative/almost-soft-navigation.html": {
+    "total": 5
+  },
+  "soft-navigation-heuristics/smoke/tentative/basic.html": {
+    "total": 2
+  },
+  "soft-navigation-heuristics/smoke/tentative/dom.html": {
+    "total": 8
+  },
+  "soft-navigation-heuristics/smoke/tentative/image-src-change.html": {
+    "total": 4
+  },
+  "soft-navigation-heuristics/smoke/tentative/late-url-change.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/smoke/tentative/lcp-unbuffered.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/smoke/tentative/lcp.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/smoke/tentative/supported-entry-types.window.js": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/smoke/tentative/task-attribution-hash-change.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/smoke/tentative/task-attribution-link-load.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/smoke/tentative/task-attribution.html": {
+    "total": 8
+  },
+  "soft-navigation-heuristics/smoke/tentative/video-src-change.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Soft Navigation Detection supports HTMLVideoElment.src": "NOTRUN"
+    }
+  },
+  "soft-navigation-heuristics/smoke/tentative/window-open-cross-scheduling.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/soft-navigation-detection-main-descendent.tentative.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/soft-navigation-detection-web-component-lifecycle.tentative.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/soft-navigation-detection.tentative.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/softnav-after-lcp-paint-larger-than-viewport.tentative.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/softnav-after-lcp-paint.tentative.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/softnav-between-lcp-render-and-paint.tentative.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/text-lcp-followed-by-anim-image-softnav-lcp.tentative.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/text-lcp-followed-by-image-softnav-lcp.tentative.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/text-lcp-followed-by-text-softnav-lcp.tentative.html": {
+    "total": 1
+  },
+  "soft-navigation-heuristics/visited-link.tentative.html": {
+    "total": 1
+  }
+}

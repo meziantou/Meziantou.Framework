@@ -1846,11 +1846,7 @@
     "total": 3
   },
   "html/dom/elements/images/bypass-cache-revalidation.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "Images can bypass no-cache": "TIMEOUT"
-    }
+    "total": 1
   },
   "html/dom/elements/name-content-attribute-and-property.html": {
     "total": 141

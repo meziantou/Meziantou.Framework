@@ -9,31 +9,23 @@ description: "The results of the web-platform-tests of content-dpr, and why the 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 1 | 1 | – |
+| [Stable](#stable-tests) | 1 | 1 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
-| [Reftests](#reftests) | 0 | 5 | 5 | – |
-| **All** | **0** | **6** | **6** | **–** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **REQUIRES**: 6
-  - `layout`: 6
-  - `rendering`: 6
+| [Reftests](#reftests) | 5 | 5 | 0 | 100% |
+| **All** | **6** | **6** | **0** | **100%** |
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`image-with-dpr-header.html`](https://wpt.fyi/results/content-dpr/image-with-dpr-header.html) | Disabled | – | REQUIRES(layout, rendering) | Content-DPR header |
+| [`image-with-dpr-header.html`](https://wpt.fyi/results/content-dpr/image-with-dpr-header.html) | Pass | 1 / 1 |  |  |
 
 ## Reftests
 
 | Test | Result | Variants | Kind | Description |
 |---|---|--:|---|---|
-| [`content-dpr-various-elements.html`](https://wpt.fyi/results/content-dpr/content-dpr-various-elements.html) | Disabled | – | REQUIRES(layout, rendering) | Content-DPR header |
-| [`image-pseudo-element-content-dpr.html`](https://wpt.fyi/results/content-dpr/image-pseudo-element-content-dpr.html) | Disabled | – | REQUIRES(layout, rendering) | Content-DPR header |
-| [`image-with-content-dpr-and-explicit-dimensions.html`](https://wpt.fyi/results/content-dpr/image-with-content-dpr-and-explicit-dimensions.html) | Disabled | – | REQUIRES(layout, rendering) | Content-DPR header |
-| [`tiled-background-image-with-content-dpr.html`](https://wpt.fyi/results/content-dpr/tiled-background-image-with-content-dpr.html) | Disabled | – | REQUIRES(layout, rendering) | Content-DPR header |
-| [`tiled-background-svg-image-with-content-dpr.html`](https://wpt.fyi/results/content-dpr/tiled-background-svg-image-with-content-dpr.html) | Disabled | – | REQUIRES(layout, rendering) | Content-DPR header |
+| [`content-dpr-various-elements.html`](https://wpt.fyi/results/content-dpr/content-dpr-various-elements.html) | Pass | 1 / 1 |  |  |
+| [`image-pseudo-element-content-dpr.html`](https://wpt.fyi/results/content-dpr/image-pseudo-element-content-dpr.html) | Pass | 1 / 1 |  |  |
+| [`image-with-content-dpr-and-explicit-dimensions.html`](https://wpt.fyi/results/content-dpr/image-with-content-dpr-and-explicit-dimensions.html) | Pass | 1 / 1 |  |  |
+| [`tiled-background-image-with-content-dpr.html`](https://wpt.fyi/results/content-dpr/tiled-background-image-with-content-dpr.html) | Pass | 1 / 1 |  |  |
+| [`tiled-background-svg-image-with-content-dpr.html`](https://wpt.fyi/results/content-dpr/tiled-background-svg-image-with-content-dpr.html) | Pass | 1 / 1 |  |  |

@@ -76,6 +76,7 @@ public partial class HtmlVideoElement
                 // https://html.spec.whatwg.org/multipage/media.html#poster-frame: the natural size of the video is the one of its poster frame
                 if (generation == _posterGeneration && resource is not null && ImageHeaders.TryGetImageInfo(EmbeddedResources.GetBytes(resource), resource.MimeType?.Essence ?? "", out var naturalSize))
                 {
+                    naturalSize = naturalSize.WithContentDpr(resource);
                     PosterNaturalSize = naturalSize;
                     var bytes = resource.ContentBytes ?? System.Text.Encoding.UTF8.GetBytes(resource.Content ?? "");
                     PosterImage = NodeDocument.CreatePaintImage(url.Serialize(), naturalSize, bytes, resource.MimeType?.Essence);

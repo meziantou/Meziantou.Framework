@@ -21,10 +21,9 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 - **BUG**: 18
 - **TEST BUG**: 4
 - **NOT IMPLEMENTED**: 658
-- **REQUIRES**: 4
+- **REQUIRES**: 3
   - `media`: 3
-  - `rendering`: 1
-- **TEST RUNNER**: 1
+- **TEST RUNNER**: 2
 
 ## Stable tests
 
@@ -1115,7 +1114,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`element/text/2d.text.measure.width.nullCharacter.html`](https://wpt.fyi/results/html/canvas/element/text/2d.text.measure.width.nullCharacter.html) | Pass | 1 / 1 |  |  |
 | [`element/text/2d.text.measure.width.space.html`](https://wpt.fyi/results/html/canvas/element/text/2d.text.measure.width.space.html) | Pass | 1 / 1 |  |  |
 | [`element/text/2d.text.setFont.mathFont.html`](https://wpt.fyi/results/html/canvas/element/text/2d.text.setFont.mathFont.html) | Pass | 1 / 1 |  |  |
-| [`element/text/2d.text.variationSelectors.html`](https://wpt.fyi/results/html/canvas/element/text/2d.text.variationSelectors.html) | Fail | 0 / 1 | REQUIRES(rendering) | an emoji font (U+2693 with the text and emoji presentation selectors): the bundled fonts and the fonts of the test do not have it |
+| [`element/text/2d.text.variationSelectors.html`](https://wpt.fyi/results/html/canvas/element/text/2d.text.variationSelectors.html) | Fail | 0 / 1 | TEST RUNNER | the runner has no emoji font (U+2693 with the text and emoji presentation selectors): the bundled fonts and the fonts of the test do not have it, so the two presentations have the same width |
 | [`element/text/parent-style-relative-units.html`](https://wpt.fyi/results/html/canvas/element/text/parent-style-relative-units.html) | Pass | 2 / 2 |  |  |
 | [`element/the-canvas-state/2d.state.saverestore.bitmap.html`](https://wpt.fyi/results/html/canvas/element/the-canvas-state/2d.state.saverestore.bitmap.html) | Pass | 1 / 1 |  |  |
 | [`element/the-canvas-state/2d.state.saverestore.clip.2.html`](https://wpt.fyi/results/html/canvas/element/the-canvas-state/2d.state.saverestore.clip.2.html) | Pass | 1 / 1 |  |  |

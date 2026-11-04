@@ -4,7 +4,8 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 
 // The paint timing of a document (https://w3c.github.io/paint-timing/): the pending image records, the owned text nodes, "mark
 // paint timing" at the end of the rendering update, the first paint and the first contentful paint, the largest contentful paint
-// (https://w3c.github.io/largest-contentful-paint/) and the element timing (https://w3c.github.io/element-timing/)
+// (https://w3c.github.io/largest-contentful-paint/), the element timing (https://w3c.github.io/element-timing/) and the container
+// timing (https://w3c.github.io/container-timing/, see Document.ContainerTiming.cs)
 public partial class Document
 {
     /// <summary>The maximum number of pending image records (the oldest ones are dropped).</summary>
@@ -17,11 +18,12 @@ public partial class Document
 
     /// <summary>
     /// Whether one of the paint timing APIs is exposed to the window of the document (see <see cref="WebPlatformFeatures.PaintTimingEnabled"/>,
-    /// <see cref="WebPlatformFeatures.LargestContentfulPaintEnabled"/>, <see cref="WebPlatformFeatures.ElementTimingEnabled"/>) and
+    /// <see cref="WebPlatformFeatures.LargestContentfulPaintEnabled"/>, <see cref="WebPlatformFeatures.ElementTimingEnabled"/>,
+    /// <see cref="WebPlatformFeatures.ContainerTimingEnabled"/>, <see cref="WebPlatformFeatures.SoftNavigationsEnabled"/>) and
     /// its browsing context is paint-timing eligible (https://w3c.github.io/paint-timing/#paint-timing-eligible: all of them are).
     /// </summary>
     private bool IsPaintTimingSupported => BrowsingContext?.Options.EffectiveFeatures is { } features
-        && (features.PaintTimingEnabled || features.LargestContentfulPaintEnabled || features.ElementTimingEnabled)
+        && (features.PaintTimingEnabled || features.LargestContentfulPaintEnabled || features.ElementTimingEnabled || features.ContainerTimingEnabled || features.SoftNavigationsEnabled)
         && DefaultView is not null;
 
     /// <summary>
@@ -41,6 +43,21 @@ public partial class Document
         eventLoop.AddDocumentWithPaintTiming(this);
         GetLayoutEngine().RequestRenderingUpdates();
         eventLoop.RequestRenderingUpdate();
+    }
+
+    /// <summary>
+    /// Called before the first trusted input event of the window of the document is dispatched: a document is painted before the user
+    /// can interact with it, so the content of a scripted document whose paints are not computed yet is painted now (its paint timing
+    /// starts), before the input stops the reporting of the largest contentful paint (e.g. a script that reads the largest contentful
+    /// paint after a first interaction, WPT soft-navigation-heuristics/first-interaction-not-softnav.tentative.html).
+    /// </summary>
+    internal void MarkPaintTimingBeforeFirstInput()
+    {
+        if (IsTrackingPaintTiming || !IsPaintTimingSupported || DefaultView?.ScriptEngine is null || !IsFullyActive)
+            return;
+
+        StartPaintTiming();
+        MarkPaintTiming();
     }
 
     /// <summary>
@@ -245,9 +262,21 @@ public partial class Document
             ReportLargestContentfulPaint(state, engine, window, paintTimingInfo, paintedImages, lcpTextElements, scan);
         }
 
+        // https://wicg.github.io/soft-navigations/#sec-paint-timing-integration. As in the browsers, the element timing entries of
+        // the rendering update that emits a soft navigation belong to it (they are queued after it)
+        if (features.SoftNavigationsEnabled && _softNavigation is not null)
+        {
+            ReportInteractionContentfulPaints(state, engine, window, paintTimingInfo, paintedImages, paintedTextElements, scan);
+        }
+
         if (features.ElementTimingEnabled)
         {
             ReportElementTiming(state, engine, window, paintTimingInfo, paintedImages, paintedTextElements);
+        }
+
+        if (features.ContainerTimingEnabled)
+        {
+            ReportContainerTiming(state, engine, window, paintTimingInfo, paintedImages, paintedTextElements);
         }
     }
 
@@ -373,6 +402,10 @@ public partial class Document
         return result;
     }
 
+    /// <summary>The intersection rect of the owned text nodes of an element (https://w3c.github.io/element-timing/#report-text-element-timing): their visible part in the viewport.</summary>
+    private static PhysicalRect GetTextIntersectionRect(PaintTimingState state, LayoutEngine engine, Element element)
+        => GetOwnedTextRect(state, engine, element) is { } textRect && IntersectionGeometry.TryIntersect(textRect, GetVisualViewportRect(engine), out var visible) ? visible : default;
+
     /// <summary>Returns the visual viewport of the document (without the scrollbars), in the coordinates of the viewport.</summary>
     private static PhysicalRect GetVisualViewportRect(LayoutEngine engine)
     {
@@ -389,9 +422,31 @@ public partial class Document
         if (window.HasDispatchedInputEvent)
             return;
 
-        // https://w3c.github.io/largest-contentful-paint/#compute-new-lcp-candidate
         var currentCandidate = state.LargestContentfulPaintCandidate;
         var currentSize = currentCandidate?.Size ?? 0;
+        var newCandidate = ComputeNewLargestContentfulPaintCandidate(state, engine, paintedImages, paintedTextElements, scan, currentSize);
+        if (newCandidate is null)
+            return;
+
+        // A candidate whose size changed by 3 px or less in both axes is the same content (e.g. a text whose web font is loaded). As in
+        // the browsers, this only applies to the content of the same element (WPT largest-contentful-paint/image-TAO.sub.html)
+        if (currentCandidate is not null && currentSize > 0 && ReferenceEquals(newCandidate.Element, currentCandidate.Element)
+            && newCandidate.Width - currentCandidate.Width <= 3 && newCandidate.Height - currentCandidate.Height <= 3)
+            return;
+
+        state.LargestContentfulPaintCandidate = newCandidate;
+
+        // https://w3c.github.io/largest-contentful-paint/#create-a-largestcontentfulpaint-entry
+        var entry = new LargestContentfulPaint(window, paintTimingInfo, (uint)Math.Min(uint.MaxValue, Math.Round(newCandidate.Size, MidpointRounding.AwayFromZero)), newCandidate.LoadTime, newCandidate.Element.GetAttributeValue("id") ?? "", newCandidate.Url ?? "", newCandidate.Element);
+        window.Performance.QueueLargestContentfulPaintEntry(entry);
+    }
+
+    /// <summary>
+    /// https://w3c.github.io/largest-contentful-paint/#compute-new-lcp-candidate: the largest of the painted images and texts
+    /// whose effective visual size is larger than <paramref name="currentSize"/> (the size of the current candidate), or null.
+    /// </summary>
+    private LargestContentfulPaintCandidate? ComputeNewLargestContentfulPaintCandidate(PaintTimingState state, LayoutEngine engine, IEnumerable<(PendingImageRecord Record, PhysicalRect PaintedRect)> paintedImages, IEnumerable<Element> paintedTextElements, ContentfulPaintScan scan, double currentSize)
+    {
         var largestSize = currentSize;
         LargestContentfulPaintCandidate? newCandidate = null;
         foreach (var (record, paintedRect) in paintedImages)
@@ -429,34 +484,22 @@ public partial class Document
             newCandidate = new LargestContentfulPaintCandidate(element, result.Size, result.Width, result.Height, Url: null, LoadTime: 0);
         }
 
-        if (newCandidate is null)
-            return;
+        return newCandidate;
+    }
 
-        // A candidate whose size changed by 3 px or less in both axes is the same content (e.g. a text whose web font is loaded). As in
-        // the browsers, this only applies to the content of the same element (WPT largest-contentful-paint/image-TAO.sub.html)
-        if (currentCandidate is not null && currentSize > 0 && ReferenceEquals(newCandidate.Element, currentCandidate.Element)
-            && newCandidate.Width - currentCandidate.Width <= 3 && newCandidate.Height - currentCandidate.Height <= 3)
-            return;
-
-        state.LargestContentfulPaintCandidate = newCandidate;
-
-        // https://w3c.github.io/largest-contentful-paint/#create-a-largestcontentfulpaint-entry
-        var entry = new LargestContentfulPaint(window, paintTimingInfo, (uint)Math.Min(uint.MaxValue, Math.Round(newCandidate.Size, MidpointRounding.AwayFromZero)), newCandidate.LoadTime, newCandidate.Element.GetAttributeValue("id") ?? "", newCandidate.Url ?? "", newCandidate.Element);
-        window.Performance.QueueLargestContentfulPaintEntry(entry);
-
-        static bool HasVisibleText(PaintTimingState state, ContentfulPaintScan scan, Element element)
-        {
-            if (!state.OwnedTextNodes.TryGetValue(element, out var owned))
-                return false;
-
-            foreach (var node in owned)
-            {
-                if (scan.Texts.TryGetValue(node, out var visible) && visible)
-                    return true;
-            }
-
+    /// <summary>Whether one of the owned text nodes of an element is visible in the paints of the rendering update.</summary>
+    private static bool HasVisibleText(PaintTimingState state, ContentfulPaintScan scan, Element element)
+    {
+        if (!state.OwnedTextNodes.TryGetValue(element, out var owned))
             return false;
+
+        foreach (var node in owned)
+        {
+            if (scan.Texts.TryGetValue(node, out var visible) && visible)
+                return true;
         }
+
+        return false;
     }
 
     /// <summary>
@@ -555,7 +598,7 @@ public partial class Document
             if (element.GetAttributeValue("elementtiming") is not { } identifier)
                 continue;
 
-            var intersectionRect = GetOwnedTextRect(state, engine, element) is { } textRect && IntersectionGeometry.TryIntersect(textRect, GetVisualViewportRect(engine), out var visible) ? visible : default;
+            var intersectionRect = GetTextIntersectionRect(state, engine, element);
             var entry = new PerformanceElementTiming(window, "text-paint", paintTimingInfo, loadTime: 0, ToDomRect(intersectionRect), identifier, 0, 0, element.GetAttributeValue("id") ?? "", element, requestUrl: null);
             window.Performance.QueueElementTimingEntry(entry);
         }
@@ -621,6 +664,9 @@ public partial class Document
 
         /// <summary>The time of the last rendering update that marked the paint timing.</summary>
         public double LastMarkTime { get; set; }
+
+        /// <summary>The container timing records of the container roots (https://w3c.github.io/container-timing/), by root.</summary>
+        public Dictionary<HtmlElement, ContainerTimingRecord> ContainerTimingRecords { get; } = [];
     }
 }
 
@@ -640,6 +686,11 @@ public partial class Window
     {
         if (@event.IsTrusted && @event.Type is "keydown" or "mousedown" or "pointerdown" or "click")
         {
+            if (!HasDispatchedInputEvent)
+            {
+                Document.MarkPaintTimingBeforeFirstInput();
+            }
+
             HasDispatchedInputEvent = true;
         }
     }

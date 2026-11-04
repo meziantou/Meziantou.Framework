@@ -20,8 +20,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 1
 - **NOT IMPLEMENTED**: 1
-- **REQUIRES**: 1
-  - `rendering`: 1
+- **TEST RUNNER**: 1
 
 ## Reftests
 
@@ -34,7 +33,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`background-image-print.html`](https://wpt.fyi/results/css/printing/background-image-print.html) | Pass | 1 / 1 |  |  |
 | [`conic-gradient-skia-crash-print.html`](https://wpt.fyi/results/css/printing/conic-gradient-skia-crash-print.html) | Pass | 1 / 1 |  |  |
 | [`destination-backslash-crash-print.html`](https://wpt.fyi/results/css/printing/destination-backslash-crash-print.html) | Pass | 1 / 1 |  |  |
-| [`emoji-print.html`](https://wpt.fyi/results/css/printing/emoji-print.html) | Fail | 0 / 1 | REQUIRES(rendering) | an emoji font: the bundled fonts and the fonts of the runner have no glyph for the emoji, so the page is as blank as the mismatch reference |
+| [`emoji-print.html`](https://wpt.fyi/results/css/printing/emoji-print.html) | Fail | 0 / 1 | TEST RUNNER | the runner has no emoji font: the bundled fonts and the fonts of the runner have no glyph for the emoji, so the page is as blank as the mismatch reference |
 | [`existing-transition-in-media-print.tentative.html`](https://wpt.fyi/results/css/printing/existing-transition-in-media-print.tentative.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the transitions of the screen while printing (tentative): the print styles neither start nor update the transitions, so the running transition of the screen (to the color of `.print`) is not applied: the text keeps the red of the screen before the change, where the test expects the transition to be ended in the printed page |
 | [`fixed-container-query-removal-crash-print.html`](https://wpt.fyi/results/css/printing/fixed-container-query-removal-crash-print.html) | Pass | 1 / 1 |  |  |
 | [`fixed-generated-content-reconstruct-crash-print.html`](https://wpt.fyi/results/css/printing/fixed-generated-content-reconstruct-crash-print.html) | Pass | 1 / 1 |  |  |

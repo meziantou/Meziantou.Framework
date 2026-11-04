@@ -191,6 +191,7 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["DataTransferItemList"] = Binding_DataTransferItemList<TAdapter, TValue>.Binding,
             ["DedicatedWorkerGlobalScope"] = Binding_DedicatedWorkerGlobalScope<TAdapter, TValue>.Binding,
             ["DelayNode"] = Binding_DelayNode<TAdapter, TValue>.Binding,
+            ["DelegatedInkTrailPresenter"] = Binding_DelegatedInkTrailPresenter<TAdapter, TValue>.Binding,
             ["Document"] = Binding_Document<TAdapter, TValue>.Binding,
             ["DocumentFragment"] = Binding_DocumentFragment<TAdapter, TValue>.Binding,
             ["DocumentTimeline"] = Binding_DocumentTimeline<TAdapter, TValue>.Binding,
@@ -328,8 +329,10 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["ImageBitmap"] = Binding_ImageBitmap<TAdapter, TValue>.Binding,
             ["ImageBitmapRenderingContext"] = Binding_ImageBitmapRenderingContext<TAdapter, TValue>.Binding,
             ["ImageData"] = Binding_ImageData<TAdapter, TValue>.Binding,
+            ["Ink"] = Binding_Ink<TAdapter, TValue>.Binding,
             ["InputEvent"] = Binding_InputEvent<TAdapter, TValue>.Binding,
             ["InstallEvent"] = Binding_InstallEvent<TAdapter, TValue>.Binding,
+            ["InteractionContentfulPaint"] = Binding_InteractionContentfulPaint<TAdapter, TValue>.Binding,
             ["IntersectionObserver"] = Binding_IntersectionObserver<TAdapter, TValue>.Binding,
             ["IntersectionObserverEntry"] = Binding_IntersectionObserverEntry<TAdapter, TValue>.Binding,
             ["IntrinsicSizes"] = Binding_IntrinsicSizes<TAdapter, TValue>.Binding,
@@ -394,6 +397,7 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["PannerNode"] = Binding_PannerNode<TAdapter, TValue>.Binding,
             ["Path2D"] = Binding_Path2D<TAdapter, TValue>.Binding,
             ["Performance"] = Binding_Performance<TAdapter, TValue>.Binding,
+            ["PerformanceContainerTiming"] = Binding_PerformanceContainerTiming<TAdapter, TValue>.Binding,
             ["PerformanceElementTiming"] = Binding_PerformanceElementTiming<TAdapter, TValue>.Binding,
             ["PerformanceEntry"] = Binding_PerformanceEntry<TAdapter, TValue>.Binding,
             ["PerformanceEventTiming"] = Binding_PerformanceEventTiming<TAdapter, TValue>.Binding,
@@ -406,6 +410,7 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["PerformancePaintTiming"] = Binding_PerformancePaintTiming<TAdapter, TValue>.Binding,
             ["PerformanceResourceTiming"] = Binding_PerformanceResourceTiming<TAdapter, TValue>.Binding,
             ["PerformanceServerTiming"] = Binding_PerformanceServerTiming<TAdapter, TValue>.Binding,
+            ["PerformanceSoftNavigation"] = Binding_PerformanceSoftNavigation<TAdapter, TValue>.Binding,
             ["PerformanceTiming"] = Binding_PerformanceTiming<TAdapter, TValue>.Binding,
             ["PeriodicWave"] = Binding_PeriodicWave<TAdapter, TValue>.Binding,
             ["PermissionStatus"] = Binding_PermissionStatus<TAdapter, TValue>.Binding,
@@ -1083,6 +1088,12 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.ImportNodeOptions dictionaryDom_ImportNodeOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_ImportNodeOptions(r, dictionaryDom_ImportNodeOptions);
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.InkPresenterParam dictionaryDom_InkPresenterParam:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_InkPresenterParam(r, dictionaryDom_InkPresenterParam);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.InkTrailStyle dictionaryDom_InkTrailStyle:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_InkTrailStyle(r, dictionaryDom_InkTrailStyle);
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.IntersectionObserverEntryInit dictionaryDom_IntersectionObserverEntryInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_IntersectionObserverEntryInit(r, dictionaryDom_IntersectionObserverEntryInit);
                 return true;
@@ -1619,6 +1630,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.CustomElementConstructor> taskSystem_Threading_Tasks_Task_Dom_CustomElementConstructor_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_CustomElementConstructor_, static (r, v) => r.FromCustomElementConstructor(v));
+                return true;
+            case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.DelegatedInkTrailPresenter> taskSystem_Threading_Tasks_Task_Dom_DelegatedInkTrailPresenter_:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_DelegatedInkTrailPresenter_, static (r, v) => r.Wrap(v));
                 return true;
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.FileApi.Blob> taskSystem_Threading_Tasks_Task_Dom_FileApi_Blob_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_FileApi_Blob_, static (r, v) => r.Wrap(v));

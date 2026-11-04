@@ -18,12 +18,18 @@ internal static class ReferrerPolicies
     /// <summary>Returns whether a value is a referrer policy other than the empty string (https://w3c.github.io/webappsec-referrer-policy/#referrer-policy).</summary>
     public static bool IsValid(string value) => value is "no-referrer" or "no-referrer-when-downgrade" or "same-origin" or "origin" or "strict-origin" or "origin-when-cross-origin" or "strict-origin-when-cross-origin" or "unsafe-url";
 
-    /// <summary>https://w3c.github.io/webappsec-referrer-policy/#parse-referrer-policy-from-header: the last valid token, or the empty string.</summary>
+    /// <summary>https://w3c.github.io/webappsec-referrer-policy/#parse-referrer-policy-from-header: the last valid token, or the empty string (also when a value is not a token).</summary>
     public static string ParseHeader(IReadOnlyList<KeyValuePair<string, string>> headers)
     {
         var policy = "";
         foreach (var token in HeaderList.GetDecodeAndSplit(headers, "Referrer-Policy") ?? [])
         {
+            // https://fetch.spec.whatwg.org/#extract-header-list-values: a value that does not match the 1#policy-token grammar
+            // (e.g. "origin no-referrer") makes the whole header invalid, and the default policy applies. The empty elements of
+            // the list are ignored.
+            if (token.Length > 0 && !FetchHeaders.IsToken(token))
+                return "";
+
             if (IsValid(token))
             {
                 policy = token;

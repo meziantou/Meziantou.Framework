@@ -64,7 +64,7 @@ public partial class HtmlImageElement
                 natural = natural.WithoutOrientation();
             }
 
-            return natural.Scale(1 / request.CurrentPixelDensity);
+            return natural.Scale(1 / request.EffectivePixelDensity);
         }
 
         if (!IsImageExpectedToChange && GetAttributeValue("alt") is null && _currentRequest.CurrentUrl.Length > 0)

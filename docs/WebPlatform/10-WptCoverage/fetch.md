@@ -19,7 +19,7 @@ description: "The results of the web-platform-tests of fetch, and why the tests 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **BUG**: 13
-- **TEST BUG**: 18
+- **TEST BUG**: 19
 - **NOT IMPLEMENTED**: 91
 - **REQUIRES**: 3
   - `layout`: 2
@@ -197,7 +197,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`api/response/response-clone.any.js`](https://wpt.fyi/results/fetch/api/response/response-clone.any.js) | Pass | 63 / 63 |  |  |
 | [`api/response/response-consume-empty.any.js`](https://wpt.fyi/results/fetch/api/response/response-consume-empty.any.js) | Fail | 39 / 42 | TEST BUG | the FormData subtest ("Consume empty FormData response body as text") expects an empty `FormData` to be serialized as an empty body, which the test itself marks as unclear (FIXME, web-platform-tests/wpt#3950). The multipart/form-data encoding (RFC 7578) writes the close delimiter `--boundary--` even without entries, which `fetch/api/response/response-form-data.html` ("Empty form data") and the round trips of `fetch/api/body/formdata.any.js` require: the two expectations cannot both be met |
 | [`api/response/response-consume-stream.any.js`](https://wpt.fyi/results/fetch/api/response/response-consume-stream.any.js) | Pass | 45 / 45 |  |  |
-| [`api/response/response-consume.html`](https://wpt.fyi/results/fetch/api/response/response-consume.html) | Fail | 34 / 40 | BUG | the multipart/form-data parser only accepts `Content-Disposition: form-data; name="..."` exactly (rejects `form-data;name=` and unquoted values); the Blob type of a FormData body lacks the space after `;` |
+| [`api/response/response-consume.html`](https://wpt.fyi/results/fetch/api/response/response-consume.html) | Fail | 33 / 40 | BUG, TEST BUG | the multipart/form-data parser only accepts `Content-Disposition: form-data; name="..."` exactly (rejects `form-data;name=` and unquoted values); the Blob type of a FormData body lacks the space after `;`; "from URLSearchParams to blob" expects the blob type `application/x-www-form-urlencoded;charset=utf-8`, but the type of the blob of a body is the serialized MIME type of its `Content-Type`, whose parameter values keep their case (`charset=UTF-8`, the value set by extracting the body), as `mimesniff/mime-types/parsing.any.js` and `fetch/content-type/response.window.js` expect |
 | [`api/response/response-error-from-stream.any.js`](https://wpt.fyi/results/fetch/api/response/response-error-from-stream.any.js) | Pass | 42 / 42 |  |  |
 | [`api/response/response-error.any.js`](https://wpt.fyi/results/fetch/api/response/response-error.any.js) | Pass | 30 / 30 |  |  |
 | [`api/response/response-form-data.html`](https://wpt.fyi/results/fetch/api/response/response-form-data.html) | Pass | 14 / 14 |  |  |
@@ -237,7 +237,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`content-length/too-long.window.js`](https://wpt.fyi/results/fetch/content-length/too-long.window.js) | Fail | 0 / 1 | TEST RUNNER | `fetch/content-length/resources/content-length.py` is not emulated (404) |
 | [`content-type/multipart-malformed.any.js`](https://wpt.fyi/results/fetch/content-type/multipart-malformed.any.js) | Pass | 2 / 2 |  |  |
 | [`content-type/multipart.window.js`](https://wpt.fyi/results/fetch/content-type/multipart.window.js) | Pass | 1 / 1 |  |  |
-| [`content-type/response.window.js`](https://wpt.fyi/results/fetch/content-type/response.window.js) | Fail | 116 / 121 | BUG | the `charset` parameter of the MIME type of a blob is lowercased (`text/html;charset=gbk` instead of `charset=GBK`); and the test expects `text/html;x=", text/plain"` for the combined header, which `content-type.py` sends as `text/html;x=",text/plain"`; the other subtests pass |
+| [`content-type/response.window.js`](https://wpt.fyi/results/fetch/content-type/response.window.js) | Fail | 120 / 121 | BUG | the `charset` parameter of the MIME type of a blob is lowercased (`text/html;charset=gbk` instead of `charset=GBK`); and the test expects `text/html;x=", text/plain"` for the combined header, which `content-type.py` sends as `text/html;x=",text/plain"`; the other subtests pass |
 | [`content-type/script.window.js`](https://wpt.fyi/results/fetch/content-type/script.window.js) | Pass | 31 / 31 |  |  |
 | [`corb/script-html-js-polyglot.sub.html`](https://wpt.fyi/results/fetch/corb/script-html-js-polyglot.sub.html) | Pass | 2 / 2 |  |  |
 | [`corb/script-html-via-cross-origin-blob-url.sub.html`](https://wpt.fyi/results/fetch/corb/script-html-via-cross-origin-blob-url.sub.html) | Error | 0 / 1 | BUG | a `blob:` URL created by a cross-origin frame is loaded by `<script>` (it should be a network error) |

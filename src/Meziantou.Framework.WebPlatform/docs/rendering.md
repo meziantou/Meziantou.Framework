@@ -952,9 +952,12 @@ A screenshot with another `ScreenshotOptions.DevicePixelRatio` keeps the snappin
 ## Paint timing
 
 [Paint Timing](https://w3c.github.io/paint-timing/) (`first-paint` and `first-contentful-paint`, `PerformancePaintTiming`),
-[Largest Contentful Paint](https://w3c.github.io/largest-contentful-paint/) (`LargestContentfulPaint`) and
-[Element Timing](https://w3c.github.io/element-timing/) (`PerformanceElementTiming`, the `elementtiming` attribute) report the
-paints of a document to the performance timeline of its window (`Dom/Document.PaintTiming.cs`, `Dom/Performance/PaintTiming.cs`):
+[Largest Contentful Paint](https://w3c.github.io/largest-contentful-paint/) (`LargestContentfulPaint`),
+[Element Timing](https://w3c.github.io/element-timing/) (`PerformanceElementTiming`, the `elementtiming` attribute) and
+[Container Timing](https://w3c.github.io/container-timing/) (`PerformanceContainerTiming`, the `containertiming` and
+`containertimingignore` attributes) report the paints of a document to the performance timeline of its window
+(`Dom/Document.PaintTiming.cs`, `Dom/Document.ContainerTiming.cs`, `Dom/Performance/PaintTiming.cs`,
+`Dom/Performance/ContainerTiming.cs`):
 
 - **The paint is the display list**: "the user agent paints" when the rendering update paints the document into its display
   list, whether or not a rendering backend rasterizes it (without a backend, the display list is the "virtual paint" of the
@@ -966,12 +969,17 @@ paints of a document to the performance timeline of its window (`Dom/Document.Pa
   transparent text for this purpose, which the backends skip), an image (`DrawImageItem`, an image shader, an SVG image
   drawn for an element in a save whose `Source` is the element) and the graphics of an SVG element are contentful.
 - **Lazy**: the paints of a document are only computed once a script of its window observes the `paint`,
-  `largest-contentful-paint` or `element` entries, or reads the `paint` entries of the timeline (`getEntries()`,
+  `largest-contentful-paint`, `element`, `container`, `soft-navigation` or `interaction-contentful-paint` entries (or an HTML element of the document gets a `containertiming`
+  attribute, so that the paints of the container roots are buffered before they are observed), a user interaction
+  starts a soft navigation detection (see below), or a script reads the `paint` entries of the timeline (`getEntries()`,
   `getEntriesByType("paint")`, `getEntriesByName()`): the document is painted by every rendering update from then on
   (`DomEventLoop` "mark paint timing" at the end of the rendering update, before "report the layout shift"; a rendering update
   whose display list did not change marks nothing), and the layout and image changes schedule rendering updates. A page whose
   scripts never read the paint timing is never laid out nor painted for it; the content painted before the tracking starts is
-  considered painted by the next rendering update (the image loads are recorded before, as pending image records).
+  considered painted by the next rendering update (the image loads are recorded before, as pending image records). A document
+  is painted before the user can interact with it: the first trusted key, mouse or pointer press or click of a scripted
+  document whose paints are not computed yet paints it first (its first paint and its largest contentful paint are reported
+  before the input stops the largest contentful paint).
 - **First paint / first contentful paint**: the first rendering update that paints something other than the default
   background, and the first one that paints a paintable contentful element (a first contentful paint is also a first paint;
   the bitmap of a canvas with a context is an image of the canvas element, which is not a candidate of the largest
@@ -992,8 +1000,39 @@ paints of a document to the performance timeline of its window (`Dom/Document.Pa
 - **Element timing**: the images and the texts of the elements with an `elementtiming` attribute, with their
   `intersectionRect` (the intersection rect of the element for an image element, the visible painted image for a CSS
   image, the border boxes of the owned text nodes in the viewport for a text). Each element reports its text once.
-- `WebPlatformFeatures.PaintTimingEnabled`, `LargestContentfulPaintEnabled` and `ElementTimingEnabled` hide the
-  interfaces and the entry types. The paint timing of a [render-blocked](browsing-context.md#render-blocking) document is
+- **Container timing**: the same image and text paints (with the same intersection rects) are added to the painted region
+  of the container roots (the HTML elements with a `containertiming` attribute) of the element: the element itself and its
+  ancestors, up to the first element with a `containertimingignore` attribute (a container root with this attribute receives
+  the paints of its subtree but does not propagate them). A root whose region grew during the rendering update reports one
+  `container` entry: `size` is the area of the union of the painted rectangles (the overlaps are counted once),
+  `intersectionRect` its bounding rectangle, `firstRenderTime` the time of its first paint, and `lastPaintedElement`, as in
+  the browsers, the element with the largest intersection rect among those that painted new content (not the last one
+  painted). A paint covered by the region reports nothing; the record of a root is reset when it is disconnected or loses its
+  attribute; the reporting stops after an input, as the largest contentful paint. The buffer keeps 150 entries.
+- **Soft navigations** ([Soft Navigations](https://wicg.github.io/soft-navigations/), `Dom/Document.SoftNavigations.cs`,
+  `Dom/Performance/SoftNavigations.cs`): each interaction of the user (an event with an Event Timing `interactionId`: a
+  click, a key press) has an interaction context, which is current while its events are dispatched and is propagated, like an
+  AsyncContext variable, to the work they schedule: the tasks and the timers, the microtasks and the promise reactions
+  (`await`), the animation frame and idle callbacks, the tasks of `scheduler.postTask()` and `scheduler.yield()`, and the
+  asynchronous operations of the library started from them (e.g. the fetch of a script or of a style sheet they insert: its
+  `load` event and its execution run in the context; the .NET continuations carry it in an `AsyncLocal`). The nodes that the
+  context inserts, whose `class`, `style` or resource attribute (`src`, `srcset`, `poster`, `href`, `data`) it changes, or whose
+  data it changes (a text node) are marked; the rendering update propagates the marks to their descendants and to the
+  elements that own their texts, whose next paint is attributed to the interaction. A new largest image or text of an
+  interaction (the largest contentful paint algorithm, without the input and 3px rules) is an `InteractionContentfulPaint`
+  entry (`interaction-contentful-paint`, with the `LargestContentfulPaint` of the candidate, which is not reported to the
+  `largest-contentful-paint` observers). An interaction that changes the URL of the document (`history.pushState()`,
+  `replaceState()`, a fragment navigation, a traversal, a navigation intercepted by the Navigation API) and paints content is a
+  soft navigation: a `PerformanceSoftNavigation` entry (`soft-navigation`, whose name is the first URL, available from
+  `getEntriesByType()`) is queued when both happened, and the entries queued from then on (the element timings of the same
+  rendering update included) have a new `navigationId`. Only the last interaction that changed the URL can be a soft
+  navigation. As in the browsers, a later input does not stop the attribution of the paints of an interaction (the
+  specification stops it); a scroll does. The buffers hold 50 soft navigations and 150 interaction contentful paints. Not done:
+  the `navigate`, `popstate` and `hashchange` events of the user interface of a browser are not interactions (the library has
+  none), and the text of the form controls is not a contentful paint (typing in a text field paints no interaction contentful
+  paint).
+- `WebPlatformFeatures.PaintTimingEnabled`, `LargestContentfulPaintEnabled`, `ElementTimingEnabled`,
+  `ContainerTimingEnabled` and `SoftNavigationsEnabled` hide the interfaces and the entry types. The paint timing of a [render-blocked](browsing-context.md#render-blocking) document is
   not marked: its first paint waits for the pending parser-blocking scripts, style sheets and `blocking=render`
   elements. Not done: the paints of the video frames, the first frame of an
   animated image before it is completely loaded, and `object` images. The Event Timing entries

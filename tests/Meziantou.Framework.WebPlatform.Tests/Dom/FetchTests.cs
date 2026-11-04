@@ -233,6 +233,23 @@ public sealed class FetchTests : IDisposable
     }
 
     [Fact]
+    public void Response_Blob_TypeIsTheSerializedMimeType()
+    {
+        var document = Load("""
+            <script>
+              (async () => {
+                const types = [];
+                for (const contentType of ['TEXT/HTML;CHARSET=GBK', 'text/html;test=ÿ;charset=gbk', 'text/html;x=(;charset=gbk', 'invalid']) {
+                  types.push((await new Response(null, { headers: [['Content-Type', contentType]] }).blob()).type);
+                }
+                document.title = types.join('|');
+              })();
+            </script>
+            """);
+        Assert.Equal("text/html;charset=GBK|text/html;test=\"ÿ\";charset=gbk|text/html;x=\"(\";charset=gbk|", document.Title);
+    }
+
+    [Fact]
     public void XmlHttpRequest_Asynchronous()
     {
         _loader.Responses["https://example.com/text"] = new DocumentResource("hello") { Headers = [new("Content-Type", "text/plain"), new("X-Test", "1")] };

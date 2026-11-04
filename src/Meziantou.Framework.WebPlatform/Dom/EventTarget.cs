@@ -472,6 +472,7 @@ internal static class EventDispatcher
         }
 
         PerformanceEventTiming? timingEntry = null;
+        InteractionContext.Scope interactionContextScope = default;
         if (target.RelevantGlobal is { } targetGlobal)
         {
             @event.SetTimeStampGlobal(targetGlobal);
@@ -485,6 +486,10 @@ internal static class EventDispatcher
             if (@event.IsTrusted && targetGlobal is Window timingWindow)
             {
                 timingEntry = timingWindow.InitializeEventTiming(@event);
+
+                // https://wicg.github.io/soft-navigations/#sec-event-timing-integration: the event of an interaction sets the
+                // current interaction context while it is dispatched
+                interactionContextScope = timingWindow.Document.EnterInteractionContextForEventDispatch(@event, timingEntry);
             }
         }
 
@@ -688,6 +693,8 @@ internal static class EventDispatcher
         {
             UserAgentDefaultActions.Run(@event, defaultActionTarget, @event.CanceledFlag);
         }
+
+        interactionContextScope.Dispose();
 
         // https://w3c.github.io/event-timing/#finalize-event-timing, with the last target of the event (the entry belongs to
         // the window that computed its interaction, which is the relevant global object of the target unless a listener

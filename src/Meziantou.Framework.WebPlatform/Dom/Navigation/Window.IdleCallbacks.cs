@@ -32,6 +32,18 @@ public partial class Window
     public uint RequestIdleCallback(IdleRequestCallback callback, IdleRequestOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(callback);
+
+        // https://wicg.github.io/soft-navigations/#sec-interaction-context-intro: the callback runs in the interaction context of the caller
+        if (InteractionContext.Current is { } interactionContext)
+        {
+            var innerCallback = callback;
+            callback = deadline =>
+            {
+                using var scope = InteractionContext.Enter(interactionContext);
+                innerCallback(deadline);
+            };
+        }
+
         var handle = ++_idleCallbackIdentifier;
         (_idleRequestCallbacks ??= []).Add((handle, callback));
         EventLoop.OnIdleCallbackRequested(this);

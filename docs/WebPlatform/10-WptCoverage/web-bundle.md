@@ -14,6 +14,12 @@ description: "The results of the web-platform-tests of web-bundle, and why the t
 | Reftests | 0 | 0 | 0 | – |
 | **All** | **0** | **29** | **29** | **–** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **NOT IMPLEMENTED**: 29
+
 ## Tentative tests
 
 | Test | Result | Subtests | Kind | Description |

@@ -14,6 +14,12 @@ description: "The results of the web-platform-tests of css/mediaqueries, and why
 | [Reftests](#reftests) | 57 | 58 | 0 | 98% |
 | **All** | **86** | **94** | **0** | **91%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **NOT IMPLEMENTED**: 8
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

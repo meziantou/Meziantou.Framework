@@ -14,6 +14,13 @@ description: "The results of the web-platform-tests of css/css-multicol, and why
 | [Reftests](#reftests) | 459 | 467 | 0 | 98% |
 | **All** | **548** | **559** | **0** | **98%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 6
+- **NOT IMPLEMENTED**: 5
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

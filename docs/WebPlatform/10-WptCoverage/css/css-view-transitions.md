@@ -14,6 +14,16 @@ description: "The results of the web-platform-tests of css/css-view-transitions,
 | [Reftests](#reftests) | 308 | 318 | 0 | 97% |
 | **All** | **464** | **489** | **0** | **95%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 3
+- **TEST BUG**: 9
+- **NOT IMPLEMENTED**: 9
+- **TEST RUNNER**: 3
+- **OUT OF SCOPE**: 1
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

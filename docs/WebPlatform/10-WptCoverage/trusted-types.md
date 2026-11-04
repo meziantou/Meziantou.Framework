@@ -14,6 +14,14 @@ description: "The results of the web-platform-tests of trusted-types, and why th
 | [Reftests](#reftests) | 1 | 1 | 0 | 100% |
 | **All** | **221** | **234** | **0** | **94%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 4
+- **NOT IMPLEMENTED**: 8
+- **TEST RUNNER**: 1
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

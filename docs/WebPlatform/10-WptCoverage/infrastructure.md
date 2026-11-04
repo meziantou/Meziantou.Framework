@@ -14,6 +14,12 @@ description: "The results of the web-platform-tests of infrastructure, and why t
 | [Reftests](#reftests) | 0 | 61 | 61 | – |
 | **All** | **0** | **163** | **163** | **–** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **OUT OF SCOPE**: 163
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

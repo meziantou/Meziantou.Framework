@@ -14,6 +14,14 @@ description: "The results of the web-platform-tests of css/css-transitions, and 
 | [Reftests](#reftests) | 6 | 6 | 0 | 100% |
 | **All** | **117** | **131** | **0** | **89%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 7
+- **TEST BUG**: 6
+- **NOT IMPLEMENTED**: 1
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

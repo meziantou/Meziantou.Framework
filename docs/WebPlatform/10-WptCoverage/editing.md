@@ -14,6 +14,15 @@ description: "The results of the web-platform-tests of editing, and why the test
 | [Reftests](#reftests) | 1 | 2 | 0 | 50% |
 | **All** | **93** | **190** | **0** | **49%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 49
+- **TEST BUG**: 53
+- **NOT IMPLEMENTED**: 23
+- **TEST RUNNER**: 1
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

@@ -14,6 +14,16 @@ description: "The results of the web-platform-tests of css/css-sizing, and why t
 | [Reftests](#reftests) | 564 | 569 | 0 | 99% |
 | **All** | **770** | **777** | **0** | **99%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 4
+- **TEST BUG**: 1
+- **NOT IMPLEMENTED**: 1
+- **REQUIRES**: 1
+  - `media`: 1
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

@@ -14,6 +14,12 @@ description: "The results of the web-platform-tests of html/syntax, and why the 
 | [Reftests](#reftests) | 22 | 22 | 0 | 100% |
 | **All** | **252** | **258** | **0** | **98%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **TEST BUG**: 6
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

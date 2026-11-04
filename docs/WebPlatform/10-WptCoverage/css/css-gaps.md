@@ -14,6 +14,13 @@ description: "The results of the web-platform-tests of css/css-gaps, and why the
 | [Reftests](#reftests) | 539 | 544 | 0 | 99% |
 | **All** | **616** | **621** | **0** | **99%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 4
+- **NOT IMPLEMENTED**: 1
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

@@ -14,6 +14,13 @@ description: "The results of the web-platform-tests of webxr, and why the tests 
 | Reftests | 0 | 0 | 0 | – |
 | **All** | **0** | **179** | **179** | **–** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **REQUIRES**: 179
+  - `hardware`: 179
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

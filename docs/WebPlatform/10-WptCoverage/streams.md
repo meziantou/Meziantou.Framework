@@ -14,6 +14,16 @@ description: "The results of the web-platform-tests of streams, and why the test
 | Reftests | 0 | 0 | 0 | – |
 | **All** | **69** | **89** | **4** | **81%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 2
+- **NOT IMPLEMENTED**: 14
+- **REQUIRES**: 1
+  - `rendering`: 1
+- **TEST RUNNER**: 14
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

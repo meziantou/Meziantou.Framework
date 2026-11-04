@@ -14,6 +14,13 @@ description: "The results of the web-platform-tests of webgl, and why the tests 
 | [Reftests](#reftests) | 0 | 2 | 2 | – |
 | **All** | **0** | **22** | **22** | **–** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **REQUIRES**: 22
+  - `rendering`: 22
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

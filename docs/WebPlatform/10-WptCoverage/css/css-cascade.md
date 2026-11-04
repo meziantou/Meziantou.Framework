@@ -14,6 +14,14 @@ description: "The results of the web-platform-tests of css/css-cascade, and why 
 | [Reftests](#reftests) | 50 | 50 | 0 | 100% |
 | **All** | **138** | **143** | **0** | **97%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 4
+- **REQUIRES**: 1
+  - `layout`: 1
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

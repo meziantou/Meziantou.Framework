@@ -14,6 +14,13 @@ description: "The results of the web-platform-tests of css/css-counter-styles, a
 | [Reftests](#reftests) | 253 | 259 | 0 | 98% |
 | **All** | **265** | **271** | **0** | **98%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **TEST BUG**: 1
+- **NOT IMPLEMENTED**: 5
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

@@ -14,6 +14,14 @@ description: "The results of the web-platform-tests of css/css-properties-values
 | [Reftests](#reftests) | 7 | 7 | 0 | 100% |
 | **All** | **106** | **118** | **0** | **90%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 7
+- **TEST BUG**: 2
+- **NOT IMPLEMENTED**: 4
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

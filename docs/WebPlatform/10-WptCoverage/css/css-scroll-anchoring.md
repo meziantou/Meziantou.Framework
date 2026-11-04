@@ -14,6 +14,13 @@ description: "The results of the web-platform-tests of css/css-scroll-anchoring,
 | [Reftests](#reftests) | 4 | 4 | 0 | 100% |
 | **All** | **78** | **81** | **0** | **96%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **TEST BUG**: 1
+- **NOT IMPLEMENTED**: 2
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

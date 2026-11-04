@@ -14,6 +14,15 @@ description: "The results of the web-platform-tests of referrer-policy, and why 
 | [Reftests](#reftests) | 0 | 1 | 0 | 0% |
 | **All** | **1,478** | **1,483** | **0** | **99.6%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 2
+- **REQUIRES**: 1
+  - `rendering`: 1
+- **TEST RUNNER**: 2
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

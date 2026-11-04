@@ -14,6 +14,14 @@ description: "The results of the web-platform-tests of css/css-grid, and why the
 | [Reftests](#reftests) | 1,731 | 1,767 | 0 | 98% |
 | **All** | **2,493** | **2,534** | **0** | **98%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 1
+- **TEST BUG**: 39
+- **TEST RUNNER**: 1
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

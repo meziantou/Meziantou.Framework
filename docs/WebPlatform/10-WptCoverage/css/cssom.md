@@ -14,6 +14,14 @@ description: "The results of the web-platform-tests of css/cssom, and why the te
 | [Reftests](#reftests) | 9 | 12 | 0 | 75% |
 | **All** | **273** | **284** | **0** | **96%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 2
+- **TEST BUG**: 2
+- **NOT IMPLEMENTED**: 7
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

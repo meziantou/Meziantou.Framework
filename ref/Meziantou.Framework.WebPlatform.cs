@@ -13360,6 +13360,7 @@ namespace Meziantou.Framework.WebPlatform.Scripting
         bool IsNull(TValue value);
         bool IsNumber(TValue value);
         bool IsObject(TValue value);
+        public bool IsResizableBuffer(TValue value) => throw null;
         public bool IsRevokedProxy(TValue value, out TValue? objectPrototype) => throw null;
         bool IsString(TValue value);
         bool IsSymbol(TValue value);
@@ -13385,6 +13386,7 @@ namespace Meziantou.Framework.WebPlatform.Scripting
         public bool TryGetBufferSource(TValue value, out Meziantou.Framework.WebPlatform.Scripting.JsBufferKind kind, out bool isShared, out System.Memory<byte> bytes) => throw null;
         bool TryGetPlatformObject(TValue value, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out object? target);
         bool TryGetThrownValue(System.Exception exception, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out TValue? value);
+        public bool TryInitializeErrorData(TValue obj, string stackHeader) => throw null;
         public bool TryMakePrototypeImmutable(TValue obj) => throw null;
         [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0011", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
         public bool TrySetErrorStack(TValue error, string stack) => throw null;

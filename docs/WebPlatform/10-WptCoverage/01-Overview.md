@@ -49,23 +49,23 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 25,757 | 29,691 | 2,509 | 95% |
-| [Tentative](#tentative-tests) | 1,179 | 3,074 | 842 | 53% |
+| [Stable](#stable-tests) | 25,763 | 29,691 | 2,505 | 95% |
+| [Tentative](#tentative-tests) | 1,181 | 3,074 | 840 | 53% |
 | [Reftests](#reftests) | 27,875 | 29,220 | 180 | 96% |
-| **All** | **54,811** | **61,985** | **3,531** | **94%** |
+| **All** | **54,819** | **61,985** | **3,525** | **94%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 477
-- **TEST BUG**: 977
+- **BUG**: 473
+- **TEST BUG**: 980
 - **NOT IMPLEMENTED**: 4,370
-- **REQUIRES**: 1,173
+- **REQUIRES**: 1,167
   - `hardware`: 764
   - `layout`: 38
   - `media`: 30
-  - `rendering`: 211
+  - `rendering`: 205
   - `service-workers`: 1
   - `user-input`: 155
   - `workers`: 3
@@ -299,7 +299,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`mediacapture-streams`](mediacapture-streams.md) | 0 | 59 | 59 | – |
 | [`mediasession`](mediasession.md) | 0 | 9 | 9 | – |
 | [`merchant-validation`](merchant-validation.md) | 0 | 1 | 1 | – |
-| [`mimesniff`](mimesniff.md) | 0 | 4 | 4 | – |
+| [`mimesniff`](mimesniff.md) | 3 | 4 | 0 | 75% |
 | [`mixed-content`](mixed-content.md) | 382 | 384 | 0 | 99% |
 | [`mst-content-hint`](mst-content-hint.md) | 0 | 4 | 4 | – |
 | [`nav-tracking-mitigations`](nav-tracking-mitigations.md) | 0 | 2 | 2 | – |
@@ -339,7 +339,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`reporting`](reporting.md) | 16 | 25 | 0 | 64% |
 | [`requestidlecallback`](requestidlecallback.md) | 20 | 20 | 0 | 100% |
 | [`resize-observer`](resize-observer.md) | 35 | 35 | 0 | 100% |
-| [`resource-timing`](resource-timing.md) | 104 | 118 | 0 | 88% |
+| [`resource-timing`](resource-timing.md) | 105 | 118 | 0 | 89% |
 | [`sanitizer-api`](sanitizer-api.md) | 48 | 50 | 0 | 96% |
 | [`savedata`](savedata.md) | 0 | 1 | 1 | – |
 | [`scheduler`](scheduler.md) | 24 | 24 | 0 | 100% |
@@ -397,7 +397,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`webdriver`](webdriver.md) | 0 | 1 | 1 | – |
 | [`webgl`](webgl.md) | 0 | 20 | 20 | – |
 | [`webhid`](webhid.md) | 0 | 5 | 5 | – |
-| [`webidl`](webidl.md) | 40 | 46 | 2 | 91% |
+| [`webidl`](webidl.md) | 42 | 46 | 2 | 95% |
 | [`webmcp`](webmcp.md) | 0 | 75 | 75 | – |
 | [`webmessaging`](webmessaging.md) | 131 | 131 | 0 | 100% |
 | [`webmidi`](webmidi.md) | 0 | 1 | 1 | – |
@@ -421,7 +421,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 317 | 330 | 0 | 96% |
 | [`xml`](xml.md) | 0 | 12 | 12 | – |
-| **Total (343 sections)** | **25,757** | **29,691** | **2,509** | **95%** |
+| **Total (343 sections)** | **25,763** | **29,691** | **2,505** | **95%** |
 
 ## Tentative tests
 
@@ -532,7 +532,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`mediacapture-fromelement`](mediacapture-fromelement.md#tentative-tests) | 0 | 1 | 1 | – |
 | [`mediacapture-insertable-streams`](mediacapture-insertable-streams.md#tentative-tests) | 0 | 2 | 2 | – |
 | [`merchant-validation`](merchant-validation.md#tentative-tests) | 0 | 3 | 3 | – |
-| [`mimesniff`](mimesniff.md#tentative-tests) | 0 | 2 | 2 | – |
+| [`mimesniff`](mimesniff.md#tentative-tests) | 2 | 2 | 0 | 100% |
 | [`mixed-content`](mixed-content.md#tentative-tests) | 4 | 4 | 0 | 100% |
 | [`navigation-api`](navigation-api.md#tentative-tests) | 3 | 12 | 0 | 25% |
 | [`notifications`](notifications.md#tentative-tests) | 2 | 4 | 0 | 50% |
@@ -591,7 +591,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`workers`](workers.md#tentative-tests) | 0 | 8 | 0 | 0% |
 | [`xhr`](xhr.md#tentative-tests) | 2 | 2 | 0 | 100% |
 | [`xml`](xml.md#tentative-tests) | 0 | 2 | 2 | – |
-| **Total (164 sections)** | **1,179** | **3,074** | **842** | **53%** |
+| **Total (164 sections)** | **1,181** | **3,074** | **840** | **53%** |
 
 ## Reftests
 

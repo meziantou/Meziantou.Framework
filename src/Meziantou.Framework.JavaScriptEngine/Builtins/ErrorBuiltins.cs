@@ -107,10 +107,10 @@ internal static class ErrorBuiltins
     /// <summary>get Error.prototype.stack (https://tc39.es/proposal-error-stack-accessor/)</summary>
     private static JsValue GetStack(JsBuiltinFunction function, JsValue thisValue, ReadOnlySpan<JsValue> arguments, JsObject? newTarget)
     {
-        if (!thisValue.IsObject)
+        if (thisValue.Cell is not JsObject obj)
             return ThrowHelper.ThrowTypeError<JsValue>("Error.prototype.stack getter called on non-object");
 
-        return thisValue.Cell is JsErrorObject { StackTrace: { } stack } ? stack : JsValue.Undefined;
+        return JsErrorObject.GetStackTrace(obj) is { } stack ? stack : JsValue.Undefined;
     }
 
     /// <summary>set Error.prototype.stack (https://tc39.es/proposal-error-stack-accessor/)</summary>

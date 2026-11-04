@@ -15,6 +15,7 @@ namespace Meziantou.Framework.JavaScriptEngine
     {
         public static void DetachArrayBuffer(Meziantou.Framework.JavaScriptEngine.JsValue arrayBuffer, Meziantou.Framework.JavaScriptEngine.JsValue key = default) { }
         public static Meziantou.Framework.JavaScriptEngine.JsSharedDataBlock? GetSharedDataBlock(Meziantou.Framework.JavaScriptEngine.JsValue value) => throw null;
+        public static bool IsResizable(Meziantou.Framework.JavaScriptEngine.JsValue value) => throw null;
         public static bool TryGetBufferSource(Meziantou.Framework.JavaScriptEngine.JsValue value, out Meziantou.Framework.JavaScriptEngine.JsBufferKind kind, out bool isShared, out System.Memory<byte> bytes) => throw null;
     }
 
@@ -204,6 +205,7 @@ namespace Meziantou.Framework.JavaScriptEngine
     public class JsHostObject : Meziantou.Framework.JavaScriptEngine.JsObject
     {
         public bool HasCallInternalMethod { get => throw null; set { } }
+        public bool HasErrorData { get => throw null; }
         public bool HasImmutablePrototype { get => throw null; set { } }
         public bool IsHtmlDdaObject { get => throw null; set { } }
         public string? ModuleSourceClassName { get => throw null; set { } }
@@ -217,6 +219,7 @@ namespace Meziantou.Framework.JavaScriptEngine
         protected virtual bool GetOwnPropertyCore(Meziantou.Framework.JavaScriptEngine.JsPropertyKey key, out Meziantou.Framework.JavaScriptEngine.JsPropertyDescriptor descriptor) => throw null;
         protected virtual Meziantou.Framework.JavaScriptEngine.JsObject? GetPrototypeOfCore() => throw null;
         protected virtual bool HasPropertyCore(Meziantou.Framework.JavaScriptEngine.JsPropertyKey key) => throw null;
+        public void InitializeErrorData(string header) { }
         protected virtual bool IsExtensibleCore() => throw null;
         public bool OrdinaryDefineOwnProperty(Meziantou.Framework.JavaScriptEngine.JsPropertyKey key, in Meziantou.Framework.JavaScriptEngine.JsPropertyDescriptor descriptor) => throw null;
         public bool OrdinaryDelete(Meziantou.Framework.JavaScriptEngine.JsPropertyKey key) => throw null;

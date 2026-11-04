@@ -58,22 +58,25 @@ internal sealed partial class WebIdlBindingsGenerator
     private static bool IsBufferIdlType(IdlType type) => !type.Union && type.Generic.Length == 0 && type.Name is not null && BufferTypeNames.Contains(type.Name);
 
     /// <summary>
-    /// Returns the set of the JsBufferKind (1 &lt;&lt; kind) of the buffer source member types of a type, and whether a view of
-    /// a SharedArrayBuffer is allowed ([AllowShared], which applies to the member types of a typedef, e.g. [AllowShared] ArrayBufferView).
+    /// Returns the set of the JsBufferKind (1 &lt;&lt; kind) of the buffer source member types of a type, whether a view of
+    /// a SharedArrayBuffer is allowed ([AllowShared], which applies to the member types of a typedef, e.g. [AllowShared] ArrayBufferView),
+    /// and whether a resizable buffer is allowed ([AllowResizable], https://webidl.spec.whatwg.org/#AllowResizable).
     /// </summary>
-    private (uint Mask, bool AllowShared) GetBufferKinds(IdlType type, IReadOnlyList<IdlExtendedAttribute>? extAttrs)
+    private (uint Mask, bool AllowShared, bool AllowResizable) GetBufferKinds(IdlType type, IReadOnlyList<IdlExtendedAttribute>? extAttrs)
     {
         var mask = 0u;
         var allowShared = false;
-        void Visit(IdlType current, bool inheritedAllowShared)
+        var allowResizable = false;
+        void Visit(IdlType current, bool inheritedAllowShared, bool inheritedAllowResizable)
         {
             current = _idl.ResolveTypedefs(current);
             var currentAllowShared = inheritedAllowShared || current.HasExtAttr("AllowShared");
+            var currentAllowResizable = inheritedAllowResizable || current.HasExtAttr("AllowResizable");
             if (current.Union)
             {
                 foreach (var subtype in current.Subtypes)
                 {
-                    Visit(subtype, currentAllowShared);
+                    Visit(subtype, currentAllowShared, currentAllowResizable);
                 }
 
                 return;
@@ -84,11 +87,15 @@ internal sealed partial class WebIdlBindingsGenerator
 
             mask |= 1u << Array.IndexOf(BufferTypeNames, current.Name);
             allowShared |= currentAllowShared;
+            allowResizable |= currentAllowResizable;
         }
 
-        Visit(type, extAttrs?.Any(a => a.Name == "AllowShared") ?? false);
-        return (mask, allowShared);
+        Visit(type, extAttrs?.Any(a => a.Name == "AllowShared") ?? false, extAttrs?.Any(a => a.Name == "AllowResizable") ?? false);
+        return (mask, allowShared, allowResizable);
     }
+
+    /// <summary>The trailing argument of a buffer source conversion that allows the resizable buffers, or an empty string.</summary>
+    private static string AllowResizableArgument(bool allowResizable) => allowResizable ? ", allowResizable: true" : "";
 
     /// <summary>Whether all the member types of a union are buffer source types.</summary>
     private bool IsBufferUnion(IdlType type) => type.Union && FlattenUnion(type).All(IsBufferIdlType);
@@ -123,8 +130,8 @@ internal sealed partial class WebIdlBindingsGenerator
         // A buffer source type, or a union of buffer source types (e.g. BufferSource): the type is checked by the conversion
         if (IsBufferIdlType(type) || IsBufferUnion(type))
         {
-            var (mask, allowShared) = GetBufferKinds(type, extAttrs);
-            var bufferConversion = $"r.ToBufferSource({value}, {mask}u, {Bool(allowShared)}, {Literal(type.ToString().TrimEnd('?'))})";
+            var (mask, allowShared, allowResizable) = GetBufferKinds(type, extAttrs);
+            var bufferConversion = $"r.ToBufferSource({value}, {mask}u, {Bool(allowShared)}, {Literal(type.ToString().TrimEnd('?'))}{AllowResizableArgument(allowResizable)})";
             if (type.Union && (type.Nullable || FlattenUnion(type).Any(t => t.Nullable)))
                 return (new Natural(NaturalKind.Buffer, BufferSourceType + "?", IdlType: type), $"(r.IsNullOrUndefined({value}) ? null : {bufferConversion})");
 

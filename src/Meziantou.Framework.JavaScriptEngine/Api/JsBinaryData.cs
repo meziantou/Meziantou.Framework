@@ -37,6 +37,19 @@ public static class JsBinaryData
         return false;
     }
 
+    /// <summary>
+    /// Gets whether a buffer source is backed by a resizable ArrayBuffer or a growable SharedArrayBuffer: the buffer itself,
+    /// or the buffer that a typed array or a DataView views (IsFixedLengthArrayBuffer is false). Returns false for the
+    /// other values.
+    /// </summary>
+    public static bool IsResizable(JsValue value) => value.Cell switch
+    {
+        JsArrayBuffer buffer => !buffer.IsFixedLength,
+        JsTypedArray typedArray => !typedArray.ViewedArrayBuffer.IsFixedLength,
+        JsDataView dataView => !dataView.ViewedArrayBuffer.IsFixedLength,
+        _ => false,
+    };
+
     /// <summary>Gets the Shared Data Block of a SharedArrayBuffer, which <see cref="JsRealm.CreateSharedArrayBuffer"/> can share with a buffer of another engine (on another thread); null for the other values.</summary>
     public static JsSharedDataBlock? GetSharedDataBlock(JsValue value) => value.Cell is JsArrayBuffer { SharedBlock: { } block } ? block : null;
 

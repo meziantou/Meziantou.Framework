@@ -298,7 +298,8 @@ public sealed partial class BrowsingContextOptions
     /// <summary>
     /// Gets or sets the callback invoked when a browsing context that uses these options downloads a resource
     /// (https://html.spec.whatwg.org/multipage/links.html#downloading-resources): the response of a navigation whose
-    /// <c>Content-Disposition</c> is <c>attachment</c> (the active document stays), or the resource of a hyperlink with a
+    /// <c>Content-Disposition</c> is <c>attachment</c> or whose computed MIME type is <c>application/octet-stream</c> (the
+    /// active document stays), or the resource of a hyperlink with a
     /// <c>download</c> attribute, fetched by <see cref="DocumentLoader"/>. The downloads of the documents sandboxed without
     /// <c>allow-downloads</c> are blocked. When null, the downloads are ignored: the hyperlinks with a <c>download</c>
     /// attribute fetch nothing, and the rest of the body of an <c>attachment</c> response is not read. The callback is

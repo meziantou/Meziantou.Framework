@@ -221,12 +221,20 @@ internal readonly struct JavaScriptAdapter(JavaScriptAdapterState state) : IJsAd
         return handler is null ? new JavaScriptPlatformObject(prototypeObject, target) : new JavaScriptLegacyPlatformObject(prototypeObject, target, handler);
     }
 
-    public object? CreateCrossOriginPlatformObject(object prototype, object target, IJsCrossOriginObjectHandler<object> handler) => new JavaScriptCrossOriginPlatformObject(Engine, prototype as JsObject, target, handler);
+    public object? CreateCrossOriginPlatformObject(object prototype, object target, IJsCrossOriginObjectHandler<object> handler) => new JavaScriptCrossOriginPlatformObject(Engine, prototype as JsObject, target, handler)
+    {
+        // https://html.spec.whatwg.org/multipage/webappapis.html#the-hostensurecanaddprivateelement-implementation
+        RejectsPrivateElements = true,
+    };
 
     public object? CreateWindowProxy(IJsWindowProxyHandler<object> handler)
     {
         using var scope = Engine.Enter();
-        return new JavaScriptWindowProxy(Engine, handler);
+        return new JavaScriptWindowProxy(Engine, handler)
+        {
+            // https://html.spec.whatwg.org/multipage/webappapis.html#the-hostensurecanaddprivateelement-implementation
+            RejectsPrivateElements = true,
+        };
     }
 
     public bool TrySetGlobalThis(object realm, object thisValue)

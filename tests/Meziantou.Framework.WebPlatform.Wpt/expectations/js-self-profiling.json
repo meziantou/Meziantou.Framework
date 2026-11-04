@@ -1,0 +1,179 @@
+{
+  "js-self-profiling/class-getter-names.https.html": {
+    "total": 1,
+    "failures": {
+      "class getter names are logged correctly": "FAIL"
+    }
+  },
+  "js-self-profiling/class-names.https.html": {
+    "total": 1,
+    "failures": {
+      "class method names are logged correctly": "FAIL"
+    }
+  },
+  "js-self-profiling/class-setter-names.https.html": {
+    "total": 1,
+    "failures": {
+      "class setter names are logged correctly": "FAIL"
+    }
+  },
+  "js-self-profiling/concurrent-profilers.https.html": {
+    "total": 1,
+    "failures": {
+      "concurrent profilers should be supported": "FAIL"
+    }
+  },
+  "js-self-profiling/cross-origin-script-cors.sub.html": {
+    "harness": "ERROR",
+    "total": 1,
+    "failures": {
+      "cors cross-origin script execution is not observable": "TIMEOUT"
+    }
+  },
+  "js-self-profiling/cross-origin-script-no-cors.sub.html": {
+    "harness": "ERROR",
+    "total": 1,
+    "failures": {
+      "no-cors cross-origin script execution is not observable": "TIMEOUT"
+    }
+  },
+  "js-self-profiling/cross-origin-script-redirect-no-cors.sub.html": {
+    "harness": "ERROR",
+    "total": 1,
+    "failures": {
+      "no-cors cross-origin script redirected from same-origin is not observable": "TIMEOUT"
+    }
+  },
+  "js-self-profiling/external-script.https.html": {
+    "total": 1,
+    "failures": {
+      "external script function details": "FAIL"
+    }
+  },
+  "js-self-profiling/function-anonymous-names.https.html": {
+    "total": 1,
+    "failures": {
+      "anonymous function expression names are logged correctly": "FAIL"
+    }
+  },
+  "js-self-profiling/function-declaration-names.https.html": {
+    "total": 1,
+    "failures": {
+      "function declaration names are logged correctly": "FAIL"
+    }
+  },
+  "js-self-profiling/function-expression-names.https.html": {
+    "total": 1,
+    "failures": {
+      "function expression names are logged correctly": "FAIL"
+    }
+  },
+  "js-self-profiling/idlharness.https.html": {
+    "total": 16,
+    "failures": {
+      "Profiler interface object length": "FAIL",
+      "Profiler interface object name": "FAIL",
+      "Profiler interface: attribute sampleInterval": "FAIL",
+      "Profiler interface: attribute stopped": "FAIL",
+      "Profiler interface: existence and properties of interface object": "FAIL",
+      "Profiler interface: existence and properties of interface prototype object": "FAIL",
+      "Profiler interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "Profiler interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "Profiler interface: operation stop()": "FAIL",
+      "Profiler interface: profiler must inherit property \"sampleInterval\" with the proper type": "FAIL",
+      "Profiler interface: profiler must inherit property \"stop()\" with the proper type": "FAIL",
+      "Profiler interface: profiler must inherit property \"stopped\" with the proper type": "FAIL",
+      "Profiler must be primary interface of profiler": "FAIL",
+      "Stringification of profiler": "FAIL",
+      "idl_test setup": "FAIL"
+    }
+  },
+  "js-self-profiling/iframe-context-filtration.https.html": {
+    "total": 2,
+    "failures": {
+      "functions from child frame are not included in profile created by parent frame": "FAIL"
+    }
+  },
+  "js-self-profiling/inline-script.html": {
+    "total": 1,
+    "failures": {
+      "inline script function details": "FAIL"
+    }
+  },
+  "js-self-profiling/js-profiling-mode/eager.https.html": {
+    "total": 2,
+    "failures": {
+      "js-profiling-mode=eager should allow profiling": "FAIL",
+      "js-profiling-mode=eager should support concurrent profilers": "FAIL"
+    }
+  },
+  "js-self-profiling/js-profiling-mode/lazy.https.html": {
+    "total": 2,
+    "failures": {
+      "js-profiling-mode=lazy should allow profiling": "FAIL",
+      "js-profiling-mode=lazy should support concurrent profilers": "FAIL"
+    }
+  },
+  "js-self-profiling/js-profiling-mode/unknown.https.html": {
+    "total": 1,
+    "failures": {
+      "js-profiling-mode=unknown (invalid token) should not allow profiling": "FAIL"
+    }
+  },
+  "js-self-profiling/max-buffer-size.window.js": {
+    "total": 3,
+    "failures": {
+      "ensure samplebufferfull is fired on full profiler": "FAIL",
+      "max buffer size is not exceeded": "FAIL",
+      "max buffer size must be defined": "FAIL"
+    }
+  },
+  "js-self-profiling/tentative/marker-vm-state.https.html": {
+    "total": 1,
+    "failures": {
+      "markers logged correctly": "FAIL"
+    }
+  },
+  "js-self-profiling/time-domain.window.js": {
+    "total": 1,
+    "failures": {
+      "sample timestamps use the current high-resolution time": "FAIL"
+    }
+  },
+  "js-self-profiling/with-document-policy/dedicated-worker-blob.https.html": {
+    "total": 1,
+    "failures": {
+      "blob: dedicated worker should inherit js-profiling policy from creator document": "FAIL"
+    }
+  },
+  "js-self-profiling/with-document-policy/dedicated-worker-data.https.html": {
+    "total": 1,
+    "failures": {
+      "data: dedicated worker should inherit js-profiling policy from creator document": "FAIL"
+    }
+  },
+  "js-self-profiling/with-document-policy/dedicated-worker-nested-blob.https.html": {
+    "total": 1,
+    "failures": {
+      "nested blob: dedicated worker should inherit js-profiling policy transitively from creator document": "FAIL"
+    }
+  },
+  "js-self-profiling/with-document-policy/dedicated-worker-no-policy.https.html": {
+    "total": 1,
+    "failures": {
+      "profiling should be blocked for network worker without document policy header": "FAIL"
+    }
+  },
+  "js-self-profiling/with-document-policy/dedicated-worker.https.html": {
+    "total": 1,
+    "failures": {
+      "profiling should succeed in dedicated worker with document policy enabled": "FAIL"
+    }
+  },
+  "js-self-profiling/without-document-policy/disabled.https.html": {
+    "total": 1,
+    "failures": {
+      "profiling should throw without passing document policy": "FAIL"
+    }
+  }
+}

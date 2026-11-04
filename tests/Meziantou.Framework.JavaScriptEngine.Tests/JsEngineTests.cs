@@ -416,6 +416,32 @@ public sealed class JsEngineTests
     }
 
     [Fact]
+    public void HostObjectsCanRejectPrivateElements()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using var scope = engine.Enter();
+        var host = new JsHostObject(realm.ObjectPrototype);
+        realm.GlobalObject.SetProperty("host", host);
+        realm.Execute("""
+            class Base { constructor(o) { return o; } }
+            class Field extends Base { #x = 1; static has(o) { return #x in o; } }
+            class Method extends Base { #m() {} static has(o) { return #m in o; } }
+            """);
+        Assert.Equal("true,true", realm.Execute("new Field(host); new Method(host); Field.has(host) + ',' + Method.has(host)").AsString());
+
+        var rejecting = new JsHostObject(realm.ObjectPrototype) { RejectsPrivateElements = true };
+        Assert.True(rejecting.RejectsPrivateElements);
+        realm.GlobalObject.SetProperty("rejecting", rejecting);
+        Assert.Equal("TypeError,TypeError,false,false", realm.Execute("""
+            const errors = [];
+            try { new Field(rejecting); } catch (e) { errors.push(e.constructor.name); }
+            try { new Method(rejecting); } catch (e) { errors.push(e.constructor.name); }
+            errors.join(',') + ',' + Field.has(rejecting) + ',' + Method.has(rejecting)
+            """).AsString());
+    }
+
+    [Fact]
     public void HostObjectsCanBeCallable()
     {
         using var engine = new JsEngine();

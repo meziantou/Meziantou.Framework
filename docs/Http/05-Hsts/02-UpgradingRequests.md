@@ -58,6 +58,8 @@ The header is processed as RFC 6797 describes:
 - `max-age` (in seconds) is required: the policy expires after it. A header without it, or with a malformed one, is
   ignored, and the response is returned as usual.
 - `includeSubDomains` extends the policy to every subdomain of the host.
+- A header that repeats a directive, such as two `includeSubDomains`, is ignored. `includeSubDomains` takes no
+  value: `includeSubDomains=1` does not extend the policy, but it still counts as a repetition.
 - `max-age=0` removes the policy the host had declared. It does not remove a host of the preload list (see
   [The preload list is a floor](03-ManagingPolicies.md#the-preload-list-is-a-floor)).
 - A header received over plaintext HTTP is ignored, so a network attacker cannot add or remove a policy.

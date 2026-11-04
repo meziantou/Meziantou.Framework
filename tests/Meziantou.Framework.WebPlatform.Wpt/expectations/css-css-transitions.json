@@ -9,10 +9,7 @@
     "total": 5
   },
   "css/css-transitions/CSSTransition-effect.tentative.html": {
-    "total": 10,
-    "failures": {
-      "A transition with a replaced effect still exhibits the regular transition reversing behavior": "FAIL"
-    }
+    "total": 10
   },
   "css/css-transitions/CSSTransition-finished.tentative.html": {
     "total": 1
@@ -44,10 +41,7 @@
   "css/css-transitions/KeyframeEffect-setKeyframes.tentative.html": {
     "total": 8,
     "failures": {
-      "A transition with replaced kefyrames and composite 'add' exhibits normal reversing behavior, and the effect is not double counted when calculating the before change style": "FAIL",
-      "A transition with replaced keyframes animating a different property still exhibits normal reversing behavior  (reversing from the base value).": "FAIL",
-      "A transition with replaced keyframes animating nothing on a property being controlled by another modified transition exhibits normal reversing behavior and reverses from the other transition's current value.": "FAIL",
-      "A transition with replaced keyframes animating nothing still exhibits normal reversing behavior (reversing from the base value).": "FAIL"
+      "A transition with replaced keyframes animating nothing on a property being controlled by another modified transition exhibits normal reversing behavior and reverses from the other transition's current value.": "FAIL"
     }
   },
   "css/css-transitions/KeyframeEffect-target.tentative.html": {
@@ -131,15 +125,7 @@
   "css/css-transitions/event-dispatch.tentative.html": {
     "total": 30,
     "failures": {
-      "Active -> Idle, no delay (display: none)": "FAIL",
-      "Active -> Idle, with negative delay (Animation.timeline = null)": "FAIL",
-      "Active -> Idle, with negative delay (display: none)": "FAIL",
-      "Active -> Idle, with positive delay (display: none)": "FAIL",
-      "After -> Before": "FAIL",
-      "Calculating the interval start and end time with negative end delay.": "FAIL",
-      "Cancel the transition after clearing the target effect": "FAIL",
-      "Idle or Pending -> Active": "FAIL",
-      "Restart transition after canceling transition immediately": "FAIL"
+      "Active -> Idle, with negative delay (Animation.timeline = null)": "FAIL"
     }
   },
   "css/css-transitions/events-001.html": {
@@ -201,11 +187,7 @@
     "total": 1
   },
   "css/css-transitions/non-rendered-element-004.tentative.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "Transitions on ::marker pseudo-elements are canceled when the parent display type is no longer list-item": "TIMEOUT"
-    }
+    "total": 1
   },
   "css/css-transitions/parsing/starting-style-parsing.html": {
     "total": 5
@@ -338,40 +320,7 @@
     }
   },
   "css/css-transitions/properties-value-inherit-003.html": {
-    "total": 62,
-    "failures": {
-      "background-position-x length-em(em) / events": "FAIL",
-      "border-bottom-width length-em(em) / events": "FAIL",
-      "border-left-width length-em(em) / events": "FAIL",
-      "border-right-width length-em(em) / events": "FAIL",
-      "border-top-width length-em(em) / events": "FAIL",
-      "bottom length-em(em) / events": "FAIL",
-      "height length-em(em) / events": "FAIL",
-      "left length-em(em) / events": "FAIL",
-      "letter-spacing length-em(em) / events": "FAIL",
-      "line-height length-em(em) / events": "FAIL",
-      "margin-bottom length-em(em) / events": "FAIL",
-      "margin-left length-em(em) / events": "FAIL",
-      "margin-right length-em(em) / events": "FAIL",
-      "margin-top length-em(em) / events": "FAIL",
-      "max-height length-em(em) / events": "FAIL",
-      "max-width length-em(em) / events": "FAIL",
-      "min-height length-em(em) / events": "FAIL",
-      "min-width length-em(em) / events": "FAIL",
-      "outline-offset length-em(em) / events": "FAIL",
-      "outline-width length-em(em) / events": "FAIL",
-      "padding-bottom length-em(em) / events": "FAIL",
-      "padding-left length-em(em) / events": "FAIL",
-      "padding-right length-em(em) / events": "FAIL",
-      "padding-top length-em(em) / events": "FAIL",
-      "right length-em(em) / events": "FAIL",
-      "text-decoration-inset length-em(em) / events": "FAIL",
-      "text-indent length-em(em) / events": "FAIL",
-      "top length-em(em) / events": "FAIL",
-      "vertical-align length-em(em) / events": "FAIL",
-      "width length-em(em) / events": "FAIL",
-      "word-spacing length-em(em) / events": "FAIL"
-    }
+    "total": 62
   },
   "css/css-transitions/pseudo-element-transform.html": {
     "reftest": "PASS"
@@ -506,10 +455,7 @@
     "total": 1
   },
   "css/css-transitions/ua-important.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Transitions can't override UA !important declarations on <marquee>": "FAIL"
-    }
+    "total": 1
   },
   "css/css-transitions/unregistered-custom-property-transition.html": {
     "total": 3

@@ -530,13 +530,7 @@
     "total": 5
   },
   "css/css-typed-om/the-stylepropertymap/declared/append.tentative.html": {
-    "total": 25,
-    "failures": {
-      "Calling StylePropertyMap.append with a CSS-wide keyword CSSKeywordValue throws TypeError": "FAIL",
-      "Calling StylePropertyMap.append with a CSS-wide keyword string throws TypeError": "FAIL",
-      "Calling StylePropertyMap.append with a valid value and a CSS-wide keyword throws TypeError": "FAIL",
-      "Calling StylePropertyMap.append with no values does nothing": "FAIL"
-    }
+    "total": 25
   },
   "css/css-typed-om/the-stylepropertymap/declared/clear.html": {
     "total": 3
@@ -581,13 +575,7 @@
     "total": 15
   },
   "css/css-typed-om/the-stylepropertymap/inline/append.tentative.html": {
-    "total": 25,
-    "failures": {
-      "Calling StylePropertyMap.append with a CSS-wide keyword CSSKeywordValue throws TypeError": "FAIL",
-      "Calling StylePropertyMap.append with a CSS-wide keyword string throws TypeError": "FAIL",
-      "Calling StylePropertyMap.append with a valid value and a CSS-wide keyword throws TypeError": "FAIL",
-      "Calling StylePropertyMap.append with no values does nothing": "FAIL"
-    }
+    "total": 25
   },
   "css/css-typed-om/the-stylepropertymap/inline/attribute-changed-callback.html": {
     "total": 11

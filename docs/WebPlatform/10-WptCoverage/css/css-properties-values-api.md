@@ -9,17 +9,17 @@ description: "The results of the web-platform-tests of css/css-properties-values
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 96 | 105 | 0 | 91% |
+| [Stable](#stable-tests) | 97 | 105 | 0 | 92% |
 | [Tentative](#tentative-tests) | 3 | 6 | 0 | 50% |
 | [Reftests](#reftests) | 7 | 7 | 0 | 100% |
-| **All** | **106** | **118** | **0** | **90%** |
+| **All** | **107** | **118** | **0** | **91%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 7
-- **TEST BUG**: 2
+- **BUG**: 3
+- **TEST BUG**: 5
 - **NOT IMPLEMENTED**: 4
 
 ## Stable tests
@@ -40,12 +40,12 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`animation/custom-property-animation-integer-space-list.html`](https://wpt.fyi/results/css/css-properties-values-api/animation/custom-property-animation-integer-space-list.html) | Pass | 6 / 6 |  |  |
 | [`animation/custom-property-animation-integer.html`](https://wpt.fyi/results/css/css-properties-values-api/animation/custom-property-animation-integer.html) | Pass | 5 / 5 |  |  |
 | [`animation/custom-property-animation-length-comma-list.html`](https://wpt.fyi/results/css/css-properties-values-api/animation/custom-property-animation-length-comma-list.html) | Pass | 6 / 6 |  |  |
-| [`animation/custom-property-animation-length-percentage-comma-list.html`](https://wpt.fyi/results/css/css-properties-values-api/animation/custom-property-animation-length-percentage-comma-list.html) | Fail | 5 / 6 | BUG | the iteration composite operation of the `<length-percentage>` lists of the registered custom properties accumulates the final value too many times |
-| [`animation/custom-property-animation-length-percentage-space-list.html`](https://wpt.fyi/results/css/css-properties-values-api/animation/custom-property-animation-length-percentage-space-list.html) | Fail | 5 / 6 | BUG | the iteration composite operation of the `<length-percentage>` lists of the registered custom properties accumulates the final value too many times |
+| [`animation/custom-property-animation-length-percentage-comma-list.html`](https://wpt.fyi/results/css/css-properties-values-api/animation/custom-property-animation-length-percentage-comma-list.html) | Fail | 5 / 6 | TEST BUG | the expected value omits the accumulation of the second item: at the middle of the third iteration of `50%` to `100px` with `iterationComposite: accumulate`, the value is the interpolated `calc(25% + 50px)` plus twice the final value `100px` (https://drafts.csswg.org/web-animations-1/#effect-accumulation-section), `calc(25% + 250px)`; the first item and the other list tests of the directory (e.g. `<length>#`: `50px` to `100px` gives `275px`) do accumulate it |
+| [`animation/custom-property-animation-length-percentage-space-list.html`](https://wpt.fyi/results/css/css-properties-values-api/animation/custom-property-animation-length-percentage-space-list.html) | Fail | 5 / 6 | TEST BUG | the expected value omits the accumulation of the second item: at the middle of the third iteration of `50%` to `100px` with `iterationComposite: accumulate`, the value is the interpolated `calc(25% + 50px)` plus twice the final value `100px` (https://drafts.csswg.org/web-animations-1/#effect-accumulation-section), `calc(25% + 250px)`; the first item and the other list tests of the directory (e.g. `<length>#`: `50px` to `100px` gives `275px`) do accumulate it |
 | [`animation/custom-property-animation-length-percentage.html`](https://wpt.fyi/results/css/css-properties-values-api/animation/custom-property-animation-length-percentage.html) | Pass | 5 / 5 |  |  |
 | [`animation/custom-property-animation-length-space-list.html`](https://wpt.fyi/results/css/css-properties-values-api/animation/custom-property-animation-length-space-list.html) | Pass | 6 / 6 |  |  |
 | [`animation/custom-property-animation-length.html`](https://wpt.fyi/results/css/css-properties-values-api/animation/custom-property-animation-length.html) | Pass | 5 / 5 |  |  |
-| [`animation/custom-property-animation-list-type-mismatch.html`](https://wpt.fyi/results/css/css-properties-values-api/animation/custom-property-animation-list-type-mismatch.html) | Fail | 6 / 7 | BUG | an additive `<transform-function>#` animation is not updated when the length of the underlying list changes (`scale(6)` instead of `scale(5)`) |
+| [`animation/custom-property-animation-list-type-mismatch.html`](https://wpt.fyi/results/css/css-properties-values-api/animation/custom-property-animation-list-type-mismatch.html) | Fail | 6 / 7 | BUG | the addition of the items of a `<transform-function>#` list adds the arguments of the functions (`scale(2)` plus `scale(4)` is `scale(6)`); the test expects the accumulation of the transform functions (`scale(5)`), which css-properties-values-api does not define for the items of a list |
 | [`animation/custom-property-animation-non-inherited-used-by-standard-property.html`](https://wpt.fyi/results/css/css-properties-values-api/animation/custom-property-animation-non-inherited-used-by-standard-property.html) | Pass | 1 / 1 |  |  |
 | [`animation/custom-property-animation-number-comma-list.html`](https://wpt.fyi/results/css/css-properties-values-api/animation/custom-property-animation-number-comma-list.html) | Pass | 6 / 6 |  |  |
 | [`animation/custom-property-animation-number-space-list.html`](https://wpt.fyi/results/css/css-properties-values-api/animation/custom-property-animation-number-space-list.html) | Pass | 6 / 6 |  |  |
@@ -60,7 +60,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`animation/custom-property-animation-time-space-list.html`](https://wpt.fyi/results/css/css-properties-values-api/animation/custom-property-animation-time-space-list.html) | Pass | 6 / 6 |  |  |
 | [`animation/custom-property-animation-time.html`](https://wpt.fyi/results/css/css-properties-values-api/animation/custom-property-animation-time.html) | Pass | 5 / 5 |  |  |
 | [`animation/custom-property-animation-transform-function.html`](https://wpt.fyi/results/css/css-properties-values-api/animation/custom-property-animation-transform-function.html) | Pass | 5 / 5 |  |  |
-| [`animation/custom-property-animation-transform-list-multiple-values.html`](https://wpt.fyi/results/css/css-properties-values-api/animation/custom-property-animation-transform-list-multiple-values.html) | Fail | 9 / 11 | BUG | additive `<transform-list>` animations: the underlying value is not updated from `none`, and an animation stacked on a discrete `var(--invalid, invalid)` animation is added to the base value instead of replacing it |
+| [`animation/custom-property-animation-transform-list-multiple-values.html`](https://wpt.fyi/results/css/css-properties-values-api/animation/custom-property-animation-transform-list-multiple-values.html) | Fail | 10 / 11 | BUG | an additive `<transform-list>` animation stacked on a discrete `var(--invalid, invalid)` animation is added to the registered initial value (the value of the discrete animation, invalid at computed-value time) instead of replacing it |
 | [`animation/custom-property-animation-transform-list-single-values.html`](https://wpt.fyi/results/css/css-properties-values-api/animation/custom-property-animation-transform-list-single-values.html) | Pass | 5 / 5 |  |  |
 | [`animation/custom-property-animation-url.html`](https://wpt.fyi/results/css/css-properties-values-api/animation/custom-property-animation-url.html) | Pass | 3 / 3 |  |  |
 | [`animation/custom-property-animation-used-in-shorthand.html`](https://wpt.fyi/results/css/css-properties-values-api/animation/custom-property-animation-used-in-shorthand.html) | Pass | 1 / 1 |  |  |
@@ -122,14 +122,14 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`registered-property-ident-function.html`](https://wpt.fyi/results/css/css-properties-values-api/registered-property-ident-function.html) | Pass | 1 / 1 |  |  |
 | [`registered-property-initial.html`](https://wpt.fyi/results/css/css-properties-values-api/registered-property-initial.html) | Pass | 29 / 29 |  |  |
 | [`registered-property-revert.html`](https://wpt.fyi/results/css/css-properties-values-api/registered-property-revert.html) | Pass | 4 / 4 |  |  |
-| [`resolved-color-value.html`](https://wpt.fyi/results/css/css-properties-values-api/resolved-color-value.html) | Fail | 0 / 1 | BUG | `sibling-index()` in the channels of `color()` is rejected for a registered `<color>` property (falls back to the initial value) |
+| [`resolved-color-value.html`](https://wpt.fyi/results/css/css-properties-values-api/resolved-color-value.html) | Pass | 1 / 1 |  |  |
 | [`self-utils.html`](https://wpt.fyi/results/css/css-properties-values-api/self-utils.html) | Pass | 3 / 3 |  |  |
 | [`typedom.html`](https://wpt.fyi/results/css/css-properties-values-api/typedom.html) | Pass | 325 / 325 |  |  |
 | [`unit-cycles.html`](https://wpt.fyi/results/css/css-properties-values-api/unit-cycles.html) | Pass | 27 / 27 |  |  |
 | [`url-resolution.html`](https://wpt.fyi/results/css/css-properties-values-api/url-resolution.html) | Pass | 18 / 18 |  |  |
 | [`var-reference-registered-properties-002.html`](https://wpt.fyi/results/css/css-properties-values-api/var-reference-registered-properties-002.html) | Pass | 1 / 1 |  |  |
 | [`var-reference-registered-properties-cycles.html`](https://wpt.fyi/results/css/css-properties-values-api/var-reference-registered-properties-cycles.html) | Pass | 5 / 5 |  |  |
-| [`var-reference-registered-properties.html`](https://wpt.fyi/results/css/css-properties-values-api/var-reference-registered-properties.html) | Fail | 15 / 16 | BUG | `var()` referencing a registered `<length>` property declared with an invalid value (`red`) substitutes `0px` instead of making the referencing property invalid |
+| [`var-reference-registered-properties.html`](https://wpt.fyi/results/css/css-properties-values-api/var-reference-registered-properties.html) | Fail | 15 / 16 | TEST BUG | a registered `<length>` property declared with `red` is invalid at computed-value time, so its computed value is its registered initial value ("the property becomes invalid at computed-value time (and thus resets to the registered initial value)", https://drafts.css-houdini.org/css-properties-values-api/#the-registerproperty-function; css-variables-2: registered custom properties act like non-custom properties when they are invalid at computed-value time), and `var()` substitutes the computed value of a registered property (https://drafts.css-houdini.org/css-properties-values-api/#substitution): `0px`, not the empty string the test expects |
 | [`var-reference-unit-cycles.html`](https://wpt.fyi/results/css/css-properties-values-api/var-reference-unit-cycles.html) | Pass | 2 / 2 |  |  |
 
 ## Tentative tests

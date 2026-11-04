@@ -18,7 +18,7 @@ description: "The results of the web-platform-tests of uievents, and why the tes
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
+- **TEST BUG**: 1
 - **NOT IMPLEMENTED**: 4
 - **REQUIRES**: 1
   - `layout`: 1
@@ -69,7 +69,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`mouse/mousemove_after_mouseover_target_removed.html`](https://wpt.fyi/results/uievents/mouse/mousemove_after_mouseover_target_removed.html) | Pass | 4 / 4 |  |  |
 | [`mouse/mousemove_prevent_default_action.html`](https://wpt.fyi/results/uievents/mouse/mousemove_prevent_default_action.html) | Pass | 2 / 2 |  |  |
 | [`mouse/mouseover-at-removing-mousedown-target.html`](https://wpt.fyi/results/uievents/mouse/mouseover-at-removing-mousedown-target.html) | Pass | 60 / 60 |  |  |
-| [`order-of-events/focus-events/focus-automated-blink-webkit.html`](https://wpt.fyi/results/uievents/order-of-events/focus-events/focus-automated-blink-webkit.html) | Fail | 1 / 2 | BUG | when the focus moves into or out of an iframe, the `focus`/`blur` events across documents have the iframe as `relatedTarget` instead of null |
+| [`order-of-events/focus-events/focus-automated-blink-webkit.html`](https://wpt.fyi/results/uievents/order-of-events/focus-events/focus-automated-blink-webkit.html) | Fail | 1 / 2 | TEST BUG | the test documents Blink's behavior: when the focus moves from `#c` to an `<input>` of the iframe, the focus chain of the new target ends with the iframe element (its navigable container) once the common `Document` is popped, so HTML's "focus update steps" give the `blur` and `focusout` of `#c` the iframe as related target ("If entry is the last entry in old chain, and entry is an Element, and the last entry in new chain is also an Element"); the test expects null |
 | [`order-of-events/focus-events/focus-contained.html`](https://wpt.fyi/results/uievents/order-of-events/focus-events/focus-contained.html) | Pass | 1 / 1 |  |  |
 | [`order-of-events/focus-events/focus-management-expectations.html`](https://wpt.fyi/results/uievents/order-of-events/focus-events/focus-management-expectations.html) | Pass | 1 / 1 |  |  |
 | [`order-of-events/focus-events/focus.html`](https://wpt.fyi/results/uievents/order-of-events/focus-events/focus.html) | Pass | 1 / 1 |  |  |

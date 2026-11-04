@@ -11,14 +11,14 @@ description: "The results of the web-platform-tests of css/css-pseudo, and why t
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 45 | 49 | 0 | 92% |
 | [Tentative](#tentative-tests) | 9 | 12 | 0 | 75% |
-| [Reftests](#reftests) | 253 | 275 | 0 | 92% |
-| **All** | **307** | **336** | **0** | **91%** |
+| [Reftests](#reftests) | 254 | 275 | 0 | 92% |
+| **All** | **308** | **336** | **0** | **92%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 6
+- **BUG**: 5
 - **TEST BUG**: 9
 - **NOT IMPLEMENTED**: 14
 
@@ -174,7 +174,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`first-line-below-float.html`](https://wpt.fyi/results/css/css-pseudo/first-line-below-float.html) | Pass | 1 / 1 |  |  |
 | [`first-line-change-inline-color-nested.html`](https://wpt.fyi/results/css/css-pseudo/first-line-change-inline-color-nested.html) | Pass | 1 / 1 |  |  |
 | [`first-line-change-inline-color.html`](https://wpt.fyi/results/css/css-pseudo/first-line-change-inline-color.html) | Pass | 1 / 1 |  |  |
-| [`first-line-font-relative-units-001.html`](https://wpt.fyi/results/css/css-pseudo/first-line-font-relative-units-001.html) | Fail | 0 / 1 | BUG | the inline-axis border of an inline box on the first line (`border-left: 1em`) is laid out with the font size that the box has on the other lines (100px), not with the one it inherits from `::first-line` (10px): the text after it is 90px too far (the border is painted 10px wide) |
+| [`first-line-font-relative-units-001.html`](https://wpt.fyi/results/css/css-pseudo/first-line-font-relative-units-001.html) | Pass | 1 / 1 |  |  |
 | [`first-line-inherited-no-transition.html`](https://wpt.fyi/results/css/css-pseudo/first-line-inherited-no-transition.html) | Pass | 1 / 1 |  |  |
 | [`first-line-inherited-with-transition.html`](https://wpt.fyi/results/css/css-pseudo/first-line-inherited-with-transition.html) | Pass | 1 / 1 |  |  |
 | [`first-line-inherited.html`](https://wpt.fyi/results/css/css-pseudo/first-line-inherited.html) | Pass | 1 / 1 |  |  |

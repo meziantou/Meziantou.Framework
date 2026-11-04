@@ -18,8 +18,8 @@ description: "The results of the web-platform-tests of css/filter-effects, and w
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 8
-- **TEST BUG**: 4
+- **BUG**: 7
+- **TEST BUG**: 5
 - **NOT IMPLEMENTED**: 1
 
 ## Stable tests
@@ -373,7 +373,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`svg-data-uri-filter-resource.html`](https://wpt.fyi/results/css/filter-effects/svg-data-uri-filter-resource.html) | Pass | 1 / 1 |  |  |
 | [`svg-empty-container-with-filter-content-added.html`](https://wpt.fyi/results/css/filter-effects/svg-empty-container-with-filter-content-added.html) | Pass | 1 / 1 |  |  |
 | [`svg-empty-element-with-filter-001.html`](https://wpt.fyi/results/css/filter-effects/svg-empty-element-with-filter-001.html) | Pass | 1 / 1 |  |  |
-| [`svg-empty-hidden-foreignobject-with-filter-001.html`](https://wpt.fyi/results/css/filter-effects/svg-empty-hidden-foreignobject-with-filter-001.html) | Fail | 0 / 1 | BUG | a `foreignObject` with `width="0" height="0"` generates no box, so its filter (a userSpaceOnUse 100x100 region filled by `feFlood`) is not rendered; only Chrome passes |
+| [`svg-empty-hidden-foreignobject-with-filter-001.html`](https://wpt.fyi/results/css/filter-effects/svg-empty-hidden-foreignobject-with-filter-001.html) | Fail | 0 / 1 | TEST BUG | the `foreignObject` has `width="0" height="0"`: SVG 2 §12.2 (Placement of the embedded content) says that a value of zero for either width or height disables rendering of the element and its embedded content, so its filter (a userSpaceOnUse 100x100 region filled by `feFlood`) is not rendered and the page is blank; only Chrome passes |
 | [`svg-external-filter-resource.html`](https://wpt.fyi/results/css/filter-effects/svg-external-filter-resource.html) | Pass | 1 / 1 |  |  |
 | [`svg-feflood-001.html`](https://wpt.fyi/results/css/filter-effects/svg-feflood-001.html) | Pass | 1 / 1 |  |  |
 | [`svg-feimage-001.html`](https://wpt.fyi/results/css/filter-effects/svg-feimage-001.html) | Pass | 1 / 1 |  |  |

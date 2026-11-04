@@ -11,14 +11,14 @@ description: "The results of the web-platform-tests of css/css-color, and why th
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 67 | 69 | 0 | 97% |
 | Tentative | 0 | 0 | 0 | – |
-| [Reftests](#reftests) | 301 | 308 | 1 | 98% |
-| **All** | **368** | **377** | **1** | **98%** |
+| [Reftests](#reftests) | 302 | 308 | 1 | 98% |
+| **All** | **369** | **377** | **1** | **98%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 2
+- **BUG**: 1
 - **TEST BUG**: 4
 - **NOT IMPLEMENTED**: 2
 - **FLAKY**: 1
@@ -123,7 +123,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`border-right-color.xht`](https://wpt.fyi/results/css/css-color/border-right-color.xht) | Pass | 1 / 1 |  |  |
 | [`border-top-color.xht`](https://wpt.fyi/results/css/css-color/border-top-color.xht) | Pass | 1 / 1 |  |  |
 | [`canvas-change-opacity.html`](https://wpt.fyi/results/css/css-color/canvas-change-opacity.html) | Pass | 1 / 1 |  |  |
-| [`clip-opacity-out-of-flow.html`](https://wpt.fyi/results/css/css-color/clip-opacity-out-of-flow.html) | Fail | 0 / 1 | BUG | the overflow clip of an ancestor of a stacking context (`overflow: hidden` 200x200 around the `opacity: 0.5` box) is applied to the whole group, including its absolutely and fixed positioned descendants whose containing block is outside of that clip: the blue and green boxes are clipped at 200px instead of at the 250px of the outer clip (10000 pixels) |
+| [`clip-opacity-out-of-flow.html`](https://wpt.fyi/results/css/css-color/clip-opacity-out-of-flow.html) | Pass | 1 / 1 |  |  |
 | [`color-001.html`](https://wpt.fyi/results/css/css-color/color-001.html) | Pass | 1 / 1 |  |  |
 | [`color-002.html`](https://wpt.fyi/results/css/css-color/color-002.html) | Pass | 1 / 1 |  |  |
 | [`color-003.html`](https://wpt.fyi/results/css/css-color/color-003.html) | Pass | 1 / 1 |  |  |

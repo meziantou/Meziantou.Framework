@@ -11,14 +11,14 @@ description: "The results of the web-platform-tests of css/css-multicol, and why
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 89 | 91 | 0 | 98% |
 | [Tentative](#tentative-tests) | 0 | 1 | 0 | 0% |
-| [Reftests](#reftests) | 459 | 467 | 0 | 98% |
-| **All** | **548** | **559** | **0** | **98%** |
+| [Reftests](#reftests) | 461 | 467 | 0 | 99% |
+| **All** | **550** | **559** | **0** | **98%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 6
+- **BUG**: 4
 - **NOT IMPLEMENTED**: 5
 
 ## Stable tests
@@ -337,7 +337,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`multicol-height-block-child-001.xht`](https://wpt.fyi/results/css/css-multicol/multicol-height-block-child-001.xht) | Pass | 1 / 1 |  |  |
 | [`multicol-inherit-001.xht`](https://wpt.fyi/results/css/css-multicol/multicol-inherit-001.xht) | Pass | 1 / 1 |  |  |
 | [`multicol-inherit-002.xht`](https://wpt.fyi/results/css/css-multicol/multicol-inherit-002.xht) | Pass | 1 / 1 |  |  |
-| [`multicol-inherit-003.xht`](https://wpt.fyi/results/css/css-multicol/multicol-inherit-003.xht) | Fail | 0 / 1 | BUG | the block-end margin of the last box of the content must fit in the last column: the last line of the third block is moved to a seventh column of the container (2em tall, 2 lines per column), where the margin is expected to be truncated at the end of the sixth column |
+| [`multicol-inherit-003.xht`](https://wpt.fyi/results/css/css-multicol/multicol-inherit-003.xht) | Pass | 1 / 1 |  |  |
 | [`multicol-list-item-001.xht`](https://wpt.fyi/results/css/css-multicol/multicol-list-item-001.xht) | Pass | 1 / 1 |  |  |
 | [`multicol-list-item-002.html`](https://wpt.fyi/results/css/css-multicol/multicol-list-item-002.html) | Pass | 1 / 1 |  |  |
 | [`multicol-list-item-003.html`](https://wpt.fyi/results/css/css-multicol/multicol-list-item-003.html) | Pass | 1 / 1 |  |  |
@@ -590,7 +590,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`table/table-cell-content-change-000.html`](https://wpt.fyi/results/css/css-multicol/table/table-cell-content-change-000.html) | Pass | 1 / 1 |  |  |
 | [`table/table-cell-content-change-001.html`](https://wpt.fyi/results/css/css-multicol/table/table-cell-content-change-001.html) | Pass | 1 / 1 |  |  |
 | [`table/table-cell-multicol-nested-001.html`](https://wpt.fyi/results/css/css-multicol/table/table-cell-multicol-nested-001.html) | Pass | 1 / 1 |  |  |
-| [`table/table-cell-multicol-nested-002.html`](https://wpt.fyi/results/css/css-multicol/table/table-cell-multicol-nested-002.html) | Fail | 0 / 1 | BUG | a table cell that is a multi-column container with `height: 10px; max-height: 10px` and taller content: its columns are 10px tall and overflow in the inline direction; the test expects the cell to grow with its content (the height of a cell is a minimum, and `max-height` does not apply to it), fragmented by the outer columns |
+| [`table/table-cell-multicol-nested-002.html`](https://wpt.fyi/results/css/css-multicol/table/table-cell-multicol-nested-002.html) | Pass | 1 / 1 |  |  |
 | [`table/table-cell-multicol-nested-003.html`](https://wpt.fyi/results/css/css-multicol/table/table-cell-multicol-nested-003.html) | Pass | 1 / 1 |  |  |
 | [`with-custom-layout-on-same-element.https.html`](https://wpt.fyi/results/css/css-multicol/with-custom-layout-on-same-element.https.html) | Pass | 1 / 1 |  |  |
 | [`zero-column-width-layout.html`](https://wpt.fyi/results/css/css-multicol/zero-column-width-layout.html) | Pass | 1 / 1 |  |  |

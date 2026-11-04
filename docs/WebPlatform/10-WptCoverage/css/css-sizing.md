@@ -11,14 +11,14 @@ description: "The results of the web-platform-tests of css/css-sizing, and why t
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 199 | 201 | 0 | 99% |
 | [Tentative](#tentative-tests) | 7 | 7 | 0 | 100% |
-| [Reftests](#reftests) | 564 | 569 | 0 | 99% |
-| **All** | **770** | **777** | **0** | **99%** |
+| [Reftests](#reftests) | 565 | 569 | 0 | 99% |
+| **All** | **771** | **777** | **0** | **99%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 4
+- **BUG**: 3
 - **TEST BUG**: 1
 - **NOT IMPLEMENTED**: 1
 - **REQUIRES**: 1
@@ -335,7 +335,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`aspect-ratio/block-aspect-ratio-056.html`](https://wpt.fyi/results/css/css-sizing/aspect-ratio/block-aspect-ratio-056.html) | Pass | 1 / 1 |  |  |
 | [`aspect-ratio/block-aspect-ratio-057.tentative.html`](https://wpt.fyi/results/css/css-sizing/aspect-ratio/block-aspect-ratio-057.tentative.html) | Pass | 1 / 1 |  |  |
 | [`aspect-ratio/block-aspect-ratio-058.html`](https://wpt.fyi/results/css/css-sizing/aspect-ratio/block-aspect-ratio-058.html) | Pass | 1 / 1 |  |  |
-| [`aspect-ratio/block-aspect-ratio-shrink-to-fit-ancestor-relayout.html`](https://wpt.fyi/results/css/css-sizing/aspect-ratio/block-aspect-ratio-shrink-to-fit-ancestor-relayout.html) | Fail | 0 / 1 | BUG | the percentage heights in a block with `aspect-ratio` resolve against the width of the previous layout when a shrink-to-fit ancestor measures it, so the block grows |
+| [`aspect-ratio/block-aspect-ratio-shrink-to-fit-ancestor-relayout.html`](https://wpt.fyi/results/css/css-sizing/aspect-ratio/block-aspect-ratio-shrink-to-fit-ancestor-relayout.html) | Pass | 1 / 1 |  |  |
 | [`aspect-ratio/block-aspect-ratio-with-margin-collapsing-001.html`](https://wpt.fyi/results/css/css-sizing/aspect-ratio/block-aspect-ratio-with-margin-collapsing-001.html) | Pass | 1 / 1 |  |  |
 | [`aspect-ratio/block-aspect-ratio-with-margin-collapsing-002.html`](https://wpt.fyi/results/css/css-sizing/aspect-ratio/block-aspect-ratio-with-margin-collapsing-002.html) | Pass | 1 / 1 |  |  |
 | [`aspect-ratio/fieldset-element-001.html`](https://wpt.fyi/results/css/css-sizing/aspect-ratio/fieldset-element-001.html) | Pass | 1 / 1 |  |  |

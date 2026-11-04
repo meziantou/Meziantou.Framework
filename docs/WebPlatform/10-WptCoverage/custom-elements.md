@@ -9,16 +9,17 @@ description: "The results of the web-platform-tests of custom-elements, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 180 | 189 | 0 | 95% |
+| [Stable](#stable-tests) | 181 | 189 | 0 | 96% |
 | [Tentative](#tentative-tests) | 2 | 7 | 0 | 29% |
 | [Reftests](#reftests) | 1 | 3 | 0 | 33% |
-| **All** | **183** | **199** | **0** | **92%** |
+| **All** | **184** | **199** | **0** | **92%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 7
+- **BUG**: 4
+- **TEST BUG**: 2
 - **NOT IMPLEMENTED**: 9
 
 ## Stable tests
@@ -73,7 +74,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`form-associated/form-disabled-legend.html`](https://wpt.fyi/results/custom-elements/form-associated/form-disabled-legend.html) | Pass | 6 / 6 |  |  |
 | [`form-associated/form-elements-namedItem.html`](https://wpt.fyi/results/custom-elements/form-associated/form-elements-namedItem.html) | Pass | 3 / 3 |  |  |
 | [`form-associated/form-reset-callback.html`](https://wpt.fyi/results/custom-elements/form-associated/form-reset-callback.html) | Pass | 3 / 3 |  |  |
-| [`form-associated/label-delegatesFocus.html`](https://wpt.fyi/results/custom-elements/form-associated/label-delegatesFocus.html) | Fail | 0 / 2 | BUG | a click of the user on a `<label>` focuses its labeled control only when the control is click focusable itself: a form-associated custom element whose shadow root delegates focus is not a focusable area, so its focus delegate (the `<input>` of its shadow tree) is not focused |
+| [`form-associated/label-delegatesFocus.html`](https://wpt.fyi/results/custom-elements/form-associated/label-delegatesFocus.html) | Pass | 2 / 2 |  |  |
 | [`historical.html`](https://wpt.fyi/results/custom-elements/historical.html) | Pass | 3 / 3 |  |  |
 | [`htmlconstructor/newtarget-customized-builtins.html`](https://wpt.fyi/results/custom-elements/htmlconstructor/newtarget-customized-builtins.html) | Pass | 10 / 10 |  |  |
 | [`htmlconstructor/newtarget.html`](https://wpt.fyi/results/custom-elements/htmlconstructor/newtarget.html) | Pass | 10 / 10 |  |  |
@@ -86,7 +87,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`parser/parser-custom-element-in-foreign-content.html`](https://wpt.fyi/results/custom-elements/parser/parser-custom-element-in-foreign-content.html) | Pass | 1 / 1 |  |  |
 | [`parser/parser-fallsback-to-unknown-element.html`](https://wpt.fyi/results/custom-elements/parser/parser-fallsback-to-unknown-element.html) | Pass | 4 / 4 |  |  |
 | [`parser/parser-sets-attributes-after-autonomous-constructor.html`](https://wpt.fyi/results/custom-elements/parser/parser-sets-attributes-after-autonomous-constructor.html) | Pass | 3 / 3 |  |  |
-| [`parser/parser-sets-attributes-after-built-in-constructor.html`](https://wpt.fyi/results/custom-elements/parser/parser-sets-attributes-after-built-in-constructor.html) | Fail | 8 / 9 | BUG | the live `document.anchors` collection is not updated when the parser appends an empty `name` attribute to a customized built-in `<a>` whose constructor inserted it into the document |
+| [`parser/parser-sets-attributes-after-built-in-constructor.html`](https://wpt.fyi/results/custom-elements/parser/parser-sets-attributes-after-built-in-constructor.html) | Fail | 8 / 9 | TEST BUG | the `document.anchors` subtest of the empty `name`: the test expects the parser to move the first `<a is=named-anchor>` out of `#anchor-container`, where its constructor inserted it, but HTML's "insert an element at the adjusted insertion location" returns without inserting an element whose parent is non-null, so it stays before the second anchor (also appended to `#anchor-container` by its constructor), and `document.anchors` is `[parser-anchor, empty]` in tree order |
 | [`parser/parser-sets-attributes-and-children.html`](https://wpt.fyi/results/custom-elements/parser/parser-sets-attributes-and-children.html) | Pass | 5 / 5 |  |  |
 | [`parser/parser-uses-constructed-element.html`](https://wpt.fyi/results/custom-elements/parser/parser-uses-constructed-element.html) | Pass | 2 / 2 |  |  |
 | [`parser/parser-uses-create-an-element-for-a-token-svg.svg`](https://wpt.fyi/results/custom-elements/parser/parser-uses-create-an-element-for-a-token-svg.svg) | Pass | 2 / 2 |  |  |
@@ -159,7 +160,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`registries/CustomElementRegistry-define.html`](https://wpt.fyi/results/custom-elements/registries/CustomElementRegistry-define.html) | Pass | 3 / 3 |  |  |
 | [`registries/CustomElementRegistry-initialize.html`](https://wpt.fyi/results/custom-elements/registries/CustomElementRegistry-initialize.html) | Fail | 12 / 13 | BUG | `CustomElementRegistry.initialize()` on a shadow root does not set the registry of the descendants that have no registry |
 | [`registries/CustomElementRegistry-multi-register.html`](https://wpt.fyi/results/custom-elements/registries/CustomElementRegistry-multi-register.html) | Pass | 2 / 2 |  |  |
-| [`registries/CustomElementRegistry-upgrade.html`](https://wpt.fyi/results/custom-elements/registries/CustomElementRegistry-upgrade.html) | Fail | 2 / 5 | BUG | `ElementInternals.shadowRoot` is null for the cloned declarative shadow root of a cloned host, so the test passes `undefined` to `upgrade()` |
+| [`registries/CustomElementRegistry-upgrade.html`](https://wpt.fyi/results/custom-elements/registries/CustomElementRegistry-upgrade.html) | Fail | 2 / 5 | TEST BUG | the subtests that read `clone.elementInternals.shadowRoot`: DOM's "clone a single node" creates the copy of `<some-host>` with the synchronous custom elements flag unset, so it is `undefined` (its upgrade is only enqueued) when "clone a node" attaches its shadow root, and "attach a shadow root" only sets "available to element internals" for a `precustomized` or `custom` element: `ElementInternals.shadowRoot` is null, and `upgrade(null)` throws a TypeError |
 | [`registries/Document-createElement.html`](https://wpt.fyi/results/custom-elements/registries/Document-createElement.html) | Pass | 10 / 10 |  |  |
 | [`registries/Document-createElementNS.html`](https://wpt.fyi/results/custom-elements/registries/Document-createElementNS.html) | Pass | 10 / 10 |  |  |
 | [`registries/Document-customElementRegistry.html`](https://wpt.fyi/results/custom-elements/registries/Document-customElementRegistry.html) | Pass | 4 / 4 |  |  |

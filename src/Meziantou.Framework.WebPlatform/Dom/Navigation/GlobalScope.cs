@@ -124,6 +124,12 @@ public abstract partial class GlobalScope : EventTarget
     /// </summary>
     internal abstract void QueueGlobalTask(Action task);
 
+    /// <summary>
+    /// Runs a task that the event loop of the global object already runs as a task (e.g. a timer whose timeout elapsed): the
+    /// steps of a global task queued by <see cref="QueueGlobalTask"/>, without queuing another task.
+    /// </summary>
+    internal abstract void RunGlobalTask(Action task);
+
     /// <summary>https://w3c.github.io/hr-time/#the-performance-attribute</summary>
     /// <seealso href="https://w3c.github.io/hr-time/#dom-windoworworkerglobalscope-performance"/>
     [IdlMember("performance", "https://w3c.github.io/hr-time/#dom-windoworworkerglobalscope-performance")]

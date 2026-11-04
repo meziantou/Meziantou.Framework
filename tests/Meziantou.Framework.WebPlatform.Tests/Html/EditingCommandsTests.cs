@@ -79,6 +79,11 @@ public sealed class EditingCommandsTests : IDisposable
     [InlineData("<font size=7>[abc]</font>", "fontName", "monospace", "<font size=\"7\" face=\"monospace\">abc</font>")]
     [InlineData("<font face=monospace>[abc]</font>", "foreColor", "#ff0000", "<font face=\"monospace\" color=\"#ff0000\">abc</font>")]
     [InlineData("<span style=\"font-size: xx-large;\">[foo]</span>", "hiliteColor", "#00FFFF", "<span style=\"font-size: xx-large; background-color: rgb(0, 255, 255);\">foo</span>")]
+    [InlineData("<font size=6>[foo]</font>", "hiliteColor", "#00FFFF", "<font size=\"6\" style=\"background-color: rgb(0, 255, 255);\">foo</font>")]
+    [InlineData("<font color=#ff0000>[abc]</font>", "fontSize", "7", "<font color=\"#ff0000\" size=\"7\">abc</font>")]
+    [InlineData("<font face=monospace>[a]bc</font>", "fontSize", "7", "<font face=\"monospace\"><font size=\"7\">a</font>bc</font>")]
+    [InlineData("foo<span style=vertical-align:super>[bar]</span>baz", "subscript", "", "foo<sub>bar</sub>baz")]
+    [InlineData("<sup>fo[o</sup><span style=vertical-align:bottom>b]ar</span>", "superscript", "", "<sup>foob</sup><span style=\"vertical-align:bottom\">ar</span>")]
     public void InlineFormatting(string html, string command, string value, string expected)
         => Assert.Equal(expected, Run(html, command, value));
 
@@ -132,6 +137,7 @@ public sealed class EditingCommandsTests : IDisposable
     [InlineData("<p>[foo]</p>", "delete", "<p><br></p>")]
     [InlineData("<p><b>[foo]</b></p>", "delete", "<p><br></p>")]
     [InlineData("<ol><li>foo</li><li>[]bar</li></ol>", "delete", "<ol><li>foobar</li></ol>")]
+    [InlineData("<table><tr><td><ol><li>[]</li></ol></td></tr></table>", "delete", "<table><tbody><tr><td><div><br></div></td></tr></tbody></table>")]
     [InlineData("foo<img src=/img.png>[]bar", "delete", "foobar")]
     [InlineData("foo<span contenteditable=false>bar</span>[]baz", "delete", "foobaz")]
     [InlineData("<div style=\"white-space:normal\">abc</div><div style=\"white-space:pre\">[]def\nghi</div>", "delete", "<div style=\"white-space:normal\">abc<span style=\"white-space: pre;\">def</span></div><div style=\"white-space:pre\">ghi</div>")]

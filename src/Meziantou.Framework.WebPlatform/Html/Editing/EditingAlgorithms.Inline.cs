@@ -532,6 +532,14 @@ internal sealed partial class EditingAlgorithms
 
     /// <summary>https://w3c.github.io/editing/docs/execCommand/#loosely-equivalent-values</summary>
     private bool AreLooselyEquivalentValues(string command, string? value1, string? value2)
+        => AreLooselyEquivalentValues(command, value1, value2, context: null);
+
+    /// <summary>
+    /// https://w3c.github.io/editing/docs/execCommand/#loosely-equivalent-values. The size of a font element is resolved
+    /// in the context of the node whose value is compared: the font sizes of the monospace generic family are smaller
+    /// (<c>&lt;font size=7&gt;</c> is 39px in a monospace font, as in the browsers).
+    /// </summary>
+    private bool AreLooselyEquivalentValues(string command, string? value1, string? value2, Node? context)
     {
         if (AreEquivalentValues(command, value1, value2))
             return true;
@@ -540,20 +548,41 @@ internal sealed partial class EditingAlgorithms
             return false;
 
         // One of the values is a keyword and the other one is the computed size of a font element of this size
-        return GetFontSizeKeywordPixels(value2) == value1 || GetFontSizeKeywordPixels(value1) == value2;
+        var monospace = UsesMonospaceFont(context);
+        return GetFontSizeKeywordPixels(value2, monospace) == value1 || GetFontSizeKeywordPixels(value1, monospace) == value2;
     }
 
-    private string? GetFontSizeKeywordPixels(string keyword)
+    /// <summary>Whether the value of the command for the node is loosely equivalent to the value (resolved in the context of the node).</summary>
+    private bool IsEffectiveValueLooselyEquivalent(Node? node, string command, string? value)
+        => AreLooselyEquivalentValues(command, GetEffectiveCommandValue(node, command), value, node);
+
+    private bool UsesMonospaceFont(Node? node)
+    {
+        var element = node as Element ?? node?.ParentElement;
+        return element is not null && element.IsConnected && GetStyle(element).GetComputedValue("font-family") == "monospace";
+    }
+
+    private string? GetFontSizeKeywordPixels(string keyword) => GetFontSizeKeywordPixels(keyword, monospace: false);
+
+    private string? GetFontSizeKeywordPixels(string keyword, bool monospace)
     {
         var index = Array.IndexOf(FontSizeKeywords, keyword);
         if (index < 0)
             return null;
 
-        _fontSizes ??= new string?[FontSizeKeywords.Length];
-        return _fontSizes[index] ??= GetProbeValue("font", element => element.SetAttribute("size", (index + 1).ToString(CultureInfo.InvariantCulture)), "font-size");
+        var sizes = monospace ? (_monospaceFontSizes ??= new string?[FontSizeKeywords.Length]) : (_fontSizes ??= new string?[FontSizeKeywords.Length]);
+        return sizes[index] ??= GetProbeValue("font", element =>
+        {
+            element.SetAttribute("size", (index + 1).ToString(CultureInfo.InvariantCulture));
+            if (monospace)
+            {
+                element.SetAttribute("face", "monospace");
+            }
+        }, "font-size");
     }
 
     private string?[]? _fontSizes;
+    private string?[]? _monospaceFontSizes;
 
     /// <summary>The resolved value of a property of an element that is not in the document (the initial values are inherited).</summary>
     private string GetProbeValue(string localName, Action<Element> initialize, string property)
@@ -765,7 +794,7 @@ internal sealed partial class EditingAlgorithms
 
         if (ReferenceEquals(candidate, node) || !IsSimpleModifiableElement(candidate)
             || !AreEquivalentValues(command, GetSpecifiedCommandValue((Element)candidate, command), newValue)
-            || !AreLooselyEquivalentValues(command, GetEffectiveCommandValue(candidate, command), newValue))
+            || !IsEffectiveValueLooselyEquivalent(candidate, command, newValue))
         {
             return;
         }
@@ -830,7 +859,29 @@ internal sealed partial class EditingAlgorithms
     /// <summary>https://w3c.github.io/editing/docs/execCommand/#clear-the-value</summary>
     private List<Node> ClearValue(Element element, string command)
     {
-        if (!IsEditable(element) || GetSpecifiedCommandValue(element, command) is null)
+        if (!IsEditable(element))
+            return [];
+
+        // The vertical-align property is not the value of subscript or superscript in the specification. As in the
+        // browsers, it is removed from the selected elements: it would conflict with the new sub or sup element
+        if (command is "subscript" or "superscript" && element.HasAttributeWithLocalName("style") && GetInlineStyleValue(element, "vertical-align").Length > 0)
+        {
+            element.GetInlineStyle().RemoveProperty("vertical-align");
+            RemoveEmptyStyleAttribute(element);
+            if (IsHtmlElement(element, "span") && element.Attributes.Count == 0)
+            {
+                var children = GetChildren(element);
+                foreach (var child in children)
+                {
+                    MovePreservingRanges(child, element.ParentNode!, NodeIndex(element));
+                }
+
+                RemoveNode(element);
+                return children;
+            }
+        }
+
+        if (GetSpecifiedCommandValue(element, command) is null)
             return [];
 
         if (IsSimpleModifiableElement(element))
@@ -919,12 +970,12 @@ internal sealed partial class EditingAlgorithms
         if (node.ParentNode is not Element)
             return;
 
-        if (AreLooselyEquivalentValues(command, GetEffectiveCommandValue(node, command), newValue))
+        if (IsEffectiveValueLooselyEquivalent(node, command, newValue))
             return;
 
         var currentAncestor = node.ParentNode;
         var ancestorList = new List<Element>();
-        while (IsEditable(currentAncestor) && currentAncestor is Element element && !AreLooselyEquivalentValues(command, GetEffectiveCommandValue(element, command), newValue))
+        while (IsEditable(currentAncestor) && currentAncestor is Element element && !IsEffectiveValueLooselyEquivalent(element, command, newValue))
         {
             ancestorList.Add(element);
             currentAncestor = element.ParentNode;
@@ -937,7 +988,7 @@ internal sealed partial class EditingAlgorithms
         if (propagatedValue is null && newValue is not null)
             return;
 
-        if (newValue is not null && !AreLooselyEquivalentValues(command, GetEffectiveCommandValue(ancestorList[^1].ParentNode, command), newValue))
+        if (newValue is not null && !IsEffectiveValueLooselyEquivalent(ancestorList[^1].ParentNode, command, newValue))
             return;
 
         while (ancestorList.Count > 0)
@@ -1021,7 +1072,7 @@ internal sealed partial class EditingAlgorithms
                 case "fontname":
                     element.SetAttribute("face", newValue);
                     break;
-                case "fontsize" when newValue != "xxx-large" && Array.IndexOf(FontSizeKeywords, newValue) is >= 0 and var sizeIndex:
+                case "fontsize" when Array.IndexOf(FontSizeKeywords, newValue) is >= 0 and var sizeIndex:
                     element.SetAttribute("size", (sizeIndex + 1).ToString(CultureInfo.InvariantCulture));
                     break;
                 default:
@@ -1029,7 +1080,7 @@ internal sealed partial class EditingAlgorithms
             }
         }
 
-        return AreLooselyEquivalentValues(command, GetEffectiveCommandValue(element, command), newValue);
+        return IsEffectiveValueLooselyEquivalent(element, command, newValue);
     }
 
     /// <summary>https://w3c.github.io/editing/docs/execCommand/#force-the-value</summary>
@@ -1047,13 +1098,13 @@ internal sealed partial class EditingAlgorithms
                 [node],
                 sibling => IsSimpleModifiableElement(sibling)
                     && AreEquivalentValues(command, GetSpecifiedCommandValue((Element)sibling, command), newValue)
-                    && AreLooselyEquivalentValues(command, GetEffectiveCommandValue(sibling, command), newValue));
+                    && IsEffectiveValueLooselyEquivalent(sibling, command, newValue));
         }
 
         if (IsInvisible(node))
             return;
 
-        if (AreLooselyEquivalentValues(command, GetEffectiveCommandValue(node, command), newValue))
+        if (IsEffectiveValueLooselyEquivalent(node, command, newValue))
             return;
 
         if (!IsAllowedChild(node, "span"))
@@ -1062,7 +1113,7 @@ internal sealed partial class EditingAlgorithms
             return;
         }
 
-        if (AreLooselyEquivalentValues(command, GetEffectiveCommandValue(node, command), newValue))
+        if (IsEffectiveValueLooselyEquivalent(node, command, newValue))
             return;
 
         if (TrySetValueOnElement(node, command, newValue))
@@ -1122,7 +1173,7 @@ internal sealed partial class EditingAlgorithms
 
         newParent ??= CreateElement("span");
         node.ParentNode.InsertBefore(newParent, node);
-        if (GetRelevantCssProperty(command) is { } property && !AreLooselyEquivalentValues(command, GetEffectiveCommandValue(newParent, command), newValue))
+        if (GetRelevantCssProperty(command) is { } property && !IsEffectiveValueLooselyEquivalent(newParent, command, newValue))
         {
             newParent.GetInlineStyle().SetProperty(property, newValue);
         }
@@ -1136,7 +1187,7 @@ internal sealed partial class EditingAlgorithms
         // the node, so that the font element is always moved in the element (<b><font size="5">). As in the browsers, the
         // font element stays around the elements that have contents (<font size="5"><b>)
         MovePreservingRanges(node, newParent, -1);
-        if (node is Element && !(command == "fontsize" && node.HasChildNodes() ? AreLooselyEquivalentValues(command, GetEffectiveCommandValue(node, command), newValue) : AreEquivalentValues(command, GetEffectiveCommandValue(node, command), newValue)))
+        if (node is Element && !(command == "fontsize" && node.HasChildNodes() ? IsEffectiveValueLooselyEquivalent(node, command, newValue) : AreEquivalentValues(command, GetEffectiveCommandValue(node, command), newValue)))
         {
             MovePreservingRanges(node, newParent.ParentNode!, NodeIndex(newParent));
             RemoveNode(newParent);
@@ -1199,8 +1250,8 @@ internal sealed partial class EditingAlgorithms
         // The specification forces the value of the outermost nodes that are effectively contained: bold in <i>[foo]</i>
         // gives <b><i>foo</i></b>. As in the browsers (and as the tests expect), when the range is in one inline element
         // and contains all its contents, the value is forced on the contents of this element: <i><b>foo</b></i>. The font
-        // elements (fontName, fontSize, foreColor) stay around the other inline elements, and a link that is replaced
-        // stays around its contents.
+        // elements (fontName, fontSize, foreColor) stay around the other inline elements, a link that is replaced
+        // stays around its contents, and a background color is set on a font or span element that has attributes.
         var wholeInlineElements = new HashSet<Node>(ReferenceEqualityComparer.Instance);
         if (newValue is not null && command is not ("fontname" or "fontsize" or "forecolor"))
         {
@@ -1212,7 +1263,8 @@ internal sealed partial class EditingAlgorithms
                 {
                     if (!IsDisplayInline(element) || IsAtomicElement(element) || element.HasAttributeWithLocalName("style")
                         || !(element.IsInclusiveAncestorOf(range.StartContainer) || element.IsInclusiveAncestorOf(range.EndContainer))
-                        || (command is "createlink" or "unlink" && IsHtmlElement(element, "a")))
+                        || (command is "createlink" or "unlink" && IsHtmlElement(element, "a"))
+                        || (command is "backcolor" or "hilitecolor" && (IsHtmlElement(element, "font") || IsHtmlElement(element, "span")) && element.Attributes.Count > 0))
                     {
                         break;
                     }
@@ -1248,11 +1300,12 @@ internal sealed partial class EditingAlgorithms
     /// Moves a node out of its inline ancestors that are modifiable elements with another value of the fontName, fontSize or
     /// foreColor command (e.g. a font element of another size), by splitting them. The specification nests the element of
     /// the new value in them; the browsers split them for these commands, which the tests expect. The values of the other
-    /// commands are preserved.
+    /// commands are preserved. For subscript and superscript, the node is moved out of the inline ancestors that have a
+    /// vertical-align style, which would conflict with the new sub or sup element.
     /// </summary>
     private void SplitAncestorsWithAnotherValue(Node node, string command, string newValue)
     {
-        if (command is not ("fontname" or "fontsize" or "forecolor") || !IsAllowedChild(node, "span"))
+        if (command is not ("fontname" or "fontsize" or "forecolor" or "subscript" or "superscript") || !IsAllowedChild(node, "span"))
             return;
 
         while (true)
@@ -1260,7 +1313,9 @@ internal sealed partial class EditingAlgorithms
             Element? ancestorWithValue = null;
             for (var ancestor = node.ParentNode; IsEditable(ancestor) && ancestor is Element element && IsInlineNode(element) && InSameEditingHost(element, node); ancestor = element.ParentNode)
             {
-                if (IsModifiableElement(element) && GetSpecifiedCommandValue(element, command) is { } value && !AreEquivalentValues(command, value, newValue))
+                if (command is "subscript" or "superscript"
+                    ? GetInlineStyleValue(element, "vertical-align").Length > 0
+                    : IsModifiableElement(element) && GetSpecifiedCommandValue(element, command) is { } value && !AreEquivalentValues(command, value, newValue))
                 {
                     ancestorWithValue = element;
                 }
@@ -1270,7 +1325,7 @@ internal sealed partial class EditingAlgorithms
                 return;
 
             // When the parent of the ancestor has the new value, the value of the ancestor is pushed down instead
-            if (AreLooselyEquivalentValues(command, GetEffectiveCommandValue(ancestorWithValue.ParentNode, command), newValue))
+            if (IsEffectiveValueLooselyEquivalent(ancestorWithValue.ParentNode, command, newValue))
                 return;
 
             var values = RecordValues([node]);

@@ -55,6 +55,17 @@ public class JsHostObject : JsObject
         set => Flags = value ? Flags | ObjectFlags.Callable : Flags & ~ObjectFlags.Callable;
     }
 
+    /// <summary>
+    /// Gets or sets whether HostEnsureCanAddPrivateElement(O) (https://tc39.es/ecma262/#sec-hostensurecanaddprivateelement)
+    /// throws a TypeError for the object: a class cannot add private fields, methods or accessors to it (e.g. a WindowProxy
+    /// or a Location object, https://html.spec.whatwg.org/multipage/webappapis.html#the-hostensurecanaddprivateelement-implementation).
+    /// </summary>
+    public bool RejectsPrivateElements
+    {
+        get => (Flags & ObjectFlags.RejectsPrivateElements) != 0;
+        set => Flags = value ? Flags | ObjectFlags.RejectsPrivateElements : Flags & ~ObjectFlags.RejectsPrivateElements;
+    }
+
     /// <summary>Gets or sets whether the prototype of the object cannot be changed (an immutable prototype exotic object, e.g. <c>Object.prototype</c> or a <c>Window</c>).</summary>
     public bool HasImmutablePrototype { get; set; }
 

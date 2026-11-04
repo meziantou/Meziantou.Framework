@@ -209,6 +209,7 @@ namespace Meziantou.Framework.JavaScriptEngine
         public bool HasImmutablePrototype { get => throw null; set { } }
         public bool IsHtmlDdaObject { get => throw null; set { } }
         public string? ModuleSourceClassName { get => throw null; set { } }
+        public bool RejectsPrivateElements { get => throw null; set { } }
         public object? Target { get => throw null; }
         public JsHostObject(Meziantou.Framework.JavaScriptEngine.JsObject? prototype, object? target = null) { }
         protected JsHostObject(Meziantou.Framework.JavaScriptEngine.JsObject? prototype, object? target, bool hasOrdinaryInternalMethods) { }

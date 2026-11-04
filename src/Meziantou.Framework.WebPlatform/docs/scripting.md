@@ -615,6 +615,8 @@ sets the `WindowProxy` of the browsing context (`IJsAdapter.CreateWindowProxy`, 
 call an `IJsWindowProxyHandler`) as the this value of the global code (`IJsAdapter.TrySetGlobalThis`). The JavaScript
 object of a window is its `WindowProxy` for every realm; the `Location` objects are created by
 `IJsAdapter.CreateCrossOriginPlatformObject`. An engine that does not support them exposes a window by its global object.
+The `JavaScriptScriptEngine` marks both kinds of objects with `JsHostObject.RejectsPrivateElements`: a class cannot
+add private fields or methods to them (https://html.spec.whatwg.org/multipage/webappapis.html#the-hostensurecanaddprivateelement-implementation).
 
 ```csharp
 sealed class MyScriptEngine : ScriptEngine, IWebIdlHost

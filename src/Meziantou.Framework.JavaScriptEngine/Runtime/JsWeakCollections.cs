@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.JavaScriptEngine;
 
@@ -162,17 +163,41 @@ internal sealed class JsFinalizationRegistry : JsObject
         }
     }
 
-    /// <summary>The value attached to a target: its finalizer runs when the target is collected.</summary>
-    private sealed class TargetSentinel(JsFinalizationRegistry registry)
+    /// <summary>
+    /// The value attached to a target: its finalizer runs when the target is collected. It references the registry with a
+    /// weak handle, which the GC clears before running the finalizers: when the registry is not reachable anymore, the
+    /// objects of its realm and of the host may be finalized before the sentinel, and no callback can be observed, so no
+    /// cleanup is scheduled.
+    /// </summary>
+    private sealed class TargetSentinel
     {
         private readonly List<FinalizationRegistryCell> _cells = [];
+        private WeakGCHandle<JsFinalizationRegistry> _registry;
+
+        public TargetSentinel(JsFinalizationRegistry registry)
+        {
+            // The handle is freed once, by the finalizer
+            unsafe
+            {
+                _registry = new(registry);
+            }
+        }
 
         public void Add(FinalizationRegistryCell cell) => _cells.Add(cell);
 
 #pragma warning disable MA0055 // The finalizer is how the collection of the target is detected
         ~TargetSentinel()
         {
-            registry.OnTargetCollected(_cells);
+            var registryAlive = _registry.TryGetTarget(out var registry);
+            unsafe
+            {
+                _registry.Dispose();
+            }
+
+            if (registryAlive)
+            {
+                registry!.OnTargetCollected(_cells);
+            }
         }
 #pragma warning restore MA0055
     }

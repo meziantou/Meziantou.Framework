@@ -34,4 +34,7 @@ internal enum ObjectFlags
 
     /// <summary>An inline cache depends on the absence of a property in the object (it is in the prototype chain of a lookup): any change of its properties or of its prototype invalidates the inline caches.</summary>
     InlineCachePrototype = 1 << 9,
+
+    /// <summary>HostEnsureCanAddPrivateElement(O) throws a TypeError for the object (e.g. a WindowProxy or a Location object of a browser).</summary>
+    RejectsPrivateElements = 1 << 10,
 }

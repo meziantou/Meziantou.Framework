@@ -347,11 +347,7 @@
     "total": 1
   },
   "css/cssom/cssom-getPropertyValue-common-checks.html": {
-    "total": 11,
-    "failures": {
-      "All properties (except 'all') can serialize their initial value (computed)": "FAIL",
-      "All shorthands (except 'all') can serialize their longhands set to their initial value": "FAIL"
-    }
+    "total": 11
   },
   "css/cssom/cssom-pagerule.html": {
     "total": 22

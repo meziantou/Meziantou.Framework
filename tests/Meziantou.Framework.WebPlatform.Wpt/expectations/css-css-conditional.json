@@ -709,7 +709,7 @@
     "total": 9
   },
   "css/css-conditional/container-queries/query-style-color.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-conditional/container-queries/reattach-container-with-dirty-child.html": {
     "total": 2

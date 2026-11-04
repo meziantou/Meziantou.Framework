@@ -719,6 +719,19 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
     }
 
     /// <summary>
+    /// Closes the functions and blocks that a value kept as written at the end of a style sheet leaves open (e.g.
+    /// <c>var(--x</c>), so that the text written after the value (e.g. by a formatter) is not part of it.
+    /// </summary>
+    internal static string CloseUnclosedBlocks(string value)
+    {
+        if (value.AsSpan().IndexOfAny("([{") < 0)
+            return value;
+
+        var components = CssParser.ParseListOfComponentValues(value);
+        return components.Count > 0 && components[^1].End >= value.Length ? FixupEndOfFile(value, components[^1], value, closeBlocks: true) : value;
+    }
+
+    /// <summary>
     /// Fixes the original text of a value that ends at the end of the input
     /// (https://drafts.csswg.org/css-syntax-3/#consume-escaped-code-point): an escaped EOF is U+FFFD (it is ignored in
     /// strings), and the unclosed strings and urls are closed. The unclosed functions and blocks are closed in the value of a

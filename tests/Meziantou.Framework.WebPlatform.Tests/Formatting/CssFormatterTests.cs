@@ -126,4 +126,19 @@ public sealed class CssFormatterTests
             """, indented);
         #endregion
     }
+
+    [Fact]
+    public void Formatters_CloseTheValueLeftOpenAtTheEndOfTheStyleSheet()
+    {
+        var sheet = new CssStyleSheet();
+        sheet.ReplaceSync("div { width: var(--prop, calc(1px + [a");
+
+        Assert.Equal("div { width: var(--prop, calc(1px + [a; }", sheet.CssRules[0].CssText);
+        Assert.Equal("div{width:var(--prop,calc(1px + [a]))}", sheet.ToCss(new CssMinifyFormatter()));
+        Assert.Equal("""
+            div {
+              width: var(--prop, calc(1px + [a]));
+            }
+            """, sheet.ToCss(new CssPrettyFormatter()));
+    }
 }

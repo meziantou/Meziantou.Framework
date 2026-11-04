@@ -276,9 +276,7 @@ public abstract partial class GlobalScope
                 }
             }
 
-            // The timer is moved to the task queue when it elapses: it is the global task of the timer
-            // (https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#run-steps-after-a-timeout), queued once
-            RunGlobalTask(task);
+            QueueGlobalTask(task);
         }
 
         eventLoop.QueueTimer(timeout, OnTimeout);

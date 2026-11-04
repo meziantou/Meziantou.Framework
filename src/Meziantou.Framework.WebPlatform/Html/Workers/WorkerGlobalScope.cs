@@ -63,15 +63,13 @@ public abstract partial class WorkerGlobalScope : GlobalScope
         if (Agent.IsClosing)
             return;
 
-        EventLoop.QueueTask(() => RunGlobalTask(task));
-    }
-
-    internal override void RunGlobalTask(Action task)
-    {
-        if (!Agent.IsClosing)
+        EventLoop.QueueTask(() =>
         {
-            task();
-        }
+            if (!Agent.IsClosing)
+            {
+                task();
+            }
+        });
     }
 
     /// <summary>Applies the policies of the response of the script of the worker (its referrer policy, its CSP list and its embedder policies).</summary>

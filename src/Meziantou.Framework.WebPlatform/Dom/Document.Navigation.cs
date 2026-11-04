@@ -460,26 +460,17 @@ public partial class Document
         if (BrowsingContext is not { } browsingContext)
             return;
 
-        browsingContext.EventLoop.QueueTask(() => RunGlobalTask(task));
-    }
-
-    /// <summary>Runs the steps of a global task of the document (see <see cref="QueueGlobalTask"/>) from a task of its event loop.</summary>
-    internal void RunGlobalTask(Action task)
-    {
-        if (WorkerGlobal is { } worker)
+        browsingContext.EventLoop.QueueTask(() =>
         {
-            worker.RunGlobalTask(task);
-            return;
-        }
-
-        if (IsFullyActive)
-        {
-            task();
-        }
-        else if (IsInBackForwardCache)
-        {
-            DeferTaskUntilReactivated(task);
-        }
+            if (IsFullyActive)
+            {
+                task();
+            }
+            else if (IsInBackForwardCache)
+            {
+                DeferTaskUntilReactivated(task);
+            }
+        });
     }
 
     /// <summary>

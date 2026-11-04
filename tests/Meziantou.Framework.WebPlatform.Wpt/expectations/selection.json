@@ -279,7 +279,10 @@
     "total": 2
   },
   "selection/onselectionchange-on-document.html": {
-    "total": 4
+    "total": 4,
+    "failures": {
+      "has scheduled selectionchange event is set to false at the beginning of a task to fire selectionchange event": "FAIL"
+    }
   },
   "selection/onselectstart-on-key-in-contenteditable.html?preventDefault=no": {
     "total": 30

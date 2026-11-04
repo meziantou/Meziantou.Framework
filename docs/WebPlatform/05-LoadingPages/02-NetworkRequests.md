@@ -126,6 +126,10 @@ Assert.Equal(bytes, script.ContentBytes?.ToArray());
   the encoding from the content.
 - `text/html` is parsed as HTML, the XML types (`application/xhtml+xml`, `image/svg+xml`, `application/xml`) as XML, and
   `text/plain` and the other text types as a text document.
+- As in a browser, the type of a page is sniffed from its bytes when the `Content-Type` is not a valid MIME type, and a
+  `text/plain` page whose first bytes are binary data is a binary resource (the default type of Apache is wrong for these
+  files), unless the response has `X-Content-Type-Options: nosniff`. A binary resource (`application/octet-stream`) does not
+  create a document: it is a download, as a response whose `Content-Disposition` is `attachment`, and the page stays.
 - A document is displayed whatever its status (a 404 page is a page). A script or a style sheet whose status is not in the
   200-299 range is a network error.
 - The library reads the headers that change the document: `Content-Security-Policy`, `Referrer-Policy`, `Refresh`,

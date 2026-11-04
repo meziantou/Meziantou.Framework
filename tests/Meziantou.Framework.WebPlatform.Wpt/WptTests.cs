@@ -138,6 +138,8 @@ public sealed class WptTests
 
     public static TheoryData<string> PermissionsTests => GetTests("permissions");
 
+    public static TheoryData<string> MimeSniffTests => GetTests("mimesniff");
+
     public static TheoryData<string> WebLocksTests => GetTests("web-locks");
 
     public static TheoryData<string> StorageTests => GetTests("storage");
@@ -265,8 +267,6 @@ public sealed class WptTests
     public static TheoryData<string> ShapeDetectionTests => GetTests("shape-detection");
 
     public static TheoryData<string> WebGLTests => GetTests("webgl");
-
-    public static TheoryData<string> MimeSniffTests => GetTests("mimesniff");
 
     public static TheoryData<string> EventTimingTests => GetTests("event-timing");
 
@@ -914,6 +914,10 @@ public sealed class WptTests
     public void Permissions(string test) => Run("permissions", test);
 
     [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(MimeSniffTests))]
+    public void MimeSniff(string test) => Run("mimesniff", test);
+
+    [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(WebLocksTests))]
     public void WebLocks(string test) => Run("web-locks", test);
 
@@ -1168,10 +1172,6 @@ public sealed class WptTests
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(WebGLTests))]
     public void WebGL(string test) => Run("webgl", test);
-
-    [Theory(SkipTestWithoutData = true)]
-    [MemberData(nameof(MimeSniffTests))]
-    public void MimeSniff(string test) => Run("mimesniff", test);
 
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(EventTimingTests))]

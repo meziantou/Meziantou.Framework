@@ -586,6 +586,8 @@ for each engine: the calls to the adapter are direct calls that can be inlined, 
   (`ArrayBuffer`, `SharedArrayBuffer`, a typed array or `DataView`) and a view of the bytes of an object, without running
   JavaScript code; the bindings pass the view to the .NET members (`ReadOnlySpan<byte>`, `Span<byte>` for the members that
   write into the buffer, e.g. `TextEncoder.encodeInto()`, `byte[]` or `float[]` copies...), and check `[AllowShared]`.
+  `IsResizableBuffer` tells the bindings that a buffer is resizable or growable, which they reject without
+  `[AllowResizable]`; without it, the resizable buffers are accepted.
   `CreateArrayBuffer` and `CreateArrayBufferView` create the results (e.g. the `Uint8Array` of `TextEncoder.encode()`).
   The default implementations do not support the buffer source types (`TryGetBufferSource` returns false) and create the
   results with the constructors of the global object. `GetSharedDataBlock` and `SetSharedDataBlock` share the memory of a
@@ -593,6 +595,8 @@ for each engine: the calls to the adapter are direct calls that can be inlined, 
   a `SharedArrayBuffer` is only shared with the realms of the same engine instance (as the same object).
 - Errors: `TrySetErrorStack` sets the [[Stack]] internal slot of a deserialized error (read by the `Error.prototype.stack`
   accessor of https://tc39.es/proposal-error-stack-accessor/); without it, the stack is an own data property.
+  `TryInitializeErrorData` gives the object of a `DOMException` an [[ErrorData]] internal slot (`Error.isError` returns
+  true) and its stack trace; without it, the stack is an own data property of the object.
 - Module sources (https://tc39.es/proposal-source-phase-imports/): `GetAbstractModuleSource` returns
   `%AbstractModuleSource%`, which `WebAssembly.Module` extends, and `SetModuleSourceClassName` sets the
   [[ModuleSourceClassName]] of its instances (read by the `%AbstractModuleSource%.prototype[@@toStringTag]` getter);

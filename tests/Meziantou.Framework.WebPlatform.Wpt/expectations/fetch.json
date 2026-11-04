@@ -1258,12 +1258,12 @@
     "total": 40,
     "failures": {
       "Consume response's body: from FormData to blob": "FAIL",
+      "Consume response's body: from URLSearchParams to blob": "FAIL",
       "Consume response's body: from blob with correct multipart type to formData": "FAIL",
       "Consume response's body: from multipart form data blob to formData": "FAIL",
       "Consume response's body: from stream with correct multipart type to formData": "FAIL",
       "Consume response's body: from text with correct multipart type to formData": "FAIL",
-      "Consume response's body: from text with correct multipart type to formData with BOM": "FAIL",
-      "Consume response's body: from URLSearchParams to blob": "FAIL"
+      "Consume response's body: from text with correct multipart type to formData with BOM": "FAIL"
     }
   },
   "fetch/api/response/response-error-from-stream.any.js": {

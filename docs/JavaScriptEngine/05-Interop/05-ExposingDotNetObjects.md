@@ -131,6 +131,9 @@ Assert.Equal("TypeError", realm.Execute("'use strict'; try { env.REGION = 'us'; 
 - The ordinary `[[Get]]`, `[[Set]]` and `[[HasProperty]]` use [GetOwnPropertyCore](cref:Meziantou.Framework.JavaScriptEngine.JsHostObject.GetOwnPropertyCore): overriding it is often enough to
   make a property readable.
 - Set [HasCallInternalMethod](cref:Meziantou.Framework.JavaScriptEngine.JsHostObject.HasCallInternalMethod) and override [CallCore](cref:Meziantou.Framework.JavaScriptEngine.JsHostObject.CallCore) to make the object callable (it is then not a constructor).
+- Call [InitializeErrorData](cref:Meziantou.Framework.JavaScriptEngine.JsHostObject.InitializeErrorData) to make the object an error, as the `DOMException` of a browser: `Error.isError` returns
+  true for it, and `Error.prototype.stack` returns the stack trace of the code that ran when you called the method.
+  The argument is the first line of the stack trace, such as `SyntaxError: The value is invalid`.
 - A derived class that overrides none of the methods that read or write properties can pass
   `hasOrdinaryInternalMethods: true` to the protected constructor: the engine then uses the fast paths of the ordinary
   objects for its properties.

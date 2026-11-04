@@ -374,6 +374,16 @@ public interface IJsAdapter<TValue>
     bool TrySetErrorStack(TValue error, string stack) => false;
 
     /// <summary>
+    /// Gives a platform object created by <see cref="CreatePlatformObject"/> an [[ErrorData]] internal slot: a
+    /// <c>DOMException</c> (https://webidl.spec.whatwg.org/#es-DOMException-specialness), for which <c>Error.isError</c>
+    /// returns true. The engine also sets its stack trace to the one of the running code, whose first line is
+    /// <paramref name="stackHeader"/>, read by the <c>Error.prototype.stack</c> accessor
+    /// (https://tc39.es/proposal-error-stack-accessor/). Returns false when the engine does not support it: the object then
+    /// gets an own <c>stack</c> data property. The default implementation returns false.
+    /// </summary>
+    bool TryInitializeErrorData(TValue obj, string stackHeader) => false;
+
+    /// <summary>
     /// Returns %AbstractModuleSource% of the current realm (https://tc39.es/proposal-source-phase-imports/#sec-abstractmodulesource-objects),
     /// which the interface object of <c>WebAssembly.Module</c> extends
     /// (https://webassembly.github.io/esm-integration/js-api/index.html#webassembly-module-objects), or null when the engine does
@@ -411,6 +421,14 @@ public interface IJsAdapter<TValue>
         bytes = default;
         return false;
     }
+
+    /// <summary>
+    /// Gets whether a buffer source is backed by a resizable <c>ArrayBuffer</c> or a growable <c>SharedArrayBuffer</c> (the
+    /// buffer itself, or the buffer that a view views), which the buffer source types reject unless they have the
+    /// [AllowResizable] extended attribute (https://webidl.spec.whatwg.org/#AllowResizable). The default implementation
+    /// returns false: the resizable buffers are accepted.
+    /// </summary>
+    bool IsResizableBuffer(TValue value) => false;
 
     /// <summary>
     /// Returns the shared data block of a <c>SharedArrayBuffer</c> ([[ArrayBufferData]]), an opaque object that

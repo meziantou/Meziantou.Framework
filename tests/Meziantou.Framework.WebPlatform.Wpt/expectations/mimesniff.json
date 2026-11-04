@@ -1230,9 +1230,6 @@
     "total": 2
   },
   "mimesniff/sniffing/mislabeled-binary-resource.tentative.window.js": {
-    "total": 4,
-    "failures": {
-      "Navigation: binary data served as text/plain should trigger download": "FAIL"
-    }
+    "total": 4
   }
 }

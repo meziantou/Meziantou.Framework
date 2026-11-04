@@ -26,11 +26,7 @@ internal static partial class WptPythonHandlers
             response.Set("Cache-Control", "public, max-age=31536000, no-cache");
             response.Body = ReadWptFile(alreadyServed ? "images/red.png" : "images/green.png");
         },
-        ["/mimesniff/mime-types/resources/mime-charset.py"] = (request, response, _) =>
-        {
-            response.Set("Content-Type", request.Get("type"));
-            response.Content = "<meta charset=utf-8>\n<script>document.write(document.characterSet)</script>";
-        },
+
         // html/browsers/browsing-the-web: a slow empty HTML document (2 seconds), a redirect to the location parameter, a
         // redirect followed once per uuid, and documents with a Refresh header
         ["/html/browsers/browsing-the-web/overlapping-navigations-and-traversals/resources/slow.py"] = (_, response, _) =>
@@ -989,6 +985,14 @@ internal static partial class WptPythonHandlers
                 </body>
 
                 """)));
+        },
+
+        // mimesniff/mime-types/resources/mime-charset.py: a document that writes its character encoding, served with the
+        // type parameter as its Content-Type header (the raw bytes, not normalized)
+        ["/mimesniff/mime-types/resources/mime-charset.py"] = (request, response, _) =>
+        {
+            response.Add("Content-Type", RequiredParameter(request, "type"));
+            response.Content = "<meta charset=utf-8>\n<script>document.write(document.characterSet)</script>";
         },
     };
 

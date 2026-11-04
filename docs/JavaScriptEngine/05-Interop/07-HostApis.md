@@ -177,12 +177,12 @@ using (engine.Enter())
 
 realm.Execute("""
     globalThis.log = [];
-    setTimeout(name => log.push(name), 20, 'timer 20 ms');
-    const canceled = setTimeout(() => log.push('canceled'), 10);
     setTimeout(() => {
       log.push('timer 0 ms');
       Promise.resolve().then(() => log.push('promise of the timer'));
     }, 0);
+    setTimeout(name => log.push(name), 20, 'timer 20 ms');
+    const canceled = setTimeout(() => log.push('canceled'), 10);
     queueMicrotask(() => log.push('microtask'));
     clearTimeout(canceled);
     log.push('script');

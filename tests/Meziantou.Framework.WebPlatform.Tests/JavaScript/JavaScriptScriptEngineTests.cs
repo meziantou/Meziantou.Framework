@@ -516,6 +516,41 @@ public sealed class JavaScriptScriptEngineTests : IDisposable
     }
 
     [Fact]
+    public void DomException_HasErrorData()
+    {
+        var document = Load("""
+            <script>
+              const results = [];
+              const e = new DOMException('bad', 'SyntaxError');
+              results.push(Error.isError(e), Object.hasOwn(e, 'stack'), Object.hasOwn(DOMException.prototype, 'stack'), e.stack.split('\n')[0]);
+              try { document.createElement(''); } catch (thrown) { results.push(Error.isError(thrown), thrown.stack.split('\n')[0]); }
+              results.push(new DOMException().stack.split('\n')[0]);
+              document.title = results.join();
+            </script>
+            """);
+        Assert.Equal("true,false,false,SyntaxError: bad,true,InvalidCharacterError: '' is not a valid element name,Error", document.Title);
+        Assert.Empty(_errors);
+    }
+
+    [Fact]
+    public void BufferSources_RejectResizableBuffers()
+    {
+        var document = Load("""
+            <script>
+              const results = [];
+              const encoder = new TextEncoder();
+              const check = (view) => { try { encoder.encodeInto('a', view); results.push('ok'); } catch (e) { results.push(e.name); } };
+              check(new Uint8Array(new ArrayBuffer(4)));
+              check(new Uint8Array(new ArrayBuffer(4, { maxByteLength: 8 })));
+              check(new Uint8Array(new ArrayBuffer(8, { maxByteLength: 16 }), 2, 4));
+              document.title = results.join();
+            </script>
+            """);
+        Assert.Equal("ok,TypeError,TypeError", document.Title);
+        Assert.Empty(_errors);
+    }
+
+    [Fact]
     public void Window_External()
     {
         var document = Load("""

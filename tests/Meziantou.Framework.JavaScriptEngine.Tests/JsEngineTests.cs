@@ -286,6 +286,28 @@ public sealed class JsEngineTests
     }
 
     [Fact]
+    public void HostObjectWithErrorData()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using var scope = engine.Enter();
+        var hostObject = new JsHostObject(realm.Execute("Error.prototype").AsObject());
+        Assert.False(hostObject.HasErrorData);
+        Assert.False(hostObject.HasInternalSlot(JsInternalSlot.ErrorData));
+        Assert.False(hostObject.TrySetErrorStack("ignored"));
+
+        hostObject.InitializeErrorData("SyntaxError: bad");
+        Assert.True(hostObject.HasErrorData);
+        Assert.True(hostObject.HasInternalSlot(JsInternalSlot.ErrorData));
+        Assert.Equal("SyntaxError: bad", hostObject.GetErrorStack());
+
+        realm.GlobalObject.SetProperty("hostError", hostObject);
+        Assert.Equal("true,false,SyntaxError: bad", realm.Execute("[Error.isError(hostError), Object.hasOwn(hostError, 'stack'), hostError.stack].join()").AsString());
+        Assert.True(hostObject.TrySetErrorStack("custom"));
+        Assert.Equal("custom", realm.Execute("Object.getOwnPropertyDescriptor(Error.prototype, 'stack').get.call(hostError)").AsString());
+    }
+
+    [Fact]
     public void PreparedScriptRunsInSeveralEngines()
     {
         var script = JsPreparedScript.Parse("var counter = (globalThis.counter ?? 0) + 1; counter", "prepared.js", lineOffset: 9, columnOffset: 4);

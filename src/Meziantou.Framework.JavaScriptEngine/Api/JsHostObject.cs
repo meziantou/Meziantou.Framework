@@ -66,6 +66,30 @@ public class JsHostObject : JsObject
     /// </summary>
     public string? ModuleSourceClassName { get; set; }
 
+    /// <summary>
+    /// Gets whether the object has an [[ErrorData]] internal slot (see <see cref="InitializeErrorData"/>):
+    /// <c>Error.isError</c> returns true for it, and the <c>Error.prototype.stack</c> getter returns its stack trace.
+    /// </summary>
+    public bool HasErrorData => Class == ObjectClass.Error;
+
+    /// <summary>Gets or sets the stack trace of an object that has an [[ErrorData]] internal slot.</summary>
+    internal string? ErrorStackTrace { get; set; }
+
+    /// <summary>
+    /// Gives the object an [[ErrorData]] internal slot, as an error object (e.g. a <c>DOMException</c>,
+    /// https://webidl.spec.whatwg.org/#es-DOMException-specialness), and sets its stack trace to the one of the running code,
+    /// whose first line is <paramref name="header"/> (e.g. "SyntaxError: message"). Call it in a scope of the engine (see
+    /// <see cref="JsEngine.Enter"/>).
+    /// </summary>
+    /// <param name="header">The first line of the stack trace.</param>
+    public void InitializeErrorData(string header)
+    {
+        ArgumentNullException.ThrowIfNull(header);
+        var engine = CheckHostAccess();
+        Class = ObjectClass.Error;
+        ErrorStackTrace = JsErrorObject.FormatStackTrace(header, engine, ErrorStackTraceApi.GetStackTraceLimit(engine.CurrentRealm), skipUntil: null);
+    }
+
     // ------------------------------------------------------------------------------------------------------------------
     // Overridable internal methods
     // ------------------------------------------------------------------------------------------------------------------

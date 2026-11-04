@@ -9,17 +9,17 @@ description: "The results of the web-platform-tests of webidl, and why the tests
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 40 | 46 | 2 | 91% |
+| [Stable](#stable-tests) | 42 | 46 | 2 | 95% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **40** | **46** | **2** | **91%** |
+| **All** | **42** | **46** | **2** | **95%** |
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
 | [`current-realm.html`](https://wpt.fyi/results/webidl/current-realm.html) | Disabled | – | TEST RUNNER | only `webidl/ecmascript-binding` is fetched and run |
-| [`ecmascript-binding/allow-resizable.html`](https://wpt.fyi/results/webidl/ecmascript-binding/allow-resizable.html) | Fail | 1 / 2 | BUG | `TextEncoder.encodeInto()` accepts a view on a growable `SharedArrayBuffer` (the argument has `[AllowShared]` but not `[AllowResizable]`) |
+| [`ecmascript-binding/allow-resizable.html`](https://wpt.fyi/results/webidl/ecmascript-binding/allow-resizable.html) | Pass | 2 / 2 |  |  |
 | [`ecmascript-binding/allow-shared.https.html`](https://wpt.fyi/results/webidl/ecmascript-binding/allow-shared.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `ImageDecoder` (WebCodecs) |
 | [`ecmascript-binding/attributes-accessors-unique-function-objects.html`](https://wpt.fyi/results/webidl/ecmascript-binding/attributes-accessors-unique-function-objects.html) | Pass | 1 / 1 |  |  |
 | [`ecmascript-binding/builtin-function-properties.any.js`](https://wpt.fyi/results/webidl/ecmascript-binding/builtin-function-properties.any.js) | Pass | 6 / 6 |  |  |
@@ -34,8 +34,8 @@ description: "The results of the web-platform-tests of webidl, and why the tests
 | [`ecmascript-binding/es-exceptions/DOMException-constructor-and-prototype.any.js`](https://wpt.fyi/results/webidl/ecmascript-binding/es-exceptions/DOMException-constructor-and-prototype.any.js) | Pass | 6 / 6 |  |  |
 | [`ecmascript-binding/es-exceptions/DOMException-constructor-behavior.any.js`](https://wpt.fyi/results/webidl/ecmascript-binding/es-exceptions/DOMException-constructor-behavior.any.js) | Pass | 92 / 92 |  |  |
 | [`ecmascript-binding/es-exceptions/DOMException-custom-bindings.any.js`](https://wpt.fyi/results/webidl/ecmascript-binding/es-exceptions/DOMException-custom-bindings.any.js) | Pass | 30 / 30 |  |  |
-| [`ecmascript-binding/es-exceptions/DOMException-is-error.any.js`](https://wpt.fyi/results/webidl/ecmascript-binding/es-exceptions/DOMException-is-error.any.js) | Fail | 0 / 2 | BUG | `DOMException` instances have no `[[ErrorData]]` internal slot (`Error.isError(new DOMException())` is false) |
-| [`ecmascript-binding/es-exceptions/DOMException-stack-accessor.any.js`](https://wpt.fyi/results/webidl/ecmascript-binding/es-exceptions/DOMException-stack-accessor.any.js) | Fail | 11 / 17 | BUG | `DOMException.prototype` has an own `stack` property and the instances have no `[[ErrorData]]` (the `Error.prototype.stack` getter returns undefined) |
+| [`ecmascript-binding/es-exceptions/DOMException-is-error.any.js`](https://wpt.fyi/results/webidl/ecmascript-binding/es-exceptions/DOMException-is-error.any.js) | Pass | 2 / 2 |  |  |
+| [`ecmascript-binding/es-exceptions/DOMException-stack-accessor.any.js`](https://wpt.fyi/results/webidl/ecmascript-binding/es-exceptions/DOMException-stack-accessor.any.js) | Fail | 15 / 17 | TEST BUG | the subtest `Error.prototype.stack setter ignores Error.prototype itself` expects the setter to accept `Error.prototype` as its this value, but `SetterThatIgnoresPrototypeProperties` throws a TypeError when this is the home object (test262 `built-ins/Error/prototype/stack/setter-receiver-is-prototype.js`) |
 | [`ecmascript-binding/es-exceptions/exceptions.html`](https://wpt.fyi/results/webidl/ecmascript-binding/es-exceptions/exceptions.html) | Pass | 12 / 12 |  |  |
 | [`ecmascript-binding/global-immutable-prototype.any.js`](https://wpt.fyi/results/webidl/ecmascript-binding/global-immutable-prototype.any.js) | Pass | 6 / 6 |  |  |
 | [`ecmascript-binding/global-object-implicit-this-value-cross-realm.html`](https://wpt.fyi/results/webidl/ecmascript-binding/global-object-implicit-this-value-cross-realm.html) | Pass | 6 / 6 |  |  |

@@ -95,6 +95,9 @@ public sealed class BinaryDataTests
         Assert.Equal(16, Get(buffer, "maxByteLength").AsNumber());
 
         var view = New(context, "Uint8Array", buffer);
+        Assert.True(JsBinaryData.IsResizable(buffer));
+        Assert.True(JsBinaryData.IsResizable(view));
+        Assert.False(JsBinaryData.IsResizable(New(context, "ArrayBuffer", 4)));
         Call(view, "fill", 7);
         Call(buffer, "resize", 2);
         Assert.Equal(2, Get(view, "length").AsNumber());
@@ -242,6 +245,9 @@ public sealed class BinaryDataTests
         Assert.Equal("[object SharedArrayBuffer]", context.CallPrototypeMethod("Object", "toString", buffer).AsString());
 
         var view = New(context, "Int32Array", buffer);
+        Assert.True(JsBinaryData.IsResizable(view));
+        Assert.True(JsBinaryData.IsResizable(New(context, "DataView", buffer)));
+        Assert.False(JsBinaryData.IsResizable(New(context, "SharedArrayBuffer", 4)));
         Assert.Equal(1, Get(view, "length").AsNumber());
         Call(buffer, "grow", 12);
         Assert.Equal(12, Get(buffer, "byteLength").AsNumber());

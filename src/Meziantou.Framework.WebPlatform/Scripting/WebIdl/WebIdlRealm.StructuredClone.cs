@@ -185,7 +185,16 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
               if (apply(hasOwn, value, ['cause'])) record.cause = serialize(value.cause, memory);
             }
             else if (isArray(value)) { record.t = 'Array'; record.length = value.length; serializeProperties(value, record, memory); }
-            else if ((result = platformSerialize(value, forStorage)) !== undefined) { record.t = 'Platform'; record.v = result; }
+            else if ((result = platformSerialize(value, forStorage)) !== undefined) {
+              record.t = 'Platform'; record.v = result;
+              // A platform object with an [[ErrorData]] internal slot (a DOMException) keeps its stack trace: the
+              // Error.prototype.stack getter returns a string only for such objects
+              if (errorStackGetter !== null && (result = tryCall(errorStackGetter, value)).ok && typeof result.value === 'string') {
+                const stack = getOwnPropertyDescriptor(value, 'stack');
+                if (stack === undefined) record.stack = result.value;
+                else if ('value' in stack && typeof stack.value === 'string') record.stack = stack.value;
+              }
+            }
             // The CryptoKey objects (WebCrypto.js) are serializable (https://w3c.github.io/webcrypto/#cryptokey-interface-serialization)
             else if (cryptoPlatformObjects !== null && (result = apply(weakMapGet, cryptoPlatformObjects, [value])) !== undefined) {
               if (result.kind !== 'CryptoKey') throw dataCloneError(`The ${result.kind} object could not be cloned`);
@@ -262,7 +271,10 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
                 memory.set(record, value);
                 for (const [k, v] of record.p) defineProperty(value, k, { value: deserialize(v, memory), writable: true, enumerable: true, configurable: true });
                 return value;
-              case 'Platform': value = platformDeserialize(record.v); break;
+              case 'Platform':
+                value = platformDeserialize(record.v);
+                if ('stack' in record && !setErrorStack(value, record.stack)) defineProperty(value, 'stack', { value: record.stack, writable: true, enumerable: false, configurable: true });
+                break;
               case 'CryptoKey': value = platformDeserializeCryptoKey(record.v); break;
             }
 

@@ -1,9 +1,6 @@
 {
   "webidl/ecmascript-binding/allow-resizable.html": {
-    "total": 2,
-    "failures": {
-      "APIs with [AllowShared] but without [AllowResizable] throw when passed growable SharedArrayBuffers": "FAIL"
-    }
+    "total": 2
   },
   "webidl/ecmascript-binding/allow-shared.https.html": {
     "total": 1,
@@ -72,30 +69,20 @@
     "total": 15
   },
   "webidl/ecmascript-binding/es-exceptions/DOMException-is-error.any.js": {
-    "total": 1,
-    "failures": {
-      "DOMException-is-error": "FAIL"
-    }
+    "total": 1
   },
   "webidl/ecmascript-binding/es-exceptions/DOMException-is-error.any.js#dedicatedworker": {
-    "total": 1,
-    "failures": {
-      "DOMException-is-error": "FAIL"
-    }
+    "total": 1
   },
   "webidl/ecmascript-binding/es-exceptions/DOMException-stack-accessor.any.js": {
     "total": 9,
     "failures": {
-      "DOMException.prototype does not have an own stack property": "FAIL",
-      "Error.prototype.stack getter works on DOMException instances": "FAIL",
       "Error.prototype.stack setter ignores Error.prototype itself": "FAIL"
     }
   },
   "webidl/ecmascript-binding/es-exceptions/DOMException-stack-accessor.any.js#dedicatedworker": {
     "total": 8,
     "failures": {
-      "DOMException.prototype does not have an own stack property": "FAIL",
-      "Error.prototype.stack getter works on DOMException instances": "FAIL",
       "Error.prototype.stack setter ignores Error.prototype itself": "FAIL"
     }
   },

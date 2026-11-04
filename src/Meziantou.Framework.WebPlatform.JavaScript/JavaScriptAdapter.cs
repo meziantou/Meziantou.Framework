@@ -385,6 +385,16 @@ internal readonly struct JavaScriptAdapter(JavaScriptAdapterState state) : IJsAd
 
     public object? GetAbstractModuleSource() => Realm.AbstractModuleSource;
 
+    public bool TryInitializeErrorData(object obj, string stackHeader)
+    {
+        if (obj is not JsHostObject hostObject)
+            return false;
+
+        using var scope = Engine.Enter();
+        hostObject.InitializeErrorData(stackHeader);
+        return true;
+    }
+
     public void SetModuleSourceClassName(object obj, string className)
     {
         if (obj is JsHostObject hostObject)
@@ -406,6 +416,8 @@ internal readonly struct JavaScriptAdapter(JavaScriptAdapterState state) : IJsAd
         bytes = default;
         return false;
     }
+
+    public bool IsResizableBuffer(object value) => value is JsObject obj && JsBinaryData.IsResizable(obj);
 
     public object CreateArrayBuffer(ReadOnlySpan<byte> bytes) => Realm.CreateArrayBuffer(bytes);
 

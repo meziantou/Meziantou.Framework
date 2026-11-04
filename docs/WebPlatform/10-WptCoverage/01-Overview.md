@@ -49,10 +49,10 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 25,699 | 29,691 | 2,570 | 95% |
+| [Stable](#stable-tests) | 25,701 | 29,691 | 2,570 | 95% |
 | [Tentative](#tentative-tests) | 1,175 | 3,074 | 847 | 53% |
 | [Reftests](#reftests) | 27,875 | 29,220 | 180 | 96% |
-| **All** | **54,749** | **61,985** | **3,597** | **94%** |
+| **All** | **54,751** | **61,985** | **3,597** | **94%** |
 
 ## Stable tests
 
@@ -377,7 +377,7 @@ The features of `REQUIRES`:
 | [`webdriver`](webdriver.md) | 0 | 1 | 1 | – |
 | [`webgl`](webgl.md) | 0 | 20 | 20 | – |
 | [`webhid`](webhid.md) | 0 | 5 | 5 | – |
-| [`webidl`](webidl.md) | 40 | 46 | 2 | 91% |
+| [`webidl`](webidl.md) | 42 | 46 | 2 | 95% |
 | [`webmcp`](webmcp.md) | 0 | 75 | 75 | – |
 | [`webmessaging`](webmessaging.md) | 131 | 131 | 0 | 100% |
 | [`webmidi`](webmidi.md) | 0 | 1 | 1 | – |
@@ -401,7 +401,7 @@ The features of `REQUIRES`:
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 317 | 330 | 0 | 96% |
 | [`xml`](xml.md) | 0 | 12 | 12 | – |
-| **Total (343 sections)** | **25,699** | **29,691** | **2,570** | **95%** |
+| **Total (343 sections)** | **25,701** | **29,691** | **2,570** | **95%** |
 
 ## Tentative tests
 

@@ -989,6 +989,49 @@ internal sealed partial class EditingAlgorithms
     /// </summary>
     private string _lineThroughElementName = "s";
 
+    /// <summary>
+    /// The specification wraps an element whose value must change in a new element. As in the browsers, the value is set on
+    /// the element itself when it is a font element and the new element would be a font element (the color, face or size
+    /// attribute of <c>&lt;font size=7&gt;</c>), or when it is a font or span element that has attributes and the value is a
+    /// background color (its style attribute). Returns false when the element does not take the value.
+    /// </summary>
+    private bool TrySetValueOnElement(Node node, string command, string newValue)
+    {
+        if (node is not Element element || !IsEditable(element) || !element.HasChildNodes())
+            return false;
+
+        if (command is "backcolor" or "hilitecolor")
+        {
+            // A span or font element without attributes is wrapped, as the specification does
+            if ((!IsHtmlElement(element, "font") && !IsHtmlElement(element, "span")) || element.Attributes.Count == 0)
+                return false;
+
+            element.GetInlineStyle().SetProperty("background-color", newValue);
+        }
+        else
+        {
+            if (_state.CssStyling || !IsHtmlElement(element, "font") || GetRelevantCssProperty(command) is not { } property || GetInlineStyleValue(element, property).Length > 0)
+                return false;
+
+            switch (command)
+            {
+                case "forecolor" when ParseSimpleColor(newValue) is { } color:
+                    element.SetAttribute("color", color);
+                    break;
+                case "fontname":
+                    element.SetAttribute("face", newValue);
+                    break;
+                case "fontsize" when newValue != "xxx-large" && Array.IndexOf(FontSizeKeywords, newValue) is >= 0 and var sizeIndex:
+                    element.SetAttribute("size", (sizeIndex + 1).ToString(CultureInfo.InvariantCulture));
+                    break;
+                default:
+                    return false;
+            }
+        }
+
+        return AreLooselyEquivalentValues(command, GetEffectiveCommandValue(element, command), newValue);
+    }
+
     /// <summary>https://w3c.github.io/editing/docs/execCommand/#force-the-value</summary>
     private void ForceValue(Node node, string command, string? newValue)
     {
@@ -1020,6 +1063,9 @@ internal sealed partial class EditingAlgorithms
         }
 
         if (AreLooselyEquivalentValues(command, GetEffectiveCommandValue(node, command), newValue))
+            return;
+
+        if (TrySetValueOnElement(node, command, newValue))
             return;
 
         Element? newParent = null;

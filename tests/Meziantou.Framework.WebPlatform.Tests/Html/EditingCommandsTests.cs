@@ -76,6 +76,9 @@ public sealed class EditingCommandsTests : IDisposable
     [InlineData("foo<a href=http://www.google.com/ class=link>[bar]</a>baz", "unlink", "", "foobarbaz")]
     [InlineData("foo<a href=http://www.google.com/ id=link>[bar]</a>baz", "unlink", "", "foo<a id=\"link\">bar</a>baz")]
     [InlineData("foo<b>b[a]r</b><i>baz</i>", "removeFormat", "", "foo<b>b</b>a<b>r</b><i>baz</i>")]
+    [InlineData("<font size=7>[abc]</font>", "fontName", "monospace", "<font size=\"7\" face=\"monospace\">abc</font>")]
+    [InlineData("<font face=monospace>[abc]</font>", "foreColor", "#ff0000", "<font face=\"monospace\" color=\"#ff0000\">abc</font>")]
+    [InlineData("<span style=\"font-size: xx-large;\">[foo]</span>", "hiliteColor", "#00FFFF", "<span style=\"font-size: xx-large; background-color: rgb(0, 255, 255);\">foo</span>")]
     public void InlineFormatting(string html, string command, string value, string expected)
         => Assert.Equal(expected, Run(html, command, value));
 

@@ -2767,7 +2767,10 @@ specification, the browsers are followed, as the tests expect:
 - when the range of an inline formatting command is in one inline element without `style` attribute and contains all its contents,
   the new element is created in this element (`bold` on `<i>[foo]</i>` gives `<i><b>foo</b></i>`, `createLink` on `<b>[abc]</b>` gives `<b><a>abc</a></b>`; the
   specification wraps the element), except the `font` elements of `fontName`, `fontSize` and `foreColor`, which stay around the other
-  inline elements (`<font size="5"><b>`).
+  inline elements (`<font size="5"><b>`);
+- when the range of `fontName`, `fontSize` or `foreColor` (without `styleWithCSS`) contains a whole `font` element, its attribute is set
+  on this element (`<font size=7>[abc]</font>` gives `<font face="monospace" size="7">abc</font>`), and `backColor` and `hiliteColor`
+  set the background color on a whole `span` or `font` element that has attributes; the specification wraps the element in a new one.
 - the states and the values of a collapsed selection that is after an inline element are the ones of the end of this
   element (the caret of the browsers);
 - a color that is not valid is black, as in the reference implementation. The `data` of the `input` event of `foreColor`,

@@ -798,21 +798,7 @@ public abstract partial class Node
 
         if (document.HasMutationObservers)
         {
-            // Transient registered observers
-            for (Node? inclusiveAncestor = this; inclusiveAncestor is not null; inclusiveAncestor = inclusiveAncestor._parent)
-            {
-                if (inclusiveAncestor.RareDataOrNull?.RegisteredObservers is not { } registeredObservers)
-                    continue;
-
-                foreach (var registered in registeredObservers.ToArray())
-                {
-                    if (registered.Options.Subtree)
-                    {
-                        node.AddRegisteredObserver(new TransientRegisteredObserver(registered.Observer, registered.Options, registered));
-                        registered.Observer.AddTransientNode(node);
-                    }
-                }
-            }
+            MutationObserver.AddTransientRegisteredObservers(node, this);
 
             if (!suppressObservers)
             {
@@ -889,6 +875,11 @@ public abstract partial class Node
         if (document.HasSlots)
         {
             Slots.OnMovedOut(oldParent, node);
+        }
+
+        if (document.HasMutationObservers)
+        {
+            MutationObserver.AddTransientRegisteredObservers(node, oldParent);
         }
 
         // The pointer of the resource selection algorithm of a media element is updated as if the node was removed, then inserted

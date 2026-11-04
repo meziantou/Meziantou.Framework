@@ -14,6 +14,8 @@ public sealed class CssAnimation : Animation
     private AnimationEffectPhase? _previousPhase;
     private double? _previousIteration;
     private double _previousActiveTime;
+    private double? _cancelActiveTime;
+    private double? _lastScheduledTime;
 
     internal CssAnimation(Element owningElement, string? pseudoElement, string animationName, KeyframeEffect effect, AnimationTimeline? timeline)
         : base(effect, timeline)
@@ -104,9 +106,32 @@ public sealed class CssAnimation : Animation
     internal void SetRangeByStyle(TimelineRangeBoundary? start, TimelineRangeBoundary? end)
         => SetRange(RangeStartOverridden ? RangeStartValue : start, RangeEndOverridden ? RangeEndValue : end);
 
-    private protected override void OnStartTimeSetByScript() => PlayStateOverridden = true;
+    // Setting the start time overrides animation-play-state only when it pauses or resumes the animation (https://drafts.csswg.org/css-animations-2/#animations)
+    private protected override void OnStartTimeSetByScript(AnimationPlayState previousPlayState)
+    {
+        if ((previousPlayState == AnimationPlayState.Paused) != (PlayStateValue == AnimationPlayState.Paused))
+        {
+            PlayStateOverridden = true;
+        }
+    }
+
+    // A canceled animation is no longer updated by animation-play-state, and its animationcancel event is queued at once (a
+    // play() that follows in the same task restarts it: the next frame sees it starting again)
+    private protected override void OnCanceledByScript()
+    {
+        PlayStateOverridden = true;
+        QueueDeclarativeEvents();
+    }
 
     internal override void OnKeyframesSetByScript() => KeyframesOverridden = true;
+
+    // An effect set through the API is no longer updated by the animation-* properties of the effect (https://drafts.csswg.org/css-animations-2/#animations)
+    private protected override void OnEffectSetByScript()
+    {
+        KeyframesOverridden = true;
+        OverriddenTimingProperties ??= new(StringComparer.Ordinal);
+        OverriddenTimingProperties.UnionWith(["delay", "endDelay", "fill", "iterationStart", "iterations", "duration", "direction", "easing"]);
+    }
 
     internal override void OnEffectTimingUpdated(OptionalEffectTiming timing)
     {
@@ -157,6 +182,7 @@ public sealed class CssAnimation : Animation
 
         OwningElement = null;
         GlobalIndex = NextGlobalIndex();
+        IsAppendedToGlobalListWhenNotIdle = PlayStateValue == AnimationPlayState.Idle;
     }
 
     // The composite order of the CSS animations: the tree order of their owning elements, then their position in animation-name
@@ -171,65 +197,102 @@ public sealed class CssAnimation : Animation
         return result != 0 ? result : NameIndex.CompareTo(otherAnimation.NameIndex);
     }
 
-    /// <summary>https://drafts.csswg.org/css-animations-2/#event-dispatch: the events are determined by the phase change of the effect.</summary>
-    internal override void QueueDeclarativeEvents()
+    /// <summary>Records the active time of the cancel event: the active time at the moment the animation is canceled, with a fill mode of both.</summary>
+    private protected override void OnBecomingIdle() => _cancelActiveTime = GetActiveTimeForCancel();
+
+    private double GetActiveTimeForCancel()
     {
-        if (HasPendingTask || EffectValue is not KeyframeEffect effect || OwningElement is null)
-            return;
+        if (EffectValue is not { } effect)
+            return 0;
 
         var localTime = effect.LocalTime;
-        var phase = PlayStateValue == AnimationPlayState.Idle ? AnimationEffectPhase.Idle : effect.GetPhase(localTime);
-        var activeTime = effect.GetActiveTime(localTime, phase);
-        var iteration = effect.GetCurrentIteration(phase, activeTime);
-        var previousPhase = _previousPhase ?? AnimationEffectPhase.Idle;
-        var previousIteration = _previousIteration;
-        var previousActiveTime = _previousActiveTime;
-        _previousPhase = phase;
-        _previousIteration = iteration;
-        if (activeTime is { } time)
+        return effect.GetActiveTime(localTime, effect.GetPhase(localTime), FillMode.Both) ?? 0;
+    }
+
+    /// <summary>
+    /// https://drafts.csswg.org/css-animations-2/#event-dispatch: the events are determined by the phase change of the effect (or,
+    /// without an effect, by the current time of the animation).
+    /// </summary>
+    internal override void QueueDeclarativeEvents()
+    {
+        if (HasPendingTask || OwningElement is null)
+            return;
+
+        var effect = EffectValue;
+        _lastScheduledTime = null;
+        AnimationEffectPhase phase;
+        double? iteration = null;
+        if (PlayStateValue == AnimationPlayState.Idle)
         {
-            _previousActiveTime = time;
+            phase = AnimationEffectPhase.Idle;
+        }
+        else if (effect is null)
+        {
+            phase = CurrentTimeValue switch
+            {
+                null => AnimationEffectPhase.Idle,
+                < 0 => AnimationEffectPhase.Before,
+                _ => AnimationEffectPhase.After,
+            };
+        }
+        else
+        {
+            var localTime = effect.LocalTime;
+            phase = effect.GetPhase(localTime);
+            iteration = effect.GetCurrentIteration(phase, effect.GetActiveTime(localTime, phase));
         }
 
-        var activeDuration = effect.ActiveDuration;
-        var intervalStart = Math.Max(Math.Min(-effect.NormalizedDelay, activeDuration), 0);
-        var intervalEnd = Math.Max(Math.Min(EffectEnd - effect.NormalizedDelay, activeDuration), 0);
+        var previousPhase = _previousPhase ?? AnimationEffectPhase.Idle;
+        var previousIteration = _previousIteration;
+        var cancelActiveTime = _cancelActiveTime ?? _previousActiveTime;
+        _previousPhase = phase;
+        _previousIteration = iteration;
+        _cancelActiveTime = null;
+        if (phase != AnimationEffectPhase.Idle)
+        {
+            _previousActiveTime = GetActiveTimeForCancel();
+        }
+
+        var activeDuration = effect?.ActiveDuration ?? 0;
+        var delay = effect?.NormalizedDelay ?? 0;
+        var intervalStart = Math.Max(Math.Min(-delay, activeDuration), 0);
+        var intervalEnd = Math.Max(Math.Min(EffectEnd - delay, activeDuration), 0);
         switch (previousPhase, phase)
         {
             case (AnimationEffectPhase.Idle or AnimationEffectPhase.Before, AnimationEffectPhase.Active):
-                Queue("animationstart", intervalStart, effect);
+                Queue("animationstart", intervalStart, delay);
                 break;
             case (AnimationEffectPhase.Idle or AnimationEffectPhase.Before, AnimationEffectPhase.After):
-                Queue("animationstart", intervalStart, effect);
-                Queue("animationend", intervalEnd, effect);
+                Queue("animationstart", intervalStart, delay);
+                Queue("animationend", intervalEnd, delay);
                 break;
             case (AnimationEffectPhase.Active, AnimationEffectPhase.Before):
-                Queue("animationend", intervalStart, effect);
+                Queue("animationend", intervalStart, delay);
                 break;
             case (AnimationEffectPhase.Active, AnimationEffectPhase.Active) when previousIteration != iteration && previousIteration is { } previous && iteration is { } current:
             {
                 var boundary = Math.Max(previous, current);
-                Queue("animationiteration", (boundary - effect.IterationStart) * effect.IterationDuration, effect);
+                Queue("animationiteration", (boundary - effect!.IterationStart) * effect.IterationDuration, delay);
                 break;
             }
 
             case (AnimationEffectPhase.Active, AnimationEffectPhase.After):
-                Queue("animationend", intervalEnd, effect);
+                Queue("animationend", intervalEnd, delay);
                 break;
             case (AnimationEffectPhase.After, AnimationEffectPhase.Active):
-                Queue("animationstart", intervalEnd, effect);
+                Queue("animationstart", intervalEnd, delay);
                 break;
             case (AnimationEffectPhase.After, AnimationEffectPhase.Before):
-                Queue("animationstart", intervalEnd, effect);
-                Queue("animationend", intervalStart, effect);
+                Queue("animationstart", intervalEnd, delay);
+                Queue("animationend", intervalStart, delay);
                 break;
             case (not AnimationEffectPhase.Idle and not AnimationEffectPhase.After, AnimationEffectPhase.Idle):
-                Queue("animationcancel", Math.Max(previousActiveTime, 0), effect, cancel: true);
+                Queue("animationcancel", Math.Max(cancelActiveTime, 0), delay, cancel: true);
                 break;
         }
     }
 
-    private void Queue(string type, double elapsedTime, KeyframeEffect effect, bool cancel = false)
+    private void Queue(string type, double elapsedTime, double delay, bool cancel = false)
     {
         if (OwningElement is not { } target || target.NodeDocument is not { } document)
             return;
@@ -253,9 +316,17 @@ public sealed class CssAnimation : Animation
         }
         else if (StartTimeValue is { } startTime && PlaybackRate != 0)
         {
-            scheduledTime = Timeline?.ToOriginRelativeTime(startTime + ((effect.NormalizedDelay + elapsedTime) / PlaybackRate));
+            scheduledTime = Timeline?.ToOriginRelativeTime(startTime + ((delay + elapsedTime) / PlaybackRate));
         }
 
+        // The events of a phase change are dispatched in the order of the table, even when an event would occur earlier than the
+        // previous one (e.g. the end event at the interval start after the start event at the interval end when seeking backwards)
+        if (scheduledTime is { } time && _lastScheduledTime is { } last && time < last)
+        {
+            scheduledTime = last;
+        }
+
+        _lastScheduledTime = scheduledTime;
         document.Animations.QueueEvent(animationEvent, target, this, scheduledTime);
     }
 }

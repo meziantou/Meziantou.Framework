@@ -18,7 +18,7 @@ description: "The results of the web-platform-tests of css/css-logical, and why 
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
+- **NOT IMPLEMENTED**: 1
 - **TEST RUNNER**: 3
 
 ## Stable tests
@@ -115,7 +115,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
 | [`animation-003.tentative.html`](https://wpt.fyi/results/css/css-logical/animation-003.tentative.html) | Fail | 0 / 1 | TEST RUNNER | `css/css-animations/support/testcommon.js` is not fetched (`addDiv`/`addStyle` undefined) |
-| [`animations/logical-shorthand-relative-prioritization-by-number-of-components.tentative.html`](https://wpt.fyi/results/css/css-logical/animations/logical-shorthand-relative-prioritization-by-number-of-components.tentative.html) | Fail | 0 / 1 | BUG | the logical shorthands of a keyframe are not prioritized by their number of longhands |
+| [`animations/logical-shorthand-relative-prioritization-by-number-of-components.tentative.html`](https://wpt.fyi/results/css/css-logical/animations/logical-shorthand-relative-prioritization-by-number-of-components.tentative.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the `logical` keyword of the box shorthands (`margin: logical 300px`, https://drafts.csswg.org/css-logical/#logical-shorthand-keyword): the keyframe declaration is invalid, so `margin-top` is not animated |
 
 ## Reftests
 

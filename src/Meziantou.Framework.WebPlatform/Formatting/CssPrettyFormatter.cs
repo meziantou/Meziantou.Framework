@@ -99,6 +99,7 @@ public sealed class CssPrettyFormatter : CssFormatter
 
         protected override void WriteDeclaration(CssRule? rule, string name, string value, bool important)
         {
+            value = CssStyleDeclaration.CloseUnclosedBlocks(value);
             StartItem();
             Output.Write(name);
             Output.Write(':');

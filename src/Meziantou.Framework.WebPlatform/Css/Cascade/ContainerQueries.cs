@@ -28,7 +28,15 @@ internal static class ContainerQueries
     /// selected among the ancestors of the element in the flat tree (the inclusive ancestors of the originating element of a
     /// pseudo-element) that are eligible for all the features of the query and whose name matches.
     /// </summary>
-    public static bool? Evaluate(ContainerCondition condition, StyleEngine engine, Element element, string? pseudoElement)
+    /// <param name="condition">The container condition.</param>
+    /// <param name="engine">The style engine of the document.</param>
+    /// <param name="element">The element, or the originating element of the pseudo-element.</param>
+    /// <param name="pseudoElement">The pseudo-element, or null.</param>
+    /// <param name="skipsElementsWithoutBox">
+    /// Whether the ancestors that generate no box (<c>display: none</c>, or in a subtree of <c>display: none</c>) are not query
+    /// containers, as for <c>matchContainer()</c> in the browsers (their elements have no style).
+    /// </param>
+    public static bool? Evaluate(ContainerCondition condition, StyleEngine engine, Element element, string? pseudoElement, bool skipsElementsWithoutBox = false)
     {
         // A query that contains an unknown feature selects no query container (https://drafts.csswg.org/css-conditional-5/#container-rule)
         if ((condition.Features & ContainerQueryFeatures.Unknown) != ContainerQueryFeatures.None)
@@ -41,7 +49,7 @@ internal static class ContainerQueries
                 continue;
 
             var style = engine.GetStyle(ancestor);
-            if (!IsEligible(condition, style))
+            if (!IsEligible(condition, style) || (skipsElementsWithoutBox && BoxGeneration.Get(style).IsDisplayNone))
                 continue;
 
             return condition.Query is null ? true : condition.Query.Evaluate(new ContainerQueryContext(style));

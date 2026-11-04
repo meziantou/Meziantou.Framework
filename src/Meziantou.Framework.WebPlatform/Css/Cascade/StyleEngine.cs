@@ -113,6 +113,12 @@ internal sealed partial class StyleEngine
     /// <summary>The origin of the winning declaration of <see cref="_originQueryProperty"/> in the last cascade, or null when no declaration applies.</summary>
     private CascadeOrigin? _originQueryResult;
 
+    /// <summary>The style whose property <see cref="_originQueryProperty"/> is rolled back to the user origin by the cascade that runs (see <see cref="GetUserOriginCascadedValue"/>), or null.</summary>
+    private ComputedStyle? _revertQueryStyle;
+
+    /// <summary>The cascaded value of the user origin of <see cref="_originQueryProperty"/> in the last cascade (see <see cref="GetUserOriginCascadedValue"/>).</summary>
+    private CascadedValue? _revertQueryResult;
+
     /// <summary>
     /// The properties whose computed value is being computed, by style (a property needed again while it is computed is a
     /// dependency cycle). It is shared by the styles of the engine, so that each style does not allocate its own set.
@@ -893,6 +899,31 @@ internal sealed partial class StyleEngine
         {
             _originQueryProperty = null;
             _originQueryResult = null;
+        }
+    }
+
+    /// <summary>
+    /// Returns the cascaded value of a longhand property of a style when the cascade is rolled back to the user origin
+    /// (https://drafts.csswg.org/css-cascade-5/#default: revert in the author origin or in the animation origin), or null when
+    /// no declaration of the user or user-agent origins applies (the property is then unset). The declarations of the logical
+    /// properties that map to the property in the writing mode of the style apply too. The cascade of the element runs again:
+    /// the declarations of the lower origins are not kept with the cascaded values.
+    /// </summary>
+    internal CascadedValue? GetUserOriginCascadedValue(ComputedStyle style, string property)
+    {
+        _originQueryProperty = property;
+        _revertQueryStyle = style;
+        _revertQueryResult = null;
+        try
+        {
+            Cascade(style.Element, style.PseudoElement, style.Parent, out _);
+            return _revertQueryResult;
+        }
+        finally
+        {
+            _originQueryProperty = null;
+            _revertQueryStyle = null;
+            _revertQueryResult = null;
         }
     }
 
@@ -3304,7 +3335,9 @@ internal sealed partial class StyleEngine
     {
         // The query of GetCascadeOrigin() is the one of this cascade, not of the nested ones
         var originQueryProperty = _originQueryProperty;
+        var revertQueryStyle = _revertQueryStyle;
         _originQueryProperty = null;
+        _revertQueryStyle = null;
 
         // The WebVTT objects of the cues rendered over a video element have their own cascade (see StyleEngine.WebVtt.cs)
         if (element is WebVtt.WebVttElement vttElement)
@@ -3461,7 +3494,14 @@ internal sealed partial class StyleEngine
         blocks.Sort(MatchedBlock.Compare);
         if (originQueryProperty is not null)
         {
-            _originQueryResult = FindWinningOrigin(blocks, originQueryProperty);
+            if (revertQueryStyle is not null)
+            {
+                _revertQueryResult = FindUserOriginValue(blocks, originQueryProperty, revertQueryStyle);
+            }
+            else
+            {
+                _originQueryResult = FindWinningOrigin(blocks, originQueryProperty);
+            }
         }
 
         // Only a limited set of properties apply to ::marker, ::first-line and ::first-letter: the other declarations are ignored
@@ -3905,7 +3945,7 @@ internal sealed partial class StyleEngine
                 if (rule.ScopeRelative && ReferenceEquals(root, element))
                     continue;
 
-                if (Matches(rule, element, context with { ScopingRoot = root }))
+                if (Matches(rule, element, context with { ScopingRoot = root, ScopesTreeRoot = root is not Element }))
                     return proximity;
             }
 
@@ -3981,7 +4021,7 @@ internal sealed partial class StyleEngine
         // The scoping roots of a nested @scope rule are in the scope of the enclosing @scope rule
         foreach (var (parentRoot, _) in GetScopingRoots(scope.Parent!, candidate, context))
         {
-            if (SelectorMatcher.Matches(start, candidate, context with { ScopingRoot = parentRoot }))
+            if (SelectorMatcher.Matches(start, candidate, context with { ScopingRoot = parentRoot, ScopesTreeRoot = parentRoot is not Element }))
                 return true;
         }
 
@@ -3995,7 +4035,7 @@ internal sealed partial class StyleEngine
             return true;
 
         // The scoping root itself is a scoping limit when it matches <scope-end> (e.g. to (:scope))
-        var limitContext = context with { ScopingRoot = root };
+        var limitContext = context with { ScopingRoot = root, ScopesTreeRoot = root is not Element };
         for (Node? node = element; node is not null; node = GetScopeParent(node, context))
         {
             if (node is Element candidate && SelectorMatcher.Matches(end, candidate, limitContext))
@@ -4048,6 +4088,37 @@ internal sealed partial class StyleEngine
     }
 
     /// <summary>The origin of the winning declaration of a property among the sorted declaration blocks, or null (see <see cref="GetCascadeOrigin"/>).</summary>
+    /// <summary>Returns the winning declaration of a property among the ones of the user and user-agent origins (see <see cref="GetUserOriginCascadedValue"/>).</summary>
+    private static CascadedValue? FindUserOriginValue(List<MatchedBlock> blocks, string property, ComputedStyle style)
+    {
+        for (var i = blocks.Count - 1; i >= 0; i--)
+        {
+            var block = blocks[i];
+            if (block.Origin >= CascadeOrigin.Author)
+                continue;
+
+            var declarations = block.Declarations;
+            for (var j = declarations.Count - 1; j >= 0; j--)
+            {
+                var declaration = declarations[j];
+                if (declaration.Important != block.Important)
+                    continue;
+
+                if (declaration.Name != property && !(LogicalProperties.IsFlowRelative(declaration.Name) && LogicalProperties.GetPhysicalProperty(declaration.Name, style) == property))
+                    continue;
+
+                // (the value of a logical property is the value of the physical property it maps to)
+                var value = declaration.Name == property ? declaration.Value : declaration.Value with { Name = property };
+                if (GetRollback(value) != Rollback.None)
+                    return RollBack(blocks, property, i, value, rank: 0);
+
+                return WithSubstitutionRollback(new CascadedValue(value, 0, block.Source) { Position = ((long)i << 20) | (uint)j, OriginatingElement = block.OriginatingElement, IsImportant = block.Important }, blocks, i);
+            }
+        }
+
+        return null;
+    }
+
     private static CascadeOrigin? FindWinningOrigin(List<MatchedBlock> blocks, string property)
     {
         for (var i = blocks.Count - 1; i >= 0; i--)
@@ -4136,7 +4207,7 @@ internal sealed partial class StyleEngine
                     var snapshot = declaration.Snapshot;
                     var rank = ((long)i << 20) | (uint)j;
                     cascaded = GetRollback(snapshot.Value) == Rollback.None
-                        ? WithSubstitutionRollback(new CascadedValue(snapshot, rank, block.Source) { OriginatingElement = block.OriginatingElement, IsImportant = block.Important }, blocks, i)
+                        ? WithSubstitutionRollback(new CascadedValue(snapshot, rank, block.Source) { OriginatingElement = block.OriginatingElement, IsImportant = block.Important, IsNonAuthorImportant = block.Important && block.Origin != CascadeOrigin.Author }, blocks, i)
                         : RollBack(blocks, declaration.Name, i, snapshot.Value, rank);
                 }
             }
@@ -4254,7 +4325,7 @@ internal sealed partial class StyleEngine
                     {
                         value = declaration.Value;
                         if (GetRollback(value) == Rollback.None)
-                            return WithSubstitutionRollback(new CascadedValue(declaration.Snapshot, rank, candidate.Source) { Position = ((long)i << 20) | (uint)j, OriginatingElement = candidate.OriginatingElement, IsImportant = candidate.Important }, blocks, i);
+                            return WithSubstitutionRollback(new CascadedValue(declaration.Snapshot, rank, candidate.Source) { Position = ((long)i << 20) | (uint)j, OriginatingElement = candidate.OriginatingElement, IsImportant = candidate.Important, IsNonAuthorImportant = candidate.Important && candidate.Origin != CascadeOrigin.Author }, blocks, i);
 
                         index = i;
                         found = true;
@@ -4388,6 +4459,16 @@ internal readonly struct CascadedValue
     }
 
     /// <summary>
+    /// Whether the declaration of the value is an important declaration of the user agent or user origins: it wins over the
+    /// transitions too (https://drafts.csswg.org/css-cascade-5/#cascade-origin).
+    /// </summary>
+    public bool IsNonAuthorImportant
+    {
+        get => _extra?.NonAuthorImportant ?? false;
+        init => _extra = _extra is not null ? _extra with { NonAuthorImportant = value } : !value ? null : new CascadedValueExtra(Rank, RollBackSubstitution: null, OriginatingElement: null, NonAuthorImportant: true);
+    }
+
+    /// <summary>
     /// Returns whether the value wins over the value of a logical or physical property that maps to the same property
     /// (https://drafts.csswg.org/css-logical/#logical-property-group): the winning declaration with the highest rank, unless
     /// it rolls back the cascade past the other value, whose declaration is in a lower block, then the declaration it
@@ -4404,7 +4485,7 @@ internal readonly struct CascadedValue
 }
 
 /// <summary>The rarely used state of a cascaded value: the values that roll back the cascade, and the declarations of the ::part() rules.</summary>
-internal sealed record CascadedValueExtra(long Position, Func<string, CascadedValue>? RollBackSubstitution, Element? OriginatingElement, bool Important = false);
+internal sealed record CascadedValueExtra(long Position, Func<string, CascadedValue>? RollBackSubstitution, Element? OriginatingElement, bool Important = false, bool NonAuthorImportant = false);
 
 /// <summary>
 /// The base URL, the tree scope and the mixin of the declarations of a rule (see <see cref="CascadedValue"/>), the namespace

@@ -271,7 +271,7 @@ public partial class JavaScriptScriptEngine : ScriptEngine, IDisposable
         ArgumentNullException.ThrowIfNull(script);
         var realm = Agent.GetRealm(script.Global);
         using var scope = EnterJavaScript();
-        var hostDefined = new ScriptHostDefined { BaseUrl = script.BaseUrl, FetchOptions = script.FetchOptions, IsGlobalScript = script.Url == script.Global.ScriptUrl };
+        var hostDefined = new ScriptHostDefined { BaseUrl = script.BaseUrl, FetchOptions = script.FetchOptions, IsGlobalScript = script.Url == script.Global.ScriptUrl, MutedErrors = script.MutedErrors };
         ActiveScripts.Push(hostDefined);
         if (script.MutedErrors)
         {
@@ -598,7 +598,8 @@ public partial class JavaScriptScriptEngine : ScriptEngine, IDisposable
             _ => JsValue.FromString(exception.ToString() ?? ""),
         };
 
-        var error = ToObject(value);
+        // The value undefined is not null (e.g. the error attribute of the error event of reportError(undefined))
+        var error = value.IsUndefined ? UndefinedValue.Instance : ToObject(value);
 
         // The location of the error (https://html.spec.whatwg.org/multipage/webappapis.html#report-an-exception): where the
         // exception was thrown, in the script whose URL is the source of the code
@@ -676,7 +677,9 @@ public partial class JavaScriptScriptEngine : ScriptEngine, IDisposable
     {
         try
         {
-            if (error.TryGetObject() is { } obj && obj.ContainsProperty("message"))
+            // The properties of an object that is not an error object are not read (their getters are not invoked), as in the
+            // browsers
+            if (error.TryGetObject() is { } obj && obj.HasInternalSlot(Meziantou.Framework.JavaScriptEngine.JsInternalSlot.ErrorData) && obj.ContainsProperty("message"))
             {
                 // The message includes the name of the error, as in the browsers (e.g. "TypeError: message")
                 var message = Engine.ToString(obj.GetProperty("message"));
@@ -698,6 +701,11 @@ public partial class JavaScriptScriptEngine : ScriptEngine, IDisposable
     internal void OnPromiseRejectionTracker(JsObject promise, JsPromiseRejectionOperation operation)
     {
         if (Agent.CurrentRealm is not { } realm)
+            return;
+
+        // "If script is a classic script and script's muted errors is true, then return": the rejections of a cross-origin
+        // script fetched without CORS are not reported
+        if (GetActiveScript() is { MutedErrors: true })
             return;
 
         var reason = promise.TryGetPromiseState(out _, out var result, out _) ? ToObject(result) : UndefinedValue.Instance;

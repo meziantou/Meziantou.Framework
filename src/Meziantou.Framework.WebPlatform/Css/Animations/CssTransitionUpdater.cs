@@ -89,6 +89,7 @@ internal static class CssTransitionUpdater
         }
 
         var changed = false;
+        ComputedStyle? currentParentStyle = null;
         foreach (var property in candidates)
         {
             var afterValue = GetValue(after, property);
@@ -113,7 +114,8 @@ internal static class CssTransitionUpdater
             {
                 var beforeValue = GetValue(before, property);
                 if ((!string.Equals(beforeValue, afterValue, StringComparison.Ordinal) || HasTreeScopedNameChanged(before, after, property, afterValue)) && (completed is null || !string.Equals(completed, afterValue, StringComparison.Ordinal))
-                    && IsTransitionable(context, property, beforeValue, afterValue, parameters.AllowDiscrete))
+                    && IsTransitionable(context, property, beforeValue, afterValue, parameters.AllowDiscrete)
+                    && !IsChangedByAncestorTransitions(style, property, beforeValue, ref currentParentStyle))
                 {
                     transitions ??= document.Animations.GetOrCreateTransitions(element, pseudoElement);
                     RemoveCompleted(transitions, property, changes);
@@ -150,7 +152,7 @@ internal static class CssTransitionUpdater
             // transition started by the layout is a value that the layout resolved: the layout compares it, see UpdateFromLayout)
             if (running is not null && !running.IsStartedByLayout && !string.Equals(running.EndValue, afterValue, StringComparison.Ordinal))
             {
-                ReplaceRunningTransition(style, context, transitions!, running, afterValue, parameters, changes, IsTainted(after, property), startedByLayout: false);
+                ReplaceRunningTransition(before?.WithCurrentAnimations() ?? style, context, transitions!, running, afterValue, parameters, changes, IsTainted(after, property), startedByLayout: false);
                 changed = true;
             }
         }
@@ -419,6 +421,31 @@ internal static class CssTransitionUpdater
     /// When the element did not inherit the value before the change (e.g. its declaration changed from a color to inherit), the
     /// transition starts, from its before-change value to the inherited after-change value (WPT css/css-transitions/after-change-style-inherited.html).
     /// </summary>
+    /// <summary>
+    /// Returns whether the value of a property changes only because the ancestors of the element transition properties it depends
+    /// on (e.g. an em length when the font size of the parent transitions): its value inheriting from the current style of the
+    /// parent is its before-change value.
+    /// </summary>
+    private static bool IsChangedByAncestorTransitions(ComputedStyle style, string property, string beforeValue, ref ComputedStyle? currentParentStyle)
+    {
+        if (!HasTransitioningAncestor(style))
+            return false;
+
+        currentParentStyle ??= style.CreateAfterChangeStyleInheritingCurrentParent();
+        return string.Equals(GetValue(currentParentStyle, property), beforeValue, StringComparison.Ordinal);
+
+        static bool HasTransitioningAncestor(ComputedStyle style)
+        {
+            for (var parent = style.Parent; parent is not null; parent = parent.Parent)
+            {
+                if (parent.Element.NodeDocument.AnimationsOrNull?.GetTransitions(parent.Element, parent.PseudoElement) is { Running.Count: > 0 })
+                    return true;
+            }
+
+            return false;
+        }
+    }
+
     private static bool IsInheritedFromTransition(ComputedStyle style, ComputedStyle before, string property)
     {
         if (!Inherits(style, property) || !Inherits(before, property))

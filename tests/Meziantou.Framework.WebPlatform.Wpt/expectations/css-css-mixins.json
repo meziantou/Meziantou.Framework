@@ -6,13 +6,7 @@
     "total": 4
   },
   "css/css-mixins/function-property-context.html": {
-    "total": 4,
-    "failures": {
-      "em in argument uses the property calling context": "FAIL",
-      "em in default uses the property calling context": "FAIL",
-      "em in local uses the property calling context": "FAIL",
-      "em in result uses the property calling context": "FAIL"
-    }
+    "total": 4
   },
   "css/css-mixins/function-relative-units.html": {
     "total": 11
@@ -174,10 +168,7 @@
     "total": 4
   },
   "css/css-mixins/private/private-cssom-serialization.tentative.html": {
-    "total": 16,
-    "failures": {
-      "Repeated variable name": "FAIL"
-    }
+    "total": 16
   },
   "css/css-mixins/private/private-shared-stylesheet.tentative.html": {
     "total": 1

@@ -78,6 +78,12 @@ public partial class Animation : EventTarget, IRealmBoundPlatformObject
     internal long GlobalIndex { get; private protected set; }
 
     /// <summary>
+    /// Whether the animation is appended to the global animation list once it leaves the idle play state: a CSS animation or transition
+    /// disassociated from its owning element (https://drafts.csswg.org/css-animations-2/#animation-composite-order).
+    /// </summary>
+    private protected bool IsAppendedToGlobalListWhenNotIdle { get; set; }
+
+    /// <summary>
     /// Whether the CSS transition or CSS animation was canceled by a style that the layout may compute again with the size of its
     /// query container: it has no effect, and it is canceled once the styles are settled, unless the style is discarded (it then
     /// runs again, see <see cref="Css.Cascade.StyleEngine.InvalidateQueryContainerDescendants"/>).
@@ -116,7 +122,12 @@ public partial class Animation : EventTarget, IRealmBoundPlatformObject
         set
         {
             FlushPendingStyle();
+            var changed = !ReferenceEquals(_effect, value);
             SetEffectCore(value);
+            if (changed)
+            {
+                OnEffectSetByScript();
+            }
         }
     }
 
@@ -188,8 +199,9 @@ public partial class Animation : EventTarget, IRealmBoundPlatformObject
         set
         {
             FlushPendingStyle();
+            var previousPlayState = PlayStateValue;
             SetStartTimeCore(ValidateTime(value));
-            OnStartTimeSetByScript();
+            OnStartTimeSetByScript(previousPlayState);
         }
     }
 
@@ -613,7 +625,7 @@ public partial class Animation : EventTarget, IRealmBoundPlatformObject
     {
     }
 
-    private protected virtual void OnStartTimeSetByScript()
+    private protected virtual void OnStartTimeSetByScript(AnimationPlayState previousPlayState)
     {
     }
 
@@ -622,6 +634,10 @@ public partial class Animation : EventTarget, IRealmBoundPlatformObject
     }
 
     private protected virtual void OnCanceledByScript()
+    {
+    }
+
+    private protected virtual void OnEffectSetByScript()
     {
     }
 
@@ -761,6 +777,11 @@ public partial class Animation : EventTarget, IRealmBoundPlatformObject
         var previousPlayState = PlayStateValue;
         var previousCurrentTime = CurrentTimeValue;
         var previousEndTime = EffectEnd;
+        if (timeline is null && previousPlayState != AnimationPlayState.Idle)
+        {
+            OnBecomingIdle();
+        }
+
         double? previousProgress = previousCurrentTime is not { } currentTime ? null : previousEndTime == 0 ? 0 : currentTime / previousEndTime;
         var fromFiniteTimeline = oldTimeline is { IsMonotonicallyIncreasing: false };
         var toFiniteTimeline = timeline is { IsMonotonicallyIncreasing: false };
@@ -860,11 +881,8 @@ public partial class Animation : EventTarget, IRealmBoundPlatformObject
         if (ReferenceEquals(oldEffect, effect))
             return;
 
-        if (effect is null && oldEffect is not null)
-        {
-            ResetPendingTasks();
-        }
-
+        // The pending play and pause tasks are rescheduled to run as soon as the animation is ready (they are not reset when the
+        // new effect is null: the animation becomes finish-pending)
         if (effect?.Animation is { } previousAnimation && !ReferenceEquals(previousAnimation, this))
         {
             previousAnimation.SetEffectCore(null);
@@ -1164,11 +1182,20 @@ public partial class Animation : EventTarget, IRealmBoundPlatformObject
         _readyPromise.SetResult(this);
     }
 
+    /// <summary>
+    /// Called before the animation may become idle (canceled, or its timeline is removed): the CSS animations and transitions record
+    /// the active time of their cancel event (https://drafts.csswg.org/css-animations-2/#event-dispatch).
+    /// </summary>
+    private protected virtual void OnBecomingIdle()
+    {
+    }
+
     /// <summary>https://drafts.csswg.org/web-animations-1/#cancel-an-animation</summary>
     private protected void CancelCore()
     {
         if (PlayStateValue != AnimationPlayState.Idle)
         {
+            OnBecomingIdle();
             ResetPendingTasks();
             RejectPromise(_finishedPromise);
             _finishedPromise = CreatePromise();
@@ -1324,6 +1351,12 @@ public partial class Animation : EventTarget, IRealmBoundPlatformObject
     /// </summary>
     private protected void OnPlaybackChanged()
     {
+        if (IsAppendedToGlobalListWhenNotIdle && PlayStateValue != AnimationPlayState.Idle)
+        {
+            IsAppendedToGlobalListWhenNotIdle = false;
+            GlobalIndex = NextGlobalIndex();
+        }
+
         UpdateEffectRegistrations();
         if (DocumentForTiming is { } document)
         {

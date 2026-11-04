@@ -3834,25 +3834,13 @@
     "total": 2
   },
   "encoding/streams/realms.window.js": {
-    "total": 12,
-    "failures": {
-      "the output chunks when read is called after write should come from the same realm as the constructor of TextEncoderStream": "FAIL",
-      "the output chunks when write is called with a pending read should come from the same realm as the constructor of TextEncoderStream": "FAIL",
-      "the result object when read is called after write should come from the same realm as the constructor of TextDecoderStream": "FAIL",
-      "the result object when write is called with a pending read should come from the same realm as the constructor of TextDecoderStream": "FAIL"
-    }
+    "total": 12
   },
   "encoding/textdecoder-arguments.any.js": {
-    "total": 4,
-    "failures": {
-      "TextDecoder decode() with array buffer detached during arg conversion": "FAIL"
-    }
+    "total": 4
   },
   "encoding/textdecoder-arguments.any.js#dedicatedworker": {
-    "total": 4,
-    "failures": {
-      "TextDecoder decode() with array buffer detached during arg conversion": "FAIL"
-    }
+    "total": 4
   },
   "encoding/textdecoder-byte-order-marks.any.js": {
     "total": 3
@@ -3990,15 +3978,9 @@
     "total": 158
   },
   "encoding/utf-32-from-win1252.html": {
-    "total": 8,
-    "failures": {
-      "Expect resources/utf-32-little-endian-bom.xml to parse as UTF-16LE": "FAIL"
-    }
+    "total": 8
   },
   "encoding/utf-32.html": {
-    "total": 8,
-    "failures": {
-      "Expect resources/utf-32-little-endian-bom.xml to parse as UTF-16LE": "FAIL"
-    }
+    "total": 8
   }
 }

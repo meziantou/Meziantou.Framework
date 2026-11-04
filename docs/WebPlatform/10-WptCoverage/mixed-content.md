@@ -9,22 +9,22 @@ description: "The results of the web-platform-tests of mixed-content, and why th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 382 | 384 | 0 | 99% |
+| [Stable](#stable-tests) | 383 | 384 | 0 | 99.7% |
 | [Tentative](#tentative-tests) | 4 | 4 | 0 | 100% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **386** | **388** | **0** | **99%** |
+| **All** | **387** | **388** | **0** | **99.7%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 2
+- **BUG**: 1
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`blob.https.sub.html`](https://wpt.fyi/results/mixed-content/blob.https.sub.html) | Fail | 1 / 2 | BUG | a classic `<script src>` with a `blob:` URL whose origin is `http:` is not blocked as mixed content (`fetch()` is); the script then runs twice (`message` redeclared error) |
+| [`blob.https.sub.html`](https://wpt.fyi/results/mixed-content/blob.https.sub.html) | Pass | 2 / 2 |  |  |
 | [`csp.https.window.js`](https://wpt.fyi/results/mixed-content/csp.https.window.js) | Pass | 3 / 3 |  |  |
 | [`gen/iframe-data-inherit.http-rp/opt-in/audio-tag.https.html`](https://wpt.fyi/results/mixed-content/gen/iframe-data-inherit.http-rp/opt-in/audio-tag.https.html) | Pass | 8 / 8 |  |  |
 | [`gen/iframe-data-inherit.http-rp/opt-in/beacon.https.html`](https://wpt.fyi/results/mixed-content/gen/iframe-data-inherit.http-rp/opt-in/beacon.https.html) | Pass | 8 / 8 |  |  |

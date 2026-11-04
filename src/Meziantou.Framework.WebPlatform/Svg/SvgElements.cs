@@ -172,6 +172,8 @@ public partial class SvgPathElement
     private List<SvgPathCommand>? _computedPathDataAttribute;
     private List<SvgPathCommand>? _geometryPathData;
     private SvgPathGeometry? _geometry;
+    private List<SvgPathCommand>? _baseGeometryPathData;
+    private SvgPathGeometry? _baseGeometry;
 
     /// <summary>The path data of the d attribute, up to the first error (not affected by the d property).</summary>
     private List<SvgPathCommand> PathData
@@ -293,8 +295,31 @@ public partial class SvgPathElement
     [IdlMember("getPathSegmentAtLength", "https://svgwg.org/specs/paths/#InterfaceSVGPathElement")]
     public SvgPathSegment? GetPathSegmentAtLength(float distance)
     {
-        var geometry = Geometry;
-        return geometry.IsEmpty ? null : _geometryPathData![geometry.GetCommandIndexAtLength(distance)].ToSegment();
+        // The d property wins over the d attribute; otherwise, the segments are the ones of the base value of the d attribute:
+        // a SMIL animation of the attribute (its animated value replaces its presentation attribute) does not change them
+        if (UsesDProperty())
+        {
+            var geometry = Geometry;
+            return geometry.IsEmpty ? null : _geometryPathData![geometry.GetCommandIndexAtLength(distance)].ToSegment();
+        }
+
+        var pathData = PathData;
+        if (_baseGeometry is null || !ReferenceEquals(pathData, _baseGeometryPathData))
+        {
+            _baseGeometry = new SvgPathGeometry(pathData);
+            _baseGeometryPathData = pathData;
+        }
+
+        return _baseGeometry.IsEmpty ? null : pathData[_baseGeometry.GetCommandIndexAtLength(distance)].ToSegment();
+    }
+
+    /// <summary>Whether the d property of the element is declared by something else than its d attribute (a style sheet, the style attribute).</summary>
+    private bool UsesDProperty()
+    {
+        if (!IsConnected)
+            return false;
+
+        return NodeDocument.GetStyleEngine().GetStyle(this).TryGetCascadedValue("d", out var cascaded) && !Css.Cascade.PresentationalHints.IsSvgPresentationAttributeValue(this, cascaded.Value);
     }
 
     /// <summary>The length of the path (see <see cref="UsedPathData"/>); the pathLength attribute does not change it.</summary>
@@ -1303,7 +1328,22 @@ public partial class SvgScriptElement
 
         // The external script delays the load event of the document until it runs
         document.ScriptsDelayingTheLoadEvent++;
-        if (Scripting.ScriptFetching.FetchClassicScript(this, browsingContext, window, url, OnFetched, out var result))
+
+        // The request of a parser-inserted script is parser-inserted ('strict-dynamic' blocks it,
+        // https://w3c.github.io/webappsec-csp/#strict-dynamic-usage)
+        bool fetched;
+        Scripting.ClassicScript? result;
+        IsParserInserted = parserInserted;
+        try
+        {
+            fetched = Scripting.ScriptFetching.FetchClassicScript(this, browsingContext, window, url, OnFetched, out result);
+        }
+        finally
+        {
+            IsParserInserted = false;
+        }
+
+        if (fetched)
         {
             // As the HTML script elements that are not parser-inserted, a script inserted by a script runs from a task
             if (parserInserted && pendingScripts is not null)

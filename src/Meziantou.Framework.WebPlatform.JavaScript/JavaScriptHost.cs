@@ -197,6 +197,9 @@ internal sealed class ScriptHostDefined
     /// <summary>Gets whether the script is a module.</summary>
     public bool IsModule { get; init; }
 
+    /// <summary>Gets whether the errors of the classic script are muted (https://html.spec.whatwg.org/multipage/webappapis.html#muted-errors).</summary>
+    public bool MutedErrors { get; init; }
+
     /// <summary>Gets whether the script is the classic script of the global object of a worker (its URL is the referrer of no fetch).</summary>
     public bool IsGlobalScript { get; init; }
 }

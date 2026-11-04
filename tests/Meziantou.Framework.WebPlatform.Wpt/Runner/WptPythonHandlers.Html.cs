@@ -27,6 +27,31 @@ internal static partial class WptPythonHandlers
             response.Body = ReadWptFile(alreadyServed ? "images/red.png" : "images/green.png");
         },
 
+        // svg/interact: an SVG image, a script or a text, delayed by the delay parameter (in seconds), whose status is 200 when
+        // the test parameter contains "_load" and 404 otherwise
+        ["/svg/interact/resources/load-error-events.py"] = (request, response, _) =>
+        {
+            var test = request.Get("test") ?? "";
+            response.Delay = TimeSpan.FromSeconds(ParseInt(request.Get("delay"), 0));
+            if (test.Contains("_svg", StringComparison.Ordinal))
+            {
+                response.Set("Content-Type", "image/svg+xml");
+                response.Content = """<?xml version="1.0" encoding="UTF-8"?><svg xmlns="http://www.w3.org/2000/svg"></svg>""";
+            }
+            else if (test.Contains("_script", StringComparison.Ordinal))
+            {
+                response.Set("Content-Type", "text/javascript");
+                response.Content = "// comment";
+            }
+            else
+            {
+                response.Set("Content-Type", "text/plain");
+                response.Content = "text";
+            }
+
+            response.Status = test.Contains("_load", StringComparison.Ordinal) ? 200 : 404;
+        },
+
         // html/browsers/browsing-the-web: a slow empty HTML document (2 seconds), a redirect to the location parameter, a
         // redirect followed once per uuid, and documents with a Refresh header
         ["/html/browsers/browsing-the-web/overlapping-navigations-and-traversals/resources/slow.py"] = (_, response, _) =>

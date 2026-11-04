@@ -358,7 +358,7 @@ internal static class Editing
         if (!result)
             return false;
 
-        FireInputEvent(editingHost, GetInputType(command), command is "inserttext" or "fontname" or "forecolor" or "backcolor" or "hilitecolor" or "createlink" ? value : null);
+        FireInputEvent(editingHost, GetInputType(command), command is "inserttext" or "fontname" or "forecolor" or "backcolor" or "hilitecolor" or "createlink" ? algorithms.GetInputEventData(command, value) : null);
         return true;
     }
 

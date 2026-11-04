@@ -9,16 +9,16 @@ description: "The results of the web-platform-tests of FileAPI, and why the test
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 67 | 73 | 0 | 92% |
+| [Stable](#stable-tests) | 68 | 73 | 0 | 93% |
 | Tentative | 0 | 0 | 0 | – |
 | [Reftests](#reftests) | 1 | 1 | 0 | 100% |
-| **All** | **68** | **74** | **0** | **92%** |
+| **All** | **69** | **74** | **0** | **93%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 3
+- **BUG**: 2
 - **NOT IMPLEMENTED**: 3
 - **TEST RUNNER**: 1
 
@@ -96,7 +96,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`url/url-in-tags-revoke.window.js`](https://wpt.fyi/results/FileAPI/url/url-in-tags-revoke.window.js) | Pass | 7 / 7 |  |  |
 | [`url/url-in-tags.window.js`](https://wpt.fyi/results/FileAPI/url/url-in-tags.window.js) | Pass | 4 / 4 |  |  |
 | [`url/url-lifetime.html`](https://wpt.fyi/results/FileAPI/url/url-lifetime.html) | Pass | 2 / 2 |  |  |
-| [`url/url-reload.window.js`](https://wpt.fyi/results/FileAPI/url/url-reload.window.js) | Fail | 1 / 2 | BUG | reloading a document loaded from a revoked `blob:` URL fails (the reload fetches the revoked URL again instead of reusing its blob) |
+| [`url/url-reload.window.js`](https://wpt.fyi/results/FileAPI/url/url-reload.window.js) | Pass | 2 / 2 |  |  |
 | [`url/url-with-fetch.any.js`](https://wpt.fyi/results/FileAPI/url/url-with-fetch.any.js) | Pass | 32 / 32 |  |  |
 | [`url/url-with-xhr.any.js`](https://wpt.fyi/results/FileAPI/url/url-with-xhr.any.js) | Pass | 28 / 28 |  |  |
 

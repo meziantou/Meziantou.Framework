@@ -508,6 +508,8 @@ internal sealed class CssFunctionFrame
             }
         }
 
-        return CustomPropertySyntax.Parse(type.Text)?.Compute(Style, value, _baseUrl);
+        // The font-relative lengths are resolved in the calling context of the property (https://drafts.csswg.org/css-mixins-1/#calling-context):
+        // they refer to the font of the parent in the font properties
+        return CustomPropertySyntax.Parse(type.Text)?.Compute(Style, value, _baseUrl, CssSubstitution.IsFontPropertyComputation);
     }
 }

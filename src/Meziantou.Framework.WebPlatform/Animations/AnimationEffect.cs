@@ -379,9 +379,11 @@ public abstract class AnimationEffect : IRealmBoundPlatformObject
     }
 
     /// <summary>https://drafts.csswg.org/web-animations-1/#active-time</summary>
-    internal double? GetActiveTime(double? localTime, AnimationEffectPhase phase)
+    internal double? GetActiveTime(double? localTime, AnimationEffectPhase phase) => GetActiveTime(localTime, phase, ResolvedFill);
+
+    /// <summary>https://drafts.csswg.org/web-animations-1/#calculating-the-active-time, with a fill mode (e.g. both for the elapsed time of the cancel events of CSS animations and transitions).</summary>
+    internal double? GetActiveTime(double? localTime, AnimationEffectPhase phase, FillMode fill)
     {
-        var fill = ResolvedFill;
         var delay = NormalizedDelay;
         return phase switch
         {

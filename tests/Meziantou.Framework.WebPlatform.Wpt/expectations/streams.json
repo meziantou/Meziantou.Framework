@@ -63,22 +63,13 @@
     "total": 5
   },
   "streams/piping/general-addition.any.js": {
-    "total": 1,
-    "failures": {
-      "enqueue() must not synchronously call write algorithm": "FAIL"
-    }
+    "total": 1
   },
   "streams/piping/general-addition.any.js#dedicatedworker": {
-    "total": 1,
-    "failures": {
-      "enqueue() must not synchronously call write algorithm": "FAIL"
-    }
+    "total": 1
   },
   "streams/piping/general-addition.any.js#sharedworker": {
-    "total": 1,
-    "failures": {
-      "enqueue() must not synchronously call write algorithm": "FAIL"
-    }
+    "total": 1
   },
   "streams/piping/general.any.js": {
     "total": 14
@@ -336,10 +327,7 @@
     "total": 38
   },
   "streams/readable-streams/global.html": {
-    "total": 9,
-    "failures": {
-      "Reader objects in correct global": "FAIL"
-    }
+    "total": 9
   },
   "streams/readable-streams/owning-type-message-port.tentative.any.js": {
     "total": 2,

@@ -236,10 +236,7 @@
     "total": 1
   },
   "css/cssom-view/elementFromPoint-negative-z-index-inline.html": {
-    "total": 8,
-    "failures": {
-      "A first-line background stays above negative z-index children": "FAIL"
-    }
+    "total": 8
   },
   "css/cssom-view/elementFromPoint-parameters.html": {
     "total": 4

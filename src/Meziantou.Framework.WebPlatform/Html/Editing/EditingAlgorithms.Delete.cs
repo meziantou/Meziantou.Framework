@@ -303,6 +303,30 @@ internal sealed partial class EditingAlgorithms
     }
 
     /// <summary>
+    /// As in the browsers, a boundary point of the range in the document element (e.g. after selecting the children of an
+    /// editable html element) is moved into the body element: the head and the body element are never deleted, only the
+    /// content of the body element is.
+    /// </summary>
+    private void ClampRangeToBody(Dom.Range range)
+    {
+        if (_document.DocumentElement is not { } root || _document.Body is not { } body || !ReferenceEquals(body.ParentNode, root))
+            return;
+
+        var bodyIndex = NodeIndex(body);
+        var startsBeforeBody = ReferenceEquals(range.StartContainer, root) && (int)range.StartOffset <= bodyIndex;
+        var endsAfterBody = ReferenceEquals(range.EndContainer, root) && (int)range.EndOffset > bodyIndex;
+        if (startsBeforeBody && (endsAfterBody || body.Contains(range.EndContainer)))
+        {
+            ActiveRange.SetStart(body, 0);
+        }
+
+        if (endsAfterBody && (startsBeforeBody || body.Contains(range.StartContainer)))
+        {
+            ActiveRange.SetEnd(body, (uint)body.ChildCount);
+        }
+    }
+
+    /// <summary>
     /// https://w3c.github.io/editing/docs/execCommand/#delete-the-selection: deletes the contents of the active range, and
     /// merges the blocks of its boundary points.
     /// </summary>
@@ -313,6 +337,7 @@ internal sealed partial class EditingAlgorithms
             return;
 
         var range = _activeRange;
+        ClampRangeToBody(range);
         if (canonicalizeWhitespace)
         {
             CanonicalizeWhitespace(range.StartContainer, (int)range.StartOffset);
@@ -1492,8 +1517,10 @@ internal sealed partial class EditingAlgorithms
                 node.RemoveChild(invisibleChild);
                 offset--;
             }
-            else if ((offset == 0 && IsInlineNode(node)) || IsInvisible(node))
+            else if (((offset == 0 && IsInlineNode(node)) || IsInvisible(node)) && !IsEditingHost(node))
             {
+                // As in the browsers, the caret does not leave the editing host (e.g. an editing host that only contains
+                // collapsed white space is invisible): there is nothing to delete before its start
                 if (node.ParentNode is null)
                     break;
 
@@ -1577,7 +1604,7 @@ internal sealed partial class EditingAlgorithms
         {
             if (startOffset == 0)
             {
-                if (startNode.ParentNode is null)
+                if (startNode.ParentNode is null || IsEditingHost(startNode))
                     break;
 
                 startOffset = NodeIndex(startNode);
@@ -1606,6 +1633,10 @@ internal sealed partial class EditingAlgorithms
 
             return true;
         }
+
+        // There is nothing to delete before the start of the editing host
+        if (startOffset == 0 && IsEditingHost(startNode))
+            return true;
 
         if (IsHtmlElement(ChildAt(startNode, startOffset), "table"))
             return true;

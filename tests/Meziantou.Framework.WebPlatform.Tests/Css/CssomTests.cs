@@ -44,9 +44,9 @@ public sealed class CssomTests
     [InlineData("min-size: 1px 2px", "min-width: 1px; min-height: 2px;")]
     [InlineData("max-width: 1px; max-height: 1px", "max-width: 1px; max-height: 1px;")]
     [InlineData("width: var({--x})", "width: var({--x});")]
-    [InlineData("width: var(--x", "width: var(--x);")]
-    [InlineData("width: calc(var(--x)", "width: calc(var(--x));")]
-    [InlineData("width: calc(1px + (var(--x) * 2)", "width: calc(1px + (var(--x) * 2));")]
+    [InlineData("width: var(--x", "width: var(--x;")]
+    [InlineData("width: calc(var(--x)", "width: calc(var(--x);")]
+    [InlineData("width: calc(1px + (var(--x) * 2)", "width: calc(1px + (var(--x) * 2);")]
     [InlineData("width: calc(var(--x) )", "width: calc(var(--x) );")]
     public void CssText(string style, string expected)
     {

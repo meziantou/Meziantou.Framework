@@ -594,7 +594,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             // https://html.spec.whatwg.org/multipage/structured-data.html#structureddeserialize: a platform object whose
             // interface is not exposed in the realm (e.g. a Blob in a worklet) cannot be deserialized
             var deserialized = StructuredClone.Deserialize(serializedObject);
-            if (deserialized is not null && WebIdlBindings<TAdapter, TValue>.GetInterface(deserialized.GetType()) is { } binding && !IsExposed(binding.Exposure))
+            if (deserialized is not null && WebIdlBindings<TAdapter, TValue>.GetInterface(deserialized.GetType()) is { } binding && !IsInterfaceExposed(binding))
                 throw adapter.CreateException(ToJsError(new DomException($"The {binding.Name} object cannot be deserialized: its interface is not exposed in the realm", "DataCloneError")));
 
             return ToJs(deserialized);

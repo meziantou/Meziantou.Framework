@@ -93,12 +93,7 @@
   "web-animations/animation-model/keyframe-effects/effect-value-iteration-composite-operation.html": {
     "total": 38,
     "failures": {
-      "iteration composition of animation non-additive units": "FAIL",
       "iteration composition of complex math functions preserves AST left-to-right operand order": "FAIL",
-      "iteration composition of discrete filter list because of mismatch of the order": "FAIL",
-      "iteration composition of incompatible calc-size() bases (accumulation skipped at 0%, allowed at 50%)": "FAIL",
-      "iteration composition of incompatible clip rects (accumulation skipped at 0%, allowed at 50%)": "FAIL",
-      "iteration composition of incompatible intrinsic size keywords (accumulation is skipped)": "FAIL",
       "iteration composition of transform list animation whose order is mismatched": "FAIL",
       "iteration composition of transform list animation whose order is mismatched because of missing functions": "FAIL"
     }
@@ -227,8 +222,6 @@
   "web-animations/interfaces/Animatable/getAnimations.html": {
     "total": 34,
     "failures": {
-      "Does NOT cross shadow-tree boundaries when subtree: true is specified": "FAIL",
-      "Does not return an animation that has been removed": "FAIL",
       "Returns animations on functional pseudo-element when it is specified": "FAIL"
     }
   },
@@ -248,10 +241,7 @@
     "total": 36
   },
   "web-animations/interfaces/Animation/constructor.html": {
-    "total": 9,
-    "failures": {
-      "Animation created with an affect associated with another animation.": "FAIL"
-    }
+    "total": 9
   },
   "web-animations/interfaces/Animation/effect.html": {
     "total": 2
@@ -296,10 +286,7 @@
     "total": 6
   },
   "web-animations/interfaces/Animation/style-change-events.html": {
-    "total": 27,
-    "failures": {
-      "Animation.commitStyles produces expected style change events": "FAIL"
-    }
+    "total": 27
   },
   "web-animations/interfaces/AnimationEffect/getComputedTiming.html": {
     "total": 41
@@ -338,10 +325,7 @@
     "total": 5
   },
   "web-animations/interfaces/KeyframeEffect/getKeyframes.html": {
-    "total": 1,
-    "failures": {
-      "getKeyframes() should serialize its css values with a on keyframe sequence which requires value serilaization of its values": "FAIL"
-    }
+    "total": 1
   },
   "web-animations/interfaces/KeyframeEffect/iterationComposite.html": {
     "total": 1
@@ -430,11 +414,7 @@
     "total": 1
   },
   "web-animations/responsive/fontSize.html": {
-    "total": 4,
-    "failures": {
-      "Font size initial responsive to style changes": "FAIL",
-      "Font size medium responsive to style changes": "FAIL"
-    }
+    "total": 4
   },
   "web-animations/responsive/fontWeight.html": {
     "total": 2
@@ -581,12 +561,7 @@
     "total": 13
   },
   "web-animations/timing-model/animations/setting-the-target-effect-of-an-animation.html": {
-    "harness": "ERROR",
-    "total": 7,
-    "failures": {
-      "If new effect is null and old effect is not null the animation becomes finish-pending": "FAIL",
-      "The pending play task should be rescheduled even after temporarily setting the effect to null": "FAIL"
-    }
+    "total": 7
   },
   "web-animations/timing-model/animations/setting-the-timeline-of-an-animation.html": {
     "total": 16
@@ -626,21 +601,9 @@
     "total": 5
   },
   "web-animations/timing-model/timelines/update-and-send-events-replacement.html": {
-    "total": 42,
-    "failures": {
-      "Does NOT remove an animation after making a redundant change to another animation's current time": "FAIL",
-      "Does NOT remove an animation after making a redundant change to another animation's timeline": "FAIL",
-      "Removes an animation after seeking another animation": "FAIL",
-      "Removes an animation after updating another animation's timeline": "FAIL",
-      "Removes an animation by another animation using logical properties": "FAIL",
-      "Removes an animation by another animation using logical properties after updating the context": "FAIL",
-      "Removes an animation using logical properties": "FAIL"
-    }
+    "total": 42
   },
   "web-animations/timing-model/timelines/update-and-send-events.html": {
-    "total": 9,
-    "failures": {
-      "Sorts cancel events by composite order": "FAIL"
-    }
+    "total": 9
   }
 }

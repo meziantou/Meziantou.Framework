@@ -131,22 +131,10 @@ internal static class FetchBodyParsing
             switch (InfraAscii.ToAsciiLowercase(headerName))
             {
                 case "content-disposition":
+                    name = null;
                     filename = null;
-                    if (!StartsWith(input, position, "form-data; name=\""u8))
+                    if (!ParseContentDisposition(input, ref position, ref name, ref filename))
                         return null;
-
-                    position += "form-data; name="u8.Length;
-                    name = ParseQuotedString(input, ref position);
-                    if (name is null)
-                        return null;
-
-                    if (StartsWith(input, position, "; filename=\""u8))
-                    {
-                        position += "; filename="u8.Length;
-                        filename = ParseQuotedString(input, ref position);
-                        if (filename is null)
-                            return null;
-                    }
 
                     break;
 
@@ -178,6 +166,105 @@ internal static class FetchBodyParsing
         }
     }
 
+    /// <summary>
+    /// Parses the value of a <c>Content-Disposition</c> header: <c>form-data</c> followed by parameters. As in the browsers, the
+    /// parser is more lenient than https://andreubotella.github.io/multipart-form-data/#parse-multipart-form-data-headers: the
+    /// whitespace around the separators is optional, the names are ASCII case-insensitive and the values may be tokens.
+    /// </summary>
+    private static bool ParseContentDisposition(ReadOnlySpan<byte> input, ref int position, ref string? name, ref string? filename)
+    {
+        if (!StartsWithAsciiCaseInsensitive(input, position, "form-data"u8))
+            return false;
+
+        position += "form-data"u8.Length;
+        while (true)
+        {
+            SkipWhitespace(input, ref position);
+            if (position >= input.Length || input[position] is (byte)'\r' or (byte)'\n')
+                return true;
+
+            if (input[position] != ';')
+                return false;
+
+            position++;
+            SkipWhitespace(input, ref position);
+            var parameterNameStart = position;
+            while (position < input.Length && input[position] is not ((byte)'=' or (byte)';' or (byte)'\r' or (byte)'\n' or (byte)' ' or (byte)'\t'))
+            {
+                position++;
+            }
+
+            var parameterName = InfraAscii.ToAsciiLowercase(FetchHeaders.IsomorphicDecode(input[parameterNameStart..position]));
+            SkipWhitespace(input, ref position);
+            if (position >= input.Length || input[position] != '=')
+            {
+                if (parameterName.Length == 0)
+                    return false;
+
+                continue;
+            }
+
+            position++;
+            SkipWhitespace(input, ref position);
+            string? value;
+            if (position < input.Length && input[position] == '"')
+            {
+                value = ParseQuotedString(input, ref position);
+                if (value is null)
+                    return false;
+            }
+            else
+            {
+                var valueStart = position;
+                while (position < input.Length && input[position] is not ((byte)';' or (byte)'\r' or (byte)'\n'))
+                {
+                    position++;
+                }
+
+                value = DecodeUtf8WithoutBom(input[valueStart..position]).TrimEnd('\t', ' ');
+            }
+
+            switch (parameterName)
+            {
+                case "name":
+                    name ??= value;
+                    break;
+
+                case "filename":
+                    filename ??= value;
+                    break;
+            }
+        }
+    }
+
+    private static void SkipWhitespace(ReadOnlySpan<byte> input, ref int position)
+    {
+        while (position < input.Length && input[position] is (byte)'\t' or (byte)' ')
+        {
+            position++;
+        }
+    }
+
+    private static bool StartsWithAsciiCaseInsensitive(ReadOnlySpan<byte> input, int position, ReadOnlySpan<byte> value)
+    {
+        if (position > input.Length || input.Length - position < value.Length)
+            return false;
+
+        for (var i = 0; i < value.Length; i++)
+        {
+            var b = input[position + i];
+            if (b is >= (byte)'A' and <= (byte)'Z')
+            {
+                b = (byte)(b + 0x20);
+            }
+
+            if (b != value[i])
+                return false;
+        }
+
+        return true;
+    }
+
     /// <summary>https://andreubotella.github.io/multipart-form-data/#parse-a-multipart-form-data-name: the escapes %0A, %0D and %22 are decoded.</summary>
     private static string? ParseQuotedString(ReadOnlySpan<byte> input, ref int position)
     {
@@ -201,13 +288,6 @@ internal static class FetchBodyParsing
 
     private static bool StartsWith(ReadOnlySpan<byte> input, int position, ReadOnlySpan<byte> value) => position <= input.Length && input[position..].StartsWith(value);
 
-    private static string DecodeUtf8WithoutBom(ReadOnlySpan<byte> bytes)
-    {
-        if (bytes.StartsWith("\U0000FEFF"u8))
-        {
-            bytes = bytes[3..];
-        }
-
-        return Encodings.WebEncodingRegistry.CreateDecoder(Encodings.WebEncodingId.Utf8).DecodeToString(bytes);
-    }
+    /// <summary>https://encoding.spec.whatwg.org/#utf-8-decode-without-bom: a byte order mark is kept (a U+FEFF character).</summary>
+    private static string DecodeUtf8WithoutBom(ReadOnlySpan<byte> bytes) => Encodings.WebEncodingRegistry.CreateDecoder(Encodings.WebEncodingId.Utf8).DecodeToString(bytes);
 }

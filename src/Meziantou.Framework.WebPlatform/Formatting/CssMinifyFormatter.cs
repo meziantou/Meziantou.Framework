@@ -63,6 +63,7 @@ public sealed partial class CssMinifyFormatter : CssFormatter
 
         protected override void WriteDeclaration(CssRule? rule, string name, string value, bool important)
         {
+            value = CssStyleDeclaration.CloseUnclosedBlocks(value);
             WritePendingSemicolon();
             Output.Write(name);
             Output.Write(':');

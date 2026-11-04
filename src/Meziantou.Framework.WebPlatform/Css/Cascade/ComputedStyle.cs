@@ -1,4 +1,5 @@
 using System.Collections.Frozen;
+using System.Globalization;
 using Meziantou.Framework.WebPlatform.Css.Layout;
 using Meziantou.Framework.WebPlatform.Css.Om;
 using Meziantou.Framework.WebPlatform.Css.Syntax;
@@ -1111,7 +1112,16 @@ internal sealed partial class ComputedStyle
         }
         else if (CssSubstitution.MayContainSubstitution(text))
         {
-            text = SubstituteLonghand(declared.Name, CssRandom.AssignIfConditionCachingKeys(declared.Name, text), GetSubstitutionContext(cascaded));
+            var substitutionText = CssRandom.AssignIfConditionCachingKeys(declared.Name, text);
+            text = SubstituteLonghand(declared.Name, substitutionText, GetSubstitutionContext(cascaded));
+
+            // In a quirks mode document, a unitless number substituted in a presentation attribute of an SVG element is a length
+            // in user units, as in Blink and WebKit (WPT svg/styling/css-var-on-length-attributes-quirk.html); in a no-quirks
+            // document it is invalid at computed-value time (css-var-on-length-attributes-04.svg)
+            if (text is null && Element is SvgElement && Element.NodeDocument.Mode == DocumentMode.Quirks && PseudoElement is null && PresentationalHints.IsSvgPresentationAttributeValue(Element, declared))
+            {
+                text = SubstituteLonghand(declared.Name, substitutionText, GetSubstitutionContext(cascaded), unitlessLength: true);
+            }
         }
 
         // Invalid at computed-value time (https://drafts.csswg.org/css-variables/#invalid-at-computed-value-time): unset
@@ -1255,7 +1265,8 @@ internal sealed partial class ComputedStyle
     }
 
     /// <summary>Substitutes the functions of the value of a longhand and validates the result against its grammar.</summary>
-    private string? SubstituteLonghand(string name, string text, SubstitutionContext context)
+    /// <param name="unitlessLength">Whether a unitless number that results from the substitution is a length in px (user units).</param>
+    private string? SubstituteLonghand(string name, string text, SubstitutionContext context, bool unitlessLength = false)
     {
         // https://drafts.csswg.org/css-values-5/#attr-security: an attr()-tainted value used in a URL makes the declaration invalid
         var substituted = CssSubstitution.Substitute(text, context, out var taintedRanges);
@@ -1263,6 +1274,11 @@ internal sealed partial class ComputedStyle
             return null;
 
         var longhands = ParseSubstitutedValue(name, substituted);
+        if (longhands is not [{ ShorthandName: null }] && unitlessLength && double.TryParse(substituted.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out _))
+        {
+            longhands = ParseSubstitutedValue(name, substituted.Trim() + "px");
+        }
+
         return longhands is [var longhand] && longhand.ShorthandName is null ? longhand.Value : null;
     }
 

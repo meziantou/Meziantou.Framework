@@ -346,10 +346,7 @@
     "total": 2
   },
   "FileAPI/url/url-reload.window.js": {
-    "total": 2,
-    "failures": {
-      "Reloading a blob URL succeeds even if the URL was revoked.": "FAIL"
-    }
+    "total": 2
   },
   "FileAPI/url/url-with-fetch.any.js": {
     "total": 16

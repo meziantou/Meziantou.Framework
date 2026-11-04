@@ -72,7 +72,13 @@ public sealed class EditingCommandsTests : IDisposable
     [InlineData("foo[bar]baz", "foreColor", "#0000FF", "foo<font color=\"#0000ff\">bar</font>baz")]
     [InlineData("foo[bar]baz", "createLink", "http://www.google.com/", "foo<a href=\"http://www.google.com/\">bar</a>baz")]
     [InlineData("foo<a href=http://www.google.com/>b[a]r</a>baz", "unlink", "", "foobarbaz")]
+    [InlineData("foo<a href=http://www.google.com/ style=font-weight:bold>[bar]</a>baz", "unlink", "", "foo<b>bar</b>baz")]
+    [InlineData("foo<a href=http://www.google.com/ class=link>[bar]</a>baz", "unlink", "", "foobarbaz")]
+    [InlineData("foo<a href=http://www.google.com/ id=link>[bar]</a>baz", "unlink", "", "foo<a id=\"link\">bar</a>baz")]
     [InlineData("foo<b>b[a]r</b><i>baz</i>", "removeFormat", "", "foo<b>b</b>a<b>r</b><i>baz</i>")]
+    [InlineData("<font size=7>[abc]</font>", "fontName", "monospace", "<font size=\"7\" face=\"monospace\">abc</font>")]
+    [InlineData("<font face=monospace>[abc]</font>", "foreColor", "#ff0000", "<font face=\"monospace\" color=\"#ff0000\">abc</font>")]
+    [InlineData("<span style=\"font-size: xx-large;\">[foo]</span>", "hiliteColor", "#00FFFF", "<span style=\"font-size: xx-large; background-color: rgb(0, 255, 255);\">foo</span>")]
     public void InlineFormatting(string html, string command, string value, string expected)
         => Assert.Equal(expected, Run(html, command, value));
 
@@ -91,9 +97,9 @@ public sealed class EditingCommandsTests : IDisposable
     [InlineData("<p>[foo]</p>", "insertOrderedList", "", "<ol><li>foo</li></ol>")]
     [InlineData("<ol><li>[foo]</li></ol>", "insertOrderedList", "", "<div>foo</div>")]
     [InlineData("<ol><li>[foo]</li></ol>", "insertUnorderedList", "", "<ul><li>foo</li></ul>")]
-    [InlineData("<p>[foo]</p>", "justifyCenter", "", "<div style=\"text-align: center\"><p>foo</p></div>")]
+    [InlineData("<p>[foo]</p>", "justifyCenter", "", "<div style=\"text-align: center;\"><p>foo</p></div>")]
     [InlineData("<div align=center>[foo]</div>", "justifyLeft", "", "foo")]
-    [InlineData("<center>[foo]</center>", "justifyRight", "", "<div style=\"text-align: right\">foo</div>")]
+    [InlineData("<center>[foo]</center>", "justifyRight", "", "<div style=\"text-align: right;\">foo</div>")]
     public void BlockFormatting(string html, string command, string value, string expected)
         => Assert.Equal(expected, Run(html, command, value));
 
@@ -229,6 +235,22 @@ public sealed class EditingCommandsTests : IDisposable
         Assert.True(document.ExecCommand("formatBlock", showUI: false, "p"));
         Assert.True(document.ExecCommand("styleWithCSS", showUI: false, "true"));
         Assert.Equal(["formatBold:", "formatFontName:serif", "insertText:a", "insertParagraph:", "deleteContentBackward:", ":"], events);
+    }
+
+    // The data of the input event of the color commands is the serialized color, or the CSS-wide keyword in lowercase
+    [Theory]
+    [InlineData("foreColor", "#FF0000", "rgb(255, 0, 0)")]
+    [InlineData("backColor", "orange", "rgb(255, 165, 0)")]
+    [InlineData("hiliteColor", "#0000FF88", "rgba(0, 0, 255, 0.533)")]
+    [InlineData("foreColor", "Inherit", "inherit")]
+    [InlineData("foreColor", "Invalid-Value", "Invalid-Value")]
+    public void InputEvents_ColorData(string command, string value, string expected)
+    {
+        var (document, host) = Load("foo[bar]baz");
+        string? data = null;
+        host.AddEventListener("input", e => data = ((InputEvent)e).Data);
+        Assert.True(document.ExecCommand(command, showUI: false, value));
+        Assert.Equal(expected, data);
     }
 
     [Fact]

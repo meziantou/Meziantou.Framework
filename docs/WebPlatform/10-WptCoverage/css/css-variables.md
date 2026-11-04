@@ -9,16 +9,15 @@ description: "The results of the web-platform-tests of css/css-variables, and wh
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 61 | 63 | 0 | 97% |
+| [Stable](#stable-tests) | 62 | 63 | 0 | 98% |
 | Tentative | 0 | 0 | 0 | – |
 | [Reftests](#reftests) | 183 | 183 | 0 | 100% |
-| **All** | **244** | **246** | **0** | **99%** |
+| **All** | **245** | **246** | **0** | **99.5%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
 - **TEST BUG**: 1
 
 ## Stable tests
@@ -74,7 +73,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`variable-reference-shorthands-cssom.html`](https://wpt.fyi/results/css/css-variables/variable-reference-shorthands-cssom.html) | Pass | 1 / 1 |  |  |
 | [`variable-reference-shorthands.html`](https://wpt.fyi/results/css/css-variables/variable-reference-shorthands.html) | Pass | 16 / 16 |  |  |
 | [`variable-reference-variable.html`](https://wpt.fyi/results/css/css-variables/variable-reference-variable.html) | Pass | 2 / 2 |  |  |
-| [`variable-reference.html`](https://wpt.fyi/results/css/css-variables/variable-reference.html) | Fail | 17 / 18 | BUG | a `var(` left open at the end of the style sheet is serialized closed (`var(--prop)`) instead of as written |
+| [`variable-reference.html`](https://wpt.fyi/results/css/css-variables/variable-reference.html) | Pass | 18 / 18 |  |  |
 | [`variable-resolution-during-prioritary-properties.html`](https://wpt.fyi/results/css/css-variables/variable-resolution-during-prioritary-properties.html) | Pass | 5 / 5 |  |  |
 | [`variable-substitution-background-properties.html`](https://wpt.fyi/results/css/css-variables/variable-substitution-background-properties.html) | Pass | 10 / 10 |  |  |
 | [`variable-substitution-basic.html`](https://wpt.fyi/results/css/css-variables/variable-substitution-basic.html) | Pass | 13 / 13 |  |  |

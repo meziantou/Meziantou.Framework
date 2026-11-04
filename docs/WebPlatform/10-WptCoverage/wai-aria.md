@@ -10,15 +10,14 @@ description: "The results of the web-platform-tests of wai-aria, and why the tes
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 20 | 21 | 0 | 95% |
-| [Tentative](#tentative-tests) | 3 | 14 | 0 | 21% |
+| [Tentative](#tentative-tests) | 4 | 14 | 0 | 29% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **23** | **35** | **0** | **66%** |
+| **All** | **24** | **35** | **0** | **69%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
 - **TEST BUG**: 2
 - **NOT IMPLEMENTED**: 5
 - **TEST RUNNER**: 4
@@ -64,6 +63,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`role/contextual-roles.tentative.html`](https://wpt.fyi/results/wai-aria/role/contextual-roles.tentative.html) | Pass | 2 / 2 |  |  |
 | [`role/empty-container-roles.tentative.html`](https://wpt.fyi/results/wai-aria/role/empty-container-roles.tentative.html) | Pass | 4 / 4 |  |  |
 | [`role/role_none_conflict_resolution.tentative.html`](https://wpt.fyi/results/wai-aria/role/role_none_conflict_resolution.tentative.html) | Fail | 4 / 9 | TEST BUG | the tentative test expects the placeholder role `SPEC_AMBIGUOUS_LOG_VALUE` (an open spec ambiguity), which no engine returns |
-| [`role/role_none_conflict_resolution_spec_ambiguities.tentative.html`](https://wpt.fyi/results/wai-aria/role/role_none_conflict_resolution_spec_ambiguities.tentative.html) | Fail | 1 / 3 | BUG | a `td` with a global ARIA attribute (`aria-describedby`) inside `table[role=none]` is exposed as `cell` instead of generic/none |
+| [`role/role_none_conflict_resolution_spec_ambiguities.tentative.html`](https://wpt.fyi/results/wai-aria/role/role_none_conflict_resolution_spec_ambiguities.tentative.html) | Pass | 3 / 3 |  |  |
 | [`role/roles.tentative.html`](https://wpt.fyi/results/wai-aria/role/roles.tentative.html) | Pass | 2 / 2 |  |  |
 | [`subtree/tablist.tentative.html`](https://wpt.fyi/results/wai-aria/subtree/tablist.tentative.html) | Fail | 0 / 1 | TEST RUNNER | `test_driver.get_accessibility_properties_for_element()` is not supported |

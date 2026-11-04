@@ -54,7 +54,8 @@ public sealed class ContainerQueryList : EventTarget, IRealmBoundPlatformObject
     public string Query { get; }
 
     /// <summary>
-    /// Gets whether one of the container conditions is true for the element; false when the element is not connected. The size
+    /// Gets whether one of the container conditions is true for the element; false when the element is not connected. The
+    /// ancestors that generate no box (in a <c>display: none</c> subtree) are not query containers. The size
     /// queries are evaluated with the sizes of the containers computed by the layout (a forced layout when the element is in a
     /// size container).
     /// </summary>
@@ -69,7 +70,7 @@ public sealed class ContainerQueryList : EventTarget, IRealmBoundPlatformObject
 
             ContainerQueries.GetStyleWithContainerLayout(Element, pseudoElement: null);
             var engine = Element.NodeDocument.GetStyleEngine();
-            return _conditions.Exists(condition => ContainerQueries.Evaluate(condition, engine, Element, pseudoElement: null) == true);
+            return _conditions.Exists(condition => ContainerQueries.Evaluate(condition, engine, Element, pseudoElement: null, skipsElementsWithoutBox: true) == true);
         }
     }
 

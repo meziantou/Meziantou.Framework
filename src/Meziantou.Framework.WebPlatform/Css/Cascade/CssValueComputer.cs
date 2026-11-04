@@ -1552,7 +1552,8 @@ internal static partial class CssValueComputer
             }
 
             var parentDisplay = parent?.GetComputedValue("display");
-            blockify = parentDisplay is "flex" or "inline-flex" or "grid" or "inline-grid" or "grid-lanes" or "inline-grid-lanes" or "inline grid-lanes" or "block flex" or "block grid"
+            // (https://compat.spec.whatwg.org/#valdef-flex--webkit-box: -webkit-box and -webkit-inline-box are flex containers)
+            blockify = parentDisplay is "flex" or "inline-flex" or "-webkit-box" or "-webkit-inline-box" or "grid" or "inline-grid" or "grid-lanes" or "inline-grid-lanes" or "inline grid-lanes" or "block flex" or "block grid"
                 || parentDisplay is not null && BlockifiesLayoutApiChildren(style, parentDisplay);
 
             // https://drafts.csswg.org/css-writing-modes-4/#block-flow: "If a box has a different writing-mode value than its

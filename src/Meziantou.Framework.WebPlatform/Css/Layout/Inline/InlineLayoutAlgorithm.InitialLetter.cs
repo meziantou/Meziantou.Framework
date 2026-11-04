@@ -118,10 +118,26 @@ internal sealed partial class InlineLayoutAlgorithm
         var margin = _writingDirection.ToLogical(fragment.Margin);
         var edges = _writingDirection.ToLogical(fragment.Border.Add(fragment.Padding));
         var lineStart = _content.BlockFormattingContextOffset.Block + lineBlockOffset;
-        var contentStart = lineStart + baseline - letter.CapHeight - ((letter.Size - letter.Sink) * letter.LineHeight) + margin.BlockStart;
+        var blockSize = _writingDirection.ToLogical(fragment.Size).Block;
+
+        // A sink larger than the size does not move the letter: it satisfies its over alignment, and its exclusion extends to
+        // the end of the sink-th line (WPT css/css-inline/initial-letter/initial-letter-block-position-over-sunk*.html)
+        var raisedLines = Math.Max(0, letter.Size - letter.Sink);
+        double contentStart;
+        if (_block.Style.Layout.HasCentralDominantBaseline)
+        {
+            // With the central baseline (vertical text), the letter is centered in the lines of its size
+            var contentBlockSize = blockSize - edges.BlockStart - edges.BlockEnd;
+            contentStart = lineStart - (raisedLines * letter.LineHeight) + (((letter.Size * letter.LineHeight) - contentBlockSize) / 2) + margin.BlockStart;
+        }
+        else
+        {
+            contentStart = lineStart + baseline - letter.CapHeight - (raisedLines * letter.LineHeight) + margin.BlockStart;
+        }
+
         var borderBoxStart = contentStart - edges.BlockStart;
         var blockStart = Math.Min(lineStart, borderBoxStart - margin.BlockStart);
-        var blockEnd = Math.Max(blockStart, borderBoxStart + _writingDirection.ToLogical(fragment.Size).Block + margin.BlockEnd);
+        var blockEnd = Math.Max(blockStart, Math.Max(borderBoxStart + blockSize + margin.BlockEnd, lineStart + (letter.Sink * letter.LineHeight)));
         return (blockStart, blockEnd, borderBoxStart);
     }
 

@@ -32,7 +32,7 @@ internal static class Binding_TextEncoder<TAdapter, TValue> where TAdapter : str
         if (a.Length < 2) throw r.NotEnoughArguments("encodeInto", 2, a.Length);
         var a0 = r.ToUsvString(a[0]);
         var a1 = r.ToBufferSource(a[1], 16u, true, "Uint8Array");
-        var result = o.EncodeInto(a0, a1.Bytes.Span); return (result is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_TextEncoderEncodeIntoResult(r, dictionaryValue) : r.Adapter.Null);
+        var result = o.EncodeInto(a0, a1.CurrentBytes.Span); return (result is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_TextEncoderEncodeIntoResult(r, dictionaryValue) : r.Adapter.Null);
     }
     private static void DefineMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue interfaceObject, TValue prototype, TValue instanceTarget)
     {

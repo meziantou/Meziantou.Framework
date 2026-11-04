@@ -25,6 +25,10 @@ public partial class Animation
         if (_effect is not KeyframeEffect { TargetElement: { } target } effect)
             return;
 
+        // The pending style changes of the target are applied before its values are read (a style change event, which may
+        // start transitions)
+        target.NodeDocument.FlushAnimationStyles();
+
         if (effect.PseudoElementName is not null || target is not (HtmlElement or SvgElement or MathMLElement))
             throw new DomException("The target of the animation has no style attribute.", "NoModificationAllowedError");
 
@@ -44,10 +48,6 @@ public partial class Animation
         }
 
         using var scope = CEReactionsScope.Enter();
-        var inlineStyle = target.GetInlineStyle();
-        foreach (var (property, value) in values)
-        {
-            inlineStyle.SetComputedProperty(property, value);
-        }
+        target.GetInlineStyle().SetComputedProperties(values);
     }
 }

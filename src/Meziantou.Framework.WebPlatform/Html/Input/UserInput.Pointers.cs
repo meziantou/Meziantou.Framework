@@ -175,6 +175,7 @@ public sealed partial class UserInput
         if (button == 0)
         {
             pointer.DragNode = target;
+            pointer.DragElement = DragAndDropOperation.FindDraggableElement(target);
             pointer.DownX = pointer.X;
             pointer.DownY = pointer.Y;
         }
@@ -1100,8 +1101,10 @@ public sealed partial class UserInput
         if (!pointer.IsMouse || pointer.DragNode is not { } dragNode || (pointer.X == pointer.DownX && pointer.Y == pointer.DownY) || GetPointerLockTarget(pointer) is not null)
             return;
 
+        var dragElement = pointer.DragElement;
         pointer.DragNode = null;
-        if (DragAndDropOperation.TryStart(dragNode, GetDragState(pointer, dragNode), pointer.DragsSelection) is not { } operation)
+        pointer.DragElement = null;
+        if (DragAndDropOperation.TryStartCore(dragNode, dragElement, GetDragState(pointer, dragNode), pointer.DragsSelection) is not { } operation)
             return;
 
         // The pointer capture is released, and the boundary events of the end of the stream were fired at the source node

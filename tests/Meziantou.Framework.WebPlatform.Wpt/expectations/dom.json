@@ -1256,10 +1256,7 @@
     "total": 1
   },
   "dom/nodes/MutationObserver-callback-order.window.js": {
-    "total": 3,
-    "failures": {
-      "Mutation observers are notified in the order they were created": "FAIL"
-    }
+    "total": 3
   },
   "dom/nodes/MutationObserver-callback-tricky.html": {
     "total": 2
@@ -1295,13 +1292,7 @@
     "total": 4
   },
   "dom/nodes/MutationObserver-transient-registered-observers.window.js": {
-    "total": 15,
-    "failures": {
-      "A removed subtree is no longer observed after mutation observers are notified, even if no record was queued": "FAIL",
-      "Removing a node from an observed subtree queues the mutation observer microtask": "FAIL",
-      "observe() on a node in a removed subtree keeps observing it after mutation observers are notified": "FAIL",
-      "observe() stops observing subtrees removed from a removed subtree": "FAIL"
-    }
+    "total": 15
   },
   "dom/nodes/MutationObserver-xml-parser.xhtml": {
     "total": 1
@@ -1952,10 +1943,7 @@
     "total": 1
   },
   "dom/nodes/moveBefore/mutation-observer-moved-subtree.window.js": {
-    "total": 1,
-    "failures": {
-      "A subtree moved out of an observed subtree by moveBefore() is observed until mutation observers are notified": "FAIL"
-    }
+    "total": 1
   },
   "dom/nodes/moveBefore/mutation-observer.html": {
     "total": 2

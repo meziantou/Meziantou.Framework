@@ -1353,6 +1353,8 @@ internal sealed partial class CssRuleParser
 
             if (ParsePrivateDeclaration(block[start..i]) is { } declaration)
             {
+                // As in a declaration block, the last declaration of a name replaces the previous ones
+                result.RemoveAll(existing => existing.Name == declaration.Name);
                 result.Add(declaration);
             }
 

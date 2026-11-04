@@ -536,6 +536,9 @@ public sealed class PointerInput
     // The drag-and-drop operation of the mouse
     internal Node? DragNode { get; set; }
 
+    /// <summary>The draggable element of the press, determined before the mousedown handlers run (they may move the pressed node).</summary>
+    internal Element? DragElement { get; set; }
+
     /// <summary>Whether the press of the primary button was in the selection of the document: a move then drags the selection.</summary>
     internal bool DragsSelection { get; set; }
 

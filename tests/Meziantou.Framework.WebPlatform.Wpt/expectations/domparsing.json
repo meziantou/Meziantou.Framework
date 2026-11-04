@@ -339,11 +339,7 @@
     "total": 45
   },
   "domparsing/tentative/unclosed-script-already-started.html": {
-    "total": 4,
-    "failures": {
-      "Unclosed <script> from createContextualFragment() never runs": "FAIL",
-      "Unclosed <script> from setHTMLUnsafe({runScripts: true}) never runs": "FAIL"
-    }
+    "total": 4
   },
   "domparsing/unsafe-and-trusted-types-external-scripts-async.html": {
     "total": 12

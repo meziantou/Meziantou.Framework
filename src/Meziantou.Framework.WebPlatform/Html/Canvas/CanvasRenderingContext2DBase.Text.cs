@@ -683,8 +683,8 @@ public abstract partial class CanvasRenderingContext2DBase
         {
             foreach (var value in values)
             {
-                // The variables and the element-dependent functions (the canvas has no element style)
-                if (value is CssFunction function && (InfraAscii.ToAsciiLowercase(function.Name) is "var" or "env" or "attr" or "sibling-index" or "sibling-count" || ContainsFunction(function.Value)))
+                // The arbitrary substitution functions and the element-dependent functions (the canvas has no element style)
+                if (value is CssFunction function && (InfraAscii.ToAsciiLowercase(function.Name) is "var" or "env" or "attr" or "if" or "inherit" or "sibling-index" or "sibling-count" || ContainsFunction(function.Value)))
                     return true;
             }
 

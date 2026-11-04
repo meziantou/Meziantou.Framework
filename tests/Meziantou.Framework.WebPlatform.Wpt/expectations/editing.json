@@ -443,8 +443,6 @@
   "editing/other/editable-state-and-focus-in-shadow-dom-in-designMode.tentative.html": {
     "total": 29,
     "failures": {
-      "Focus after Collapse selection into text in <div contenteditable> in the closed shadow DOM": "FAIL",
-      "Focus after Collapse selection into text in <div contenteditable> in the open shadow DOM": "FAIL",
       "SelectAll in the <div contenteditable> in the closed shadow DOM": "FAIL",
       "SelectAll in the <div contenteditable> in the open shadow DOM": "FAIL",
       "SelectAll in the closed shadow DOM": "FAIL",
@@ -2190,20 +2188,7 @@
     "total": 2
   },
   "editing/other/select-all-and-delete-in-html-element-having-contenteditable.html": {
-    "total": 12,
-    "failures": {
-      "Select All, then, Backspace": "FAIL",
-      "Select All, then, Delete": "FAIL",
-      "Select All, then, execCommand(\"delete\")": "FAIL",
-      "Select All, then, execCommand(\"forwarddelete\")": "FAIL",
-      "execCommand(\"selectall\"), then, Backspace": "FAIL",
-      "execCommand(\"selectall\"), then, Delete": "FAIL",
-      "execCommand(\"selectall\"), then, execCommand(\"delete\")": "FAIL",
-      "getSelection().selectAllChildren(document.documentElement), then, Backspace": "FAIL",
-      "getSelection().selectAllChildren(document.documentElement), then, Delete": "FAIL",
-      "getSelection().selectAllChildren(document.documentElement), then, execCommand(\"delete\")": "FAIL",
-      "getSelection().selectAllChildren(document.documentElement), then, execCommand(\"forwarddelete\")": "FAIL"
-    }
+    "total": 12
   },
   "editing/other/selectall-in-editinghost.html": {
     "total": 4,
@@ -2215,10 +2200,7 @@
     "total": 3
   },
   "editing/other/selection-change-not-fired-if-selection-set-to-root.html": {
-    "total": 1,
-    "failures": {
-      "Selectionchange event should not get fired when the selection is already set to the beginning of the root ": "FAIL"
-    }
+    "total": 1
   },
   "editing/other/setting-value-of-textcontrol-immediately-after-hidden.html?editor=input&hide-target=editor": {
     "total": 7
@@ -2668,9 +2650,6 @@
   "editing/run/fontname.html?2001-last": {
     "total": 225,
     "failures": {
-      "[[\"styleWithCSS\",\"false\"],[\"fontName\",\"monospace\"]] \"<font color=#ff0000>[abc]</font>\" compare innerHTML": "FAIL",
-      "[[\"styleWithCSS\",\"false\"],[\"fontName\",\"monospace\"]] \"<font size=7>[abc]</font>\" compare innerHTML": "FAIL",
-      "[[\"styleWithCSS\",\"false\"],[\"fontName\",\"monospace\"]] \"<font size=\\\"7\\\" color=#ff0000>[abc]</font>\" compare innerHTML": "FAIL",
       "[[\"stylewithcss\",\"false\"],[\"fontname\",\"sans-serif\"]] \"fo[o<listing>b]ar</listing>\" queryCommandValue(\"fontname\") after": "FAIL",
       "[[\"stylewithcss\",\"true\"],[\"fontname\",\"sans-serif\"]] \"fo[o<pre>b]ar</pre>\" queryCommandState(\"stylewithcss\") before": "FAIL"
     }
@@ -2720,9 +2699,6 @@
   "editing/run/forecolor.html?2001-last": {
     "total": 327,
     "failures": {
-      "[[\"styleWithCSS\",\"false\"],[\"foreColor\",\"#ff0000\"]] \"<font face=monospace>[abc]</font>\" compare innerHTML": "FAIL",
-      "[[\"styleWithCSS\",\"false\"],[\"foreColor\",\"#ff0000\"]] \"<font size=7>[abc]</font>\" compare innerHTML": "FAIL",
-      "[[\"styleWithCSS\",\"false\"],[\"foreColor\",\"#ff0000\"]] \"<font size=\\\"7\\\" face=monospace>[abc]</font>\" compare innerHTML": "FAIL",
       "[[\"stylewithcss\",\"false\"],[\"forecolor\",\"#0000FF\"]] \"<span style=color:brown>fo[o</span><span style=color:#0000ff>b]ar</span>\" compare innerHTML": "FAIL",
       "[[\"stylewithcss\",\"true\"],[\"forecolor\",\"#0000FF\"]] \"fo[o<font color=brown>bar</font>b]az\" queryCommandIndeterm(\"forecolor\") after": "FAIL",
       "[[\"stylewithcss\",\"true\"],[\"forecolor\",\"#0000FF\"]] \"fo[o<font color=brown>bar</font>b]az\" queryCommandValue(\"forecolor\") after": "FAIL"
@@ -2910,10 +2886,8 @@
     "total": 1218,
     "failures": {
       "[[\"stylewithcss\",\"false\"],[\"hilitecolor\",\"#00FFFF\"]] \"<font size=6>[foo]</font>\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"false\"],[\"hilitecolor\",\"#00FFFF\"]] \"<span style=font-size:xx-large>[foo]</span>\" compare innerHTML": "FAIL",
       "[[\"stylewithcss\",\"true\"],[\"hilitecolor\",\"#00FFFF\"]] \"<font size=6>[foo]</font>\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"hilitecolor\",\"#00FFFF\"]] \"<p>[foo</p> <p>bar]</p>\" queryCommandState(\"stylewithcss\") before": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"hilitecolor\",\"#00FFFF\"]] \"<span style=font-size:xx-large>[foo]</span>\" compare innerHTML": "FAIL"
+      "[[\"stylewithcss\",\"true\"],[\"hilitecolor\",\"#00FFFF\"]] \"<p>[foo</p> <p>bar]</p>\" queryCommandState(\"stylewithcss\") before": "FAIL"
     }
   },
   "editing/run/indent.html": {
@@ -3886,17 +3860,7 @@
     "total": 69
   },
   "editing/run/unlink.html": {
-    "total": 395,
-    "failures": {
-      "[[\"stylewithcss\",\"false\"],[\"unlink\",\"\"]] \"[foo<a href=https://example.com class=bold>bar</a>baz]\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"false\"],[\"unlink\",\"\"]] \"[foo<a href=https://example.com style=font-weight:bold>bar</a>baz]\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"false\"],[\"unlink\",\"\"]] \"foo<a href=https://example.com class=bold>[bar]</a>baz\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"false\"],[\"unlink\",\"\"]] \"foo<a href=https://example.com style=font-weight:bold>[bar]</a>baz\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"unlink\",\"\"]] \"[foo<a href=https://example.com class=bold>bar</a>baz]\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"unlink\",\"\"]] \"[foo<a href=https://example.com style=font-weight:bold>bar</a>baz]\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"unlink\",\"\"]] \"foo<a href=https://example.com class=bold>[bar]</a>baz\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"unlink\",\"\"]] \"foo<a href=https://example.com style=font-weight:bold>[bar]</a>baz\" compare innerHTML": "FAIL"
-    }
+    "total": 395
   },
   "editing/whitespaces/chrome-compat/delete-img.tentative.html": {
     "total": 7

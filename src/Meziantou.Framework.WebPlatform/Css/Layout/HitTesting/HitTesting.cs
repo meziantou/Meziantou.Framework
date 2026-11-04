@@ -131,6 +131,15 @@ internal static class HitTesting
                 continue;
             }
 
+            // The ::first-line box of a line (see PaintOrder.PaintLine) is a part of its block container
+            if (fragment is LineBoxFragment line)
+            {
+                if (HitTestFirstLine(context, line) && !all)
+                    return true;
+
+                continue;
+            }
+
             // A block-level replaced box is hit once, where its content is painted
             if (fragment.Box is null || paintOrder[i].Part == PaintItemPart.Decorations || !IsHitTestable(fragment.Box))
                 continue;
@@ -200,6 +209,19 @@ internal static class HitTesting
         }
 
         return false;
+    }
+
+    /// <summary>Hit tests the <c>::first-line</c> box of a line: the point in the line hits its block container.</summary>
+    private static bool HitTestFirstLine(HitTestContext context, LineBoxFragment line)
+    {
+        if (line.Parent is not BoxFragment { Box: { Element: { } element } box } block || !IsHitTestable(box) || !IsHitTestTarget(box.Style, element, box.PseudoElement))
+            return false;
+
+        if (GetLocalPoint(context, line) is not { } local || !Contains(line, local) || GetLocalPoint(context, block) is not { } blockLocal || Painter.IsClippedOut(block, blockLocal))
+            return false;
+
+        context.Results.Add(new HitTestResult(block, blockLocal, null));
+        return true;
     }
 
     /// <summary>

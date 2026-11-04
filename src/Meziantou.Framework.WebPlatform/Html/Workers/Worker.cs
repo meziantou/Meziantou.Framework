@@ -153,6 +153,7 @@ public sealed class Worker : EventTarget
 
         _agent = new WorkerAgent(owner, url, options.Name, options.Type, isShared: false)
         {
+            Credentials = options.Credentials,
             WorkerObject = this,
             InsidePort = insidePort,
         };

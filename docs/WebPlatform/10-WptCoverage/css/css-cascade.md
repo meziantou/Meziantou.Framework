@@ -9,18 +9,16 @@ description: "The results of the web-platform-tests of css/css-cascade, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 87 | 92 | 0 | 95% |
+| [Stable](#stable-tests) | 91 | 92 | 0 | 99% |
 | [Tentative](#tentative-tests) | 1 | 1 | 0 | 100% |
 | [Reftests](#reftests) | 50 | 50 | 0 | 100% |
-| **All** | **138** | **143** | **0** | **97%** |
+| **All** | **142** | **143** | **0** | **99%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 4
-- **REQUIRES**: 1
-  - `layout`: 1
+- **BUG**: 1
 
 ## Stable tests
 
@@ -66,7 +64,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`parsing/layer.html`](https://wpt.fyi/results/css/css-cascade/parsing/layer.html) | Pass | 11 / 11 |  |  |
 | [`parsing/supports-import-parsing.html`](https://wpt.fyi/results/css/css-cascade/parsing/supports-import-parsing.html) | Pass | 24 / 24 |  |  |
 | [`presentational-hints-cascade.html`](https://wpt.fyi/results/css/css-cascade/presentational-hints-cascade.html) | Pass | 3 / 3 |  |  |
-| [`presentational-hints-rollback.html`](https://wpt.fyi/results/css/css-cascade/presentational-hints-rollback.html) | Fail | 14 / 16 | REQUIRES(layout) | `clientWidth`/`clientHeight` of images and iframes (natural and default sizes) when `revert` rolls back the `width`/`height` hints |
+| [`presentational-hints-rollback.html`](https://wpt.fyi/results/css/css-cascade/presentational-hints-rollback.html) | Pass | 16 / 16 |  |  |
 | [`revert-layer-008.html`](https://wpt.fyi/results/css/css-cascade/revert-layer-008.html) | Pass | 1 / 1 |  |  |
 | [`revert-rule-basic.html`](https://wpt.fyi/results/css/css-cascade/revert-rule-basic.html) | Pass | 4 / 4 |  |  |
 | [`revert-rule-custom-property.html`](https://wpt.fyi/results/css/css-cascade/revert-rule-custom-property.html) | Pass | 1 / 1 |  |  |
@@ -77,8 +75,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`revert-val-003.html`](https://wpt.fyi/results/css/css-cascade/revert-val-003.html) | Pass | 1 / 1 |  |  |
 | [`revert-val-004.html`](https://wpt.fyi/results/css/css-cascade/revert-val-004.html) | Pass | 1 / 1 |  |  |
 | [`revert-val-005.html`](https://wpt.fyi/results/css/css-cascade/revert-val-005.html) | Pass | 2 / 2 |  |  |
-| [`revert-val-006.html`](https://wpt.fyi/results/css/css-cascade/revert-val-006.html) | Fail | 0 / 1 | BUG | `revert` in a keyframe is the underlying value instead of rolling back to the user-agent value |
-| [`revert-val-007.html`](https://wpt.fyi/results/css/css-cascade/revert-val-007.html) | Fail | 0 / 1 | BUG | `revert` in a keyframe is the underlying value instead of rolling back to the user-agent value |
+| [`revert-val-006.html`](https://wpt.fyi/results/css/css-cascade/revert-val-006.html) | Pass | 1 / 1 |  |  |
+| [`revert-val-007.html`](https://wpt.fyi/results/css/css-cascade/revert-val-007.html) | Pass | 1 / 1 |  |  |
 | [`revert-val-008.html`](https://wpt.fyi/results/css/css-cascade/revert-val-008.html) | Pass | 1 / 1 |  |  |
 | [`revert-val-009.html`](https://wpt.fyi/results/css/css-cascade/revert-val-009.html) | Pass | 1 / 1 |  |  |
 | [`revert-val-010.html`](https://wpt.fyi/results/css/css-cascade/revert-val-010.html) | Pass | 1 / 1 |  |  |
@@ -90,7 +88,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`scope-evaluation.html`](https://wpt.fyi/results/css/css-cascade/scope-evaluation.html) | Pass | 26 / 26 |  |  |
 | [`scope-focus.html`](https://wpt.fyi/results/css/css-cascade/scope-focus.html) | Pass | 4 / 4 |  |  |
 | [`scope-hover.html`](https://wpt.fyi/results/css/css-cascade/scope-hover.html) | Pass | 4 / 4 |  |  |
-| [`scope-implicit-constructed-document.html`](https://wpt.fyi/results/css/css-cascade/scope-implicit-constructed-document.html) | Fail | 10 / 14 | BUG | an implicit `@scope` (without prelude) in a constructed style sheet adopted by a document: the tests expect the document to be its scoping root (the scoped rules match the root element, and `:scope` matches no element) |
+| [`scope-implicit-constructed-document.html`](https://wpt.fyi/results/css/css-cascade/scope-implicit-constructed-document.html) | Pass | 14 / 14 |  |  |
 | [`scope-implicit-external.html`](https://wpt.fyi/results/css/css-cascade/scope-implicit-external.html) | Pass | 2 / 2 |  |  |
 | [`scope-implicit-remove-sheet.html`](https://wpt.fyi/results/css/css-cascade/scope-implicit-remove-sheet.html) | Pass | 2 / 2 |  |  |
 | [`scope-implicit-sibling-mutations.html`](https://wpt.fyi/results/css/css-cascade/scope-implicit-sibling-mutations.html) | Pass | 1 / 1 |  |  |

@@ -10,16 +10,16 @@ description: "The results of the web-platform-tests of html-aam, and why the tes
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 24 | 26 | 0 | 92% |
-| [Tentative](#tentative-tests) | 3 | 10 | 0 | 30% |
+| [Tentative](#tentative-tests) | 5 | 10 | 0 | 50% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **27** | **36** | **0** | **75%** |
+| **All** | **29** | **36** | **0** | **81%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 5
-- **TEST BUG**: 1
+- **BUG**: 2
+- **TEST BUG**: 2
 - **NOT IMPLEMENTED**: 4
 
 ## Stable tests
@@ -27,7 +27,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
 | [`accname-computation-by-element/a.html`](https://wpt.fyi/results/html-aam/accname-computation-by-element/a.html) | Pass | 6 / 6 |  |  |
-| [`accname-computation-by-element/area.html`](https://wpt.fyi/results/html-aam/accname-computation-by-element/area.html) | Fail | 5 / 7 | BUG | the accessible name of an `<area>` without `alt` comes from the mapped image's `alt` instead of its `title` (or empty) |
+| [`accname-computation-by-element/area.html`](https://wpt.fyi/results/html-aam/accname-computation-by-element/area.html) | Fail | 5 / 7 | TEST BUG | the `from title` and `to be empty` subtests: `html-aam-accname-utils.js` sets `alt="Mapped image alt attribute value"` on every tested `<area>` (its special context), so the `alt` of the area itself is its name (HTML-AAM uses `alt` before `title`) |
 | [`accname-computation-by-element/button.html`](https://wpt.fyi/results/html-aam/accname-computation-by-element/button.html) | Pass | 9 / 9 |  |  |
 | [`accname-computation-by-element/fieldset.html`](https://wpt.fyi/results/html-aam/accname-computation-by-element/fieldset.html) | Pass | 6 / 6 |  |  |
 | [`accname-computation-by-element/figure.html`](https://wpt.fyi/results/html-aam/accname-computation-by-element/figure.html) | Pass | 5 / 5 |  |  |
@@ -60,10 +60,10 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`accname-computation-by-element/tr-td-th.tentative.html`](https://wpt.fyi/results/html-aam/accname-computation-by-element/tr-td-th.tentative.html) | Fail | 24 / 30 | BUG | `tr` and `th` elements get their accessible name from their content instead of `title` (or empty) |
 | [`dir-role.tentative.html`](https://wpt.fyi/results/html-aam/dir-role.tentative.html) | Pass | 1 / 1 |  |  |
 | [`figure-name-no-figcaption.tentative.html`](https://wpt.fyi/results/html-aam/figure-name-no-figcaption.tentative.html) | Fail | 5 / 9 | BUG | a `<figure>` gets its accessible name from its `<figcaption>`, while the tentative rule gives it no name (or its `title`) and uses the figcaption to name an `<img>` without `alt` |
-| [`img-src-srcset-roles.tentative.html`](https://wpt.fyi/results/html-aam/img-src-srcset-roles.tentative.html) | Fail | 30 / 49 | BUG | an `<img>` without an accessible name (empty/whitespace `alt`, no `src`/`srcset`) is exposed as `image` instead of generic/none |
+| [`img-src-srcset-roles.tentative.html`](https://wpt.fyi/results/html-aam/img-src-srcset-roles.tentative.html) | Pass | 49 / 49 |  |  |
 | [`optgroup-role.tentative.html`](https://wpt.fyi/results/html-aam/optgroup-role.tentative.html) | Pass | 1 / 1 |  |  |
 | [`roles-contextual.tentative.html`](https://wpt.fyi/results/html-aam/roles-contextual.tentative.html) | Pass | 4 / 4 |  |  |
 | [`roles-dynamic-switch.tentative.window.js`](https://wpt.fyi/results/html-aam/roles-dynamic-switch.tentative.window.js) | Fail | 0 / 6 | NOT IMPLEMENTED | the `switch` role of `<input type=checkbox switch>` |
-| [`roles-generic.tentative.html`](https://wpt.fyi/results/html-aam/roles-generic.tentative.html) | Fail | 2 / 5 | BUG | an `<li>` whose list parent is through a generic element, `aria-owns` or an explicit `role=list` is exposed as `generic` instead of `listitem` |
+| [`roles-generic.tentative.html`](https://wpt.fyi/results/html-aam/roles-generic.tentative.html) | Pass | 5 / 5 |  |  |
 | [`roles-minimum.tentative.html`](https://wpt.fyi/results/html-aam/roles-minimum.tentative.html) | Fail | 4 / 14 | TEST BUG, NOT IMPLEMENTED | `el-div-popover-attr` expects the role `group` for a popover that is not showing: it is not rendered (`display: none`), so its computed role is `none`, as `html/semantics/popovers/popover-minimum-role.html` expects (the minimum role `group` applies once it is shown); the tentative minimum role `group` of generic elements with attributes such as `autofocus` or `draggable` |
 | [`roles.tentative.html`](https://wpt.fyi/results/html-aam/roles.tentative.html) | Fail | 3 / 4 | NOT IMPLEMENTED | the `switch` role of `<input type=checkbox switch>` |

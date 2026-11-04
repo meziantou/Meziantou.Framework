@@ -9,16 +9,16 @@ description: "The results of the web-platform-tests of css/cssom-view, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 215 | 231 | 0 | 93% |
+| [Stable](#stable-tests) | 216 | 231 | 0 | 94% |
 | [Tentative](#tentative-tests) | 2 | 4 | 0 | 50% |
 | [Reftests](#reftests) | 11 | 11 | 0 | 100% |
-| **All** | **228** | **246** | **0** | **93%** |
+| **All** | **229** | **246** | **0** | **93%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 3
+- **BUG**: 2
 - **TEST BUG**: 6
 - **NOT IMPLEMENTED**: 6
 - **REQUIRES**: 3
@@ -86,7 +86,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`elementFromPoint-list-001.html`](https://wpt.fyi/results/css/cssom-view/elementFromPoint-list-001.html) | Pass | 10 / 10 |  |  |
 | [`elementFromPoint-mixed-font-sizes.html`](https://wpt.fyi/results/css/cssom-view/elementFromPoint-mixed-font-sizes.html) | Pass | 1 / 1 |  |  |
 | [`elementFromPoint-negative-z-index-inline-overflow-clip.html`](https://wpt.fyi/results/css/cssom-view/elementFromPoint-negative-z-index-inline-overflow-clip.html) | Pass | 1 / 1 |  |  |
-| [`elementFromPoint-negative-z-index-inline.html`](https://wpt.fyi/results/css/cssom-view/elementFromPoint-negative-z-index-inline.html) | Fail | 7 / 8 | BUG | hit testing: the `::first-line` background of a stacking context is below its children with a negative `z-index` (`elementFromPoint()` returns the child) |
+| [`elementFromPoint-negative-z-index-inline.html`](https://wpt.fyi/results/css/cssom-view/elementFromPoint-negative-z-index-inline.html) | Pass | 8 / 8 |  |  |
 | [`elementFromPoint-parameters.html`](https://wpt.fyi/results/css/cssom-view/elementFromPoint-parameters.html) | Pass | 4 / 4 |  |  |
 | [`elementFromPoint-subpixel.html`](https://wpt.fyi/results/css/cssom-view/elementFromPoint-subpixel.html) | Pass | 4 / 4 |  |  |
 | [`elementFromPoint-visibility-hidden-resizer.html`](https://wpt.fyi/results/css/cssom-view/elementFromPoint-visibility-hidden-resizer.html) | Pass | 1 / 1 |  |  |

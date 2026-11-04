@@ -222,11 +222,7 @@
     "total": 3
   },
   "css/css-cascade/presentational-hints-rollback.html": {
-    "total": 16,
-    "failures": {
-      "#tests > * 11": "FAIL",
-      "#tests > * 3": "FAIL"
-    }
+    "total": 16
   },
   "css/css-cascade/revert-layer-001.html": {
     "reftest": "PASS"
@@ -310,16 +306,10 @@
     "total": 2
   },
   "css/css-cascade/revert-val-006.html": {
-    "total": 1,
-    "failures": {
-      "The revert keyword works with @keyframes": "FAIL"
-    }
+    "total": 1
   },
   "css/css-cascade/revert-val-007.html": {
-    "total": 1,
-    "failures": {
-      "A @keyframe animation with revert works when applied to multiple identical elements": "FAIL"
-    }
+    "total": 1
   },
   "css/css-cascade/revert-val-008.html": {
     "total": 1
@@ -376,13 +366,7 @@
     "reftest": "PASS"
   },
   "css/css-cascade/scope-implicit-constructed-document.html": {
-    "total": 14,
-    "failures": {
-      ":scope in implicit @scope in a constructed stylesheet adopted by a document does not match any element": "FAIL",
-      "Child combinator in implicit @scope in a constructed stylesheet adopted by a document matches only the root element": "FAIL",
-      "Implicit @scope in a constructed stylesheet adopted by a document matches the root element": "FAIL",
-      "Scoped declarations in implicit @scope in a constructed stylesheet adopted by a document do not match any element": "FAIL"
-    }
+    "total": 14
   },
   "css/css-cascade/scope-implicit-crash-print.html": {
     "reftest": "PASS"

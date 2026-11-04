@@ -210,7 +210,18 @@ public static partial class WebPlatformFuzzTargets
         // The serialization is parsed again (it must be valid CSS)
         var reparsed = new CssStyleSheet();
         reparsed.ReplaceSync(text);
-        _ = Serialize(reparsed.CssRules);
+        if (Serialize(reparsed.CssRules) != text)
+        {
+            // A value left open at the end of the input (e.g. "a { width: var(--x") is serialized as written, as in the
+            // browsers, so the serialization is not parsed as the same rules. The formatters close it: their output is
+            // compared with the rules of the closed text, which is parsed as the same rules when it is formatted again
+            var closedSheet = new CssStyleSheet();
+            closedSheet.ReplaceSync(sheet.ToCss(new CssPrettyFormatter()));
+            text = Serialize(closedSheet.CssRules);
+            var closedAgain = new CssStyleSheet();
+            closedAgain.ReplaceSync(closedSheet.ToCss(new CssPrettyFormatter()));
+            FuzzAssert.Equal(text, Serialize(closedAgain.CssRules), "The output of the pretty formatter is not stable");
+        }
 
         // The formatters only change the whitespace and the notation of the values: their output is parsed as the same rules.
         // The minifier removes the rules that have no effect, which changes the rules, unless RemoveEmptyRules is false. Some

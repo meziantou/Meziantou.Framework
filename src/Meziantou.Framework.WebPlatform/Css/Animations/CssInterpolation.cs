@@ -157,15 +157,17 @@ internal static class CssInterpolation
             or CssInterpolationKind.Visibility or CssInterpolationKind.Display or CssInterpolationKind.ContentVisibility)
             return value;
 
-        // Binary exponentiation of the accumulation of the final value (the accumulation is associative)
+        // Binary exponentiation of the accumulation of the final value (the accumulation is associative), then the value of the
+        // keyframe is accumulated onto it: the accumulated final value is the underlying value (the keyframe value replaces it
+        // when they cannot be added, e.g. a number and a length of line-height)
         var count = (long)Math.Min(Math.Floor(iterations), long.MaxValue / 2);
-        var result = value;
+        string? accumulated = null;
         var power = finalValue;
         while (count > 0)
         {
             if ((count & 1) == 1)
             {
-                result = Accumulate(context, property, result, power);
+                accumulated = accumulated is null ? power : Accumulate(context, property, accumulated, power);
             }
 
             count >>= 1;
@@ -175,7 +177,7 @@ internal static class CssInterpolation
             }
         }
 
-        return result;
+        return accumulated is null ? value : Accumulate(context, property, accumulated, value);
     }
 
     private static string Combine(CssInterpolationContext context, string property, string underlying, string value, CssCombineOperation operation)

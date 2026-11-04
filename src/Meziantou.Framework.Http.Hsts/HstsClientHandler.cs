@@ -332,6 +332,7 @@ public sealed class HstsClientHandler : DelegatingHandler
         maxAge = default;
         includeSubdomains = false;
         var hasMaxAge = false;
+        var hasIncludeSubdomains = false;
 
         while (!header.IsEmpty)
         {
@@ -370,12 +371,16 @@ public sealed class HstsClientHandler : DelegatingHandler
                 maxAge = TimeSpan.FromSeconds(Math.Min(seconds, MaxMaxAgeInSeconds));
                 hasMaxAge = true;
             }
-            else if (separator < 0 && name.Equals("includeSubDomains", StringComparison.OrdinalIgnoreCase))
+            else if (name.Equals("includeSubDomains", StringComparison.OrdinalIgnoreCase))
             {
-                if (includeSubdomains)
+                // A repeated directive makes the whole header field invalid, even when one of them has a value
+                if (hasIncludeSubdomains)
                     return false;
 
-                includeSubdomains = true;
+                hasIncludeSubdomains = true;
+
+                // includeSubDomains is valueless; a malformed one with a value is skipped
+                includeSubdomains = separator < 0;
             }
         }
 

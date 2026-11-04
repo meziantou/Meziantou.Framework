@@ -619,8 +619,18 @@ internal static partial class JsInterpreter
         constructor.FieldInitializer?.Call(obj, []);
     }
 
+    /// <summary>HostEnsureCanAddPrivateElement(O): the host rejects the private elements of some objects (see <see cref="JsHostObject.RejectsPrivateElements"/>).</summary>
+    private static void HostEnsureCanAddPrivateElement(JsObject obj)
+    {
+        if ((obj.Flags & ObjectFlags.RejectsPrivateElements) != 0)
+        {
+            ThrowHelper.ThrowTypeError("Cannot add a private element to this object");
+        }
+    }
+
     private static void PrivateMethodOrAccessorAdd(JsObject obj, PrivateMethodRecord method)
     {
+        HostEnsureCanAddPrivateElement(obj);
         var elements = obj.PrivateElements ??= new PrivateElementTable();
         var index = elements.Find(method.Name);
         if (index >= 0)
@@ -640,6 +650,8 @@ internal static partial class JsInterpreter
 
     private static void PrivateFieldAdd(JsObject obj, PrivateName name, JsValue value)
     {
+        HostEnsureCanAddPrivateElement(obj);
+
         // Non-extensible Applies to Private (https://github.com/tc39/proposal-nonextensible-applies-to-private)
         if (!obj.IsExtensible())
         {

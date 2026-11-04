@@ -314,6 +314,12 @@ embedded CLDR data (`Intl/Data/`, `CldrData.Default`): never from the globalizat
   fast paths (it must not override the methods that read or write properties).
   `JsHostObject.HasCallInternalMethod` gives a host object a [[Call]] internal method (`CallCore`, which runs in the
   realm of the caller), and `IsHtmlDdaObject` an [[IsHTMLDDA]] internal slot: both are used by `document.all`.
+  `JsHostObject.RejectsPrivateElements` (the `ObjectFlags.RejectsPrivateElements` flag) is HostEnsureCanAddPrivateElement:
+  `PrivateFieldAdd` and `PrivateMethodOrAccessorAdd` throw a TypeError for the object (WebPlatform sets it on the
+  WindowProxy and Location objects).
+- FinalizationRegistry (`Runtime/JsWeakCollections.cs`): each target has a finalizable sentinel that references the
+  registry with a weak GC handle. The GC clears it before running the finalizers, so a sentinel whose registry is
+  unreachable too schedules no cleanup: the objects of its realm and of the host may already be finalized.
   `JsHostObject.InitializeErrorData` gives it an [[ErrorData]] internal slot (its `Class` becomes `ObjectClass.Error`)
   and a stack trace (`ErrorStackTrace`), used by `DOMException`; `JsErrorObject.GetStackTrace`/`TrySetStackTrace` read
   and write the stack of both kinds of error objects.

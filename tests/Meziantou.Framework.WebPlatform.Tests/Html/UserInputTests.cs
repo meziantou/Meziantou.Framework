@@ -517,8 +517,8 @@ public sealed class UserInputTests : IDisposable
     [Fact]
     public void ShowFilePicker_IsInvokedWhenTheUserActivatesAFileInput()
     {
-        var shown = new List<HtmlInputElement>();
-        var document = _contexts.Create(new BrowsingContextOptions { ShowFilePicker = shown.Add }).Navigate("https://example.com/", _ => "<!DOCTYPE html>" + Style + "<input id=a type=file multiple style='display: block; width: 100px; height: 30px'>");
+        var shown = new List<(CallbackContext Context, HtmlInputElement Input)>();
+        var document = _contexts.Create(new BrowsingContextOptions { ShowFilePicker = (callbackContext, input) => shown.Add((callbackContext, input)) }).Navigate("https://example.com/", _ => "<!DOCTYPE html>" + Style + "<input id=a type=file multiple style='display: block; width: 100px; height: 30px'>");
         _contexts.EventLoop.RunUntilIdle();
         var mouse = document.BrowsingContext!.Input.Mouse;
 
@@ -526,9 +526,11 @@ public sealed class UserInputTests : IDisposable
         mouse.Down();
         mouse.Up();
 
-        var input = Assert.Single(shown);
+        var (callbackContext, input) = Assert.Single(shown);
         Assert.Same(document.GetElementById("a"), input);
         Assert.True(input.Multiple);
+        Assert.Same(document, callbackContext.Document);
+        Assert.Same(document.BrowsingContext, callbackContext.BrowsingContext);
     }
 
     [Fact]

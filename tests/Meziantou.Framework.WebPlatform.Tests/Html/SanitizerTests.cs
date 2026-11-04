@@ -68,11 +68,34 @@ public sealed class SanitizerTests
     [InlineData("<b>1<p>foo</b>bar", "b", "1<p>foobar</p>")]
     [InlineData("<b><em><div>Text</b>after", "div", "<b><em>Text</em></b><em><b></b>after</em>")]
     [InlineData("<div><template><b>Hello</b></template>after</div>", "template", "<div>after</div>")]
+    [InlineData("<table><div>x</div><tr><td>y</table>", "div", "x<table><tbody><tr><td>y</td></tr></tbody></table>")]
+    [InlineData("<table>a<b>y</b>c<tr><td>z", "b", "ayc<table><tbody><tr><td>z</td></tr></tbody></table>")]
+    [InlineData("<table><b><div>x</b>y", "div", "<b>x</b><b></b>y<table></table>")]
     public void ReplaceWithChildrenWhileParsing(string html, string element, string expected)
     {
         var container = CreateContainer();
         container.SetHtml(html, new SetHtmlOptions { Sanitizer = new SanitizerConfig { ReplaceWithChildrenElements = [element] } });
         Assert.Equal(expected, container.InnerHtml);
+    }
+
+    [Fact]
+    public void ParseHtmlUnsafeReplacesBodyWhileParsing()
+    {
+        var document = Document.ParseHtmlUnsafe("<div></div><frameset>", new ParseHtmlUnsafeOptions { Sanitizer = new SanitizerConfig { ReplaceWithChildrenElements = ["body"] } });
+        Assert.Equal("<html><head></head><div></div><frameset></frameset></html>", document.DocumentElement!.OuterHtml);
+    }
+
+    [Theory]
+    [InlineData("href", false)]
+    [InlineData("xlink:href", false)]
+    [InlineData("zlink:href", false)]
+    [InlineData("xlink:href:x", true)]
+    [InlineData("hreflang", true)]
+    public void SetHtmlRemovesAnimatedHrefAttributeName(string attributeName, bool kept)
+    {
+        var container = CreateContainer();
+        container.SetHtml($"<svg><a><set attributeName=\"{attributeName}\" to=\"https://example.org/\"></set></a></svg>", new SetHtmlOptions { Sanitizer = new SanitizerConfig() });
+        Assert.Equal(kept, container.QuerySelector("set")!.HasAttribute("attributeName"));
     }
 
     [Fact]

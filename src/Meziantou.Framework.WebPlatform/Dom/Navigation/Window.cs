@@ -529,7 +529,7 @@ public sealed partial class Window : GlobalScope
             return null;
 
         // "Optionally, pause while waiting for the user to acknowledge the message": the handler blocks the event loop
-        return handler(this, new UserPrompt(type, NormalizeNewlines(message), NormalizeNewlines(defaultValue)));
+        return handler(CallbackContext.For(this), new UserPrompt(type, NormalizeNewlines(message), NormalizeNewlines(defaultValue)));
 
         // "Normalize newlines" of the message (https://infra.spec.whatwg.org/#normalize-newlines)
         static string NormalizeNewlines(string value) => value.Contains('\r', StringComparison.Ordinal) ? value.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n') : value;

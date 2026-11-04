@@ -29,8 +29,8 @@ using var context = new BrowsingContext(new BrowsingContextOptions
 {
     ScriptEngine = engine,
     DocumentLoader = DocumentLoader.Create(),     // the documents and the external scripts (see the threat model below)
-    UnhandledScriptError = (window, error) => Console.Error.WriteLine(error),
-    ConsoleMessage = (window, message) => Console.WriteLine(message.Text), // console.log(), console.count()...
+    UnhandledScriptError = (_, error) => Console.Error.WriteLine(error),
+    ConsoleMessage = (_, message) => Console.WriteLine(message.Text), // console.log(), console.count()...
 });
 
 var document = await context.NavigateAsync("https://example.com/", _ => """
@@ -312,8 +312,9 @@ await CSS.paintWorklet.addModule('paint.js', { credentials: 'same-origin' });
   `SyntaxError` of the window). A module that throws when it is evaluated is still added: the promise is fulfilled, by a
   task queued after the tasks the module queued (e.g. the registration of a paint in the document).
 - **Errors**: an exception of a module or of a callback is reported to its global scope, which fires no event (a worklet
-  global scope is not an event target for the scripts): it is given to `BrowsingContextOptions.UnhandledScriptError` with
-  the `WorkletGlobalScope`. The messages of `console` are given to `ConsoleMessage` with the global scope too.
+  global scope is not an event target for the scripts): it is given to `BrowsingContextOptions.UnhandledScriptError`, whose
+  `CallbackContext.Global` is the `WorkletGlobalScope` (its `BrowsingContext` is null). The messages of `console` are given
+  to `ConsoleMessage` with the worklet global scope too.
 - **Microtasks**: the specification runs a worklet in its own agent, which has its own microtask queue. The callbacks of
   the layout worklet are async functions that the layout of the document runs to completion, synchronously, possibly while
   a script of the document reads a geometry: `ScriptEngine.EnterNestedMicrotaskQueue()` gives them a separate queue (the

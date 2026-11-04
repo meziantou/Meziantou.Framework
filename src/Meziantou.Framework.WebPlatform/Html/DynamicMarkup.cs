@@ -733,13 +733,22 @@ public partial class Document
 
     private static Document ParseAndSanitize(string html, SanitizerConfiguration? sanitizer, bool safe)
     {
-        var document = new HtmlDocumentParser(new HtmlParserOptions { ScriptingEnabled = false, AllowDeclarativeShadowRoots = true }).Parse(html);
-        document.OriginDocument = GetOriginDocument(CurrentGlobalDocument);
-        if (sanitizer is not null)
+        // The nodes are sanitized while they are parsed (e.g. the children of a body replaced by its children are kept when a
+        // frameset start tag removes the body), then the parsed tree is sanitized, as for setHTML()
+        var parser = new HtmlDocumentParser(new HtmlParserOptions { ScriptingEnabled = false, AllowDeclarativeShadowRoots = true });
+        Document document;
+        if (sanitizer is null)
         {
-            SanitizerConfiguration.Sanitize(document, sanitizer, safe);
+            document = parser.Parse(html);
+        }
+        else
+        {
+            var configuration = SanitizerConfiguration.GetEffectiveConfiguration(sanitizer, safe);
+            document = parser.Parse(html, configuration);
+            SanitizerConfiguration.Sanitize(document, configuration, safe: false);
         }
 
+        document.OriginDocument = GetOriginDocument(CurrentGlobalDocument);
         return document;
     }
 }

@@ -98,6 +98,36 @@ public sealed class WorkerTests : IDisposable
     }
 
     [Fact]
+    public async Task Worker_ConsoleMessages_HaveTheContextOfTheWorker()
+    {
+        var contexts = new List<CallbackContext>();
+        AddScript("https://example.com/dir/worker.js", "console.log('from worker'); postMessage('done');");
+        var context = _contexts.Create(new BrowsingContextOptions
+        {
+            ScriptEngine = _engine,
+            DocumentLoader = _loader,
+            ConsoleMessage = (callbackContext, _) =>
+            {
+                lock (contexts)
+                {
+                    contexts.Add(callbackContext);
+                }
+            },
+        });
+        var document = context.Navigate("https://example.com/dir/page.html", _ => "<script>new Worker('worker.js').onmessage = e => document.title = e.data;</script>");
+
+        Assert.Equal("done", await WaitForTitleAsync(document));
+        lock (contexts)
+        {
+            var callbackContext = Assert.Single(contexts);
+            Assert.IsType<DedicatedWorkerGlobalScope>(callbackContext.Global);
+            Assert.Null(callbackContext.BrowsingContext);
+            Assert.Null(callbackContext.Window);
+            Assert.Null(callbackContext.Document);
+        }
+    }
+
+    [Fact]
     public async Task Worker_InterfaceObjectsAreBuiltInFunctions()
     {
         AddScript("https://example.com/dir/worker.js", """

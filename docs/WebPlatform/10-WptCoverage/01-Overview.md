@@ -49,16 +49,16 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 25,701 | 29,691 | 2,570 | 95% |
-| [Tentative](#tentative-tests) | 1,175 | 3,074 | 847 | 53% |
+| [Stable](#stable-tests) | 25,706 | 29,691 | 2,570 | 95% |
+| [Tentative](#tentative-tests) | 1,176 | 3,074 | 847 | 53% |
 | [Reftests](#reftests) | 27,875 | 29,220 | 180 | 96% |
-| **All** | **54,751** | **61,985** | **3,597** | **94%** |
+| **All** | **54,757** | **61,985** | **3,597** | **94%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 481
+- **BUG**: 474
 - **TEST BUG**: 975
 - **NOT IMPLEMENTED**: 4,401
 - **REQUIRES**: 1,200
@@ -340,7 +340,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`requestidlecallback`](requestidlecallback.md) | 20 | 20 | 0 | 100% |
 | [`resize-observer`](resize-observer.md) | 35 | 35 | 0 | 100% |
 | [`resource-timing`](resource-timing.md) | 104 | 118 | 0 | 88% |
-| [`sanitizer-api`](sanitizer-api.md) | 43 | 50 | 0 | 86% |
+| [`sanitizer-api`](sanitizer-api.md) | 48 | 50 | 0 | 96% |
 | [`savedata`](savedata.md) | 0 | 1 | 1 | – |
 | [`scheduler`](scheduler.md) | 24 | 24 | 0 | 100% |
 | [`screen-capture`](screen-capture.md) | 0 | 13 | 13 | – |
@@ -421,7 +421,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 317 | 330 | 0 | 96% |
 | [`xml`](xml.md) | 0 | 12 | 12 | – |
-| **Total (343 sections)** | **25,701** | **29,691** | **2,570** | **95%** |
+| **Total (343 sections)** | **25,706** | **29,691** | **2,570** | **95%** |
 
 ## Tentative tests
 
@@ -490,7 +490,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`digital-credentials`](digital-credentials.md#tentative-tests) | 0 | 3 | 3 | – |
 | [`document-policy`](document-policy.md#tentative-tests) | 0 | 3 | 3 | – |
 | [`dom`](dom.md#tentative-tests) | 30 | 55 | 2 | 57% |
-| [`domparsing`](domparsing.md#tentative-tests) | 33 | 39 | 0 | 85% |
+| [`domparsing`](domparsing.md#tentative-tests) | 34 | 39 | 0 | 87% |
 | [`domxpath`](domxpath.md#tentative-tests) | 6 | 6 | 0 | 100% |
 | [`editing`](editing.md#tentative-tests) | 25 | 61 | 0 | 41% |
 | [`encoding-detection`](encoding-detection.md#tentative-tests) | 70 | 70 | 0 | 100% |
@@ -591,7 +591,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`workers`](workers.md#tentative-tests) | 0 | 8 | 0 | 0% |
 | [`xhr`](xhr.md#tentative-tests) | 2 | 2 | 0 | 100% |
 | [`xml`](xml.md#tentative-tests) | 0 | 2 | 2 | – |
-| **Total (164 sections)** | **1,175** | **3,074** | **847** | **53%** |
+| **Total (164 sections)** | **1,176** | **3,074** | **847** | **53%** |
 
 ## Reftests
 

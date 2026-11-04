@@ -1694,7 +1694,7 @@ public sealed class BrowsingContextTests
         var activated = new List<string>();
         using var context = new BrowsingContext(new BrowsingContextOptions
         {
-            DocumentActivated = (browsingContext, document) => activated.Add((browsingContext.Parent is null ? "top " : "frame ") + document.Url),
+            DocumentActivated = (callbackContext, document) => activated.Add((callbackContext.BrowsingContext!.Parent is null ? "top " : "frame ") + document.Url),
         });
 
         Assert.Empty(activated);
@@ -1710,8 +1710,8 @@ public sealed class BrowsingContextTests
         var calls = new List<string>();
         using var context = new BrowsingContext(new BrowsingContextOptions
         {
-            BrowsingContextCreated = browsingContext => calls.Add($"created {browsingContext.Name} {browsingContext.Document.Url} {browsingContext.Parent is not null}"),
-            BrowsingContextDestroyed = browsingContext => calls.Add($"destroyed {browsingContext.Name} {browsingContext.IsDestroyed}"),
+            BrowsingContextCreated = callbackContext => calls.Add($"created {callbackContext.BrowsingContext!.Name} {callbackContext.BrowsingContext.Document.Url} {callbackContext.BrowsingContext.Parent is not null}"),
+            BrowsingContextDestroyed = callbackContext => calls.Add($"destroyed {callbackContext.BrowsingContext!.Name} {callbackContext.BrowsingContext.IsDestroyed}"),
         });
 
         var document = Load(context, "<iframe name=child></iframe>");
@@ -1725,12 +1725,62 @@ public sealed class BrowsingContextTests
     }
 
     [Fact]
+    public void Options_Callbacks_ReceiveTheContextOfTheBrowsingContext()
+    {
+        var created = new List<(CallbackContext Context, string? Url)>();
+        var activated = new List<(CallbackContext Context, Document Document)>();
+        var options = new BrowsingContextOptions
+        {
+            BrowsingContextCreated = callbackContext => created.Add((callbackContext, callbackContext.Document?.Url)),
+            DocumentActivated = (callbackContext, document) => activated.Add((callbackContext, document)),
+        };
+        using var context = new BrowsingContext(options);
+
+        var document = Load(context, "<iframe srcdoc='<p>x'></iframe>", "https://example.com/a");
+        var iframe = (HtmlIFrameElement)document.QuerySelector("iframe")!;
+        var frameDocument = iframe.ContentDocument!;
+
+        var (createdContext, createdUrl) = Assert.Single(created);
+        Assert.Same(options, createdContext.Options);
+        Assert.Same(frameDocument.BrowsingContext, createdContext.BrowsingContext);
+        Assert.Same(context, createdContext.BrowsingContext!.Parent);
+        Assert.Equal("about:blank", createdUrl);
+
+        Assert.Equal(2, activated.Count);
+        Assert.Same(context, activated[0].Context.BrowsingContext);
+        Assert.Same(document, activated[0].Document);
+        Assert.Same(frameDocument.BrowsingContext, activated[1].Context.BrowsingContext);
+        Assert.Same(frameDocument, activated[1].Document);
+        Assert.All(activated, item => Assert.Same(item.Context.Window, item.Context.Global));
+    }
+
+    [Fact]
+    public void Options_CallbackContext_TellsWhereTheCallbackWasRaised()
+    {
+        #region WebPlatform_CallbackContext
+        var log = new List<string>();
+        using var context = new BrowsingContext(new BrowsingContextOptions
+        {
+            // The first argument of every callback is a CallbackContext: the browsing context, the window or the worker,
+            // and the document where the callback was raised
+            DocumentActivated = (callbackContext, document) => log.Add((callbackContext.BrowsingContext!.Parent is null ? "page " : "frame ") + document.Url),
+            BrowsingContextCreated = callbackContext => log.Add("created a frame in " + callbackContext.BrowsingContext!.Parent!.Document.Url),
+        });
+
+        context.Navigate("https://example.com/", _ => "<iframe srcdoc='<p>x'></iframe>");
+        context.EventLoop.RunUntilIdle();
+        #endregion
+
+        Assert.Equal(["page https://example.com/", "created a frame in https://example.com/", "frame about:srcdoc"], log);
+    }
+
+    [Fact]
     public void Options_SameDocumentNavigated_IsInvokedForTheFragmentNavigations()
     {
         var urls = new List<string>();
         using var context = new BrowsingContext(new BrowsingContextOptions
         {
-            SameDocumentNavigated = browsingContext => urls.Add(browsingContext.Document.Url),
+            SameDocumentNavigated = callbackContext => urls.Add(callbackContext.BrowsingContext!.Document.Url),
         });
         var document = Load(context, "<p id=a>a", "https://example.com/page");
 

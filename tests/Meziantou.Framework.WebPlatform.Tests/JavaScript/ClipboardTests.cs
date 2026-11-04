@@ -19,7 +19,7 @@ public sealed class ClipboardTests : IDisposable
         TestScriptEngines.Dispose(_engine);
     }
 
-    private Document Load(string html, SystemClipboard? clipboard = null, Func<Document, ClipboardAccess, bool>? permission = null, string url = "https://example.com/")
+    private Document Load(string html, SystemClipboard? clipboard = null, Func<CallbackContext, ClipboardAccess, bool>? permission = null, string url = "https://example.com/")
     {
         var context = _contexts.Create(new BrowsingContextOptions
         {

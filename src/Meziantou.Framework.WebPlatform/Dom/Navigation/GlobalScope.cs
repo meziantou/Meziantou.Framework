@@ -515,10 +515,10 @@ public abstract partial class GlobalScope : EventTarget
     private protected virtual void OnErrorNotHandled(ScriptError error) => ReportUnhandledError(error);
 
     /// <summary>Gives an error that was not handled to the host ("report exception to a developer console").</summary>
-    internal void ReportUnhandledError(ScriptError error) => Options.UnhandledScriptError?.Invoke(this, error);
+    internal void ReportUnhandledError(ScriptError error) => Options.UnhandledScriptError?.Invoke(CallbackContext.For(this), error);
 
     /// <summary>Gives a message of the <c>console</c> namespace to the host (the Printer of https://console.spec.whatwg.org/#printer).</summary>
-    internal void ReportConsoleMessage(ConsoleMessage message) => Options.ConsoleMessage?.Invoke(this, message);
+    internal void ReportConsoleMessage(ConsoleMessage message) => Options.ConsoleMessage?.Invoke(CallbackContext.For(this), message);
 
     /// <summary>Whether the host receives the messages of the <c>console</c> namespace.</summary>
     internal bool HasConsoleMessageHandler => Options.ConsoleMessage is not null;

@@ -1676,7 +1676,7 @@
     "reftest": "PASS"
   },
   "css/css-multicol/table/table-cell-multicol-nested-002.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-multicol/table/table-cell-multicol-nested-003.html": {
     "reftest": "PASS"

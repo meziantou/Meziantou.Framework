@@ -807,7 +807,7 @@ internal sealed class SanitizerConfiguration
             if (elementName.Namespace == Namespaces.MathML && localName == "href" && namespaceUri is null or Namespaces.XLink && ContainsJavaScriptUrl(value))
                 return true;
 
-            if (AnimatingUrlAttributes.Contains((elementName, attrName)) && value is "href" or "xlink:href")
+            if (AnimatingUrlAttributes.Contains((elementName, attrName)) && IsAnimatedHrefName(value))
                 return true;
         }
 
@@ -947,6 +947,21 @@ internal sealed class SanitizerConfiguration
 
         element.IsValue = null;
         element.CustomElementState = CustomElementState.Uncustomized;
+    }
+
+    /// <summary>
+    /// Whether the <c>attributeName</c> of an SVG animation element names an <c>href</c> attribute. The specification only
+    /// lists "href" and "xlink:href"; as in Chromium and the WPT tests (sanitizer-api/sanitizer-svg-animate.html), the names
+    /// with any other prefix (e.g. "zlink:href" with an <c>xmlns:zlink</c> declaration) are removed too. A name with several
+    /// colons ("xlink:href:x") does not name an href attribute.
+    /// </summary>
+    private static bool IsAnimatedHrefName(string value)
+    {
+        if (value == "href")
+            return true;
+
+        var colon = value.IndexOf(':', StringComparison.Ordinal);
+        return colon >= 0 && value.AsSpan(colon + 1).SequenceEqual("href");
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#contains-a-javascript-url</summary>

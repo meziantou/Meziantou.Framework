@@ -299,7 +299,7 @@ internal static class ClipboardPermissions
         if (!document.IsFullyActive)
             return false;
 
-        return window.Options.ClipboardPermission?.Invoke(document, access) ?? true;
+        return window.Options.ClipboardPermission?.Invoke(CallbackContext.For(window), access) ?? true;
     }
 
     /// <summary>

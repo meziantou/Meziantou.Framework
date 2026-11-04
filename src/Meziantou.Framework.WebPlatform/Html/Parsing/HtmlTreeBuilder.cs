@@ -918,14 +918,11 @@ internal sealed partial class HtmlTreeBuilder
             }
         }
 
-        if (_sanitizerActions is not null)
+        // The children of an element replaced by its children are inserted where the element would be inserted (the parent
+        // of a foster-parented element is its table's parent, which is never replaced)
+        if (_sanitizerActions is not null && referenceChild is null)
         {
-            var parent = SkipElementsReplacedWithChildren(targetParent);
-            if (!ReferenceEquals(parent, targetParent))
-            {
-                targetParent = parent;
-                referenceChild = null;
-            }
+            (targetParent, referenceChild) = GetChildInsertionLocation(targetParent);
         }
 
         if (targetParent is not HtmlTemplateElement template)
@@ -944,7 +941,15 @@ internal sealed partial class HtmlTreeBuilder
     /// <summary>https://html.spec.whatwg.org/multipage/parsing.html#adjusted-insertion-location</summary>
     private (Node Parent, Node? Before) GetAdjustedInsertionLocation(Node? overrideTarget = null)
     {
-        var location = GetAppropriatePlaceForInsertingANode(overrideTarget);
+        return AdjustInsertionLocation(GetAppropriatePlaceForInsertingANode(overrideTarget));
+    }
+
+    /// <summary>
+    /// https://whatpr.org/html/12758/parsing.html#adjusted-insertion-location: the children of the root are inserted in the
+    /// root insertion target.
+    /// </summary>
+    private (Node Parent, Node? Before) AdjustInsertionLocation((Node Parent, Node? Before) location)
+    {
         if (RootInsertionTarget is not null && ReferenceEquals(location.Parent, _openElements[0]))
             return (RootInsertionTarget, RootInsertionReferenceChild);
 
@@ -986,7 +991,10 @@ internal sealed partial class HtmlTreeBuilder
                 isValue = null;
             }
 
-            registry = CustomElementRegistry.LookUp(intendedParent);
+            // The fragment parser inserts the children of the root (e.g. the foster-parented elements) in the fragment, which has
+            // no registry: the intended parent of the specification is the root
+            var registryParent = !IsStreaming && RootInsertionTarget is not null && ReferenceEquals(intendedParent, RootInsertionTarget) ? _openElements[0] : intendedParent;
+            registry = CustomElementRegistry.LookUp(registryParent);
         }
 
 
@@ -1092,7 +1100,10 @@ internal sealed partial class HtmlTreeBuilder
     private void InsertElementAtAdjustedInsertionLocation(Element element, Node? insertionLocationParent = null)
     {
         if (GetSanitizerAction(element) != SanitizerElementAction.Keep)
+        {
+            InsertElementAt(element, GetAdjustedInsertionLocation(insertionLocationParent));
             return;
+        }
 
         var (targetParent, referenceChild) = GetAdjustedInsertionLocation(insertionLocationParent);
         if (element.ParentNode is not null || element.IsHostIncludingInclusiveAncestorOf(targetParent) || (targetParent is Document document && document.DocumentElement is not null) || IsDisplaced(targetParent, referenceChild))

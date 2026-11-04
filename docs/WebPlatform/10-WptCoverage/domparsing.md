@@ -10,15 +10,15 @@ description: "The results of the web-platform-tests of domparsing, and why the t
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 52 | 56 | 0 | 93% |
-| [Tentative](#tentative-tests) | 33 | 39 | 0 | 85% |
+| [Tentative](#tentative-tests) | 34 | 39 | 0 | 87% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **85** | **95** | **0** | **89%** |
+| **All** | **86** | **95** | **0** | **91%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 3
+- **BUG**: 2
 - **TEST BUG**: 4
 - **NOT IMPLEMENTED**: 3
 
@@ -103,7 +103,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`tentative/stream-html-parser-blocking-script.html`](https://wpt.fyi/results/domparsing/tentative/stream-html-parser-blocking-script.html) | Error | 8 / 26 | NOT IMPLEMENTED | the parser-blocking scripts of the streaming HTML methods (the parser does not pause for an external script streamed with `runScripts`) |
 | [`tentative/stream-html-run-scripts-option.html`](https://wpt.fyi/results/domparsing/tentative/stream-html-run-scripts-option.html) | Pass | 14 / 14 |  |  |
 | [`tentative/stream-html-sanitizer-safe.html`](https://wpt.fyi/results/domparsing/tentative/stream-html-sanitizer-safe.html) | Pass | 30 / 30 |  |  |
-| [`tentative/stream-html-sanitizer.html`](https://wpt.fyi/results/domparsing/tentative/stream-html-sanitizer.html) | Fail | 258 / 276 | BUG | the sanitizer replaces the `replaceWithChildrenElements` elements with their children after the tree construction: the tests expect the children of a foster-parented element to be inserted before the table, the adoption agency algorithm not to see the replaced element, and a declarative shadow root of a replaced element not to be attached |
+| [`tentative/stream-html-sanitizer.html`](https://wpt.fyi/results/domparsing/tentative/stream-html-sanitizer.html) | Pass | 276 / 276 |  |  |
 | [`tentative/stream-html-script-safe.html`](https://wpt.fyi/results/domparsing/tentative/stream-html-script-safe.html) | Pass | 36 / 36 |  |  |
 | [`tentative/stream-html-unsafe.html`](https://wpt.fyi/results/domparsing/tentative/stream-html-unsafe.html) | Pass | 17 / 17 |  |  |
 | [`tentative/stream-html-with-declarative-shadow-root.html`](https://wpt.fyi/results/domparsing/tentative/stream-html-with-declarative-shadow-root.html) | Pass | 37 / 37 |  |  |

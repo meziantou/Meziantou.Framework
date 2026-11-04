@@ -273,27 +273,7 @@
     "total": 30
   },
   "domparsing/tentative/stream-html-sanitizer.html": {
-    "total": 276,
-    "failures": {
-      "element.streamAfterHTML: foster-parented replaceWithChildrenElements element unwraps before table": "FAIL",
-      "element.streamAfterHTMLUnsafe: foster-parented replaceWithChildrenElements element unwraps before table": "FAIL",
-      "element.streamAfterHTMLUnsafe: replaceWithChildrenElements preserves ownerDocument and does not attach inner declarative shadow root": "FAIL",
-      "element.streamAppendHTML: foster-parented replaceWithChildrenElements element unwraps before table": "FAIL",
-      "element.streamAppendHTMLUnsafe: foster-parented replaceWithChildrenElements element unwraps before table": "FAIL",
-      "element.streamAppendHTMLUnsafe: replaceWithChildrenElements preserves ownerDocument and does not attach inner declarative shadow root": "FAIL",
-      "element.streamBeforeHTML: foster-parented replaceWithChildrenElements element unwraps before table": "FAIL",
-      "element.streamBeforeHTMLUnsafe: foster-parented replaceWithChildrenElements element unwraps before table": "FAIL",
-      "element.streamBeforeHTMLUnsafe: replaceWithChildrenElements preserves ownerDocument and does not attach inner declarative shadow root": "FAIL",
-      "element.streamHTML: foster-parented replaceWithChildrenElements element unwraps before table": "FAIL",
-      "element.streamHTMLUnsafe: foster-parented replaceWithChildrenElements element unwraps before table": "FAIL",
-      "element.streamHTMLUnsafe: replaceWithChildrenElements preserves ownerDocument and does not attach inner declarative shadow root": "FAIL",
-      "element.streamPrependHTML: foster-parented replaceWithChildrenElements element unwraps before table": "FAIL",
-      "element.streamPrependHTMLUnsafe: foster-parented replaceWithChildrenElements element unwraps before table": "FAIL",
-      "element.streamPrependHTMLUnsafe: replaceWithChildrenElements preserves ownerDocument and does not attach inner declarative shadow root": "FAIL",
-      "element.streamReplaceWithHTML: foster-parented replaceWithChildrenElements element unwraps before table": "FAIL",
-      "element.streamReplaceWithHTMLUnsafe: foster-parented replaceWithChildrenElements element unwraps before table": "FAIL",
-      "element.streamReplaceWithHTMLUnsafe: replaceWithChildrenElements preserves ownerDocument and does not attach inner declarative shadow root": "FAIL"
-    }
+    "total": 276
   },
   "domparsing/tentative/stream-html-script-safe.html": {
     "total": 36

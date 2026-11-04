@@ -29,8 +29,8 @@ using var context = new BrowsingContext(new BrowsingContextOptions
 {
     ScriptEngine = engine,
     DocumentLoader = DocumentLoader.Create(), // optional: external scripts, modules, fetch, XMLHttpRequest, WebSocket, EventSource...
-    UnhandledScriptError = (window, error) => Console.Error.WriteLine(error),
-    ConsoleMessage = (window, message) => Console.WriteLine(message.Text), // console.log(), console.count()...
+    UnhandledScriptError = (_, error) => Console.Error.WriteLine(error),
+    ConsoleMessage = (_, message) => Console.WriteLine(message.Text), // console.log(), console.count()...
 });
 
 var document = await context.NavigateAsync("https://example.com/", _ => """

@@ -416,7 +416,7 @@ public sealed partial class BrowsingContext : IDisposable
             return;
 
         _isFullscreen = true;
-        SetFullscreenViewportSize(Options.EnterFullscreen?.Invoke(this, options));
+        SetFullscreenViewportSize(Options.EnterFullscreen?.Invoke(CallbackContext.For(this), options));
     }
 
     /// <summary>https://fullscreen.spec.whatwg.org/#exit-fullscreen: "resize doc's viewport to its "normal" dimensions".</summary>
@@ -428,7 +428,7 @@ public sealed partial class BrowsingContext : IDisposable
         _isFullscreen = false;
         if (!IsDestroyed)
         {
-            Options.ExitFullscreen?.Invoke(this);
+            Options.ExitFullscreen?.Invoke(CallbackContext.For(this));
         }
 
         SetFullscreenViewportSize(null);
@@ -605,7 +605,7 @@ public sealed partial class BrowsingContext : IDisposable
             openerNavigable.Top.SessionStorageShed.CopyTo(context.SessionStorageShed);
         }
 
-        Options.BrowsingContextCreated?.Invoke(context);
+        Options.BrowsingContextCreated?.Invoke(CallbackContext.For(context));
         return context;
     }
 
@@ -2330,7 +2330,7 @@ public sealed partial class BrowsingContext : IDisposable
         if ((GetFinalSandboxingFlags(resource.Headers, parameters.TargetSandboxingFlags) & SandboxingFlags.Downloads) != SandboxingFlags.None)
             return false;
 
-        downloadStarted(this, new Download(resource.Url ?? url.Serialize(), filename: null, resource));
+        downloadStarted(CallbackContext.For(this), new Download(resource.Url ?? url.Serialize(), filename: null, resource));
         return true;
     }
 
@@ -3062,7 +3062,7 @@ public sealed partial class BrowsingContext : IDisposable
         DocumentActivated?.Invoke(document);
         if (!document.IsInitialAboutBlank)
         {
-            Options.DocumentActivated?.Invoke(this, document);
+            Options.DocumentActivated?.Invoke(CallbackContext.For(this), document);
         }
 
         // https://html.spec.whatwg.org/multipage/dom.html#reveal: the document of a navigation with a view transition is revealed
@@ -3351,7 +3351,7 @@ public sealed partial class BrowsingContext : IDisposable
             Options.ScriptEngine?.DestroyRealm(window);
         }
 
-        Options.BrowsingContextDestroyed?.Invoke(this);
+        Options.BrowsingContextDestroyed?.Invoke(CallbackContext.For(this));
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/document-sequences.html#create-a-new-child-navigable</summary>
@@ -3368,7 +3368,7 @@ public sealed partial class BrowsingContext : IDisposable
         NavigableContainers.SetContentNavigable(element, navigable);
         (parentDocument.ChildNavigables ??= []).Add(navigable);
         parent.Options.ScriptEngine?.OnChildNavigablesChanged(parent.Window);
-        parent.Options.BrowsingContextCreated?.Invoke(navigable);
+        parent.Options.BrowsingContextCreated?.Invoke(CallbackContext.For(navigable));
     }
 
     /// <summary>
@@ -3526,7 +3526,7 @@ public sealed partial class BrowsingContext : IDisposable
             Options.ScriptEngine?.DestroyRealm(window);
         }
 
-        Options.BrowsingContextDestroyed?.Invoke(this);
+        Options.BrowsingContextDestroyed?.Invoke(CallbackContext.For(this));
     }
 
     /// <summary>The number of times the loading was stopped (window.stop()): a planned navigation of a form is canceled by a stop (https://github.com/whatwg/html/issues/3730).</summary>
@@ -3744,7 +3744,7 @@ public sealed partial class BrowsingContext : IDisposable
             document.QueueGlobalTask(() => window.FireEvent(new HashChangeEvent("hashchange", new HashChangeEventInit { OldUrl = oldUrlString, NewUrl = newUrlString })));
         }
 
-        Options.SameDocumentNavigated?.Invoke(this);
+        Options.SameDocumentNavigated?.Invoke(CallbackContext.For(this));
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/browsing-the-web.html#url-and-history-update-steps</summary>
@@ -3772,7 +3772,7 @@ public sealed partial class BrowsingContext : IDisposable
         document.SetUrl(newUrl, keepTargetElement: true);
         document.LatestEntry = newEntry;
         document.RelevantWindow?.Navigation.UpdateEntriesForSameDocumentNavigation(newEntry, historyHandling == NavigationHistoryBehavior.Push ? NavigationType.Push : NavigationType.Replace);
-        Options.SameDocumentNavigated?.Invoke(this);
+        Options.SameDocumentNavigated?.Invoke(CallbackContext.For(this));
     }
 
     /// <summary>The parameters of the document being created by a navigation.</summary>

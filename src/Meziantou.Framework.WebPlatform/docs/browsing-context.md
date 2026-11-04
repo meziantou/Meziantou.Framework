@@ -2548,8 +2548,8 @@ is in the top layer of its document.
 var context = new BrowsingContext(new BrowsingContextOptions
 {
     // The host makes its window fullscreen and gives the size of the screen (null keeps the viewport)
-    EnterFullscreen = (context, options) => new FullscreenViewportSize(1920, 1080),
-    ExitFullscreen = context => { /* restore the window */ },
+    EnterFullscreen = (callbackContext, options) => new FullscreenViewportSize(1920, 1080),
+    ExitFullscreen = callbackContext => { /* restore the window */ },
 });
 ```
 
@@ -2606,8 +2606,8 @@ movements of its mouse:
 var context = new BrowsingContext(new BrowsingContextOptions
 {
     // Return false to refuse the lock (e.g. when options.UnadjustedMovement cannot be honored)
-    RequestPointerLock = (context, options) => { /* hide the cursor, read the raw input */ return true; },
-    ExitPointerLock = context => { /* show the cursor at context.Input.Mouse.X, Y */ },
+    RequestPointerLock = (callbackContext, options) => { /* hide the cursor, read the raw input */ return true; },
+    ExitPointerLock = callbackContext => { /* show the cursor at callbackContext.BrowsingContext!.Input.Mouse.X, Y */ },
 });
 
 context.Input.Mouse.MoveBy(3, -2);   // pointermove and mousemove at the target, with movementX: 3 and movementY: -2
@@ -3125,6 +3125,14 @@ loop:
 - `SameDocumentNavigated`: the URL of the active document changed without a new document (a fragment navigation,
   `history.pushState()`, `history.replaceState()`, a traversal within the document).
 
+Every callback of `BrowsingContextOptions` receives a `CallbackContext` as its first argument: where the callback was
+raised. It is a snapshot taken when the callback is invoked, with the `Options`, the `BrowsingContext` (null for a worker,
+or a window without browsing context), the `Global` (the window or the worker, or the active window of the browsing
+context), and the `Window` and `Document` derived from it. The callbacks raised by a browsing context (the ones above, the
+downloads, the fullscreen and pointer lock requests) always have a `BrowsingContext`; the dialogs, the file picker and the
+clipboard permission always have a `Window`; the console messages, the unhandled errors and the content security policy
+violations have the `Global` that raised them.
+
 `DocumentRequest.BrowsingContext` attributes the requests of the `DocumentLoader` to their browsing context (the browsing
 context that is navigated for a navigation request, else the one of the document that makes the request), and
 `BrowsingContext.Reload()` reloads the active document, as the reload button of a browser. `BrowsingContext.IsNavigating` is
@@ -3144,7 +3152,7 @@ A dismissed unload confirmation cancels the navigation, the traversal or the clo
 using var context = new BrowsingContext(new BrowsingContextOptions
 {
     ScriptEngine = engine,
-    UserPromptHandler = (window, prompt) => prompt.Type switch
+    UserPromptHandler = (callbackContext, prompt) => prompt.Type switch
     {
         UserPromptType.Confirm => UserPromptResult.Accept(),
         UserPromptType.Prompt => UserPromptResult.Accept("answer"),
@@ -3211,7 +3219,7 @@ var context = new BrowsingContext(new BrowsingContextOptions
 {
     ScriptEngine = new JavaScriptScriptEngine(),
     Clipboard = clipboard,
-    ClipboardPermission = (document, access) => access == ClipboardAccess.Write, // the pages cannot read the clipboard
+    ClipboardPermission = (callbackContext, access) => access == ClipboardAccess.Write, // the pages cannot read the clipboard
 });
 clipboard.WriteText("pasted text");
 // ... navigator.clipboard.writeText('copied'), or document.execCommand('copy')
@@ -3276,7 +3284,8 @@ The dedicated workers (`Worker`) and the shared workers (`SharedWorker`) are imp
   its own thread, and its scripts run in the realm of its own script engine, created by
   `ScriptEngine.CreateWorkerScriptEngine()` (`JavaScriptScriptEngine` creates a new engine with the same options). The
   members of a worker global scope must be used on the thread of the worker. The callbacks of the options
-  (`UnhandledScriptError`, `ConsoleMessage`) receive the `GlobalScope` and are invoked on the thread of the worker.
+  (`UnhandledScriptError`, `ConsoleMessage`) receive a `CallbackContext` whose `Global` is the worker global scope (its
+  `BrowsingContext` is null), and are invoked on the thread of the worker.
 - The script of a worker is fetched with the environment of its creator (classic scripts with the `same-origin` mode,
   module scripts with the `cors` mode and the `credentials` option); an HTTP(S) response must have a JavaScript MIME type,
   and the script is decoded as UTF-8. A worker created from a `data:` URL has an opaque origin, from a `blob:` URL the

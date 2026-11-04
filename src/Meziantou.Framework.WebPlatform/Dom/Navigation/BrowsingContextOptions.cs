@@ -232,16 +232,18 @@ public sealed partial class BrowsingContextOptions
     /// (https://html.spec.whatwg.org/multipage/webappapis.html#report-an-exception). It plays the role of the developer
     /// console of a browser. The callback is invoked on the thread of the event loop of the global object: the workers run
     /// on their own threads.
+    /// The first argument is the context of the global object that raised it (see <see cref="CallbackContext"/>): its <see cref="CallbackContext.Global"/> is the window, the worker or the worklet, and its <see cref="CallbackContext.BrowsingContext"/> is null for a worker or a worklet.
     /// </summary>
-    public Action<GlobalScope, Scripting.ScriptError>? UnhandledScriptError { get; init; }
+    public Action<CallbackContext, Scripting.ScriptError>? UnhandledScriptError { get; init; }
 
     /// <summary>
     /// Gets or sets the callback invoked when a script of a global object (a window or a worker) prints a message with the
     /// <c>console</c> namespace (<c>console.log()</c>, <c>console.count()</c>... https://console.spec.whatwg.org/). It plays
     /// the role of the developer console of a browser. The default is null: the messages are not formatted. The callback is
     /// invoked on the thread of the event loop of the global object: the workers run on their own threads.
+    /// The first argument is the context of the global object that raised it (see <see cref="CallbackContext"/>): its <see cref="CallbackContext.Global"/> is the window, the worker or the worklet, and its <see cref="CallbackContext.BrowsingContext"/> is null for a worker or a worklet.
     /// </summary>
-    public Action<GlobalScope, Scripting.ConsoleMessage>? ConsoleMessage { get; init; }
+    public Action<CallbackContext, Scripting.ConsoleMessage>? ConsoleMessage { get; init; }
 
     /// <summary>
     /// Gets or sets the callback invoked when a content security policy is violated (the policies of the
@@ -250,8 +252,9 @@ public sealed partial class BrowsingContextOptions
     /// <see cref="ContentSecurityPolicyViolationReport.Disposition"/>. It is invoked with the <c>securitypolicyviolation</c> event, in the
     /// task that fires it, so it plays the role of the developer console of a browser. The callback is invoked on the thread of the
     /// event loop of the global object: the workers run on their own threads. It is not invoked for a document without browsing context.
+    /// The first argument is the context of the global object that raised it (see <see cref="CallbackContext"/>): its <see cref="CallbackContext.Global"/> is the window, the worker or the worklet, and its <see cref="CallbackContext.BrowsingContext"/> is null for a worker or a worklet.
     /// </summary>
-    public Action<GlobalScope, ContentSecurityPolicyViolationReport>? ContentSecurityPolicyViolation { get; init; }
+    public Action<CallbackContext, ContentSecurityPolicyViolationReport>? ContentSecurityPolicyViolation { get; init; }
 
     /// <summary>
     /// Gets or sets the callback invoked when the library creates a browsing context that uses these options: a nested
@@ -260,16 +263,18 @@ public sealed partial class BrowsingContextOptions
     /// <see cref="BrowsingContext.IsAuxiliary"/>). It is invoked once the browsing context is attached to its parent or to its
     /// opener, with its initial <c>about:blank</c> document. It is not invoked for the browsing contexts created by the
     /// application. The callback is invoked on the thread of the event loop.
+    /// The first argument is the context of the new browsing context (see <see cref="CallbackContext"/>): its <see cref="CallbackContext.BrowsingContext"/> is never null.
     /// </summary>
-    public Action<BrowsingContext>? BrowsingContextCreated { get; init; }
+    public Action<CallbackContext>? BrowsingContextCreated { get; init; }
 
     /// <summary>
     /// Gets or sets the callback invoked when a browsing context that uses these options is destroyed: a nested browsing
     /// context whose container is removed, a top-level browsing context closed by <c>window.close()</c> or disposed by the
     /// application (<see cref="BrowsingContext.Dispose"/>). Its documents are unloaded. The callback is invoked on the thread
     /// of the event loop.
+    /// The first argument is the context of the browsing context (see <see cref="CallbackContext"/>): its <see cref="CallbackContext.BrowsingContext"/> is never null.
     /// </summary>
-    public Action<BrowsingContext>? BrowsingContextDestroyed { get; init; }
+    public Action<CallbackContext>? BrowsingContextDestroyed { get; init; }
 
     /// <summary>
     /// Gets or sets the callback invoked when a document becomes the active document of a browsing context that uses these
@@ -277,16 +282,18 @@ public sealed partial class BrowsingContextOptions
     /// is a network error, see <see cref="Document.IsNetworkErrorDocument"/>), or a traversal of the session history that loads
     /// a document. It is not invoked for the initial <c>about:blank</c> document of a new browsing context. The callback is
     /// invoked on the thread of the event loop, before the document is parsed.
+    /// The first argument is the context of the browsing context (see <see cref="CallbackContext"/>): its <see cref="CallbackContext.BrowsingContext"/> is never null.
     /// </summary>
-    public Action<BrowsingContext, Document>? DocumentActivated { get; init; }
+    public Action<CallbackContext, Document>? DocumentActivated { get; init; }
 
     /// <summary>
     /// Gets or sets the callback invoked when the URL of the active document of a browsing context that uses these options
     /// changes without a new document (https://html.spec.whatwg.org/multipage/browsing-the-web.html#navigate-to-a-fragment): a
     /// navigation to a fragment, <c>history.pushState()</c> or <c>history.replaceState()</c>, a traversal of the session history
     /// within the document. The callback is invoked on the thread of the event loop.
+    /// The first argument is the context of the browsing context (see <see cref="CallbackContext"/>): its <see cref="CallbackContext.BrowsingContext"/> is never null.
     /// </summary>
-    public Action<BrowsingContext>? SameDocumentNavigated { get; init; }
+    public Action<CallbackContext>? SameDocumentNavigated { get; init; }
 
     /// <summary>
     /// Gets or sets the callback invoked when a browsing context that uses these options downloads a resource
@@ -297,8 +304,9 @@ public sealed partial class BrowsingContextOptions
     /// <c>allow-downloads</c> are blocked. When null, the downloads are ignored: the hyperlinks with a <c>download</c>
     /// attribute fetch nothing, and the rest of the body of an <c>attachment</c> response is not read. The callback is
     /// invoked on the thread of the event loop.
+    /// The first argument is the context of the browsing context (see <see cref="CallbackContext"/>): its <see cref="CallbackContext.BrowsingContext"/> is never null.
     /// </summary>
-    public Action<BrowsingContext, Download>? DownloadStarted { get; init; }
+    public Action<CallbackContext, Download>? DownloadStarted { get; init; }
 
     /// <summary>
     /// Gets or sets the callback that shows the simple dialogs of the windows
@@ -307,16 +315,18 @@ public sealed partial class BrowsingContextOptions
     /// (the user is asked to confirm that the document is unloaded). The script waits for the result: the callback blocks the
     /// event loop until the user answers. The default is null: no dialog is shown, <c>confirm()</c> returns false,
     /// <c>prompt()</c> returns null and the documents are unloaded.
+    /// The first argument is the context of the window (see <see cref="CallbackContext"/>): its <see cref="CallbackContext.Window"/> is never null.
     /// </summary>
-    public Func<Window, UserPrompt, UserPromptResult>? UserPromptHandler { get; init; }
+    public Func<CallbackContext, UserPrompt, UserPromptResult>? UserPromptHandler { get; init; }
 
     /// <summary>
     /// Gets or sets the callback invoked when the file picker of an <c>input</c> element of type <c>file</c> is shown (the
     /// activation of the element, or <c>showPicker()</c>). The host lets the user choose files, and sets them with
     /// <see cref="HtmlInputElement.Files"/> (then fires the <c>input</c> and <c>change</c> events). The callback is invoked on
     /// the thread of the event loop. The default is null: the file picker closes at once, without file.
+    /// The first argument is the context of the window of the element (see <see cref="CallbackContext"/>): its <see cref="CallbackContext.Window"/> is never null.
     /// </summary>
-    public Action<HtmlInputElement>? ShowFilePicker { get; init; }
+    public Action<CallbackContext, HtmlInputElement>? ShowFilePicker { get; init; }
 
     /// <summary>
     /// Gets or sets the preferred languages of the user, as BCP 47 language tags, in order of preference: <c>navigator.language</c>
@@ -389,15 +399,17 @@ public sealed partial class BrowsingContextOptions
     /// the viewport while fullscreen (the dimensions of the screen), or null to keep the size of the viewport. The default
     /// is null: the viewport keeps its size (<see cref="Viewport"/>), and the fullscreen element fills it (the
     /// <c>:fullscreen</c> rules of the user agent style sheet).
+    /// The first argument is the context of the top-level browsing context (see <see cref="CallbackContext"/>): its <see cref="CallbackContext.BrowsingContext"/> is never null.
     /// </summary>
-    public Func<BrowsingContext, FullscreenOptions, FullscreenViewportSize?>? EnterFullscreen { get; init; }
+    public Func<CallbackContext, FullscreenOptions, FullscreenViewportSize?>? EnterFullscreen { get; init; }
 
     /// <summary>
     /// Gets or sets the callback called when the documents of a top-level browsing context are no longer displayed
     /// fullscreen (https://fullscreen.spec.whatwg.org/#exit-fullscreen): the viewport gets the size of
     /// <see cref="Viewport"/> back. The default is null.
+    /// The first argument is the context of the top-level browsing context (see <see cref="CallbackContext"/>): its <see cref="CallbackContext.BrowsingContext"/> is never null.
     /// </summary>
-    public Action<BrowsingContext>? ExitFullscreen { get; init; }
+    public Action<CallbackContext>? ExitFullscreen { get; init; }
 
     /// <summary>
     /// Gets or sets the callback called when an element of a document of a top-level browsing context requests the pointer
@@ -407,15 +419,17 @@ public sealed partial class BrowsingContextOptions
     /// <see cref="PointerLockOptions.UnadjustedMovement"/> is set, and returns true; it returns false when it cannot or does
     /// not want to lock the pointer (the request fails with a <c>NotSupportedError</c>). The default is null: the pointer is
     /// locked (a host without cursor has nothing to do, and the movements it injects are not adjusted).
+    /// The first argument is the context of the top-level browsing context (see <see cref="CallbackContext"/>): its <see cref="CallbackContext.BrowsingContext"/> is never null.
     /// </summary>
-    public Func<BrowsingContext, PointerLockOptions, bool>? RequestPointerLock { get; init; }
+    public Func<CallbackContext, PointerLockOptions, bool>? RequestPointerLock { get; init; }
 
     /// <summary>
     /// Gets or sets the callback called when the pointer lock of a top-level browsing context is exited
     /// (https://w3c.github.io/pointerlock/#dfn-exit-pointer-lock): the host displays its cursor again, at the position of the
     /// mouse (<see cref="UserInput.Mouse"/>). The default is null.
+    /// The first argument is the context of the top-level browsing context (see <see cref="CallbackContext"/>): its <see cref="CallbackContext.BrowsingContext"/> is never null.
     /// </summary>
-    public Action<BrowsingContext>? ExitPointerLock { get; init; }
+    public Action<CallbackContext>? ExitPointerLock { get; init; }
 
     /// <summary>
     /// Gets or sets the system clipboard of the browsing contexts: the data copied by the copy and cut actions and by
@@ -432,12 +446,13 @@ public sealed partial class BrowsingContextOptions
     /// <c>document.execCommand()</c>. It plays the role of the permission prompt of a browser; there is no user activation,
     /// so the access never requires a user gesture. The default is null: all the documents are allowed. Deny the access to
     /// untrusted documents when <see cref="Clipboard"/> is the clipboard of the operating system.
+    /// The first argument is the context of the window (see <see cref="CallbackContext"/>): its <see cref="CallbackContext.Window"/> is never null, and <see cref="CallbackContext.Document"/> is the document that accesses the clipboard.
     /// </summary>
     /// <remarks>
     /// The asynchronous clipboard API is only available to the documents of a secure context that have the focus, and the
     /// copy, cut and paste actions triggered by the user are always allowed.
     /// </remarks>
-    public Func<Document, ClipboardAccess, bool>? ClipboardPermission { get; init; }
+    public Func<CallbackContext, ClipboardAccess, bool>? ClipboardPermission { get; init; }
 
     /// <summary>
     /// Gets or sets whether the fonts installed on the machine can be used: a <c>font-family</c> and a <c>local()</c> source

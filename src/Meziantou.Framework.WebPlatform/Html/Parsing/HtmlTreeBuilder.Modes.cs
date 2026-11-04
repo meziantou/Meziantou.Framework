@@ -369,7 +369,8 @@ internal sealed partial class HtmlTreeBuilder
             // current node is checked, so that, in the fragment case, a template that becomes a child of the context element
             // (whose adjusted current node is the context element, which is not in the stack) does not attach a shadow root
             // to the context element
-            if (!AllowDeclarativeShadowRoots || ReferenceEquals(CurrentNode, _openElements[0]))
+            // The template of a host removed or replaced by its children is a regular template: the host is not inserted
+            if (!AllowDeclarativeShadowRoots || ReferenceEquals(CurrentNode, _openElements[0]) || GetSanitizerAction(AdjustedCurrentNode!) != SanitizerElementAction.Keep)
             {
                 InsertHtmlElement(templateStartTag);
                 return;

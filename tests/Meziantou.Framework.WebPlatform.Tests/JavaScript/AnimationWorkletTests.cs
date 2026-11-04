@@ -14,7 +14,7 @@ public sealed class AnimationWorkletTests : IDisposable
 {
     private readonly BrowsingContextScope _contexts = new();
     private readonly List<ScriptError> _errors = [];
-    private readonly List<(GlobalScope Global, string Text)> _messages = [];
+    private readonly List<(GlobalScope? Global, string Text)> _messages = [];
     private readonly RecordingLoader _loader = new();
     private readonly ScriptEngine _engine = TestScriptEngines.Create();
     private readonly FakeTimeProvider _clock = new();
@@ -36,7 +36,7 @@ public sealed class AnimationWorkletTests : IDisposable
             Features = features,
             TimeProvider = _clock,
             UnhandledScriptError = (_, error) => _errors.Add(error),
-            ConsoleMessage = (global, message) => _messages.Add((global, message.Text)),
+            ConsoleMessage = (context, message) => _messages.Add((context.Global, message.Text)),
         });
 
         var document = context.Navigate("https://example.com/page.html", _ => "<!DOCTYPE html><body>" + html + "<script>if (CSS.animationWorklet) CSS.animationWorklet.addModule('animator.js').then(() => { document.title = 'added'; " + script + " }).catch(e => document.title = 'error ' + e)</script>");

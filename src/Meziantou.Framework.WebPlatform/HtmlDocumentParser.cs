@@ -127,6 +127,19 @@ public sealed class HtmlDocumentParser
         return document;
     }
 
+    /// <summary>
+    /// Parses an HTML document from a string, and sanitizes its nodes while they are parsed (<c>Document.parseHTML()</c>,
+    /// <c>Document.parseHTMLUnsafe()</c>), as the fragment parser does for <c>setHTML()</c>.
+    /// </summary>
+    /// <param name="html">The HTML.</param>
+    /// <param name="sanitizer">The sanitizer configuration applied while parsing (see <see cref="SanitizerConfiguration.GetEffectiveConfiguration"/>).</param>
+    internal Document Parse(string html, SanitizerConfiguration sanitizer)
+    {
+        var document = CreateDocument();
+        RunParser(document, html, lateDeclaration: null, sanitizer: sanitizer);
+        return document;
+    }
+
     /// <summary>Parses an HTML document from bytes, determining the character encoding as specified.</summary>
     public Document Parse(ReadOnlySpan<byte> bytes)
     {
@@ -673,13 +686,15 @@ public sealed class HtmlDocumentParser
     /// <param name="input">The decoded input.</param>
     /// <param name="lateDeclaration">The bytes of the input and the meta element of the head that declares the encoding after the first 1024 bytes, if any.</param>
     /// <param name="endOfFile">Whether the input is the whole document (false when the rest of the input arrives later).</param>
-    private HtmlScriptingParser RunParser(Document document, string input, (byte[] Bytes, (WebEncodingId Encoding, int End) Declaration)? lateDeclaration, bool endOfFile = true)
+    /// <param name="sanitizer">The sanitizer configuration applied while parsing, or null.</param>
+    private HtmlScriptingParser RunParser(Document document, string input, (byte[] Bytes, (WebEncodingId Encoding, int End) Declaration)? lateDeclaration, bool endOfFile = true, SanitizerConfiguration? sanitizer = null)
     {
         var errorCallback = CreateErrorCallback(_options.ParseErrorHandler);
         var tokenizer = new HtmlTokenizer(input, errorCallback, new NameTable()) { EofInserted = endOfFile };
         var builder = new HtmlTreeBuilder(document, tokenizer, errorCallback, document.ScriptingEnabled ? ParserScriptingMode.Normal : ParserScriptingMode.Disabled)
         {
             AllowDeclarativeShadowRoots = _options.AllowDeclarativeShadowRoots,
+            Sanitizer = sanitizer,
         };
 
         // https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-inhead: the meta element found by the prescan after

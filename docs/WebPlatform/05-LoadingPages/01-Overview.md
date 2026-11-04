@@ -81,6 +81,33 @@ The callbacks of the options report what happens in the pages: [ConsoleMessage](
 scripts, [BrowsingContextCreated](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.BrowsingContextCreated) and [BrowsingContextDestroyed](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.BrowsingContextDestroyed) for the frames and the popups, [DocumentActivated](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.DocumentActivated) for
 the navigations, and [UserPromptHandler](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.UserPromptHandler) answers `alert()`, `confirm()` and `prompt()`.
 
+The first argument of every callback is a [CallbackContext](cref:Meziantou.Framework.WebPlatform.Dom.CallbackContext): where the callback was raised.
+It has the [BrowsingContext](cref:Meziantou.Framework.WebPlatform.Dom.CallbackContext.BrowsingContext), the [Global](cref:Meziantou.Framework.WebPlatform.Dom.CallbackContext.Global)
+object (a window, a worker or a worklet), and the [Window](cref:Meziantou.Framework.WebPlatform.Dom.CallbackContext.Window) and
+[Document](cref:Meziantou.Framework.WebPlatform.Dom.CallbackContext.Document) when the global object is a window. Use it to know
+which page or frame a message comes from:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/Dom/BrowsingContextTests.cs;region=WebPlatform_CallbackContext;format=md-fenced-code-block;dedent=true -->
+```csharp
+var log = new List<string>();
+using var context = new BrowsingContext(new BrowsingContextOptions
+{
+    // The first argument of every callback is a CallbackContext: the browsing context, the window or the worker,
+    // and the document where the callback was raised
+    DocumentActivated = (callbackContext, document) => log.Add((callbackContext.BrowsingContext!.Parent is null ? "page " : "frame ") + document.Url),
+    BrowsingContextCreated = callbackContext => log.Add("created a frame in " + callbackContext.BrowsingContext!.Parent!.Document.Url),
+});
+
+context.Navigate("https://example.com/", _ => "<iframe srcdoc='<p>x'></iframe>");
+context.EventLoop.RunUntilIdle();
+```
+<!-- endref -->
+
+The callbacks raised by a browsing context (its creation, its navigations, the downloads, fullscreen and pointer lock)
+always have a `BrowsingContext`. The callbacks raised by scripts (the console messages, the unhandled errors and the
+content security policy violations) can come from a worker or a worklet: their `BrowsingContext` is null, and `Global` is
+the worker or worklet global scope.
+
 ## Frames and popups
 
 The `iframe` elements get nested browsing contexts ([BrowsingContext.Children](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContext.Children), [HtmlIFrameElement.ContentDocument](cref:Meziantou.Framework.WebPlatform.Dom.HtmlIFrameElement.ContentDocument)),

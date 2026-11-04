@@ -14,6 +14,13 @@ description: "The results of the web-platform-tests of css/compositing, and why 
 | [Reftests](#reftests) | 55 | 60 | 0 | 92% |
 | **All** | **68** | **75** | **0** | **91%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 2
+- **TEST BUG**: 5
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

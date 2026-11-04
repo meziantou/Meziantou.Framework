@@ -14,6 +14,15 @@ description: "The results of the web-platform-tests of html/cross-origin-embedde
 | Reftests | 0 | 0 | 0 | – |
 | **All** | **53** | **76** | **0** | **70%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 3
+- **TEST BUG**: 14
+- **NOT IMPLEMENTED**: 5
+- **TEST RUNNER**: 1
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

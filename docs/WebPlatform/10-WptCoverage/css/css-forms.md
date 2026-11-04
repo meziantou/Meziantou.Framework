@@ -14,6 +14,12 @@ description: "The results of the web-platform-tests of css/css-forms, and why th
 | [Reftests](#reftests) | 6 | 17 | 0 | 35% |
 | **All** | **12** | **26** | **0** | **46%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **TEST BUG**: 14
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

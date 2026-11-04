@@ -14,6 +14,13 @@ description: "The results of the web-platform-tests of css/fill-stroke, and why 
 | [Reftests](#reftests) | 1 | 1 | 0 | 100% |
 | **All** | **5** | **11** | **0** | **45%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 1
+- **NOT IMPLEMENTED**: 5
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

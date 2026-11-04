@@ -14,6 +14,13 @@ description: "The results of the web-platform-tests of preload, and why the test
 | [Reftests](#reftests) | 1 | 1 | 0 | 100% |
 | **All** | **64** | **71** | **0** | **90%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **TEST BUG**: 4
+- **NOT IMPLEMENTED**: 3
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

@@ -14,6 +14,14 @@ description: "The results of the web-platform-tests of shadow-dom, and why the t
 | [Reftests](#reftests) | 26 | 26 | 0 | 100% |
 | **All** | **274** | **378** | **0** | **72%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 1
+- **TEST BUG**: 6
+- **NOT IMPLEMENTED**: 97
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

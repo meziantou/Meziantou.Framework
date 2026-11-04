@@ -14,6 +14,15 @@ description: "The results of the web-platform-tests of css/css-masking, and why 
 | [Reftests](#reftests) | 488 | 500 | 1 | 98% |
 | **All** | **551** | **564** | **1** | **98%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 8
+- **TEST BUG**: 1
+- **NOT IMPLEMENTED**: 3
+- **FLAKY**: 1
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

@@ -14,6 +14,15 @@ description: "The results of the web-platform-tests of webmessaging, and why the
 | Reftests | 0 | 0 | 0 | – |
 | **All** | **131** | **138** | **0** | **95%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **NOT IMPLEMENTED**: 4
+- **REQUIRES**: 1
+  - `workers`: 1
+- **TEST RUNNER**: 2
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

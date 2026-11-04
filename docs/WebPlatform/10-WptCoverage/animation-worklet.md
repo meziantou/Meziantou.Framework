@@ -14,6 +14,12 @@ description: "The results of the web-platform-tests of animation-worklet, and wh
 | [Reftests](#reftests) | 10 | 15 | 0 | 67% |
 | **All** | **25** | **38** | **0** | **66%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **TEST BUG**: 13
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

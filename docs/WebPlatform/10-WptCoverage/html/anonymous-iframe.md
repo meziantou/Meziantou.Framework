@@ -14,6 +14,13 @@ description: "The results of the web-platform-tests of html/anonymous-iframe, an
 | Reftests | 0 | 0 | 0 | – |
 | **All** | **13** | **18** | **0** | **72%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 2
+- **NOT IMPLEMENTED**: 3
+
 ## Tentative tests
 
 | Test | Result | Subtests | Kind | Description |

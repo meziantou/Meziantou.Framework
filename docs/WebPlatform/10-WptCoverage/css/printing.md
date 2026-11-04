@@ -14,6 +14,15 @@ description: "The results of the web-platform-tests of css/printing, and why the
 | [Reftests](#reftests) | 36 | 39 | 0 | 92% |
 | **All** | **36** | **39** | **0** | **92%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 1
+- **NOT IMPLEMENTED**: 1
+- **REQUIRES**: 1
+  - `rendering`: 1
+
 ## Reftests
 
 | Test | Result | Variants | Kind | Description |

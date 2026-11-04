@@ -14,6 +14,14 @@ description: "The results of the web-platform-tests of reporting, and why the te
 | Reftests | 0 | 0 | 0 | – |
 | **All** | **16** | **25** | **0** | **64%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **TEST BUG**: 1
+- **NOT IMPLEMENTED**: 8
+- **TEST RUNNER**: 1
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

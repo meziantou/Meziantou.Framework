@@ -14,6 +14,13 @@ description: "The results of the web-platform-tests of jpegxl, and why the tests
 | [Reftests](#reftests) | 33 | 51 | 0 | 65% |
 | **All** | **42** | **63** | **0** | **67%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 4
+- **NOT IMPLEMENTED**: 17
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

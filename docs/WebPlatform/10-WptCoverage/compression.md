@@ -14,6 +14,12 @@ description: "The results of the web-platform-tests of compression, and why the 
 | Reftests | 0 | 0 | 0 | – |
 | **All** | **19** | **20** | **0** | **95%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **NOT IMPLEMENTED**: 1
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

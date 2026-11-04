@@ -14,6 +14,12 @@ description: "The results of the web-platform-tests of upgrade-insecure-requests
 | Reftests | 0 | 0 | 0 | – |
 | **All** | **191** | **197** | **0** | **97%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **TEST BUG**: 6
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

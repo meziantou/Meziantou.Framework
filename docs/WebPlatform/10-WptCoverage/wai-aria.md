@@ -14,6 +14,15 @@ description: "The results of the web-platform-tests of wai-aria, and why the tes
 | Reftests | 0 | 0 | 0 | – |
 | **All** | **23** | **35** | **0** | **66%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 1
+- **TEST BUG**: 2
+- **NOT IMPLEMENTED**: 5
+- **TEST RUNNER**: 4
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

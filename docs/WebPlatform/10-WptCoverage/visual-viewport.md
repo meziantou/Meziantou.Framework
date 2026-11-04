@@ -14,6 +14,14 @@ description: "The results of the web-platform-tests of visual-viewport, and why 
 | Reftests | 0 | 0 | 0 | – |
 | **All** | **16** | **19** | **0** | **84%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **NOT IMPLEMENTED**: 1
+- **REQUIRES**: 2
+  - `user-input`: 2
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

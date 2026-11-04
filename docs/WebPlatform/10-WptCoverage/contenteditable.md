@@ -14,6 +14,14 @@ description: "The results of the web-platform-tests of contenteditable, and why 
 | [Reftests](#reftests) | 0 | 1 | 1 | – |
 | **All** | **0** | **3** | **3** | **–** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **NOT IMPLEMENTED**: 3
+- **REQUIRES**: 3
+  - `user-input`: 3
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

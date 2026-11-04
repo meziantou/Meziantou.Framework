@@ -14,6 +14,14 @@ description: "The results of the web-platform-tests of html/document-isolation-p
 | Reftests | 0 | 0 | 0 | – |
 | **All** | **21** | **44** | **0** | **48%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 1
+- **TEST BUG**: 5
+- **NOT IMPLEMENTED**: 22
+
 ## Tentative tests
 
 | Test | Result | Subtests | Kind | Description |

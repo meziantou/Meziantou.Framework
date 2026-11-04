@@ -14,6 +14,16 @@ description: "The results of the web-platform-tests of svg, and why the tests th
 | [Reftests](#reftests) | 555 | 629 | 2 | 89% |
 | **All** | **1,304** | **1,418** | **4** | **92%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 22
+- **TEST BUG**: 9
+- **NOT IMPLEMENTED**: 74
+- **TEST RUNNER**: 7
+- **FLAKY**: 2
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

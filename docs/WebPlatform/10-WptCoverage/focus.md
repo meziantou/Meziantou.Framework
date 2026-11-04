@@ -14,6 +14,13 @@ description: "The results of the web-platform-tests of focus, and why the tests 
 | [Reftests](#reftests) | 1 | 2 | 0 | 50% |
 | **All** | **32** | **41** | **0** | **78%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 1
+- **TEST BUG**: 8
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

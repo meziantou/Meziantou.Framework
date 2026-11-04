@@ -14,6 +14,13 @@ description: "The results of the web-platform-tests of css/WOFF2, and why the te
 | [Reftests](#reftests) | 292 | 298 | 1 | 98% |
 | **All** | **292** | **298** | **1** | **98%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **TEST BUG**: 5
+- **FLAKY**: 1
+
 ## Reftests
 
 | Test | Result | Variants | Kind | Description |

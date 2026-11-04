@@ -14,6 +14,14 @@ description: "The results of the web-platform-tests of css/css-pseudo, and why t
 | [Reftests](#reftests) | 253 | 275 | 0 | 92% |
 | **All** | **307** | **336** | **0** | **91%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 6
+- **TEST BUG**: 9
+- **NOT IMPLEMENTED**: 14
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

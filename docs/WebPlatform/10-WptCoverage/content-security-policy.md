@@ -14,6 +14,16 @@ description: "The results of the web-platform-tests of content-security-policy, 
 | [Reftests](#reftests) | 8 | 8 | 0 | 100% |
 | **All** | **873** | **916** | **0** | **95%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 3
+- **TEST BUG**: 9
+- **NOT IMPLEMENTED**: 24
+- **TEST RUNNER**: 1
+- **OUT OF SCOPE**: 7
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

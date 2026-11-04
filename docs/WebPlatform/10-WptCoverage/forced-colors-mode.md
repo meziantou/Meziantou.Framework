@@ -14,6 +14,13 @@ description: "The results of the web-platform-tests of forced-colors-mode, and w
 | [Reftests](#reftests) | 48 | 49 | 0 | 98% |
 | **All** | **61** | **64** | **0** | **95%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 1
+- **NOT IMPLEMENTED**: 2
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

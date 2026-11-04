@@ -14,6 +14,14 @@ description: "The results of the web-platform-tests of css/css-writing-modes, an
 | [Reftests](#reftests) | 1,145 | 1,159 | 0 | 99% |
 | **All** | **1,228** | **1,245** | **0** | **99%** |
 
+## Failure reasons
+
+The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
+
+- **BUG**: 2
+- **TEST BUG**: 10
+- **NOT IMPLEMENTED**: 5
+
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |

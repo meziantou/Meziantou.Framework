@@ -239,7 +239,7 @@ public partial class JsObject
         JsInternalSlot.StringData => Class == ObjectClass.String,
         JsInternalSlot.SymbolData => Class == ObjectClass.Symbol,
         JsInternalSlot.DateValue => this is JsDateObject,
-        JsInternalSlot.ErrorData => this is JsErrorObject,
+        JsInternalSlot.ErrorData => JsErrorObject.HasErrorData(this),
         JsInternalSlot.RegExpMatcher => this is JsRegExpObject,
         JsInternalSlot.ArrayBufferData => this is JsArrayBuffer { IsShared: false },
         JsInternalSlot.SharedArrayBufferData => this is JsArrayBuffer { IsShared: true },
@@ -285,17 +285,10 @@ public partial class JsObject
     }
 
     /// <summary>Gets the stack trace of an error object (its [[Stack]] internal slot, read by the <c>stack</c> accessor).</summary>
-    public string? GetErrorStack() => (this as JsErrorObject)?.StackTrace;
+    public string? GetErrorStack() => JsErrorObject.GetStackTrace(this);
 
     /// <summary>Sets the stack trace of an error object (e.g. a deserialized error); returns false when the object is not an error.</summary>
-    public bool TrySetErrorStack(string stack)
-    {
-        if (this is not JsErrorObject error)
-            return false;
-
-        error.StackTrace = stack;
-        return true;
-    }
+    public bool TrySetErrorStack(string stack) => JsErrorObject.TrySetStackTrace(this, stack);
 
     /// <summary>
     /// Gets the engine that owns the object, when it is known without running code: the engine of the realm of a function,

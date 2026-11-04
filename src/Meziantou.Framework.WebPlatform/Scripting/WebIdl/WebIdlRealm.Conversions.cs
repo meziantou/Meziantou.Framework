@@ -42,13 +42,14 @@ public sealed partial class WebIdlRealm<TAdapter, TValue> : IJsBufferOwner
     /// <summary>
     /// Converts a value to a buffer source type (https://webidl.spec.whatwg.org/#js-buffer-source-types), or a union of
     /// them: <paramref name="allowedKinds"/> is the set of the <see cref="JsBufferKind"/> of the types (1 &lt;&lt; kind).
-    /// Without [AllowShared], a view of a SharedArrayBuffer is a TypeError.
+    /// Without [AllowShared], a view of a SharedArrayBuffer is a TypeError. Without [AllowResizable], a resizable
+    /// ArrayBuffer, a growable SharedArrayBuffer, or a view of one, is a TypeError.
     /// </summary>
-    internal JsBufferSource ToBufferSource(TValue value, uint allowedKinds, bool allowShared, string typeName)
-        => TryToBufferSource(value, allowedKinds, allowShared) ?? throw CreateTypeError($"The value is not of type '{typeName}'");
+    internal JsBufferSource ToBufferSource(TValue value, uint allowedKinds, bool allowShared, string typeName, bool allowResizable = false)
+        => TryToBufferSource(value, allowedKinds, allowShared, allowResizable) ?? throw CreateTypeError($"The value is not of type '{typeName}'");
 
     /// <summary>Converts a value to a buffer source type, or returns null when the value is not an object of one of the types (the union conversion continues).</summary>
-    internal JsBufferSource? TryToBufferSource(TValue value, uint allowedKinds, bool allowShared)
+    internal JsBufferSource? TryToBufferSource(TValue value, uint allowedKinds, bool allowShared, bool allowResizable = false)
     {
         if (!Adapter.IsObject(value) || !Adapter.TryGetBufferSource(value, out var kind, out var isShared, out var bytes))
             return null;
@@ -58,6 +59,9 @@ public sealed partial class WebIdlRealm<TAdapter, TValue> : IJsBufferOwner
             if (isShared && kind != JsBufferKind.SharedArrayBuffer && !allowShared)
                 throw CreateTypeError($"The {JsBufferSource.GetName(kind)} cannot view a SharedArrayBuffer");
 
+            if (!allowResizable && Adapter.IsResizableBuffer(value))
+                throw CreateTypeError($"The {JsBufferSource.GetName(kind)} cannot be resizable or view a resizable buffer");
+
             return JsBufferSource.FromScript(kind, bytes, value, this);
         }
 
@@ -66,6 +70,9 @@ public sealed partial class WebIdlRealm<TAdapter, TValue> : IJsBufferOwner
         {
             if (!allowShared)
                 throw CreateTypeError("The value cannot be a SharedArrayBuffer");
+
+            if (!allowResizable && Adapter.IsResizableBuffer(value))
+                throw CreateTypeError("The SharedArrayBuffer cannot be growable");
 
             return JsBufferSource.FromScript(kind, bytes, value);
         }

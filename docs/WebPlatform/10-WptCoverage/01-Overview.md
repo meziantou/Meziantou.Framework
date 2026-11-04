@@ -49,17 +49,17 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 25,708 | 29,691 | 2,566 | 95% |
+| [Stable](#stable-tests) | 25,710 | 29,691 | 2,566 | 95% |
 | [Tentative](#tentative-tests) | 1,178 | 3,074 | 845 | 53% |
 | [Reftests](#reftests) | 27,875 | 29,220 | 180 | 96% |
-| **All** | **54,761** | **61,985** | **3,591** | **94%** |
+| **All** | **54,763** | **61,985** | **3,591** | **94%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 476
-- **TEST BUG**: 976
+- **BUG**: 473
+- **TEST BUG**: 977
 - **NOT IMPLEMENTED**: 4,401
 - **REQUIRES**: 1,194
   - `hardware`: 791
@@ -397,7 +397,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`webdriver`](webdriver.md) | 0 | 1 | 1 | – |
 | [`webgl`](webgl.md) | 0 | 20 | 20 | – |
 | [`webhid`](webhid.md) | 0 | 5 | 5 | – |
-| [`webidl`](webidl.md) | 40 | 46 | 2 | 91% |
+| [`webidl`](webidl.md) | 42 | 46 | 2 | 95% |
 | [`webmcp`](webmcp.md) | 0 | 75 | 75 | – |
 | [`webmessaging`](webmessaging.md) | 131 | 131 | 0 | 100% |
 | [`webmidi`](webmidi.md) | 0 | 1 | 1 | – |
@@ -421,7 +421,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 317 | 330 | 0 | 96% |
 | [`xml`](xml.md) | 0 | 12 | 12 | – |
-| **Total (343 sections)** | **25,708** | **29,691** | **2,566** | **95%** |
+| **Total (343 sections)** | **25,710** | **29,691** | **2,566** | **95%** |
 
 ## Tentative tests
 

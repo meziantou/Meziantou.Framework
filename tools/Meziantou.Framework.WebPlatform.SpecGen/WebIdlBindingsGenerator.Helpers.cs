@@ -579,8 +579,8 @@ internal sealed partial class WebIdlBindingsGenerator
 
         if (types.Exists(IsBufferIdlType))
         {
-            var (mask, allowShared) = GetBufferKinds(type, extAttrs);
-            code.Append($"        if (r.TryToBufferSource(value, {mask}u, {Bool(allowShared)}) is {{ }} buffer) return buffer;\n");
+            var (mask, allowShared, allowResizable) = GetBufferKinds(type, extAttrs);
+            code.Append($"        if (r.TryToBufferSource(value, {mask}u, {Bool(allowShared)}{AllowResizableArgument(allowResizable)}) is {{ }} buffer) return buffer;\n");
         }
 
         if (types.Find(t => Definition(t)?.Kind == IdlDefinitionKind.Callback) is { } callbackType)

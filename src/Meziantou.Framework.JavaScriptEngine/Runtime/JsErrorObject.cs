@@ -15,6 +15,33 @@ internal sealed class JsErrorObject(JsObject? prototype) : JsObject(prototype, O
         StackTrace = FormatStackTrace(ErrorFormatting.GetDescription(new JsValue(this)), engine, ErrorStackTraceApi.GetStackTraceLimit(engine?.CurrentRealm), skipUntil: null);
     }
 
+    /// <summary>Gets whether an object has an [[ErrorData]] internal slot: an error object, or a host object that has one.</summary>
+    public static bool HasErrorData(JsObject obj) => obj is JsErrorObject or JsHostObject { HasErrorData: true };
+
+    /// <summary>Gets the stack trace of an object that has an [[ErrorData]] internal slot, or null.</summary>
+    public static string? GetStackTrace(JsObject obj) => obj switch
+    {
+        JsErrorObject error => error.StackTrace,
+        JsHostObject { HasErrorData: true } host => host.ErrorStackTrace,
+        _ => null,
+    };
+
+    /// <summary>Sets the stack trace of an object that has an [[ErrorData]] internal slot; returns false for the other objects.</summary>
+    public static bool TrySetStackTrace(JsObject obj, string stack)
+    {
+        switch (obj)
+        {
+            case JsErrorObject error:
+                error.StackTrace = stack;
+                return true;
+            case JsHostObject { HasErrorData: true } host:
+                host.ErrorStackTrace = stack;
+                return true;
+            default:
+                return false;
+        }
+    }
+
     /// <summary>
     /// Formats the stack trace of the running code: <paramref name="header"/>, then at most
     /// <paramref name="maxFrames"/> frames, the innermost first. When <paramref name="skipUntil"/> is not null, the frames above

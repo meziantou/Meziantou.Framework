@@ -52,11 +52,7 @@ internal static class ErrorStackTraceApi
         var messageString = message.IsUndefined ? "" : JsOperations.ToString(message);
         var header = nameString.Length == 0 ? messageString : messageString.Length == 0 ? nameString : nameString + ": " + messageString;
         var stack = JsErrorObject.FormatStackTrace(header, function.Realm.Engine, GetStackTraceLimit(function.Realm), constructorOpt);
-        if (target is JsErrorObject error)
-        {
-            error.StackTrace = stack;
-        }
-
+        JsErrorObject.TrySetStackTrace(target, stack);
         target.DefinePropertyOrThrow(new PropertyKey("stack"), PropertyDescriptor.Data(JsValue.FromString(stack), PropertyFlags.Writable | PropertyFlags.Configurable));
         return JsValue.Undefined;
     }

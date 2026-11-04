@@ -182,7 +182,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
     // ----------------------------------------------------------------------------------------------------------------
 
     /// <summary>Converts an <c>[AllowResizable] AllowSharedBufferSource</c> and returns a copy of its bytes (stableBytes).</summary>
-    internal byte[] ToWasmBytes(TValue value) => ToBufferSource(value, AllBufferSourceKinds, allowShared: true, "AllowSharedBufferSource").ToArray();
+    internal byte[] ToWasmBytes(TValue value) => ToBufferSource(value, AllBufferSourceKinds, allowShared: true, "AllowSharedBufferSource", allowResizable: true).ToArray();
 
     /// <summary>https://webassembly.github.io/spec/js-api/#dictdef-webassemblycompileoptions</summary>
     internal (string[] BuiltinSets, string? ImportedStringModule) ToWasmCompileOptions(ReadOnlySpan<TValue> arguments, int index)

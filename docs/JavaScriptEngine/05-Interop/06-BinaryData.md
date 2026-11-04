@@ -56,6 +56,10 @@ Assert.Equal([1, 2, 3], bytes.ToArray());
 detached, and the method returns false for any other value. The bytes of a typed array are its elements, in the byte
 order of the machine.
 
+[JsBinaryData.IsResizable](cref:Meziantou.Framework.JavaScriptEngine.JsBinaryData.IsResizable) tells whether the memory can change size: a resizable `ArrayBuffer`, a
+growable `SharedArrayBuffer`, or a view of one. An API that keeps the `Memory<byte>` can reject these buffers, as
+the Web APIs do unless they allow them.
+
 ## Share memory between engines
 
 A `SharedArrayBuffer` is the memory that several engines, each on its own thread, can use at the same time, with

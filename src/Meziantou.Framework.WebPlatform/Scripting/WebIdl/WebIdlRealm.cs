@@ -504,17 +504,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             _definingInterface = previousDefiningInterface;
         }
 
-        if (binding.Name == "DOMException")
-        {
-            // DOMException objects have a stack property in browsers, which testharness.js reads to format them
-            var defineStack = EvaluateBuiltIn("""
-                (function (prototype) {
-                  Object.defineProperty(prototype, 'stack', { get() { return this instanceof DOMException ? this.name + ': ' + this.message : undefined; }, configurable: true });
-                })
-                """);
-            Adapter.Call(defineStack, Adapter.Undefined, [prototype]);
-        }
-        else if (binding.Name == "Blob")
+        if (binding.Name == "Blob")
         {
             DefineBlobStreamMethods(prototype);
         }
@@ -1210,6 +1200,11 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             _ => CreatePlatformObject(prototype, target, GetLegacyPlatformObjectHandler(binding)),
         };
 
+        if (target is DomException exception)
+        {
+            InitializeDomExceptionErrorData(wrapper, exception);
+        }
+
         if ((binding.Flags & InterfaceBindingFlags.ModuleSource) != InterfaceBindingFlags.None)
         {
 #pragma warning disable WEBPLATEXP0014 // The source phase imports are experimental for the consumers of the package only
@@ -1247,6 +1242,21 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         }
 
         return wrapper;
+    }
+
+    /// <summary>
+    /// Gives the object of a DOMException an [[ErrorData]] internal slot and a stack trace, whose first line is the one of
+    /// <c>Error.prototype.toString</c> (https://webidl.spec.whatwg.org/#es-DOMException-specialness). Without engine support,
+    /// the stack is an own data property, as in the browsers that have no <c>Error.prototype.stack</c> accessor.
+    /// </summary>
+    private void InitializeDomExceptionErrorData(TValue wrapper, DomException exception)
+    {
+        var message = exception.Message;
+        var header = message.Length == 0 ? exception.Name : exception.Name.Length == 0 ? message : exception.Name + ": " + message;
+        if (!Adapter.TryInitializeErrorData(wrapper, header))
+        {
+            Adapter.DefineOwnProperty(wrapper, Key("stack"), JsPropertyDescriptor<TValue>.Data(Adapter.FromString(header), writable: true, enumerable: false, configurable: true));
+        }
     }
 
     // The closure is created in its own method: GetWrapper would otherwise allocate it on each call, for the existing wrappers too

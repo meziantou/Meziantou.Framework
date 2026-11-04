@@ -18,7 +18,7 @@ description: "The results of the web-platform-tests of webidl, and why the tests
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 3
+- **TEST BUG**: 1
 - **NOT IMPLEMENTED**: 1
 - **TEST RUNNER**: 2
 

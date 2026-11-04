@@ -244,7 +244,13 @@ internal static class IntrinsicSizing
     /// In quirks mode, the basis of a percentage <c>height</c> of the box when <paramref name="containingBlockBlockSize"/> is
     /// indefinite (see <see cref="ConstraintSpace.QuirksPercentageBlockSize"/>), else null.
     /// </param>
-    public static IntrinsicSizes GetContribution(LayoutContext context, ContainerBox box, WritingDirection containingBlock, double? containingBlockBlockSize, bool stretchesBlockSize = false, bool isFlexItem = false, double? quirksPercentageBlockSize = null)
+    /// <param name="stretchedBlockSizeIsTransferredOnly">
+    /// Whether the stretched block size of the box (<paramref name="stretchesBlockSize"/>) is only transferred through its
+    /// aspect ratio (a grid item with an aspect ratio and <c>normal</c> alignment, see <see cref="GridItem.TransfersStretchedBlockSize"/>):
+    /// its block size comes from its inline size, which its contributions determine, so it is not definite for its contents (their
+    /// percentage block sizes behave as <c>auto</c>, https://drafts.csswg.org/css-sizing-3/#cyclic-percentage-contribution).
+    /// </param>
+    public static IntrinsicSizes GetContribution(LayoutContext context, ContainerBox box, WritingDirection containingBlock, double? containingBlockBlockSize, bool stretchesBlockSize = false, bool isFlexItem = false, double? quirksPercentageBlockSize = null, bool stretchedBlockSizeIsTransferredOnly = false)
     {
         var layout = box.Style.Layout;
         var writingDirection = WritingDirection.FromStyle(layout);
@@ -282,12 +288,14 @@ internal static class IntrinsicSizing
         // height of the nearest ancestor that is not an auto height block container
         var usesQuirksBasis = quirksPercentageBlockSize is not null && FormattingContext.UsesQuirksPercentageHeight(box, layout, boxModel.GetSize(!horizontal));
         var preferredBlockSize = (usesQuirksBasis ? blockSizing with { PercentageBasis = quirksPercentageBlockSize } : blockSizing).Resolve(boxModel.GetSize(!horizontal), SizingProperty.Preferred);
+        var transfersOnly = false;
         if (stretchesBlockSize && boxModel.GetSize(!horizontal).IsAuto)
         {
             preferredBlockSize = blockSizing.StretchSize;
+            transfersOnly = stretchedBlockSizeIsTransferredOnly;
         }
 
-        double? contentBlockSize = preferredBlockSize is { } blockSize ? Math.Max(0, blockSizing.Clamp(blockSize) - blockSizing.Edges) : null;
+        double? contentBlockSize = preferredBlockSize is { } blockSize && !transfersOnly ? Math.Max(0, blockSizing.Clamp(blockSize) - blockSizing.Edges) : null;
 
         // The percentage block sizes of the children of an anonymous block box refer to its containing block (see ContentArea.AnonymousPercentageBlockSize)
         if (contentBlockSize is null && box is { Kind: ContainerBoxKind.Anonymous, IsInlineBox: false, Display.Internal: DisplayInternal.None })

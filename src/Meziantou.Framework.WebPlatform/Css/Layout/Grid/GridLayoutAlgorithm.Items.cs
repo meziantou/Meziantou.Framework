@@ -287,7 +287,7 @@ internal sealed partial class GridLayoutAlgorithm
             var containingBlock = axis == GridAxis.Columns ? _writingDirection : item.WritingDirection;
             // (the block size of an item stretched in the rows is definite once the rows are sized)
             var stretches = axis == GridAxis.Columns && !item.IsOrthogonal && otherAreaSize is not null && (item.StretchesRows || item.TransfersStretchedBlockSize);
-            var (minContent, maxContent) = IntrinsicSizing.GetContribution(_context, item.Box, containingBlock, otherAreaSize, stretches);
+            var (minContent, maxContent) = IntrinsicSizing.GetContribution(_context, item.Box, containingBlock, otherAreaSize, stretches, stretchedBlockSizeIsTransferredOnly: !item.StretchesRows);
             result.MinContent = minContent;
             result.MaxContent = maxContent;
             result.DependsOnContainingBlock = DependsOnContainingBlock(preferred, inBlockAxis: false);

@@ -410,10 +410,12 @@ internal static class Fetching
             if (request.Client is { } mixedContentClient && !(request.Mode == RequestMode.Navigate && request.Destination == RequestDestination.Document) && MixedContent.ShouldBlockFetch(mixedContentClient, url))
                 return true;
         }
-        else if (url.Scheme == "blob" && request.Client is { } blobClient && !(request.Mode == RequestMode.Navigate && request.Destination == RequestDestination.Document) && MixedContent.ShouldBlockFetch(blobClient, url))
+        else if (url.Scheme == "blob" && request.Client is { } blobClient && !(request.Mode == RequestMode.Navigate && request.Destination == RequestDestination.Document)
+            && url.OpaquePath is { } blobPath && UrlParser.Parse(blobPath, baseUrl: null) is { Scheme: "http" } blobOriginUrl && MixedContent.ShouldBlockFetch(blobClient, blobOriginUrl))
         {
-            // https://w3c.github.io/webappsec-mixed-content/#should-block-fetch: a blob: URL is potentially trustworthy when its
-            // origin is (e.g. a blob created by an http: document is mixed content in a secure context)
+            // https://w3c.github.io/webappsec-mixed-content/#should-block-fetch: a blob: URL whose origin is a non-trustworthy
+            // tuple origin (a blob created by an http: document) is mixed content in a secure context. As in the browsers, a blob
+            // created by an opaque origin (e.g. a sandboxed frame of the secure context) is not.
             return true;
         }
 

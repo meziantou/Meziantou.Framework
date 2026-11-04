@@ -189,8 +189,19 @@ public sealed class StylePropertyMap : StylePropertyMapReadOnly
         if (ValueMatcher.ContainsSubstitutionFunction(currentValues))
             throw new TypeErrorException("The value contains a var() reference");
 
-        if (currentValues is [CssPreservedToken { Type: CssTokenType.Ident } keyword] && ValueMatcher.CssWideKeywords.Contains(InfraAscii.ToAsciiLowercase(keyword.Token.Value)))
+        // Appending no values does nothing, even to a CSS-wide keyword
+        if (values.Length == 0)
+            return;
+
+        if (IsCssWideKeyword(currentValues))
             throw new TypeErrorException("A CSS-wide keyword cannot be appended to");
+
+        // A CSS-wide keyword is a value of the whole property, not an item of its list
+        foreach (var value in values)
+        {
+            if (value.Value is CssKeywordValue keywordValue ? ValueMatcher.CssWideKeywords.Contains(InfraAscii.ToAsciiLowercase(keywordValue.Value)) : value.Value is string valueText && IsCssWideKeyword(ValueMatcher.RemoveWhitespace(CssParser.ParseListOfComponentValues(valueText))))
+                throw new TypeErrorException("A CSS-wide keyword cannot be appended");
+        }
 
         var text = CreateInternalRepresentations(name, values);
         if (text.Length == 0)
@@ -220,6 +231,8 @@ public sealed class StylePropertyMap : StylePropertyMapReadOnly
     }
 
     private protected override IEnumerable<string> GetNames() => _declarations.Declarations.Select(d => d.Name).Where(name => _declarations.GetPropertyValue(name).Length > 0);
+
+    private static bool IsCssWideKeyword(List<CssComponentValue> values) => values is [CssPreservedToken { Type: CssTokenType.Ident } keyword] && ValueMatcher.CssWideKeywords.Contains(InfraAscii.ToAsciiLowercase(keyword.Token.Value));
 
     private static void CheckAssociatedProperties(string property, ReadOnlySpan<CssStyleValueOrString> values)
     {

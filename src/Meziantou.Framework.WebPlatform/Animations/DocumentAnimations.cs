@@ -420,6 +420,13 @@ internal sealed class DocumentAnimations
                     var (x, y) => x.Value.CompareTo(y.Value),
                 };
 
+                // The playback events of the animations (e.g. cancel) are dispatched before the events of the CSS animations and
+                // transitions scheduled at the same time (e.g. animationcancel), as in the browsers
+                if (result == 0)
+                {
+                    result = (b.Event is AnimationPlaybackEvent).CompareTo(a.Event is AnimationPlaybackEvent);
+                }
+
                 if (result == 0 && !ReferenceEquals(a.Animation, b.Animation))
                 {
                     result = a.Animation.CompareCompositeOrder(b.Animation);
@@ -488,14 +495,20 @@ internal sealed class DocumentAnimations
             if (animation.EffectValue is not KeyframeEffect effect || !effect.IsInEffect)
                 continue;
 
-            var properties = effect.GetTargetPropertiesForReplacement();
-            var isReplaceable = animation.ReplaceState == AnimationReplaceState.Active
+            // https://drafts.csswg.org/web-animations-1/#replaceable-animation: only the replaceable animations replace the
+            // animations earlier in the composite order (the target properties are physical: a logical property is mapped with
+            // the writing mode of the target)
+            var isReplaceable = animation.ReplaceState != AnimationReplaceState.Removed
                 && animation.PlayStateValue == AnimationPlayState.Finished
                 && animation.Timeline is DocumentTimeline
                 && animation.CompositeOrderClass == 2
                 && ReferenceEquals(animation.DocumentForTiming, _document);
+            if (!isReplaceable)
+                continue;
 
-            if (isReplaceable && properties.Count > 0 && properties.All(replaced.Contains))
+            var properties = GetPhysicalProperties(element, effect);
+
+            if (animation.ReplaceState == AnimationReplaceState.Active && properties.Count > 0 && properties.All(replaced.Contains))
             {
                 animation.ReplaceState = AnimationReplaceState.Removed;
                 animation.OnRemoved();
@@ -509,16 +522,24 @@ internal sealed class DocumentAnimations
                 continue;
             }
 
-            if (animation.ReplaceState != AnimationReplaceState.Removed)
-            {
-                foreach (var property in properties)
-                {
-                    replaced.Add(property);
-                }
-            }
+            replaced.UnionWith(properties);
+        }
+    }
+
+    private static HashSet<string> GetPhysicalProperties(Element element, KeyframeEffect effect)
+    {
+        var properties = effect.GetTargetPropertiesForReplacement();
+        if (!properties.Any(Css.Cascade.LogicalProperties.IsFlowRelative))
+            return properties;
+
+        var style = element.NodeDocument.GetStyleEngine().GetStyle(element, effect.PseudoElementName);
+        var result = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var property in properties)
+        {
+            result.Add(Css.Cascade.LogicalProperties.GetPhysicalProperty(property, style) ?? property);
         }
 
-        _ = element;
+        return result;
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -682,7 +703,8 @@ internal sealed class DocumentAnimations
             if (subtreeOf is not null)
             {
                 // The subtree of a pseudo-element is made of its descendant pseudo-elements (the view transition tree)
-                if (!ReferenceEquals(element, subtreeOf) && !(includeSubtree && pseudoElement is null && subtreeOf.IsShadowIncludingInclusiveAncestorOf(element)))
+                // (the subtree does not cross the shadow tree boundaries)
+                if (!ReferenceEquals(element, subtreeOf) && !(includeSubtree && pseudoElement is null && subtreeOf.IsInclusiveAncestorOf(element)))
                     continue;
             }
             else if (!(shadowIncluding ? root.IsShadowIncludingInclusiveAncestorOf(element) : root.IsInclusiveAncestorOf(element)))
@@ -700,7 +722,8 @@ internal sealed class DocumentAnimations
 
                 foreach (var effect in effects)
                 {
-                    if (effect.Animation is { } animation && effect.IsRelevant && !result.Contains(animation))
+                    // https://drafts.csswg.org/web-animations-1/#relevant-animation: a removed animation is not relevant
+                    if (effect.Animation is { ReplaceState: not AnimationReplaceState.Removed } animation && effect.IsRelevant && !result.Contains(animation))
                     {
                         result.Add(animation);
                     }

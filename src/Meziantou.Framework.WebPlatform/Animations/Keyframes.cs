@@ -190,7 +190,7 @@ internal static class KeyframeProcessing
             if (longhands is null || longhands.Count == 0)
                 continue;
 
-            keyframe.Properties.Add(new(propertyName, value));
+            keyframe.Properties.Add(new(propertyName, SerializeValue(propertyName, longhands, value)));
             if (CssPropertyRegistry.Get(propertyName) is { IsShorthand: true })
             {
                 shorthands.Add((propertyName, longhands));
@@ -215,6 +215,19 @@ internal static class KeyframeProcessing
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// Returns the serialization of a valid property value (https://drafts.csswg.org/web-animations-1/#dom-keyframeeffect-getkeyframes:
+    /// "the result of serializing the property value"), as the CSSOM serializes a declaration of the property.
+    /// </summary>
+    private static string SerializeValue(string propertyName, List<CssLonghandValue> longhands, string value)
+    {
+        var serialized = CssPropertyRegistry.Get(propertyName) is { IsShorthand: true } shorthand
+            ? CssShorthands.Serialize(shorthand, name => longhands.Find(longhand => longhand.Name == name) is { Name: not null } longhand ? longhand : null)
+            : longhands is [var single] ? single.Value : "";
+
+        return serialized.Length > 0 ? serialized : value;
     }
 
     /// <summary>Returns whether a property can be animated by a keyframe effect: an animatable longhand, a shorthand of animatable longhands, or a custom property.</summary>

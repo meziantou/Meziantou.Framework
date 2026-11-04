@@ -37,8 +37,10 @@ internal sealed partial class ComputedStyle
         if (!MayBeAnimated(name))
             return false;
 
-        var transition = IncludeTransitions ? GetTransitionEffect(name) : null;
         var important = (TryGetCascadedValue(name, out var cascaded) && cascaded.IsImportant) || HasUserAgentImportantOverlay(name);
+
+        // The transitions lose to the important declarations of the user agent and user origins only
+        var transition = IncludeTransitions && !cascaded.IsNonAuthorImportant ? GetTransitionEffect(name) : null;
         var effects = important ? null : GetEffectStack(name);
         if (transition is null && effects is null)
             return false;
@@ -120,6 +122,19 @@ internal sealed partial class ComputedStyle
     }
 
     /// <summary>
+    /// Returns the after-change style of the element, but inheriting from the current style of the parent (with the values of its
+    /// transitions): a value that differs from the after-change value only because of the transitions of the ancestors (e.g. an
+    /// em length when the font size of the parent transitions) does not start a transition
+    /// (https://drafts.csswg.org/css-transitions-1/#starting: "inherited (directly or indirectly) from another element that is
+    /// transitioning the same property").
+    /// </summary>
+    internal ComputedStyle CreateAfterChangeStyleInheritingCurrentParent()
+    {
+        _cascadedShared = true;
+        return WithVisitedCascadeOf(new ComputedStyle(Engine, Element, PseudoElement, Parent, _cascaded, cascadedShared: true) { HighlightParent = HighlightParent, IncludeTransitions = false }, sameCascadedValues: true);
+    }
+
+    /// <summary>
     /// Returns the style with the same cascade and the animations of the element at the current time: the before-change style
     /// of a transition is "the computed values of all properties on the element as of the previous style change event, except
     /// with any styles derived from declarative animations such as CSS Transitions, CSS Animations, and SMIL Animations updated
@@ -158,6 +173,10 @@ internal sealed partial class ComputedStyle
 
         // A ::before or ::after pseudo-element whose content is none (or normal) does not exist
         if (PseudoElement is "before" or "after" && GetUnanimatedComputedValue("content") is "none" or "normal")
+            return true;
+
+        // A ::marker pseudo-element exists only when its originating element is a list item
+        if (PseudoElement == "marker" && Parent is { } originating && !originating.GetComputedValue("display").Contains("list-item", StringComparison.Ordinal))
             return true;
 
         for (var style = Parent; style is not null; style = style.Parent)
@@ -486,13 +505,18 @@ internal sealed partial class ComputedStyle
         var declared = value.ShorthandName is null ? value with { Name = property.Name } : value;
         var keepsInfiniteCalculations = CssValueComputer.KeepsInfiniteCalculations;
         CssValueComputer.KeepsInfiniteCalculations = true;
+        var fontSizeOrigin = _fontSizeOrigin;
         try
         {
-            return ComputeCascadedValue(property, new CascadedValue(declared, 0, keyframe.Source), property.Inherited, rollbacks: 0);
+            var result = ComputeCascadedValue(property, new CascadedValue(declared, 0, keyframe.Source), property.Inherited, rollbacks: 0);
+
+            // A font size keyword of a keyframe is mapped with the default font size of the generic family, as a declared one
+            return property.Name == "font-size" ? AdjustFontSizeToGenericFamily(result) : result;
         }
         finally
         {
             CssValueComputer.KeepsInfiniteCalculations = keepsInfiniteCalculations;
+            _fontSizeOrigin = fontSizeOrigin;
         }
     }
 

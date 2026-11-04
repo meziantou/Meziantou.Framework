@@ -4136,7 +4136,7 @@ internal sealed partial class StyleEngine
                     var snapshot = declaration.Snapshot;
                     var rank = ((long)i << 20) | (uint)j;
                     cascaded = GetRollback(snapshot.Value) == Rollback.None
-                        ? WithSubstitutionRollback(new CascadedValue(snapshot, rank, block.Source) { OriginatingElement = block.OriginatingElement, IsImportant = block.Important }, blocks, i)
+                        ? WithSubstitutionRollback(new CascadedValue(snapshot, rank, block.Source) { OriginatingElement = block.OriginatingElement, IsImportant = block.Important, IsNonAuthorImportant = block.Important && block.Origin != CascadeOrigin.Author }, blocks, i)
                         : RollBack(blocks, declaration.Name, i, snapshot.Value, rank);
                 }
             }
@@ -4254,7 +4254,7 @@ internal sealed partial class StyleEngine
                     {
                         value = declaration.Value;
                         if (GetRollback(value) == Rollback.None)
-                            return WithSubstitutionRollback(new CascadedValue(declaration.Snapshot, rank, candidate.Source) { Position = ((long)i << 20) | (uint)j, OriginatingElement = candidate.OriginatingElement, IsImportant = candidate.Important }, blocks, i);
+                            return WithSubstitutionRollback(new CascadedValue(declaration.Snapshot, rank, candidate.Source) { Position = ((long)i << 20) | (uint)j, OriginatingElement = candidate.OriginatingElement, IsImportant = candidate.Important, IsNonAuthorImportant = candidate.Important && candidate.Origin != CascadeOrigin.Author }, blocks, i);
 
                         index = i;
                         found = true;
@@ -4388,6 +4388,16 @@ internal readonly struct CascadedValue
     }
 
     /// <summary>
+    /// Whether the declaration of the value is an important declaration of the user agent or user origins: it wins over the
+    /// transitions too (https://drafts.csswg.org/css-cascade-5/#cascade-origin).
+    /// </summary>
+    public bool IsNonAuthorImportant
+    {
+        get => _extra?.NonAuthorImportant ?? false;
+        init => _extra = _extra is not null ? _extra with { NonAuthorImportant = value } : !value ? null : new CascadedValueExtra(Rank, RollBackSubstitution: null, OriginatingElement: null, NonAuthorImportant: true);
+    }
+
+    /// <summary>
     /// Returns whether the value wins over the value of a logical or physical property that maps to the same property
     /// (https://drafts.csswg.org/css-logical/#logical-property-group): the winning declaration with the highest rank, unless
     /// it rolls back the cascade past the other value, whose declaration is in a lower block, then the declaration it
@@ -4404,7 +4414,7 @@ internal readonly struct CascadedValue
 }
 
 /// <summary>The rarely used state of a cascaded value: the values that roll back the cascade, and the declarations of the ::part() rules.</summary>
-internal sealed record CascadedValueExtra(long Position, Func<string, CascadedValue>? RollBackSubstitution, Element? OriginatingElement, bool Important = false);
+internal sealed record CascadedValueExtra(long Position, Func<string, CascadedValue>? RollBackSubstitution, Element? OriginatingElement, bool Important = false, bool NonAuthorImportant = false);
 
 /// <summary>
 /// The base URL, the tree scope and the mixin of the declarations of a rule (see <see cref="CascadedValue"/>), the namespace

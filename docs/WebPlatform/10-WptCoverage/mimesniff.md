@@ -18,8 +18,7 @@ description: "The results of the web-platform-tests of mimesniff, and why the te
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **REQUIRES**: 6
-  - `rendering`: 6
+- **TEST BUG**: 1
 
 ## Stable tests
 

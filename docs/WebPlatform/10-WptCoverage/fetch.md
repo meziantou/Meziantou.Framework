@@ -19,7 +19,7 @@ description: "The results of the web-platform-tests of fetch, and why the tests 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **BUG**: 13
-- **TEST BUG**: 18
+- **TEST BUG**: 19
 - **NOT IMPLEMENTED**: 91
 - **REQUIRES**: 3
   - `layout`: 2

@@ -841,9 +841,9 @@ internal sealed partial class BoxTreeBuilder
 
         if (BoxGeneration.IsReplaced(element, style))
         {
-            // As in the browsers, the content of an img element or of an image button can be replaced by an image
+            // As in the browsers, the content of an img element, of an image button or of a video element can be replaced by an image
             // (https://drafts.csswg.org/css-content-3/#content-property)
-            var replaced = new ContainerBox(ContainerBoxKind.Replaced, style, GetReplacedDisplay(display), element) { GeneratedImage = element is HtmlImageElement or HtmlInputElement { InputType: InputType.Image } ? GetReplacementImage(style) : null };
+            var replaced = new ContainerBox(ContainerBoxKind.Replaced, style, GetReplacedDisplay(display), element) { GeneratedImage = element is HtmlImageElement or HtmlInputElement { InputType: InputType.Image } or HtmlVideoElement ? GetReplacementImage(style) : null };
             parent.AppendChild(replaced);
             _boxes[(element, null)] = replaced;
             ApplyContentVisibility(replaced, element, style);

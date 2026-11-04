@@ -9,47 +9,48 @@ description: "The results of the web-platform-tests of notifications, and why th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 20 | 20 | – |
-| [Tentative](#tentative-tests) | 0 | 4 | 4 | – |
+| [Stable](#stable-tests) | 12 | 20 | 0 | 60% |
+| [Tentative](#tentative-tests) | 2 | 4 | 0 | 50% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **0** | **24** | **24** | **–** |
+| **All** | **14** | **24** | **0** | **58%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 24
+- **TEST BUG**: 1
+- **NOT IMPLEMENTED**: 10
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`constructor-basic.https.html`](https://wpt.fyi/results/notifications/constructor-basic.https.html) | Disabled | – | NOT IMPLEMENTED | Notifications API |
-| [`constructor-invalid.https.html`](https://wpt.fyi/results/notifications/constructor-invalid.https.html) | Disabled | – | NOT IMPLEMENTED | Notifications API |
-| [`constructor-non-secure.html`](https://wpt.fyi/results/notifications/constructor-non-secure.html) | Disabled | – | NOT IMPLEMENTED | Notifications API |
-| [`event-onclose.https.html`](https://wpt.fyi/results/notifications/event-onclose.https.html) | Disabled | – | NOT IMPLEMENTED | Notifications API |
-| [`event-onshow.https.html`](https://wpt.fyi/results/notifications/event-onshow.https.html) | Disabled | – | NOT IMPLEMENTED | Notifications API |
-| [`fetch-url-resolve.https.window.js`](https://wpt.fyi/results/notifications/fetch-url-resolve.https.window.js) | Disabled | – | NOT IMPLEMENTED | Notifications API |
-| [`getnotifications-across-processes.https.window.js`](https://wpt.fyi/results/notifications/getnotifications-across-processes.https.window.js) | Disabled | – | NOT IMPLEMENTED | Notifications API |
-| [`historical.any.js`](https://wpt.fyi/results/notifications/historical.any.js) | Disabled | – | NOT IMPLEMENTED | Notifications API |
-| [`icon-url-encoding-euc-kr.https.html`](https://wpt.fyi/results/notifications/icon-url-encoding-euc-kr.https.html) | Disabled | – | NOT IMPLEMENTED | Notifications API |
-| [`idlharness.https.any.js`](https://wpt.fyi/results/notifications/idlharness.https.any.js) | Disabled | – | NOT IMPLEMENTED | Notifications API |
-| [`instance.https.window.js`](https://wpt.fyi/results/notifications/instance.https.window.js) | Disabled | – | NOT IMPLEMENTED | Notifications API |
-| [`lang.https.html`](https://wpt.fyi/results/notifications/lang.https.html) | Disabled | – | NOT IMPLEMENTED | Notifications API |
-| [`permission.html`](https://wpt.fyi/results/notifications/permission.html) | Disabled | – | NOT IMPLEMENTED | Notifications API |
-| [`permissions-non-secure.html`](https://wpt.fyi/results/notifications/permissions-non-secure.html) | Disabled | – | NOT IMPLEMENTED | Notifications API |
-| [`registration-association.https.window.js`](https://wpt.fyi/results/notifications/registration-association.https.window.js) | Disabled | – | NOT IMPLEMENTED | Notifications API |
-| [`shownotification-window.https.html`](https://wpt.fyi/results/notifications/shownotification-window.https.html) | Disabled | – | NOT IMPLEMENTED | Notifications API |
-| [`shownotification-without-permission.https.window.js`](https://wpt.fyi/results/notifications/shownotification-without-permission.https.window.js) | Disabled | – | NOT IMPLEMENTED | Notifications API |
-| [`shownotification.https.window.js`](https://wpt.fyi/results/notifications/shownotification.https.window.js) | Disabled | – | NOT IMPLEMENTED | Notifications API |
-| [`tag.https.html`](https://wpt.fyi/results/notifications/tag.https.html) | Disabled | – | NOT IMPLEMENTED | Notifications API |
-| [`worker-gc.https.window.js`](https://wpt.fyi/results/notifications/worker-gc.https.window.js) | Disabled | – | NOT IMPLEMENTED | Notifications API |
+| [`constructor-basic.https.html`](https://wpt.fyi/results/notifications/constructor-basic.https.html) | Pass | 4 / 4 |  |  |
+| [`constructor-invalid.https.html`](https://wpt.fyi/results/notifications/constructor-invalid.https.html) | Pass | 1 / 1 |  |  |
+| [`constructor-non-secure.html`](https://wpt.fyi/results/notifications/constructor-non-secure.html) | Pass | 1 / 1 |  |  |
+| [`event-onclose.https.html`](https://wpt.fyi/results/notifications/event-onclose.https.html) | Pass | 2 / 2 |  |  |
+| [`event-onshow.https.html`](https://wpt.fyi/results/notifications/event-onshow.https.html) | Pass | 1 / 1 |  |  |
+| [`fetch-url-resolve.https.window.js`](https://wpt.fyi/results/notifications/fetch-url-resolve.https.window.js) | Error | 1 / 2 | NOT IMPLEMENTED | persistent notifications (`ServiceWorkerRegistration.showNotification()` and `getNotifications()`) |
+| [`getnotifications-across-processes.https.window.js`](https://wpt.fyi/results/notifications/getnotifications-across-processes.https.window.js) | Error | 0 / 3 | NOT IMPLEMENTED | persistent notifications (`ServiceWorkerRegistration.showNotification()` and `getNotifications()`) |
+| [`historical.any.js`](https://wpt.fyi/results/notifications/historical.any.js) | Pass | 4 / 4 |  |  |
+| [`icon-url-encoding-euc-kr.https.html`](https://wpt.fyi/results/notifications/icon-url-encoding-euc-kr.https.html) | Pass | 1 / 1 |  |  |
+| [`idlharness.https.any.js`](https://wpt.fyi/results/notifications/idlharness.https.any.js) | Fail | 187 / 193 | NOT IMPLEMENTED | persistent notifications (`ServiceWorkerRegistration.showNotification()` and `getNotifications()`) |
+| [`instance.https.window.js`](https://wpt.fyi/results/notifications/instance.https.window.js) | Error | 1 / 34 | TEST BUG, NOT IMPLEMENTED | the window subtests construct a `Notification` with `actions`, which the constructor rejects with a `TypeError` (only the persistent notifications have actions); persistent notifications (`ServiceWorkerRegistration.showNotification()` and `getNotifications()`) |
+| [`lang.https.html`](https://wpt.fyi/results/notifications/lang.https.html) | Pass | 37 / 37 |  |  |
+| [`permission.html`](https://wpt.fyi/results/notifications/permission.html) | Pass | 1 / 1 |  |  |
+| [`permissions-non-secure.html`](https://wpt.fyi/results/notifications/permissions-non-secure.html) | Pass | 3 / 3 |  |  |
+| [`registration-association.https.window.js`](https://wpt.fyi/results/notifications/registration-association.https.window.js) | Error | 0 / 2 | NOT IMPLEMENTED | persistent notifications (`ServiceWorkerRegistration.showNotification()` and `getNotifications()`) |
+| [`shownotification-window.https.html`](https://wpt.fyi/results/notifications/shownotification-window.https.html) | Error | 0 / 1 | NOT IMPLEMENTED | persistent notifications (`ServiceWorkerRegistration.showNotification()` and `getNotifications()`) |
+| [`shownotification-without-permission.https.window.js`](https://wpt.fyi/results/notifications/shownotification-without-permission.https.window.js) | Error | 0 / 1 | NOT IMPLEMENTED | persistent notifications (`ServiceWorkerRegistration.showNotification()` and `getNotifications()`) |
+| [`shownotification.https.window.js`](https://wpt.fyi/results/notifications/shownotification.https.window.js) | Error | 0 / 11 | NOT IMPLEMENTED | persistent notifications (`ServiceWorkerRegistration.showNotification()` and `getNotifications()`) |
+| [`tag.https.html`](https://wpt.fyi/results/notifications/tag.https.html) | Pass | 2 / 2 |  |  |
+| [`worker-gc.https.window.js`](https://wpt.fyi/results/notifications/worker-gc.https.window.js) | Pass | 1 / 1 |  |  |
 
 ## Tentative tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`cross-origin-nested.tentative.https.sub.html`](https://wpt.fyi/results/notifications/cross-origin-nested.tentative.https.sub.html) | Disabled | – | NOT IMPLEMENTED | Notifications API |
-| [`cross-origin-same-site-request.tentative.https.sub.html`](https://wpt.fyi/results/notifications/cross-origin-same-site-request.tentative.https.sub.html) | Disabled | – | NOT IMPLEMENTED | Notifications API |
-| [`cross-origin-serviceworker.tentative.https.sub.html`](https://wpt.fyi/results/notifications/cross-origin-serviceworker.tentative.https.sub.html) | Disabled | – | NOT IMPLEMENTED | Notifications API |
-| [`icon-fetch.tentative.https.window.js`](https://wpt.fyi/results/notifications/icon-fetch.tentative.https.window.js) | Disabled | – | NOT IMPLEMENTED | Notifications API |
+| [`cross-origin-nested.tentative.https.sub.html`](https://wpt.fyi/results/notifications/cross-origin-nested.tentative.https.sub.html) | Pass | 4 / 4 |  |  |
+| [`cross-origin-same-site-request.tentative.https.sub.html`](https://wpt.fyi/results/notifications/cross-origin-same-site-request.tentative.https.sub.html) | Pass | 1 / 1 |  |  |
+| [`cross-origin-serviceworker.tentative.https.sub.html`](https://wpt.fyi/results/notifications/cross-origin-serviceworker.tentative.https.sub.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | persistent notifications (`ServiceWorkerRegistration.showNotification()` and `getNotifications()`) |
+| [`icon-fetch.tentative.https.window.js`](https://wpt.fyi/results/notifications/icon-fetch.tentative.https.window.js) | Fail | 0 / 1 | NOT IMPLEMENTED | persistent notifications (`ServiceWorkerRegistration.showNotification()` and `getNotifications()`) |

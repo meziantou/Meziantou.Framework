@@ -90,6 +90,29 @@ public sealed class Permissions
     }
 
     /// <summary>
+    /// https://w3c.github.io/permissions/#dfn-request-permission-to-use: the state of the permission, after asking the user
+    /// when it is <see cref="PermissionState.Prompt"/>. The answer of <see cref="BrowsingContextOptions.RequestPermission"/>
+    /// is stored in the permission store (for the top-level origin), so the next requests do not ask again; without
+    /// callback, the request is denied and nothing is stored (the user dismissed the prompt).
+    /// </summary>
+    internal static PermissionState RequestPermissionToUse(GlobalScope global, string name)
+    {
+        var current = GetPermissionState(global, name);
+        if (current != PermissionState.Prompt)
+            return current;
+
+        if (global.Options.RequestPermission is not { } request)
+            return PermissionState.Denied;
+
+        var answer = request(CallbackContext.For(global), name);
+        if (answer is PermissionState.Prompt)
+            return PermissionState.Denied;
+
+        global.Options.EffectivePermissions.SetState(name, global.EnvironmentDocument.TopLevelOrigin.Serialize(), answer);
+        return answer;
+    }
+
+    /// <summary>
     /// Returns the state of a permission (https://w3c.github.io/permissions/#dom-permissions-query). The task fails with an
     /// <c>InvalidStateError</c> <see cref="DomException"/> when the document is not fully active, and with a
     /// <see cref="TypeErrorException"/> when the feature is not supported.

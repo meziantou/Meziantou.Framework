@@ -48,26 +48,26 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 25,715 | 29,691 | 2,507 | 95% |
-| [Tentative](#tentative-tests) | 1,302 | 3,074 | 715 | 55% |
+| [Stable](#stable-tests) | 25,770 | 29,691 | 2,446 | 95% |
+| [Tentative](#tentative-tests) | 1,305 | 3,074 | 710 | 55% |
 | [Reftests](#reftests) | 27,880 | 29,220 | 173 | 96% |
-| **All** | **54,897** | **61,985** | **3,395** | **94%** |
+| **All** | **54,955** | **61,985** | **3,329** | **94%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **BUG**: 473
-- **TEST BUG**: 977
-- **NOT IMPLEMENTED**: 4,466
-- **REQUIRES**: 989
-  - `hardware`: 791
+- **TEST BUG**: 980
+- **NOT IMPLEMENTED**: 4,433
+- **REQUIRES**: 962
+  - `hardware`: 764
   - `layout`: 31
   - `media`: 18
   - `service-workers`: 1
   - `user-input`: 155
   - `workers`: 3
-- **TEST RUNNER**: 303
+- **TEST RUNNER**: 301
 - **OUT OF SCOPE**: 229
 - **FLAKY**: 14
 - **PERFORMANCE**: 7
@@ -231,7 +231,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`fullscreen`](fullscreen.md) | 81 | 87 | 0 | 93% |
 | [`gamepad`](gamepad.md) | 0 | 6 | 6 | – |
 | [`generic-sensor`](generic-sensor.md) | 0 | 3 | 3 | – |
-| [`geolocation`](geolocation.md) | 0 | 23 | 23 | – |
+| [`geolocation`](geolocation.md) | 20 | 23 | 0 | 87% |
 | [`geolocation-sensor`](geolocation-sensor.md) | 0 | 1 | 1 | – |
 | [`gpc`](gpc.md) | 0 | 4 | 4 | – |
 | [`graphics-aria`](graphics-aria.md) | 0 | 1 | 1 | – |
@@ -245,7 +245,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`html/cross-origin-opener-policy`](html/cross-origin-opener-policy.md) | 67 | 114 | 0 | 59% |
 | [`html/dom`](html/dom.md) | 211 | 216 | 0 | 98% |
 | [`html/editing`](html/editing.md) | 119 | 129 | 0 | 92% |
-| [`html/infrastructure`](html/infrastructure.md) | 62 | 69 | 0 | 90% |
+| [`html/infrastructure`](html/infrastructure.md) | 63 | 69 | 0 | 91% |
 | [`html/interaction`](html/interaction.md) | 55 | 58 | 0 | 95% |
 | [`html/links`](html/links.md) | 6 | 6 | 0 | 100% |
 | [`html/meta`](html/meta.md) | 1 | 1 | 0 | 100% |
@@ -305,7 +305,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`navigation-timing`](navigation-timing.md) | 54 | 58 | 0 | 93% |
 | [`netinfo`](netinfo.md) | 0 | 2 | 2 | – |
 | [`network-error-logging`](network-error-logging.md) | 0 | 12 | 12 | – |
-| [`notifications`](notifications.md) | 0 | 20 | 20 | – |
+| [`notifications`](notifications.md) | 12 | 20 | 0 | 60% |
 | [`old-tests`](old-tests.md) | 0 | 15 | 15 | – |
 | [`orientation-event`](orientation-event.md) | 0 | 27 | 27 | – |
 | [`orientation-sensor`](orientation-sensor.md) | 0 | 16 | 16 | – |
@@ -319,7 +319,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`performance-timeline`](performance-timeline.md) | 29 | 30 | 0 | 97% |
 | [`periodic-background-sync`](periodic-background-sync.md) | 0 | 2 | 2 | – |
 | [`permissions`](permissions.md) | 11 | 14 | 2 | 92% |
-| [`permissions-policy`](permissions-policy.md) | 39 | 94 | 0 | 41% |
+| [`permissions-policy`](permissions-policy.md) | 40 | 94 | 0 | 43% |
 | [`permissions-request`](permissions-request.md) | 0 | 1 | 1 | – |
 | [`permissions-revoke`](permissions-revoke.md) | 0 | 1 | 1 | – |
 | [`picture-in-picture`](picture-in-picture.md) | 0 | 18 | 18 | – |
@@ -356,7 +356,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`shadow-dom`](shadow-dom.md) | 217 | 254 | 0 | 85% |
 | [`shape-detection`](shape-detection.md) | 0 | 25 | 0 | 0% |
 | [`soft-navigation-heuristics`](soft-navigation-heuristics.md) | 1 | 1 | 0 | 100% |
-| [`speculation-rules`](speculation-rules.md) | 122 | 185 | 1 | 66% |
+| [`speculation-rules`](speculation-rules.md) | 124 | 185 | 1 | 67% |
 | [`speech-api`](speech-api.md) | 0 | 16 | 16 | – |
 | [`storage`](storage.md) | 11 | 14 | 0 | 79% |
 | [`storage-access-api`](storage-access-api.md) | 0 | 37 | 37 | – |
@@ -373,21 +373,21 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`url`](url.md) | 33 | 34 | 0 | 97% |
 | [`urlpattern`](urlpattern.md) | 6 | 6 | 0 | 100% |
 | [`user-timing`](user-timing.md) | 38 | 38 | 0 | 100% |
-| [`vibration`](vibration.md) | 0 | 4 | 4 | – |
+| [`vibration`](vibration.md) | 4 | 4 | 0 | 100% |
 | [`video-rvfc`](video-rvfc.md) | 0 | 8 | 8 | – |
 | [`viewport`](viewport.md) | 1 | 1 | 0 | 100% |
 | [`viewport-segments`](viewport-segments.md) | 0 | 3 | 3 | – |
 | [`virtual-keyboard`](virtual-keyboard.md) | 0 | 3 | 3 | – |
 | [`visual-viewport`](visual-viewport.md) | 16 | 19 | 0 | 84% |
 | [`wai-aria`](wai-aria.md) | 20 | 21 | 0 | 95% |
-| [`wasm`](wasm.md) | 324 | 342 | 0 | 95% |
+| [`wasm`](wasm.md) | 325 | 342 | 0 | 95% |
 | [`web-animations`](web-animations.md) | 117 | 136 | 0 | 86% |
 | [`web-based-payment-handler`](web-based-payment-handler.md) | 0 | 10 | 10 | – |
 | [`web-extensions`](web-extensions.md) | 0 | 6 | 6 | – |
 | [`web-locks`](web-locks.md) | 22 | 23 | 0 | 96% |
 | [`web-nfc`](web-nfc.md) | 0 | 11 | 11 | – |
 | [`web-otp`](web-otp.md) | 0 | 1 | 1 | – |
-| [`web-share`](web-share.md) | 0 | 14 | 14 | – |
+| [`web-share`](web-share.md) | 14 | 14 | 0 | 100% |
 | [`webaudio`](webaudio.md) | 278 | 298 | 0 | 93% |
 | [`webauthn`](webauthn.md) | 0 | 54 | 54 | – |
 | [`webcodecs`](webcodecs.md) | 0 | 86 | 86 | – |
@@ -419,7 +419,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 317 | 330 | 0 | 96% |
 | [`xml`](xml.md) | 0 | 12 | 12 | – |
-| **Total (343 sections)** | **25,715** | **29,691** | **2,507** | **95%** |
+| **Total (343 sections)** | **25,770** | **29,691** | **2,446** | **95%** |
 
 ## Tentative tests
 
@@ -533,7 +533,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`mimesniff`](mimesniff.md#tentative-tests) | 2 | 2 | 0 | 100% |
 | [`mixed-content`](mixed-content.md#tentative-tests) | 4 | 4 | 0 | 100% |
 | [`navigation-api`](navigation-api.md#tentative-tests) | 3 | 12 | 0 | 25% |
-| [`notifications`](notifications.md#tentative-tests) | 0 | 4 | 4 | – |
+| [`notifications`](notifications.md#tentative-tests) | 2 | 4 | 0 | 50% |
 | [`page-lifecycle`](page-lifecycle.md#tentative-tests) | 0 | 3 | 3 | – |
 | [`page-visibility`](page-visibility.md#tentative-tests) | 1 | 1 | 0 | 100% |
 | [`payment-request`](payment-request.md#tentative-tests) | 0 | 2 | 2 | – |
@@ -576,7 +576,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`web-bundle`](web-bundle.md#tentative-tests) | 0 | 29 | 29 | – |
 | [`web-install`](web-install.md#tentative-tests) | 0 | 5 | 5 | – |
 | [`web-locks`](web-locks.md#tentative-tests) | 6 | 7 | 0 | 86% |
-| [`web-share`](web-share.md#tentative-tests) | 0 | 1 | 1 | – |
+| [`web-share`](web-share.md#tentative-tests) | 1 | 1 | 0 | 100% |
 | [`webaudio`](webaudio.md#tentative-tests) | 2 | 5 | 0 | 40% |
 | [`webauthn`](webauthn.md#tentative-tests) | 0 | 1 | 1 | – |
 | [`WebCryptoAPI`](WebCryptoAPI.md#tentative-tests) | 54 | 54 | 0 | 100% |
@@ -589,7 +589,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`workers`](workers.md#tentative-tests) | 0 | 8 | 0 | 0% |
 | [`xhr`](xhr.md#tentative-tests) | 2 | 2 | 0 | 100% |
 | [`xml`](xml.md#tentative-tests) | 0 | 2 | 2 | – |
-| **Total (164 sections)** | **1,302** | **3,074** | **715** | **55%** |
+| **Total (164 sections)** | **1,305** | **3,074** | **710** | **55%** |
 
 ## Reftests
 

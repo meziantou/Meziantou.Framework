@@ -180,7 +180,7 @@
     "reftest": "PASS"
   },
   "css/css-content/quotes-030.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-content/quotes-031.html": {
     "reftest": "PASS"

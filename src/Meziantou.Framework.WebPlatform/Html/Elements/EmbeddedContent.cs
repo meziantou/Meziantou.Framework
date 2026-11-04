@@ -575,6 +575,19 @@ public partial class HtmlScriptElement
         SetDelayingTheLoadEvent(false);
     }
 
+    /// <summary>Whether the script was streamed by a parser that was aborted before it ran (see <see cref="DiscardScriptOfAbortedParser"/>).</summary>
+    private bool _discardedByAbortedParser;
+
+    /// <summary>
+    /// Discards a streamed script that has not run when its parser is aborted: it is the pending parsing-blocking script of the
+    /// parser, which never runs, and on which the rendering is unblocked (https://whatpr.org/html/12758/parsing.html#abort-a-parser).
+    /// </summary>
+    internal void DiscardScriptOfAbortedParser()
+    {
+        _discardedByAbortedParser = true;
+        StopBlockingRendering();
+    }
+
     private void SetReadyToBeParserExecuted()
     {
         ReadyToBeParserExecuted = true;
@@ -886,7 +899,7 @@ public partial class HtmlScriptElement
     internal void Execute()
     {
         var document = NodeDocument;
-        if (!ReferenceEquals(PreparationTimeDocument, document))
+        if (!ReferenceEquals(PreparationTimeDocument, document) || _discardedByAbortedParser)
             return;
 
         StopBlockingRendering();

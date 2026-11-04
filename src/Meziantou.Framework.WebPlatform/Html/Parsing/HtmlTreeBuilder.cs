@@ -483,8 +483,26 @@ internal sealed partial class HtmlTreeBuilder
             }
         }
 
+        // The streamed scripts that have not run yet would be the pending parsing-blocking script of the parser, which pauses
+        // until they run: they never run, and they no longer block the rendering
+        if (_streamedScripts is not null)
+        {
+            foreach (var script in _streamedScripts)
+            {
+                if (script.NodeDocument.ScriptsToExecuteInOrderAsSoonAsPossible.Contains(script))
+                {
+                    script.DiscardScriptOfAbortedParser();
+                }
+            }
+
+            _streamedScripts = null;
+        }
+
         StopParsing();
     }
+
+    /// <summary>The script elements streamed by the parser with runScripts (see <see cref="Abort"/>).</summary>
+    private List<HtmlScriptElement>? _streamedScripts;
 
     /// <summary>https://html.spec.whatwg.org/multipage/parsing.html#stop-parsing</summary>
     private void StopParsing()

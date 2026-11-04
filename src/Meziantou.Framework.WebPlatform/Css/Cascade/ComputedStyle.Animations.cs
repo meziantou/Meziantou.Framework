@@ -494,11 +494,21 @@ internal sealed partial class ComputedStyle
         return null;
     }
 
-    /// <summary>Computes the value of a property in a keyframe: revert and revert-layer are the underlying value.</summary>
+    /// <summary>
+    /// Computes the value of a property in a keyframe: revert-layer is the underlying value (the animation origin has no layer),
+    /// and revert rolls back the cascade to the user origin, as in the author origin (https://drafts.csswg.org/css-cascade-5/#default).
+    /// </summary>
     private string? ComputeKeyframeValue(CssPropertyDefinition property, ProcessedKeyframe keyframe, CssLonghandValue value, string? underlying)
     {
         if (IsRevertKeyword(value.Value))
-            return underlying;
+        {
+            if (InfraAscii.ToAsciiLowercase(value.Value.Trim()) != "revert")
+                return underlying;
+
+            return Engine.GetUserOriginCascadedValue(this, property.Name) is { } reverted
+                ? ComputeCascadedValue(property, reverted, property.Inherited, rollbacks: 0)
+                : Default(property, inherit: property.Inherited);
+        }
 
         // A longhand of a pending-substitution shorthand keeps its name (it is looked up in the substituted shorthand). The
         // infinite calculations are clamped after the interpolation (see IsInfinite).

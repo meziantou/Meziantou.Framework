@@ -57,6 +57,13 @@ internal static class ImageBitmapFactory
                 ? RenderSvgImage(global, svgImage, corsSameOrigin, sourceRect, options)
                 : Format(GetSourceBitmap(global, image, options), sourceRect, options);
         }
+        catch (DomException ex) when (image is Blob)
+        {
+            // A blob is read and decoded in parallel: the promise is rejected in a task when its image cannot be decoded
+            var rejection = new TaskCompletionSource<ImageBitmap>();
+            global.EventLoop.QueueTask(() => rejection.TrySetException(ex));
+            return rejection.Task;
+        }
         catch (DomException ex)
         {
             return Task.FromException<ImageBitmap>(ex);

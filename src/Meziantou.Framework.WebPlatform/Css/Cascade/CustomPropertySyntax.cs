@@ -313,7 +313,11 @@ internal sealed class CustomPropertySyntax
     }
 
     /// <summary>Returns the computed value of a value of a registered custom property, or null when the value does not match the syntax.</summary>
-    public string? Compute(ComputedStyle style, string value, string? baseUrl)
+    /// <param name="style">The style the relative values are resolved against.</param>
+    /// <param name="value">The value.</param>
+    /// <param name="baseUrl">The URL the relative URLs are resolved against.</param>
+    /// <param name="fontSizeContext">Whether the font-relative lengths refer to the font of the parent (the value is used by a font property).</param>
+    public string? Compute(ComputedStyle style, string value, string? baseUrl, bool fontSizeContext = false)
     {
         if (IsUniversal)
             return value;
@@ -330,9 +334,9 @@ internal sealed class CustomPropertySyntax
         // The percentages of the translations are resolved against the reference box at used-value time (e.g. a random() of
         // percentages is kept with its base value)
         if (component.Name == "transform-list")
-            return RestoreTransformFunctionNames(CssValueComputer.ComputeGeneric(style, property: null, value, baseUrl, hasColors: false, percentageUnit: "px"));
+            return RestoreTransformFunctionNames(CssValueComputer.ComputeGeneric(style, property: null, value, baseUrl, hasColors: false, fontSizeContext, percentageUnit: "px"));
 
-        return JoinItems(significant, component, item => ComputeItem(style, component.Name, item, baseUrl));
+        return JoinItems(significant, component, item => ComputeItem(style, component.Name, item, baseUrl, fontSizeContext));
     }
 
     /// <summary>Computes the items of a list (or the single value) and joins them with the separator of the multiplier.</summary>
@@ -342,7 +346,7 @@ internal sealed class CustomPropertySyntax
         return string.Join(component.Multiplier == '#' ? ", " : " ", items);
     }
 
-    private static string ComputeItem(ComputedStyle style, string type, CssComponentValue value, string? baseUrl)
+    private static string ComputeItem(ComputedStyle style, string type, CssComponentValue value, string? baseUrl, bool fontSizeContext)
     {
         var text = CssSerializer.SerializeValue([value], property: null);
 
@@ -352,7 +356,7 @@ internal sealed class CustomPropertySyntax
             text = CssValueComputer.ReplaceCurrentColor(text, style.CurrentColor);
         }
 
-        var computed = CssValueComputer.ComputeGeneric(style, property: null, text, baseUrl, hasColors: type == "color", percentageUnit: type == "transform-function" ? "px" : null);
+        var computed = CssValueComputer.ComputeGeneric(style, property: null, text, baseUrl, hasColors: type == "color", fontSizeContext, percentageUnit: type == "transform-function" ? "px" : null);
         switch (type)
         {
             // The math functions of an <integer> are rounded to the nearest integer (https://drafts.csswg.org/css-values-4/#calc-type-checking)

@@ -444,7 +444,10 @@ internal sealed partial class LayoutEngine
                 // (https://drafts.csswg.org/css-scroll-snap-2/#snapevent-interface)
                 if (type is "scrollsnapchange" or "scrollsnapchanging")
                 {
-                    target.FireEvent(new Om.SnapEvent(type, new Om.SnapEventInit { Bubbles = target is Document, SnapTargetBlock = snapTargetBlock, SnapTargetInline = snapTargetInline }));
+                    // A snap area in a shadow tree is exposed as its shadow host (the snap targets are retargeted against the snap container)
+                    var block = (Node?)EventDispatcher.Retarget(snapTargetBlock, target);
+                    var inline = (Node?)EventDispatcher.Retarget(snapTargetInline, target);
+                    target.FireEvent(new Om.SnapEvent(type, new Om.SnapEventInit { Bubbles = target is Document, SnapTargetBlock = block, SnapTargetInline = inline }));
                 }
                 else
                 {

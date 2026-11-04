@@ -717,9 +717,11 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
     /// <summary>
     /// Fixes the original text of a value that ends at the end of the input
     /// (https://drafts.csswg.org/css-syntax-3/#consume-escaped-code-point): an escaped EOF is U+FFFD (it is ignored in
-    /// strings), and the unclosed strings, urls, functions and blocks are closed.
+    /// strings), and the unclosed strings and urls are closed. The unclosed functions and blocks are closed in the value of a
+    /// custom property, whose value is substituted in other values; the value of another property is kept as written, as in
+    /// the browsers (WPT css/css-variables/variable-reference.html: "var(--prop" at the end of a style sheet).
     /// </summary>
-    private static string FixupEndOfFile(string text, CssComponentValue last, string source)
+    private static string FixupEndOfFile(string text, CssComponentValue last, string source, bool closeBlocks)
     {
         var closers = new System.Text.StringBuilder();
         var value = last;
@@ -808,7 +810,7 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
             }
         }
 
-        return text + closers;
+        return closeBlocks ? text + closers : text;
     }
 
     private static int CountTrailingBackslashes(string text)
@@ -1029,7 +1031,7 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
         var endOfFile = declaration.Value.Count > 0 && declaration.Value[^1].End >= source.Length;
         if (endOfFile)
         {
-            originalText = FixupEndOfFile(originalText, declaration.Value[^1], source);
+            originalText = FixupEndOfFile(originalText, declaration.Value[^1], source, closeBlocks: CssPropertyRegistry.IsCustomProperty(name));
         }
 
         // An empty custom property (e.g. --x: ;) is valid (https://drafts.csswg.org/css-variables/#defining-variables): its

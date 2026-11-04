@@ -253,6 +253,11 @@ internal static partial class CssPropertyRules
         ["marker"] = (ExpandMarker, SerializeSameValue),
         ["overflow-clip-margin-block"] = (ExpandSameValue, SerializeSameValue),
         ["overflow-clip-margin-inline"] = (ExpandSameValue, SerializeSameValue),
+
+        // https://drafts.csswg.org/css-borders-4/#border-clip-shorthands: the value of the shorthand is the value of each side
+        ["border-clip"] = (ExpandSameLonghandValue, SerializeSameValue),
+        ["border-block-clip"] = (ExpandSameLonghandValue, SerializeSameValue),
+        ["border-inline-clip"] = (ExpandSameLonghandValue, SerializeSameValue),
         ["animation"] = (ExpandAnimation, SerializeAnimation),
         ["animation-range"] = (ExpandAnimationRange, SerializeAnimationRange),
         ["scroll-timeline"] = (ExpandScrollTimeline, SerializeScrollTimeline),
@@ -403,6 +408,16 @@ internal static partial class CssPropertyRules
     {
         var value = CssSerializer.SerializeValue(significant, shorthand);
         return CssPropertyRegistry.GetLonghandsRecursive(shorthand).ToDictionary(longhand => longhand, _ => value, StringComparer.Ordinal);
+    }
+
+    /// <summary>All the longhands are set to the value of the shorthand, serialized as a value of the longhands (e.g. border-clip sets the 4 sides).</summary>
+    private static Dictionary<string, string>? ExpandSameLonghandValue(CssPropertyDefinition shorthand, List<CssComponentValue> significant)
+    {
+        var longhands = CssPropertyRegistry.GetLonghandsRecursive(shorthand);
+        if (longhands.Count == 0 || CssShorthands.ParseValue(longhands[0], CssShorthands.InsertSpaces(significant), originalText: null) is not [{ ShorthandName: null } longhand])
+            return null;
+
+        return longhands.ToDictionary(name => name, _ => longhand.Value, StringComparer.Ordinal);
     }
 
     /// <summary>All the longhands are set to the canonical value of the shorthand (e.g. overflow-clip-margin sets the 4 sides).</summary>

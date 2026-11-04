@@ -3809,16 +3809,10 @@
     "total": 12
   },
   "html/canvas/element/manual/imagebitmap/createImageBitmap-resolves-in-task.any.js": {
-    "total": 34,
-    "failures": {
-      "Invalid Blob source should reject async": "FAIL"
-    }
+    "total": 34
   },
   "html/canvas/element/manual/imagebitmap/createImageBitmap-resolves-in-task.any.js#dedicatedworker": {
-    "total": 13,
-    "failures": {
-      "Invalid Blob source should reject async": "FAIL"
-    }
+    "total": 13
   },
   "html/canvas/element/manual/imagebitmap/createImageBitmap-serializable.html": {
     "total": 12
@@ -5627,10 +5621,7 @@
     "total": 1
   },
   "html/canvas/element/text/2d.text.font.parse.invalid.html": {
-    "total": 1,
-    "failures": {
-      "Canvas test: 2d.text.font.parse.invalid": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/element/text/2d.text.font.parse.size.percentage.default.html": {
     "total": 1
@@ -12811,16 +12802,10 @@
     "total": 1
   },
   "html/canvas/offscreen/text/2d.text.font.parse.invalid.html": {
-    "total": 1,
-    "failures": {
-      "OffscreenCanvas test: 2d.text.font.parse.invalid": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/text/2d.text.font.parse.invalid.worker.js": {
-    "total": 1,
-    "failures": {
-      "2d": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/text/2d.text.font.parse.system.html": {
     "total": 1

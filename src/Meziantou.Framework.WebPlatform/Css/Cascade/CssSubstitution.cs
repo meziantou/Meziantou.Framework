@@ -470,7 +470,7 @@ internal static class CssSubstitution
                 value.Append(token.Token.Value);
             }
             // The font-relative lengths of a font property refer to the font of the parent (https://drafts.csswg.org/css-values-4/#font-relative-lengths)
-            else if (CustomPropertySyntax.ComputeGrammar(context.Style, "<integer>", CssSerializer.SerializeValue([argument], property: null), baseUrl: null, fontSizeContext: s_computedProperty.Property?.StartsWith("font-", StringComparison.Ordinal) == true) is { } integer)
+            else if (CustomPropertySyntax.ComputeGrammar(context.Style, "<integer>", CssSerializer.SerializeValue([argument], property: null), baseUrl: null, fontSizeContext: IsFontPropertyComputation) is { } integer)
             {
                 value.Append(integer);
             }
@@ -949,6 +949,9 @@ internal static class CssSubstitution
     /// <summary>The property whose value is being computed, and the number of custom functions it invoked (see <see cref="NextInvocation"/>).</summary>
     [ThreadStatic]
     private static (string Property, int Invocations) s_computedProperty;
+
+    /// <summary>Whether the property being computed is a font property: its font-relative lengths refer to the font of the parent (https://drafts.csswg.org/css-values-4/#font-relative-lengths).</summary>
+    internal static bool IsFontPropertyComputation => s_computedProperty.Property?.StartsWith("font-", StringComparison.Ordinal) == true;
 
     /// <summary>
     /// Starts the computation of the value of a property: the attributes being substituted by the property that references it

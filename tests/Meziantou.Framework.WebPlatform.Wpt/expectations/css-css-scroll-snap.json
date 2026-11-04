@@ -600,11 +600,7 @@
     "total": 2
   },
   "css/css-scroll-snap/snap-events/snap-events-with-shadow-dom.html": {
-    "total": 2,
-    "failures": {
-      "snapTarget for scrollsnapchange is the host element when a snap area is inside a closed shadow root": "FAIL",
-      "snapTarget for scrollsnapchanging is the host element when a snap area is inside a closed shadow root": "FAIL"
-    }
+    "total": 2
   },
   "css/css-scroll-snap/snap-events/snapevents-at-document-bubble-to-window.html": {
     "total": 2

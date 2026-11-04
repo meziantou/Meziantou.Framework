@@ -58,6 +58,39 @@ internal sealed partial class EditingAlgorithms
         return result;
     }
 
+    /// <summary>A hexadecimal color without its leading # is accepted by the color commands.</summary>
+    private static string AddMissingHashToColor(string value)
+    {
+        if (value.Length is 3 or 6 && value.AsSpan().IndexOfAnyExceptInRange('0', '9') is var other && (other < 0 || !value.AsSpan().ContainsAnyExcept(HexDigits)))
+            return "#" + value;
+
+        return value;
+    }
+
+    /// <summary>
+    /// The data of the input event of a command that has one (https://w3c.github.io/input-events/#overview): the value of
+    /// the command, except for the color commands, whose data is the serialized color (<c>rgb(255, 0, 0)</c>) or the
+    /// CSS-wide keyword in lowercase (<c>inherit</c>), as in the browsers. A value that is not a color is given as is.
+    /// </summary>
+    public string GetInputEventData(string command, string value)
+    {
+        if (command is not ("backcolor" or "forecolor" or "hilitecolor"))
+            return value;
+
+        var trimmed = value.Trim(' ', '\t', '\n', '\f', '\r');
+        var keyword = Infra.InfraAscii.ToAsciiLowercase(trimmed);
+        if (keyword is "inherit" or "initial" or "unset" or "revert" or "revert-layer" or "currentcolor")
+            return keyword;
+
+        var color = AddMissingHashToColor(value);
+        var probe = CreateElement("span").GetInlineStyle();
+        probe.SetProperty("color", color);
+        if (probe.GetPropertyValue("color").Length == 0)
+            return value;
+
+        return NormalizeColor(color) ?? value;
+    }
+
     private static bool IsInSelectElement(Node node)
     {
         for (var current = node; current is not null; current = current.ParentNode)
@@ -74,12 +107,7 @@ internal sealed partial class EditingAlgorithms
         switch (command)
         {
             case "backcolor" or "forecolor" or "hilitecolor":
-                // A hexadecimal color without its leading # is accepted
-                if (value.Length is 3 or 6 && value.AsSpan().IndexOfAnyExceptInRange('0', '9') is var other && (other < 0 || !value.AsSpan().ContainsAnyExcept(HexDigits)))
-                {
-                    value = "#" + value;
-                }
-
+                value = AddMissingHashToColor(value);
                 if (NormalizeColor(value) is null)
                     return false;
 

@@ -9,16 +9,16 @@ description: "The results of the web-platform-tests of css/css-scroll-snap, and 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 145 | 157 | 0 | 92% |
+| [Stable](#stable-tests) | 146 | 157 | 0 | 93% |
 | [Tentative](#tentative-tests) | 30 | 31 | 0 | 97% |
 | [Reftests](#reftests) | 24 | 26 | 0 | 92% |
-| **All** | **199** | **214** | **0** | **93%** |
+| **All** | **200** | **214** | **0** | **93%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 6
+- **BUG**: 5
 - **TEST BUG**: 6
 - **NOT IMPLEMENTED**: 4
 
@@ -156,7 +156,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`snap-at-user-scroll-end.html`](https://wpt.fyi/results/css/css-scroll-snap/snap-at-user-scroll-end.html) | Pass | 1 / 1 |  |  |
 | [`snap-events/scrollsnapchange/scrollsnapchange-same-targets-after-layout-changed.html`](https://wpt.fyi/results/css/css-scroll-snap/snap-events/scrollsnapchange/scrollsnapchange-same-targets-after-layout-changed.html) | Pass | 2 / 2 |  |  |
 | [`snap-events/scrollsnapchange/scrollsnapchange-scroll-snap-type-change.html`](https://wpt.fyi/results/css/css-scroll-snap/snap-events/scrollsnapchange/scrollsnapchange-scroll-snap-type-change.html) | Fail | 0 / 1 | BUG | the layout is computed lazily: the document is first laid out when the `scrollsnapchange` listener is added, after the changes of `scroll-snap-type`, and the first snap of a scroll container fires no snap event |
-| [`snap-events/snap-events-with-shadow-dom.html`](https://wpt.fyi/results/css/css-scroll-snap/snap-events/snap-events-with-shadow-dom.html) | Fail | 0 / 2 | BUG | the `snapTargetBlock` of the snap events fired at the scroll container is the snap area inside the shadow tree: it is not retargeted to the shadow host |
+| [`snap-events/snap-events-with-shadow-dom.html`](https://wpt.fyi/results/css/css-scroll-snap/snap-events/snap-events-with-shadow-dom.html) | Pass | 2 / 2 |  |  |
 | [`snap-events/snapevents-at-document-bubble-to-window.html`](https://wpt.fyi/results/css/css-scroll-snap/snap-events/snapevents-at-document-bubble-to-window.html) | Pass | 2 / 2 |  |  |
 | [`snap-fling-in-large-area.html`](https://wpt.fyi/results/css/css-scroll-snap/snap-fling-in-large-area.html) | Pass | 1 / 1 |  |  |
 | [`snap-fling-past-furthest-area.html`](https://wpt.fyi/results/css/css-scroll-snap/snap-fling-past-furthest-area.html) | Pass | 1 / 1 |  |  |

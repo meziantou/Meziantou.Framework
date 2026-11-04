@@ -18,8 +18,8 @@ description: "The results of the web-platform-tests of css/css-fonts, and why th
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 5
-- **TEST BUG**: 19
+- **BUG**: 4
+- **TEST BUG**: 20
 - **NOT IMPLEMENTED**: 3
 - **REQUIRES**: 1
   - `layout`: 1
@@ -42,7 +42,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`animations/font-style-interpolation.html`](https://wpt.fyi/results/css/css-fonts/animations/font-style-interpolation.html) | Pass | 129 / 129 |  |  |
 | [`animations/font-variation-settings-composition.html`](https://wpt.fyi/results/css/css-fonts/animations/font-variation-settings-composition.html) | Pass | 60 / 60 |  |  |
 | [`animations/font-variation-settings-interpolation.html`](https://wpt.fyi/results/css/css-fonts/animations/font-variation-settings-interpolation.html) | Pass | 358 / 358 |  |  |
-| [`animations/font-weight-composition.html`](https://wpt.fyi/results/css/css-fonts/animations/font-weight-composition.html) | Fail | 18 / 20 | BUG | the sum of the added font weights is rounded |
+| [`animations/font-weight-composition.html`](https://wpt.fyi/results/css/css-fonts/animations/font-weight-composition.html) | Fail | 18 / 20 | TEST BUG | underlying 200, from add 600 (800) to replace 500 at -0.3 is 800 + 0.3 × 300 = 890, the result of the library; the expected 889.75 is the result of the internal precision of the font weights of Blink, not of the interpolation (https://drafts.csswg.org/css-values-4/#combine-numbers) |
 | [`animations/multiple-elements-font-palette-animation.html`](https://wpt.fyi/results/css/css-fonts/animations/multiple-elements-font-palette-animation.html) | Pass | 2 / 2 |  |  |
 | [`animations/system-fonts.html`](https://wpt.fyi/results/css/css-fonts/animations/system-fonts.html) | Pass | 588 / 588 |  |  |
 | [`calc-in-font-variation-settings.html`](https://wpt.fyi/results/css/css-fonts/calc-in-font-variation-settings.html) | Fail | 1 / 2 | TEST BUG | the specified-value subtest reads the inline `div.style`, but the value is set in a style sheet rule (it fails in every browser) |

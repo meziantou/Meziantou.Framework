@@ -668,7 +668,7 @@ internal sealed partial class WebIdlBindingsGenerator
         // A buffer source (e.g. AllowSharedBufferSource for a ReadOnlySpan<byte> parameter)
         if (unionType == typeof(ReadOnlySpan<byte>) || unionType == typeof(Span<byte>))
         {
-            code.Append($"    {BufferSourceType} v => v.Bytes.Span,\n");
+            code.Append($"    {BufferSourceType} v => v.CurrentBytes.Span,\n");
         }
         else if (conversions.Contains(typeof(byte[])))
         {

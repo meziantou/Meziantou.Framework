@@ -919,7 +919,21 @@ internal abstract class FormattingContext
         // block size is known when it is definite or contained); the styles of its descendants may depend on it
         if ((layout.ContainerType & (ContainerType.Size | ContainerType.InlineSize)) != ContainerType.Normal)
         {
-            context.OnSizeContainerLaidOut(box, content.BlockSize is null && containedBlockSize is { } contained ? content with { BlockSize = Math.Max(0, contained - edges.BlockSum()) } : content);
+            var containerContent = content.BlockSize is null && containedBlockSize is { } contained ? content with { BlockSize = Math.Max(0, contained - edges.BlockSum()) } : content;
+
+            // The container queries and the container units take into account the scrollbar gutters that are reserved
+            // (overflow: scroll, scrollbar-gutter: stable), not the ones of the automatic scrollbars that the contents need
+            // (https://github.com/w3c/csswg-drafts/issues/10043#issuecomment-2165291421)
+            if ((scrollbars & ~ScrollContainers.GetForcedScrollbars(ScrollContainers.GetUsedOverflow(box))) != Scrollbars.None)
+            {
+                var overflow = ScrollContainers.GetUsedOverflow(box);
+                var reserved = writingDirection.ToLogical(ScrollContainers.GetScrollbarSides(ScrollContainers.GetForcedScrollbars(overflow), overflow, writingDirection, layout.Overflow.ScrollbarGutter, ScrollContainers.GetScrollbarThickness(context, layout)));
+                var autoInline = Math.Max(0, gutters.InlineStart + gutters.InlineEnd - reserved.InlineStart - reserved.InlineEnd);
+                var autoBlock = Math.Max(0, gutters.BlockStart + gutters.BlockEnd - reserved.BlockStart - reserved.BlockEnd);
+                containerContent = containerContent with { InlineSize = containerContent.InlineSize + autoInline, BlockSize = containerContent.BlockSize + autoBlock };
+            }
+
+            context.OnSizeContainerLaidOut(box, containerContent);
         }
 
         // The box whose block-start margin collapses with the margins of its first children, unless an ancestor whose margin

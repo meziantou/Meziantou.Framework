@@ -9,16 +9,16 @@ description: "The results of the web-platform-tests of custom-elements, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 178 | 189 | 0 | 94% |
+| [Stable](#stable-tests) | 180 | 189 | 0 | 95% |
 | [Tentative](#tentative-tests) | 2 | 7 | 0 | 29% |
 | [Reftests](#reftests) | 1 | 3 | 0 | 33% |
-| **All** | **181** | **199** | **0** | **91%** |
+| **All** | **183** | **199** | **0** | **92%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 9
+- **BUG**: 7
 - **NOT IMPLEMENTED**: 9
 
 ## Stable tests
@@ -79,7 +79,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`htmlconstructor/newtarget.html`](https://wpt.fyi/results/custom-elements/htmlconstructor/newtarget.html) | Pass | 10 / 10 |  |  |
 | [`microtasks-and-constructors.html`](https://wpt.fyi/results/custom-elements/microtasks-and-constructors.html) | Pass | 5 / 5 |  |  |
 | [`overwritten-customElements-global.html`](https://wpt.fyi/results/custom-elements/overwritten-customElements-global.html) | Pass | 4 / 4 |  |  |
-| [`parser/parser-constructs-custom-element-in-document-write.html`](https://wpt.fyi/results/custom-elements/parser/parser-constructs-custom-element-in-document-write.html) | Fail | 1 / 2 | BUG | when the parser creates a custom element during `document.write()`, its `connectedCallback` runs after the child nodes are appended instead of before |
+| [`parser/parser-constructs-custom-element-in-document-write.html`](https://wpt.fyi/results/custom-elements/parser/parser-constructs-custom-element-in-document-write.html) | Pass | 2 / 2 |  |  |
 | [`parser/parser-constructs-custom-element-synchronously.html`](https://wpt.fyi/results/custom-elements/parser/parser-constructs-custom-element-synchronously.html) | Pass | 1 / 1 |  |  |
 | [`parser/parser-constructs-custom-elements-with-is.html`](https://wpt.fyi/results/custom-elements/parser/parser-constructs-custom-elements-with-is.html) | Pass | 2 / 2 |  |  |
 | [`parser/parser-constructs-custom-elements.html`](https://wpt.fyi/results/custom-elements/parser/parser-constructs-custom-elements.html) | Pass | 2 / 2 |  |  |
@@ -99,7 +99,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`pseudo-class-defined.html`](https://wpt.fyi/results/custom-elements/pseudo-class-defined.html) | Pass | 24 / 24 |  |  |
 | [`range-and-constructors.html`](https://wpt.fyi/results/custom-elements/range-and-constructors.html) | Pass | 2 / 2 |  |  |
 | [`reaction-timing.html`](https://wpt.fyi/results/custom-elements/reaction-timing.html) | Pass | 3 / 3 |  |  |
-| [`reactions/Animation.html`](https://wpt.fyi/results/custom-elements/reactions/Animation.html) | Fail | 1 / 3 | BUG | `commitStyles()` updates the `style` attribute once per property (one attribute change reaction each) instead of once |
+| [`reactions/Animation.html`](https://wpt.fyi/results/custom-elements/reactions/Animation.html) | Pass | 3 / 3 |  |  |
 | [`reactions/AriaMixin-element-attributes.html`](https://wpt.fyi/results/custom-elements/reactions/AriaMixin-element-attributes.html) | Pass | 16 / 16 |  |  |
 | [`reactions/AriaMixin-string-attributes.html`](https://wpt.fyi/results/custom-elements/reactions/AriaMixin-string-attributes.html) | Pass | 80 / 80 |  |  |
 | [`reactions/Attr.html`](https://wpt.fyi/results/custom-elements/reactions/Attr.html) | Pass | 2 / 2 |  |  |

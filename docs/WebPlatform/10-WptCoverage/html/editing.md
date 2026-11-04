@@ -9,16 +9,15 @@ description: "The results of the web-platform-tests of html/editing, and why the
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 119 | 129 | 0 | 92% |
+| [Stable](#stable-tests) | 121 | 129 | 0 | 94% |
 | [Tentative](#tentative-tests) | 1 | 1 | 0 | 100% |
 | [Reftests](#reftests) | 23 | 24 | 1 | 100% |
-| **All** | **143** | **154** | **1** | **93%** |
+| **All** | **145** | **154** | **1** | **95%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 2
 - **TEST BUG**: 1
 - **NOT IMPLEMENTED**: 5
 - **REQUIRES**: 2
@@ -110,8 +109,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`dnd/js-file-image-drag.html`](https://wpt.fyi/results/html/editing/dnd/js-file-image-drag.html) | Pass | 1 / 1 |  |  |
 | [`dnd/layoutshift/001.html`](https://wpt.fyi/results/html/editing/dnd/layoutshift/001.html) | Pass | 1 / 1 |  |  |
 | [`dnd/platform/mousedown-drag-select-input-display-change.html`](https://wpt.fyi/results/html/editing/dnd/platform/mousedown-drag-select-input-display-change.html) | Pass | 3 / 3 |  |  |
-| [`dnd/platform/mousedown-move-inner-when-dragging-1.html`](https://wpt.fyi/results/html/editing/dnd/platform/mousedown-move-inner-when-dragging-1.html) | Timeout | 0 / 1 | BUG | the drag source is determined from the pressed node after the `mousedown` handlers run, so when a handler moves it out of the draggable element no `dragstart` fires |
-| [`dnd/platform/mousedown-move-inner-when-dragging-2.html`](https://wpt.fyi/results/html/editing/dnd/platform/mousedown-move-inner-when-dragging-2.html) | Timeout | 0 / 1 | BUG | the drag source is determined from the pressed node after the `mousedown` handlers run, so when a handler moves it out of the draggable element no `dragstart` fires |
+| [`dnd/platform/mousedown-move-inner-when-dragging-1.html`](https://wpt.fyi/results/html/editing/dnd/platform/mousedown-move-inner-when-dragging-1.html) | Pass | 1 / 1 |  |  |
+| [`dnd/platform/mousedown-move-inner-when-dragging-2.html`](https://wpt.fyi/results/html/editing/dnd/platform/mousedown-move-inner-when-dragging-2.html) | Pass | 1 / 1 |  |  |
 | [`dnd/platform/pointerdown-add-display-none.html`](https://wpt.fyi/results/html/editing/dnd/platform/pointerdown-add-display-none.html) | Pass | 1 / 1 |  |  |
 | [`dnd/platform/pointerdown-add-overflow-hidden.html`](https://wpt.fyi/results/html/editing/dnd/platform/pointerdown-add-overflow-hidden.html) | Pass | 1 / 1 |  |  |
 | [`dnd/remove/001.html`](https://wpt.fyi/results/html/editing/dnd/remove/001.html) | Pass | 1 / 1 |  |  |

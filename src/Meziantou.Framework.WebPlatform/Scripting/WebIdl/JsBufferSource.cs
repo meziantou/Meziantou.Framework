@@ -107,6 +107,12 @@ internal sealed class JsBufferSource(JsBufferKind kind, Memory<byte> bytes)
     /// <summary>Whether the buffer of the JavaScript object is detached (https://webidl.spec.whatwg.org/#buffersource-detached).</summary>
     public bool IsDetached => DetachedProbe is { } probe ? probe() : Value is { } value && Owner?.IsDetached(value) == true;
 
+    /// <summary>
+    /// The bytes viewed by the object now: empty when its buffer was detached after the conversion (e.g. by the conversion of
+    /// a later argument of the operation).
+    /// </summary>
+    public Memory<byte> CurrentBytes => IsDetached ? Memory<byte>.Empty : Bytes;
+
     /// <summary>Gets a copy of the bytes (https://webidl.spec.whatwg.org/#dfn-get-buffer-source-copy).</summary>
     public byte[] ToArray() => Bytes.ToArray();
 

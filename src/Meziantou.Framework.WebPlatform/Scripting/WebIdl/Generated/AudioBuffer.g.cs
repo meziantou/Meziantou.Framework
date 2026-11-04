@@ -37,7 +37,7 @@ internal static class Binding_AudioBuffer<TAdapter, TValue> where TAdapter : str
         var a0 = r.ToBufferSource(a[0], 8192u, false, "Float32Array");
         var a1 = r.ToUnsignedLong(a[1], global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None);
         var a2 = r.IsMissing(a, 2) ? (uint)(uint)(0d) : r.ToUnsignedLong(a[2], global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None);
-        o.CopyFromChannel(a0.Bytes.Span, a1, a2); return r.Adapter.Undefined;
+        o.CopyFromChannel(a0.CurrentBytes.Span, a1, a2); return r.Adapter.Undefined;
     }
     private static TValue Op_copyToChannel(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
@@ -46,7 +46,7 @@ internal static class Binding_AudioBuffer<TAdapter, TValue> where TAdapter : str
         var a0 = r.ToBufferSource(a[0], 8192u, false, "Float32Array");
         var a1 = r.ToUnsignedLong(a[1], global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None);
         var a2 = r.IsMissing(a, 2) ? (uint)(uint)(0d) : r.ToUnsignedLong(a[2], global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None);
-        o.CopyToChannel(a0.Bytes.Span, a1, a2); return r.Adapter.Undefined;
+        o.CopyToChannel(a0.CurrentBytes.Span, a1, a2); return r.Adapter.Undefined;
     }
     private static void DefineMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue interfaceObject, TValue prototype, TValue instanceTarget)
     {

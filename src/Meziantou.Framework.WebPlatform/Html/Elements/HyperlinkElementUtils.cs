@@ -6,6 +6,8 @@ namespace Meziantou.Framework.WebPlatform.Html;
 /// <summary>The HTMLHyperlinkElementUtils mixin (https://html.spec.whatwg.org/multipage/links.html#htmlhyperlinkelementutils).</summary>
 internal static class HyperlinkElementUtils
 {
+    private const string XLinkNamespace = "http://www.w3.org/1999/xlink";
+
     /// <summary>The url of the element: the href content attribute parsed relative to the node document (https://html.spec.whatwg.org/multipage/links.html#reinitialise-url).</summary>
     internal static UrlRecord? GetUrl(Element element)
     {
@@ -13,7 +15,7 @@ internal static class HyperlinkElementUtils
         var href = element.GetAttributeValue("href");
         if (href is null && element is SvgElement)
         {
-            href = element.GetAttributeNS("http://www.w3.org/1999/xlink", "href");
+            href = element.GetAttributeNS(XLinkNamespace, "href");
         }
 
         if (href is null)
@@ -40,8 +42,18 @@ internal static class HyperlinkElementUtils
 
         var wrapper = new Url(url);
         setter(wrapper, value);
-        element.SetAttributeValue("href", wrapper.Href);
+
+        // The SVG elements update the deprecated xlink:href attribute when it is the one in use (there is no href attribute)
+        if (element is SvgElement && !element.HasAttribute("href") && element.HasAttributeNS(XLinkNamespace, "href"))
+        {
+            element.SetAttributeValue("href", wrapper.Href, "xlink", XLinkNamespace);
+        }
+        else
+        {
+            element.SetAttributeValue("href", wrapper.Href);
+        }
     }
+
     /// <summary>
     /// The activation behavior of the <c>a</c> and <c>area</c> elements
     /// (https://html.spec.whatwg.org/multipage/links.html#links-created-by-a-and-area-elements) and of the SVG and MathML

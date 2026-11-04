@@ -9499,7 +9499,7 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     {
         byte[] v => v,
         global::System.ArraySegment<byte> v => v,
-        global::Meziantou.Framework.WebPlatform.Scripting.JsBufferSource v => v.Bytes.Span,
+        global::Meziantou.Framework.WebPlatform.Scripting.JsBufferSource v => v.CurrentBytes.Span,
         _ => throw new global::System.InvalidCastException("The value cannot be converted to ReadOnlySpan`1"),
     };
 

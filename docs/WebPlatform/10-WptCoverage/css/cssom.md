@@ -123,7 +123,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`cssom-cssstyledeclaration-set.html`](https://wpt.fyi/results/css/cssom/cssom-cssstyledeclaration-set.html) | Pass | 1 / 1 |  |  |
 | [`cssom-fontfacerule-constructors.html`](https://wpt.fyi/results/css/cssom/cssom-fontfacerule-constructors.html) | Pass | 2 / 2 |  |  |
 | [`cssom-fontfacerule.html`](https://wpt.fyi/results/css/cssom/cssom-fontfacerule.html) | Pass | 1 / 1 |  |  |
-| [`cssom-getPropertyValue-common-checks.html`](https://wpt.fyi/results/css/cssom/cssom-getPropertyValue-common-checks.html) | Fail | 9 / 11 | BUG | the initial values of the `border-block-clip`, `border-inline-clip` and `timeline-trigger*` shorthands serialize as "" |
+| [`cssom-getPropertyValue-common-checks.html`](https://wpt.fyi/results/css/cssom/cssom-getPropertyValue-common-checks.html) | Fail | 9 / 11 | BUG | the initial values of the `timeline-trigger`, `timeline-trigger-range`, `timeline-trigger-activation-range` and `timeline-trigger-active-range` shorthands serialize as "" (their longhands are lists of ranges whose omitted values are not defined like the ones of `animation-range`) |
 | [`cssom-pagerule.html`](https://wpt.fyi/results/css/cssom/cssom-pagerule.html) | Pass | 22 / 22 |  |  |
 | [`cssom-ruleTypeAndOrder.html`](https://wpt.fyi/results/css/cssom/cssom-ruleTypeAndOrder.html) | Pass | 7 / 7 |  |  |
 | [`cssom-setProperty-shorthand.html`](https://wpt.fyi/results/css/cssom/cssom-setProperty-shorthand.html) | Pass | 76 / 76 |  |  |

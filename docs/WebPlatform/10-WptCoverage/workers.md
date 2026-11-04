@@ -9,17 +9,15 @@ description: "The results of the web-platform-tests of workers, and why the test
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 277 | 288 | 0 | 96% |
+| [Stable](#stable-tests) | 285 | 288 | 0 | 99% |
 | [Tentative](#tentative-tests) | 0 | 8 | 0 | 0% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **277** | **296** | **0** | **94%** |
+| **All** | **285** | **296** | **0** | **96%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 6
-- **TEST BUG**: 2
 - **NOT IMPLEMENTED**: 11
 - **TEST RUNNER**: 7
 
@@ -237,24 +235,24 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`interfaces/WorkerUtils/navigator/language.html`](https://wpt.fyi/results/workers/interfaces/WorkerUtils/navigator/language.html) | Pass | 1 / 1 |  |  |
 | [`modules/dedicated-worker-import-blob-url.any.js`](https://wpt.fyi/results/workers/modules/dedicated-worker-import-blob-url.any.js) | Pass | 18 / 18 |  |  |
 | [`modules/dedicated-worker-import-csp.html`](https://wpt.fyi/results/workers/modules/dedicated-worker-import-csp.html) | Pass | 11 / 11 |  |  |
-| [`modules/dedicated-worker-import-data-url-cross-origin.html`](https://wpt.fyi/results/workers/modules/dedicated-worker-import-data-url-cross-origin.html) | Fail | 3 / 4 | BUG | a module script imported by a module worker created from a `data:` URL (an opaque origin) cannot be imported from another origin |
-| [`modules/dedicated-worker-import-data-url.any.js`](https://wpt.fyi/results/workers/modules/dedicated-worker-import-data-url.any.js) | Fail | 16 / 18 | TEST BUG | "Static import (redirect)": the module worker created from a `data:` URL has an opaque origin, so its import of `redirect.py` is a CORS request, and the redirect response has no `Access-Control-Allow-Origin` header (the `pipe=header()` parameter is only on the URL of the importing script): the CORS check of the redirect fails, as the Fetch Standard requires |
+| [`modules/dedicated-worker-import-data-url-cross-origin.html`](https://wpt.fyi/results/workers/modules/dedicated-worker-import-data-url-cross-origin.html) | Pass | 4 / 4 |  |  |
+| [`modules/dedicated-worker-import-data-url.any.js`](https://wpt.fyi/results/workers/modules/dedicated-worker-import-data-url.any.js) | Pass | 18 / 18 |  |  |
 | [`modules/dedicated-worker-import-failure.html`](https://wpt.fyi/results/workers/modules/dedicated-worker-import-failure.html) | Pass | 6 / 6 |  |  |
 | [`modules/dedicated-worker-import-meta.html`](https://wpt.fyi/results/workers/modules/dedicated-worker-import-meta.html) | Pass | 3 / 3 |  |  |
-| [`modules/dedicated-worker-import-referrer.html`](https://wpt.fyi/results/workers/modules/dedicated-worker-import-referrer.html) | Fail | 11 / 15 | BUG | the static imports of a module worker are fetched with the referrer policy of the worker instead of the one of the document that created it (the policy of the outside settings applies to the top-level script and its static imports; only the dynamic imports use the policy of the worker) |
+| [`modules/dedicated-worker-import-referrer.html`](https://wpt.fyi/results/workers/modules/dedicated-worker-import-referrer.html) | Pass | 15 / 15 |  |  |
 | [`modules/dedicated-worker-import.any.js`](https://wpt.fyi/results/workers/modules/dedicated-worker-import.any.js) | Pass | 18 / 18 |  |  |
-| [`modules/dedicated-worker-options-credentials.html`](https://wpt.fyi/results/workers/modules/dedicated-worker-options-credentials.html) | Fail | 31 / 33 | BUG | the `credentials: "omit"` option of a module worker is not applied to its same-origin imports (static and dynamic): they are fetched with the cookies |
+| [`modules/dedicated-worker-options-credentials.html`](https://wpt.fyi/results/workers/modules/dedicated-worker-options-credentials.html) | Pass | 33 / 33 |  |  |
 | [`modules/dedicated-worker-options-type.html`](https://wpt.fyi/results/workers/modules/dedicated-worker-options-type.html) | Pass | 5 / 5 |  |  |
 | [`modules/dedicated-worker-parse-error-failure.html`](https://wpt.fyi/results/workers/modules/dedicated-worker-parse-error-failure.html) | Pass | 2 / 2 |  |  |
 | [`modules/shared-worker-import-blob-url.window.js`](https://wpt.fyi/results/workers/modules/shared-worker-import-blob-url.window.js) | Pass | 9 / 9 |  |  |
 | [`modules/shared-worker-import-csp.html`](https://wpt.fyi/results/workers/modules/shared-worker-import-csp.html) | Pass | 9 / 9 |  |  |
-| [`modules/shared-worker-import-data-url-cross-origin.html`](https://wpt.fyi/results/workers/modules/shared-worker-import-data-url-cross-origin.html) | Fail | 3 / 4 | BUG | a module script imported by a module worker created from a `data:` URL (an opaque origin) cannot be imported from another origin |
-| [`modules/shared-worker-import-data-url.window.js`](https://wpt.fyi/results/workers/modules/shared-worker-import-data-url.window.js) | Fail | 8 / 9 | TEST BUG | "Static import (redirect)": the module worker created from a `data:` URL has an opaque origin, so its import of `redirect.py` is a CORS request, and the redirect response has no `Access-Control-Allow-Origin` header (the `pipe=header()` parameter is only on the URL of the importing script): the CORS check of the redirect fails, as the Fetch Standard requires |
+| [`modules/shared-worker-import-data-url-cross-origin.html`](https://wpt.fyi/results/workers/modules/shared-worker-import-data-url-cross-origin.html) | Pass | 4 / 4 |  |  |
+| [`modules/shared-worker-import-data-url.window.js`](https://wpt.fyi/results/workers/modules/shared-worker-import-data-url.window.js) | Pass | 9 / 9 |  |  |
 | [`modules/shared-worker-import-failure.html`](https://wpt.fyi/results/workers/modules/shared-worker-import-failure.html) | Pass | 6 / 6 |  |  |
 | [`modules/shared-worker-import-meta.html`](https://wpt.fyi/results/workers/modules/shared-worker-import-meta.html) | Pass | 3 / 3 |  |  |
-| [`modules/shared-worker-import-referrer.html`](https://wpt.fyi/results/workers/modules/shared-worker-import-referrer.html) | Fail | 11 / 15 | BUG | the static imports of a module worker are fetched with the referrer policy of the worker instead of the one of the document that created it (the policy of the outside settings applies to the top-level script and its static imports; only the dynamic imports use the policy of the worker) |
+| [`modules/shared-worker-import-referrer.html`](https://wpt.fyi/results/workers/modules/shared-worker-import-referrer.html) | Pass | 15 / 15 |  |  |
 | [`modules/shared-worker-import.window.js`](https://wpt.fyi/results/workers/modules/shared-worker-import.window.js) | Pass | 9 / 9 |  |  |
-| [`modules/shared-worker-options-credentials.html`](https://wpt.fyi/results/workers/modules/shared-worker-options-credentials.html) | Fail | 31 / 33 | BUG | the `credentials: "omit"` option of a module worker is not applied to its same-origin imports (static and dynamic): they are fetched with the cookies |
+| [`modules/shared-worker-options-credentials.html`](https://wpt.fyi/results/workers/modules/shared-worker-options-credentials.html) | Pass | 33 / 33 |  |  |
 | [`modules/shared-worker-options-type.html`](https://wpt.fyi/results/workers/modules/shared-worker-options-type.html) | Pass | 5 / 5 |  |  |
 | [`modules/shared-worker-parse-error-failure.html`](https://wpt.fyi/results/workers/modules/shared-worker-parse-error-failure.html) | Pass | 2 / 2 |  |  |
 | [`multi-globals/url-parsing.html`](https://wpt.fyi/results/workers/multi-globals/url-parsing.html) | Pass | 1 / 1 |  |  |

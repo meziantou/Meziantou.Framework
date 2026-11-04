@@ -32,6 +32,16 @@ internal readonly record struct SelectorContext(Node? ScopingRoot, Element? Shad
     public bool InRelationalPseudoClass { get; init; }
 
     /// <summary>
+    /// Whether the scoping root is the root node of a tree (a document) that the rules of an implicit @scope rule are relative to
+    /// (https://drafts.csswg.org/css-cascade-6/#scope-limits): :scope and &amp; then represent that node, which no element matches,
+    /// but the child and descendant combinators relate the elements to it (e.g. "&amp; &gt; html" matches the root element).
+    /// </summary>
+    public bool ScopesTreeRoot { get; init; }
+
+    /// <summary>Whether :scope and &amp; (outside of a style rule) match an element: the scoping element, or the root element when the scoping root is not an element.</summary>
+    public bool IsScopingElement(Element element) => ScopingRoot is Element scopingElement ? ReferenceEquals(element, scopingElement) : !ScopesTreeRoot && element.ParentNode is Document;
+
+    /// <summary>
     /// The scroll navigation pseudo-element (see <see cref="Layout.ScrollControls"/>) whose style is being computed, or null: the
     /// pseudo-classes written after the pseudo-element in a selector are matched against its state, not against the state of
     /// its originating element.
@@ -198,7 +208,10 @@ internal static class SelectorMatcher
             case Combinator.Child:
             {
                 var parent = GetParentElement(node, context);
-                return parent is null ? MatchResult.FailsCompletely : MatchFrom(selector, index - 1, parent, context, anchor);
+                if (parent is null)
+                    return MatchesTreeRoot(selector, index, context, anchor) && ReferenceEquals(node.ParentNode, context.ScopingRoot) ? MatchResult.Matches : MatchResult.FailsCompletely;
+
+                return MatchFrom(selector, index - 1, parent, context, anchor);
             }
 
             case Combinator.Descendant:
@@ -211,7 +224,7 @@ internal static class SelectorMatcher
                         return result;
                 }
 
-                return MatchResult.FailsCompletely;
+                return MatchesTreeRoot(selector, index, context, anchor) && ReferenceEquals(node.GetRoot(), context.ScopingRoot) ? MatchResult.Matches : MatchResult.FailsCompletely;
             }
 
             // The shadow host has no siblings in its shadow tree
@@ -247,6 +260,25 @@ internal static class SelectorMatcher
         }
 
         return MatchResult.FailsLocally;
+    }
+
+    /// <summary>
+    /// Whether the compound selectors on the left of the combinator at <paramref name="index"/> are only the scoping root of an
+    /// implicit @scope rule whose root is a tree root (see <see cref="SelectorContext.ScopesTreeRoot"/>): the root node, which is
+    /// not an element, is the parent of the elements at the top of the tree.
+    /// </summary>
+    private static bool MatchesTreeRoot(ComplexSelector selector, int index, in SelectorContext context, Element? anchor)
+    {
+        if (!context.ScopesTreeRoot || index != 1 || anchor is not null || context.ScopingRoot is null or Element)
+            return false;
+
+        foreach (var simple in selector.Compounds[0].Selectors)
+        {
+            if (simple is not (NestingSelector { Parent: null } or PseudoClassSelector { Kind: PseudoClass.Scope }))
+                return false;
+        }
+
+        return true;
     }
 
     private static MatchResult MatchSubsequentSiblings(ComplexSelector selector, int index, Node node, in SelectorContext context, Element? anchor)
@@ -498,7 +530,7 @@ internal static class SelectorMatcher
                 if (nesting.Parent is { } parent)
                     return Matches(parent, element, context);
 
-                return context.ScopingRoot is Element scopingElement ? ReferenceEquals(element, scopingElement) : element.ParentNode is Document;
+                return context.IsScopingElement(element);
 
             case IdSelector id:
                 if (element.IdValue is not { } elementId)
@@ -727,8 +759,9 @@ internal static class SelectorMatcher
 
             case PseudoClass.Scope:
                 // When the scoping root is not an element (a document, a fragment or a shadow root), there is no scoping
-                // element: :scope then represents the root of the tree, like :root (web-compatible behavior checked by WPT)
-                return context.ScopingRoot is Element scopingElement ? ReferenceEquals(element, scopingElement) : element.ParentNode is Document;
+                // element: :scope then represents the root of the tree, like :root (web-compatible behavior checked by WPT), except
+                // in the rules of an implicit @scope rule (see SelectorContext.ScopesTreeRoot)
+                return context.IsScopingElement(element);
 
             case PseudoClass.Host or PseudoClass.HostFunction or PseudoClass.HostContext:
                 // Only the featureless shadow host matches them, in the context of its shadow tree (querying never matches it)

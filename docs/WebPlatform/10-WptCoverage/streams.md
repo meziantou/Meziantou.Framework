@@ -9,16 +9,15 @@ description: "The results of the web-platform-tests of streams, and why the test
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 68 | 85 | 4 | 84% |
+| [Stable](#stable-tests) | 70 | 85 | 4 | 86% |
 | [Tentative](#tentative-tests) | 1 | 4 | 0 | 25% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **69** | **89** | **4** | **81%** |
+| **All** | **71** | **89** | **4** | **84%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 2
 - **NOT IMPLEMENTED**: 14
 - **TEST RUNNER**: 14
 
@@ -33,7 +32,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`piping/error-propagation-backward.any.js`](https://wpt.fyi/results/streams/piping/error-propagation-backward.any.js) | Pass | 108 / 108 |  |  |
 | [`piping/error-propagation-forward.any.js`](https://wpt.fyi/results/streams/piping/error-propagation-forward.any.js) | Pass | 96 / 96 |  |  |
 | [`piping/flow-control.any.js`](https://wpt.fyi/results/streams/piping/flow-control.any.js) | Pass | 15 / 15 |  |  |
-| [`piping/general-addition.any.js`](https://wpt.fyi/results/streams/piping/general-addition.any.js) | Fail | 0 / 3 | BUG | `enqueue()` on a piped stream runs the destination's write algorithm synchronously (it should be deferred to a microtask) |
+| [`piping/general-addition.any.js`](https://wpt.fyi/results/streams/piping/general-addition.any.js) | Pass | 3 / 3 |  |  |
 | [`piping/general.any.js`](https://wpt.fyi/results/streams/piping/general.any.js) | Pass | 42 / 42 |  |  |
 | [`piping/multiple-propagation.any.js`](https://wpt.fyi/results/streams/piping/multiple-propagation.any.js) | Pass | 27 / 27 |  |  |
 | [`piping/pipe-through.any.js`](https://wpt.fyi/results/streams/piping/pipe-through.any.js) | Pass | 129 / 129 |  |  |
@@ -66,7 +65,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`readable-streams/from.any.js`](https://wpt.fyi/results/streams/readable-streams/from.any.js) | Pass | 150 / 150 |  |  |
 | [`readable-streams/garbage-collection.any.js`](https://wpt.fyi/results/streams/readable-streams/garbage-collection.any.js) | Pass | 15 / 15 |  |  |
 | [`readable-streams/general.any.js`](https://wpt.fyi/results/streams/readable-streams/general.any.js) | Pass | 114 / 114 |  |  |
-| [`readable-streams/global.html`](https://wpt.fyi/results/streams/readable-streams/global.html) | Fail | 8 / 9 | BUG | the `{value, done}` result of a read fulfilled by another realm's `close()` is created in the stream's realm instead of the current realm |
+| [`readable-streams/global.html`](https://wpt.fyi/results/streams/readable-streams/global.html) | Pass | 9 / 9 |  |  |
 | [`readable-streams/patched-global.any.js`](https://wpt.fyi/results/streams/readable-streams/patched-global.any.js) | Pass | 15 / 15 |  |  |
 | [`readable-streams/read-task-handling.window.js`](https://wpt.fyi/results/streams/readable-streams/read-task-handling.window.js) | Pass | 1 / 1 |  |  |
 | [`readable-streams/reentrant-strategies.any.js`](https://wpt.fyi/results/streams/readable-streams/reentrant-strategies.any.js) | Pass | 30 / 30 |  |  |

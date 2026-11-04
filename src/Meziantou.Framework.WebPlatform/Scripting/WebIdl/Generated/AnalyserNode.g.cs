@@ -34,28 +34,28 @@ internal static class Binding_AnalyserNode<TAdapter, TValue> where TAdapter : st
         var o = r.This<global::Meziantou.Framework.WebPlatform.WebAudio.AnalyserNode>(t, Binding);
         if (a.Length < 1) throw r.NotEnoughArguments("getFloatFrequencyData", 1, a.Length);
         var a0 = r.ToBufferSource(a[0], 8192u, false, "Float32Array");
-        o.GetFloatFrequencyData(a0.Bytes.Span); return r.Adapter.Undefined;
+        o.GetFloatFrequencyData(a0.CurrentBytes.Span); return r.Adapter.Undefined;
     }
     private static TValue Op_getByteFrequencyData(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.WebAudio.AnalyserNode>(t, Binding);
         if (a.Length < 1) throw r.NotEnoughArguments("getByteFrequencyData", 1, a.Length);
         var a0 = r.ToBufferSource(a[0], 16u, false, "Uint8Array");
-        o.GetByteFrequencyData(a0.Bytes.Span); return r.Adapter.Undefined;
+        o.GetByteFrequencyData(a0.CurrentBytes.Span); return r.Adapter.Undefined;
     }
     private static TValue Op_getFloatTimeDomainData(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.WebAudio.AnalyserNode>(t, Binding);
         if (a.Length < 1) throw r.NotEnoughArguments("getFloatTimeDomainData", 1, a.Length);
         var a0 = r.ToBufferSource(a[0], 8192u, false, "Float32Array");
-        o.GetFloatTimeDomainData(a0.Bytes.Span); return r.Adapter.Undefined;
+        o.GetFloatTimeDomainData(a0.CurrentBytes.Span); return r.Adapter.Undefined;
     }
     private static TValue Op_getByteTimeDomainData(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.WebAudio.AnalyserNode>(t, Binding);
         if (a.Length < 1) throw r.NotEnoughArguments("getByteTimeDomainData", 1, a.Length);
         var a0 = r.ToBufferSource(a[0], 16u, false, "Uint8Array");
-        o.GetByteTimeDomainData(a0.Bytes.Span); return r.Adapter.Undefined;
+        o.GetByteTimeDomainData(a0.CurrentBytes.Span); return r.Adapter.Undefined;
     }
     private static void DefineMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue interfaceObject, TValue prototype, TValue instanceTarget)
     {

@@ -498,10 +498,7 @@
     "reftest": "PASS"
   },
   "css/css-variables/variable-reference.html": {
-    "total": 18,
-    "failures": {
-      "Variable reference left open at end of stylesheet": "FAIL"
-    }
+    "total": 18
   },
   "css/css-variables/variable-resolution-during-prioritary-properties.html": {
     "total": 5

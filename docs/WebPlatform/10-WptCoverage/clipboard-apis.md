@@ -10,15 +10,15 @@ description: "The results of the web-platform-tests of clipboard-apis, and why t
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 32 | 38 | 0 | 84% |
-| [Tentative](#tentative-tests) | 13 | 20 | 0 | 65% |
+| [Tentative](#tentative-tests) | 14 | 20 | 0 | 70% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **45** | **58** | **0** | **78%** |
+| **All** | **46** | **58** | **0** | **79%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 7
+- **BUG**: 5
 - **NOT IMPLEMENTED**: 3
 - **TEST RUNNER**: 4
 
@@ -28,7 +28,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 |---|---|--:|---|---|
 | [`async-clipboard-read-unsanitized-null.https.html`](https://wpt.fyi/results/clipboard-apis/async-clipboard-read-unsanitized-null.https.html) | Pass | 1 / 1 |  |  |
 | [`async-html-script-removal.https.html`](https://wpt.fyi/results/clipboard-apis/async-html-script-removal.https.html) | Pass | 1 / 1 |  |  |
-| [`async-navigator-clipboard-basics.https.html`](https://wpt.fyi/results/clipboard-apis/async-navigator-clipboard-basics.https.html) | Fail | 14 / 17 | BUG, TEST RUNNER | `clipboard.write()` with more than one `ClipboardItem` resolves instead of rejecting; the clipboard is empty when the test starts, so `readText()` rejects with `NotFoundError` (the test assumes the system clipboard holds text) |
+| [`async-navigator-clipboard-basics.https.html`](https://wpt.fyi/results/clipboard-apis/async-navigator-clipboard-basics.https.html) | Fail | 15 / 17 | TEST RUNNER | the clipboard is empty when the test starts, so `readText()` rejects with `NotFoundError` (the test assumes the system clipboard holds text) |
 | [`async-navigator-clipboard-read-resource-load.https.html`](https://wpt.fyi/results/clipboard-apis/async-navigator-clipboard-read-resource-load.https.html) | Fail | 0 / 1 | BUG | the `text/html` item read by `navigator.clipboard.read()` does not contain the `<img>` markup that the `copy` event handler wrote with `clipboardData.setData()` (the first assertion of the test); no resource is loaded |
 | [`async-navigator-clipboard-read-sanitize.https.html`](https://wpt.fyi/results/clipboard-apis/async-navigator-clipboard-read-sanitize.https.html) | Pass | 1 / 1 |  |  |
 | [`async-navigator-clipboard-write-domstring.https.html`](https://wpt.fyi/results/clipboard-apis/async-navigator-clipboard-write-domstring.https.html) | Pass | 8 / 8 |  |  |
@@ -72,7 +72,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`async-clipboard-cached-getType-permission-revocation.tentative.https.html`](https://wpt.fyi/results/clipboard-apis/async-clipboard-cached-getType-permission-revocation.tentative.https.html) | Pass | 1 / 1 |  |  |
 | [`async-clipboard-cached-getType-reject.tentative.https.html`](https://wpt.fyi/results/clipboard-apis/async-clipboard-cached-getType-reject.tentative.https.html) | Pass | 1 / 1 |  |  |
 | [`async-clipboard-stale-getType-reject.tentative.https.html`](https://wpt.fyi/results/clipboard-apis/async-clipboard-stale-getType-reject.tentative.https.html) | Pass | 1 / 1 |  |  |
-| [`async-custom-formats-write-fail.tentative.https.html`](https://wpt.fyi/results/clipboard-apis/async-custom-formats-write-fail.tentative.https.html) | Fail | 4 / 5 | BUG | `clipboard.write()` with more than 100 web custom formats writes the first 100 instead of rejecting with `NotAllowedError` |
+| [`async-custom-formats-write-fail.tentative.https.html`](https://wpt.fyi/results/clipboard-apis/async-custom-formats-write-fail.tentative.https.html) | Pass | 5 / 5 |  |  |
 | [`async-custom-formats-write-read-web-prefix.tentative.https.html`](https://wpt.fyi/results/clipboard-apis/async-custom-formats-write-read-web-prefix.tentative.https.html) | Pass | 1 / 1 |  |  |
 | [`async-custom-formats-write-read-without-web-prefix.tentative.https.html`](https://wpt.fyi/results/clipboard-apis/async-custom-formats-write-read-without-web-prefix.tentative.https.html) | Pass | 1 / 1 |  |  |
 | [`async-custom-formats-write-read.tentative.https.html`](https://wpt.fyi/results/clipboard-apis/async-custom-formats-write-read.tentative.https.html) | Pass | 1 / 1 |  |  |

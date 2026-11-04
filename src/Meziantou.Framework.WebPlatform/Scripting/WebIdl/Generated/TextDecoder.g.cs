@@ -27,7 +27,7 @@ internal static class Binding_TextDecoder<TAdapter, TValue> where TAdapter : str
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.TextDecoder>(t, Binding);
         var has0 = !r.IsMissing(a, 0); var a0 = has0 ? (global::Meziantou.Framework.WebPlatform.Scripting.JsBufferSource?)r.ToBufferSource(a[0], 32767u, true, "(ArrayBuffer or SharedArrayBuffer or (Int8Array or Int16Array or Int32Array or Uint8Array or Uint16Array or Uint32Array or Uint8ClampedArray or BigInt64Array or BigUint64Array or Float16Array or Float32Array or Float64Array or DataView))") : default;
         var a1 = r.IsMissing(a, 1) ? (global::Meziantou.Framework.WebPlatform.Dom.TextDecodeOptions)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_TextDecodeOptions(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_TextDecodeOptions(r, a[1]);
-        var result = o.Decode((has0 ? (a0 is { } buffer ? buffer.Bytes.Span : default) : default(global::System.ReadOnlySpan<byte>)), a1); return r.FromString(result);
+        var result = o.Decode((has0 ? (a0 is { } buffer ? buffer.CurrentBytes.Span : default) : default(global::System.ReadOnlySpan<byte>)), a1); return r.FromString(result);
     }
     private static void DefineMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue interfaceObject, TValue prototype, TValue instanceTarget)
     {

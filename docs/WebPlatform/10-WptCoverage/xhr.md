@@ -9,16 +9,17 @@ description: "The results of the web-platform-tests of xhr, and why the tests th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 317 | 330 | 0 | 96% |
+| [Stable](#stable-tests) | 318 | 330 | 0 | 96% |
 | [Tentative](#tentative-tests) | 2 | 2 | 0 | 100% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **319** | **332** | **0** | **96%** |
+| **All** | **320** | **332** | **0** | **96%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 6
+- **BUG**: 3
+- **TEST BUG**: 2
 - **NOT IMPLEMENTED**: 2
 - **TEST RUNNER**: 5
 
@@ -188,7 +189,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`open-url-javascript-window.htm`](https://wpt.fyi/results/xhr/open-url-javascript-window.htm) | Pass | 1 / 1 |  |  |
 | [`open-url-multi-window-2.htm`](https://wpt.fyi/results/xhr/open-url-multi-window-2.htm) | Pass | 1 / 1 |  |  |
 | [`open-url-multi-window-3.htm`](https://wpt.fyi/results/xhr/open-url-multi-window-3.htm) | Fail | 0 / 1 | BUG | `send()` does not throw `InvalidStateError` when the document of the XHR's relevant global (a removed iframe) is not fully active |
-| [`open-url-multi-window-4.htm`](https://wpt.fyi/results/xhr/open-url-multi-window-4.htm) | Timeout | 0 / 1 | BUG | an XHR of a document whose iframe is removed during the request never fires `error`/`loadend` (the fetch is not terminated) |
+| [`open-url-multi-window-4.htm`](https://wpt.fyi/results/xhr/open-url-multi-window-4.htm) | Timeout | 0 / 1 | TEST BUG | the test (whose comment says the pass condition is unclear and follows a proposal, whatwg/xhr#3, that was not merged) expects `error` and `loadend` events for an XHR of an iframe removed during the request: the document is destroyed, its fetch group is terminated, and the tasks of the terminated fetch do not run (the document is not fully active), so no event is fired, as in Firefox |
 | [`open-url-multi-window-5.htm`](https://wpt.fyi/results/xhr/open-url-multi-window-5.htm) | Pass | 1 / 1 |  |  |
 | [`open-url-multi-window-6.htm`](https://wpt.fyi/results/xhr/open-url-multi-window-6.htm) | Fail | 0 / 1 | BUG | the `InvalidStateError` thrown by `open()` in a document that is not fully active is created in the caller's realm instead of the XHR's realm |
 | [`open-url-multi-window.htm`](https://wpt.fyi/results/xhr/open-url-multi-window.htm) | Pass | 1 / 1 |  |  |
@@ -198,7 +199,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`open-url-worker-simple.htm`](https://wpt.fyi/results/xhr/open-url-worker-simple.htm) | Pass | 1 / 1 |  |  |
 | [`open-user-password-non-same-origin.htm`](https://wpt.fyi/results/xhr/open-user-password-non-same-origin.htm) | Pass | 1 / 1 |  |  |
 | [`over-1-meg.any.js`](https://wpt.fyi/results/xhr/over-1-meg.any.js) | Pass | 2 / 2 |  |  |
-| [`overridemimetype-blob.html`](https://wpt.fyi/results/xhr/overridemimetype-blob.html) | Fail | 70 / 77 | BUG | the response `Blob` gets the overridden MIME type through the `Blob` constructor rules: it is ASCII-lowercased (`charset=GBK` becomes `gbk`) and emptied when it has a non-ASCII character |
+| [`overridemimetype-blob.html`](https://wpt.fyi/results/xhr/overridemimetype-blob.html) | Pass | 77 / 77 |  |  |
 | [`overridemimetype-chunked-response.window.js`](https://wpt.fyi/results/xhr/overridemimetype-chunked-response.window.js) | Fail | 0 / 4 | TEST RUNNER | `xhr/resources/content-in-chunks.py` is not emulated (404) |
 | [`overridemimetype-done-state.any.js`](https://wpt.fyi/results/xhr/overridemimetype-done-state.any.js) | Pass | 2 / 2 |  |  |
 | [`overridemimetype-edge-cases.window.js`](https://wpt.fyi/results/xhr/overridemimetype-edge-cases.window.js) | Pass | 4 / 4 |  |  |
@@ -255,7 +256,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`send-authentication-basic.htm`](https://wpt.fyi/results/xhr/send-authentication-basic.htm) | Pass | 1 / 1 |  |  |
 | [`send-authentication-competing-names-passwords.htm`](https://wpt.fyi/results/xhr/send-authentication-competing-names-passwords.htm) | Pass | 13 / 13 |  |  |
 | [`send-authentication-cors-basic-setrequestheader.htm`](https://wpt.fyi/results/xhr/send-authentication-cors-basic-setrequestheader.htm) | Pass | 1 / 1 |  |  |
-| [`send-authentication-cors-setrequestheader-no-cred.htm`](https://wpt.fyi/results/xhr/send-authentication-cors-setrequestheader-no-cred.htm) | Fail | 1 / 2 | BUG | the synchronous `send()` throws `NetworkError` when the CORS preflight rejects the `Authorization` header; the test expects only `error`/`loadend` events |
+| [`send-authentication-cors-setrequestheader-no-cred.htm`](https://wpt.fyi/results/xhr/send-authentication-cors-setrequestheader-no-cred.htm) | Fail | 1 / 2 | TEST BUG | the synchronous request whose CORS preflight rejects the `Authorization` header expects `error` and `loadend` events: the request error steps of a synchronous request throw the `NetworkError` before the events are fired (https://xhr.spec.whatwg.org/#request-error-steps, step 4) |
 | [`send-blob-with-no-mime-type.html`](https://wpt.fyi/results/xhr/send-blob-with-no-mime-type.html) | Pass | 8 / 8 |  |  |
 | [`send-conditional-cors.htm`](https://wpt.fyi/results/xhr/send-conditional-cors.htm) | Pass | 2 / 2 |  |  |
 | [`send-conditional.htm`](https://wpt.fyi/results/xhr/send-conditional.htm) | Pass | 2 / 2 |  |  |

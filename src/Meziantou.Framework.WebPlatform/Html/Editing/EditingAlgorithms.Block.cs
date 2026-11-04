@@ -877,7 +877,8 @@ internal sealed partial class EditingAlgorithms
                 () =>
                 {
                     var newParent = CreateElement("div");
-                    newParent.SetAttribute("style", "text-align: " + alignment);
+                    // As in the browsers, the attribute is the CSSOM serialization of the declaration (with its semicolon)
+                    newParent.SetAttribute("style", "text-align: " + alignment + ";");
                     return newParent;
                 });
         }

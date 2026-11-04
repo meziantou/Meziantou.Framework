@@ -188,9 +188,16 @@ internal sealed partial class Painter
             var fy = ResolvePaintServerLength(element, GetTemplateAttribute(chain, "fy", IsRadial), objectBoundingBox, height, cy);
             var fr = ResolvePaintServerLength(element, GetTemplateAttribute(chain, "fr", IsRadial), objectBoundingBox, diagonal, 0);
 
-            // A negative radius is an error; a radius of zero paints the color of the last stop
-            if (r < 0 || fr < 0)
+            // A negative radius is an error; a radius of zero paints the color of the last stop. As in the browsers, a negative
+            // focal radius is ignored: the attribute in error has its initial value (0%,
+            // https://svgwg.org/svg2-draft/conform.html#ErrorProcessing)
+            if (r < 0)
                 return null;
+
+            if (fr < 0)
+            {
+                fr = 0;
+            }
 
             if (r == 0)
                 return new DisplayPaint(stops[^1].Color);

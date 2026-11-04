@@ -9,16 +9,16 @@ description: "The results of the web-platform-tests of html/webappapis, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 311 | 338 | 1 | 92% |
+| [Stable](#stable-tests) | 317 | 338 | 1 | 94% |
 | [Tentative](#tentative-tests) | 2 | 6 | 0 | 33% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **313** | **344** | **1** | **91%** |
+| **All** | **319** | **344** | **1** | **93%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 11
+- **BUG**: 5
 - **TEST BUG**: 1
 - **NOT IMPLEMENTED**: 8
 - **TEST RUNNER**: 11
@@ -181,7 +181,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`dynamic-markup-insertion/opening-the-input-stream/form-control-state.html`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/opening-the-input-stream/form-control-state.html) | Pass | 2 / 2 |  |  |
 | [`dynamic-markup-insertion/opening-the-input-stream/history-state.window.js`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/opening-the-input-stream/history-state.window.js) | Pass | 2 / 2 |  |  |
 | [`dynamic-markup-insertion/opening-the-input-stream/history.window.js`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/opening-the-input-stream/history.window.js) | Pass | 1 / 1 |  |  |
-| [`dynamic-markup-insertion/opening-the-input-stream/ignore-opens-during-unload.window.js`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/opening-the-input-stream/ignore-opens-during-unload.window.js) | Fail | 8 / 12 | BUG | the ignore-opens-during-unload counter of the parent document is not incremented while a child document fires its unload events (`open(parent)` is not ignored) |
+| [`dynamic-markup-insertion/opening-the-input-stream/ignore-opens-during-unload.window.js`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/opening-the-input-stream/ignore-opens-during-unload.window.js) | Pass | 12 / 12 |  |  |
 | [`dynamic-markup-insertion/opening-the-input-stream/location-set-and-document-open.html`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/opening-the-input-stream/location-set-and-document-open.html) | Pass | 1 / 1 |  |  |
 | [`dynamic-markup-insertion/opening-the-input-stream/mutation-observer.window.js`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/opening-the-input-stream/mutation-observer.window.js) | Pass | 1 / 1 |  |  |
 | [`dynamic-markup-insertion/opening-the-input-stream/no-new-global.window.js`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/opening-the-input-stream/no-new-global.window.js) | Pass | 17 / 17 |  |  |
@@ -265,7 +265,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`scripting/events/invalid-uncompiled-raw-handler-compiled-once.window.js`](https://wpt.fyi/results/html/webappapis/scripting/events/invalid-uncompiled-raw-handler-compiled-once.window.js) | Pass | 1 / 1 |  |  |
 | [`scripting/events/invalid-uncompiled-raw-handler-keeps-position.window.js`](https://wpt.fyi/results/html/webappapis/scripting/events/invalid-uncompiled-raw-handler-keeps-position.window.js) | Pass | 1 / 1 |  |  |
 | [`scripting/events/messageevent-constructor.https.html`](https://wpt.fyi/results/html/webappapis/scripting/events/messageevent-constructor.https.html) | Pass | 9 / 9 |  |  |
-| [`scripting/events/onerroreventhandler.html`](https://wpt.fyi/results/html/webappapis/scripting/events/onerroreventhandler.html) | Timeout | 1 / 3 | BUG | the `onerror` attribute of a `<body>` inserted with `outerHTML` does not set the Window's `onerror` handler, so the dispatched `error` events are not seen |
+| [`scripting/events/onerroreventhandler.html`](https://wpt.fyi/results/html/webappapis/scripting/events/onerroreventhandler.html) | Pass | 3 / 3 |  |  |
 | [`scripting/events/uncompiled_event_handler_with_scripting_disabled.html`](https://wpt.fyi/results/html/webappapis/scripting/events/uncompiled_event_handler_with_scripting_disabled.html) | Pass | 1 / 1 |  |  |
 | [`scripting/processing-model-2/addEventListener.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/addEventListener.html) | Pass | 1 / 1 |  |  |
 | [`scripting/processing-model-2/body-onerror-compile-error-data-url.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/body-onerror-compile-error-data-url.html) | Pass | 2 / 2 |  |  |
@@ -302,7 +302,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`scripting/processing-model-2/runtime-error-same-origin.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/runtime-error-same-origin.html) | Pass | 2 / 2 |  |  |
 | [`scripting/processing-model-2/runtime-error.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/runtime-error.html) | Pass | 2 / 2 |  |  |
 | [`scripting/processing-model-2/unhandled-promise-rejections/allow-crossorigin.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/unhandled-promise-rejections/allow-crossorigin.html) | Pass | 1 / 1 |  |  |
-| [`scripting/processing-model-2/unhandled-promise-rejections/disallow-crossorigin.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/unhandled-promise-rejections/disallow-crossorigin.html) | Fail | 2 / 3 | BUG | the `unhandledrejection` event fires for a promise rejected by a cross-origin classic script fetched without CORS: the rejections of a script whose errors are muted must not be reported |
+| [`scripting/processing-model-2/unhandled-promise-rejections/disallow-crossorigin.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/unhandled-promise-rejections/disallow-crossorigin.html) | Pass | 3 / 3 |  |  |
 | [`scripting/processing-model-2/unhandled-promise-rejections/promise-rejection-event-constructor.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/unhandled-promise-rejections/promise-rejection-event-constructor.html) | Pass | 1 / 1 |  |  |
 | [`scripting/processing-model-2/unhandled-promise-rejections/promise-rejection-event-during-parse.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/unhandled-promise-rejections/promise-rejection-event-during-parse.html) | Pass | 1 / 1 |  |  |
 | [`scripting/processing-model-2/unhandled-promise-rejections/promise-rejection-events-attached-in-event.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/unhandled-promise-rejections/promise-rejection-events-attached-in-event.html) | Pass | 1 / 1 |  |  |
@@ -325,7 +325,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`scripting/processing-model-2/window-onerror-with-cross-frame-event-listeners-4.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/window-onerror-with-cross-frame-event-listeners-4.html) | Pass | 1 / 1 |  |  |
 | [`scripting/processing-model-2/window-onerror-with-cross-frame-event-listeners-5.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/window-onerror-with-cross-frame-event-listeners-5.html) | Pass | 1 / 1 |  |  |
 | [`scripting/reporterror-cross-realm-method.html`](https://wpt.fyi/results/html/webappapis/scripting/reporterror-cross-realm-method.html) | Pass | 1 / 1 |  |  |
-| [`scripting/reporterror.any.js`](https://wpt.fyi/results/html/webappapis/scripting/reporterror.any.js) | Fail | 4 / 10 | BUG | `reportError()` of a value that is not an error object (`1`, `undefined`) reports an empty `filename` and no position (the browsers report the location of the call), and it reads the properties (getters) of the reported object |
+| [`scripting/reporterror.any.js`](https://wpt.fyi/results/html/webappapis/scripting/reporterror.any.js) | Pass | 10 / 10 |  |  |
 | [`structured-clone/structured-clone-cross-realm-method.html`](https://wpt.fyi/results/html/webappapis/structured-clone/structured-clone-cross-realm-method.html) | Pass | 4 / 4 |  |  |
 | [`structured-clone/structured-clone.any.js`](https://wpt.fyi/results/html/webappapis/structured-clone/structured-clone.any.js) | Fail | 287 / 289 | NOT IMPLEMENTED | transferring the streams (the `ReadableStream` subclass subtest is a precondition failure) |
 | [`system-state-and-capabilities/the-navigator-object/clientinformation.window.js`](https://wpt.fyi/results/html/webappapis/system-state-and-capabilities/the-navigator-object/clientinformation.window.js) | Pass | 2 / 2 |  |  |
@@ -341,7 +341,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`system-state-and-capabilities/the-navigator-object/protocol-handler-path.https.html`](https://wpt.fyi/results/html/webappapis/system-state-and-capabilities/the-navigator-object/protocol-handler-path.https.html) | Error | 0 / 0 | TEST RUNNER | `test_driver.set_rph_registration_mode()` is not supported (the handler is never invoked through a navigation) |
 | [`system-state-and-capabilities/the-navigator-object/protocol-handler-query-nosw.https.html`](https://wpt.fyi/results/html/webappapis/system-state-and-capabilities/the-navigator-object/protocol-handler-query-nosw.https.html) | Error | 0 / 0 | TEST RUNNER | `test_driver.set_rph_registration_mode()` is not supported (the handler is never invoked through a navigation) |
 | [`system-state-and-capabilities/the-navigator-object/protocol-handler-query.https.html`](https://wpt.fyi/results/html/webappapis/system-state-and-capabilities/the-navigator-object/protocol-handler-query.https.html) | Error | 0 / 0 | TEST RUNNER | `test_driver.set_rph_registration_mode()` is not supported (the handler is never invoked through a navigation) |
-| [`system-state-and-capabilities/the-navigator-object/protocol.https.html`](https://wpt.fyi/results/html/webappapis/system-state-and-capabilities/the-navigator-object/protocol.https.html) | Fail | 242 / 244 | BUG | `registerProtocolHandler()` validates the URL before the scheme, so a non-ASCII scheme (`web+Kelvinsign`) throws a `SyntaxError` instead of a `SecurityError` |
+| [`system-state-and-capabilities/the-navigator-object/protocol.https.html`](https://wpt.fyi/results/html/webappapis/system-state-and-capabilities/the-navigator-object/protocol.https.html) | Pass | 244 / 244 |  |  |
 | [`system-state-and-capabilities/the-navigator-object/secure_context.html`](https://wpt.fyi/results/html/webappapis/system-state-and-capabilities/the-navigator-object/secure_context.html) | Pass | 2 / 2 |  |  |
 | [`the-windoworworkerglobalscope-mixin/Worker_Self_Origin.html`](https://wpt.fyi/results/html/webappapis/the-windoworworkerglobalscope-mixin/Worker_Self_Origin.html) | Pass | 6 / 6 |  |  |
 | [`timers/arguments.html`](https://wpt.fyi/results/html/webappapis/timers/arguments.html) | Pass | 2 / 2 |  |  |
@@ -361,7 +361,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`timers/type-long-setinterval.any.js`](https://wpt.fyi/results/html/webappapis/timers/type-long-setinterval.any.js) | Pass | 2 / 2 |  |  |
 | [`timers/type-long-settimeout.any.js`](https://wpt.fyi/results/html/webappapis/timers/type-long-settimeout.any.js) | Pass | 2 / 2 |  |  |
 | [`timers/zero-settimeout.any.js`](https://wpt.fyi/results/html/webappapis/timers/zero-settimeout.any.js) | Pass | 2 / 2 |  |  |
-| [`update-rendering/child-document-raf-order.html`](https://wpt.fyi/results/html/webappapis/update-rendering/child-document-raf-order.html) | Fail | 0 / 1 | BUG | the update-the-rendering steps run the `requestAnimationFrame` callbacks of child documents before the parent's instead of in tree order |
+| [`update-rendering/child-document-raf-order.html`](https://wpt.fyi/results/html/webappapis/update-rendering/child-document-raf-order.html) | Pass | 1 / 1 |  |  |
 | [`user-prompts/print-during-beforeunload.html`](https://wpt.fyi/results/html/webappapis/user-prompts/print-during-beforeunload.html) | Pass | 1 / 1 |  |  |
 | [`user-prompts/print-during-unload.html`](https://wpt.fyi/results/html/webappapis/user-prompts/print-during-unload.html) | Pass | 1 / 1 |  |  |
 | [`user-prompts/print-in-detached-frame.html`](https://wpt.fyi/results/html/webappapis/user-prompts/print-in-detached-frame.html) | Pass | 1 / 1 |  |  |

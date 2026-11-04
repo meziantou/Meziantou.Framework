@@ -139,6 +139,12 @@ public partial class Document : Node
     /// <summary>https://dom.spec.whatwg.org/#concept-document-encoding</summary>
     internal WebEncodingId Encoding { get; set; } = WebEncodingId.Utf8;
 
+    /// <summary>
+    /// The blob URL entry of the URL of the document (https://url.spec.whatwg.org/#concept-url-blob-entry), for a document
+    /// loaded from a <c>blob:</c> URL: a reload uses it, even when the URL was revoked.
+    /// </summary>
+    internal FileApi.BlobUrlEntry? UrlBlobEntry { get; set; }
+
     /// <summary>https://dom.spec.whatwg.org/#concept-document-url</summary>
     internal UrlRecord UrlRecord { get; set; }
 

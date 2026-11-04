@@ -12,7 +12,8 @@
     "total": 7,
     "failures": {
       "Label: el-image (label from image>title element)": "FAIL",
-      "el-image (generic, explicitly empty image>title element)": "FAIL"
+      "Role: el-image (empty label due to missing image>title element)": "FAIL",
+      "Role: el-image (label from image>title element)": "FAIL"
     }
   },
   "svg-aam/role/roles-generic.html": {

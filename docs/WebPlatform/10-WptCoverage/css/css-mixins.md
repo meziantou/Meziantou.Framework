@@ -9,16 +9,15 @@ description: "The results of the web-platform-tests of css/css-mixins, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 47 | 49 | 0 | 96% |
-| [Tentative](#tentative-tests) | 7 | 8 | 0 | 88% |
+| [Stable](#stable-tests) | 48 | 49 | 0 | 98% |
+| [Tentative](#tentative-tests) | 8 | 8 | 0 | 100% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **54** | **57** | **0** | **95%** |
+| **All** | **56** | **57** | **0** | **98%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 2
 - **NOT IMPLEMENTED**: 1
 
 ## Stable tests
@@ -27,7 +26,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 |---|---|--:|---|---|
 | [`function-definition-scope.html`](https://wpt.fyi/results/css/css-mixins/function-definition-scope.html) | Pass | 3 / 3 |  |  |
 | [`function-parameter-scoping.html`](https://wpt.fyi/results/css/css-mixins/function-parameter-scoping.html) | Pass | 4 / 4 |  |  |
-| [`function-property-context.html`](https://wpt.fyi/results/css/css-mixins/function-property-context.html) | Fail | 0 / 4 | BUG | the `em` units of the arguments, defaults, locals and result of a custom function do not resolve in the calling context of the property (32px instead of 20px) |
+| [`function-property-context.html`](https://wpt.fyi/results/css/css-mixins/function-property-context.html) | Pass | 4 / 4 |  |  |
 | [`function-relative-units.html`](https://wpt.fyi/results/css/css-mixins/function-relative-units.html) | Pass | 11 / 11 |  |  |
 | [`functions/at-function-cssom.html`](https://wpt.fyi/results/css/css-mixins/functions/at-function-cssom.html) | Pass | 37 / 37 |  |  |
 | [`functions/at-function-parsing.html`](https://wpt.fyi/results/css/css-mixins/functions/at-function-parsing.html) | Pass | 93 / 93 |  |  |
@@ -85,5 +84,5 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`mixins/mixin-cycle.tentative.html`](https://wpt.fyi/results/css/css-mixins/mixins/mixin-cycle.tentative.html) | Pass | 1 / 1 |  |  |
 | [`mixins/mixin-invalidation.tentative.html`](https://wpt.fyi/results/css/css-mixins/mixins/mixin-invalidation.tentative.html) | Pass | 3 / 3 |  |  |
 | [`private/private-cssom-insert-rule.tentative.html`](https://wpt.fyi/results/css/css-mixins/private/private-cssom-insert-rule.tentative.html) | Pass | 4 / 4 |  |  |
-| [`private/private-cssom-serialization.tentative.html`](https://wpt.fyi/results/css/css-mixins/private/private-cssom-serialization.tentative.html) | Fail | 15 / 16 | BUG | the serialization of `@private` keeps the repeated declarations of a variable (`--x: 1px; --x: 2px;` instead of the last one) |
+| [`private/private-cssom-serialization.tentative.html`](https://wpt.fyi/results/css/css-mixins/private/private-cssom-serialization.tentative.html) | Pass | 16 / 16 |  |  |
 | [`private/private-shared-stylesheet.tentative.html`](https://wpt.fyi/results/css/css-mixins/private/private-shared-stylesheet.tentative.html) | Pass | 1 / 1 |  |  |

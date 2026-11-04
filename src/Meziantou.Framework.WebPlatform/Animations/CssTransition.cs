@@ -13,6 +13,8 @@ public sealed class CssTransition : Animation
 
     private TransitionPhase? _previousPhase;
     private double _previousActiveTime;
+    private double? _cancelActiveTime;
+    private double? _lastScheduledTime;
 
     private enum TransitionPhase
     {
@@ -71,12 +73,22 @@ public sealed class CssTransition : Animation
     internal void PlayByStyle() => PlayCore(autoRewind: true);
 
     /// <summary>Cancels the transition when the style changes (https://drafts.csswg.org/css-transitions-1/#starting): the <c>transitioncancel</c> event is queued.</summary>
-    internal void CancelByStyle()
+    internal void CancelByStyle() => CancelByStyle(discarded: false);
+
+    private void CancelByStyle(bool discarded)
     {
+        // A transition canceled by the style change that follows the one that started it (before an animation frame) has run:
+        // its transitionrun event is queued before its transitioncancel event
+        if (!discarded && _previousPhase is null)
+        {
+            QueueDeclarativeEvents();
+        }
+
         CancelCore();
         QueueDeclarativeEvents();
         OwningElement = null;
         GlobalIndex = NextGlobalIndex();
+        IsAppendedToGlobalListWhenNotIdle = PlayStateValue == AnimationPlayState.Idle;
     }
 
     /// <summary>
@@ -86,11 +98,12 @@ public sealed class CssTransition : Animation
     /// </summary>
     internal void Discard()
     {
-        CancelByStyle();
+        CancelByStyle(discarded: true);
         SetEffectCore(null);
     }
 
-    // A transition canceled through the API is no longer a running transition of its owning element
+    // A transition canceled through the API is no longer a running transition of its owning element, but it is not disassociated
+    // from it (https://drafts.csswg.org/css-transitions-2/#csstransition): a play() that follows dispatches its events again
     private protected override void OnCanceledByScript()
     {
         if (OwningElement is { } element)
@@ -99,8 +112,6 @@ public sealed class CssTransition : Animation
         }
 
         QueueDeclarativeEvents();
-        OwningElement = null;
-        GlobalIndex = NextGlobalIndex();
     }
 
     // The composite order of the transitions: the tree order of their owning elements, their generation, then their property
@@ -119,28 +130,48 @@ public sealed class CssTransition : Animation
         return result != 0 ? result : string.CompareOrdinal(TransitionProperty, otherTransition.TransitionProperty);
     }
 
+    /// <summary>Records the active time of the cancel event: the active time at the moment the transition is canceled, with a fill mode of both.</summary>
+    private protected override void OnBecomingIdle() => _cancelActiveTime = GetActiveTimeForCancel();
+
+    private double GetActiveTimeForCancel()
+    {
+        if (EffectValue is not { } effect)
+            return 0;
+
+        var localTime = effect.LocalTime;
+        return effect.GetActiveTime(localTime, effect.GetPhase(localTime), FillMode.Both) ?? 0;
+    }
+
     /// <summary>https://drafts.csswg.org/css-transitions-2/#event-dispatch</summary>
     internal override void QueueDeclarativeEvents()
     {
-        if (EffectValue is not KeyframeEffect effect || OwningElement is null)
+        if (OwningElement is null)
             return;
 
-        var localTime = effect.LocalTime;
+        var effect = EffectValue;
+        _lastScheduledTime = null;
+        var previousPhase = _previousPhase ?? TransitionPhase.Idle;
         TransitionPhase phase;
-        double? activeTime = null;
         if (PlayStateValue == AnimationPlayState.Idle)
         {
             phase = TransitionPhase.Idle;
         }
-        else if (HasPendingTask || StartTimeValue is null)
+        else if (effect is null)
+        {
+            phase = CurrentTimeValue switch
+            {
+                null => TransitionPhase.Idle,
+                < 0 => TransitionPhase.Before,
+                _ => TransitionPhase.After,
+            };
+        }
+        else if (HasPendingTask && previousPhase is TransitionPhase.Idle or TransitionPhase.Pending)
         {
             phase = TransitionPhase.Pending;
         }
         else
         {
-            var effectPhase = effect.GetPhase(localTime);
-            activeTime = effect.GetActiveTime(localTime, effectPhase);
-            phase = effectPhase switch
+            phase = effect.GetPhase(effect.LocalTime) switch
             {
                 AnimationEffectPhase.Before => TransitionPhase.Before,
                 AnimationEffectPhase.Active => TransitionPhase.Active,
@@ -149,59 +180,60 @@ public sealed class CssTransition : Animation
             };
         }
 
-        var previousPhase = _previousPhase ?? TransitionPhase.Idle;
-        var previousActiveTime = _previousActiveTime;
+        var cancelActiveTime = _cancelActiveTime ?? _previousActiveTime;
         _previousPhase = phase;
-        if (activeTime is { } time)
+        _cancelActiveTime = null;
+        if (phase != TransitionPhase.Idle)
         {
-            _previousActiveTime = time;
+            _previousActiveTime = GetActiveTimeForCancel();
         }
 
-        var activeDuration = effect.ActiveDuration;
-        var intervalStart = Math.Max(Math.Min(-effect.NormalizedDelay, activeDuration), 0);
-        var intervalEnd = Math.Max(Math.Min(EffectEnd - effect.NormalizedDelay, activeDuration), 0);
+        var activeDuration = effect?.ActiveDuration ?? 0;
+        var delay = effect?.NormalizedDelay ?? 0;
+        var intervalStart = Math.Max(Math.Min(-delay, activeDuration), 0);
+        var intervalEnd = Math.Max(Math.Min(EffectEnd - delay, activeDuration), 0);
         var wasPendingOrBefore = previousPhase is TransitionPhase.Pending or TransitionPhase.Before;
         switch (phase)
         {
             case TransitionPhase.Pending or TransitionPhase.Before when previousPhase == TransitionPhase.Idle:
-                Queue("transitionrun", intervalStart, effect);
+                Queue("transitionrun", intervalStart, delay);
                 break;
             case TransitionPhase.Active when previousPhase == TransitionPhase.Idle:
-                Queue("transitionrun", intervalStart, effect);
-                Queue("transitionstart", intervalStart, effect);
+                Queue("transitionrun", intervalStart, delay);
+                Queue("transitionstart", intervalStart, delay);
                 break;
             case TransitionPhase.After when previousPhase == TransitionPhase.Idle:
-                Queue("transitionrun", intervalStart, effect);
-                Queue("transitionstart", intervalStart, effect);
-                Queue("transitionend", intervalEnd, effect);
+                Queue("transitionrun", intervalStart, delay);
+                Queue("transitionstart", intervalStart, delay);
+                Queue("transitionend", intervalEnd, delay);
                 break;
             case TransitionPhase.Active when wasPendingOrBefore:
-                Queue("transitionstart", intervalStart, effect);
+                Queue("transitionstart", intervalStart, delay);
                 break;
             case TransitionPhase.After when wasPendingOrBefore:
-                Queue("transitionstart", intervalStart, effect);
-                Queue("transitionend", intervalEnd, effect);
+                Queue("transitionstart", intervalStart, delay);
+                Queue("transitionend", intervalEnd, delay);
                 break;
             case TransitionPhase.After when previousPhase == TransitionPhase.Active:
-                Queue("transitionend", intervalEnd, effect);
+                Queue("transitionend", intervalEnd, delay);
                 break;
             case TransitionPhase.Before when previousPhase == TransitionPhase.Active:
-                Queue("transitionend", intervalStart, effect);
+                Queue("transitionend", intervalStart, delay);
                 break;
             case TransitionPhase.Active when previousPhase == TransitionPhase.After:
-                Queue("transitionstart", intervalEnd, effect);
+                Queue("transitionstart", intervalEnd, delay);
                 break;
             case TransitionPhase.Before when previousPhase == TransitionPhase.After:
-                Queue("transitionstart", intervalEnd, effect);
-                Queue("transitionend", intervalStart, effect);
+                Queue("transitionstart", intervalEnd, delay);
+                Queue("transitionend", intervalStart, delay);
                 break;
             case TransitionPhase.Idle when previousPhase is not TransitionPhase.Idle and not TransitionPhase.After:
-                Queue("transitioncancel", Math.Max(previousActiveTime, 0), effect, cancel: true);
+                Queue("transitioncancel", Math.Max(cancelActiveTime, 0), delay, cancel: true);
                 break;
         }
     }
 
-    private void Queue(string type, double elapsedTime, KeyframeEffect effect, bool cancel = false)
+    private void Queue(string type, double elapsedTime, double delay, bool cancel = false)
     {
         if (OwningElement is not { } target)
             return;
@@ -225,9 +257,17 @@ public sealed class CssTransition : Animation
         }
         else if (StartTimeValue is { } startTime && PlaybackRate != 0)
         {
-            scheduledTime = Timeline?.ToOriginRelativeTime(startTime + ((effect.NormalizedDelay + elapsedTime) / PlaybackRate));
+            scheduledTime = Timeline?.ToOriginRelativeTime(startTime + ((delay + elapsedTime) / PlaybackRate));
         }
 
+        // The events of a phase change are dispatched in the order of the table, even when an event would occur earlier than the
+        // previous one (e.g. the end event at the interval start after the start event at the interval end when seeking backwards)
+        if (scheduledTime is { } time && _lastScheduledTime is { } last && time < last)
+        {
+            scheduledTime = last;
+        }
+
+        _lastScheduledTime = scheduledTime;
         document.Animations.QueueEvent(transitionEvent, target, this, scheduledTime);
     }
 }

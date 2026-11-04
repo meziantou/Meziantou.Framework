@@ -45,6 +45,10 @@ The object model is written, not the text it was parsed from: the comments, the 
 unsupported properties are not written, and the values are in their serialized form (the longhands are combined into
 their shorthand, `calc(1px + 2px)` is `calc(3px)`). The formatters are immutable and never change the style sheet.
 
+A value left open at the end of the style sheet (`div { width: var(--x`) is serialized as written, as in the browsers, so
+the default formatter writes `div { width: var(--x; }`. [CssMinifyFormatter](cref:Meziantou.Framework.WebPlatform.Formatting.CssMinifyFormatter) and [CssPrettyFormatter](cref:Meziantou.Framework.WebPlatform.Formatting.CssPrettyFormatter) close it
+(`var(--x)`), so that their output is valid CSS.
+
 ## Minify
 
 [CssMinifyFormatter](cref:Meziantou.Framework.WebPlatform.Formatting.CssMinifyFormatter) removes the whitespace that is not needed and the last semicolon of each block. Its options, all

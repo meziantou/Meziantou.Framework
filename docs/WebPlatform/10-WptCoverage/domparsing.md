@@ -10,15 +10,15 @@ description: "The results of the web-platform-tests of domparsing, and why the t
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 52 | 56 | 0 | 93% |
-| [Tentative](#tentative-tests) | 34 | 39 | 0 | 87% |
+| [Tentative](#tentative-tests) | 35 | 39 | 0 | 90% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **86** | **95** | **0** | **91%** |
+| **All** | **87** | **95** | **0** | **92%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 2
+- **BUG**: 1
 - **TEST BUG**: 4
 - **NOT IMPLEMENTED**: 3
 
@@ -125,4 +125,4 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`tentative/stream-sanitizer-img-ctor.html`](https://wpt.fyi/results/domparsing/tentative/stream-sanitizer-img-ctor.html) | Pass | 65 / 65 |  |  |
 | [`tentative/stream-sanitizer-resource-fetch.html`](https://wpt.fyi/results/domparsing/tentative/stream-sanitizer-resource-fetch.html) | Pass | 18 / 18 |  |  |
 | [`tentative/stream-tokenizer-context.html`](https://wpt.fyi/results/domparsing/tentative/stream-tokenizer-context.html) | Pass | 45 / 45 |  |  |
-| [`tentative/unclosed-script-already-started.html`](https://wpt.fyi/results/domparsing/tentative/unclosed-script-already-started.html) | Fail | 2 / 4 | BUG | an unclosed `<script>` parsed by `createContextualFragment()` or `setHTMLUnsafe({ runScripts: true })` runs when it is inserted (it is not marked as already started at the end of the parsing) |
+| [`tentative/unclosed-script-already-started.html`](https://wpt.fyi/results/domparsing/tentative/unclosed-script-already-started.html) | Pass | 4 / 4 |  |  |

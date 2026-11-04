@@ -259,6 +259,7 @@ internal static partial class WptPythonHandlers
         ["/fetch/http-cache/resources/http-cache.py"] = FetchHttpCache,
         ["/fetch/http-cache/resources/cached_pragma_rand.py"] = (_, response, _) => CachedPragmaRand(response, "max-age=2592000, public"),
         ["/fetch/http-cache/resources/cached_pragma_immutable_rand.py"] = (_, response, _) => CachedPragmaRand(response, "max-age=2592000, immutable"),
+        ["/fetch/http-cache/resources/securedimage.py"] = SecuredImage,
         ["/fetch/api/resources/dump-authorization-header.py"] = DumpAuthorizationHeader,
         ["/fetch/api/resources/echo-content.py"] = EchoContent,
         ["/fetch/api/resources/method.py"] = Method,
@@ -1814,6 +1815,27 @@ internal static partial class WptPythonHandlers
         response.Set("Cache-Control", cacheControl);
         response.Set("Pragma", "no-cache");
         response.Content = "Token: " + Guid.NewGuid().ToString("D");
+    }
+
+    // fetch/http-cache/resources/securedimage.py: a 401 challenge without credentials, else a redirect to /images/green.png
+    private static void SecuredImage(WptHandlerRequest request, WptHandlerResponse response, WptStash stash)
+    {
+        if (request.Header("Authorization") is not { } authorization)
+        {
+            response.Status = 401;
+            response.Set("WWW-Authenticate", "Basic");
+            return;
+        }
+
+        if (authorization != "Basic dGVzdHVzZXI6dGVzdHBhc3M=")
+        {
+            response.Status = 403;
+            response.Content = "Invalid username or password - " + authorization;
+            return;
+        }
+
+        response.Status = 301;
+        response.Set("Location", request.Url.Href.Replace("fetch/http-cache/resources/securedimage.py", "images/green.png", StringComparison.Ordinal));
     }
 
     // fetch/api/resources/dump-authorization-header.py

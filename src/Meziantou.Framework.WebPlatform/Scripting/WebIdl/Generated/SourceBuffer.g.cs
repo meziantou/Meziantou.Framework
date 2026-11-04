@@ -47,7 +47,7 @@ internal static class Binding_SourceBuffer<TAdapter, TValue> where TAdapter : st
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.SourceBuffer>(t, Binding);
         if (a.Length < 1) throw r.NotEnoughArguments("appendBuffer", 1, a.Length);
         var a0 = r.ToBufferSource(a[0], 32765u, false, "(ArrayBuffer or (Int8Array or Int16Array or Int32Array or Uint8Array or Uint16Array or Uint32Array or Uint8ClampedArray or BigInt64Array or BigUint64Array or Float16Array or Float32Array or Float64Array or DataView))");
-        o.AppendBuffer(a0.Bytes.Span); return r.Adapter.Undefined;
+        o.AppendBuffer(a0.CurrentBytes.Span); return r.Adapter.Undefined;
     }
     private static TValue Op_abort(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {

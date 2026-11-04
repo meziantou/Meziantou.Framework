@@ -33,7 +33,7 @@ internal static class Binding_BiquadFilterNode<TAdapter, TValue> where TAdapter 
         var a0 = r.ToBufferSource(a[0], 8192u, false, "Float32Array");
         var a1 = r.ToBufferSource(a[1], 8192u, false, "Float32Array");
         var a2 = r.ToBufferSource(a[2], 8192u, false, "Float32Array");
-        o.GetFrequencyResponse(a0.Bytes.Span, a1.Bytes.Span, a2.Bytes.Span); return r.Adapter.Undefined;
+        o.GetFrequencyResponse(a0.CurrentBytes.Span, a1.CurrentBytes.Span, a2.CurrentBytes.Span); return r.Adapter.Undefined;
     }
     private static void DefineMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue interfaceObject, TValue prototype, TValue instanceTarget)
     {

@@ -79,8 +79,14 @@ internal sealed class TransientRegisteredObserver(MutationObserver observer, Mut
 [IdlInterface("MutationObserver", "https://dom.spec.whatwg.org/#mutationobserver")]
 public sealed class MutationObserver
 {
+    // https://dom.spec.whatwg.org/#mutation-observer-counter: the creation indexes increase in the order of creation in
+    // every agent (they are only compared)
+    private static long s_mutationObserverCounter;
+
     private readonly MutationCallback _callback;
+    private readonly long _creationIndex;
     private readonly List<WeakReference<Node>> _nodeList = [];
+    private readonly List<WeakReference<Node>> _transientNodeSet = [];
     private readonly List<MutationRecord> _recordQueue = [];
 
     /// <summary>Creates an observer that invokes the callback with the batched mutation records.</summary>
@@ -90,6 +96,7 @@ public sealed class MutationObserver
     {
         ArgumentNullException.ThrowIfNull(callback);
         _callback = callback;
+        _creationIndex = Interlocked.Increment(ref s_mutationObserverCounter);
     }
 
     /// <summary>https://dom.spec.whatwg.org/#dom-mutationobserver-observe</summary>
@@ -123,10 +130,11 @@ public sealed class MutationObserver
 
         foreach (var registered in target.RegisteredObservers)
         {
-            if (!ReferenceEquals(registered.Observer, this))
+            // The transient registered observers of a removed or moved subtree are ignored
+            if (!ReferenceEquals(registered.Observer, this) || registered is TransientRegisteredObserver)
                 continue;
 
-            foreach (var node in EnumerateNodes())
+            foreach (var node in EnumerateNodes(_transientNodeSet))
             {
                 node.RegisteredObserverList?.RemoveAll(r => r is TransientRegisteredObserver transient && ReferenceEquals(transient.Source, registered));
             }
@@ -144,12 +152,13 @@ public sealed class MutationObserver
     [IdlMember("disconnect", "https://dom.spec.whatwg.org/#dom-mutationobserver-disconnect")]
     public void Disconnect()
     {
-        foreach (var node in EnumerateNodes())
+        foreach (var node in EnumerateNodes(_nodeList).Concat(EnumerateNodes(_transientNodeSet)))
         {
             node.RegisteredObserverList?.RemoveAll(r => ReferenceEquals(r.Observer, this));
             node.UpdateObserverCount();
         }
 
+        _transientNodeSet.Clear();
         _recordQueue.Clear();
     }
 
@@ -165,15 +174,61 @@ public sealed class MutationObserver
 
     internal void Enqueue(MutationRecord record) => _recordQueue.Add(record);
 
-    internal void AddTransientNode(Node node) => _nodeList.Add(new WeakReference<Node>(node));
-
-    private IEnumerable<Node> EnumerateNodes()
+    private static IEnumerable<Node> EnumerateNodes(List<WeakReference<Node>> references)
     {
-        foreach (var reference in _nodeList.ToArray())
+        foreach (var reference in references.ToArray())
         {
             if (reference.TryGetTarget(out var node))
                 yield return node;
         }
+    }
+
+    /// <summary>https://dom.spec.whatwg.org/#add-transient-registered-observers</summary>
+    internal static void AddTransientRegisteredObservers(Node node, Node parent)
+    {
+        var eventLoop = node.NodeDocument.EventLoop;
+        for (Node? inclusiveAncestor = parent; inclusiveAncestor is not null; inclusiveAncestor = inclusiveAncestor.ParentNode)
+        {
+            if (inclusiveAncestor.RegisteredObserverList is not { Count: > 0 } registeredObservers)
+                continue;
+
+            foreach (var registered in registeredObservers.ToArray())
+            {
+                if (!registered.Options.Subtree)
+                    continue;
+
+                var observer = registered.Observer;
+                var source = registered is TransientRegisteredObserver transient ? transient.Source : registered;
+                if (node.RegisteredObservers.Any(r => r is TransientRegisteredObserver existing && ReferenceEquals(existing.Source, source)))
+                    continue;
+
+                node.AddRegisteredObserver(new TransientRegisteredObserver(observer, source.Options, source));
+                observer._transientNodeSet.Add(new WeakReference<Node>(node));
+
+                // The observer is notified, so that the transient registered observers are removed even if no record is queued
+                if (eventLoop is not null)
+                {
+                    if (!eventLoop.PendingMutationObservers.Contains(observer))
+                    {
+                        eventLoop.PendingMutationObservers.Add(observer);
+                    }
+
+                    QueueMutationObserverMicrotask(eventLoop);
+                }
+            }
+        }
+    }
+
+    /// <summary>https://dom.spec.whatwg.org/#remove-transient-registered-observers</summary>
+    private void RemoveTransientRegisteredObservers()
+    {
+        foreach (var node in EnumerateNodes(_transientNodeSet))
+        {
+            node.RegisteredObserverList?.RemoveAll(r => r is TransientRegisteredObserver && ReferenceEquals(r.Observer, this));
+            node.UpdateObserverCount();
+        }
+
+        _transientNodeSet.Clear();
     }
 
     /// <summary>https://dom.spec.whatwg.org/#queue-a-mutation-observer-compound-microtask</summary>
@@ -190,7 +245,7 @@ public sealed class MutationObserver
     internal static void NotifyMutationObservers(DomEventLoop eventLoop)
     {
         eventLoop.MutationObserverMicrotaskQueued = false;
-        var notifySet = eventLoop.PendingMutationObservers.ToArray();
+        var notifySet = eventLoop.PendingMutationObservers.OrderBy(observer => observer._creationIndex).ToArray();
         eventLoop.PendingMutationObservers.Clear();
         var signalSet = eventLoop.SignalSlots.ToArray();
         eventLoop.SignalSlots.Clear();
@@ -198,11 +253,7 @@ public sealed class MutationObserver
         {
             var records = mo._recordQueue.ToArray();
             mo._recordQueue.Clear();
-            foreach (var node in mo.EnumerateNodes())
-            {
-                node.RegisteredObserverList?.RemoveAll(r => r is TransientRegisteredObserver && ReferenceEquals(r.Observer, mo));
-                node.UpdateObserverCount();
-            }
+            mo.RemoveTransientRegisteredObservers();
 
             if (records.Length > 0)
             {

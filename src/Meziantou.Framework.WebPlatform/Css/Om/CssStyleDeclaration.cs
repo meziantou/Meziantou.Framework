@@ -55,6 +55,9 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
     /// <summary>The value of the style attribute the declarations were parsed from (the owner node's declarations are updated lazily).</summary>
     private string? _source;
 
+    // Whether the updates of the style attribute are deferred (see SetComputedProperties)
+    private bool _deferStyleAttributeUpdate;
+
     /// <summary>Creates the declarations of the style attribute of an element (https://drafts.csswg.org/cssom/#dom-elementcssinlinestyle-style).</summary>
     internal CssStyleDeclaration(Element ownerNode)
     {
@@ -325,6 +328,33 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
         }
 
         if (updated)
+        {
+            UpdateStyleAttribute();
+        }
+    }
+
+    /// <summary>
+    /// Sets the declarations, then updates the style attribute once, when a declaration changed
+    /// (https://drafts.csswg.org/web-animations-1/#dom-animation-commitstyles: the declarations are set in the declaration
+    /// block, then the style attribute is updated; a redundant commit does not mutate the attribute).
+    /// </summary>
+    internal void SetComputedProperties(IReadOnlyList<(string Property, string Value)> values)
+    {
+        var before = SerializeDeclarationBlock(Declarations);
+        _deferStyleAttributeUpdate = true;
+        try
+        {
+            foreach (var (property, value) in values)
+            {
+                SetComputedProperty(property, value);
+            }
+        }
+        finally
+        {
+            _deferStyleAttributeUpdate = false;
+        }
+
+        if (!string.Equals(before, SerializeDeclarationBlock(Declarations), StringComparison.Ordinal))
         {
             UpdateStyleAttribute();
         }
@@ -689,11 +719,26 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
     }
 
     /// <summary>
+    /// Closes the functions and blocks that a value kept as written at the end of a style sheet leaves open (e.g.
+    /// <c>var(--x</c>), so that the text written after the value (e.g. by a formatter) is not part of it.
+    /// </summary>
+    internal static string CloseUnclosedBlocks(string value)
+    {
+        if (value.AsSpan().IndexOfAny("([{") < 0)
+            return value;
+
+        var components = CssParser.ParseListOfComponentValues(value);
+        return components.Count > 0 && components[^1].End >= value.Length ? FixupEndOfFile(value, components[^1], value, closeBlocks: true) : value;
+    }
+
+    /// <summary>
     /// Fixes the original text of a value that ends at the end of the input
     /// (https://drafts.csswg.org/css-syntax-3/#consume-escaped-code-point): an escaped EOF is U+FFFD (it is ignored in
-    /// strings), and the unclosed strings, urls, functions and blocks are closed.
+    /// strings), and the unclosed strings and urls are closed. The unclosed functions and blocks are closed in the value of a
+    /// custom property, whose value is substituted in other values; the value of another property is kept as written, as in
+    /// the browsers (WPT css/css-variables/variable-reference.html: "var(--prop" at the end of a style sheet).
     /// </summary>
-    private static string FixupEndOfFile(string text, CssComponentValue last, string source)
+    private static string FixupEndOfFile(string text, CssComponentValue last, string source, bool closeBlocks)
     {
         var closers = new System.Text.StringBuilder();
         var value = last;
@@ -782,7 +827,7 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
             }
         }
 
-        return text + closers;
+        return closeBlocks ? text + closers : text;
     }
 
     private static int CountTrailingBackslashes(string text)
@@ -946,6 +991,9 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
     /// <summary>https://drafts.csswg.org/cssom/#update-style-attribute-for</summary>
     private void UpdateStyleAttribute()
     {
+        if (_deferStyleAttributeUpdate)
+            return;
+
         // The declarations of a style attribute are updated with the attribute, which invalidates the computed styles
         if (_ownerNode is null)
         {
@@ -1000,7 +1048,7 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
         var endOfFile = declaration.Value.Count > 0 && declaration.Value[^1].End >= source.Length;
         if (endOfFile)
         {
-            originalText = FixupEndOfFile(originalText, declaration.Value[^1], source);
+            originalText = FixupEndOfFile(originalText, declaration.Value[^1], source, closeBlocks: CssPropertyRegistry.IsCustomProperty(name));
         }
 
         // An empty custom property (e.g. --x: ;) is valid (https://drafts.csswg.org/css-variables/#defining-variables): its

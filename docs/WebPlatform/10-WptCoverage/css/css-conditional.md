@@ -10,15 +10,15 @@ description: "The results of the web-platform-tests of css/css-conditional, and 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 218 | 226 | 0 | 96% |
-| [Tentative](#tentative-tests) | 5 | 6 | 0 | 83% |
-| [Reftests](#reftests) | 168 | 173 | 0 | 97% |
-| **All** | **391** | **405** | **0** | **97%** |
+| [Tentative](#tentative-tests) | 6 | 6 | 0 | 100% |
+| [Reftests](#reftests) | 170 | 173 | 0 | 98% |
+| **All** | **394** | **405** | **0** | **97%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 10
+- **BUG**: 7
 - **TEST BUG**: 1
 - **NOT IMPLEMENTED**: 3
 
@@ -261,7 +261,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`container-queries/scroll-state/scroll-state-stuck-snapshot.tentative.html`](https://wpt.fyi/results/css/css-conditional/container-queries/scroll-state/scroll-state-stuck-snapshot.tentative.html) | Pass | 1 / 1 |  |  |
 | [`container-queries/style-query-guaranteed-invalid.tentative.html`](https://wpt.fyi/results/css/css-conditional/container-queries/style-query-guaranteed-invalid.tentative.html) | Pass | 1 / 1 |  |  |
 | [`container-queries/style-query-registered-custom-invalid.tentative.html`](https://wpt.fyi/results/css/css-conditional/container-queries/style-query-registered-custom-invalid.tentative.html) | Pass | 1 / 1 |  |  |
-| [`match-container-change-event.tentative.html`](https://wpt.fyi/results/css/css-conditional/match-container-change-event.tentative.html) | Fail | 15 / 17 | BUG | `matchContainer()` evaluates its queries in a `display: none` subtree: it fires `change` while hidden and does not skip a hidden ancestor container |
+| [`match-container-change-event.tentative.html`](https://wpt.fyi/results/css/css-conditional/match-container-change-event.tentative.html) | Pass | 17 / 17 |  |  |
 | [`match-container.tentative.html`](https://wpt.fyi/results/css/css-conditional/match-container.tentative.html) | Pass | 30 / 30 |  |  |
 
 ## Reftests
@@ -386,8 +386,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`container-queries/pseudo-elements-012.html`](https://wpt.fyi/results/css/css-conditional/container-queries/pseudo-elements-012.html) | Pass | 1 / 1 |  |  |
 | [`container-queries/query-style-color.html`](https://wpt.fyi/results/css/css-conditional/container-queries/query-style-color.html) | Fail | 0 / 1 | BUG | a registered `<color>` custom property with a `none` component (`hwb(none 0 100)`, `color(srgb none 0 0)`, `oklch(0 0 none)`) is compared by `style(--c: black)` after its conversion to sRGB, where `none` is 0: the query matches although the computed values differ; only Firefox passes |
 | [`container-queries/resize-while-content-visibility-hidden.html`](https://wpt.fyi/results/css/css-conditional/container-queries/resize-while-content-visibility-hidden.html) | Pass | 1 / 1 |  |  |
-| [`container-queries/scrollbar-container-units-block.html`](https://wpt.fyi/results/css/css-conditional/container-queries/scrollbar-container-units-block.html) | Fail | 0 / 1 | BUG | the `cqw`/`cqh` units of a size container with `overflow: auto` are resolved against its content box minus the scrollbar that its contents trigger (85px); Chrome and Safari resolve them as if the automatic scrollbar was absent (100px, only `overflow: scroll` reserves the scrollbar) |
-| [`container-queries/scrollbar-container-units-inline.html`](https://wpt.fyi/results/css/css-conditional/container-queries/scrollbar-container-units-inline.html) | Fail | 0 / 1 | BUG | the `cqw`/`cqh` units of a size container with `overflow: auto` are resolved against its content box minus the scrollbar that its contents trigger (85px); Chrome and Safari resolve them as if the automatic scrollbar was absent (100px, only `overflow: scroll` reserves the scrollbar) |
+| [`container-queries/scrollbar-container-units-block.html`](https://wpt.fyi/results/css/css-conditional/container-queries/scrollbar-container-units-block.html) | Pass | 1 / 1 |  |  |
+| [`container-queries/scrollbar-container-units-inline.html`](https://wpt.fyi/results/css/css-conditional/container-queries/scrollbar-container-units-inline.html) | Pass | 1 / 1 |  |  |
 | [`container-queries/size-container-popover-change.html`](https://wpt.fyi/results/css/css-conditional/container-queries/size-container-popover-change.html) | Pass | 1 / 1 |  |  |
 | [`container-queries/size-container-with-quotes.html`](https://wpt.fyi/results/css/css-conditional/container-queries/size-container-with-quotes.html) | Pass | 1 / 1 |  |  |
 | [`container-queries/style-negation-with-container-name.html`](https://wpt.fyi/results/css/css-conditional/container-queries/style-negation-with-container-name.html) | Pass | 1 / 1 |  |  |

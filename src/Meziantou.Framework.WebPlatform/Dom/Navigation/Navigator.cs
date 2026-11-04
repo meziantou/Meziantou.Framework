@@ -133,7 +133,7 @@ public sealed partial class Navigator
     /// <summary>https://html.spec.whatwg.org/multipage/system-state.html#normalize-protocol-handler-parameters</summary>
     private void NormalizeProtocolHandlerParameters(string scheme, string url)
     {
-        scheme = scheme.ToLowerInvariant();
+        scheme = Infra.InfraAscii.ToAsciiLowercase(scheme);
         if (!IsSafelistedScheme(scheme) && !(scheme.StartsWith("web+", StringComparison.Ordinal) && scheme.Length > 4 && scheme.AsSpan(4).IndexOfAnyExceptInRange('a', 'z') < 0))
             throw new DomException("The scheme is not allowed", "SecurityError");
 

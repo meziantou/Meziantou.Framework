@@ -400,7 +400,13 @@
     return deferred.promise;
   }
 
-  const toArrayBuffer = (bytes) => apply(arrayBufferSlice, apply(typedArrayBuffer, bytes, []), [apply(typedArrayByteOffset, bytes, []), apply(typedArrayByteOffset, bytes, []) + bytes.length]);
+  // A copy of the bytes in an ArrayBuffer of this realm (the bytes may come from another realm, whose ArrayBuffer would be the
+  // species constructor of a slice)
+  const toArrayBuffer = (bytes) => {
+    const copy = new Uint8Array_(apply(typedArrayByteLength, bytes, []));
+    apply(typedArraySet, copy, [bytes, 0]);
+    return apply(typedArrayBuffer, copy, []);
+  };
 
   // https://encoding.spec.whatwg.org/#utf-8-decode
   const utf8Decode = (bytes) => apply(textDecoderDecode, new TextDecoder_(), [bytes]);
@@ -678,9 +684,6 @@
       if (initBody === null && inputBody !== null) {
         if (isUnusable(inputRecord)) throw new TypeError_("Failed to construct 'Request': Cannot construct a Request with a Request object that has already been used.");
         finalBody = proxyBody(inputBody);
-      } else if (inputBody !== null && !isUnusable(inputRecord)) {
-        // The body of the input request is disturbed even when it is replaced (as in the browsers)
-        streams.lock(inputBody.stream);
       }
 
       request.body = finalBody;

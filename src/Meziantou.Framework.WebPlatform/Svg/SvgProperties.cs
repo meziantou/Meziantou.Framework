@@ -45,6 +45,7 @@ internal static class SvgProperties
         ["SVGTextContentElement.lengthAdjust"] = new(1, ("spacing", 1), ("spacingAndGlyphs", 2)),
         ["SVGTextPathElement.method"] = new(1, ("align", 1), ("stretch", 2)),
         ["SVGTextPathElement.spacing"] = new(2, ("auto", 1), ("exact", 2)),
+        ["SVGTextPathElement.side"] = new(1, ("left", 1), ("right", 2)),
     };
 
     private static readonly Dictionary<string, string> LengthDefaults = new(StringComparer.Ordinal)

@@ -35,6 +35,8 @@ public sealed class ClipboardUnsanitizedFormats
 [IdlInterface("Clipboard", "https://w3c.github.io/clipboard-apis/#clipboard")]
 public sealed class Clipboard : EventTarget
 {
+    private const int MaxWebCustomFormats = 100;
+
     private bool _clipboardChangePending;
 
     internal Clipboard(Window window)
@@ -141,6 +143,19 @@ public sealed class Clipboard : EventTarget
         var completion = new TaskCompletionSource();
         Window.Document.QueueGlobalTask(() =>
         {
+            // As in the browsers, the system clipboard holds a single item, and an item holds at most 100 web custom formats
+            if (items.Length > 1)
+            {
+                completion.TrySetException(DomException.NotAllowed("The clipboard does not support multiple clipboard items"));
+                return;
+            }
+
+            if (items.Any(item => item.Representations.Count(r => r.IsCustom) > MaxWebCustomFormats))
+            {
+                completion.TrySetException(DomException.NotAllowed("A clipboard item cannot have more than 100 web custom formats"));
+                return;
+            }
+
             // React to the promises of the data of the representations
             var itemsData = items.Select(item => (Item: item, Data: item.Representations.Select(r => (Representation: r, Data: item.GetData(r))).ToArray())).ToArray();
             _ = Task.WhenAll(itemsData.SelectMany(item => item.Data).Select(r => r.Data)).ContinueWith(task =>

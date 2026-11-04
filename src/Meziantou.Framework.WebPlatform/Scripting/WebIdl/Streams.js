@@ -623,6 +623,9 @@
   defineProperty(ReadableStream.prototype, SymbolAsyncIterator, { value: ReadableStream.prototype.values, writable: true, enumerable: false, configurable: true });
 
   // https://webidl.spec.whatwg.org/#es-asynchronous-iterator-prototype-object
+  // The {value, done} object of a read is created in the current realm (https://webidl.spec.whatwg.org/#js-dictionary): the
+  // steps that fulfill a read request give it the function of their realm (e.g. close() called through the controller of
+  // another realm), as the records of the streams are shared by the realms of the agent
   const createIterResultObject = (value, done) => ({ value, done });
   const ReadableStreamAsyncIteratorPrototype = ObjectCreate(AsyncIteratorPrototype);
   const asyncIteratorMethods = {
@@ -857,8 +860,8 @@
         if (reader.stream === undefined) return promiseRejectedWith(new TypeError_('The reader is released'));
         const promise = newPromise();
         readableStreamDefaultReaderRead(reader, {
-          chunk(chunk) { resolvePromise(promise, createIterResultObject(chunk, false)); },
-          close() { resolvePromise(promise, createIterResultObject(undefined, true)); },
+          chunk(chunk, create = createIterResultObject) { resolvePromise(promise, create(chunk, false)); },
+          close(create = createIterResultObject) { resolvePromise(promise, create(undefined, true)); },
           error(e) { rejectPromise(promise, e); },
         });
         return promise.promise;
@@ -919,8 +922,8 @@
         if (reader.stream === undefined) return promiseRejectedWith(new TypeError_('The reader is released'));
         const promise = newPromise();
         readableStreamBYOBReaderRead(reader, view, min, {
-          chunk(chunk) { resolvePromise(promise, createIterResultObject(chunk, false)); },
-          close(chunk) { resolvePromise(promise, createIterResultObject(chunk, true)); },
+          chunk(chunk, create = createIterResultObject) { resolvePromise(promise, create(chunk, false)); },
+          close(chunk, create = createIterResultObject) { resolvePromise(promise, create(chunk, true)); },
           error(e) { rejectPromise(promise, e); },
         });
         return promise.promise;
@@ -1005,7 +1008,7 @@
     const stream = reader.stream;
     stream.disturbed = true;
     if (stream.state === 'closed') {
-      readRequest.close();
+      readRequest.close(createIterResultObject);
     } else if (stream.state === 'errored') {
       readRequest.error(stream.storedError);
     } else {
@@ -1075,7 +1078,7 @@
     if (reader !== undefined && reader.kind === 'ReadableStreamBYOBReader') {
       const readIntoRequests = reader.readIntoRequests;
       reader.readIntoRequests = new List();
-      for (const readIntoRequest of readIntoRequests.toArray()) readIntoRequest.close(undefined);
+      for (const readIntoRequest of readIntoRequests.toArray()) readIntoRequest.close(undefined, createIterResultObject);
     }
 
     const sourceCancelPromise = stream.controller.cancelSteps(reason);
@@ -1090,7 +1093,7 @@
     if (reader.kind === 'ReadableStreamDefaultReader') {
       const readRequests = reader.readRequests;
       reader.readRequests = new List();
-      for (const readRequest of readRequests.toArray()) readRequest.close();
+      for (const readRequest of readRequests.toArray()) readRequest.close(createIterResultObject);
     }
   }
 
@@ -1113,14 +1116,14 @@
 
   function readableStreamFulfillReadRequest(stream, chunk, done) {
     const readRequest = stream.reader.readRequests.shift();
-    if (done) readRequest.close();
-    else readRequest.chunk(chunk);
+    if (done) readRequest.close(createIterResultObject);
+    else readRequest.chunk(chunk, createIterResultObject);
   }
 
   function readableStreamFulfillReadIntoRequest(stream, chunk, done) {
     const readIntoRequest = stream.reader.readIntoRequests.shift();
-    if (done) readIntoRequest.close(chunk);
-    else readIntoRequest.chunk(chunk);
+    if (done) readIntoRequest.close(chunk, createIterResultObject);
+    else readIntoRequest.chunk(chunk, createIterResultObject);
   }
 
   const readableStreamGetNumReadRequests = (stream) => stream.reader.readRequests.size;
@@ -1459,7 +1462,9 @@
         const read = newPromise();
         readableStreamDefaultReaderRead(reader, {
           chunk(chunk) {
-            currentWrite = performPromiseThen(writableStreamDefaultWriterWrite(writer, chunk), undefined, noop);
+            // The chunk steps run synchronously when enqueue() fulfills the read request: the write is done in a microtask, so
+            // that enqueue() does not call the write algorithm of the destination synchronously
+            currentWrite = performPromiseThen(resolvedPromise, () => performPromiseThen(writableStreamDefaultWriterWrite(writer, chunk), undefined, noop));
             resolvePromise(read, false);
           },
           close() { resolvePromise(read, true); },
@@ -1664,7 +1669,7 @@
           readableStreamDefaultControllerCallPullIfNeeded(controller);
         }
 
-        readRequest.chunk(chunk);
+        readRequest.chunk(chunk, createIterResultObject);
       } else {
         readableStreamAddReadRequest(stream, readRequest);
         readableStreamDefaultControllerCallPullIfNeeded(controller);
@@ -1927,7 +1932,7 @@
     controller.queueTotalSize -= entry.byteLength;
     readableByteStreamControllerHandleQueueDrain(controller);
     const view = new Uint8Array_(entry.buffer, entry.byteOffset, entry.byteLength);
-    readRequest.chunk(view);
+    readRequest.chunk(view, createIterResultObject);
   }
 
   function readableByteStreamControllerGetBYOBRequest(controller) {
@@ -2028,7 +2033,7 @@
 
     if (stream.state === 'closed') {
       const emptyView = new ctor(pullIntoDescriptor.buffer, pullIntoDescriptor.byteOffset, 0);
-      readIntoRequest.close(emptyView);
+      readIntoRequest.close(emptyView, createIterResultObject);
       return;
     }
 
@@ -2036,7 +2041,7 @@
       if (readableByteStreamControllerFillPullIntoDescriptorFromQueue(controller, pullIntoDescriptor)) {
         const filledView = readableByteStreamControllerConvertPullIntoDescriptor(pullIntoDescriptor);
         readableByteStreamControllerHandleQueueDrain(controller);
-        readIntoRequest.chunk(filledView);
+        readIntoRequest.chunk(filledView, createIterResultObject);
         return;
       }
 

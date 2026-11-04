@@ -75,10 +75,7 @@
     "total": 1
   },
   "trusted-types/HTMLScriptElement-internal-slot.html": {
-    "total": 9,
-    "failures": {
-      "Test TT application when manipulating <script> elements during loading.": "FAIL"
-    }
+    "total": 9
   },
   "trusted-types/Node-multiple-arguments-tt-enforced.html": {
     "total": 90
@@ -90,10 +87,7 @@
     "total": 1
   },
   "trusted-types/SVGScriptElement-internal-slot.html": {
-    "total": 1,
-    "failures": {
-      "Test TT application when manipulating <script> elements during loading.": "FAIL"
-    }
+    "total": 1
   },
   "trusted-types/ServiceWorker-block-eval-function-constructor.https.html": {
     "total": 6
@@ -559,8 +553,7 @@
   "trusted-types/should-trusted-type-policy-creation-be-blocked-by-csp-002.html": {
     "total": 21,
     "failures": {
-      "directive \"trusted-type _TTP1_%09_TTP2_%0A%20_TTP3_%0C_TTP4_%0D_TTP5_%20_TTP6_\" (required-ascii-whitespace)": "FAIL",
-      "non-ASCII trusted-types directives are discarded (\"política\")": "FAIL"
+      "directive \"trusted-type _TTP1_%09_TTP2_%0A%20_TTP3_%0C_TTP4_%0D_TTP5_%20_TTP6_\" (required-ascii-whitespace)": "FAIL"
     }
   },
   "trusted-types/should-trusted-type-policy-creation-be-blocked-by-csp-003.html": {

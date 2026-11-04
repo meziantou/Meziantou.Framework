@@ -1034,7 +1034,7 @@ internal sealed partial class HtmlTreeBuilder
         // https://w3c.github.io/trusted-types/dist/spec/#setting-slot-values-from-parser
         if (script is SvgScriptElement parsedScript)
         {
-            parsedScript.ScriptText = parsedScript.GetChildTextContent();
+            parsedScript.ScriptText = TakeParsedScriptText(parsedScript);
         }
 
         if (ContextElement is null && script is SvgScriptElement svgScript)

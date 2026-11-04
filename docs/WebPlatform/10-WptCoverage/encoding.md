@@ -9,16 +9,10 @@ description: "The results of the web-platform-tests of encoding, and why the tes
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 148 | 152 | 0 | 97% |
+| [Stable](#stable-tests) | 152 | 152 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
 | [Reftests](#reftests) | 4 | 4 | 0 | 100% |
-| **All** | **152** | **156** | **0** | **97%** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **BUG**: 4
+| **All** | **156** | **156** | **0** | **100%** |
 
 ## Stable tests
 
@@ -157,8 +151,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`streams/encode-utf8.any.js`](https://wpt.fyi/results/encoding/streams/encode-utf8.any.js) | Pass | 57 / 57 |  |  |
 | [`streams/invalid-realm.window.js`](https://wpt.fyi/results/encoding/streams/invalid-realm.window.js) | Pass | 4 / 4 |  |  |
 | [`streams/readable-writable-properties.any.js`](https://wpt.fyi/results/encoding/streams/readable-writable-properties.any.js) | Pass | 6 / 6 |  |  |
-| [`streams/realms.window.js`](https://wpt.fyi/results/encoding/streams/realms.window.js) | Fail | 8 / 12 | BUG | the chunks and `{value, done}` results of `TextEncoderStream`/`TextDecoderStream` are created in the current realm instead of the realm of the stream's constructor |
-| [`textdecoder-arguments.any.js`](https://wpt.fyi/results/encoding/textdecoder-arguments.any.js) | Fail | 6 / 8 | BUG | `decode()` reads the bytes before converting the options, so it ignores that the `ArrayBuffer` was detached during the conversion |
+| [`streams/realms.window.js`](https://wpt.fyi/results/encoding/streams/realms.window.js) | Pass | 12 / 12 |  |  |
+| [`textdecoder-arguments.any.js`](https://wpt.fyi/results/encoding/textdecoder-arguments.any.js) | Pass | 8 / 8 |  |  |
 | [`textdecoder-byte-order-marks.any.js`](https://wpt.fyi/results/encoding/textdecoder-byte-order-marks.any.js) | Pass | 6 / 6 |  |  |
 | [`textdecoder-copy.any.js`](https://wpt.fyi/results/encoding/textdecoder-copy.any.js) | Pass | 6 / 6 |  |  |
 | [`textdecoder-eof.any.js`](https://wpt.fyi/results/encoding/textdecoder-eof.any.js) | Pass | 4 / 4 |  |  |
@@ -174,8 +168,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`textencoder-utf16-surrogates.any.js`](https://wpt.fyi/results/encoding/textencoder-utf16-surrogates.any.js) | Pass | 14 / 14 |  |  |
 | [`unsupported-encodings.any.js`](https://wpt.fyi/results/encoding/unsupported-encodings.any.js) | Pass | 28 / 28 |  |  |
 | [`unsupported-labels.window.js`](https://wpt.fyi/results/encoding/unsupported-labels.window.js) | Pass | 158 / 158 |  |  |
-| [`utf-32-from-win1252.html`](https://wpt.fyi/results/encoding/utf-32-from-win1252.html) | Fail | 7 / 8 | BUG | an XML document starting with the UTF-32LE BOM (`FF FE 00 00`) is decoded as UTF-8 instead of UTF-16LE (its first bytes are a UTF-16LE BOM) |
-| [`utf-32.html`](https://wpt.fyi/results/encoding/utf-32.html) | Fail | 7 / 8 | BUG | an XML document starting with the UTF-32LE BOM (`FF FE 00 00`) is decoded as UTF-8 instead of UTF-16LE (its first bytes are a UTF-16LE BOM) |
+| [`utf-32-from-win1252.html`](https://wpt.fyi/results/encoding/utf-32-from-win1252.html) | Pass | 8 / 8 |  |  |
+| [`utf-32.html`](https://wpt.fyi/results/encoding/utf-32.html) | Pass | 8 / 8 |  |  |
 
 ## Reftests
 

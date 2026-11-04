@@ -138,6 +138,8 @@ public sealed class WptTests
 
     public static TheoryData<string> PermissionsTests => GetTests("permissions");
 
+    public static TheoryData<string> MimeSniffTests => GetTests("mimesniff");
+
     public static TheoryData<string> WebLocksTests => GetTests("web-locks");
 
     public static TheoryData<string> StorageTests => GetTests("storage");
@@ -894,6 +896,10 @@ public sealed class WptTests
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(PermissionsTests))]
     public void Permissions(string test) => Run("permissions", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(MimeSniffTests))]
+    public void MimeSniff(string test) => Run("mimesniff", test);
 
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(WebLocksTests))]

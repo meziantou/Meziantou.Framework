@@ -2337,11 +2337,16 @@ public sealed partial class BrowsingContext : IDisposable
     /// <summary>
     /// Returns whether a response does not create a document
     /// (https://html.spec.whatwg.org/multipage/browsing-the-web.html#populating-a-session-history-entry): a 204 or 205
-    /// status, or a download (a <c>Content-Disposition</c> header whose type is <c>attachment</c>, which is not saved).
+    /// status, or a download, which is not saved: a <c>Content-Disposition</c> header whose type is <c>attachment</c>, or a
+    /// binary resource (its computed MIME type is <c>application/octet-stream</c>, which is not rendered: it is handed off to
+    /// external software, and the browsers download it).
     /// </summary>
     private static bool HasNoDocument(DocumentResource resource)
     {
         if (resource.StatusCode is 204 or 205)
+            return true;
+
+        if (GetComputedMimeType(resource) is { Essence: "application/octet-stream" })
             return true;
 
         // https://httpwg.org/specs/rfc6266.html#header.field.definition: the disposition type is the token before the parameters
@@ -2350,6 +2355,37 @@ public sealed partial class BrowsingContext : IDisposable
 
         var semicolon = contentDisposition.IndexOf(';', StringComparison.Ordinal);
         return Infra.InfraAscii.EqualsIgnoreAsciiCase(Infra.MimeType.TrimHttpWhitespace(semicolon < 0 ? contentDisposition : contentDisposition.AsSpan(0, semicolon)), "attachment");
+    }
+
+    /// <summary>
+    /// Returns the computed MIME type of the response of a navigation (https://mimesniff.spec.whatwg.org/#mime-type-sniffing-algorithm),
+    /// or null when the response has no <c>Content-Type</c> (an HTML document: the handlers of the tests often omit it). A
+    /// <c>Content-Type</c> that gives no MIME type (e.g. <c>*/*</c>) is sniffed from the bytes of the resource (an HTML document,
+    /// else a text or binary resource). A <c>text/plain</c> type sent as Apache sends it by default (the check-for-apache-bug flag,
+    /// https://mimesniff.spec.whatwg.org/#supplied-mime-type-detection-algorithm) is <c>application/octet-stream</c> when the
+    /// first bytes of the resource contain binary data, unless the response has <c>X-Content-Type-Options: nosniff</c>.
+    /// </summary>
+    private static Infra.MimeType? GetComputedMimeType(DocumentResource resource)
+    {
+        if (HeaderList.Get(resource.Headers, "Content-Type") is not { } contentType)
+            return null;
+
+        if (resource.MimeType is not { } mimeType)
+        {
+            var sniffedType = EmbeddedResources.SniffType(GetContentBytes(resource));
+            return Infra.MimeType.Parse(sniffedType == "image/*" ? "application/octet-stream" : sniffedType);
+        }
+
+        if (contentType is "text/plain" or "text/plain; charset=ISO-8859-1" or "text/plain; charset=iso-8859-1" or "text/plain; charset=UTF-8"
+            && !HeaderList.DetermineNosniff(resource.Headers) && EmbeddedResources.IsBinary(GetContentBytes(resource)))
+        {
+            return Infra.MimeType.Parse("application/octet-stream");
+        }
+
+        return mimeType;
+
+        static ReadOnlySpan<byte> GetContentBytes(DocumentResource resource)
+            => resource.ContentBytes is { } contentBytes ? contentBytes.Span : System.Text.Encoding.UTF8.GetBytes(resource.Content ?? "");
     }
 
     /// <summary>
@@ -2366,16 +2402,7 @@ public sealed partial class BrowsingContext : IDisposable
             _ = TextDirectives.RemoveFragmentDirective(url);
         }
 
-        // https://mimesniff.spec.whatwg.org/#mime-type-sniffing-algorithm: a Content-Type that gives no MIME type (e.g. */*) is
-        // sniffed from the bytes of the resource (an HTML document, else a text or binary resource). A response without
-        // Content-Type is an HTML document (the handlers of the tests often omit it).
-        var mimeType = resource.MimeType;
-        if (mimeType is null && HeaderList.Get(resource.Headers, "Content-Type") is not null)
-        {
-            var sniffedType = EmbeddedResources.SniffType(resource.ContentBytes is { } contentBytes ? contentBytes.Span : System.Text.Encoding.UTF8.GetBytes(resource.Content ?? ""));
-            mimeType = Infra.MimeType.Parse(sniffedType == "image/*" ? "application/octet-stream" : sniffedType);
-        }
-
+        var mimeType = GetComputedMimeType(resource);
         var contentType = mimeType?.Essence ?? "text/html";
         var charset = mimeType?.GetParameter("charset");
         if (HeaderList.Get(resource.Headers, "Last-Modified") is { } lastModified)

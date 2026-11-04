@@ -162,10 +162,7 @@
     "total": 19
   },
   "resource-timing/iframe-with-download.html": {
-    "total": 1,
-    "failures": {
-      "Iframes should not report resource timing for non-handled mime-types (downloads)": "FAIL"
-    }
+    "total": 1
   },
   "resource-timing/image-sequence-of-events.html": {
     "total": 3

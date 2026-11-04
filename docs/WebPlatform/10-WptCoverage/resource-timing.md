@@ -9,16 +9,16 @@ description: "The results of the web-platform-tests of resource-timing, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 104 | 118 | 0 | 88% |
+| [Stable](#stable-tests) | 105 | 118 | 0 | 89% |
 | [Tentative](#tentative-tests) | 1 | 33 | 0 | 3% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **105** | **151** | **0** | **70%** |
+| **All** | **106** | **151** | **0** | **70%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 3
+- **BUG**: 2
 - **TEST BUG**: 2
 - **NOT IMPLEMENTED**: 41
 
@@ -70,7 +70,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`iframe-non-html.html`](https://wpt.fyi/results/resource-timing/iframe-non-html.html) | Pass | 4 / 4 |  |  |
 | [`iframe-redirect-without-location.html`](https://wpt.fyi/results/resource-timing/iframe-redirect-without-location.html) | Pass | 1 / 1 |  |  |
 | [`iframe-sequence-of-events.html`](https://wpt.fyi/results/resource-timing/iframe-sequence-of-events.html) | Pass | 19 / 19 |  |  |
-| [`iframe-with-download.html`](https://wpt.fyi/results/resource-timing/iframe-with-download.html) | Fail | 0 / 1 | BUG | an `application/octet-stream` response of the navigation of an iframe creates an empty document instead of being downloaded (only `Content-Disposition: attachment` is a download), so its resource timing entry is reported |
+| [`iframe-with-download.html`](https://wpt.fyi/results/resource-timing/iframe-with-download.html) | Pass | 1 / 1 |  |  |
 | [`image-sequence-of-events.html`](https://wpt.fyi/results/resource-timing/image-sequence-of-events.html) | Pass | 3 / 3 |  |  |
 | [`initiator-type-for-script.html`](https://wpt.fyi/results/resource-timing/initiator-type-for-script.html) | Pass | 1 / 1 |  |  |
 | [`initiator-type/audio.html`](https://wpt.fyi/results/resource-timing/initiator-type/audio.html) | Pass | 4 / 4 |  |  |

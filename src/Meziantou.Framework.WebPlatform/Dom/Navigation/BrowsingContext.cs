@@ -2573,9 +2573,6 @@ public sealed partial class BrowsingContext : IDisposable
 
     private static bool IsJson(Infra.MimeType? mimeType) => mimeType is not null && (mimeType.Subtype.EndsWith("+json", StringComparison.Ordinal) || mimeType.Essence is "application/json" or "text/json");
 
-    /// <summary>Decodes a resource that is not HTML: the byte order mark, then the charset parameter, then UTF-8.</summary>
-    private static string Decode(ReadOnlySpan<byte> bytes, string? charset) => Decode(bytes, charset, out _);
-
     /// <summary>
     /// Decodes an XML document (https://html.spec.whatwg.org/multipage/document-lifecycle.html#read-xml): the byte order mark,
     /// then the charset parameter, then the encoding of the XML declaration, then UTF-8.

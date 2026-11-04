@@ -88,7 +88,7 @@ public sealed class DragAndDropOperation
             return null;
 
         // Determine what is being dragged: the selection when the node is selected, else the first draggable inclusive ancestor
-        Node? sourceNode = null;
+        Node? sourceNode;
         var sourceKind = DragSourceKind.Element;
         var store = new DragDataStore();
         if (dragSelection && node.IsConnected && node.NodeDocument.GetSelection() is { IsCollapsed: false } selection && selection.ContainsNode(node) && GetFirstSelectedText(selection) is { } text)

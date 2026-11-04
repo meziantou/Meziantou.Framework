@@ -140,6 +140,10 @@ public sealed class WptTests
 
     public static TheoryData<string> MimeSniffTests => GetTests("mimesniff");
 
+    public static TheoryData<string> JsTests => GetTests("js");
+
+    public static TheoryData<string> JsSelfProfilingTests => GetTests("js-self-profiling");
+
     public static TheoryData<string> WebLocksTests => GetTests("web-locks");
 
     public static TheoryData<string> StorageTests => GetTests("storage");
@@ -924,6 +928,14 @@ public sealed class WptTests
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(MimeSniffTests))]
     public void MimeSniff(string test) => Run("mimesniff", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(JsTests))]
+    public void Js(string test) => Run("js", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(JsSelfProfilingTests))]
+    public void JsSelfProfiling(string test) => Run("js-self-profiling", test);
 
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(WebLocksTests))]

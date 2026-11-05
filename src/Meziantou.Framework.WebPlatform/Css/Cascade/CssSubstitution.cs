@@ -878,12 +878,32 @@ internal static class CssSubstitution
         if (arguments[index] is not CssPreservedToken { Type: CssTokenType.Ident } nameToken)
             return null;
 
-        // The indices of the two-dimensional variables (viewport-segment-*) are not supported
-        var end = SkipWhitespace(arguments, index + 1);
-        if (end != (comma < 0 ? arguments.Count : comma))
-            return null;
+        // The indices of the two-dimensional variables (viewport-segment-*): non-negative integers separated by whitespace
+        var end = comma < 0 ? arguments.Count : comma;
+        Span<int> indices = stackalloc int[2];
+        var count = 0;
+        for (var i = SkipWhitespace(arguments, index + 1); i < end; i = SkipWhitespace(arguments, i + 1))
+        {
+            if (count == indices.Length || arguments[i] is not CssPreservedToken { Type: CssTokenType.Number, Token: { IsInteger: true, NumericValue: >= 0 and <= int.MaxValue } } indexToken)
+                return null;
 
-        return GetEnvironmentVariable(nameToken.Token.Value, style.Environment);
+            indices[count++] = (int)indexToken.Token.NumericValue;
+        }
+
+        return GetEnvironmentVariable(nameToken.Token.Value, indices[..count], style.Environment);
+    }
+
+    /// <summary>
+    /// Returns the value of a UA-defined environment variable with its indices (https://drafts.csswg.org/css-env-1/#env-function),
+    /// or null when it is unknown or the indices do not match: the <c>viewport-segment-*</c> variables have two indices (the
+    /// column and the row of the segment), and are defined when the viewport has several segments.
+    /// </summary>
+    internal static string? GetEnvironmentVariable(string name, ReadOnlySpan<int> indices, Om.MediaEnvironment environment)
+    {
+        if (name.StartsWith("viewport-segment-", StringComparison.Ordinal))
+            return indices.Length == 2 && environment.ViewportSegments?.GetValue(name, indices[0], indices[1]) is { } value ? CssSerializer.SerializeNumber(value) + "px" : null;
+
+        return indices.IsEmpty ? GetEnvironmentVariable(name, environment) : null;
     }
 
     /// <summary>
@@ -894,13 +914,35 @@ internal static class CssSubstitution
     {
         "safe-area-inset-top" or "safe-area-inset-right" or "safe-area-inset-bottom" or "safe-area-inset-left" => "0px",
         "safe-area-max-inset-top" or "safe-area-max-inset-right" or "safe-area-max-inset-bottom" or "safe-area-max-inset-left" => "0px",
-        "keyboard-inset-top" or "keyboard-inset-right" or "keyboard-inset-bottom" or "keyboard-inset-left" or "keyboard-inset-width" or "keyboard-inset-height" => "0px",
+        "keyboard-inset-top" or "keyboard-inset-right" or "keyboard-inset-bottom" or "keyboard-inset-left" or "keyboard-inset-width" or "keyboard-inset-height" => GetKeyboardInset(name, environment.KeyboardInsets),
         "titlebar-area-x" or "titlebar-area-y" or "titlebar-area-height" => "0px",
         "titlebar-area-width" => CssSerializer.SerializeNumber(environment.Width) + "px",
         "preferred-text-scale" => "1",
         _ => null,
     };
 
+
+    /// <summary>
+    /// The value of a <c>keyboard-inset-*</c> environment variable (https://w3c.github.io/virtual-keyboard/#keyboard-inset-variables):
+    /// the rectangle of the virtual keyboard that overlays the content (as Chromium, the bottom and right insets are the
+    /// bottom and right edges of the rectangle), or 0 when there is none.
+    /// </summary>
+    private static string GetKeyboardInset(string name, Dom.VirtualKeyboardRect? insets)
+    {
+        if (insets is not { } rect)
+            return "0px";
+
+        var value = name switch
+        {
+            "keyboard-inset-top" => rect.Y,
+            "keyboard-inset-left" => rect.X,
+            "keyboard-inset-bottom" => rect.Y + rect.Height,
+            "keyboard-inset-right" => rect.X + rect.Width,
+            "keyboard-inset-width" => rect.Width,
+            _ => rect.Height,
+        };
+        return CssSerializer.SerializeNumber(value) + "px";
+    }
 
     /// <summary>The kind of the &lt;attr-type&gt; of an attr() function.</summary>
     internal enum AttrTypeKind

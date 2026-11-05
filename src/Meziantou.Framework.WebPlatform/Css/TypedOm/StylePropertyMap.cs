@@ -326,6 +326,11 @@ internal sealed class ComputedStylePropertyMap : StylePropertyMapReadOnly
         {
             value = "normal";
         }
+        else if (definition.Name.StartsWith("overflow-clip-margin-", StringComparison.Ordinal))
+        {
+            // The computed value keeps an explicit padding-box, which the serialization omits
+            value = CssPropertyRules.CanonicalizeOverflowClipMargin(value);
+        }
 
         return CssStyleValueReifier.Reify(property, value, computed: true);
     }

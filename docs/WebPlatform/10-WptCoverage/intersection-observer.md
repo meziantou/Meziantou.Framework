@@ -9,16 +9,15 @@ description: "The results of the web-platform-tests of intersection-observer, an
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 139 | 153 | 0 | 91% |
+| [Stable](#stable-tests) | 140 | 153 | 0 | 92% |
 | Tentative | 0 | 0 | 0 | – |
 | [Reftests](#reftests) | 1 | 1 | 0 | 100% |
-| **All** | **140** | **154** | **0** | **91%** |
+| **All** | **141** | **154** | **0** | **92%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
 - **NOT IMPLEMENTED**: 12
 - **TEST RUNNER**: 1
 
@@ -115,7 +114,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`svg-image.html`](https://wpt.fyi/results/intersection-observer/svg-image.html) | Pass | 3 / 3 |  |  |
 | [`svg-intersection-with-fractional-bounds-2.html`](https://wpt.fyi/results/intersection-observer/svg-intersection-with-fractional-bounds-2.html) | Pass | 6 / 6 |  |  |
 | [`svg-intersection-with-fractional-bounds.html`](https://wpt.fyi/results/intersection-observer/svg-intersection-with-fractional-bounds.html) | Pass | 4 / 4 |  |  |
-| [`svg-overflow-clip-margin-iframe.sub.html`](https://wpt.fyi/results/intersection-observer/svg-overflow-clip-margin-iframe.sub.html) | Fail | 8 / 16 | BUG | an explicit `padding-box` in `overflow-clip-margin` on an `<svg>` (a replaced element) clips to the content box: the parsed value drops the `padding-box` keyword (its serialization omits it, as the `css-overflow` parsing tests expect), so the computed value cannot tell it from an omitted box, which is `content-box` on the replaced elements; keeping it needs the serialization of the specified and computed values to omit it instead |
+| [`svg-overflow-clip-margin-iframe.sub.html`](https://wpt.fyi/results/intersection-observer/svg-overflow-clip-margin-iframe.sub.html) | Pass | 16 / 16 |  |  |
 | [`svg-rect-target.html`](https://wpt.fyi/results/intersection-observer/svg-rect-target.html) | Pass | 4 / 4 |  |  |
 | [`svg-stroke-change.html`](https://wpt.fyi/results/intersection-observer/svg-stroke-change.html) | Pass | 3 / 3 |  |  |
 | [`svg-target-changes-position.html`](https://wpt.fyi/results/intersection-observer/svg-target-changes-position.html) | Pass | 3 / 3 |  |  |

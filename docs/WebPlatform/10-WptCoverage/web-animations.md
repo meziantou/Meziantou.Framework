@@ -18,8 +18,8 @@ description: "The results of the web-platform-tests of web-animations, and why t
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 2
-- **TEST BUG**: 3
+- **BUG**: 1
+- **TEST BUG**: 4
 - **NOT IMPLEMENTED**: 8
 - **TEST RUNNER**: 1
 
@@ -56,7 +56,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`interfaces/Animatable/animate.html`](https://wpt.fyi/results/web-animations/interfaces/Animatable/animate.html) | Pass | 153 / 153 |  |  |
 | [`interfaces/Animatable/getAnimations-iframe.html`](https://wpt.fyi/results/web-animations/interfaces/Animatable/getAnimations-iframe.html) | Pass | 2 / 2 |  |  |
 | [`interfaces/Animatable/getAnimations-pseudoElement-option-on-view-transition.html`](https://wpt.fyi/results/web-animations/interfaces/Animatable/getAnimations-pseudoElement-option-on-view-transition.html) | Pass | 1 / 1 |  |  |
-| [`interfaces/Animatable/getAnimations.html`](https://wpt.fyi/results/web-animations/interfaces/Animatable/getAnimations.html) | Fail | 33 / 34 | BUG | `getAnimations({ pseudoElement: '::part(test)' })` throws (the `::part()` pseudo-elements are rejected); the test also expects the animation of a `::part(test)` rule of a div without shadow tree, which no element matches |
+| [`interfaces/Animatable/getAnimations.html`](https://wpt.fyi/results/web-animations/interfaces/Animatable/getAnimations.html) | Fail | 33 / 34 | TEST BUG | the test expects the animation of a `.pseudo::part(test)` rule on a div without shadow tree: `::part()` only matches the elements of the shadow tree of its originating element (https://drafts.csswg.org/css-shadow-parts/#part), so the rule matches nothing and no animation is created; the pseudo-element is valid (https://drafts.csswg.org/web-animations-1/#pseudo-element-parsing), so `getAnimations()` returns an empty list (Firefox fails it too: functional pseudo-elements are not supported for the animations, bug 1935557) |
 | [`interfaces/Animation/animation-range-invalid.html`](https://wpt.fyi/results/web-animations/interfaces/Animation/animation-range-invalid.html) | Fail | 10 / 11 | NOT IMPLEMENTED | the `rangeStart` and `rangeEnd` options of `animate()` (scroll-driven animations) are not validated |
 | [`interfaces/Animation/cancel-event-on-element-removal.html`](https://wpt.fyi/results/web-animations/interfaces/Animation/cancel-event-on-element-removal.html) | Pass | 1 / 1 |  |  |
 | [`interfaces/Animation/cancel.html`](https://wpt.fyi/results/web-animations/interfaces/Animation/cancel.html) | Pass | 4 / 4 |  |  |

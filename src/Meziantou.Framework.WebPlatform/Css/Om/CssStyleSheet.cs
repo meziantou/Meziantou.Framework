@@ -291,9 +291,17 @@ public sealed partial class CssStyleSheet : StyleSheet
 
     /// <summary>
     /// The referrer and the referrer policy of the requests of the resources of a fetched style sheet, or null for the other
-    /// style sheets, whose resources are requested with the referrer and the referrer policy of the document.
+    /// style sheets, whose resources are requested with the referrer and the referrer policy of the document. It records whether
+    /// the style sheet (or one of the style sheets that import it) is not origin-clean: its resources are not reported in the
+    /// resource timing (https://w3c.github.io/resource-timing/#resources-included-in-the-performanceresourcetiming-interface).
     /// </summary>
-    internal CssResourceReferrer? ResourceReferrer { get; init; }
+    internal CssResourceReferrer? ResourceReferrer
+    {
+        get;
+        init => field = value is not null && !IsOriginCleanWithImporters() ? value with { OriginClean = false } : value;
+    }
+
+    private bool IsOriginCleanWithImporters() => OriginClean && (ParentStyleSheet is null || ParentStyleSheet.IsOriginCleanWithImporters());
 
     /// <summary>https://drafts.csswg.org/cssom/#concept-css-style-sheet-disallow-modification-flag</summary>
     private bool DisallowModification { get; set; }
@@ -653,7 +661,8 @@ public static partial class Css
 /// </summary>
 /// <param name="Url">The URL of the response of the style sheet (its base URL), or the URL of its request when the response has none (a response created by a service worker).</param>
 /// <param name="ReferrerPolicy">The referrer policy of the response of the style sheet, or the empty string.</param>
-internal sealed record CssResourceReferrer(string Url, string ReferrerPolicy)
+/// <param name="OriginClean">Whether the style sheet and the style sheets that import it are origin-clean.</param>
+internal sealed record CssResourceReferrer(string Url, string ReferrerPolicy, bool OriginClean = true)
 {
     /// <summary>Returns the referrer of the resources of the style sheet whose base URL is <paramref name="url"/>.</summary>
     public static CssResourceReferrer Create(string url, DocumentResource? response)

@@ -625,7 +625,7 @@ public partial class HtmlMediaElement
 
         // The media data is given to the player as it arrives
         request.StreamsBody = true;
-        var started = SubresourceFetching.Fetch(client, request, resource => OnResponse(generation, cancellation, data, resource), initiatorType: this is HtmlAudioElement ? "audio" : "video", cancellation.Token);
+        var started = SubresourceFetching.Fetch(client, request, resource => OnResponse(generation, cancellation, data, resource), initiatorType: this is HtmlAudioElement ? "audio" : "video", cancellationToken: cancellation.Token);
         if (!started)
         {
             // Nothing can be fetched (there is no loader): the media data cannot be fetched at all

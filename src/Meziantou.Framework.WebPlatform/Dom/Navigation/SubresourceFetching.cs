@@ -46,22 +46,23 @@ internal static class SubresourceFetching
     /// is fetched (the document has no browsing context, or the URL needs a loader and there is none): the callback is not called.
     /// The timing of a request sent to the loader is added to the performance timeline of the document
     /// (https://w3c.github.io/resource-timing/#dfn-mark-resource-timing): its initiator type is <paramref name="initiatorType"/>,
-    /// or the local name of the initiator element.
+    /// or the local name of the initiator element. Without <paramref name="reportTiming"/>, the timing is not reported (e.g. the
+    /// resources of a style sheet that is not origin-clean).
     /// </summary>
-    public static bool Fetch(Document document, FetchRequest request, Action<DocumentResource?>? onComplete, string? initiatorType = null, CancellationToken cancellationToken = default)
-        => FetchResponse(document, request, onComplete is null ? null : response => onComplete(response.ToDocumentResource()), initiatorType, cancellationToken: cancellationToken);
+    public static bool Fetch(Document document, FetchRequest request, Action<DocumentResource?>? onComplete, string? initiatorType = null, bool reportTiming = true, CancellationToken cancellationToken = default)
+        => FetchResponse(document, request, onComplete is null ? null : response => onComplete(response.ToDocumentResource()), initiatorType, cancellationToken: cancellationToken, reportTiming: reportTiming);
 
     /// <summary>
     /// Fetches a subresource of a document as <see cref="Fetch"/> does: <paramref name="onComplete"/> is called with the
     /// response of the fetch algorithm, which is a network error on failure. With <paramref name="reportBlockedRequest"/>,
     /// the timing of a request that is blocked before it is sent to the loader is reported too.
     /// </summary>
-    public static bool FetchResponse(Document document, FetchRequest request, Action<FetchResponse>? onComplete, string? initiatorType = null, bool reportBlockedRequest = false, CancellationToken cancellationToken = default)
+    public static bool FetchResponse(Document document, FetchRequest request, Action<FetchResponse>? onComplete, string? initiatorType = null, bool reportBlockedRequest = false, bool reportTiming = true, CancellationToken cancellationToken = default)
     {
         if (document.BrowsingContext is not { } browsingContext || (browsingContext.Options.DocumentLoader is null && request.CurrentUrl.Scheme is not ("data" or "blob")))
             return false;
 
-        var timing = ResourceTiming.Start(document, request, initiatorType ?? request.Initiator?.LocalName ?? "other");
+        var timing = reportTiming ? ResourceTiming.Start(document, request, initiatorType ?? request.Initiator?.LocalName ?? "other") : null;
         Fetching.Fetch(request, Complete, document.QueueElementTask, cancellationToken);
         return true;
 

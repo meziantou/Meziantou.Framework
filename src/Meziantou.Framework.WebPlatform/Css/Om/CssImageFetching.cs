@@ -284,7 +284,7 @@ internal static class CssImageFetching
                         document.CssImagesDelayingTheLoadEvent--;
                         document.TryQueueLoadEvent();
                     }
-                }, initiatorType: GetInitiatorType(document, element, property, key));
+                }, initiatorType: GetInitiatorType(document, element, property, key), reportTiming: referrer is not { OriginClean: false });
                 if (!started && delaysLoadEvent)
                 {
                     document.CssImagesDelayingTheLoadEvent--;

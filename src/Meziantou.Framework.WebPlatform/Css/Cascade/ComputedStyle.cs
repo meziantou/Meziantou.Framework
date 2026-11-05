@@ -616,6 +616,10 @@ internal sealed partial class ComputedStyle
         if (physical == "shape-outside" && value.StartsWith("path(", StringComparison.Ordinal))
             return CssPath.ToAbsoluteCommands(value);
 
+        // The computed value of overflow-clip-margin keeps an explicit padding-box, which the serialization omits (see CssPropertyRules.GetOverflowClipMarginComputationValue)
+        if (physical.StartsWith("overflow-clip-margin-", StringComparison.Ordinal))
+            return CssPropertyRules.CanonicalizeOverflowClipMargin(value);
+
         if (TryGetLayoutResolvedValue(physical, value) is { } layoutValue)
             return layoutValue;
 

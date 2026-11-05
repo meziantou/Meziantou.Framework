@@ -37,7 +37,7 @@ public partial class HtmlTemplateElement
         request.StreamsBody = !buffered && integrity.Length == 0;
         var patch = new SourcePatch(start, end, buffered, sanitizes);
         _sourcePatch = patch;
-        if (!SubresourceFetching.Fetch(document, request, resource => OnSourceResponse(patch, resource), initiatorType: "template", patch.Cancellation.Token))
+        if (!SubresourceFetching.Fetch(document, request, resource => OnSourceResponse(patch, resource), initiatorType: "template", cancellationToken: patch.Cancellation.Token))
         {
             _sourcePatch = null;
             patch.Cancellation.Dispose();

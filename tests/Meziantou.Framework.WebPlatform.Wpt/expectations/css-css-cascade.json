@@ -87,10 +87,7 @@
     "total": 8
   },
   "css/css-cascade/declaration-context.html": {
-    "total": 28,
-    "failures": {
-      "@scope cannot relax page declaration restrictions": "FAIL"
-    }
+    "total": 28
   },
   "css/css-cascade/duplicate-stylesheets.html": {
     "total": 17

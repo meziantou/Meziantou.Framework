@@ -608,6 +608,20 @@ public sealed class LayoutStyleTests : IDisposable
         Assert.True(overflow.SmoothScrolling);
     }
 
+    [Theory]
+    [InlineData("overflow-clip-margin: padding-box", "0px")]
+    [InlineData("overflow-clip-margin: 20px padding-box", "20px")]
+    [InlineData("overflow-clip-margin-left: padding-box 20px", "20px")]
+    public void OverflowClipMargin_ExplicitPaddingBox(string declaration, string expectedResolvedValue)
+    {
+        var document = Parse("<svg id=target style='overflow: clip; " + declaration + "'></svg>");
+        var element = document.QuerySelector("#target")!;
+        var style = document.GetStyleEngine().GetStyle(element);
+        Assert.Equal(VisualBox.PaddingBox, style.Layout.Overflow.OverflowClipMargin.Left.Box);
+        Assert.Equal(expectedResolvedValue, style.GetResolvedValue("overflow-clip-margin-left"));
+        Assert.Null(GetLayout("<svg id=target style='overflow: clip; overflow-clip-margin: 20px'></svg>").Overflow.OverflowClipMargin.Left.Box);
+    }
+
     [Fact]
     public void Replaced()
     {

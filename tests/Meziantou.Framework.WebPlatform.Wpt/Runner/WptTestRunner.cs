@@ -1602,6 +1602,18 @@ internal sealed partial class WptTestRunner
 
             return adapter.Undefined;
         });
+        Define("__wpt_freeze", 2, (_, args) =>
+        {
+            // The top-level browsing context is frozen, as by the Chromium driver (Page.setWebLifecycleState)
+            var completion = CreateCompletion(args[1], args[1]);
+            if (realm.ToInterface<Window>(args[0], "Window").BrowsingContext is { } browsingContext)
+            {
+                browsingContext.IsFrozen = true;
+            }
+
+            completion(null);
+            return adapter.Undefined;
+        });
         Define("__wpt_set_geolocation_override", 10, (_, args) =>
         {
             // The override is set after the tasks that are already queued, as a WebDriver command

@@ -133,7 +133,14 @@ Assert.Equal(bytes, script.ContentBytes?.ToArray());
 - A document is displayed whatever its status (a 404 page is a page). A script or a style sheet whose status is not in the
   200-299 range is a network error.
 - The library reads the headers that change the document: `Content-Security-Policy`, `Referrer-Policy`, `Refresh`,
-  `Link` (preloads), `X-Frame-Options`, `Content-Language`... The other headers are ignored.
+  `Link` (preloads), `X-Frame-Options`, `Content-Language`, `Document-Policy`... The other headers are ignored.
+- [Document Policy](https://wicg.github.io/document-policy/) is applied as in Chromium: `Document-Policy: sync-xhr=?0`
+  makes the synchronous `XMLHttpRequest` requests fail, and `Document-Policy-Report-Only` reports them
+  (`document-policy-violation` reports). A page requires a policy from the pages of its frames with the
+  `Require-Document-Policy` header and the `policy` attribute of its `iframe` elements: the requests of the frames send it
+  in the `Sec-Required-Document-Policy` header, and a frame whose `Document-Policy` header is less strict is blocked. The
+  library supports the `sync-xhr` and `force-load-at-top` features. Disable it with
+  [DocumentPolicyEnabled](cref:Meziantou.Framework.WebPlatform.Dom.WebPlatformFeatures.DocumentPolicyEnabled).
 - The `Content-DPR` header of an image gives its density: its natural size is divided by it (`Content-DPR: 2` displays a
   100x100 image at 50x50 CSS pixels), in the `img` elements (where it replaces the density of the `srcset` candidate), the
   CSS images, the SVG `image` elements, the video posters and the image buttons.

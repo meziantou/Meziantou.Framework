@@ -1877,6 +1877,23 @@ Differences from the specification and from the browsers:
 - The permissions policy does not apply to the workers (the specification does not define it yet): a worker can send
   synchronous requests whatever the policy of its owner.
 
+## Document Policy
+
+[Document Policy](https://wicg.github.io/document-policy/) configures features of a document with structured headers:
+`Document-Policy` (enforced) and `Document-Policy-Report-Only` (only reported) set the policy of the document, and
+`Require-Document-Policy` and the `policy` attribute of the `iframe` elements (`HtmlIFrameElement.Policy`, experimental:
+`WEBPLATEXP0016`) set the policy that the documents of the iframes must declare. The required policy of a navigation of
+an iframe is the required policy of its container document (its own required policy combined with its
+`Require-Document-Policy` header), combined with the `policy` attribute (the stricter value of each feature). It is sent
+in the `Sec-Required-Document-Policy` header, in canonical form (the features in ASCII order), and a response whose
+`Document-Policy` is not compatible with it (a feature less strict than required, a missing feature counting as its
+default value) is blocked: the iframe gets an error document. The supported configuration points are the boolean
+`sync-xhr` (`sync-xhr=?0`: the synchronous `XMLHttpRequest` requests fail with a `NetworkError`, as in Chromium) and
+`force-load-at-top`; the others are ignored. A violation of the policy, or of the report-only policy, generates a
+`document-policy-violation` report (`featureId`, `sourceFile`, `lineNumber`, `columnNumber`, `disposition`, `message`),
+delivered to the reporting observers and to the endpoint of its `report-to` parameter. Not done: the
+`network-efficiency-guardrails` and `js-profiling` configuration points.
+
 ## Permissions
 
 The [Permissions API](https://w3c.github.io/permissions/) is implemented in the windows and the workers:
@@ -2349,6 +2366,25 @@ document is also hidden when it is unloaded (the documents of the nested browsin
 updates, the timers and the animation frames are not throttled while a document is hidden. The documents of a
 prerendering traversable (see [Speculative loading](#speculative-loading)) are hidden and never have the system focus,
 whatever the state of the browsing context that prerenders them; they get its state when they are activated.
+
+## Page lifecycle
+
+[Page Lifecycle](https://wicg.github.io/page-lifecycle/): `BrowsingContext.IsFrozen` freezes a top-level browsing
+context, as the browsers freeze the tabs in the background. From a task, the `freeze` event is fired at the document of
+the top-level browsing context, then at the documents of its nested browsing contexts, and their media elements are
+paused; then the documents are frozen: their tasks (the global tasks, the posted messages and the timers) are deferred
+until they are resumed, the synchronous `XMLHttpRequest` requests fail with a `NetworkError`, and the fetches that are
+not keepalive requests wait (as in Chromium; `navigator.sendBeacon()` and `fetch(..., { keepalive: true })` are sent).
+Resuming fires `resume`, then runs the deferred tasks in order. The `lifecycleState` of the service worker clients is
+`frozen` while their document is frozen.
+
+A document is also frozen while it is in the back/forward cache (the `freeze` event follows `pagehide`, the `resume`
+event precedes `pageshow`), and the document of an `iframe` is frozen after its load event when its permissions
+policy disables `execution-while-not-rendered` and the `iframe` is not rendered, or disables
+`execution-while-out-of-viewport` and the `iframe` does not intersect the viewport (the media elements paused this way
+play again when it is resumed). `BrowsingContext.Discard()` discards a top-level browsing context and loads its active
+entry again: the new document has `document.wasDiscarded` set to true. Not done: the dedicated workers of a frozen
+document are not blocked.
 
 ## Focus
 
@@ -3329,9 +3365,9 @@ text).
 
 The APIs whose behavior depends on the device or on the user are answered by the host, with callbacks of
 `BrowsingContextOptions` (grouped in a nested options object for the newer APIs: `Badging`, `BatteryStatus`, `WakeLock`,
-`KeyboardLock`, `ScreenOrientation`, `VirtualKeyboard`, `ViewportSegments`, `ComputePressure`, `IdleDetection`,
-`DevicePosture` and `Sensors`). Each one has a default that works without a host, and a flag of `WebPlatformFeatures` that
-hides it (see [Disabling features](#disabling-features)).
+`KeyboardLock`, `KeyboardMap`, `MediaSession`, `ScreenOrientation`, `VirtualKeyboard`, `ViewportSegments`,
+`ComputePressure`, `IdleDetection`, `DevicePosture` and `Sensors`). Each one has a default that works without a host, and a
+flag of `WebPlatformFeatures` that hides it (see [Disabling features](#disabling-features)).
 
 - **Web Share** ([Web Share API](https://w3c.github.io/web-share/)): `navigator.share()` and `navigator.canShare()`, in
   secure contexts. The library checks the document (fully active, allowed by the `web-share` permissions policy, with a
@@ -3389,8 +3425,22 @@ hides it (see [Disabling features](#disabling-features)).
   are validated (`InvalidAccessError`), a pending request is aborted by the next one (`AbortError`), then
   `KeyboardLock.Lock` gets the reserved key codes (empty for all the keys); `KeyboardLock.Unlock` is called by
   `unlock()` and when the document is unloaded. A document whose keyboard is locked is not kept in the back/forward
-  cache (`keyboardlock`), as in Chromium. The `layoutchange` event and `getLayoutMap()` (Keyboard Map) are not
-  implemented.
+  cache (`keyboardlock`), as in Chromium.
+- **Keyboard Map** ([Keyboard Map](https://wicg.github.io/keyboard-map/)): `navigator.keyboard.getLayoutMap()` and
+  `KeyboardLayoutMap` (a `maplike<DOMString, DOMString>` of the writing system keys, by `code` value), read from the
+  `KeyboardLayoutProvider` of `KeyboardMap.Provider` (US QWERTY without provider, `KeyboardLayoutProvider.UsQwerty`).
+  The calls made before the promise is resolved return the same promise (as in Chromium). A document that is not
+  allowed to use the `keyboard-map` permissions policy feature (default allowlist `'self'`) gets a `SecurityError`.
+  Setting the `Layout` of the provider fires `layoutchange` at `navigator.keyboard` (from a task; a hidden document
+  gets it when it becomes visible).
+- **Media Session** ([Media Session](https://w3c.github.io/mediasession/)): `navigator.mediaSession`, `MediaMetadata`
+  (the artwork URLs are parsed with the API base URL of the current global object, and the artwork and the chapters are
+  frozen arrays of frozen objects) and `ChapterInformation`, `playbackState`, `setActionHandler()`,
+  `setPositionState()` (validated as the specification says), `setMicrophoneActive()`, `setCameraActive()` and
+  `setScreenshareActive()`. `MediaSession.SessionChanged` gets the `MediaSession` each time it changes (its metadata
+  or an attribute of its metadata, its playback state, its position state, its action handlers, its capture states),
+  and the host calls `MediaSession.HandleAction()` to run the handler of an action from a task. Not done: the artwork
+  images are not fetched, and the media elements are not controlled when the page has no action handler.
 - **Sensors** ([Generic Sensor API](https://w3c.github.io/sensors/), [Accelerometer](https://w3c.github.io/accelerometer/),
   [Gyroscope](https://w3c.github.io/gyroscope/), [Magnetometer](https://w3c.github.io/magnetometer/),
   [Ambient Light Sensor](https://w3c.github.io/ambient-light/), [Orientation Sensor](https://w3c.github.io/orientation-sensor/),
@@ -4052,7 +4102,11 @@ using var context = new BrowsingContext(new BrowsingContextOptions
 | `BadgingEnabled` | The [Badging API](#device-apis): `navigator.setAppBadge()` and `navigator.clearAppBadge()` |
 | `BatteryStatusEnabled` | The [Battery Status API](#device-apis): `navigator.getBattery()`, `BatteryManager` |
 | `WakeLockEnabled` | The [Screen Wake Lock API](#device-apis): `navigator.wakeLock`, `WakeLock`, `WakeLockSentinel` |
-| `KeyboardLockEnabled` | The [Keyboard Lock API](#device-apis): `navigator.keyboard`, `Keyboard` |
+| `KeyboardLockEnabled` | The [Keyboard Lock API](#device-apis): `navigator.keyboard.lock()` and `unlock()` (and `navigator.keyboard`, `Keyboard` when `KeyboardMapEnabled` is false too) |
+| `KeyboardMapEnabled` | The [Keyboard Map API](#device-apis): `navigator.keyboard.getLayoutMap()`, `onlayoutchange`, `KeyboardLayoutMap` |
+| `MediaSessionEnabled` | The [Media Session API](#device-apis): `navigator.mediaSession`, `MediaSession`, `MediaMetadata`, `ChapterInformation` |
+| `PageLifecycleEnabled` | The [Page Lifecycle API](#page-lifecycle): `document.onfreeze`, `document.onresume`, `document.wasDiscarded` (the documents are frozen whatever its value) |
+| `DocumentPolicyEnabled` | [Document Policy](#document-policy): the headers are ignored and `HTMLIFrameElement.policy` is hidden |
 | `SensorsEnabled` | The [sensors](#device-apis): `Sensor`, `SensorErrorEvent`, `Accelerometer`, `LinearAccelerationSensor`, `GravitySensor`, `Gyroscope`, `Magnetometer`, `UncalibratedMagnetometer`, `AmbientLightSensor`, `ProximitySensor`, `OrientationSensor`, `AbsoluteOrientationSensor`, `RelativeOrientationSensor` |
 | `DeviceOrientationEnabled` | The [device orientation and motion events](#device-apis): `DeviceOrientationEvent`, `DeviceMotionEvent`, `DeviceMotionEventAcceleration`, `DeviceMotionEventRotationRate`, `ondeviceorientation`, `ondeviceorientationabsolute`, `ondevicemotion` |
 | `ScreenOrientationEnabled` | The [Screen Orientation API](#device-apis): `screen.orientation`, `ScreenOrientation` |

@@ -1,6 +1,6 @@
 ---
 title: Permissions and devices
-description: Answer the permission prompts, and decide what the clipboard, sharing, vibration, geolocation, notifications, badging, battery, wake lock, keyboard lock, screen orientation, virtual keyboard, viewport segments, compute pressure, idle detection, device posture and sensor APIs do in your pages.
+description: Answer the permission prompts, and decide what the clipboard, sharing, vibration, geolocation, notifications, badging, battery, wake lock, keyboard lock, keyboard layout, media session, screen orientation, virtual keyboard, viewport segments, compute pressure, idle detection, device posture and sensor APIs do in your pages.
 ---
 
 Some web APIs depend on the device or on the user: a browser asks the user for a permission, shows a share sheet, reads
@@ -27,6 +27,8 @@ the device in a test, or to connect the API to your application.
 | [ComputePressure](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.ComputePressure) | `PressureObserver` | The `cpu` source is supported, but reports no state |
 | [IdleDetection](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.IdleDetection) | `IdleDetector` | The user is active and the screen is unlocked |
 | [DevicePosture](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.DevicePosture) | `navigator.devicePosture`, the `device-posture` media feature | The posture is `continuous` |
+| [KeyboardMap](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.KeyboardMap) | `navigator.keyboard.getLayoutMap()` | A US QWERTY keyboard |
+| [MediaSession](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.MediaSession) | `navigator.mediaSession` | The media session is shown nowhere |
 | [Sensors](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Sensors) | `Accelerometer`, `Gyroscope`, `AmbientLightSensor` and the other sensors, the `deviceorientation` and `devicemotion` events | The device has no sensor: the sensors fail to start, and the events report null values |
 
 To remove an API completely, so that the pages see it as unsupported, disable it with
@@ -433,6 +435,64 @@ posture.Posture = DevicePostureType.Folded;
 Changing [Posture](cref:Meziantou.Framework.WebPlatform.Dom.DevicePostureProvider.Posture) fires the `change` event of
 `navigator.devicePosture`, and the `change` event of the media query lists such as `matchMedia('(device-posture: folded)')`.
 A hidden page gets the event when it becomes visible. All the frames of a tab have the posture of the tab.
+
+## Keyboard layout
+
+`navigator.keyboard.getLayoutMap()` tells the page which character each key of the keyboard produces, for instance to
+display the shortcuts of a game. It reads the layout of a
+[KeyboardLayoutProvider](cref:Meziantou.Framework.WebPlatform.Dom.KeyboardLayoutProvider): the key value of each `code`
+value. Setting its [Layout](cref:Meziantou.Framework.WebPlatform.Dom.KeyboardLayoutProvider.Layout) fires the
+`layoutchange` event of `navigator.keyboard`:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_KeyboardMap;format=md-fenced-code-block;dedent=true -->
+```csharp
+var keyboard = new KeyboardLayoutProvider
+{
+    // The key produced by each key of the keyboard, by code: setting the layout fires the layoutchange event
+    Layout = new Dictionary<string, string>(KeyboardLayoutProvider.UsQwerty) { ["KeyQ"] = "a", ["KeyA"] = "q", ["Digit1"] = "&" },
+};
+
+var options = new BrowsingContextOptions
+{
+    KeyboardMap = new KeyboardMapOptions { Provider = keyboard },
+};
+```
+<!-- endref -->
+
+Without provider, the keyboard is a US QWERTY keyboard
+([UsQwerty](cref:Meziantou.Framework.WebPlatform.Dom.KeyboardLayoutProvider.UsQwerty)). Only the writing system keys (the
+letters, the digits and the punctuation) are given to the pages. The frames that their permissions policy does not allow
+(`keyboard-map`) get a `SecurityError`.
+
+## Media session
+
+A page that plays media describes it with `navigator.mediaSession`: the title, the artist, the album and the artwork of
+the media, whether it plays, its position, and the actions that the media controls of the system can trigger (play,
+pause, next track...). [SessionChanged](cref:Meziantou.Framework.WebPlatform.Dom.MediaSessionOptions.SessionChanged) gets
+the [MediaSession](cref:Meziantou.Framework.WebPlatform.Dom.MediaSession) of the page each time it changes:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_MediaSession;format=md-fenced-code-block;dedent=true -->
+```csharp
+string? nowPlaying = null;
+MediaSession? session = null;
+var options = new BrowsingContextOptions
+{
+    MediaSession = new MediaSessionOptions
+    {
+        // Called when the page changes its metadata, its playback state, its position or its action handlers
+        SessionChanged = (callbackContext, mediaSession) =>
+        {
+            session = mediaSession;
+            nowPlaying = mediaSession.Metadata is { } metadata ? $"{metadata.Title} - {metadata.Artist} ({mediaSession.PlaybackState})" : null;
+        },
+    },
+};
+```
+<!-- endref -->
+
+Call [HandleAction](cref:Meziantou.Framework.WebPlatform.Dom.MediaSession.HandleAction) when the user presses a media
+control: the handler that the page registered with `setActionHandler()` runs from a task, and the method returns false
+when the page has no handler for the action. The URLs of the artwork are absolute; the library does not fetch the images.
 
 ## Sensors
 

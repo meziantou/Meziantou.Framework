@@ -237,6 +237,36 @@ public sealed record WebPlatformFeatures
     public bool DeviceOrientationEnabled { get; init; } = true;
 
     /// <summary>
+    /// Gets or sets whether the Keyboard Map API is exposed (https://wicg.github.io/keyboard-map/): <c>navigator.keyboard.getLayoutMap()</c>,
+    /// <c>navigator.keyboard.onlayoutchange</c> and the <c>KeyboardLayoutMap</c> interface (see
+    /// <see cref="BrowsingContextOptions.KeyboardMap"/>). <c>navigator.keyboard</c> is hidden when both this API and the
+    /// Keyboard Lock API (<see cref="KeyboardLockEnabled"/>) are disabled. The default is true.
+    /// </summary>
+    public bool KeyboardMapEnabled { get; init; } = true;
+
+    /// <summary>
+    /// Gets or sets whether the Media Session API is exposed (https://w3c.github.io/mediasession/): <c>navigator.mediaSession</c>
+    /// and the <c>MediaSession</c>, <c>MediaMetadata</c> and <c>ChapterInformation</c> interfaces (see
+    /// <see cref="BrowsingContextOptions.MediaSession"/>). The default is true.
+    /// </summary>
+    public bool MediaSessionEnabled { get; init; } = true;
+
+    /// <summary>
+    /// Gets or sets whether the Page Lifecycle API is exposed (https://wicg.github.io/page-lifecycle/): the <c>onfreeze</c>,
+    /// <c>onresume</c> and <c>wasDiscarded</c> members of <c>Document</c>. The documents are frozen and resumed whatever its
+    /// value (see <see cref="BrowsingContext.IsFrozen"/>). The default is true.
+    /// </summary>
+    public bool PageLifecycleEnabled { get; init; } = true;
+
+    /// <summary>
+    /// Gets or sets whether Document Policy is supported (https://wicg.github.io/document-policy/): the <c>Document-Policy</c>,
+    /// <c>Document-Policy-Report-Only</c> and <c>Require-Document-Policy</c> headers, the <c>Sec-Required-Document-Policy</c>
+    /// request header and the <c>policy</c> attribute of the <c>iframe</c> elements. When it is false, the headers are
+    /// ignored and <c>HTMLIFrameElement.policy</c> is hidden. The default is true.
+    /// </summary>
+    public bool DocumentPolicyEnabled { get; init; } = true;
+
+    /// <summary>
     /// Gets or sets whether the Compute Pressure API is exposed (https://w3c.github.io/compute-pressure/): the
     /// <c>PressureObserver</c> and <c>PressureRecord</c> interfaces, in the windows and the workers (see
     /// <see cref="BrowsingContextOptions.ComputePressure"/>). The default is true.

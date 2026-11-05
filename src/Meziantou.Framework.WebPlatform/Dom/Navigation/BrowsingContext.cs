@@ -780,6 +780,67 @@ public sealed partial class BrowsingContext : IDisposable
     private bool _isVisible = true;
 
     /// <summary>
+    /// Gets or sets whether the top-level browsing context is frozen (https://wicg.github.io/page-lifecycle/#change-the-frozenness-of-a-top-level-document):
+    /// the host freezes a tab that is in the background to save resources, as the browsers do. Freezing fires the
+    /// <c>freeze</c> event at the documents of the top-level browsing context and of its nested browsing contexts, pauses
+    /// their media elements, then stops running their tasks and their timers until the browsing context is resumed (the
+    /// tasks are deferred, not lost); resuming fires the <c>resume</c> event. The documents are updated from a task of the
+    /// event loop. The nested browsing contexts share the state of their top-level browsing context. The default is false.
+    /// The documents of the iframes are also frozen while their permissions policy disables
+    /// <c>execution-while-not-rendered</c> and the iframe is not rendered, or disables <c>execution-while-out-of-viewport</c>
+    /// and the iframe is out of the viewport.
+    /// </summary>
+    public bool IsFrozen
+    {
+        get => Top._isFrozen;
+        set
+        {
+            var top = Top;
+            if (top._isFrozen == value)
+                return;
+
+            top._isFrozen = value;
+            EventLoop.QueueTask(() =>
+            {
+                if (top.IsDestroyed || top._isFrozen != value)
+                    return;
+
+                // The top-level document first, then the documents of the descendant navigables
+                foreach (var navigable in top.GetDescendantNavigables().Prepend(top).ToArray())
+                {
+                    var document = navigable.Document;
+                    if (!navigable.IsDestroyed && !document.IsUnloaded && document.IsFullyActive)
+                    {
+                        document.ChangeFrozenness(value);
+                    }
+                }
+            });
+        }
+    }
+
+    private bool _isFrozen;
+
+    /// <summary>
+    /// Discards the top-level browsing context to save resources, then loads its active session history entry again, as a
+    /// browser does when the user goes back to a tab that it discarded (https://wicg.github.io/page-lifecycle/#discarding):
+    /// the new document has <c>document.wasDiscarded</c> set to true. The documents are unloaded as by a reload, and the
+    /// document is loaded again by <see cref="BrowsingContextOptions.DocumentLoader"/>, from a task of the event loop.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">The browsing context is not a top-level browsing context.</exception>
+    public void Discard()
+    {
+        if (Parent is not null)
+            throw new InvalidOperationException("Only a top-level browsing context can be discarded");
+
+        IsFrozen = false;
+        _wasDiscarded = true;
+        ReloadNavigable(userInvolvement: UserNavigationInvolvement.BrowserUI);
+    }
+
+    /// <summary>Whether the browsing context was discarded (<see cref="Discard"/>): the next document it creates has <c>wasDiscarded</c> set.</summary>
+    private bool _wasDiscarded;
+
+    /// <summary>
     /// Gets or sets whether the top-level browsing context has the system focus
     /// (https://html.spec.whatwg.org/multipage/interaction.html#tlbc-system-focus): whether its window is the active window of
     /// the user. The host sets it when its window is activated or deactivated: the focused element and the window of its
@@ -1848,6 +1909,7 @@ public sealed partial class BrowsingContext : IDisposable
         }
 
         parameters.RequiredContentSecurityPolicy = requiredPolicy;
+        parameters.RequiredDocumentPolicy = GetRequiredDocumentPolicy();
 
         DocumentResource resource;
         if (srcdoc is null && IsNavigationRequestBlockedByContentSecurityPolicy(url, sourceDocument, isFormSubmission))
@@ -2003,6 +2065,12 @@ public sealed partial class BrowsingContext : IDisposable
             if (requiredPolicy is not null)
             {
                 request.HeaderList.Add(new("Sec-Required-CSP", requiredPolicy));
+            }
+
+            // https://wicg.github.io/document-policy/#algo-set-sec-required-document-policy-header
+            if (!parameters.RequiredDocumentPolicy.IsEmpty)
+            {
+                request.HeaderList.Add(new("Sec-Required-Document-Policy", parameters.RequiredDocumentPolicy.Serialize()));
             }
 
             // https://wicg.github.io/nav-speculation/prefetch.html#wait-for-a-matching-prefetch-record: the navigation uses the
@@ -2682,6 +2750,13 @@ public sealed partial class BrowsingContext : IDisposable
 
         // https://html.spec.whatwg.org/multipage/document-lifecycle.html#initialise-the-document-object: a new registry
         document.CustomElementRegistryStorage = new CustomElementRegistry(document);
+
+        // https://wicg.github.io/page-lifecycle/#initialize-the-document-object: the document of a discarded browsing context
+        if (_wasDiscarded)
+        {
+            _wasDiscarded = false;
+            document.WasDiscarded = true;
+        }
         var parameters = _pendingDocumentParameters ?? new DocumentParameters
         {
             HistoryHandling = activeDocument.IsInitialAboutBlank ? NavigationHistoryBehavior.Replace : NavigationHistoryBehavior.Push,
@@ -2786,6 +2861,15 @@ public sealed partial class BrowsingContext : IDisposable
         if (parameters.RequiredContentSecurityPolicy is { } requiredPolicy && !parameters.IsNetworkError)
         {
             document.RequiredContentSecurityPolicy = requiredPolicy;
+        }
+
+        // https://wicg.github.io/document-policy/#integration-with-html: the policies of the document, and the required
+        // policy of the documents of its child navigables
+        if (Options.EffectiveFeatures.DocumentPolicyEnabled && !parameters.IsNetworkError)
+        {
+            document.DocumentPolicy = DocumentPolicyRecord.FromHeaders(parameters.Headers, "Document-Policy");
+            document.ReportOnlyDocumentPolicy = DocumentPolicyRecord.FromHeaders(parameters.Headers, "Document-Policy-Report-Only");
+            document.NestedRequiredDocumentPolicy = DocumentPolicyRecord.Combine(parameters.RequiredDocumentPolicy, DocumentPolicyRecord.FromHeaders(parameters.Headers, "Require-Document-Policy"));
         }
 
         foreach (var (name, value) in parameters.Headers)
@@ -3282,6 +3366,12 @@ public sealed partial class BrowsingContext : IDisposable
 
                 // https://html.spec.whatwg.org/multipage/document-lifecycle.html#unload-a-document, step 7
                 document.UpdateVisibilityState(visible: false);
+
+                // https://wicg.github.io/page-lifecycle/#bfcache-changes: a document that enters the back/forward cache is frozen
+                if (persisted)
+                {
+                    document.ChangeFrozenness(frozen: true);
+                }
 
                 // The "unload" policy-controlled feature (https://github.com/fergald/docs/blob/master/explainers/permissions-policy-unload.md,
                 // implemented by Chromium): the unload event is not fired at a document whose permissions policy disables it.
@@ -4015,5 +4105,8 @@ public sealed partial class BrowsingContext : IDisposable
         /// the serialized policy that the document must enforce, or null.
         /// </summary>
         public string? RequiredContentSecurityPolicy { get; set; }
+
+        /// <summary>The required document policy of the navigable (https://wicg.github.io/document-policy/#required-document-policy), for the <c>Sec-Required-Document-Policy</c> header.</summary>
+        public DocumentPolicyRecord RequiredDocumentPolicy { get; set; } = DocumentPolicyRecord.Empty;
     }
 }

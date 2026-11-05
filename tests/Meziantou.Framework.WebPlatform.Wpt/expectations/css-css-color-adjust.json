@@ -108,20 +108,15 @@
     "reftest": "PASS"
   },
   "css/css-color-adjust/rendering/dark-color-scheme/prefers-color-scheme-meta-dark.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-color-adjust/rendering/dark-color-scheme/prefers-color-scheme-meta-dynamic.html": {
-    "harness": "TIMEOUT",
-    "total": 2,
-    "failures": {
-      "Dynamic changes to meta color-scheme affect matchMedia('(prefers-color-scheme)')": "FAIL",
-      "Inserting a meta color-scheme that changes prefers-color-scheme fires a change event": "TIMEOUT"
-    }
+    "total": 2
   },
   "css/css-color-adjust/rendering/dark-color-scheme/prefers-color-scheme-meta-light-dark.html": {
     "reftest": "PASS"
   },
   "css/css-color-adjust/rendering/dark-color-scheme/prefers-color-scheme-meta-only-dark-print.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   }
 }

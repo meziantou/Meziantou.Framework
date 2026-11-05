@@ -1850,6 +1850,53 @@ public sealed class BrowsingContextTests
     }
 
     [Fact]
+    public void PrefersColorScheme_FollowsPageColorScheme()
+    {
+        #region PreferredColorScheme_PageColorScheme
+        using var context = new BrowsingContext(new BrowsingContextOptions
+        {
+            Viewport = new ViewportOptions { PreferredColorScheme = PreferredColorScheme.Light },
+        });
+        var document = context.Navigate("https://example.com/", _ => """
+            <!DOCTYPE html>
+            <meta name="color-scheme" content="dark">
+            """);
+        var window = document.DefaultView!;
+
+        // The page only supports the dark color scheme
+        Assert.True(window.MatchMedia("(prefers-color-scheme: dark)").Matches);
+
+        // The page supports both color schemes: the preference of the user applies
+        document.QuerySelector("meta")!.SetAttribute("content", "light dark");
+        Assert.True(window.MatchMedia("(prefers-color-scheme: light)").Matches);
+        #endregion
+    }
+
+    [Fact]
+    public void PrefersColorScheme_PageColorScheme_FiresChangeEvent()
+    {
+        var clock = new FakeTimeProvider();
+        using var context = new BrowsingContext(new BrowsingContextOptions { TimeProvider = clock });
+        var document = Load(context, "<p>x");
+        var query = document.DefaultView!.MatchMedia("(prefers-color-scheme: dark)");
+        var changes = new List<bool>();
+        query.AddEventListener("change", _ => changes.Add(query.Matches));
+
+        var meta = document.CreateElement("meta");
+        meta.SetAttribute("name", "color-scheme");
+        meta.SetAttribute("content", "only dark");
+        document.Head!.AppendChild(meta);
+        clock.Advance(TimeSpan.FromMilliseconds(50));
+        context.EventLoop.RunUntilIdle();
+
+        meta.Remove();
+        clock.Advance(TimeSpan.FromMilliseconds(50));
+        context.EventLoop.RunUntilIdle();
+
+        Assert.Equal([true, false], changes);
+    }
+
+    [Fact]
     public void Viewport_NestedBrowsingContext_Throws()
     {
         using var context = new BrowsingContext();

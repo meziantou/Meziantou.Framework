@@ -6,10 +6,7 @@
     "total": 23
   },
   "css/css-pseudo/CSSPseudoElement-getBoxQuads.tentative.html": {
-    "total": 8,
-    "failures": {
-      "getBoxQuads with box=\"margin\" returns margin box dimensions": "FAIL"
-    }
+    "total": 8
   },
   "css/css-pseudo/CSSPseudoElement-identity.html": {
     "total": 1

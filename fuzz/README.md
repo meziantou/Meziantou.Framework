@@ -125,6 +125,11 @@ export MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_DURATION_SECONDS=60
 pwsh eng/run-fuzz-tests.ps1 -Filter '--filter-class Meziantou.Framework.Imaging.FuzzTests.MutationFuzzTests'
 ```
 
+Each test of the campaign runs for the whole time budget. `dotnet test` kills a test still running after 10 minutes
+(hang dump), so `eng/run-fuzz-tests.ps1` moves the hang dump to 10 minutes after the budget (`FuzzHangDumpTimeout`,
+`fuzz/Directory.Build.targets`). Pass `-p:FuzzHangDumpTimeout=30m` when running a campaign longer than about 8 minutes
+with `dotnet test` directly.
+
 The minimized failing inputs are written to `artifacts/fuzz/inputs`. Once a failure is fixed, commit the minimized input
 under `fuzz/Meziantou.Framework.Imaging.FuzzTests/FuzzRegressions` (see `regressions.json`).
 

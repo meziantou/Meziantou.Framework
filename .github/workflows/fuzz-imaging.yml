@@ -13,7 +13,7 @@ on:
         type: string
         required: false
       duration_seconds:
-        description: Time budget of each Imaging fuzz test campaign, in seconds
+        description: Time budget of each Imaging fuzz test campaign, in seconds (the job stops after 60 minutes)
         type: number
         default: 420
         required: false
@@ -55,8 +55,8 @@ jobs:
           - { id: other, shard: '', filter: --filter-not-class Meziantou.Framework.Imaging.FuzzTests.MutationFuzzTests }
     env:
       MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_SEED: ${{ inputs.seed || github.run_id }}
-      # The test host kills a test still running after 10 minutes (hang dump). 420 s leaves time to minimize the
-      # failures found at the end of the budget.
+      # eng/run-fuzz-tests.ps1 moves the hang dump of the test host to 10 minutes after the budget, which leaves time to
+      # minimize the failures found at the end of the budget
       MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_DURATION_SECONDS: ${{ inputs.duration_seconds || 420 }}
       # The duration is the only bound
       MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_ITERATIONS: 2000000000

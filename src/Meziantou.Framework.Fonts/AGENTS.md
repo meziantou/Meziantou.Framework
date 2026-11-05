@@ -13,8 +13,7 @@ These instructions complete the repository-level `AGENTS.md`.
   `Meziantou.Framework.WebPlatform`, `Meziantou.Framework.WebPlatform.Imaging` or `Meziantou.Framework.Pdf` uses it
   (`FontSubsetter` for the font subsets of PDF, `CffFont` and `TrueTypeGlyphOutlines` for the font programs its renderer
   draws), and everything else stays `internal` (the tests, the fuzzing and the benchmarks see it through
-  `InternalsVisibleTo`). The packages that use internal types depend on the exact version of this package
-  (`UseExactProjectReferenceVersions` in their project file) and are released together with it;
+  `InternalsVisibleTo`). The packages that use internal types are released together with this package;
   `Meziantou.Framework.Pdf` uses the public API only and has a normal dependency, so do not give it access to the
   internals again. Every public member is documented (`DisableDocumentationWarnings` is
   `false`), and the public API is recorded in `ref/` by the build. The one exception is the AFM reader

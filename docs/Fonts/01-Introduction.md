@@ -20,8 +20,7 @@ own text renderer or document writer and need what is under that API:
 - a subset of a font to embed in a document;
 - the metrics of PostScript fonts from AFM files, such as the 14 standard fonts of PDF.
 
-The public API is low level: it is the one these libraries need. The packages that use it depend on its exact version,
-so update them together.
+The public API is low level: it is the one these libraries need. Update the packages that use it together.
 
 ## What it supports
 

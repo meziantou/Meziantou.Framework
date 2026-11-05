@@ -17,13 +17,4 @@
     <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Tests" />
     <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Benchmarks" />
   </ItemGroup>
-
-  <!-- The package uses the internal hosting primitives of the core: it depends on the exact version of the core package -->
-  <Target Name="UseExactProjectReferenceVersions" AfterTargets="_GetProjectReferenceVersions">
-    <ItemGroup>
-      <_ExactProjectReferencesWithVersions Include="@(_ProjectReferencesWithVersions)" ProjectVersion="[%(_ProjectReferencesWithVersions.ProjectVersion)]" />
-      <_ProjectReferencesWithVersions Remove="@(_ProjectReferencesWithVersions)" />
-      <_ProjectReferencesWithVersions Include="@(_ExactProjectReferencesWithVersions)" />
-    </ItemGroup>
-  </Target>
 </Project>

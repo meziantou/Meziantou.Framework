@@ -311,6 +311,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
 
     internal static readonly string[] Enum_OffscreenRenderingContextId_Values = new[] { "2d", "bitmaprenderer", "webgl", "webgl2", "webgpu" };
 
+    internal static readonly string[] Enum_OrientationLockType_Values = new[] { "any", "natural", "landscape", "portrait", "portrait-primary", "portrait-secondary", "landscape-primary", "landscape-secondary" };
+
     internal static readonly string[] Enum_OrientationSensorLocalCoordinateSystem_Values = new[] { "device", "screen" };
 
     internal static readonly string[] Enum_OscillatorType_Values = new[] { "sine", "square", "sawtooth", "triangle", "custom" };
@@ -3504,10 +3506,32 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         _ => value.ToString(),
     };
 
+    internal static string FromEnum_Dom_OrientationLockType(global::Meziantou.Framework.WebPlatform.Dom.OrientationLockType value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.OrientationLockType.Any => "any",
+        global::Meziantou.Framework.WebPlatform.Dom.OrientationLockType.Natural => "natural",
+        global::Meziantou.Framework.WebPlatform.Dom.OrientationLockType.Landscape => "landscape",
+        global::Meziantou.Framework.WebPlatform.Dom.OrientationLockType.Portrait => "portrait",
+        global::Meziantou.Framework.WebPlatform.Dom.OrientationLockType.PortraitPrimary => "portrait-primary",
+        global::Meziantou.Framework.WebPlatform.Dom.OrientationLockType.PortraitSecondary => "portrait-secondary",
+        global::Meziantou.Framework.WebPlatform.Dom.OrientationLockType.LandscapePrimary => "landscape-primary",
+        global::Meziantou.Framework.WebPlatform.Dom.OrientationLockType.LandscapeSecondary => "landscape-secondary",
+        _ => value.ToString(),
+    };
+
     internal static string FromEnum_Dom_OrientationSensorLocalCoordinateSystem(global::Meziantou.Framework.WebPlatform.Dom.OrientationSensorLocalCoordinateSystem value) => value switch
     {
         global::Meziantou.Framework.WebPlatform.Dom.OrientationSensorLocalCoordinateSystem.Device => "device",
         global::Meziantou.Framework.WebPlatform.Dom.OrientationSensorLocalCoordinateSystem.Screen => "screen",
+        _ => value.ToString(),
+    };
+
+    internal static string FromEnum_Dom_OrientationType(global::Meziantou.Framework.WebPlatform.Dom.OrientationType value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.OrientationType.PortraitPrimary => "portrait-primary",
+        global::Meziantou.Framework.WebPlatform.Dom.OrientationType.PortraitSecondary => "portrait-secondary",
+        global::Meziantou.Framework.WebPlatform.Dom.OrientationType.LandscapePrimary => "landscape-primary",
+        global::Meziantou.Framework.WebPlatform.Dom.OrientationType.LandscapeSecondary => "landscape-secondary",
         _ => value.ToString(),
     };
 
@@ -9293,6 +9317,19 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         "webgl" => global::Meziantou.Framework.WebPlatform.Dom.OffscreenRenderingContextId.WebGL,
         "webgl2" => global::Meziantou.Framework.WebPlatform.Dom.OffscreenRenderingContextId.WebGL2,
         "webgpu" => global::Meziantou.Framework.WebPlatform.Dom.OffscreenRenderingContextId.WebGpu,
+        _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
+    };
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.OrientationLockType ToEnum_Dom_OrientationLockType(string value) => value switch
+    {
+        "any" => global::Meziantou.Framework.WebPlatform.Dom.OrientationLockType.Any,
+        "natural" => global::Meziantou.Framework.WebPlatform.Dom.OrientationLockType.Natural,
+        "landscape" => global::Meziantou.Framework.WebPlatform.Dom.OrientationLockType.Landscape,
+        "portrait" => global::Meziantou.Framework.WebPlatform.Dom.OrientationLockType.Portrait,
+        "portrait-primary" => global::Meziantou.Framework.WebPlatform.Dom.OrientationLockType.PortraitPrimary,
+        "portrait-secondary" => global::Meziantou.Framework.WebPlatform.Dom.OrientationLockType.PortraitSecondary,
+        "landscape-primary" => global::Meziantou.Framework.WebPlatform.Dom.OrientationLockType.LandscapePrimary,
+        "landscape-secondary" => global::Meziantou.Framework.WebPlatform.Dom.OrientationLockType.LandscapeSecondary,
         _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
     };
 

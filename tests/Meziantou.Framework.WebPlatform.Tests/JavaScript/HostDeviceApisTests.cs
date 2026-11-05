@@ -1,8 +1,8 @@
 using System.Globalization;
 using Meziantou.Framework.WebPlatform.Dom;
-using Microsoft.Extensions.Time.Testing;
 using Meziantou.Framework.WebPlatform.Scripting;
 using Meziantou.Framework.WebPlatform.Tests.Scripting;
+using Microsoft.Extensions.Time.Testing;
 
 namespace Meziantou.Framework.WebPlatform.Tests.JavaScript;
 
@@ -11,8 +11,10 @@ namespace Meziantou.Framework.WebPlatform.Tests.JavaScript;
 /// Web Share (https://w3c.github.io/web-share/), Vibration (https://w3c.github.io/vibration/), Geolocation
 /// (https://w3c.github.io/geolocation/), Notifications (https://notifications.spec.whatwg.org/), Badging
 /// (https://w3c.github.io/badging/), Battery Status (https://w3c.github.io/battery/), Screen Wake Lock
-/// (https://w3c.github.io/screen-wake-lock/), Keyboard Lock (https://wicg.github.io/keyboard-lock/), the sensors
-/// (https://w3c.github.io/sensors/) and the device orientation and motion events (https://w3c.github.io/deviceorientation/).
+/// (https://w3c.github.io/screen-wake-lock/), Keyboard Lock (https://wicg.github.io/keyboard-lock/), Screen Orientation
+/// (https://w3c.github.io/screen-orientation/), VirtualKeyboard (https://w3c.github.io/virtual-keyboard/), the viewport
+/// segments (https://drafts.csswg.org/css-viewport/#viewport-segments), the sensors (https://w3c.github.io/sensors/) and
+/// the device orientation and motion events (https://w3c.github.io/deviceorientation/).
 /// </summary>
 public sealed class HostDeviceApisTests : IDisposable
 {
@@ -45,6 +47,9 @@ public sealed class HostDeviceApisTests : IDisposable
             WakeLock = options.WakeLock,
             KeyboardLock = options.KeyboardLock,
             Sensors = options.Sensors,
+            ScreenOrientation = options.ScreenOrientation,
+            VirtualKeyboard = options.VirtualKeyboard,
+            ViewportSegments = options.ViewportSegments,
             TimeProvider = options.TimeProvider,
             Features = options.Features,
         });
@@ -1232,13 +1237,259 @@ public sealed class HostDeviceApisTests : IDisposable
         Assert.Equal(",0", Run(document));
     }
 
+    // Screen Orientation
+
+    private const string OrientationScript = """
+        window.log = [];
+        screen.orientation.onchange = () => log.push('change ' + screen.orientation.type + ' ' + screen.orientation.angle);
+        window.go = p => p.then(() => log.push('locked ' + screen.orientation.type), e => log.push(e.name));
+        window.fullscreen = () => document.documentElement.requestFullscreen();
+        window.done = () => document.title = log.join('|');
+        """;
+
+    /// <summary>The clock of the screen orientation tests: a lock completes once the screen has rotated, after a frame.</summary>
+    private readonly FakeTimeProvider _clock = new();
+
+    private Document LoadWithScreen(ScreenOrientationProvider screen)
+        => Load("<script>" + OrientationScript + "</script>", new BrowsingContextOptions
+        {
+            ScreenOrientation = new ScreenOrientationOptions { Provider = screen },
+            TimeProvider = _clock,
+        });
+
+    /// <summary>Runs the script, then lets the screen rotate.</summary>
+    private string RunFrame(Document document, string? script = null)
+    {
+        Run(document, script);
+        _clock.Advance(TimeSpan.FromMilliseconds(20));
+        return Run(document);
+    }
+
+    [Fact]
+    public void ScreenOrientation_WithoutProvider_IsADesktopScreenThatCannotBeLocked()
+    {
+        var document = Load("<script>" + OrientationScript + "</script>");
+
+        Assert.Equal("landscape-primary,0", Run(document, "document.title = [screen.orientation.type, screen.orientation.angle].join()"));
+        Assert.Equal("NotSupportedError", Run(document, "go(screen.orientation.lock('portrait')).then(done)"));
+    }
+
+    [Fact]
+    public void ScreenOrientation_Lock_RotatesTheScreen()
+    {
+        #region WebPlatform_ScreenOrientation
+        // The screen of a phone, held in portrait: lock() rotates it to the orientation of the lock
+        var screen = new ScreenOrientationProvider(OrientationType.PortraitPrimary);
+        var options = new BrowsingContextOptions
+        {
+            ScreenOrientation = new ScreenOrientationOptions { Provider = screen },
+        };
+        #endregion
+
+        var document = Load("<script>" + OrientationScript + "</script>", new BrowsingContextOptions { ScreenOrientation = options.ScreenOrientation, TimeProvider = _clock });
+        Assert.Equal("portrait-primary,0", Run(document, "document.title = [screen.orientation.type, screen.orientation.angle].join()"));
+
+        Activate(document);
+        Run(document, "fullscreen().then(() => go(screen.orientation.lock('landscape')))");
+        Assert.Equal(OrientationLockType.Landscape, screen.ActiveLock);
+        Assert.Equal("", Run(document, "done()"));
+
+        RunFrame(document);
+        Assert.Equal("change landscape-primary 90|locked landscape-primary", Run(document, "done()"));
+
+        RunFrame(document, "screen.orientation.unlock()");
+        Assert.Equal("change landscape-primary 90|locked landscape-primary|change portrait-primary 0", Run(document, "done()"));
+        Assert.Null(screen.ActiveLock);
+    }
+
+    [Fact]
+    public void ScreenOrientation_LockWithoutFullscreen_IsRejectedWithNotAllowedError()
+    {
+        var document = LoadWithScreen(new ScreenOrientationProvider());
+
+        Assert.Equal("NotAllowedError", Run(document, "go(screen.orientation.lock('portrait')).then(done)"));
+    }
+
+    [Fact]
+    public void ScreenOrientation_ExitFullscreen_UnlocksTheScreen()
+    {
+        var screen = new ScreenOrientationProvider();
+        var document = LoadWithScreen(screen);
+        Activate(document);
+        RunFrame(document, "fullscreen().then(() => go(screen.orientation.lock('portrait-secondary')))");
+        Assert.Equal(OrientationLockType.PortraitSecondary, screen.ActiveLock);
+
+        RunFrame(document, "document.exitFullscreen()");
+
+        Assert.Null(screen.ActiveLock);
+        Assert.Equal("change portrait-secondary 270|locked portrait-secondary|change landscape-primary 0", Run(document, "done()"));
+    }
+
+    [Fact]
+    public void ScreenOrientation_DeviceRotation_FiresTheChangeEvent()
+    {
+        var screen = new ScreenOrientationProvider();
+        var document = LoadWithScreen(screen);
+
+        screen.DeviceOrientation = OrientationType.LandscapeSecondary;
+        Run(document);
+
+        Assert.Equal("change landscape-secondary 180", Run(document, "done()"));
+    }
+
+    [Fact]
+    public void ScreenOrientation_SecondLock_AbortsThePendingOne()
+    {
+        var document = LoadWithScreen(new ScreenOrientationProvider());
+        Activate(document);
+
+        RunFrame(document, "fullscreen().then(() => { go(screen.orientation.lock('portrait')); go(screen.orientation.lock('landscape')); })");
+
+        Assert.Equal("AbortError|locked landscape-primary", Run(document, "done()"));
+    }
+
+    [Fact]
+    public void ScreenOrientation_RemovedIframe_AbortsTheLockRequest()
+    {
+        var document = LoadWithScreen(new ScreenOrientationProvider());
+        Activate(document);
+
+        RunFrame(document, """
+            const frame = document.createElement('iframe');
+            document.body.append(frame);
+            const orientation = frame.contentWindow.screen.orientation;
+            fullscreen().then(() => {
+              const promise = orientation.lock('portrait');
+              frame.remove();
+              return promise;
+            }).catch(e => { log.push(e.name); done(); });
+            """);
+
+        Assert.Equal("AbortError", Run(document, "done()"));
+    }
+
+    // VirtualKeyboard
+
+    private const string VirtualKeyboardScript = """
+        window.log = [];
+        navigator.virtualKeyboard.ongeometrychange = e => {
+          const r = navigator.virtualKeyboard.boundingRect;
+          log.push([e.type, e.bubbles, r.x, r.y, r.width, r.height].join(' '));
+        };
+        window.done = () => document.title = log.join('|');
+        """;
+
+    [Fact]
+    public void VirtualKeyboard_Show_CallsTheHost()
+    {
+        #region WebPlatform_VirtualKeyboard
+        var keyboard = new VirtualKeyboardProvider();
+        var options = new BrowsingContextOptions
+        {
+            VirtualKeyboard = new VirtualKeyboardOptions
+            {
+                // The system shows its keyboard, then reports its rectangle (relative to the viewport)
+                Show = callbackContext => keyboard.BoundingRect = new VirtualKeyboardRect(0, 400, 800, 200),
+                Hide = callbackContext => keyboard.BoundingRect = default,
+                Provider = keyboard,
+            },
+        };
+        #endregion
+
+        var document = Load("""<div contenteditable virtualkeyboardpolicy="manual">text</div><script>""" + VirtualKeyboardScript + "</script>", options);
+        Activate(document);
+
+        Run(document, "document.querySelector('div').focus(); navigator.virtualKeyboard.show()");
+        Assert.Equal("geometrychange false 0 400 800 200", Run(document, "done()"));
+
+        Run(document, "navigator.virtualKeyboard.hide()");
+        Assert.Equal("geometrychange false 0 400 800 200|geometrychange false 0 0 0 0", Run(document, "done()"));
+    }
+
+    [Fact]
+    public void VirtualKeyboard_Show_RequiresTheManualPolicy()
+    {
+        var shown = 0;
+        var document = Load("""<div contenteditable>text</div><input><script>""" + VirtualKeyboardScript + "</script>", new BrowsingContextOptions
+        {
+            VirtualKeyboard = new VirtualKeyboardOptions { Show = _ => shown++ },
+        });
+
+        Run(document, "document.querySelector('div').focus(); navigator.virtualKeyboard.show()");
+        Activate(document);
+        Run(document, "navigator.virtualKeyboard.show()");
+        Assert.Equal(0, shown);
+
+        Run(document, "document.querySelector('div').virtualKeyboardPolicy = 'MANUAL'; navigator.virtualKeyboard.show()");
+        Assert.Equal(1, shown);
+
+        Run(document, "document.querySelector('div').setAttribute('inputmode', 'none'); navigator.virtualKeyboard.show()");
+        Assert.Equal(1, shown);
+    }
+
+    [Fact]
+    public void VirtualKeyboard_OverlaysContent_SetsTheKeyboardInsets()
+    {
+        var keyboard = new VirtualKeyboardProvider();
+        var document = Load("""
+            <style>div { margin-top: env(keyboard-inset-top, 1px); height: env(keyboard-inset-height, 1px); }</style>
+            <div></div>
+            <script>
+            window.insets = () => { const style = getComputedStyle(document.querySelector('div')); document.title = style.marginTop + ' ' + style.height; };
+            </script>
+            """, new BrowsingContextOptions { VirtualKeyboard = new VirtualKeyboardOptions { Provider = keyboard } });
+
+        keyboard.BoundingRect = new VirtualKeyboardRect(0, 300, 800, 300);
+        Assert.Equal("0px 0px", Run(document, "insets()"));
+
+        Assert.Equal("300px 300px", Run(document, "navigator.virtualKeyboard.overlaysContent = true; insets()"));
+    }
+
+    // Viewport segments
+
+    [Fact]
+    public void ViewportSegments_DisplayFeatures_SplitTheViewport()
+    {
+        #region WebPlatform_ViewportSegments
+        // A foldable device: a vertical hinge of 20 pixels splits the viewport in two segments, side by side
+        var displayFeatures = new DisplayFeaturesProvider();
+        var options = new BrowsingContextOptions
+        {
+            ViewportSegments = new ViewportSegmentsOptions { Provider = displayFeatures },
+        };
+        displayFeatures.DisplayFeatures = [new DisplayFeature(DisplayFeatureOrientation.Vertical, Offset: 390, MaskLength: 20)];
+        #endregion
+
+        var document = Load("""
+            <style>div { width: env(viewport-segment-width 1 0, 1px); margin-left: env(viewport-segment-left 1 0, 1px); }</style>
+            <div></div>
+            <iframe srcdoc="<p>"></iframe>
+            <script>
+            window.describe = () => {
+              const style = getComputedStyle(document.querySelector('div'));
+              document.title = [
+                viewport.segments.map(s => [s.x, s.y, s.width, s.height].join(' ')).join(','),
+                matchMedia('(horizontal-viewport-segments: 2) and (vertical-viewport-segments: 1)').matches,
+                style.width, style.marginLeft,
+                frames[0].viewport.segments,
+              ].join('|');
+            };
+            </script>
+            """, options);
+
+        Assert.Equal("0 0 390 600,410 0 390 600|true|390px|410px|", Run(document, "describe()"));
+
+        displayFeatures.DisplayFeatures = [];
+        Assert.Equal("0 0 800 600|false|1px|1px|", Run(document, "describe()"));
+    }
+
     [Fact]
     public void DisabledFeatures_HideTheApis()
     {
         var document = Load(
-            "<script>document.title = ['share' in navigator, 'vibrate' in navigator, 'geolocation' in navigator, typeof Notification, 'setAppBadge' in navigator, 'getBattery' in navigator, typeof BatteryManager, 'wakeLock' in navigator, typeof WakeLockSentinel, 'keyboard' in navigator, typeof Keyboard, typeof Accelerometer, 'ondevicemotion' in window].join();</script>",
-            new BrowsingContextOptions { Features = new WebPlatformFeatures { WebShareEnabled = false, VibrationEnabled = false, GeolocationEnabled = false, NotificationsEnabled = false, BadgingEnabled = false, BatteryStatusEnabled = false, WakeLockEnabled = false, KeyboardLockEnabled = false, SensorsEnabled = false, DeviceOrientationEnabled = false } });
+            "<script>document.title = ['share' in navigator, 'vibrate' in navigator, 'geolocation' in navigator, typeof Notification, 'setAppBadge' in navigator, 'getBattery' in navigator, typeof BatteryManager, 'wakeLock' in navigator, typeof WakeLockSentinel, 'keyboard' in navigator, typeof Keyboard, 'orientation' in screen, typeof ScreenOrientation, 'virtualKeyboard' in navigator, typeof VirtualKeyboard, typeof Accelerometer, 'ondevicemotion' in window].join();</script>",
+            new BrowsingContextOptions { Features = new WebPlatformFeatures { WebShareEnabled = false, VibrationEnabled = false, GeolocationEnabled = false, NotificationsEnabled = false, BadgingEnabled = false, BatteryStatusEnabled = false, WakeLockEnabled = false, KeyboardLockEnabled = false, ScreenOrientationEnabled = false, VirtualKeyboardEnabled = false, SensorsEnabled = false, DeviceOrientationEnabled = false } });
 
-        Assert.Equal("false,false,false,undefined,false,false,undefined,false,undefined,false,undefined,undefined,false", Run(document));
+        Assert.Equal("false,false,false,undefined,false,false,undefined,false,undefined,false,undefined,false,undefined,false,undefined,undefined,false", Run(document));
     }
 }

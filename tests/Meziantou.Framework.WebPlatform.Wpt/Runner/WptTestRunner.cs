@@ -96,6 +96,9 @@ internal sealed partial class WptTestRunner
 
     /// <summary>The position of the device, overridden by test_driver.bidi.emulation.set_geolocation_override().</summary>
     private readonly GeolocationProvider _geolocation = new() { Position = DefaultGeolocationPosition };
+
+    /// <summary>The display features of the screen, set by test_driver.set_display_features().</summary>
+    private readonly DisplayFeaturesProvider _displayFeatures = new();
     private readonly WptStash _stash = new();
 
     /// <summary>The WebSocket server of wptserve (its connections are in-memory pipes).</summary>
@@ -200,6 +203,11 @@ internal sealed partial class WptTestRunner
 
                 // The virtual sensors of test_driver.create_virtual_sensor()
                 Sensors = new DeviceSensorsOptions { Provider = _sensors },
+
+                // A screen whose orientation can be locked (as the test environment of Chromium), and whose display features
+                // are set by test_driver.set_display_features()
+                ScreenOrientation = new ScreenOrientationOptions { Provider = new ScreenOrientationProvider() },
+                ViewportSegments = new ViewportSegmentsOptions { Provider = _displayFeatures },
 
                 // The pages of the reftests are rasterized; the images of all the tests are decoded by the backend
                 RenderingBackend = _renderingBackend,
@@ -1598,6 +1606,25 @@ internal sealed partial class WptTestRunner
             });
             return adapter.Undefined;
         });
+        Define("__wpt_set_display_features", 3, (_, args) =>
+        {
+            // https://drafts.csswg.org/css-viewport/#set-display-features: the features are validated, then set after the tasks
+            // that are already queued, as a WebDriver command
+            var completion = CreateCompletion(args[1], args[2]);
+            var features = ParseDisplayFeatures(adapter.ToString(args[0]), out var error);
+            if (features is null)
+            {
+                completion(error);
+                return adapter.Undefined;
+            }
+
+            QueueTask(() =>
+            {
+                _displayFeatures.DisplayFeatures = features;
+                completion(null);
+            });
+            return adapter.Undefined;
+        });
         Define("__wpt_set_permission", 3, (_, args) =>
         {
             var name = adapter.ToString(args[0]);
@@ -1747,6 +1774,39 @@ internal sealed partial class WptTestRunner
             DeviceSensorType.AbsoluteOrientation or DeviceSensorType.RelativeOrientation => DeviceSensorReading.FromEulerAngles(Number("alpha"), Number("beta"), Number("gamma")),
             _ => DeviceSensorReading.FromXyz(Number("x"), Number("y"), Number("z")),
         };
+    }
+
+    /// <summary>
+    /// Parses the display features of the Set Display Features command (https://drafts.csswg.org/css-viewport/#set-display-features),
+    /// or returns null with the error.
+    /// </summary>
+    private static List<DisplayFeature>? ParseDisplayFeatures(string json, out string? error)
+    {
+        error = null;
+        using var document = JsonDocument.Parse(json);
+        if (document.RootElement.ValueKind != JsonValueKind.Array)
+        {
+            error = "invalid argument: the features must be an array";
+            return null;
+        }
+
+        var features = new List<DisplayFeature>();
+        foreach (var item in document.RootElement.EnumerateArray())
+        {
+            if (item.ValueKind != JsonValueKind.Object
+                || !item.TryGetProperty("maskLength", out var maskLength) || maskLength.ValueKind != JsonValueKind.Number || maskLength.GetDouble() < 0
+                || !item.TryGetProperty("offset", out var offset) || offset.ValueKind != JsonValueKind.Number || offset.GetDouble() < 0
+                || !item.TryGetProperty("orientation", out var orientation) || orientation.GetString() is not ("vertical" or "horizontal"))
+            {
+                error = "invalid argument: a display feature has an orientation (vertical or horizontal), a mask length and an offset";
+                return null;
+            }
+
+            var kind = orientation.GetString() == "vertical" ? DisplayFeatureOrientation.Vertical : DisplayFeatureOrientation.Horizontal;
+            features.Add(new DisplayFeature(kind, offset.GetDouble(), maskLength.GetDouble()));
+        }
+
+        return features;
     }
 
     // ----------------------------------------------------------------------------------------------------------------

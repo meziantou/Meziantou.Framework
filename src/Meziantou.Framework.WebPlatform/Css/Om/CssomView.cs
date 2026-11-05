@@ -649,6 +649,8 @@ public partial class Window
     [IdlMember("screen", "https://drafts.csswg.org/cssom-view/#dom-window-screen")]
     public Screen Screen => _screen ??= new Screen(this);
 
+    internal Screen? ScreenOrNull => _screen;
+
     /// <summary>Gets the number of device pixels per CSS pixel (https://drafts.csswg.org/cssom-view/#dom-window-devicepixelratio): <see cref="ViewportOptions.DevicePixelRatio"/>.</summary>
     /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-window-devicepixelratio"/>
     [IdlMember("devicePixelRatio", "https://drafts.csswg.org/cssom-view/#dom-window-devicepixelratio")]
@@ -755,7 +757,7 @@ public sealed partial class Range
 /// </summary>
 /// <seealso href="https://drafts.csswg.org/cssom-view/#screen"/>
 [IdlInterface("Screen", "https://drafts.csswg.org/cssom-view/#screen")]
-public sealed class Screen : IRealmBoundPlatformObject
+public sealed partial class Screen : IRealmBoundPlatformObject
 {
     private readonly Window _window;
 

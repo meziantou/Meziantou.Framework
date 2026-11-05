@@ -33,6 +33,8 @@ public sealed class WebPlatformFeaturesTests : IDisposable
           KeyboardLockEnabled: typeof navigator.keyboard + typeof Keyboard + ('keyboard' in navigator),
           SensorsEnabled: typeof Sensor + typeof SensorErrorEvent + typeof Accelerometer + typeof LinearAccelerationSensor + typeof GravitySensor + typeof Gyroscope + typeof Magnetometer + typeof UncalibratedMagnetometer + typeof AmbientLightSensor + typeof ProximitySensor + typeof OrientationSensor + typeof AbsoluteOrientationSensor + typeof RelativeOrientationSensor,
           DeviceOrientationEnabled: typeof DeviceOrientationEvent + typeof DeviceMotionEvent + typeof DeviceMotionEventAcceleration + typeof DeviceMotionEventRotationRate + ('ondeviceorientation' in window) + ('ondeviceorientationabsolute' in window) + ('ondevicemotion' in window),
+          ScreenOrientationEnabled: typeof screen.orientation + typeof ScreenOrientation + ('orientation' in screen),
+          VirtualKeyboardEnabled: typeof navigator.virtualKeyboard + typeof VirtualKeyboard + ('virtualKeyboard' in navigator) + ('virtualKeyboardPolicy' in HTMLElement.prototype),
           IndexedDBEnabled: typeof indexedDB + typeof IDBFactory + typeof IDBKeyRange + ('indexedDB' in self),
           CacheStorageEnabled: typeof caches + typeof Cache + typeof CacheStorage + ('caches' in self),
           WebStorageEnabled: typeof localStorage + typeof sessionStorage + typeof Storage + typeof StorageEvent + ('localStorage' in window),

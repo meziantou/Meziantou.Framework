@@ -1,0 +1,54 @@
+{
+  "screen-orientation/active-lock.html": {
+    "total": 3
+  },
+  "screen-orientation/event-before-promise.html": {
+    "total": 1
+  },
+  "screen-orientation/fullscreen-interactions.html": {
+    "total": 2,
+    "failures": {
+      "Iframe can't itself know if it's parent is fullscreen when changing orientation": "FAIL"
+    }
+  },
+  "screen-orientation/hidden_document.html": {
+    "harness": "ERROR",
+    "total": 4,
+    "failures": {
+      "Once maximized, a minimized window can lock or unlock the screen orientation again": "NOTRUN"
+    }
+  },
+  "screen-orientation/idlharness.window.js": {
+    "total": 25
+  },
+  "screen-orientation/lock-bad-argument.html": {
+    "total": 2
+  },
+  "screen-orientation/lock-basic.html": {
+    "total": 3
+  },
+  "screen-orientation/lock-sandboxed-iframe.html": {
+    "total": 2
+  },
+  "screen-orientation/lock-unlock-check.html": {
+    "total": 2
+  },
+  "screen-orientation/nested-documents.html": {
+    "total": 2
+  },
+  "screen-orientation/non-fully-active.html": {
+    "total": 3
+  },
+  "screen-orientation/onchange-event-subframe.html": {
+    "total": 2
+  },
+  "screen-orientation/onchange-event.html": {
+    "total": 2
+  },
+  "screen-orientation/orientation-reading.html": {
+    "total": 6
+  },
+  "screen-orientation/unlock.html": {
+    "total": 5
+  }
+}

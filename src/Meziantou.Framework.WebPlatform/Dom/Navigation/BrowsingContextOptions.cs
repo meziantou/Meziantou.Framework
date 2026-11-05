@@ -603,6 +603,30 @@ public sealed partial class BrowsingContextOptions
     /// </summary>
     public DeviceSensorsOptions? Sensors { get; init; }
 
+    /// <summary>
+    /// Gets or sets the host hooks of the Screen Orientation API (https://w3c.github.io/screen-orientation/,
+    /// <c>screen.orientation</c>): <see cref="ScreenOrientationOptions.Provider"/> is the screen of the device, its orientation
+    /// and its locks. The default is null: a desktop screen, whose orientation cannot be locked.
+    /// </summary>
+    public ScreenOrientationOptions? ScreenOrientation { get; init; }
+
+    /// <summary>
+    /// Gets or sets the host hooks of the VirtualKeyboard API (https://w3c.github.io/virtual-keyboard/,
+    /// <c>navigator.virtualKeyboard</c>): <see cref="VirtualKeyboardOptions.Show"/> and <see cref="VirtualKeyboardOptions.Hide"/>
+    /// show and hide the on-screen keyboard, whose geometry is reported by <see cref="VirtualKeyboardOptions.Provider"/>. The
+    /// default is null: there is no virtual keyboard.
+    /// </summary>
+    public VirtualKeyboardOptions? VirtualKeyboard { get; init; }
+
+    /// <summary>
+    /// Gets or sets the host hooks of the viewport segments (https://drafts.csswg.org/css-viewport/#viewport-segments,
+    /// <c>window.viewport.segments</c>, the <c>horizontal-viewport-segments</c> and <c>vertical-viewport-segments</c> media
+    /// features and the <c>viewport-segment-*</c> environment variables): <see cref="ViewportSegmentsOptions.Provider"/>
+    /// reports the display features (folds and hinges) that split the viewport. The default is null: the viewport has a single
+    /// segment.
+    /// </summary>
+    public ViewportSegmentsOptions? ViewportSegments { get; init; }
+
     /// <summary>The list of notifications (https://notifications.spec.whatwg.org/#list-of-notifications) of the browsing contexts. Lock it to use it.</summary>
     internal List<Notification> ShownNotifications { get; } = [];
 }

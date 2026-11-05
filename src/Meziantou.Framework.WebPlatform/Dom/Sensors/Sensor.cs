@@ -310,8 +310,8 @@ public abstract class Sensor : EventTarget
         ];
     }
 
-    /// <summary>The angle of the orientation of the screen, in degrees: the screen of the library is in its natural orientation.</summary>
-    private static double GetScreenOrientationAngle() => 0;
+    /// <summary>The angle of the orientation of the screen of the window, in degrees (https://w3c.github.io/screen-orientation/#dfn-screen-orientation-values-lists).</summary>
+    private double GetScreenOrientationAngle() => ScreenOrientationModel.GetCurrentOrientation(_window).Angle;
 
     private PlatformSensor GetPlatformSensor() => _window.Sensors.GetPlatformSensor(Kind);
 

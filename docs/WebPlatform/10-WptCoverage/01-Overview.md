@@ -48,10 +48,10 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 25,999 | 29,691 | 2,257 | 95% |
+| [Stable](#stable-tests) | 26,000 | 29,691 | 2,257 | 95% |
 | [Tentative](#tentative-tests) | 1,339 | 3,074 | 709 | 57% |
 | [Reftests](#reftests) | 27,901 | 29,220 | 173 | 96% |
-| **All** | **55,239** | **61,985** | **3,139** | **94%** |
+| **All** | **55,240** | **61,985** | **3,139** | **94%** |
 
 ## Failure reasons
 
@@ -59,7 +59,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 308
 - **TEST BUG**: 1,014
-- **NOT IMPLEMENTED**: 4,406
+- **NOT IMPLEMENTED**: 4,405
 - **REQUIRES**: 834
   - `hardware`: 637
   - `layout`: 30
@@ -205,7 +205,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`direct-sockets`](direct-sockets.md) | 0 | 4 | 4 | – |
 | [`document-picture-in-picture`](document-picture-in-picture.md) | 0 | 22 | 22 | – |
 | [`document-policy`](document-policy.md) | 0 | 7 | 7 | – |
-| [`dom`](dom.md) | 664 | 684 | 6 | 98% |
+| [`dom`](dom.md) | 665 | 684 | 6 | 98% |
 | [`domparsing`](domparsing.md) | 52 | 56 | 0 | 93% |
 | [`domxpath`](domxpath.md) | 28 | 28 | 0 | 100% |
 | [`dpub-aam`](dpub-aam.md) | 0 | 1 | 1 | – |
@@ -419,7 +419,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 318 | 330 | 0 | 96% |
 | [`xml`](xml.md) | 0 | 12 | 12 | – |
-| **Total (343 sections)** | **25,999** | **29,691** | **2,257** | **95%** |
+| **Total (343 sections)** | **26,000** | **29,691** | **2,257** | **95%** |
 
 ## Tentative tests
 

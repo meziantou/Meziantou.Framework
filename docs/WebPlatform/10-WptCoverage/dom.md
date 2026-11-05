@@ -9,17 +9,17 @@ description: "The results of the web-platform-tests of dom, and why the tests th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 664 | 684 | 6 | 98% |
+| [Stable](#stable-tests) | 665 | 684 | 6 | 98% |
 | [Tentative](#tentative-tests) | 30 | 55 | 2 | 57% |
 | [Reftests](#reftests) | 4 | 4 | 0 | 100% |
-| **All** | **698** | **743** | **8** | **95%** |
+| **All** | **699** | **743** | **8** | **95%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **TEST BUG**: 7
-- **NOT IMPLEMENTED**: 28
+- **NOT IMPLEMENTED**: 27
 - **REQUIRES**: 1
   - `user-input`: 1
 - **TEST RUNNER**: 2
@@ -109,7 +109,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`events/EventTarget-addEventListener.any.js`](https://wpt.fyi/results/dom/events/EventTarget-addEventListener.any.js) | Pass | 2 / 2 |  |  |
 | [`events/EventTarget-constructible.any.js`](https://wpt.fyi/results/dom/events/EventTarget-constructible.any.js) | Pass | 6 / 6 |  |  |
 | [`events/EventTarget-dispatchEvent-returnvalue.html`](https://wpt.fyi/results/dom/events/EventTarget-dispatchEvent-returnvalue.html) | Pass | 2 / 2 |  |  |
-| [`events/EventTarget-dispatchEvent.html`](https://wpt.fyi/results/dom/events/EventTarget-dispatchEvent.html) | Fail | 23 / 25 | NOT IMPLEMENTED | `DeviceMotionEvent` and `DeviceOrientationEvent` |
+| [`events/EventTarget-dispatchEvent.html`](https://wpt.fyi/results/dom/events/EventTarget-dispatchEvent.html) | Pass | 25 / 25 |  |  |
 | [`events/EventTarget-removeEventListener.any.js`](https://wpt.fyi/results/dom/events/EventTarget-removeEventListener.any.js) | Pass | 2 / 2 |  |  |
 | [`events/EventTarget-this-of-listener.html`](https://wpt.fyi/results/dom/events/EventTarget-this-of-listener.html) | Pass | 6 / 6 |  |  |
 | [`events/EventTarget-window-constructor.html`](https://wpt.fyi/results/dom/events/EventTarget-window-constructor.html) | Pass | 1 / 1 |  |  |

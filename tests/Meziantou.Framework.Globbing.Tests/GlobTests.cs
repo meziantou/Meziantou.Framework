@@ -1989,6 +1989,35 @@ public class GlobTests
     }
 
     [Theory]
+    [InlineData("[a-�]", "A", true)]
+    [InlineData("[a-�]", "@", false)]
+    [InlineData("[b-�]", "A", false)]
+    [InlineData("[b-�]", "B", true)]
+    [InlineData("[à-�]", "À", true)]
+    [InlineData("[á-�]", "À", false)]
+    [InlineData("[ς-�]", "Σ", true)]
+    [InlineData("[Ā-�]", "ÿ", true)]
+    [InlineData("[Ā-�]", "S", false)]
+    public void IgnoreCaseWideRangeMatchesTheCaseVariantsOfItsCharacters(string pattern, string path, bool expected)
+    {
+        Assert.Equal(expected, Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.IgnoreCase).IsMatch(path));
+        Assert.Equal(!expected, Glob.Parse("[!" + pattern[1..], GlobDialect.Standard, GlobOptions.IgnoreCase).IsMatch(path));
+    }
+
+    [Fact]
+    public void IgnoreCaseWideRangesInExpandedBracesAreParsedQuickly()
+    {
+        // The braces expand into 512 patterns, and the parser used to walk every character of each range of each of
+        // them, which took several seconds
+        var pattern = string.Concat(Enumerable.Repeat("{a/,b}", 9)) + string.Concat(Enumerable.Repeat("[a-�]", 8));
+        var glob = Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.IgnoreCase);
+
+        Assert.True(glob.IsMatch("bbbbbbbbbAAAAAAAA"));
+        Assert.True(glob.IsMatch("a/a/a/a/a/a/a/a/a/ÉéAaZzΣς"));
+        Assert.False(glob.IsMatch("bbbbbbbbbAAAAAAA@"));
+    }
+
+    [Theory]
     [InlineData('a', 'z')]
     [InlineData('A', 'Z')]
     [InlineData('R', 'S')]

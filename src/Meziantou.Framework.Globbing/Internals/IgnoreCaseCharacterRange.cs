@@ -1,5 +1,3 @@
-using System.Buffers;
-
 namespace Meziantou.Framework.Globbing.Internals;
 
 /// <summary>
@@ -15,32 +13,15 @@ namespace Meziantou.Framework.Globbing.Internals;
 /// </remarks>
 internal sealed class IgnoreCaseCharacterRange
 {
-    private readonly CharacterRange _range;
+    // The characters that are not their own case key, sorted by key. The table does not depend on the range, so creating
+    // a range does not walk its characters, which would be slow for a wide range such as '[a-�]'.
+    private static readonly (char[] Keys, char[] Characters) FoldedCharacters = CreateFoldedCharacters();
 
-    // The case keys of the characters of the range that are not their own key. Two characters are equal when their keys
-    // are equal, so a character outside of the range matches when its key is one of these, or is a character of the
-    // range that is its own key.
-    private readonly SearchValues<char>? _foldedKeys;
+    private readonly CharacterRange _range;
 
     public IgnoreCaseCharacterRange(CharacterRange range)
     {
         _range = range;
-
-        HashSet<char>? keys = null;
-        for (var c = (int)range.Min; c <= range.Max; c++)
-        {
-            var key = GetCaseKey((char)c);
-            if (key != c)
-            {
-                keys ??= [];
-                keys.Add(key);
-            }
-        }
-
-        if (keys is not null)
-        {
-            _foldedKeys = SearchValues.Create([.. keys]);
-        }
     }
 
     public CharacterRange Range => _range;
@@ -50,11 +31,45 @@ internal sealed class IgnoreCaseCharacterRange
         if (_range.IsInRange(c))
             return true;
 
+        // Two characters are equal when their keys are equal: 'c' matches when the range holds its key, if the key is its
+        // own key, or one of the characters whose key it is
         var key = GetCaseKey(c);
         if (_range.IsInRange(key) && GetCaseKey(key) == key)
             return true;
 
-        return _foldedKeys is not null && _foldedKeys.Contains(key);
+        var (keys, characters) = FoldedCharacters;
+        var index = keys.AsSpan().BinarySearch(key);
+        if (index < 0)
+            return false;
+
+        while (index > 0 && keys[index - 1] == key)
+        {
+            index--;
+        }
+
+        for (; index < keys.Length && keys[index] == key; index++)
+        {
+            if (_range.IsInRange(characters[index]))
+                return true;
+        }
+
+        return false;
+    }
+
+    private static (char[] Keys, char[] Characters) CreateFoldedCharacters()
+    {
+        var entries = new List<(char Key, char Character)>();
+        for (var c = (int)char.MinValue; c <= char.MaxValue; c++)
+        {
+            var key = GetCaseKey((char)c);
+            if (key != c)
+            {
+                entries.Add((key, (char)c));
+            }
+        }
+
+        entries.Sort();
+        return ([.. entries.Select(entry => entry.Key)], [.. entries.Select(entry => entry.Character)]);
     }
 
     /// <summary>

@@ -197,6 +197,38 @@ public sealed class CookieJar
         return removed;
     }
 
+    /// <summary>
+    /// https://w3c.github.io/webappsec-clear-site-data/#clear-cookies: removes the cookies whose domain domain-matches a
+    /// registrable domain (or a host without registrable domain): the unpartitioned cookies when
+    /// <paramref name="includeUnpartitioned"/> is true, and the cookies partitioned by the top-level site
+    /// <paramref name="partitionSite"/> (<c>scheme://site</c>) when it is set. Returns the number of removed cookies.
+    /// </summary>
+    internal int RemoveForDomain(string domain, bool includeUnpartitioned, string? partitionSite)
+    {
+        List<CookieChange>? changes = null;
+        lock (_lock)
+        {
+            for (var i = _cookies.Count - 1; i >= 0; i--)
+            {
+                var cookie = _cookies[i];
+                var inScope = cookie.PartitionKey is { } partitionKey ? partitionKey.TopLevelSite == partitionSite : includeUnpartitioned;
+                if (!inScope || !(cookie.Domain == domain || cookie.Domain.EndsWith("." + domain, StringComparison.Ordinal)))
+                    continue;
+
+                (changes ??= []).Add(new CookieChange(cookie, Deleted: true));
+                _cookies.RemoveAt(i);
+            }
+
+            if (changes is not null)
+            {
+                PersistChanges(changes);
+            }
+        }
+
+        RaiseChanged(changes);
+        return changes?.Count ?? 0;
+    }
+
     /// <summary>Removes all the cookies, and the persisted cookies of <see cref="Persistence"/>.</summary>
     public void Clear()
     {

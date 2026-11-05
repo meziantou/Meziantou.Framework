@@ -1,0 +1,35 @@
+{
+  "gyroscope/Gyroscope-disabled-by-permissions-policy.https.html": {
+    "total": 3
+  },
+  "gyroscope/Gyroscope-enabled-by-permissions-policy-attribute-redirect-on-load.https.html": {
+    "total": 2
+  },
+  "gyroscope/Gyroscope-enabled-by-permissions-policy-attribute.https.html": {
+    "total": 2
+  },
+  "gyroscope/Gyroscope-enabled-by-permissions-policy.https.html": {
+    "total": 3
+  },
+  "gyroscope/Gyroscope-enabled-on-self-origin-by-permissions-policy.https.html": {
+    "total": 3
+  },
+  "gyroscope/Gyroscope-iframe-access.https.html": {
+    "total": 4
+  },
+  "gyroscope/Gyroscope-supported-by-permissions-policy.html": {
+    "total": 1
+  },
+  "gyroscope/Gyroscope.https.html": {
+    "total": 20,
+    "failures": {
+      "Gyroscope: sensor reading is correct when options.referenceFrame is 'screen'.": "FAIL"
+    }
+  },
+  "gyroscope/Gyroscope_insecure_context.html": {
+    "total": 1
+  },
+  "gyroscope/idlharness.https.window.js": {
+    "total": 16
+  }
+}

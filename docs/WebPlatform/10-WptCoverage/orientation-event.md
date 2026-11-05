@@ -9,46 +9,39 @@ description: "The results of the web-platform-tests of orientation-event, and wh
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 27 | 27 | – |
+| [Stable](#stable-tests) | 27 | 27 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **0** | **27** | **27** | **–** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **REQUIRES**: 27
-  - `hardware`: 27
+| **All** | **27** | **27** | **0** | **100%** |
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`device-orientation-events-of-detached-documents.https.html`](https://wpt.fyi/results/orientation-event/device-orientation-events-of-detached-documents.https.html) | Disabled | – | REQUIRES(hardware) | DeviceOrientation and DeviceMotion events |
-| [`device-orientation-events-unavailable-on-insecure-origins.html`](https://wpt.fyi/results/orientation-event/device-orientation-events-unavailable-on-insecure-origins.html) | Disabled | – | REQUIRES(hardware) | DeviceOrientation and DeviceMotion events |
-| [`idlharness.https.window.js`](https://wpt.fyi/results/orientation-event/idlharness.https.window.js) | Disabled | – | REQUIRES(hardware) | DeviceOrientation and DeviceMotion events |
-| [`motion/add-during-dispatch.https.html`](https://wpt.fyi/results/orientation-event/motion/add-during-dispatch.https.html) | Disabled | – | REQUIRES(hardware) | DeviceOrientation and DeviceMotion events |
-| [`motion/add-listener-from-callback.https.html`](https://wpt.fyi/results/orientation-event/motion/add-listener-from-callback.https.html) | Disabled | – | REQUIRES(hardware) | DeviceOrientation and DeviceMotion events |
-| [`motion/create-event.https.html`](https://wpt.fyi/results/orientation-event/motion/create-event.https.html) | Disabled | – | REQUIRES(hardware) | DeviceOrientation and DeviceMotion events |
-| [`motion/multiple-event-listeners.https.html`](https://wpt.fyi/results/orientation-event/motion/multiple-event-listeners.https.html) | Disabled | – | REQUIRES(hardware) | DeviceOrientation and DeviceMotion events |
-| [`motion/null-values.https.html`](https://wpt.fyi/results/orientation-event/motion/null-values.https.html) | Disabled | – | REQUIRES(hardware) | DeviceOrientation and DeviceMotion events |
-| [`motion/optional-event-properties.https.html`](https://wpt.fyi/results/orientation-event/motion/optional-event-properties.https.html) | Disabled | – | REQUIRES(hardware) | DeviceOrientation and DeviceMotion events |
-| [`motion/page-visibility.https.html`](https://wpt.fyi/results/orientation-event/motion/page-visibility.https.html) | Disabled | – | REQUIRES(hardware) | DeviceOrientation and DeviceMotion events |
-| [`motion/permission-denied.https.html`](https://wpt.fyi/results/orientation-event/motion/permission-denied.https.html) | Disabled | – | REQUIRES(hardware) | DeviceOrientation and DeviceMotion events |
-| [`motion/requestPermission.https.window.js`](https://wpt.fyi/results/orientation-event/motion/requestPermission.https.window.js) | Disabled | – | REQUIRES(hardware) | DeviceOrientation and DeviceMotion events |
-| [`motion/rounding.https.html`](https://wpt.fyi/results/orientation-event/motion/rounding.https.html) | Disabled | – | REQUIRES(hardware) | DeviceOrientation and DeviceMotion events |
-| [`orientation/absolute-fallback.https.html`](https://wpt.fyi/results/orientation-event/orientation/absolute-fallback.https.html) | Disabled | – | REQUIRES(hardware) | DeviceOrientation and DeviceMotion events |
-| [`orientation/add-listener-from-callback.https.html`](https://wpt.fyi/results/orientation-event/orientation/add-listener-from-callback.https.html) | Disabled | – | REQUIRES(hardware) | DeviceOrientation and DeviceMotion events |
-| [`orientation/basic-operation-absolute.https.html`](https://wpt.fyi/results/orientation-event/orientation/basic-operation-absolute.https.html) | Disabled | – | REQUIRES(hardware) | DeviceOrientation and DeviceMotion events |
-| [`orientation/basic-operation.https.html`](https://wpt.fyi/results/orientation-event/orientation/basic-operation.https.html) | Disabled | – | REQUIRES(hardware) | DeviceOrientation and DeviceMotion events |
-| [`orientation/create-event.https.html`](https://wpt.fyi/results/orientation-event/orientation/create-event.https.html) | Disabled | – | REQUIRES(hardware) | DeviceOrientation and DeviceMotion events |
-| [`orientation/multiple-event-listeners.https.html`](https://wpt.fyi/results/orientation-event/orientation/multiple-event-listeners.https.html) | Disabled | – | REQUIRES(hardware) | DeviceOrientation and DeviceMotion events |
-| [`orientation/no-synchronous-events.https.html`](https://wpt.fyi/results/orientation-event/orientation/no-synchronous-events.https.html) | Disabled | – | REQUIRES(hardware) | DeviceOrientation and DeviceMotion events |
-| [`orientation/null-values.https.html`](https://wpt.fyi/results/orientation-event/orientation/null-values.https.html) | Disabled | – | REQUIRES(hardware) | DeviceOrientation and DeviceMotion events |
-| [`orientation/optional-event-properties.https.html`](https://wpt.fyi/results/orientation-event/orientation/optional-event-properties.https.html) | Disabled | – | REQUIRES(hardware) | DeviceOrientation and DeviceMotion events |
-| [`orientation/page-visibility.https.html`](https://wpt.fyi/results/orientation-event/orientation/page-visibility.https.html) | Disabled | – | REQUIRES(hardware) | DeviceOrientation and DeviceMotion events |
-| [`orientation/permission-denied.https.html`](https://wpt.fyi/results/orientation-event/orientation/permission-denied.https.html) | Disabled | – | REQUIRES(hardware) | DeviceOrientation and DeviceMotion events |
-| [`orientation/requestPermission.https.window.js`](https://wpt.fyi/results/orientation-event/orientation/requestPermission.https.window.js) | Disabled | – | REQUIRES(hardware) | DeviceOrientation and DeviceMotion events |
-| [`orientation/rounding.https.html`](https://wpt.fyi/results/orientation-event/orientation/rounding.https.html) | Disabled | – | REQUIRES(hardware) | DeviceOrientation and DeviceMotion events |
-| [`orientation/updates.https.html`](https://wpt.fyi/results/orientation-event/orientation/updates.https.html) | Disabled | – | REQUIRES(hardware) | DeviceOrientation and DeviceMotion events |
+| [`device-orientation-events-of-detached-documents.https.html`](https://wpt.fyi/results/orientation-event/device-orientation-events-of-detached-documents.https.html) | Pass | 1 / 1 |  |  |
+| [`device-orientation-events-unavailable-on-insecure-origins.html`](https://wpt.fyi/results/orientation-event/device-orientation-events-unavailable-on-insecure-origins.html) | Pass | 4 / 4 |  |  |
+| [`idlharness.https.window.js`](https://wpt.fyi/results/orientation-event/idlharness.https.window.js) | Pass | 76 / 76 |  |  |
+| [`motion/add-during-dispatch.https.html`](https://wpt.fyi/results/orientation-event/motion/add-during-dispatch.https.html) | Pass | 1 / 1 |  |  |
+| [`motion/add-listener-from-callback.https.html`](https://wpt.fyi/results/orientation-event/motion/add-listener-from-callback.https.html) | Pass | 1 / 1 |  |  |
+| [`motion/create-event.https.html`](https://wpt.fyi/results/orientation-event/motion/create-event.https.html) | Pass | 1 / 1 |  |  |
+| [`motion/multiple-event-listeners.https.html`](https://wpt.fyi/results/orientation-event/motion/multiple-event-listeners.https.html) | Pass | 1 / 1 |  |  |
+| [`motion/null-values.https.html`](https://wpt.fyi/results/orientation-event/motion/null-values.https.html) | Pass | 1 / 1 |  |  |
+| [`motion/optional-event-properties.https.html`](https://wpt.fyi/results/orientation-event/motion/optional-event-properties.https.html) | Pass | 17 / 17 |  |  |
+| [`motion/page-visibility.https.html`](https://wpt.fyi/results/orientation-event/motion/page-visibility.https.html) | Pass | 1 / 1 |  |  |
+| [`motion/permission-denied.https.html`](https://wpt.fyi/results/orientation-event/motion/permission-denied.https.html) | Pass | 1 / 1 |  |  |
+| [`motion/requestPermission.https.window.js`](https://wpt.fyi/results/orientation-event/motion/requestPermission.https.window.js) | Pass | 4 / 4 |  |  |
+| [`motion/rounding.https.html`](https://wpt.fyi/results/orientation-event/motion/rounding.https.html) | Pass | 1 / 1 |  |  |
+| [`orientation/absolute-fallback.https.html`](https://wpt.fyi/results/orientation-event/orientation/absolute-fallback.https.html) | Pass | 1 / 1 |  |  |
+| [`orientation/add-listener-from-callback.https.html`](https://wpt.fyi/results/orientation-event/orientation/add-listener-from-callback.https.html) | Pass | 1 / 1 |  |  |
+| [`orientation/basic-operation-absolute.https.html`](https://wpt.fyi/results/orientation-event/orientation/basic-operation-absolute.https.html) | Pass | 2 / 2 |  |  |
+| [`orientation/basic-operation.https.html`](https://wpt.fyi/results/orientation-event/orientation/basic-operation.https.html) | Pass | 2 / 2 |  |  |
+| [`orientation/create-event.https.html`](https://wpt.fyi/results/orientation-event/orientation/create-event.https.html) | Pass | 1 / 1 |  |  |
+| [`orientation/multiple-event-listeners.https.html`](https://wpt.fyi/results/orientation-event/orientation/multiple-event-listeners.https.html) | Pass | 1 / 1 |  |  |
+| [`orientation/no-synchronous-events.https.html`](https://wpt.fyi/results/orientation-event/orientation/no-synchronous-events.https.html) | Pass | 1 / 1 |  |  |
+| [`orientation/null-values.https.html`](https://wpt.fyi/results/orientation-event/orientation/null-values.https.html) | Pass | 2 / 2 |  |  |
+| [`orientation/optional-event-properties.https.html`](https://wpt.fyi/results/orientation-event/orientation/optional-event-properties.https.html) | Pass | 8 / 8 |  |  |
+| [`orientation/page-visibility.https.html`](https://wpt.fyi/results/orientation-event/orientation/page-visibility.https.html) | Pass | 1 / 1 |  |  |
+| [`orientation/permission-denied.https.html`](https://wpt.fyi/results/orientation-event/orientation/permission-denied.https.html) | Pass | 2 / 2 |  |  |
+| [`orientation/requestPermission.https.window.js`](https://wpt.fyi/results/orientation-event/orientation/requestPermission.https.window.js) | Pass | 4 / 4 |  |  |
+| [`orientation/rounding.https.html`](https://wpt.fyi/results/orientation-event/orientation/rounding.https.html) | Pass | 1 / 1 |  |  |
+| [`orientation/updates.https.html`](https://wpt.fyi/results/orientation-event/orientation/updates.https.html) | Pass | 2 / 2 |  |  |

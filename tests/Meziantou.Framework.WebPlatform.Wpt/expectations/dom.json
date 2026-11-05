@@ -285,11 +285,7 @@
     "total": 2
   },
   "dom/events/EventTarget-dispatchEvent.html": {
-    "total": 25,
-    "failures": {
-      "If the event's initialized flag is not set, an InvalidStateError must be thrown (DeviceMotionEvent).": "FAIL",
-      "If the event's initialized flag is not set, an InvalidStateError must be thrown (DeviceOrientationEvent).": "FAIL"
-    }
+    "total": 25
   },
   "dom/events/EventTarget-removeEventListener.any.js": {
     "total": 1
@@ -989,23 +985,11 @@
   "dom/nodes/Document-createEvent.https.html": {
     "total": 279,
     "failures": {
-      "DEVICEMOTIONEVENT should be an alias for DeviceMotionEvent.": "FAIL",
-      "DEVICEORIENTATIONEVENT should be an alias for DeviceOrientationEvent.": "FAIL",
-      "DeviceMotionEvent should be an alias for DeviceMotionEvent.": "FAIL",
-      "DeviceOrientationEvent should be an alias for DeviceOrientationEvent.": "FAIL",
       "TOUCHEVENT should be an alias for TouchEvent.": "PRECONDITION_FAILED",
       "TouchEvent should be an alias for TouchEvent.": "PRECONDITION_FAILED",
-      "createEvent('DEVICEMOTIONEVENT') should be initialized correctly.": "FAIL",
-      "createEvent('DEVICEORIENTATIONEVENT') should be initialized correctly.": "FAIL",
-      "createEvent('DeviceMotionEvent') should be initialized correctly.": "FAIL",
-      "createEvent('DeviceOrientationEvent') should be initialized correctly.": "FAIL",
       "createEvent('TOUCHEVENT') should be initialized correctly.": "PRECONDITION_FAILED",
       "createEvent('TouchEvent') should be initialized correctly.": "PRECONDITION_FAILED",
-      "createEvent('devicemotionevent') should be initialized correctly.": "FAIL",
-      "createEvent('deviceorientationevent') should be initialized correctly.": "FAIL",
       "createEvent('touchevent') should be initialized correctly.": "PRECONDITION_FAILED",
-      "devicemotionevent should be an alias for DeviceMotionEvent.": "FAIL",
-      "deviceorientationevent should be an alias for DeviceOrientationEvent.": "FAIL",
       "touchevent should be an alias for TouchEvent.": "PRECONDITION_FAILED"
     }
   },

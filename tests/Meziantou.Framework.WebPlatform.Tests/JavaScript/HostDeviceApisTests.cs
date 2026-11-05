@@ -17,8 +17,9 @@ namespace Meziantou.Framework.WebPlatform.Tests.JavaScript;
 /// Media Session (https://w3c.github.io/mediasession/), Page Lifecycle (https://wicg.github.io/page-lifecycle/), Compute
 /// Pressure (https://w3c.github.io/compute-pressure/), Idle Detection (https://wicg.github.io/idle-detection/), Device
 /// Posture (https://w3c.github.io/device-posture/), Network Information (https://wicg.github.io/netinfo/), Device Memory
-/// (https://www.w3.org/TR/device-memory/), Global Privacy Control (https://w3c.github.io/gpc/) and the early detection of
-/// input events (https://wicg.github.io/is-input-pending/).
+/// (https://www.w3.org/TR/device-memory/), Global Privacy Control (https://w3c.github.io/gpc/), the early detection of
+/// input events (https://wicg.github.io/is-input-pending/), the sensors (https://w3c.github.io/sensors/) and the device
+/// orientation and motion events (https://w3c.github.io/deviceorientation/).
 /// </summary>
 public sealed class HostDeviceApisTests : IDisposable
 {
@@ -56,6 +57,7 @@ public sealed class HostDeviceApisTests : IDisposable
             ComputePressure = options.ComputePressure,
             IdleDetection = options.IdleDetection,
             DevicePosture = options.DevicePosture,
+            Sensors = options.Sensors,
             ScreenOrientation = options.ScreenOrientation,
             VirtualKeyboard = options.VirtualKeyboard,
             ViewportSegments = options.ViewportSegments,
@@ -1829,13 +1831,261 @@ public sealed class HostDeviceApisTests : IDisposable
             """));
     }
 
+    // Sensors
+
+    private const string SensorScript = """
+        window.log = [];
+        window.startSensor = sensor => {
+          window.sensor = sensor;
+          sensor.onactivate = () => log.push('activate');
+          sensor.onerror = e => log.push(e.error.name);
+          sensor.onreading = () => log.push(window.describe(sensor));
+          sensor.start();
+        };
+        window.describe = s => [s.x, s.y, s.z].join(',');
+        window.done = () => document.title = log.join('|');
+        """;
+
+    private static PermissionStore GrantedSensorPermissions()
+    {
+        var permissions = new PermissionStore();
+        foreach (var name in (ReadOnlySpan<string>)["accelerometer", "gyroscope", "magnetometer", "ambient-light-sensor"])
+        {
+            permissions.SetState(name, PermissionState.Granted);
+        }
+
+        return permissions;
+    }
+
+    [Fact]
+    public void Sensor_WithoutDevice_FiresNotReadableError()
+    {
+        var document = Load("<script>" + SensorScript + "startSensor(new Accelerometer());</script>", new BrowsingContextOptions { Permissions = GrantedSensorPermissions() });
+
+        Assert.Equal("NotReadableError", Run(document, "done()"));
+        Assert.Equal("false", Run(document, "document.title = sensor.activated"));
+    }
+
+    [Fact]
+    public void Sensor_WithoutPermission_FiresNotAllowedError()
+    {
+        var provider = new DeviceSensorProvider();
+        provider.AddSensor(DeviceSensorType.Accelerometer);
+        var document = Load("<script>" + SensorScript + "startSensor(new Accelerometer());</script>", new BrowsingContextOptions { Sensors = new DeviceSensorsOptions { Provider = provider } });
+
+        Assert.Equal("NotAllowedError", Run(document, "done()"));
+    }
+
+    [Fact]
+    public void Accelerometer_ReadsTheSensorOfTheDevice()
+    {
+        #region WebPlatform_Sensors
+        var sensors = new DeviceSensorProvider();
+
+        // The accelerometer of the device: Update() makes a new reading available to the sensor objects of the documents
+        var accelerometer = sensors.AddSensor(DeviceSensorType.Accelerometer);
+
+        var permissions = new PermissionStore();
+        permissions.SetState("accelerometer", PermissionState.Granted);
+        var options = new BrowsingContextOptions
+        {
+            Sensors = new DeviceSensorsOptions { Provider = sensors },
+            Permissions = permissions,
+        };
+        #endregion
+
+        var document = Load("<script>" + SensorScript + "startSensor(new Accelerometer());</script>", options);
+        Run(document);
+
+        accelerometer.Update(DeviceSensorReading.FromXyz(1.12345, 2.16, -9.81));
+        Run(document);
+        Assert.Equal("activate|1.1,2.2,-9.8", Run(document, "done()"));
+        Assert.Equal("true,true", Run(document, "document.title = [sensor.hasReading, sensor.timestamp > 0].join()"));
+
+        Assert.Equal("false,null,null", Run(document, "sensor.stop(); document.title = [sensor.hasReading, String(sensor.x), String(sensor.timestamp)].join()"));
+    }
+
+    [Fact]
+    public void Sensor_RequestedSamplingFrequency_IsTheHighestFrequencyWithinTheBounds()
+    {
+        var provider = new DeviceSensorProvider();
+        var gyroscope = provider.AddSensor(DeviceSensorType.Gyroscope, maximumSamplingFrequency: 30);
+        var document = Load("<script>" + SensorScript + "</script>", new BrowsingContextOptions { Sensors = new DeviceSensorsOptions { Provider = provider }, Permissions = GrantedSensorPermissions() });
+
+        Assert.Equal(0, gyroscope.RequestedSamplingFrequency);
+        Run(document, "window.slow = new Gyroscope({ frequency: 10 }); slow.start()");
+        Assert.Equal(10, gyroscope.RequestedSamplingFrequency);
+
+        Run(document, "window.fast = new Gyroscope({ frequency: 500 }); fast.start()");
+        Assert.Equal(30, gyroscope.RequestedSamplingFrequency);
+
+        Run(document, "fast.stop()");
+        Assert.Equal(10, gyroscope.RequestedSamplingFrequency);
+
+        Run(document, "slow.stop()");
+        Assert.Equal(0, gyroscope.RequestedSamplingFrequency);
+    }
+
+    [Fact]
+    public void AmbientLightSensor_RoundsTheIlluminanceAndDiscardsTheSmallChanges()
+    {
+        var clock = new FakeTimeProvider();
+        var provider = new DeviceSensorProvider();
+        var light = provider.AddSensor(DeviceSensorType.AmbientLight);
+        var document = Load("<script>" + SensorScript + "window.describe = s => s.illuminance; startSensor(new AmbientLightSensor());</script>", new BrowsingContextOptions { Sensors = new DeviceSensorsOptions { Provider = provider }, Permissions = GrantedSensorPermissions(), TimeProvider = clock });
+        Run(document);
+
+        foreach (var illuminance in (ReadOnlySpan<double>)[127, 165, 24, 35, 49])
+        {
+            light.Update(DeviceSensorReading.FromIlluminance(illuminance));
+            Run(document);
+
+            // The readings are reported at most at the frequency of the sensor (5 Hz by default)
+            clock.Advance(TimeSpan.FromSeconds(1));
+            Run(document);
+        }
+
+        Assert.Equal("activate|150|0|50", Run(document, "done()"));
+    }
+
+    [Fact]
+    public void Sensor_HiddenDocument_GetsTheReadingWhenItBecomesVisible()
+    {
+        var provider = new DeviceSensorProvider();
+        var accelerometer = provider.AddSensor(DeviceSensorType.Accelerometer);
+        var document = Load("<script>" + SensorScript + "startSensor(new Accelerometer());</script>", new BrowsingContextOptions { Sensors = new DeviceSensorsOptions { Provider = provider }, Permissions = GrantedSensorPermissions() });
+        Run(document);
+
+        document.BrowsingContext!.IsVisible = false;
+        Run(document);
+        accelerometer.Update(DeviceSensorReading.FromXyz(1, 2, 3));
+        Assert.Equal("activate", Run(document, "done()"));
+
+        document.BrowsingContext.IsVisible = true;
+        Run(document);
+        Assert.Equal("activate|1,2,3", Run(document, "done()"));
+    }
+
+    [Fact]
+    public void Sensor_NotAllowedByPermissionsPolicy_ThrowsSecurityError()
+    {
+        var document = Load("""
+            <iframe allow="gyroscope 'none'" srcdoc="<p>"></iframe>
+            <script>
+              window.onload = () => {
+                try {
+                  new (document.querySelector('iframe').contentWindow.Gyroscope)();
+                  document.title = 'created';
+                } catch (e) {
+                  document.title = e.name;
+                }
+              };
+            </script>
+            """);
+
+        Assert.Equal("SecurityError", Run(document));
+    }
+
+    [Fact]
+    public void OrientationSensor_QuaternionAndRotationMatrix()
+    {
+        var provider = new DeviceSensorProvider();
+        var orientation = provider.AddSensor(DeviceSensorType.RelativeOrientation);
+        orientation.Update(DeviceSensorReading.FromEulerAngles(alpha: 0, beta: -180, gamma: 0));
+        var document = Load("<script>" + SensorScript + "window.describe = s => s.quaternion.map(Math.round).join(); startSensor(new RelativeOrientationSensor());</script>", new BrowsingContextOptions { Sensors = new DeviceSensorsOptions { Provider = provider }, Permissions = GrantedSensorPermissions() });
+
+        Assert.Equal("activate|-1,0,0,0", Run(document, "done()"));
+        Assert.Equal("true,1,0,0,0,0,-1,0,0,0,0,-1,0,0,0,0,1", Run(document, """
+            const matrix = new Float64Array(16);
+            sensor.populateMatrix(matrix);
+            document.title = [sensor.quaternion === sensor.quaternion, ...Array.from(matrix, Math.round)].join();
+            """));
+        Assert.Equal("TypeError", Run(document, "try { sensor.populateMatrix(new Float32Array(15)); } catch (e) { document.title = e.name; }"));
+    }
+
+    // Device orientation and motion events
+
+    [Fact]
+    public void DeviceOrientation_FiresTheEventsWithTheReadings()
+    {
+        #region WebPlatform_DeviceOrientation
+        var sensors = new DeviceSensorProvider();
+
+        // The deviceorientation event reads the relative orientation sensor, as Euler angles in degrees
+        var orientation = sensors.AddSensor(DeviceSensorType.RelativeOrientation);
+        #endregion
+
+        var document = Load("""
+            <script>
+              window.log = [];
+              window.ondeviceorientation = e => log.push([e.alpha, e.beta, e.gamma, e.absolute].join());
+              window.done = () => document.title = log.join('|');
+            </script>
+            """, new BrowsingContextOptions { Sensors = new DeviceSensorsOptions { Provider = sensors }, Permissions = GrantedSensorPermissions() });
+
+        orientation.Update(DeviceSensorReading.FromEulerAngles(alpha: 1.23, beta: 2.34, gamma: 3.46));
+        Run(document);
+        orientation.Update(DeviceSensorReading.FromEulerAngles(alpha: 1.21, beta: 2.33, gamma: 3.46));
+        Run(document);
+        orientation.Update(DeviceSensorReading.FromEulerAngles(alpha: 10, beta: 20, gamma: 30));
+        Run(document);
+
+        Assert.Equal("1.2,2.3,3.5,false|10,20,30,false", Run(document, "done()"));
+    }
+
+    [Fact]
+    public void DeviceOrientation_WithoutSensor_FiresANullEvent()
+    {
+        var document = Load("<script>window.addEventListener('deviceorientation', e => document.title = [e.alpha, e.beta, e.gamma, e.absolute].join());</script>");
+
+        Assert.Equal(",,,false", Run(document));
+    }
+
+    [Fact]
+    public void DeviceMotion_FiresTheEventsWithTheReadings()
+    {
+        var clock = new FakeTimeProvider();
+        var sensors = new DeviceSensorProvider();
+        sensors.AddSensor(DeviceSensorType.Accelerometer).Update(DeviceSensorReading.FromXyz(1.23, 2, 3));
+        sensors.AddSensor(DeviceSensorType.LinearAcceleration).Update(DeviceSensorReading.FromXyz(0, 0.5, 0));
+        sensors.AddSensor(DeviceSensorType.Gyroscope).Update(DeviceSensorReading.FromXyz(Math.PI, 0, 0));
+        var document = Load("""
+            <script>
+              window.addEventListener('devicemotion', e => document.title = [
+                e.acceleration.x, e.acceleration.y, e.accelerationIncludingGravity.x, e.rotationRate.alpha, e.interval].join(), { once: true });
+            </script>
+            """, new BrowsingContextOptions { Sensors = new DeviceSensorsOptions { Provider = sensors }, Permissions = GrantedSensorPermissions(), TimeProvider = clock });
+
+        clock.Advance(TimeSpan.FromMilliseconds(16));
+
+        Assert.Equal("0,0.5,1.2,180,16", Run(document));
+    }
+
+    [Fact]
+    public async Task DeviceMotionEvent_RequestPermission()
+    {
+        var document = Load("<script>window.go = p => p.then(state => document.title = state, e => document.title = e.name);</script>");
+        Assert.Equal("NotAllowedError", await RunAsync(document, "go(DeviceMotionEvent.requestPermission())"));
+
+        var granted = Load("<script>window.go = p => p.then(state => document.title = state, e => document.title = e.name);</script>", new BrowsingContextOptions { Permissions = GrantedSensorPermissions() });
+        Assert.Equal("granted", await RunAsync(granted, "go(DeviceOrientationEvent.requestPermission(true))"));
+    }
+
+    [Fact]
+    public void CreateEvent_DeviceOrientationAndMotionEvents()
+    {
+        var document = Load("<script>document.title = [document.createEvent('DeviceOrientationEvent').alpha, document.createEvent('DeviceMotionEvent').interval].join();</script>");
+
+        Assert.Equal(",0", Run(document));
+    }
+
     [Fact]
     public void DisabledFeatures_HideTheApis()
     {
         var document = Load(
-            "<script>document.title = ['share' in navigator, 'vibrate' in navigator, 'geolocation' in navigator, typeof Notification, 'setAppBadge' in navigator, 'getBattery' in navigator, typeof BatteryManager, 'wakeLock' in navigator, typeof WakeLockSentinel, 'keyboard' in navigator, typeof Keyboard, 'orientation' in screen, typeof ScreenOrientation, 'virtualKeyboard' in navigator, typeof VirtualKeyboard, 'scheduling' in navigator, typeof Scheduling].join();</script>",
-            new BrowsingContextOptions { Features = new WebPlatformFeatures { WebShareEnabled = false, VibrationEnabled = false, GeolocationEnabled = false, NotificationsEnabled = false, BadgingEnabled = false, BatteryStatusEnabled = false, WakeLockEnabled = false, KeyboardLockEnabled = false, KeyboardMapEnabled = false, ScreenOrientationEnabled = false, VirtualKeyboardEnabled = false, InputPendingEnabled = false } });
+            "<script>document.title = ['share' in navigator, 'vibrate' in navigator, 'geolocation' in navigator, typeof Notification, 'setAppBadge' in navigator, 'getBattery' in navigator, typeof BatteryManager, 'wakeLock' in navigator, typeof WakeLockSentinel, 'keyboard' in navigator, typeof Keyboard, 'orientation' in screen, typeof ScreenOrientation, 'virtualKeyboard' in navigator, typeof VirtualKeyboard, 'scheduling' in navigator, typeof Scheduling, typeof Accelerometer, 'ondevicemotion' in window].join();</script>",
+            new BrowsingContextOptions { Features = new WebPlatformFeatures { WebShareEnabled = false, VibrationEnabled = false, GeolocationEnabled = false, NotificationsEnabled = false, BadgingEnabled = false, BatteryStatusEnabled = false, WakeLockEnabled = false, KeyboardLockEnabled = false, KeyboardMapEnabled = false, ScreenOrientationEnabled = false, VirtualKeyboardEnabled = false, InputPendingEnabled = false, SensorsEnabled = false, DeviceOrientationEnabled = false } });
 
-        Assert.Equal("false,false,false,undefined,false,false,undefined,false,undefined,false,undefined,false,undefined,false,undefined,false,undefined", Run(document));
+        Assert.Equal("false,false,false,undefined,false,false,undefined,false,undefined,false,undefined,false,undefined,false,undefined,false,undefined,undefined,false", Run(document));
     }
 }

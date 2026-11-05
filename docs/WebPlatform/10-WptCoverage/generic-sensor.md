@@ -9,22 +9,15 @@ description: "The results of the web-platform-tests of generic-sensor, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 3 | 3 | – |
+| [Stable](#stable-tests) | 3 | 3 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **0** | **3** | **3** | **–** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **REQUIRES**: 3
-  - `hardware`: 3
+| **All** | **3** | **3** | **0** | **100%** |
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`SensorErrorEvent-constructor.https.html`](https://wpt.fyi/results/generic-sensor/SensorErrorEvent-constructor.https.html) | Disabled | – | REQUIRES(hardware) | Generic Sensor API |
-| [`generic-sensor-permission.https.html`](https://wpt.fyi/results/generic-sensor/generic-sensor-permission.https.html) | Disabled | – | REQUIRES(hardware) | Generic Sensor API |
-| [`idlharness.https.window.js`](https://wpt.fyi/results/generic-sensor/idlharness.https.window.js) | Disabled | – | REQUIRES(hardware) | Generic Sensor API |
+| [`SensorErrorEvent-constructor.https.html`](https://wpt.fyi/results/generic-sensor/SensorErrorEvent-constructor.https.html) | Pass | 2 / 2 |  |  |
+| [`generic-sensor-permission.https.html`](https://wpt.fyi/results/generic-sensor/generic-sensor-permission.https.html) | Pass | 8 / 8 |  |  |
+| [`idlharness.https.window.js`](https://wpt.fyi/results/generic-sensor/idlharness.https.window.js) | Pass | 36 / 36 |  |  |

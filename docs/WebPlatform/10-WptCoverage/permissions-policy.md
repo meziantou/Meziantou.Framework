@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of permissions-policy, and w
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 41 | 94 | 0 | 44% |
+| [Stable](#stable-tests) | 43 | 94 | 0 | 46% |
 | [Tentative](#tentative-tests) | 14 | 23 | 0 | 61% |
 | [Reftests](#reftests) | 0 | 1 | 0 | 0% |
-| **All** | **55** | **118** | **0** | **47%** |
+| **All** | **57** | **118** | **0** | **48%** |
 
 ## Failure reasons
 
@@ -20,7 +20,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 1
 - **TEST BUG**: 10
-- **NOT IMPLEMENTED**: 51
+- **NOT IMPLEMENTED**: 49
 - **TEST RUNNER**: 1
 
 ## Stable tests
@@ -94,8 +94,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`reporting/encrypted-media-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/encrypted-media-reporting.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Encrypted Media Extensions (`navigator.requestMediaKeySystemAccess()`) |
 | [`reporting/fullscreen-report-only.html`](https://wpt.fyi/results/permissions-policy/reporting/fullscreen-report-only.html) | Pass | 1 / 1 |  |  |
 | [`reporting/fullscreen-reporting.html`](https://wpt.fyi/results/permissions-policy/reporting/fullscreen-reporting.html) | Pass | 1 / 1 |  |  |
-| [`reporting/generic-sensor-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/generic-sensor-report-only.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the Generic Sensor API (`Accelerometer`, `Gyroscope`, `Magnetometer`...) |
-| [`reporting/generic-sensor-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/generic-sensor-reporting.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the Generic Sensor API (`Accelerometer`, `Gyroscope`, `Magnetometer`...) |
+| [`reporting/generic-sensor-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/generic-sensor-report-only.https.html) | Pass | 1 / 1 |  |  |
+| [`reporting/generic-sensor-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/generic-sensor-reporting.https.html) | Pass | 1 / 1 |  |  |
 | [`reporting/geolocation-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/geolocation-report-only.https.html) | Fail | 0 / 1 | TEST BUG | the test expects a position but does not grant the `geolocation` permission (`test_driver.set_permission()`): the report is checked, then `getCurrentPosition()` fails with `PERMISSION_DENIED` |
 | [`reporting/geolocation-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/geolocation-reporting.https.html) | Pass | 1 / 1 |  |  |
 | [`reporting/microphone-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/microphone-report-only.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Media Capture and Streams: the test uses the `camera`/`microphone` features with `navigator.mediaDevices.getUserMedia()` (and `/mediacapture-streams/permission-helper.js`, which is not fetched); the reports of the features that the library implements are tested by `reporting/sync-xhr-report-only.html` |

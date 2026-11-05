@@ -19,7 +19,10 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
         {
             ["AbortController"] = Binding_AbortController<TAdapter, TValue>.Binding,
             ["AbortSignal"] = Binding_AbortSignal<TAdapter, TValue>.Binding,
+            ["AbsoluteOrientationSensor"] = Binding_AbsoluteOrientationSensor<TAdapter, TValue>.Binding,
             ["AbstractRange"] = Binding_AbstractRange<TAdapter, TValue>.Binding,
+            ["Accelerometer"] = Binding_Accelerometer<TAdapter, TValue>.Binding,
+            ["AmbientLightSensor"] = Binding_AmbientLightSensor<TAdapter, TValue>.Binding,
             ["AnalyserNode"] = Binding_AnalyserNode<TAdapter, TValue>.Binding,
             ["Animation"] = Binding_Animation<TAdapter, TValue>.Binding,
             ["AnimationEffect"] = Binding_AnimationEffect<TAdapter, TValue>.Binding,
@@ -194,6 +197,10 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["DedicatedWorkerGlobalScope"] = Binding_DedicatedWorkerGlobalScope<TAdapter, TValue>.Binding,
             ["DelayNode"] = Binding_DelayNode<TAdapter, TValue>.Binding,
             ["DelegatedInkTrailPresenter"] = Binding_DelegatedInkTrailPresenter<TAdapter, TValue>.Binding,
+            ["DeviceMotionEvent"] = Binding_DeviceMotionEvent<TAdapter, TValue>.Binding,
+            ["DeviceMotionEventAcceleration"] = Binding_DeviceMotionEventAcceleration<TAdapter, TValue>.Binding,
+            ["DeviceMotionEventRotationRate"] = Binding_DeviceMotionEventRotationRate<TAdapter, TValue>.Binding,
+            ["DeviceOrientationEvent"] = Binding_DeviceOrientationEvent<TAdapter, TValue>.Binding,
             ["DevicePosture"] = Binding_DevicePosture<TAdapter, TValue>.Binding,
             ["Document"] = Binding_Document<TAdapter, TValue>.Binding,
             ["DocumentFragment"] = Binding_DocumentFragment<TAdapter, TValue>.Binding,
@@ -238,6 +245,8 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["GeolocationCoordinates"] = Binding_GeolocationCoordinates<TAdapter, TValue>.Binding,
             ["GeolocationPosition"] = Binding_GeolocationPosition<TAdapter, TValue>.Binding,
             ["GeolocationPositionError"] = Binding_GeolocationPositionError<TAdapter, TValue>.Binding,
+            ["GravitySensor"] = Binding_GravitySensor<TAdapter, TValue>.Binding,
+            ["Gyroscope"] = Binding_Gyroscope<TAdapter, TValue>.Binding,
             ["HTMLAllCollection"] = Binding_HTMLAllCollection<TAdapter, TValue>.Binding,
             ["HTMLAnchorElement"] = Binding_HTMLAnchorElement<TAdapter, TValue>.Binding,
             ["HTMLAreaElement"] = Binding_HTMLAreaElement<TAdapter, TValue>.Binding,
@@ -356,9 +365,11 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["LayoutShift"] = Binding_LayoutShift<TAdapter, TValue>.Binding,
             ["LayoutShiftAttribution"] = Binding_LayoutShiftAttribution<TAdapter, TValue>.Binding,
             ["LayoutWorkletGlobalScope"] = Binding_LayoutWorkletGlobalScope<TAdapter, TValue>.Binding,
+            ["LinearAccelerationSensor"] = Binding_LinearAccelerationSensor<TAdapter, TValue>.Binding,
             ["Location"] = Binding_Location<TAdapter, TValue>.Binding,
             ["Lock"] = Binding_Lock<TAdapter, TValue>.Binding,
             ["LockManager"] = Binding_LockManager<TAdapter, TValue>.Binding,
+            ["Magnetometer"] = Binding_Magnetometer<TAdapter, TValue>.Binding,
             ["ManagedMediaSource"] = Binding_ManagedMediaSource<TAdapter, TValue>.Binding,
             ["ManagedSourceBuffer"] = Binding_ManagedSourceBuffer<TAdapter, TValue>.Binding,
             ["MathMLAnchorElement"] = Binding_MathMLAnchorElement<TAdapter, TValue>.Binding,
@@ -400,6 +411,7 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["OfflineAudioContext"] = Binding_OfflineAudioContext<TAdapter, TValue>.Binding,
             ["OffscreenCanvas"] = Binding_OffscreenCanvas<TAdapter, TValue>.Binding,
             ["OffscreenCanvasRenderingContext2D"] = Binding_OffscreenCanvasRenderingContext2D<TAdapter, TValue>.Binding,
+            ["OrientationSensor"] = Binding_OrientationSensor<TAdapter, TValue>.Binding,
             ["Origin"] = Binding_Origin<TAdapter, TValue>.Binding,
             ["OscillatorNode"] = Binding_OscillatorNode<TAdapter, TValue>.Binding,
             ["PageRevealEvent"] = Binding_PageRevealEvent<TAdapter, TValue>.Binding,
@@ -440,9 +452,11 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["ProcessingInstruction"] = Binding_ProcessingInstruction<TAdapter, TValue>.Binding,
             ["ProgressEvent"] = Binding_ProgressEvent<TAdapter, TValue>.Binding,
             ["PromiseRejectionEvent"] = Binding_PromiseRejectionEvent<TAdapter, TValue>.Binding,
+            ["ProximitySensor"] = Binding_ProximitySensor<TAdapter, TValue>.Binding,
             ["QuotaExceededError"] = Binding_QuotaExceededError<TAdapter, TValue>.Binding,
             ["RadioNodeList"] = Binding_RadioNodeList<TAdapter, TValue>.Binding,
             ["Range"] = Binding_Range<TAdapter, TValue>.Binding,
+            ["RelativeOrientationSensor"] = Binding_RelativeOrientationSensor<TAdapter, TValue>.Binding,
             ["ReportingObserver"] = Binding_ReportingObserver<TAdapter, TValue>.Binding,
             ["ResizeObserver"] = Binding_ResizeObserver<TAdapter, TValue>.Binding,
             ["ResizeObserverEntry"] = Binding_ResizeObserverEntry<TAdapter, TValue>.Binding,
@@ -550,6 +564,8 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["ScrollTimeline"] = Binding_ScrollTimeline<TAdapter, TValue>.Binding,
             ["SecurityPolicyViolationEvent"] = Binding_SecurityPolicyViolationEvent<TAdapter, TValue>.Binding,
             ["Selection"] = Binding_Selection<TAdapter, TValue>.Binding,
+            ["Sensor"] = Binding_Sensor<TAdapter, TValue>.Binding,
+            ["SensorErrorEvent"] = Binding_SensorErrorEvent<TAdapter, TValue>.Binding,
             ["ServiceWorker"] = Binding_ServiceWorker<TAdapter, TValue>.Binding,
             ["ServiceWorkerContainer"] = Binding_ServiceWorkerContainer<TAdapter, TValue>.Binding,
             ["ServiceWorkerGlobalScope"] = Binding_ServiceWorkerGlobalScope<TAdapter, TValue>.Binding,
@@ -602,6 +618,7 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["URL"] = Binding_URL<TAdapter, TValue>.Binding,
             ["URLPattern"] = Binding_URLPattern<TAdapter, TValue>.Binding,
             ["URLSearchParams"] = Binding_URLSearchParams<TAdapter, TValue>.Binding,
+            ["UncalibratedMagnetometer"] = Binding_UncalibratedMagnetometer<TAdapter, TValue>.Binding,
             ["UserActivation"] = Binding_UserActivation<TAdapter, TValue>.Binding,
             ["VTTCue"] = Binding_VTTCue<TAdapter, TValue>.Binding,
             ["VTTRegion"] = Binding_VTTRegion<TAdapter, TValue>.Binding,
@@ -736,6 +753,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Css.Om.SnapEventInit dictionaryCss_Om_SnapEventInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Css_Om_SnapEventInit(r, dictionaryCss_Om_SnapEventInit);
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.AccelerometerSensorOptions dictionaryDom_AccelerometerSensorOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_AccelerometerSensorOptions(r, dictionaryDom_AccelerometerSensorOptions);
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.AddEventListenerOptions dictionaryDom_AddEventListenerOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_AddEventListenerOptions(r, dictionaryDom_AddEventListenerOptions);
                 return true;
@@ -763,6 +783,12 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.CustomEventInit dictionaryDom_CustomEventInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_CustomEventInit(r, dictionaryDom_CustomEventInit);
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.DeviceMotionEventInit dictionaryDom_DeviceMotionEventInit:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_DeviceMotionEventInit(r, dictionaryDom_DeviceMotionEventInit);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.DeviceOrientationEventInit dictionaryDom_DeviceOrientationEventInit:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_DeviceOrientationEventInit(r, dictionaryDom_DeviceOrientationEventInit);
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.DocumentPolicyViolationReportBody dictionaryDom_DocumentPolicyViolationReportBody:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_DocumentPolicyViolationReportBody(r, dictionaryDom_DocumentPolicyViolationReportBody);
                 return true;
@@ -781,11 +807,17 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.FormDataEventInit dictionaryDom_FormDataEventInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_FormDataEventInit(r, dictionaryDom_FormDataEventInit);
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.GyroscopeSensorOptions dictionaryDom_GyroscopeSensorOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_GyroscopeSensorOptions(r, dictionaryDom_GyroscopeSensorOptions);
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.HashChangeEventInit dictionaryDom_HashChangeEventInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_HashChangeEventInit(r, dictionaryDom_HashChangeEventInit);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.IdbVersionChangeEventInit dictionaryDom_IdbVersionChangeEventInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_IdbVersionChangeEventInit(r, dictionaryDom_IdbVersionChangeEventInit);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.MagnetometerSensorOptions dictionaryDom_MagnetometerSensorOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MagnetometerSensorOptions(r, dictionaryDom_MagnetometerSensorOptions);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.MessageEventInit dictionaryDom_MessageEventInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MessageEventInit(r, dictionaryDom_MessageEventInit);
@@ -801,6 +833,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.NavigationReloadOptions dictionaryDom_NavigationReloadOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_NavigationReloadOptions(r, dictionaryDom_NavigationReloadOptions);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.OrientationSensorOptions dictionaryDom_OrientationSensorOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_OrientationSensorOptions(r, dictionaryDom_OrientationSensorOptions);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.PageRevealEventInit dictionaryDom_PageRevealEventInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_PageRevealEventInit(r, dictionaryDom_PageRevealEventInit);
@@ -834,6 +869,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.SecurityPolicyViolationEventInit dictionaryDom_SecurityPolicyViolationEventInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_SecurityPolicyViolationEventInit(r, dictionaryDom_SecurityPolicyViolationEventInit);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.SensorErrorEventInit dictionaryDom_SensorErrorEventInit:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_SensorErrorEventInit(r, dictionaryDom_SensorErrorEventInit);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.SharedWorkerOptions dictionaryDom_SharedWorkerOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_SharedWorkerOptions(r, dictionaryDom_SharedWorkerOptions);
@@ -1017,6 +1055,12 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.CookieStoreGetOptions dictionaryDom_CookieStoreGetOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_CookieStoreGetOptions(r, dictionaryDom_CookieStoreGetOptions);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.DeviceMotionEventAccelerationInit dictionaryDom_DeviceMotionEventAccelerationInit:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_DeviceMotionEventAccelerationInit(r, dictionaryDom_DeviceMotionEventAccelerationInit);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.DeviceMotionEventRotationRateInit dictionaryDom_DeviceMotionEventRotationRateInit:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_DeviceMotionEventRotationRateInit(r, dictionaryDom_DeviceMotionEventRotationRateInit);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.DomMatrix2DInit dictionaryDom_DomMatrix2DInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_DomMatrix2DInit(r, dictionaryDom_DomMatrix2DInit);
@@ -1261,6 +1305,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.ScrollOptions dictionaryDom_ScrollOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_ScrollOptions(r, dictionaryDom_ScrollOptions);
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.SensorOptions dictionaryDom_SensorOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_SensorOptions(r, dictionaryDom_SensorOptions);
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.SetHtmlOptions dictionaryDom_SetHtmlOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_SetHtmlOptions(r, dictionaryDom_SetHtmlOptions);
                 return true;
@@ -1411,6 +1458,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssNumericBaseType enumCss_TypedOm_CssNumericBaseType:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Css_TypedOm_CssNumericBaseType(enumCss_TypedOm_CssNumericBaseType));
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.AccelerometerLocalCoordinateSystem enumDom_AccelerometerLocalCoordinateSystem:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_AccelerometerLocalCoordinateSystem(enumDom_AccelerometerLocalCoordinateSystem));
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.AlignSetting enumDom_AlignSetting:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_AlignSetting(enumDom_AlignSetting));
                 return true;
@@ -1513,6 +1563,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.FullscreenNavigationUI enumDom_FullscreenNavigationUI:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_FullscreenNavigationUI(enumDom_FullscreenNavigationUI));
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.GyroscopeLocalCoordinateSystem enumDom_GyroscopeLocalCoordinateSystem:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_GyroscopeLocalCoordinateSystem(enumDom_GyroscopeLocalCoordinateSystem));
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.IdbCursorDirection enumDom_IdbCursorDirection:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_IdbCursorDirection(enumDom_IdbCursorDirection));
                 return true;
@@ -1542,6 +1595,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.LockMode enumDom_LockMode:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_LockMode(enumDom_LockMode));
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.MagnetometerLocalCoordinateSystem enumDom_MagnetometerLocalCoordinateSystem:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_MagnetometerLocalCoordinateSystem(enumDom_MagnetometerLocalCoordinateSystem));
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.MediaSessionAction enumDom_MediaSessionAction:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_MediaSessionAction(enumDom_MediaSessionAction));
@@ -1581,6 +1637,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.OrientationLockType enumDom_OrientationLockType:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_OrientationLockType(enumDom_OrientationLockType));
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.OrientationSensorLocalCoordinateSystem enumDom_OrientationSensorLocalCoordinateSystem:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_OrientationSensorLocalCoordinateSystem(enumDom_OrientationSensorLocalCoordinateSystem));
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.OrientationType enumDom_OrientationType:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_OrientationType(enumDom_OrientationType));

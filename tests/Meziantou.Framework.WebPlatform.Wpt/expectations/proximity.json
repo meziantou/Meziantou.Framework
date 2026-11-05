@@ -1,0 +1,16 @@
+{
+  "proximity/ProximitySensor-iframe-access.https.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "proximity/ProximitySensor.https.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "proximity/ProximitySensor_insecure_context.html": {
+    "total": 1
+  },
+  "proximity/idlharness.https.window.js": {
+    "total": 16
+  }
+}

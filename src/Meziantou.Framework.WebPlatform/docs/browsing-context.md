@@ -3365,8 +3365,8 @@ text).
 The APIs whose behavior depends on the device or on the user are answered by the host, with callbacks of
 `BrowsingContextOptions` (grouped in a nested options object for the newer APIs: `Badging`, `BatteryStatus`, `WakeLock`,
 `KeyboardLock`, `KeyboardMap`, `MediaSession`, `ScreenOrientation`, `VirtualKeyboard`, `ViewportSegments`,
-`ComputePressure`, `IdleDetection` and `DevicePosture`). Each one has a default that works without a host, and a flag of
-`WebPlatformFeatures` that hides it (see [Disabling features](#disabling-features)).
+`ComputePressure`, `IdleDetection`, `DevicePosture` and `Sensors`). Each one has a default that works without a host, and a
+flag of `WebPlatformFeatures` that hides it (see [Disabling features](#disabling-features)).
 
 - **Web Share** ([Web Share API](https://w3c.github.io/web-share/)): `navigator.share()` and `navigator.canShare()`, in
   secure contexts. The library checks the document (fully active, allowed by the `web-share` permissions policy, with a
@@ -3440,6 +3440,31 @@ The APIs whose behavior depends on the device or on the user are answered by the
   or an attribute of its metadata, its playback state, its position state, its action handlers, its capture states),
   and the host calls `MediaSession.HandleAction()` to run the handler of an action from a task. Not done: the artwork
   images are not fetched, and the media elements are not controlled when the page has no action handler.
+- **Sensors** ([Generic Sensor API](https://w3c.github.io/sensors/), [Accelerometer](https://w3c.github.io/accelerometer/),
+  [Gyroscope](https://w3c.github.io/gyroscope/), [Magnetometer](https://w3c.github.io/magnetometer/),
+  [Ambient Light Sensor](https://w3c.github.io/ambient-light/), [Orientation Sensor](https://w3c.github.io/orientation-sensor/),
+  [Proximity Sensor](https://w3c.github.io/proximity/)): `Accelerometer`, `LinearAccelerationSensor`, `GravitySensor`,
+  `Gyroscope`, `Magnetometer`, `UncalibratedMagnetometer`, `AmbientLightSensor`, `ProximitySensor`,
+  `AbsoluteOrientationSensor` and `RelativeOrientationSensor`, in the secure windows. They read the sensors of the
+  `DeviceSensorProvider` of `Sensors.Provider`: `AddSensor()` adds a sensor (it may not work: `canProvideReadings`, and
+  has sampling frequency bounds), `DeviceSensor.Update()` pushes a reading from any thread. The constructors throw a
+  `SecurityError` when the permissions policy (`accelerometer`, `gyroscope`, `magnetometer`, `ambient-light-sensor`,
+  `proximity-sensor`) does not allow the document; `start()` requests the permissions of the sensor type, then connects to
+  the sensor of the device (`NotAllowedError`, `NotReadableError`). The frequency is clamped to the bounds of the sensor
+  (1 to 60 Hz by default, 5 Hz when the page asks for none), the `reading` events are fired at most at that frequency, the
+  readings are quantized (0.1 m/s², 0.1 deg/s as Chromium, 50 lux with a threshold of 25 lux), and they are only
+  delivered while the document is visible and same origin with the focused frame (a hidden document gets the latest
+  reading when it becomes visible). `populateMatrix()` fills a `Float32Array`, a `Float64Array` or a `DOMMatrix`. The
+  `screen` reference frame remaps the readings with the angle of `screen.orientation`. Without
+  provider, the sensors fail to start with a `NotReadableError`.
+- **Device orientation and motion** ([DeviceOrientation Event](https://w3c.github.io/deviceorientation/)):
+  `deviceorientation`, `deviceorientationabsolute` and `devicemotion` (and their event handlers), `DeviceOrientationEvent`,
+  `DeviceMotionEvent` and their `requestPermission()`, read from the relative orientation (or absolute, as a fallback),
+  absolute orientation, linear acceleration, accelerometer and gyroscope sensors of the same provider. As in Chromium, an
+  event is fired when a listener is added (with null values without working sensor or without the `accelerometer` and
+  `gyroscope` permissions), then the orientation events are fired when the orientation changes and the motion events every
+  16 ms while the sensors get new readings; the motion event always has its acceleration and rotation rate objects. The
+  values are rounded to 0.1 degree, 0.1 m/s² and 0.1 deg/s, and a hidden document gets no event.
 - **Network Information** ([Network Information API](https://wicg.github.io/netinfo/)): `navigator.connection` (the
   same `NetworkInformation` object at each read) in the windows and the workers, read from the
   `NetworkInformationProvider` of `NetworkInformation.Provider`. Set its `Status` (a `NetworkConnectionStatus`: `Type`,
@@ -4130,6 +4155,8 @@ using var context = new BrowsingContext(new BrowsingContextOptions
 | `MediaSessionEnabled` | The [Media Session API](#device-apis): `navigator.mediaSession`, `MediaSession`, `MediaMetadata`, `ChapterInformation` |
 | `PageLifecycleEnabled` | The [Page Lifecycle API](#page-lifecycle): `document.onfreeze`, `document.onresume`, `document.wasDiscarded` (the documents are frozen whatever its value) |
 | `DocumentPolicyEnabled` | [Document Policy](#document-policy): the headers are ignored and `HTMLIFrameElement.policy` is hidden |
+| `SensorsEnabled` | The [sensors](#device-apis): `Sensor`, `SensorErrorEvent`, `Accelerometer`, `LinearAccelerationSensor`, `GravitySensor`, `Gyroscope`, `Magnetometer`, `UncalibratedMagnetometer`, `AmbientLightSensor`, `ProximitySensor`, `OrientationSensor`, `AbsoluteOrientationSensor`, `RelativeOrientationSensor` |
+| `DeviceOrientationEnabled` | The [device orientation and motion events](#device-apis): `DeviceOrientationEvent`, `DeviceMotionEvent`, `DeviceMotionEventAcceleration`, `DeviceMotionEventRotationRate`, `ondeviceorientation`, `ondeviceorientationabsolute`, `ondevicemotion` |
 | `NetworkInformationEnabled` | The [Network Information API](#device-apis): `navigator.connection`, `NetworkInformation` |
 | `DeviceMemoryEnabled` | The [Device Memory API](#device-apis): `navigator.deviceMemory` |
 | `GlobalPrivacyControlEnabled` | [Global Privacy Control](#device-apis): `navigator.globalPrivacyControl` (the `Sec-GPC` header depends on `BrowsingContextOptions.GlobalPrivacyControl` only) |

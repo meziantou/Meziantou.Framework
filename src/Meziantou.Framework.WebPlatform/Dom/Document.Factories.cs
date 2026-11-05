@@ -43,6 +43,8 @@ public partial class Document
             "beforeunloadevent" => BeforeUnloadEvent.CreateUninitializedBeforeUnloadEvent(),
             "compositionevent" => CompositionEvent.CreateUninitializedCompositionEvent(),
             "customevent" => CustomEvent.CreateUninitializedCustomEvent(),
+            "devicemotionevent" => DeviceMotionEvent.CreateUninitializedDeviceMotionEvent(),
+            "deviceorientationevent" => DeviceOrientationEvent.CreateUninitializedDeviceOrientationEvent(),
             "dragevent" => DragEvent.CreateUninitializedDragEvent(),
             "event" or "events" or "htmlevents" or "svgevents" => Event.CreateUninitialized(),
             "focusevent" => FocusEvent.CreateUninitializedFocusEvent(),
@@ -54,7 +56,7 @@ public partial class Document
             "textevent" => TextEvent.CreateUninitializedTextEvent(),
             "uievent" or "uievents" => UIEvent.CreateUninitializedUIEvent(),
 
-            // Device motion/orientation and touch events are not supported, as there are no such devices
+            // Touch events are not supported, as there is no touch screen
             _ => throw DomException.NotSupported($"The event interface '{@interface}' is not supported"),
         };
 

@@ -132,10 +132,7 @@
     "total": 1
   },
   "layout-instability/pointerdown-becomes-scroll.html": {
-    "total": 1,
-    "failures": {
-      "Shift in pointerdown reported when it becomes a scroll.": "FAIL"
-    }
+    "total": 1
   },
   "layout-instability/pointerdown-becomes-tap.html": {
     "total": 1

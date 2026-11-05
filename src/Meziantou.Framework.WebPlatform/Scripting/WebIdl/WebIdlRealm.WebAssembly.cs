@@ -276,11 +276,12 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
 
         var importObject = ToWasmImportObject(arguments, 1);
         var (promise, resolve, reject) = CreateWasmPromise();
+        var incumbent = GetWasmIncumbentGlobal();
 
         // instantiate(Module moduleObject, optional object importObject)
         if (Unwrap(arguments[0]) is WebAssemblyModuleObject moduleObject)
         {
-            InstantiateWasmModuleAsync(moduleObject, importObject, instance => Adapter.Call(resolve, Adapter.Undefined, [instance]), error => Adapter.Call(reject, Adapter.Undefined, [error]));
+            InstantiateWasmModuleAsync(moduleObject, importObject, incumbent, instance => Adapter.Call(resolve, Adapter.Undefined, [instance]), error => Adapter.Call(reject, Adapter.Undefined, [error]));
             return promise;
         }
 
@@ -289,7 +290,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         var options = ToWasmCompileOptions(arguments, 2);
         CompileWasmModuleAsync(bytes, options, module =>
         {
-            InstantiateWasmModuleAsync(module, importObject, instance =>
+            InstantiateWasmModuleAsync(module, importObject, incumbent, instance =>
             {
                 // WebAssemblyInstantiatedSource
                 var result = CreateObject();
@@ -314,12 +315,12 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
     }
 
     /// <summary>https://webassembly.github.io/spec/js-api/#asynchronously-instantiate-a-webassembly-module</summary>
-    private void InstantiateWasmModuleAsync(WebAssemblyModuleObject moduleObject, TValue? importObject, Action<TValue> onSuccess, Action<TValue> onError)
+    private void InstantiateWasmModuleAsync(WebAssemblyModuleObject moduleObject, TValue? importObject, GlobalScope? incumbent, Action<TValue> onSuccess, Action<TValue> onError)
     {
         IReadOnlyList<WasmExtern> imports;
         try
         {
-            imports = ReadWasmImports(moduleObject, importObject);
+            imports = ReadWasmImports(moduleObject, importObject, incumbent);
         }
         catch (Exception ex)
         {
@@ -356,8 +357,11 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
     // Instantiation
     // ----------------------------------------------------------------------------------------------------------------
 
-    /// <summary>https://webassembly.github.io/spec/js-api/#read-the-imports</summary>
-    internal IReadOnlyList<WasmExtern> ReadWasmImports(WebAssemblyModuleObject moduleObject, TValue? importObject)
+    /// <summary>
+    /// https://webassembly.github.io/spec/js-api/#read-the-imports: <paramref name="incumbent"/> is the incumbent global object
+    /// of the call that instantiates the module, stored by the host functions it creates.
+    /// </summary>
+    internal IReadOnlyList<WasmExtern> ReadWasmImports(WebAssemblyModuleObject moduleObject, TValue? importObject, GlobalScope? incumbent)
     {
         var moduleImports = moduleObject.Module.Imports;
         if (moduleImports.Count > 0 && importObject is null)
@@ -381,7 +385,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
 
                     if (!state.FunctionAddresses.TryGetValue(v, out var function))
                     {
-                        function = CreateWasmHostFunction(v, functionType);
+                        function = CreateWasmHostFunction(v, functionType, incumbent);
                         state.FunctionNames.AddOrUpdate(function, functionIndex.ToString(System.Globalization.CultureInfo.InvariantCulture));
                     }
 
@@ -622,18 +626,24 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         };
     }
 
-    /// <summary>https://webassembly.github.io/spec/js-api/#create-a-host-function</summary>
-    private WasmFunction CreateWasmHostFunction(TValue function, WasmFunctionType type)
+    /// <summary>
+    /// https://webassembly.github.io/spec/js-api/#create-a-host-function: the function stores the incumbent settings object
+    /// (<paramref name="incumbent"/>), with which the callback runs.
+    /// </summary>
+    private WasmFunction CreateWasmHostFunction(TValue function, WasmFunctionType type, GlobalScope? incumbent = null)
     {
         var store = WebAssemblyState.Store;
-        return WasmCall(() => store.CreateHostFunction(type, function, (arguments, results) => RunWasmHostFunction(function, type, arguments, results)));
+        return WasmCall(() => store.CreateHostFunction(type, function, (arguments, results) => RunWasmHostFunction(function, type, incumbent, arguments, results)));
     }
+
+    /// <summary>The incumbent global object (https://html.spec.whatwg.org/multipage/webappapis.html#incumbent), or null when the host does not track it.</summary>
+    internal GlobalScope? GetWasmIncumbentGlobal() => Agent.Host is IWebIdlIncumbentHost host ? host.GetIncumbentGlobal() : null;
 
     /// <summary>
     /// https://webassembly.github.io/spec/js-api/#run-a-host-function: an exception thrown by the function is thrown in
     /// WebAssembly, as an exception of the JavaScript exception tag (or as the exception of an Exception object).
     /// </summary>
-    private void RunWasmHostFunction(TValue function, WasmFunctionType type, ReadOnlySpan<WasmValue> arguments, Span<WasmValue> results)
+    private void RunWasmHostFunction(TValue function, WasmFunctionType type, GlobalScope? incumbent, ReadOnlySpan<WasmValue> arguments, Span<WasmValue> results)
     {
         var callbackRealm = Agent.GetAssociatedRealm(function) ?? this;
         TValue value;
@@ -648,7 +658,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
                 jsArguments[i] = ToJsValue(arguments[i]);
             }
 
-            var ret = InvokeWasmHostFunction(callbackRealm, function, jsArguments);
+            var ret = InvokeWasmHostFunction(callbackRealm, function, incumbent, jsArguments);
             var resultTypes = type.Results;
             if (resultTypes.Length == 1)
             {
@@ -689,12 +699,14 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
     }
 
     /// <summary>Calls the JavaScript function of a host function (prepare to run script and to run a callback).</summary>
-    private TValue InvokeWasmHostFunction(WebIdlRealm<TAdapter, TValue> callbackRealm, TValue function, TValue[] arguments)
+    private TValue InvokeWasmHostFunction(WebIdlRealm<TAdapter, TValue> callbackRealm, TValue function, GlobalScope? incumbent, TValue[] arguments)
     {
         if (Agent.Host.IsScriptRunning)
             return Adapter.Call(function, Adapter.Undefined, arguments);
 
-        // A start function called by an instantiation of a task (WebAssembly.instantiate)
+        // A start function called by an instantiation of a task (WebAssembly.instantiate): no script is on the stack, the
+        // incumbent is the one stored by the function ("prepare to run a callback with stored settings")
+        using var incumbentScope = incumbent is not null && Agent.Host is IWebIdlIncumbentHost host ? host.EnterBackupIncumbent(incumbent) : null;
         return callbackRealm.Run(() => InvokeCallback(function, Adapter.Undefined, arguments, CallbackBehavior.RunWhenInactive));
     }
 
@@ -947,6 +959,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             ]);
         }
 
+        var incumbent = GetWasmIncumbentGlobal();
         var onBytes = Adapter.CreateFunction("", 1, (_, args) =>
         {
             byte[] bytes;
@@ -968,7 +981,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
                     return;
                 }
 
-                InstantiateWasmModuleAsync(module, importObject, instance =>
+                InstantiateWasmModuleAsync(module, importObject, incumbent, instance =>
                 {
                     var result = CreateObject();
                     SetMember(result, "module", GetWrapper(module));

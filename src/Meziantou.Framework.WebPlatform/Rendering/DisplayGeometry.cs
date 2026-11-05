@@ -162,7 +162,17 @@ internal readonly record struct RoundedRect(PhysicalRect Rect, BorderRadii Radii
             Shrink(Radii.TopRight, widths.Right, widths.Top),
             Shrink(Radii.BottomRight, widths.Right, widths.Bottom),
             Shrink(Radii.BottomLeft, widths.Left, widths.Bottom));
-        return new RoundedRect(rect, radii) { Contour = Contour, HasAdjustedOutsets = HasAdjustedOutsets };
+        var contour = Contour;
+        if (contour is null && rect.Width > 0 && rect.Height > 0 && HasOverflowingRadii(rect, radii))
+        {
+            // The inner radii are not reduced to fit the rectangle (e.g. a corner whose radius is the size of the border box,
+            // whose inner curve starts beyond the opposite side of the padding box): the curves are clipped to the rectangle, as
+            // the corners of the contour path (https://drafts.csswg.org/css-borders-4/#border-contour-path), where reducing
+            // all the radii of the path (FromFittedRoundedRect) would move the curves away from the curves of the outer edge
+            contour = new CornerContour(rect, radii, CornerShapes.Round);
+        }
+
+        return new RoundedRect(rect, radii) { Contour = contour, HasAdjustedOutsets = HasAdjustedOutsets };
 
         // An outset of a rounded corner grows its radii; an outset of a square corner keeps it square
         static (double X, double Y) Shrink((double X, double Y) radius, double x, double y)
@@ -197,6 +207,20 @@ internal readonly record struct RoundedRect(PhysicalRect Rect, BorderRadii Radii
 
     /// <summary>Returns the rounded rectangle moved by an offset.</summary>
     public RoundedRect Translate(PhysicalOffset offset) => this with { Rect = Rect.Translate(offset), Contour = Contour?.Translate(offset) };
+
+    /// <summary>Whether the radii of two adjacent corners are larger than the side of the rectangle between them.</summary>
+    public static bool HasOverflowingRadii(PhysicalRect rect, BorderRadii radii)
+    {
+        const double Epsilon = 1e-6;
+        return Width(radii.TopLeft) + Width(radii.TopRight) > rect.Width + Epsilon
+            || Width(radii.BottomLeft) + Width(radii.BottomRight) > rect.Width + Epsilon
+            || Height(radii.TopLeft) + Height(radii.BottomLeft) > rect.Height + Epsilon
+            || Height(radii.TopRight) + Height(radii.BottomRight) > rect.Height + Epsilon;
+
+        static double Width((double X, double Y) radius) => IsSquare(radius) ? 0 : radius.X;
+
+        static double Height((double X, double Y) radius) => IsSquare(radius) ? 0 : radius.Y;
+    }
 
     private static bool IsSquare((double X, double Y) radius) => radius.X <= 0 || radius.Y <= 0;
 }

@@ -11,14 +11,13 @@ description: "The results of the web-platform-tests of focus, and why the tests 
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 31 | 39 | 0 | 79% |
 | Tentative | 0 | 0 | 0 | – |
-| [Reftests](#reftests) | 1 | 2 | 0 | 50% |
-| **All** | **32** | **41** | **0** | **78%** |
+| [Reftests](#reftests) | 2 | 2 | 0 | 100% |
+| **All** | **33** | **41** | **0** | **80%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
 - **TEST BUG**: 8
 
 ## Stable tests
@@ -69,5 +68,5 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 | Test | Result | Variants | Kind | Description |
 |---|---|--:|---|---|
-| [`focus-large-element-in-overflow-hidden-container.html`](https://wpt.fyi/results/focus/focus-large-element-in-overflow-hidden-container.html) | Fail | 0 / 1 | BUG | `focus()` scrolls the target into view with the `center` alignment in the block axis, as HTML says: the `overflow: hidden` container (12px) is scrolled by 1.5px to center the target (15px), which shows a row of 3 red pixels of the bottom of the target; the browsers do not scroll a scrolling box that the target already covers |
+| [`focus-large-element-in-overflow-hidden-container.html`](https://wpt.fyi/results/focus/focus-large-element-in-overflow-hidden-container.html) | Pass | 1 / 1 |  |  |
 | [`focus-visible-element-in-overflow-hidden-container.html`](https://wpt.fyi/results/focus/focus-visible-element-in-overflow-hidden-container.html) | Pass | 1 / 1 |  |  |

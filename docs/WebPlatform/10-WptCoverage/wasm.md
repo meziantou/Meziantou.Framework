@@ -9,16 +9,15 @@ description: "The results of the web-platform-tests of wasm, and why the tests t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 325 | 342 | 0 | 95% |
+| [Stable](#stable-tests) | 326 | 342 | 0 | 95% |
 | [Tentative](#tentative-tests) | 15 | 70 | 0 | 21% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **340** | **412** | **0** | **83%** |
+| **All** | **341** | **412** | **0** | **83%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
 - **TEST BUG**: 4
 - **NOT IMPLEMENTED**: 67
 
@@ -294,7 +293,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`jsapi/constructor/validate.any.js`](https://wpt.fyi/results/wasm/jsapi/constructor/validate.any.js) | Pass | 124 / 124 |  |  |
 | [`jsapi/functions/entry-different-function-realm.html`](https://wpt.fyi/results/wasm/jsapi/functions/entry-different-function-realm.html) | Pass | 1 / 1 |  |  |
 | [`jsapi/functions/entry.html`](https://wpt.fyi/results/wasm/jsapi/functions/entry.html) | Pass | 2 / 2 |  |  |
-| [`jsapi/functions/incumbent.html`](https://wpt.fyi/results/wasm/jsapi/functions/incumbent.html) | Fail | 1 / 2 | BUG | the incumbent settings object stored when a host function is created is not tracked: `postMessage()` called by the start function of an asynchronous instantiation gets the realm of the function as its source |
+| [`jsapi/functions/incumbent.html`](https://wpt.fyi/results/wasm/jsapi/functions/incumbent.html) | Pass | 2 / 2 |  |  |
 | [`jsapi/global/constructor.any.js`](https://wpt.fyi/results/wasm/jsapi/global/constructor.any.js) | Pass | 120 / 120 |  |  |
 | [`jsapi/global/toString.any.js`](https://wpt.fyi/results/wasm/jsapi/global/toString.any.js) | Pass | 4 / 4 |  |  |
 | [`jsapi/global/value-get-set.any.js`](https://wpt.fyi/results/wasm/jsapi/global/value-get-set.any.js) | Pass | 136 / 136 |  |  |

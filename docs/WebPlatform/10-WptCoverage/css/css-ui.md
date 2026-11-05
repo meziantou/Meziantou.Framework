@@ -10,15 +10,15 @@ description: "The results of the web-platform-tests of css/css-ui, and why the t
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 94 | 101 | 0 | 93% |
-| [Tentative](#tentative-tests) | 11 | 16 | 0 | 69% |
+| [Tentative](#tentative-tests) | 12 | 16 | 0 | 75% |
 | [Reftests](#reftests) | 959 | 964 | 0 | 99% |
-| **All** | **1,064** | **1,081** | **0** | **98%** |
+| **All** | **1,065** | **1,081** | **0** | **99%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 2
+- **BUG**: 1
 - **TEST BUG**: 4
 - **NOT IMPLEMENTED**: 4
 - **REQUIRES**: 7
@@ -137,7 +137,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 |---|---|--:|---|---|
 | [`animation/outline-offset-interpolation-rounding.tentative.html`](https://wpt.fyi/results/css/css-ui/animation/outline-offset-interpolation-rounding.tentative.html) | Fail | 2 / 7 | NOT IMPLEMENTED | the interpolated `outline-offset` is not snapped as a line width |
 | [`outline-width-rounding.tentative.html`](https://wpt.fyi/results/css/css-ui/outline-width-rounding.tentative.html) | Pass | 12 / 12 |  |  |
-| [`resize-iframe-3d-transform.tentative.html`](https://wpt.fyi/results/css/css-ui/resize-iframe-3d-transform.tentative.html) | Fail | 0 / 1 | BUG | the iframe is resized by dragging its resizer, but its width is measured 152.00000000000003 instead of 152 through the 3D transform (the floating-point error of the inverse of the transform) |
+| [`resize-iframe-3d-transform.tentative.html`](https://wpt.fyi/results/css/css-ui/resize-iframe-3d-transform.tentative.html) | Pass | 1 / 1 |  |  |
 | [`resize-textarea-relative-to-right-001.tentative.html`](https://wpt.fyi/results/css/css-ui/resize-textarea-relative-to-right-001.tentative.html) | Fail | 0 / 1 | REQUIRES(layout) | the textarea is resized by dragging its resize handle and its width is measured |
 | [`resize-textarea-rtl-001.tentative.html`](https://wpt.fyi/results/css/css-ui/resize-textarea-rtl-001.tentative.html) | Fail | 0 / 1 | REQUIRES(layout) | the textarea is resized by dragging its resize handle and its width is measured |
 | [`resize-textarea-rtl-002.tentative.html`](https://wpt.fyi/results/css/css-ui/resize-textarea-rtl-002.tentative.html) | Fail | 0 / 1 | REQUIRES(layout) | the textarea is resized by dragging its resize handle and its width is measured |

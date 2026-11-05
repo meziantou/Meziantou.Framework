@@ -1318,14 +1318,13 @@ not implemented yet (the grid lanes): their children are stacked without collaps
     fieldset); its intrinsic inline sizes are the greater of the ones of the legend and of the content box. The
     percentages of the paddings that the content box inherits resolve as the ones of the fieldset.
   - The scroll container of a fieldset is its content box (`ContainerBox.ScrollingElement`: its scroll state is the one
-    of the fieldset element, for `scrollTop`, `scrollHeight`, the scroll markers...; the legend does not scroll and is
-    not clipped). A flex or grid item fieldset that scrolls has no automatic minimum size
+    of the fieldset element, for `scrollTop`, `scrollHeight`, the scroll markers, the source of the scroll and view
+    timelines of its descendants...; the legend does not scroll and is not clipped). A flex or grid item fieldset that scrolls has no automatic minimum size
     (`BlockFormattingContext.GetContentsStyle`).
   - A fieldset is fragmented as any box: its legend is monolithic and there is no break between its block-start edge and
     the legend.
   - Not done: a fieldset is never a subgrid (its grid container is the content box, a child of a block container: as in
-    Chrome), the `::column::scroll-marker` of a multi-column fieldset do not scroll to their columns, a child of a
-    fieldset scroll container does not find it as the source of its view timeline, and the block-end border of a fieldset
+    Chrome), the `::column::scroll-marker` of a multi-column fieldset do not scroll to their columns, and the block-end border of a fieldset
     that does not fit after its content box is split by the break (Blink breaks before it).
 
 - **Framesets** ([HTML](https://html.spec.whatwg.org/multipage/rendering.html#frames-and-framesets),
@@ -4778,6 +4777,9 @@ placed in a focused editing host (`Editing.PlaceCaretAtStart`) move the caret ov
   timeline (150 entries, used by the `buffered` observers; the entries are not available from `getEntries()`).
 - The excluding inputs are the trusted `keydown`, `mousedown` and `pointerdown` events and the `mousemove`/`pointermove`
   events with a pressed button (a drag), recorded by `UserAgentDefaultActions.BeforeDispatch` for the document of the target.
+  While a touch pointer is pressed, the layout shifts are held (as in Chrome): its `pointerup` queues them, and its
+  `pointercancel` (the touch becomes a scroll) queues them after restoring the excluding input that preceded the
+  `pointerdown`, which is then not an excluding input.
 - The tracked objects (`LayoutShiftTracker.IsTracked`, as Chrome's `LayoutShiftTracker::NeedsToTrack`): the principal boxes of
   the elements and pseudo-elements (the table wrapper box of a table), except the anonymous boxes, the non-atomic inline
   boxes, the sticky positioned boxes, the SVG elements in an svg element, and the empty block containers that paint nothing

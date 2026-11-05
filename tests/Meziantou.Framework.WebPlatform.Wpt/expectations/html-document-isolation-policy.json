@@ -351,8 +351,7 @@
   "html/document-isolation-policy/shared-workers.tentative.https.html": {
     "total": 8,
     "failures": {
-      "\"isolate-and-require-corp\" (derived from owner set due to use of local scheme - blob URL)": "FAIL",
-      "\"isolate-and-require-corp\" (derived from owner set due to use of local scheme - data URL)": "FAIL"
+      "\"isolate-and-require-corp\" (derived from owner set due to use of local scheme - blob URL)": "FAIL"
     }
   },
   "html/document-isolation-policy/window-reuse.tentative.https.html": {

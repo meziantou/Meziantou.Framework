@@ -205,7 +205,7 @@ internal sealed partial class ServiceWorkerRegistry
         {
             Client = client,
             KeepaliveBrowsingContext = client is null ? GroupOwner : null,
-            CookieContext = client is null ? new FetchCookieContext(GroupOwner.GetCookieJar(credentialless: false), origin, origin) : null,
+            CookieContext = client is null ? new FetchCookieContext(GetCookieJar(registration.StorageKey), origin, origin) : null,
             Origin = origin,
             Referrer = client is null ? "no-referrer" : "client",
             // The module graph of a module service worker is fetched with the credentials mode "omit", and its static imports

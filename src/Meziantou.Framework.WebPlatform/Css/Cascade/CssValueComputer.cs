@@ -255,7 +255,7 @@ internal static partial class CssValueComputer
                 // The logical keywords of the positions and of the lines of shape() are the physical ones of the writing mode
                 // of the element (the points of the computed value are offsets from the top left corner)
                 var generic = ComputeGeneric(style, property, value, baseUrl);
-                if (name is "clip-path" or "offset-path" && generic.StartsWith("path(", StringComparison.Ordinal))
+                if (generic.StartsWith("path(", StringComparison.Ordinal))
                 {
                     generic = KeepRelativePathCommands(value, generic);
                 }
@@ -363,12 +363,12 @@ internal static partial class CssValueComputer
 
     /// <summary>Computes a value of a property that has no specific computation: the generic computation, clamped to the range of the property.</summary>
     /// <summary>
-    /// The path() of clip-path and offset-path keeps its relative commands, as in the browsers (WPT
+    /// The path() of clip-path, shape-outside and offset-path keeps its relative commands, as in the browsers (WPT
     /// css/css-shapes/shape-functions/path-function-computed.html; the path data of the d property is converted to absolute
-    /// commands, https://svgwg.org/svg2-draft/paths.html#TheDProperty, and so is the one of shape-outside, WPT
-    /// css/css-shapes/parsing/shape-outside-computed.html). The relative commands are needed by the interpolation of a path()
+    /// commands, https://svgwg.org/svg2-draft/paths.html#TheDProperty, and so is the resolved value of shape-outside, see
+    /// <see cref="ComputedStyle.GetResolvedValue(string)"/>). The relative commands are needed by the interpolation of a path()
     /// with a shape(), whose <c>by</c> commands are not interpolated with the <c>to</c> commands
-    /// (https://drafts.csswg.org/css-shapes-2/#interpolating-shape).
+    /// (https://drafts.csswg.org/css-shapes-2/#interpolating-shape; WPT css/css-shapes/animation/shape-outside-shape-interpolation.html).
     /// </summary>
     private static string KeepRelativePathCommands(string specified, string computed)
     {

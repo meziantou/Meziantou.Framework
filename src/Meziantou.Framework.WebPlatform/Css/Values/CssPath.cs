@@ -66,6 +66,19 @@ internal static class CssPath
         return Serialize(fillRule, absolute ? SvgPathData.ToAbsolute(commands) : commands);
     }
 
+    /// <summary>
+    /// Converts the commands of the path() function that starts a value (followed by its &lt;shape-box&gt;, if any) to absolute
+    /// commands. Returns the value unchanged when it does not start with a valid path() function.
+    /// </summary>
+    public static string ToAbsoluteCommands(string value)
+    {
+        if (CssParser.ParseListOfComponentValues(value) is not [CssFunction function, .. var rest] || Serialize(function, absolute: true) is not { } path)
+            return value;
+
+        var shapeBox = CssSerializer.SerializeValue(rest, property: null).Trim();
+        return shapeBox.Length == 0 ? path : path + " " + shapeBox;
+    }
+
     public static string Serialize(string? fillRule, List<SvgPathCommand> commands)
     {
         var data = CssSerializer.SerializeString(SvgPathData.Serialize(commands));

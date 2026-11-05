@@ -386,6 +386,42 @@ internal static class SharedWorkerManager
         });
     }
 
+    /// <summary>
+    /// The navigable of <paramref name="owner"/> is destroyed (e.g. its iframe is removed): its objects are removed from the
+    /// owner sets of the shared workers, and a worker whose owner set is empty is not a permissible worker
+    /// (https://html.spec.whatwg.org/multipage/workers.html#the-worker's-lifetime): it is terminated, so a new constructor
+    /// creates a new worker. The workers of a document replaced by a navigation are kept, as the workers created with
+    /// <c>extendedLifetime</c> (https://html.spec.whatwg.org/multipage/workers.html#dom-sharedworkeroptions-extendedlifetime).
+    /// </summary>
+    public static void RemoveOwner(GlobalScope owner)
+    {
+        var groupLoop = GetGroupEventLoop(owner.EventLoop);
+        if (!Workers.TryGetValue(groupLoop, out var registry))
+            return;
+
+        List<WorkerAgent>? unused = null;
+        lock (registry)
+        {
+            for (var i = registry.Count - 1; i >= 0; i--)
+            {
+                var (_, agent, objects) = registry[i];
+                if (objects.RemoveAll(worker => ReferenceEquals(worker.RelevantGlobal, owner)) > 0 && objects.Count == 0 && !agent.ExtendedLifetime)
+                {
+                    registry.RemoveAt(i);
+                    (unused ??= []).Add(agent);
+                }
+            }
+        }
+
+        if (unused is null)
+            return;
+
+        foreach (var agent in unused)
+        {
+            agent.Terminate();
+        }
+    }
+
     /// <summary>The script of a shared worker cannot be fetched: an error event is fired at its objects.</summary>
     public static void OnScriptLoadFailed(WorkerAgent agent)
     {

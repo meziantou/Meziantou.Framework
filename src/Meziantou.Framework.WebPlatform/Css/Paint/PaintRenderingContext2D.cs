@@ -1,3 +1,5 @@
+using Meziantou.Framework.WebPlatform.Css.Cascade;
+
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>
@@ -27,6 +29,14 @@ public sealed class PaintRenderingContext2D : CanvasRenderingContext2DBase
     private protected override void OnBitmapChanged()
     {
     }
+
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The context has no font and the worklet has no viewport: the <c>filter</c> attribute (an extension of Blink, the
+    /// specification does not include <c>CanvasFilters</c>) resolves the font-relative lengths against <c>medium</c> and the
+    /// viewport-percentage lengths against a viewport of size zero.
+    /// </remarks>
+    private protected override ComputedStyle GetFilterStyle() => GetFilterStyleWithoutViewport(_global);
 }
 
 /// <summary>The size of the image a paint callback draws (https://drafts.css-houdini.org/css-paint-api-1/#paintsize): the concrete object size of the <c>paint()</c> image, in CSS pixels.</summary>

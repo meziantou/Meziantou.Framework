@@ -9,6 +9,9 @@ public sealed partial class DomEventLoop
     [ThreadStatic]
     private static DomEventLoop? s_currentWorkerLoop;
 
+    /// <summary>Gets the event loop of the worker whose thread is the current thread, or null.</summary>
+    internal static DomEventLoop? CurrentWorkerLoop => s_currentWorkerLoop;
+
     private static readonly TimeSpan FakeClockPollingInterval = TimeSpan.FromMilliseconds(10);
 
     private readonly List<DomEventLoop> _childLoops = [];

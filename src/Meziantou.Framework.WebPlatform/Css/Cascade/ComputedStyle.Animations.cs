@@ -165,12 +165,25 @@ internal sealed partial class ComputedStyle
     }
 
     /// <summary>
+    /// Returns the style of the element without its animations and its transitions, including the ones of its custom properties
+    /// (e.g. <c>display: var(--x)</c> with an animated <c>--x</c>), or the style itself when it has no animation.
+    /// </summary>
+    private ComputedStyle GetBaseStyle()
+    {
+        if (_effects is not { Count: > 0 })
+            return this;
+
+        _cascadedShared = true;
+        return new ComputedStyle(Engine, Element, PseudoElement, Parent, _cascaded, cascadedShared: true, animated: false) { HighlightParent = HighlightParent, IncludeTransitions = false };
+    }
+
+    /// <summary>
     /// Returns whether the element is not rendered: its display is none (without the animations of the element, which do not
-    /// cancel themselves), or the display of an ancestor is none.
+    /// cancel themselves, including the ones of the custom properties it uses), or the display of an ancestor is none.
     /// </summary>
     internal bool IsDisplayNoneForAnimations()
     {
-        if (GetUnanimatedComputedValue("display") == "none")
+        if (GetUnanimatedComputedValue("display") == "none" && GetBaseStyle().GetComputedValue("display") == "none")
             return true;
 
         // A ::before or ::after pseudo-element whose content is none (or normal) does not exist

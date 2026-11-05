@@ -9,16 +9,10 @@ description: "The results of the web-platform-tests of layout-instability, and w
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 82 | 83 | 0 | 99% |
+| [Stable](#stable-tests) | 83 | 83 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **82** | **83** | **0** | **99%** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **BUG**: 1
+| **All** | **83** | **83** | **0** | **100%** |
 
 ## Stable tests
 
@@ -68,7 +62,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`opacity-zero.html`](https://wpt.fyi/results/layout-instability/opacity-zero.html) | Pass | 1 / 1 |  |  |
 | [`outline.html`](https://wpt.fyi/results/layout-instability/outline.html) | Pass | 1 / 1 |  |  |
 | [`partially-clipped-visual-rect.html`](https://wpt.fyi/results/layout-instability/partially-clipped-visual-rect.html) | Pass | 1 / 1 |  |  |
-| [`pointerdown-becomes-scroll.html`](https://wpt.fyi/results/layout-instability/pointerdown-becomes-scroll.html) | Fail | 0 / 1 | BUG | the layout shift of the `pointerdown` of a touch that becomes a scroll is still excluded as a shift that follows a user input: the exclusion is not canceled when the pointer event stream is canceled by the pan (the score is 0) |
+| [`pointerdown-becomes-scroll.html`](https://wpt.fyi/results/layout-instability/pointerdown-becomes-scroll.html) | Pass | 1 / 1 |  |  |
 | [`pointerdown-becomes-tap.html`](https://wpt.fyi/results/layout-instability/pointerdown-becomes-tap.html) | Pass | 1 / 1 |  |  |
 | [`pointermove-becomes-drag.html`](https://wpt.fyi/results/layout-instability/pointermove-becomes-drag.html) | Pass | 1 / 1 |  |  |
 | [`recent-input.html`](https://wpt.fyi/results/layout-instability/recent-input.html) | Pass | 1 / 1 |  |  |

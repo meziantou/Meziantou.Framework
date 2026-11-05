@@ -62,9 +62,25 @@ internal static class CssomViewGeometry
             return result;
         }
 
-        foreach (var fragment in GetClientFragments(engine, element))
+        // The block-level boxes split out of an inline box are in the inline box: as in Blink, they follow its sticky offset in
+        // its rectangles, and not their own (WPT css/css-position/sticky/position-sticky-block-in-sticky-inline.html)
+        // (before the first part of the inline box, the offset of its first fragment)
+        var clientFragments = GetClientFragments(engine, element);
+        var inlineStickyOffset = clientFragments.Find(fragment => fragment.Box.IsInlineBox)?.StickyOffset;
+        var hasInlineParts = inlineStickyOffset is not null;
+        foreach (var fragment in clientFragments)
         {
-            result.Add(engine.ToViewport(LayoutEngine.MapToRoot(fragment, fragment.BorderBoxRect)));
+            var rect = fragment.BorderBoxRect;
+            if (fragment.Box.IsInlineBox)
+            {
+                inlineStickyOffset = fragment.StickyOffset;
+            }
+            else if (hasInlineParts)
+            {
+                rect = rect.Translate(inlineStickyOffset.GetValueOrDefault() - fragment.StickyOffset);
+            }
+
+            result.Add(engine.ToViewport(LayoutEngine.MapToRoot(fragment, rect)));
         }
 
         return result;

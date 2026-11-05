@@ -778,10 +778,7 @@
     "total": 1
   },
   "css/css-position/sticky/position-sticky-block-in-sticky-inline.html": {
-    "total": 1,
-    "failures": {
-      "a sticky block in an inline does not duplicate its sticky inline ancestor's offset": "FAIL"
-    }
+    "total": 1
   },
   "css/css-position/sticky/position-sticky-bottom-002.html": {
     "reftest": "PASS"

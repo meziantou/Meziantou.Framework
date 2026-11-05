@@ -9,16 +9,16 @@ description: "The results of the web-platform-tests of pointerevents, and why th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 168 | 179 | 0 | 94% |
+| [Stable](#stable-tests) | 169 | 179 | 0 | 94% |
 | [Tentative](#tentative-tests) | 5 | 9 | 0 | 56% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **173** | **188** | **0** | **92%** |
+| **All** | **174** | **188** | **0** | **93%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 3
+- **BUG**: 2
 - **TEST BUG**: 5
 - **NOT IMPLEMENTED**: 6
 - **TEST RUNNER**: 1
@@ -41,7 +41,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`compat/pointerevent_mouse-pointer-updown-events.html`](https://wpt.fyi/results/pointerevents/compat/pointerevent_mouse-pointer-updown-events.html) | Pass | 1 / 1 |  |  |
 | [`compat/pointerevent_mouse_target_after_pointer_target_host_of_shadow_removed.html`](https://wpt.fyi/results/pointerevents/compat/pointerevent_mouse_target_after_pointer_target_host_of_shadow_removed.html) | Pass | 3 / 3 |  |  |
 | [`compat/pointerevent_mouse_target_after_pointer_target_root_element_in_shadow_removed.html`](https://wpt.fyi/results/pointerevents/compat/pointerevent_mouse_target_after_pointer_target_root_element_in_shadow_removed.html) | Pass | 3 / 3 |  |  |
-| [`compat/pointerevent_mouse_target_after_pointer_target_slot_removed.html`](https://wpt.fyi/results/pointerevents/compat/pointerevent_mouse_target_after_pointer_target_slot_removed.html) | Fail | 0 / 3 | BUG | when a pointer event listener removes the `<slot>` its target is assigned to, the compatibility mouse event is fired at the slotted element (which stays connected, without box), not at the parent of the removed slot as the test expects (only Gecko passes) |
+| [`compat/pointerevent_mouse_target_after_pointer_target_slot_removed.html`](https://wpt.fyi/results/pointerevents/compat/pointerevent_mouse_target_after_pointer_target_slot_removed.html) | Pass | 3 / 3 |  |  |
 | [`compat/pointerevent_mouseevent_key_pressed.html`](https://wpt.fyi/results/pointerevents/compat/pointerevent_mouseevent_key_pressed.html) | Pass | 5 / 5 |  |  |
 | [`compat/pointerevent_preventdefault_pointerdown_dblclick.html`](https://wpt.fyi/results/pointerevents/compat/pointerevent_preventdefault_pointerdown_dblclick.html) | Pass | 2 / 2 |  |  |
 | [`compat/pointerevent_touch-action-verification.html`](https://wpt.fyi/results/pointerevents/compat/pointerevent_touch-action-verification.html) | Pass | 4 / 4 |  |  |

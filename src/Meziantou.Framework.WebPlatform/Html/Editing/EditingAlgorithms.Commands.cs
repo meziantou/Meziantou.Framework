@@ -1142,9 +1142,12 @@ internal sealed partial class EditingAlgorithms
         var descendants = GetDescendants(fragment);
         if (IsBlockNode(range.StartContainer))
         {
+            // The specification only removes the collapsed block props that follow the insertion point. As in the browsers,
+            // the one that precedes it is removed too when the fragment has text, which replaces it (<p><br>{}</p>)
+            var hasText = descendants.Exists(static descendant => descendant is Text text && text.Data.AsSpan().ContainsAnyExcept(" \t\n\f\r"));
             foreach (var child in GetChildren(range.StartContainer))
             {
-                if (IsEditable(child) && IsCollapsedBlockProp(child) && NodeIndex(child) >= range.StartOffset)
+                if (IsEditable(child) && IsCollapsedBlockProp(child) && (hasText || NodeIndex(child) >= range.StartOffset))
                 {
                     RemoveNode(child);
                 }
@@ -1265,6 +1268,14 @@ internal sealed partial class EditingAlgorithms
         {
             range.InsertNode(CreateElement("br"));
             CollapseTo(br.ParentNode!, 1 + NodeIndex(br));
+        }
+
+        // As in the browsers, a space that was rendered after the content before the caret, and that now starts the line,
+        // where it collapses, is replaced with a no-break space so that it stays visible
+        if (br.NextSibling is Text { Length: > 0 } next && next.Data[0] == ' ' && IsEditable(next)
+            && GetWhiteSpace(next) is "normal" or "nowrap" && FindLineItem(br, forward: false) == LineItem.Content)
+        {
+            next.ReplaceData(0, 1, NoBreakSpace);
         }
 
         return true;

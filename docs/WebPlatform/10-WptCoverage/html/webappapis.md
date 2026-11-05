@@ -18,8 +18,8 @@ description: "The results of the web-platform-tests of html/webappapis, and why 
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 5
-- **TEST BUG**: 1
+- **BUG**: 4
+- **TEST BUG**: 2
 - **NOT IMPLEMENTED**: 8
 - **TEST RUNNER**: 11
 
@@ -314,7 +314,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`scripting/processing-model-2/unhandled-promise-rejections/promise-rejection-events.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/unhandled-promise-rejections/promise-rejection-events.html) | Pass | 43 / 43 |  |  |
 | [`scripting/processing-model-2/unhandled-promise-rejections/promise-rejection-events.serviceworker.https.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/unhandled-promise-rejections/promise-rejection-events.serviceworker.https.html) | Pass | 37 / 37 |  |  |
 | [`scripting/processing-model-2/unhandled-promise-rejections/promise-rejection-events.sharedworker.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/unhandled-promise-rejections/promise-rejection-events.sharedworker.html) | Pass | 36 / 36 |  |  |
-| [`scripting/processing-model-2/unhandled-promise-rejections/promise-resolution-order.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/unhandled-promise-rejections/promise-resolution-order.html) | Timeout | 0 / 1 | BUG | the interleaving of `requestAnimationFrame` callbacks, microtasks, `error` events of `<script src="   ">` and `unhandledrejection` differs from the spec, so the final check never completes |
+| [`scripting/processing-model-2/unhandled-promise-rejections/promise-resolution-order.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/unhandled-promise-rejections/promise-resolution-order.html) | Timeout | 0 / 1 | TEST BUG | the test expects `<script src="   ">` to fire an `error` event, as Chromium does (it strips the whitespace of the src attribute); the HTML Standard only fires it for an empty src attribute: the whitespace-only URL resolves to the URL of the document, which is fetched and run as a script (`html/semantics/scripting-1/the-script-element/fetch-src/whitespace-with-base.html` checks it), so the test never completes |
 | [`scripting/processing-model-2/window-onerror-event-throw-null.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/window-onerror-event-throw-null.html) | Pass | 1 / 1 |  |  |
 | [`scripting/processing-model-2/window-onerror-parse-error.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/window-onerror-parse-error.html) | Pass | 3 / 3 |  |  |
 | [`scripting/processing-model-2/window-onerror-runtime-error-throw.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/window-onerror-runtime-error-throw.html) | Pass | 3 / 3 |  |  |

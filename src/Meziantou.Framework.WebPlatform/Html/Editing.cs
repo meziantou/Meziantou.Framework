@@ -316,6 +316,11 @@ internal static class Editing
     private static bool ExecuteCore(Document document, string command, string value)
     {
         command = Infra.InfraAscii.ToAsciiLowercase(command);
+        if (SupportedCommands.Contains(command) && !IsMiscellaneousCommand(command) && command is not ("undo" or "redo" or "copy" or "cut" or "paste"))
+        {
+            ExcludeInertFocus(document);
+        }
+
         if (!IsEnabled(document, command))
             return false;
 
@@ -631,6 +636,40 @@ internal static class Editing
     /// The editing host of the active range: the closest editing host that is an inclusive ancestor of its start and end
     /// nodes, when these nodes are editable or editing hosts; else null.
     /// </summary>
+    /// <summary>
+    /// When the anchor of the selection is editable and its focus is in an inert element (that behaves as a non-editable one,
+    /// https://html.spec.whatwg.org/multipage/interaction.html#inert), the focus is moved out of the inert element, to its
+    /// boundary that is the nearest to the anchor: as in the browsers, a command edits the editable part of the selection (WPT
+    /// inert-inlines-around-selection-range-in-contenteditable.html; a command is not enabled when the anchor is inert).
+    /// </summary>
+    private static void ExcludeInertFocus(Document document)
+    {
+        if (document.GetSelection() is not { AnchorNode: { } anchor, FocusNode: { } focus, IsCollapsed: false } selection)
+            return;
+
+        if (!IsEditable(anchor) && !IsEditingHost(anchor))
+            return;
+
+        // The outermost ancestor of the focus that is not editable, in an editable parent
+        Node? outermost = null;
+        for (var node = focus; !IsEditable(node) && !IsEditingHost(node); node = node.ParentNode)
+        {
+            if (node.ParentNode is not { } parent)
+                return;
+
+            outermost = node;
+            if (IsEditable(parent) || IsEditingHost(parent))
+                break;
+        }
+
+        if (outermost is not HtmlElement inert || !inert.HasAttributeWithLocalName("inert") || inert.ParentNode is not { } inertParent || !ReferenceEquals(GetEditingHost(inertParent), GetEditingHost(anchor)))
+            return;
+
+        var index = (uint)inert.GetIndex();
+        var offset = selection.Direction == "backward" ? index + 1 : index;
+        selection.SetBaseAndExtent(anchor, selection.AnchorOffset, inertParent, offset);
+    }
+
     private static Element? GetActiveRangeEditingHost(Document document)
     {
         if (document.GetSelection()?.RangeOrNull is not { } range)

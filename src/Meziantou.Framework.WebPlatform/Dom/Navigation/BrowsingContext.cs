@@ -2885,9 +2885,10 @@ public sealed partial class BrowsingContext : IDisposable
         document.StartRenderBlockingPeriod();
         InitializeServiceWorkerClient(document, parameters.ReservedClient);
 
-        // The window of an initial about:blank document is reused by a same origin-domain document
+        // The window of an initial about:blank document is reused by a same origin-domain document, unless the credentialless
+        // attribute of the iframe changed since the initial document was created (https://wicg.github.io/anonymous-iframe/#spec-window-reuse)
         Window window;
-        if (!switchesGroup && activeDocument.IsInitialAboutBlank && Document.IsSameOriginDomain(activeDocument, document))
+        if (!switchesGroup && activeDocument.IsInitialAboutBlank && Document.IsSameOriginDomain(activeDocument, document) && activeDocument.IsCredentialless == document.IsCredentialless)
         {
             window = activeDocument.RelevantWindow!;
         }
@@ -3284,6 +3285,14 @@ public sealed partial class BrowsingContext : IDisposable
 
         if (transition is not null && !IsDestroyed)
         {
+            // https://drafts.csswg.org/css-view-transitions-2/#setup-cross-document-view-transition: the old state is captured by
+            // the next rendering update of the old document, which runs the animation frame callbacks first (e.g. the ones that
+            // the pageswap listeners requested)
+            if (transition.Phase == ViewTransitionPhase.PendingCapture)
+            {
+                oldWindow.RunAnimationFrameCallbacks(EventLoop.TimeProvider.GetTimestamp());
+            }
+
             newDocument.InboundViewTransitionParams = oldDocument.CaptureOutboundViewTransition(transition);
         }
     }
@@ -3547,6 +3556,7 @@ public sealed partial class BrowsingContext : IDisposable
         DestroyDocument(Document);
         if (window is not null)
         {
+            SharedWorkerManager.RemoveOwner(window);
             Options.ScriptEngine?.DestroyRealm(window);
         }
 
@@ -3722,6 +3732,7 @@ public sealed partial class BrowsingContext : IDisposable
         }
         if (window is not null)
         {
+            SharedWorkerManager.RemoveOwner(window);
             Options.ScriptEngine?.DestroyRealm(window);
         }
 

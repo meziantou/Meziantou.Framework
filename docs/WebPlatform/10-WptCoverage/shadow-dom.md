@@ -9,16 +9,15 @@ description: "The results of the web-platform-tests of shadow-dom, and why the t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 217 | 254 | 0 | 85% |
+| [Stable](#stable-tests) | 218 | 254 | 0 | 86% |
 | [Tentative](#tentative-tests) | 33 | 98 | 0 | 34% |
 | [Reftests](#reftests) | 26 | 26 | 0 | 100% |
-| **All** | **276** | **378** | **0** | **73%** |
+| **All** | **277** | **378** | **0** | **73%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
 - **TEST BUG**: 6
 - **NOT IMPLEMENTED**: 95
 
@@ -160,7 +159,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`focus/click-focus-delegatesFocus-click.html`](https://wpt.fyi/results/shadow-dom/focus/click-focus-delegatesFocus-click.html) | Pass | 6 / 6 |  |  |
 | [`focus/click-focus-delegatesFocus-tabindex-varies.html`](https://wpt.fyi/results/shadow-dom/focus/click-focus-delegatesFocus-tabindex-varies.html) | Pass | 1 / 1 |  |  |
 | [`focus/click-focus-delegatesFocus-tabindex-zero.html`](https://wpt.fyi/results/shadow-dom/focus/click-focus-delegatesFocus-tabindex-zero.html) | Pass | 1 / 1 |  |  |
-| [`focus/click-focus-slot-ancestor.html`](https://wpt.fyi/results/shadow-dom/focus/click-focus-slot-ancestor.html) | Fail | 2 / 3 | BUG | 1 of 3 subtests: a drag that selects the text slotted in a non-focusable `<slot>` of a shadow tree whose content is editable (`contenteditable` on the shadow host's parent), inside a focusable `<div tabindex=0>` of the shadow tree, focuses that `<div>` (`shadowRoot.activeElement` is the `<div id=shadowDiv>`); the test expects the focus to be on the editing host only (`shadowRoot.activeElement` null), as Chrome and Safari do: the press focuses the first click-focusable flat-tree ancestor of the target, which is the `<div>` before the editing host (Firefox fails this subtest too). |
+| [`focus/click-focus-slot-ancestor.html`](https://wpt.fyi/results/shadow-dom/focus/click-focus-slot-ancestor.html) | Pass | 3 / 3 |  |  |
 | [`focus/delegatesFocus-tabindex-change.html`](https://wpt.fyi/results/shadow-dom/focus/delegatesFocus-tabindex-change.html) | Pass | 1 / 1 |  |  |
 | [`focus/focus-autofocus.html`](https://wpt.fyi/results/shadow-dom/focus/focus-autofocus.html) | Pass | 5 / 5 |  |  |
 | [`focus/focus-click-on-shadow-host.html`](https://wpt.fyi/results/shadow-dom/focus/focus-click-on-shadow-host.html) | Pass | 1 / 1 |  |  |

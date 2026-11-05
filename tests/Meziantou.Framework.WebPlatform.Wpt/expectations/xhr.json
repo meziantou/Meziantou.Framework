@@ -1220,16 +1220,10 @@
     "total": 3
   },
   "xhr/xhr-timeout-longtask.any.js": {
-    "total": 1,
-    "failures": {
-      "Long tasks should not trigger load timeout": "FAIL"
-    }
+    "total": 1
   },
   "xhr/xhr-timeout-longtask.any.js#dedicatedworker": {
-    "total": 1,
-    "failures": {
-      "Long tasks should not trigger load timeout": "FAIL"
-    }
+    "total": 1
   },
   "xhr/xmlhttprequest-basic.htm": {
     "total": 1

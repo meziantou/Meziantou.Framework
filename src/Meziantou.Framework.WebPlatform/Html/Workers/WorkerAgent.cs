@@ -47,13 +47,14 @@ internal sealed class WorkerAgent
     /// <summary>
     /// Creates the agent of a service worker (https://w3c.github.io/ServiceWorker/#run-service-worker-algorithm): it has no
     /// creator, it belongs to the browsing context group of <paramref name="groupOwner"/> (its event loop is a child of the
-    /// event loop of the group, which terminates it when it is disposed), and it is a secure context.
+    /// event loop of the group, which terminates it when it is disposed), and it is a secure context. Its requests use
+    /// <paramref name="cookieJar"/>: the cookie jar of the storage key of its registration.
     /// </summary>
-    public WorkerAgent(BrowsingContext groupOwner, UrlRecord url, WorkerType type)
+    public WorkerAgent(BrowsingContext groupOwner, UrlRecord url, WorkerType type, CookieJar? cookieJar)
     {
         GroupBrowsingContext = groupOwner;
         Options = groupOwner.Options;
-        CookieJar = groupOwner.GetCookieJar(credentialless: false);
+        CookieJar = cookieJar;
         CreatorIsSecureContext = true;
         Url = url;
         Name = "";

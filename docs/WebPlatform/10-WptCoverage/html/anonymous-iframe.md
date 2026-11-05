@@ -10,15 +10,14 @@ description: "The results of the web-platform-tests of html/anonymous-iframe, an
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | Stable | 0 | 0 | 0 | – |
-| [Tentative](#tentative-tests) | 13 | 18 | 0 | 72% |
+| [Tentative](#tentative-tests) | 15 | 18 | 0 | 83% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **13** | **18** | **0** | **72%** |
+| **All** | **15** | **18** | **0** | **83%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 2
 - **NOT IMPLEMENTED**: 3
 
 ## Tentative tests
@@ -26,7 +25,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
 | [`anonymous-iframe-popup.tentative.https.window.js`](https://wpt.fyi/results/html/anonymous-iframe/anonymous-iframe-popup.tentative.https.window.js) | Pass | 2 / 2 |  |  |
-| [`anonymous-window.tentative.https.window.js`](https://wpt.fyi/results/html/anonymous-iframe/anonymous-window.tentative.https.window.js) | Fail | 1 / 3 | BUG | the Window of the initial about:blank is reused by the navigation although the iframe's `credentialless` attribute changed before it (it must not be reused when the credentialless state differs) |
+| [`anonymous-window.tentative.https.window.js`](https://wpt.fyi/results/html/anonymous-iframe/anonymous-window.tentative.https.window.js) | Pass | 3 / 3 |  |  |
 | [`cache-storage.tentative.https.window.js`](https://wpt.fyi/results/html/anonymous-iframe/cache-storage.tentative.https.window.js) | Pass | 1 / 1 |  |  |
 | [`cookie-store.tentative.https.window.js`](https://wpt.fyi/results/html/anonymous-iframe/cookie-store.tentative.https.window.js) | Pass | 4 / 4 |  |  |
 | [`cookie.tentative.https.window.js`](https://wpt.fyi/results/html/anonymous-iframe/cookie.tentative.https.window.js) | Pass | 11 / 11 |  |  |
@@ -42,4 +41,4 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`session-storage.tentative.https.window.js`](https://wpt.fyi/results/html/anonymous-iframe/session-storage.tentative.https.window.js) | Pass | 1 / 1 |  |  |
 | [`sharedworker-partitioning.tentative.https.window.js`](https://wpt.fyi/results/html/anonymous-iframe/sharedworker-partitioning.tentative.https.window.js) | Fail | 0 / 1 | NOT IMPLEMENTED | partitioning the shared workers of the credentialless iframes (a credentialless iframe connects to the shared worker of a normal iframe) |
 | [`web-lock.tentative.https.window.js`](https://wpt.fyi/results/html/anonymous-iframe/web-lock.tentative.https.window.js) | Pass | 1 / 1 |  |  |
-| [`worker-cookies.tentative.https.window.js`](https://wpt.fyi/results/html/anonymous-iframe/worker-cookies.tentative.https.window.js) | Fail | 8 / 9 | BUG | the service worker registered by a credentialless iframe sends the cookies of the browsing context group (the `service_worker` variant) |
+| [`worker-cookies.tentative.https.window.js`](https://wpt.fyi/results/html/anonymous-iframe/worker-cookies.tentative.https.window.js) | Pass | 9 / 9 |  |  |

@@ -542,7 +542,7 @@ internal sealed partial class ComputedStyle
     /// <summary>
     /// Returns the resolved value of a longhand or custom property (https://drafts.csswg.org/cssom/#resolved-value): the
     /// computed value, except for the colors (the used value: currentcolor is resolved), line-height (the used value
-    /// when it is a number), transform (a matrix), and the used values from the layout of width, height, the margins, the
+    /// when it is a number), transform (a matrix), the path() of shape-outside (absolute commands), and the used values from the layout of width, height, the margins, the
     /// paddings, the insets of the positioned boxes, the transform origins and the track lists of the grid containers (a
     /// forced layout, see <see cref="LayoutResolvedValues"/>).
     /// </summary>
@@ -610,6 +610,11 @@ internal sealed partial class ComputedStyle
 
         if (physical == "transform")
             return ResolveTransform(value);
+
+        // As in the browsers, the path() of shape-outside resolves to absolute commands (WPT css/css-shapes/parsing/shape-outside-computed.html);
+        // its computed value keeps the relative commands for the interpolation with a shape() (see CssValueComputer.KeepRelativePathCommands)
+        if (physical == "shape-outside" && value.StartsWith("path(", StringComparison.Ordinal))
+            return CssPath.ToAbsoluteCommands(value);
 
         if (TryGetLayoutResolvedValue(physical, value) is { } layoutValue)
             return layoutValue;

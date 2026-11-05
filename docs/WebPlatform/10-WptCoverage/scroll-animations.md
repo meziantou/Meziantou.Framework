@@ -9,16 +9,16 @@ description: "The results of the web-platform-tests of scroll-animations, and wh
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 141 | 148 | 0 | 95% |
+| [Stable](#stable-tests) | 142 | 148 | 0 | 96% |
 | [Tentative](#tentative-tests) | 39 | 76 | 0 | 51% |
 | [Reftests](#reftests) | 30 | 37 | 0 | 81% |
-| **All** | **210** | **261** | **0** | **80%** |
+| **All** | **211** | **261** | **0** | **81%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 6
+- **BUG**: 5
 - **TEST BUG**: 1
 - **NOT IMPLEMENTED**: 43
 - **OUT OF SCOPE**: 1
@@ -80,7 +80,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`css/timeline-scope-computed.html`](https://wpt.fyi/results/scroll-animations/css/timeline-scope-computed.html) | Pass | 12 / 12 |  |  |
 | [`css/timeline-scope-parsing.html`](https://wpt.fyi/results/scroll-animations/css/timeline-scope-parsing.html) | Pass | 25 / 25 |  |  |
 | [`css/timeline-scope.html`](https://wpt.fyi/results/scroll-animations/css/timeline-scope.html) | Pass | 12 / 12 |  |  |
-| [`css/view-timeline-animation.html`](https://wpt.fyi/results/scroll-animations/css/view-timeline-animation.html) | Fail | 0 / 3 | BUG | a `fill: none` animation that finished past the end of its view progress timeline is in its after phase when the timeline goes back to 100% (the browsers apply its effect) |
+| [`css/view-timeline-animation.html`](https://wpt.fyi/results/scroll-animations/css/view-timeline-animation.html) | Fail | 0 / 3 | BUG | a `fill: none` animation is in its after phase when its view progress timeline is at 100% (the end of the cover range, `scrollTop` 200 of 250): the scroller is not at its maximum scroll offset, so it is not "at timeline boundary" (https://drafts.csswg.org/web-animations-2/#at-timeline-boundary: the minimum and maximum timeline times are the ones of the minimum and maximum scroll offsets) and the active-after boundary is exclusive; the browsers apply its effect |
 | [`css/view-timeline-axis-computed.html`](https://wpt.fyi/results/scroll-animations/css/view-timeline-axis-computed.html) | Pass | 14 / 14 |  |  |
 | [`css/view-timeline-axis-parsing.html`](https://wpt.fyi/results/scroll-animations/css/view-timeline-axis-parsing.html) | Pass | 18 / 18 |  |  |
 | [`css/view-timeline-dynamic.html`](https://wpt.fyi/results/scroll-animations/css/view-timeline-dynamic.html) | Pass | 4 / 4 |  |  |
@@ -139,7 +139,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`view-timelines/change-animation-range-updates-play-state.html`](https://wpt.fyi/results/scroll-animations/view-timelines/change-animation-range-updates-play-state.html) | Pass | 1 / 1 |  |  |
 | [`view-timelines/contain-alignment.html`](https://wpt.fyi/results/scroll-animations/view-timelines/contain-alignment.html) | Pass | 1 / 1 |  |  |
 | [`view-timelines/duration.html`](https://wpt.fyi/results/scroll-animations/view-timelines/duration.html) | Pass | 1 / 1 |  |  |
-| [`view-timelines/fieldset-source.html`](https://wpt.fyi/results/scroll-animations/view-timelines/fieldset-source.html) | Fail | 0 / 1 | BUG | the source of the view timeline of a child of a fieldset scroll container: the scroll container is the anonymous fieldset content box, which the lookup of the nearest ancestor scroll container of the subject does not map to the fieldset element (the `source` of the timeline is null, where the test expects the fieldset) |
+| [`view-timelines/fieldset-source.html`](https://wpt.fyi/results/scroll-animations/view-timelines/fieldset-source.html) | Pass | 1 / 1 |  |  |
 | [`view-timelines/get-keyframes-with-timeline-offset.html`](https://wpt.fyi/results/scroll-animations/view-timelines/get-keyframes-with-timeline-offset.html) | Pass | 6 / 6 |  |  |
 | [`view-timelines/inline-subject.html`](https://wpt.fyi/results/scroll-animations/view-timelines/inline-subject.html) | Pass | 1 / 1 |  |  |
 | [`view-timelines/intermediate-transform.html`](https://wpt.fyi/results/scroll-animations/view-timelines/intermediate-transform.html) | Pass | 1 / 1 |  |  |

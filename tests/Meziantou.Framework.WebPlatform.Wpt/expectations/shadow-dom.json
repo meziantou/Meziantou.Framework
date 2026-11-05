@@ -922,10 +922,7 @@
     "total": 1
   },
   "shadow-dom/focus/click-focus-slot-ancestor.html": {
-    "total": 3,
-    "failures": {
-      "Select on non-focusable non-editable slot in a contenteditable shadow DOM and inside focusable div will select text": "FAIL"
-    }
+    "total": 3
   },
   "shadow-dom/focus/delegatesFocus-tabindex-change.html": {
     "total": 1

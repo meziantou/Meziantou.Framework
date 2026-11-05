@@ -1301,9 +1301,11 @@ internal static class FocusModel
         Focus(element, options?.FocusVisible);
 
         // "If options["preventScroll"] is false, then scroll a target into view given this, "auto", "center", and "center""
+        // As in the browsers, a target that is visible is not centered (only when needed), except a text control: the browsers
+        // scroll its selection into view (WPT textarea-scroll-selection.html)
         if (options?.PreventScroll is not true && element.NodeDocument is { BrowsingContext: not null } document && ComputedStyleDeclarations.IsBeingRendered(element))
         {
-            document.GetLayoutEngine().ScrollIntoViewWhenLaidOut(element, ScrollLogicalPosition.Center, ScrollLogicalPosition.Center);
+            document.GetLayoutEngine().ScrollIntoViewWhenLaidOut(element, ScrollLogicalPosition.Center, ScrollLogicalPosition.Center, ifNeeded: element is not IEditableTextControl);
         }
     }
 
@@ -2240,10 +2242,19 @@ internal static class UserAgentDefaultActions
     /// </summary>
     private static void FocusClickedArea(Document topDocument, Node target)
     {
+        // As in the browsers, a click in editable content focuses its editing host, unless the focusable area is in the editable
+        // content (e.g. a form control in the editing host): not a focusable element of a shadow tree that the editable content
+        // is slotted in
+        var editingHost = Html.Editing.GetEditingHost(target) is { } host && FocusModel.IsClickFocusable(host) ? host : null;
         for (Node? node = target; node is not null; node = HtmlElement.GetFlatTreeParent(node))
         {
             if (node is not Element element)
                 continue;
+
+            if (editingHost is not null && !editingHost.IsInclusiveAncestorOf(element) && (FocusModel.IsClickFocusable(element) || element.AttachedShadowRoot is { DelegatesFocus: true }))
+            {
+                element = editingHost;
+            }
 
             if (FocusModel.IsClickFocusable(element))
             {

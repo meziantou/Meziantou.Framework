@@ -10,15 +10,14 @@ description: "The results of the web-platform-tests of touch-events, and why the
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 9 | 12 | 0 | 75% |
-| [Tentative](#tentative-tests) | 0 | 2 | 0 | 0% |
+| [Tentative](#tentative-tests) | 1 | 2 | 0 | 50% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **9** | **14** | **0** | **64%** |
+| **All** | **10** | **14** | **0** | **71%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
 - **NOT IMPLEMENTED**: 4
 
 ## Stable tests
@@ -42,5 +41,5 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`hover-state-caused-by-compatibility-mouse-events.tentative.html`](https://wpt.fyi/results/touch-events/hover-state-caused-by-compatibility-mouse-events.tentative.html) | Fail | 13 / 14 | BUG | when the element hovered by the compatibility mouse events of a tap is replaced, `:hover` no longer matches its parent: the hover state follows the target of the last mouse event, and no boundary event is fired when it is removed without a move (only Gecko passes the tentative test) |
+| [`hover-state-caused-by-compatibility-mouse-events.tentative.html`](https://wpt.fyi/results/touch-events/hover-state-caused-by-compatibility-mouse-events.tentative.html) | Pass | 14 / 14 |  |  |
 | [`mouseevents-after-touchend.tentative.html`](https://wpt.fyi/results/touch-events/mouseevents-after-touchend.tentative.html) | Fail | 6 / 7 | NOT IMPLEMENTED | a tap of two fingers: a `touchend` is fired per touch, and the compatibility mouse events and the click of the primary touch are fired; the tentative test expects one `touchend` with both touches and no mouse event (only Gecko passes) |

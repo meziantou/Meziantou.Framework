@@ -837,6 +837,7 @@ internal sealed partial class Painter
                 shader = new ImageShader(raster.Image, spreadX, spreadY, PaintedImage.GetSampling(style.GetComputedValue("image-rendering")))
                 {
                     LocalTransform = DisplayMatrix.Translation(x, y).PreConcat(DisplayMatrix.Scale(tileWidth / raster.Image.Width, tileHeight / raster.Image.Height)),
+                    ScalesTiles = true,
                 };
             }
             else

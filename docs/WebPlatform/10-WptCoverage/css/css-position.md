@@ -9,16 +9,16 @@ description: "The results of the web-platform-tests of css/css-position, and why
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 110 | 114 | 0 | 96% |
+| [Stable](#stable-tests) | 111 | 114 | 0 | 97% |
 | Tentative | 0 | 0 | 0 | – |
 | [Reftests](#reftests) | 245 | 253 | 0 | 97% |
-| **All** | **355** | **367** | **0** | **97%** |
+| **All** | **356** | **367** | **0** | **97%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 2
+- **BUG**: 1
 - **TEST BUG**: 5
 - **NOT IMPLEMENTED**: 4
 - **TEST RUNNER**: 2
@@ -108,7 +108,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`position-relative-aspect-ratio-002.html`](https://wpt.fyi/results/css/css-position/position-relative-aspect-ratio-002.html) | Pass | 3 / 3 |  |  |
 | [`position-sticky-dynamic-ancestor-001.html`](https://wpt.fyi/results/css/css-position/position-sticky-dynamic-ancestor-001.html) | Pass | 1 / 1 |  |  |
 | [`sticky-dialog.html`](https://wpt.fyi/results/css/css-position/sticky-dialog.html) | Pass | 1 / 1 |  |  |
-| [`sticky/position-sticky-block-in-sticky-inline.html`](https://wpt.fyi/results/css/css-position/sticky/position-sticky-block-in-sticky-inline.html) | Fail | 0 / 1 | BUG | `getClientRects()` of a sticky inline box split around a sticky block-level box returns the border box of the block at its own sticky position (60px) for the part of the inline box that contains it, instead of that part shifted by the sticky offset of the inline box only (50px); a block-level box that is not sticky itself does not follow the sticky offset of the inline box it is split out of (Firefox fails it too) |
+| [`sticky/position-sticky-block-in-sticky-inline.html`](https://wpt.fyi/results/css/css-position/sticky/position-sticky-block-in-sticky-inline.html) | Pass | 1 / 1 |  |  |
 | [`sticky/position-sticky-bottom.html`](https://wpt.fyi/results/css/css-position/sticky/position-sticky-bottom.html) | Pass | 3 / 3 |  |  |
 | [`sticky/position-sticky-get-bounding-client-rect.html`](https://wpt.fyi/results/css/css-position/sticky/position-sticky-get-bounding-client-rect.html) | Pass | 3 / 3 |  |  |
 | [`sticky/position-sticky-horizontal-rtl-overconstrained.html`](https://wpt.fyi/results/css/css-position/sticky/position-sticky-horizontal-rtl-overconstrained.html) | Pass | 4 / 4 |  |  |

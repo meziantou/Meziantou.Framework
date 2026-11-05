@@ -11,14 +11,13 @@ description: "The results of the web-platform-tests of css/css-transforms, and w
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 101 | 105 | 0 | 96% |
 | [Tentative](#tentative-tests) | 1 | 3 | 0 | 33% |
-| [Reftests](#reftests) | 793 | 797 | 0 | 99% |
-| **All** | **895** | **905** | **0** | **99%** |
+| [Reftests](#reftests) | 794 | 797 | 0 | 99.6% |
+| **All** | **896** | **905** | **0** | **99%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
 - **TEST BUG**: 5
 - **NOT IMPLEMENTED**: 4
 
@@ -444,7 +443,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`perspective-zero.html`](https://wpt.fyi/results/css/css-transforms/perspective-zero.html) | Pass | 1 / 1 |  |  |
 | [`preserve-3d-flat-grouping-properties-containing-block-inline.tentative.html`](https://wpt.fyi/results/css/css-transforms/preserve-3d-flat-grouping-properties-containing-block-inline.tentative.html) | Pass | 1 / 1 |  |  |
 | [`preserve3d-and-filter-no-perspective.html`](https://wpt.fyi/results/css/css-transforms/preserve3d-and-filter-no-perspective.html) | Pass | 1 / 1 |  |  |
-| [`preserve3d-and-filter-with-perspective.html`](https://wpt.fyi/results/css/css-transforms/preserve3d-and-filter-with-perspective.html) | Fail | 0 / 1 | BUG | an element with `filter: blur(1px)` whose accumulated transform has a perspective (`perspective: 1300px` on the scene, `rotateY(88deg)` then `rotateX(90deg)` in a `preserve-3d` context) is not painted at all (the same box without the filter is painted): the image filters of a layer (blur, drop-shadow) are not rendered under a perspective matrix by the rasterizer, so the black shadow inside the blue outline is missing |
+| [`preserve3d-and-filter-with-perspective.html`](https://wpt.fyi/results/css/css-transforms/preserve3d-and-filter-with-perspective.html) | Pass | 1 / 1 |  |  |
 | [`preserve3d-and-flattening-001.html`](https://wpt.fyi/results/css/css-transforms/preserve3d-and-flattening-001.html) | Pass | 1 / 1 |  |  |
 | [`preserve3d-and-flattening-002.html`](https://wpt.fyi/results/css/css-transforms/preserve3d-and-flattening-002.html) | Pass | 1 / 1 |  |  |
 | [`preserve3d-and-flattening-003.html`](https://wpt.fyi/results/css/css-transforms/preserve3d-and-flattening-003.html) | Pass | 1 / 1 |  |  |

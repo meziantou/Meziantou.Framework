@@ -14,6 +14,19 @@ public partial class Document
     /// <summary>The timestamp (<see cref="DomEventLoop.TimeProvider"/>) of the most recent excluding input, or null when there was none.</summary>
     private long? _lastExcludingInputTimestamp;
 
+    /// <summary>
+    /// Whether a touch pointer is pressed (its <c>pointerdown</c> was an excluding input): the layout shifts are held until the
+    /// pointer is released, as the <c>pointerdown</c> is not an excluding input when the touch becomes a scroll (the pointer
+    /// event stream is canceled, https://wicg.github.io/layout-instability/#excluding-input).
+    /// </summary>
+    private bool _isTouchPointerDownPending;
+
+    /// <summary>The timestamp of the excluding input that preceded the <c>pointerdown</c> of the pressed touch pointer.</summary>
+    private long? _excludingInputTimestampBeforeTouchPointerDown;
+
+    /// <summary>The layout shifts held while a touch pointer is pressed (see <see cref="_isTouchPointerDownPending"/>), or null.</summary>
+    private List<(double StartTime, double Value, LayoutShiftAttribution[] Sources)>? _pendingLayoutShifts;
+
     /// <summary>Whether the layout shifts of the document are computed by the rendering updates.</summary>
     internal bool IsTrackingLayoutShifts => _layoutShiftTracker is not null;
 
@@ -54,10 +67,54 @@ public partial class Document
             _ => false,
         };
 
+        switch (@event)
+        {
+            case PointerEvent { Type: "pointerdown", PointerType: "touch" } when !_isTouchPointerDownPending:
+                _isTouchPointerDownPending = true;
+                _excludingInputTimestampBeforeTouchPointerDown = _lastExcludingInputTimestamp;
+                break;
+
+            case PointerEvent { Type: "pointerup", PointerType: "touch" } when _isTouchPointerDownPending:
+                _isTouchPointerDownPending = false;
+                QueuePendingLayoutShifts();
+                break;
+
+            case PointerEvent { Type: "pointercancel", PointerType: "touch" } when _isTouchPointerDownPending:
+                // The pointerdown of a pointer event stream that is canceled (e.g. a touch that becomes a scroll) is not an
+                // excluding input
+                _isTouchPointerDownPending = false;
+                _lastExcludingInputTimestamp = _excludingInputTimestampBeforeTouchPointerDown;
+                QueuePendingLayoutShifts();
+                break;
+        }
+
         if (isExcludingInput && EventLoop is { } eventLoop)
         {
             _lastExcludingInputTimestamp = eventLoop.TimeProvider.GetTimestamp();
         }
+    }
+
+    /// <summary>Queues the layout shifts held while a touch pointer was pressed, now that the excluding inputs are known.</summary>
+    private void QueuePendingLayoutShifts()
+    {
+        if (_pendingLayoutShifts is not { } shifts)
+            return;
+
+        _pendingLayoutShifts = null;
+        if (DefaultView is not { } window)
+            return;
+
+        foreach (var (startTime, value, sources) in shifts)
+        {
+            QueueLayoutShiftEntry(window, startTime, value, sources);
+        }
+    }
+
+    private void QueueLayoutShiftEntry(Window window, double startTime, double value, LayoutShiftAttribution[] sources)
+    {
+        var lastInputTime = _lastExcludingInputTimestamp is { } timestamp ? window.ToRelativeHighResolutionTime(timestamp) : 0;
+        var hadRecentInput = _lastExcludingInputTimestamp is not null && startTime - lastInputTime < RecentInputDuration;
+        window.Performance.QueueLayoutShiftEntry(new LayoutShift(window, startTime, value, hadRecentInput, lastInputTime, sources));
     }
 
     /// <summary>
@@ -74,8 +131,6 @@ public partial class Document
             return;
 
         var startTime = window.GetCurrentHighResolutionTime();
-        var lastInputTime = _lastExcludingInputTimestamp is { } timestamp ? window.ToRelativeHighResolutionTime(timestamp) : 0;
-        var hadRecentInput = _lastExcludingInputTimestamp is not null && startTime - lastInputTime < RecentInputDuration;
 
         // https://wicg.github.io/layout-instability/#create-the-attribution: the rectangles in CSS pixels
         var sources = new LayoutShiftAttribution[shift.Sources.Length];
@@ -85,7 +140,13 @@ public partial class Document
             sources[i] = new LayoutShiftAttribution(source.Node, ToDomRect(source.PreviousRect), ToDomRect(source.CurrentRect));
         }
 
-        window.Performance.QueueLayoutShiftEntry(new LayoutShift(window, startTime, shift.Value, hadRecentInput, lastInputTime, sources));
+        if (_isTouchPointerDownPending)
+        {
+            (_pendingLayoutShifts ??= []).Add((startTime, shift.Value, sources));
+            return;
+        }
+
+        QueueLayoutShiftEntry(window, startTime, shift.Value, sources);
 
         static DomRectReadOnly ToDomRect(PhysicalRect rect) => new(rect.X, rect.Y, rect.Width, rect.Height);
     }

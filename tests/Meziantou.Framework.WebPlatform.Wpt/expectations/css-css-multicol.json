@@ -1637,7 +1637,7 @@
     "reftest": "PASS"
   },
   "css/css-multicol/spanner-in-opacity.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-multicol/subpixel-column-progression.html": {
     "total": 4

@@ -11,14 +11,14 @@ description: "The results of the web-platform-tests of css/filter-effects, and w
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 37 | 37 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
-| [Reftests](#reftests) | 382 | 394 | 0 | 97% |
-| **All** | **419** | **431** | **0** | **97%** |
+| [Reftests](#reftests) | 384 | 394 | 0 | 97% |
+| **All** | **421** | **431** | **0** | **98%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 7
+- **BUG**: 4
 - **TEST BUG**: 5
 - **NOT IMPLEMENTED**: 1
 
@@ -253,11 +253,11 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`feImage-with-hidden-container-radialGradient.html`](https://wpt.fyi/results/css/filter-effects/feImage-with-hidden-container-radialGradient.html) | Pass | 1 / 1 |  |  |
 | [`feImage-with-text-viewport-dependence.html`](https://wpt.fyi/results/css/filter-effects/feImage-with-text-viewport-dependence.html) | Pass | 1 / 1 |  |  |
 | [`feTile-01.html`](https://wpt.fyi/results/css/filter-effects/feTile-01.html) | Pass | 1 / 1 |  |  |
-| [`fecolormatrix-display-p3.html`](https://wpt.fyi/results/css/filter-effects/fecolormatrix-display-p3.html) | Fail | 0 / 1 | BUG | an SVG image with a filter (`color-interpolation-filters="sRGB"`) drawn with `drawImage()` into a canvas with `colorSpace: 'display-p3'`: the filter primitives are applied to the display-p3 encoded values of the canvas instead of the sRGB values: the `feColorMatrix` gives rgb(205, 237, 90) instead of #ffff89 in the third square (the inline svg and the img are right); Chrome fails too |
+| [`fecolormatrix-display-p3.html`](https://wpt.fyi/results/css/filter-effects/fecolormatrix-display-p3.html) | Pass | 1 / 1 |  |  |
 | [`fecolormatrix-negative.html`](https://wpt.fyi/results/css/filter-effects/fecolormatrix-negative.html) | Pass | 1 / 1 |  |  |
 | [`fecolormatrix-special-value.html`](https://wpt.fyi/results/css/filter-effects/fecolormatrix-special-value.html) | Pass | 1 / 1 |  |  |
 | [`fecolormatrix-type.html`](https://wpt.fyi/results/css/filter-effects/fecolormatrix-type.html) | Pass | 1 / 1 |  |  |
-| [`fecomponenttransfer-display-p3.html`](https://wpt.fyi/results/css/filter-effects/fecomponenttransfer-display-p3.html) | Fail | 0 / 1 | BUG, TEST BUG | an SVG image with a filter (`color-interpolation-filters="sRGB"`) drawn with `drawImage()` into a canvas with `colorSpace: 'display-p3'`: the filter primitives are applied to the display-p3 encoded values of the canvas instead of the sRGB values: the discrete `feComponentTransfer` gives rgb(0, 21, 11) instead of red in the third square; fails in every browser: the reference is the one of fecolormatrix-display-p3.html (three yellow #ffff89 squares) while the test paints three red squares |
+| [`fecomponenttransfer-display-p3.html`](https://wpt.fyi/results/css/filter-effects/fecomponenttransfer-display-p3.html) | Fail | 0 / 1 | TEST BUG | fails in every browser: the reference is the one of fecolormatrix-display-p3.html (three yellow #ffff89 squares) while the test paints three red squares |
 | [`fecomposite-non-zero-inoffset-001.html`](https://wpt.fyi/results/css/filter-effects/fecomposite-non-zero-inoffset-001.html) | Pass | 1 / 1 |  |  |
 | [`feconvolve-divisor.html`](https://wpt.fyi/results/css/filter-effects/feconvolve-divisor.html) | Pass | 1 / 1 |  |  |
 | [`feconvolve-region-001.html`](https://wpt.fyi/results/css/filter-effects/feconvolve-region-001.html) | Pass | 1 / 1 |  |  |
@@ -312,8 +312,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`filter-grayscale-005.html`](https://wpt.fyi/results/css/filter-effects/filter-grayscale-005.html) | Pass | 1 / 1 |  |  |
 | [`filter-hue_rotate-001-test.html`](https://wpt.fyi/results/css/filter-effects/filter-hue_rotate-001-test.html) | Pass | 1 / 1 |  |  |
 | [`filter-hue_rotate-002-test.html`](https://wpt.fyi/results/css/filter-effects/filter-hue_rotate-002-test.html) | Pass | 1 / 1 |  |  |
-| [`filter-in-3d-transformed-ancestor-child-crossing-eye-plane.html`](https://wpt.fyi/results/css/filter-effects/filter-in-3d-transformed-ancestor-child-crossing-eye-plane.html) | Fail | 0 / 1 | BUG | a filtered element (`drop-shadow()`) rotated under a perspective (`rotateY(50deg)` under `perspective: 600px`) is drawn as a washed-out smear over the whole viewport instead of the projected green box, its shadow and the orange child: the horizon of its plane is inside the viewport (on its right side), and the filter is applied on an image of the part of the plane the viewport shows (`DrawingSession.PushProjectedLayer` of Imaging, without the bounds of the content), which reaches far toward the horizon, so the image is scaled down to its pixel budget and is too coarse (rasterized alone, the same filtered element without the child is not drawn at all, and it is drawn correctly with its matrix rounded to 3 decimals, which moves the horizon out of the viewport) |
-| [`filter-in-3d-transformed-ancestor-child-near-eye-plane.html`](https://wpt.fyi/results/css/filter-effects/filter-in-3d-transformed-ancestor-child-near-eye-plane.html) | Fail | 0 / 1 | BUG | a filtered element (`drop-shadow()`) rotated under a perspective (`rotateY(50deg)` under `perspective: 600px`) is drawn as a washed-out smear over the whole viewport instead of the projected green box, its shadow and the orange child: the horizon of its plane is inside the viewport (on its right side), and the filter is applied on an image of the part of the plane the viewport shows (`DrawingSession.PushProjectedLayer` of Imaging, without the bounds of the content), which reaches far toward the horizon, so the image is scaled down to its pixel budget and is too coarse (rasterized alone, the same filtered element without the child is not drawn at all, and it is drawn correctly with its matrix rounded to 3 decimals, which moves the horizon out of the viewport) |
+| [`filter-in-3d-transformed-ancestor-child-crossing-eye-plane.html`](https://wpt.fyi/results/css/filter-effects/filter-in-3d-transformed-ancestor-child-crossing-eye-plane.html) | Fail | 0 / 1 | BUG | a filtered element (`drop-shadow()`) rotated under a perspective whose plane crosses the plane of the eye is drawn as a washed-out smear over the viewport instead of the projected green box, its shadow and the orange child: the filter is applied on an image of the part of the plane the clip shows (`DrawingSession.PushProjectedLayer` of Imaging); the filtered layer is clipped to the bounds of its content with the reach of the filters, but a part of these bounds is behind the eye, so their image is unbounded, the image of the plane reaches far toward the horizon and is scaled down to its pixel budget (too coarse) |
+| [`filter-in-3d-transformed-ancestor-child-near-eye-plane.html`](https://wpt.fyi/results/css/filter-effects/filter-in-3d-transformed-ancestor-child-near-eye-plane.html) | Pass | 1 / 1 |  |  |
 | [`filter-in-3d-transformed-ancestor.html`](https://wpt.fyi/results/css/filter-effects/filter-in-3d-transformed-ancestor.html) | Pass | 1 / 1 |  |  |
 | [`filter-invalid.html`](https://wpt.fyi/results/css/filter-effects/filter-invalid.html) | Pass | 1 / 1 |  |  |
 | [`filter-invert-001-test.html`](https://wpt.fyi/results/css/filter-effects/filter-invert-001-test.html) | Pass | 1 / 1 |  |  |

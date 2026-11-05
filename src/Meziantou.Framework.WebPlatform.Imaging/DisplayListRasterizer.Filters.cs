@@ -12,6 +12,13 @@ internal sealed partial class DisplayListRasterizer
     private const int ColorMatrixLength = 20;
 
     /// <summary>
+    /// The color space of the values the primitives of the filter graph being created compute: sRGB, the space of the
+    /// operations of the filters (https://drafts.fxtf.org/filter-effects/#attr-valuedef-color-interpolation-filters-srgb),
+    /// whose input and output are converted from and to the color space of a display-p3 bitmap.
+    /// </summary>
+    private RenderingColorSpace? _filterColorSpace;
+
+    /// <summary>
     /// Creates the filter of the drawing API of the filters of a display list, applied one after the other
     /// (https://drafts.fxtf.org/filter-effects/#FilterProperty), or returns null when no filter changes anything.
     /// </summary>
@@ -55,11 +62,45 @@ internal sealed partial class DisplayListRasterizer
                     new D.CompositePrimitive(D.FilterCompositeOperator.In, D.FilterInput.SourceGraphic) { ColorSpace = D.FilterColorSpace.Srgb });
 
             case FilterGraph graph:
-                return CreateFilterGraph(graph);
+                return _colorSpace == RenderingColorSpace.DisplayP3 ? CreateSrgbFilterGraph(graph) : CreateFilterGraph(graph);
 
             default:
                 return null;
         }
+    }
+
+    /// <summary>
+    /// Creates the graph of the primitives of an SVG filter element for a display-p3 bitmap: the primitives compute on the
+    /// sRGB values of the drawing (the primitives in <c>color-interpolation-filters: sRGB</c> operate on the sRGB values,
+    /// and the linearRGB ones on their linear values), so the drawing is converted to sRGB before the graph and its result
+    /// back to display-p3 after it. The colors that leave the gamut of sRGB are clipped by the conversion.
+    /// </summary>
+    private D.FilterChain? CreateSrgbFilterGraph(FilterGraph graph)
+    {
+        _filterColorSpace = RenderingColorSpace.Srgb;
+        D.FilterGraph? result;
+        try
+        {
+            result = CreateFilterGraph(graph);
+        }
+        finally
+        {
+            _filterColorSpace = null;
+        }
+
+        if (result is null)
+            return null;
+
+        // The two color spaces have the same transfer function: the conversion is a matrix of the linear values
+        // (https://drafts.csswg.org/css-color-4/#color-conversion-code)
+        return new D.FilterChain([
+            CreateLinearConversion(1.2249401762805598, -0.22494017628055996, 0, -0.042056954709688163, 1.0420569547096881, 0, -0.019637554590334432, -0.07863604555063188, 1.0982736001409663),
+            result,
+            CreateLinearConversion(0.8224619687143623, 0.17753803128563775, 0, 0.03319419885096161, 0.9668058011490384, 0, 0.017082631106915046, 0.07239744066396346, 0.9105199282291515),
+        ]);
+
+        static D.FilterGraph CreateLinearConversion(double rr, double rg, double rb, double gr, double gg, double gb, double br, double bg, double bb)
+            => new(new D.ColorMatrixPrimitive(new ColorMatrix([rr, rg, rb, 0, 0, gr, gg, gb, 0, 0, br, bg, bb, 0, 0, 0, 0, 0, 1, 0])) { Input = D.FilterInput.SourceGraphic, ColorSpace = D.FilterColorSpace.LinearRgb });
     }
 
     /// <summary>Creates the graph of the primitives of an SVG filter element (https://drafts.fxtf.org/filter-effects/#FilterElement).</summary>
@@ -116,6 +157,12 @@ internal sealed partial class DisplayListRasterizer
             case ImagePrimitive image:
             {
                 var content = image.Content;
+                if (_filterColorSpace is { } filterColorSpace)
+                {
+                    var matrix = _matrix;
+                    return new D.ImagePrimitive(canvas => new DisplayListRasterizer(_backend, filterColorSpace).Draw(canvas, content, matrix)) { Subregion = subregion, ColorSpace = colorSpace };
+                }
+
                 return new D.ImagePrimitive(canvas => DrawNested(canvas, content, _matrix)) { Subregion = subregion, ColorSpace = colorSpace };
             }
 
@@ -414,7 +461,7 @@ internal sealed partial class DisplayListRasterizer
         return new ColorMatrix(values);
     }
 
-    private Rgba64 ToColor(DisplayColor color) => ColorSpaces.ToRgba64(color, _colorSpace);
+    private Rgba64 ToColor(DisplayColor color) => ColorSpaces.ToRgba64(color, _filterColorSpace ?? _colorSpace);
 
     private static PointD ToOffset(double x, double y) => new(PathConversions.Clamp(x), PathConversions.Clamp(y));
 

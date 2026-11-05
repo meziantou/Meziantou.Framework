@@ -1,0 +1,60 @@
+{
+  "idle-detection/basics.tentative.https.window.js": {
+    "total": 12
+  },
+  "idle-detection/idle-detection-allowed-by-permissions-policy-attribute-redirect-on-load.https.sub.html": {
+    "total": 4
+  },
+  "idle-detection/idle-detection-allowed-by-permissions-policy-attribute.https.sub.html": {
+    "total": 4
+  },
+  "idle-detection/idle-detection-allowed-by-permissions-policy.https.sub.html": {
+    "total": 6
+  },
+  "idle-detection/idle-detection-default-permissions-policy.https.sub.html": {
+    "total": 3
+  },
+  "idle-detection/idle-detection-detached-frame.https.html": {
+    "total": 1
+  },
+  "idle-detection/idle-detection-disabled-by-permissions-policy.https.sub.html": {
+    "total": 6,
+    "failures": {
+      "Inherited Permissions-Policy header idle-detection=() disallows dedicated workers.": "FAIL",
+      "Permissions-Policy idle-detection=() explicitly set by top-level frame disallows query in the top-level document.": "FAIL"
+    }
+  },
+  "idle-detection/idle-permission.tentative.https.window.js": {
+    "total": 3,
+    "failures": {
+      "The idle-detection permission cannot be requested without a user gesture": "FAIL"
+    }
+  },
+  "idle-detection/idlharness-worker.https.window.js": {
+    "total": 22
+  },
+  "idle-detection/idlharness.https.window.js": {
+    "total": 21
+  },
+  "idle-detection/interceptor.https.html": {
+    "total": 10,
+    "failures": {
+      "A start() that has been aborted can be retried": "FAIL",
+      "Calling abort() after start() makes it fail": "FAIL",
+      "Calling abort() before start() makes it fail": "FAIL",
+      "Calling start() after abort(): re-starting monitor.": "FAIL",
+      "Calling start() and abort() multiple times": "FAIL",
+      "IdleDetector.onchange": "FAIL",
+      "locked screen": "FAIL",
+      "start()": "FAIL",
+      "updates once": "FAIL",
+      "updates twice": "FAIL"
+    }
+  },
+  "idle-detection/page-visibility.https.html": {
+    "total": 1,
+    "failures": {
+      "Page visibility.": "FAIL"
+    }
+  }
+}

@@ -242,6 +242,12 @@ public sealed class WptTests
 
     public static TheoryData<string> ClearSiteDataTests => GetTests("clear-site-data");
 
+    public static TheoryData<string> ComputePressureTests => GetTests("compute-pressure");
+
+    public static TheoryData<string> IdleDetectionTests => GetTests("idle-detection");
+
+    public static TheoryData<string> DevicePostureTests => GetTests("device-posture");
+
     public static TheoryData<string> ScreenOrientationTests => GetTests("screen-orientation");
 
     public static TheoryData<string> VirtualKeyboardTests => GetTests("virtual-keyboard");
@@ -1156,6 +1162,18 @@ public sealed class WptTests
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(ClearSiteDataTests))]
     public void ClearSiteData(string test) => Run("clear-site-data", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(ComputePressureTests))]
+    public void ComputePressure(string test) => Run("compute-pressure", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(IdleDetectionTests))]
+    public void IdleDetection(string test) => Run("idle-detection", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(DevicePostureTests))]
+    public void DevicePosture(string test) => Run("device-posture", test);
 
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(ScreenOrientationTests))]

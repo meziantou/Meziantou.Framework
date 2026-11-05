@@ -405,6 +405,8 @@ public partial class Document : Node
 
             range.OnPreRemove(node, parent, index);
         }
+
+        _selection?.OnPreRemove(node, parent, index);
     }
 
     /// <summary>Updates the live ranges when the data of a CharacterData node is replaced.</summary>

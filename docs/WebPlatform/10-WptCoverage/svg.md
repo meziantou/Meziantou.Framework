@@ -9,17 +9,17 @@ description: "The results of the web-platform-tests of svg, and why the tests th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 710 | 742 | 2 | 96% |
+| [Stable](#stable-tests) | 712 | 742 | 2 | 96% |
 | [Tentative](#tentative-tests) | 46 | 47 | 0 | 98% |
 | [Reftests](#reftests) | 557 | 629 | 2 | 89% |
-| **All** | **1,313** | **1,418** | **4** | **93%** |
+| **All** | **1,315** | **1,418** | **4** | **93%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 13
-- **TEST BUG**: 9
+- **BUG**: 9
+- **TEST BUG**: 11
 - **NOT IMPLEMENTED**: 74
 - **TEST RUNNER**: 7
 - **FLAKY**: 2
@@ -374,7 +374,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`geometry/svg-image-intrinsic-size-with-cssstyle-auto-dynamic-image-change.html`](https://wpt.fyi/results/svg/geometry/svg-image-intrinsic-size-with-cssstyle-auto-dynamic-image-change.html) | Pass | 1 / 1 |  |  |
 | [`geometry/svg-image-intrinsic-size-with-cssstyle-auto.html`](https://wpt.fyi/results/svg/geometry/svg-image-intrinsic-size-with-cssstyle-auto.html) | Pass | 32 / 32 |  |  |
 | [`geometry/svg-length-convert-to-percentage-precision.html`](https://wpt.fyi/results/svg/geometry/svg-length-convert-to-percentage-precision.html) | Pass | 4 / 4 |  |  |
-| [`historical.html`](https://wpt.fyi/results/svg/historical.html) | Fail | 65 / 68 | BUG | `getTotalLength()`, `getPointAtLength()` and `pathLength` are also on `SVGPathElement.prototype` (they belong to `SVGGeometryElement`) |
+| [`historical.html`](https://wpt.fyi/results/svg/historical.html) | Pass | 68 / 68 |  |  |
 | [`idlharness.window.js`](https://wpt.fyi/results/svg/idlharness.window.js) | Disabled | – | TEST RUNNER | the files of the `svg` directory root are not fetched (except `historical.html`) |
 | [`interact/focus-inside-hidden-svg-containers-01.html`](https://wpt.fyi/results/svg/interact/focus-inside-hidden-svg-containers-01.html) | Pass | 1 / 1 |  |  |
 | [`interact/focus-inside-hidden-svg-containers-02.html`](https://wpt.fyi/results/svg/interact/focus-inside-hidden-svg-containers-02.html) | Pass | 1 / 1 |  |  |
@@ -410,7 +410,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`interact/scripted/svg-pointer-events-bbox.html`](https://wpt.fyi/results/svg/interact/scripted/svg-pointer-events-bbox.html) | Pass | 31 / 31 |  |  |
 | [`interact/scripted/svg-root-border-radius.html`](https://wpt.fyi/results/svg/interact/scripted/svg-root-border-radius.html) | Pass | 1 / 1 |  |  |
 | [`interact/scripted/svg-small-big-path.html`](https://wpt.fyi/results/svg/interact/scripted/svg-small-big-path.html) | Pass | 5 / 5 |  |  |
-| [`interact/scripted/tabindex-focus-flag.svg`](https://wpt.fyi/results/svg/interact/scripted/tabindex-focus-flag.svg) | Fail | 36 / 39 | BUG | `audio[controls]`, `video[controls]` and `canvas[tabindex]`, children of a `g` element (HTML elements in SVG content, which generate no box), are not focusable: the test expects them focusable as if they were rendered (the `iframe` passes because focusing it focuses its document) |
+| [`interact/scripted/tabindex-focus-flag.svg`](https://wpt.fyi/results/svg/interact/scripted/tabindex-focus-flag.svg) | Fail | 36 / 39 | TEST BUG | `audio[controls]`, `video[controls]` and `canvas[tabindex]` are children of an SVG `g` element: SVG 2 does not render HTML elements outside of a `foreignObject` (https://svgwg.org/svg2-draft/render.html#Rendered-vs-NonRendered), and an element is a focusable area only when it is being rendered, delegates its rendering to its children or is relevant canvas fallback content (HTML §6.6.2 Data model), so they are not focusable; the test expects them focusable (the `iframe` passes because focusing it focuses its document) |
 | [`interact/scripted/text-hittest-001.html`](https://wpt.fyi/results/svg/interact/scripted/text-hittest-001.html) | Pass | 1 / 1 |  |  |
 | [`interact/scripted/text-hittest-002.html`](https://wpt.fyi/results/svg/interact/scripted/text-hittest-002.html) | Pass | 1 / 1 |  |  |
 | [`interact/scripted/text-hittest-003.html`](https://wpt.fyi/results/svg/interact/scripted/text-hittest-003.html) | Pass | 1 / 1 |  |  |
@@ -602,7 +602,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`struct/scripted/svg-getIntersectionList-004.svg`](https://wpt.fyi/results/svg/struct/scripted/svg-getIntersectionList-004.svg) | Pass | 1 / 1 |  |  |
 | [`struct/scripted/svg-getIntersectionList-005.svg`](https://wpt.fyi/results/svg/struct/scripted/svg-getIntersectionList-005.svg) | Pass | 1 / 1 |  |  |
 | [`struct/scripted/svg-getIntersectionList-006.svg`](https://wpt.fyi/results/svg/struct/scripted/svg-getIntersectionList-006.svg) | Pass | 1 / 1 |  |  |
-| [`struct/scripted/switch_reentrant_removal.html`](https://wpt.fyi/results/svg/struct/scripted/switch_reentrant_removal.html) | Error | 1 / 1 | BUG | the rendered child of a `<switch>` is not updated when it is removed (the harness reports an error) |
+| [`struct/scripted/switch_reentrant_removal.html`](https://wpt.fyi/results/svg/struct/scripted/switch_reentrant_removal.html) | Error | 1 / 1 | TEST BUG | the test requires an `unload` event fired in the document of an iframe while its ancestor is removed by `removeChild()`, after the removal: HTML's destroy a child navigable (run by the removing steps of the iframe) destroys the document without unloading it (https://html.spec.whatwg.org/multipage/document-lifecycle.html#destroy-a-document-and-its-descendants), and the library fires `unload` before the removal, so `child.parentNode` is still the `switch` in the handler (the harness reports the uncaught assertion as an error) |
 | [`struct/scripted/use-composedpath-closed-shadow-tree.html`](https://wpt.fyi/results/svg/struct/scripted/use-composedpath-closed-shadow-tree.html) | Pass | 2 / 2 |  |  |
 | [`struct/scripted/use-external-reload-in-iframe.html`](https://wpt.fyi/results/svg/struct/scripted/use-external-reload-in-iframe.html) | Pass | 1 / 1 |  |  |
 | [`struct/scripted/use-iframe-onload.html`](https://wpt.fyi/results/svg/struct/scripted/use-iframe-onload.html) | Pass | 1 / 1 |  |  |
@@ -634,8 +634,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`text/inheritance.svg`](https://wpt.fyi/results/svg/text/inheritance.svg) | Fail | 8 / 10 | NOT IMPLEMENTED | the `shape-subtract` property |
 | [`text/parsing/inline-size-invalid.svg`](https://wpt.fyi/results/svg/text/parsing/inline-size-invalid.svg) | Pass | 5 / 5 |  |  |
 | [`text/parsing/inline-size-valid.svg`](https://wpt.fyi/results/svg/text/parsing/inline-size-valid.svg) | Pass | 5 / 5 |  |  |
-| [`text/parsing/shape-inside-invalid.svg`](https://wpt.fyi/results/svg/text/parsing/shape-inside-invalid.svg) | Fail | 3 / 4 | BUG | `shape-inside` accepts `inset()` and rejects a basic shape followed by a `url()` |
-| [`text/parsing/shape-inside-valid.svg`](https://wpt.fyi/results/svg/text/parsing/shape-inside-valid.svg) | Fail | 5 / 6 | BUG | `shape-inside` accepts `inset()` and rejects a basic shape followed by a `url()` |
+| [`text/parsing/shape-inside-invalid.svg`](https://wpt.fyi/results/svg/text/parsing/shape-inside-invalid.svg) | Fail | 3 / 4 | BUG | `shape-inside` accepts `inset(25%)`: CSS Shapes 2 allows every `<basic-shape>`, SVG 2 (https://svgwg.org/svg2-draft/text.html#ShapeInsideProperty) says that `inset()` is invalid for SVG; the library parses the union of the two grammars |
+| [`text/parsing/shape-inside-valid.svg`](https://wpt.fyi/results/svg/text/parsing/shape-inside-valid.svg) | Pass | 6 / 6 |  |  |
 | [`text/parsing/shape-margin-invalid.svg`](https://wpt.fyi/results/svg/text/parsing/shape-margin-invalid.svg) | Pass | 5 / 5 |  |  |
 | [`text/parsing/shape-margin-valid.svg`](https://wpt.fyi/results/svg/text/parsing/shape-margin-valid.svg) | Pass | 4 / 4 |  |  |
 | [`text/parsing/shape-subtract-invalid.svg`](https://wpt.fyi/results/svg/text/parsing/shape-subtract-invalid.svg) | Pass | 4 / 4 |  |  |

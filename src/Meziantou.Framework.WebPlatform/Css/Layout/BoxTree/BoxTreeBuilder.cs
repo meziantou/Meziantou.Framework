@@ -841,9 +841,9 @@ internal sealed partial class BoxTreeBuilder
 
         if (BoxGeneration.IsReplaced(element, style))
         {
-            // As in the browsers, the content of an img element or of an image button can be replaced by an image
+            // As in the browsers, the content of an img element, of an image button or of a video element can be replaced by an image
             // (https://drafts.csswg.org/css-content-3/#content-property)
-            var replaced = new ContainerBox(ContainerBoxKind.Replaced, style, GetReplacedDisplay(display), element) { GeneratedImage = element is HtmlImageElement or HtmlInputElement { InputType: InputType.Image } ? GetReplacementImage(style) : null };
+            var replaced = new ContainerBox(ContainerBoxKind.Replaced, style, GetReplacedDisplay(display), element) { GeneratedImage = element is HtmlImageElement or HtmlInputElement { InputType: InputType.Image } or HtmlVideoElement ? GetReplacementImage(style) : null };
             parent.AppendChild(replaced);
             _boxes[(element, null)] = replaced;
             ApplyContentVisibility(replaced, element, style);
@@ -1628,7 +1628,7 @@ internal sealed partial class BoxTreeBuilder
 
     /// <summary>
     /// The quote of a nesting level (the last pair is used for the deeper levels). The auto value uses the quotation marks of
-    /// the content language of the element (<see cref="LanguageQuotes"/>).
+    /// the content language of the parent of the element (<see cref="LanguageQuotes"/>).
     /// </summary>
     internal static string GetQuote(ComputedStyle style, int depth, bool open)
     {
@@ -1643,8 +1643,10 @@ internal sealed partial class BoxTreeBuilder
 
         if (quotes is "auto" or "match-parent" or "")
         {
-            // The quotation marks of the content language of the element
-            var marks = LanguageQuotes.Get(style.Element is { } element ? Selectors.HtmlElementStates.GetLanguage(element) : null);
+            // The quotation marks of the content language of the parent of the element: "based on the content language of the
+            // element and/or its parent"; the quotes of a quotation follow the language of the text around it, not the language
+            // of the quotation (https://github.com/w3c/csswg-drafts/issues/5478#issuecomment-701507076)
+            var marks = LanguageQuotes.Get(style.Element is { } element ? Selectors.HtmlElementStates.GetLanguage(element.ParentElement ?? element) : null);
             return marks[(depth == 0 ? 0 : 2) + (open ? 0 : 1)];
         }
 

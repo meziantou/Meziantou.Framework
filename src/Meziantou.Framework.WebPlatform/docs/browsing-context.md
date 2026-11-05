@@ -2743,7 +2743,8 @@ specification, the browsers are followed, as the tests expect:
   contents of the end block when the end block is more indented (the item of a nested list, or of a list that follows a
   paragraph), and the nodes of an end block without rendered content are removed with it; a range that starts before a list or
   a list item with contents and ends after the last contents of the editing host deletes the contents of the items and keeps
-  the first item, empty; the `li` that only contained the nested list of an item that Backspace outdents is removed; an empty
+  the first item, empty; the `li` that only contained the nested list of an item that Backspace outdents is removed, and an
+  empty item that Backspace turns into another block gets a `br` (`<td><ol><li>[]</li></ol></td>` gives `<td><div><br></div></td>`); an empty
   block that follows a block that is not editable is removed by Backspace;
 - `insertParagraph` only splits the single-line containers that are block-level: one that is inline-level (e.g. a `div` whose `display` is
   `inline` or `inline-block`) is a content of its line (the line is wrapped in a new `div`, or a line break is inserted when the editing
@@ -2776,6 +2777,11 @@ specification, the browsers are followed, as the tests expect:
 - when the range of `fontName`, `fontSize` or `foreColor` (without `styleWithCSS`) contains a whole `font` element, its attribute is set
   on this element (`<font size=7>[abc]</font>` gives `<font face="monospace" size="7">abc</font>`), and `backColor` and `hiliteColor`
   set the background color on a whole `span` or `font` element that has attributes; the specification wraps the element in a new one.
+  The size of a `font` element that the `fontSize` value is compared to is resolved in the font of the node (`<font size=7>` is
+  39px in a `monospace` font, as `xxx-large`);
+- `subscript` and `superscript` remove the `vertical-align` property of the elements that the range contains, and move the
+  selected nodes out of the inline elements that have this property (`foo<span style=vertical-align:super>[bar]</span>baz`
+  gives `foo<sub>bar</sub>baz`); the specification keeps them, as the property is not the value of these commands;
 - the states and the values of a collapsed selection that is after an inline element are the ones of the end of this
   element (the caret of the browsers);
 - a color that is not valid is black, as in the reference implementation. The `data` of the `input` event of `foreColor`,

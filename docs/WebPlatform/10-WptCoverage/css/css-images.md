@@ -11,14 +11,14 @@ description: "The results of the web-platform-tests of css/css-images, and why t
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 44 | 45 | 0 | 98% |
 | Tentative | 0 | 0 | 0 | – |
-| [Reftests](#reftests) | 465 | 476 | 0 | 98% |
-| **All** | **509** | **521** | **0** | **98%** |
+| [Reftests](#reftests) | 466 | 476 | 0 | 98% |
+| **All** | **510** | **521** | **0** | **98%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 4
+- **BUG**: 3
 - **TEST BUG**: 5
 - **NOT IMPLEMENTED**: 2
 - **TEST RUNNER**: 1
@@ -158,7 +158,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`gradient/gradient-longer-hue-lch-010.html`](https://wpt.fyi/results/css/css-images/gradient/gradient-longer-hue-lch-010.html) | Pass | 1 / 1 |  |  |
 | [`gradient/gradient-longer-hue-lch-011.html`](https://wpt.fyi/results/css/css-images/gradient/gradient-longer-hue-lch-011.html) | Pass | 1 / 1 |  |  |
 | [`gradient/gradient-longer-hue-lch-012.html`](https://wpt.fyi/results/css/css-images/gradient/gradient-longer-hue-lch-012.html) | Pass | 1 / 1 |  |  |
-| [`gradient/gradient-none-interpolation.html`](https://wpt.fyi/results/css/css-images/gradient/gradient-none-interpolation.html) | Fail | 0 / 1 | BUG | the six gradients whose stops have a `none` component in a `color()` or `oklch()` function match; the last one, `linear-gradient(90deg in srgb, rgb(none 255 none), yellow)`, is expected to be yellow (the missing red and blue of the first stop take the values of yellow), but the computed value of the legacy `rgb(none 255 none)` is `rgb(0, 255, 0)` (as css-color requires for the legacy sRGB syntax, css/css-color/parsing/color-computed-rgb.html), so the gradient goes from green to yellow; only Chrome passes |
+| [`gradient/gradient-none-interpolation.html`](https://wpt.fyi/results/css/css-images/gradient/gradient-none-interpolation.html) | Pass | 1 / 1 |  |  |
 | [`gradient/gradient-powerless-hue-hsl.html`](https://wpt.fyi/results/css/css-images/gradient/gradient-powerless-hue-hsl.html) | Pass | 1 / 1 |  |  |
 | [`gradient/gradient-powerless-hue-hwb.html`](https://wpt.fyi/results/css/css-images/gradient/gradient-powerless-hue-hwb.html) | Pass | 1 / 1 |  |  |
 | [`gradient/gradient-powerless-hue-lch.html`](https://wpt.fyi/results/css/css-images/gradient/gradient-powerless-hue-lch.html) | Pass | 1 / 1 |  |  |

@@ -18,7 +18,7 @@ description: "The results of the web-platform-tests of content-security-policy, 
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 3
+- **BUG**: 2
 - **TEST BUG**: 9
 - **NOT IMPLEMENTED**: 24
 - **TEST RUNNER**: 1
@@ -585,7 +585,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`reporting/link-preload-from-header-report-only-nonce.sub.html`](https://wpt.fyi/results/content-security-policy/reporting/link-preload-from-header-report-only-nonce.sub.html) | Pass | 1 / 1 |  |  |
 | [`reporting/link-preload-report-only-nonce.sub.html`](https://wpt.fyi/results/content-security-policy/reporting/link-preload-report-only-nonce.sub.html) | Pass | 1 / 1 |  |  |
 | [`reporting/multiple-report-policies.html`](https://wpt.fyi/results/content-security-policy/reporting/multiple-report-policies.html) | Pass | 2 / 2 |  |  |
-| [`reporting/post-redirect-stacktrace.https.html`](https://wpt.fyi/results/content-security-policy/reporting/post-redirect-stacktrace.https.html) | Timeout | 0 / 4 | BUG, TEST BUG | `Error.prototype.stack` contains the URL of the response of a cross-origin script after its redirect (with its query and its fragment) instead of the URL of the request; the test waits for the `csp-violation` reports of a policy without `report-to` (Chromium): CSP generates them only for the `report-to` directive (https://w3c.github.io/webappsec-csp/#report-violation, step 3.5), as in Firefox |
+| [`reporting/post-redirect-stacktrace.https.html`](https://wpt.fyi/results/content-security-policy/reporting/post-redirect-stacktrace.https.html) | Timeout | 2 / 4 | TEST BUG | the test waits for the `csp-violation` reports of a policy without `report-to` (Chromium): CSP generates them only for the `report-to` directive (https://w3c.github.io/webappsec-csp/#report-violation, step 3.5), as in Firefox |
 | [`reporting/report-and-enforce.html`](https://wpt.fyi/results/content-security-policy/reporting/report-and-enforce.html) | Pass | 3 / 3 |  |  |
 | [`reporting/report-blocked-data-uri.html`](https://wpt.fyi/results/content-security-policy/reporting/report-blocked-data-uri.html) | Pass | 1 / 1 |  |  |
 | [`reporting/report-blocked-uri-cross-origin.sub.html`](https://wpt.fyi/results/content-security-policy/reporting/report-blocked-uri-cross-origin.sub.html) | Pass | 1 / 1 |  |  |

@@ -897,7 +897,7 @@ internal static class ValueMatcher
     {
         foreach (var argument in function.Value)
         {
-            if (argument is CssFunction nested && MathFunctions.Contains(InfraAscii.ToAsciiLowercase(nested.Name)))
+            if (argument is CssFunction nested && (MathFunctions.Contains(InfraAscii.ToAsciiLowercase(nested.Name)) || IsTreeCountingFunction(nested)))
                 return true;
 
             if (argument is CssPreservedToken { Type: CssTokenType.Ident } ident && InfraAscii.EqualsIgnoreAsciiCase(ident.Token.Value, "from"))

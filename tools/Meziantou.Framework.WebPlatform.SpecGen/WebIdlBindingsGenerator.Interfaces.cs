@@ -802,14 +802,17 @@ internal sealed partial class WebIdlBindingsGenerator
         }
 
         // The .NET methods that can take the arguments
-        var candidates = new List<(string Condition, string Call, Type ReturnType)>();
+        var candidates = new List<(string Condition, string Call, Type ReturnType, bool InRelevantRealm)>();
         foreach (var method in clrMethods.OrderBy(m => m.GetParameters().Length))
         {
             if (TryBindMethod(method, naturals, defaultArguments, out var condition, out var call))
             {
                 var returnType = method is MethodInfo methodInfo ? methodInfo.ReturnType : method.DeclaringType!;
                 var target = isConstructor ? $"new {TypeName(method.DeclaringType!)}" : method.IsStatic ? $"{TypeName(method.DeclaringType!)}.{method.Name}" : $"o.{method.Name}";
-                candidates.Add((condition, $"{target}({call})", returnType));
+                // The result of an operation annotated with IdlResultInRelevantRealmAttribute (internal) is created in the relevant
+                // realm of this
+                var inRelevantRealm = !isConstructor && !method.IsStatic && method.GetCustomAttributesData().Any(attribute => attribute.AttributeType.Name == "IdlResultInRelevantRealmAttribute");
+                candidates.Add((condition, $"{target}({call})", returnType, inRelevantRealm));
             }
         }
 
@@ -819,7 +822,7 @@ internal sealed partial class WebIdlBindingsGenerator
             return null;
         }
 
-        foreach (var (condition, call, returnType) in candidates)
+        foreach (var (condition, call, returnType, inRelevantRealm) in candidates)
         {
             string returnStatement;
             if (isConstructor)
@@ -834,6 +837,11 @@ internal sealed partial class WebIdlBindingsGenerator
             {
                 var returnIdlType = overload.Type ?? new IdlType { Name = "any" };
                 var toJs = EmitToJs(returnType, returnIdlType, "result");
+                if (inRelevantRealm && toJs == "r.Wrap(result)")
+                {
+                    toJs = "r.GetRelevantRealm(t).Wrap(result)";
+                }
+
                 if (returnIdlType.Union && returnIdlType.Subtypes.Exists(t => t.Name == "undefined"))
                 {
                     toJs = $"result is null ? r.Adapter.Undefined : {toJs}";

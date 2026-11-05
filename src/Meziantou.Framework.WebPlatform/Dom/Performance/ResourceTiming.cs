@@ -69,7 +69,6 @@ internal sealed class ResourceTiming
 {
     private readonly GlobalScope _global;
     private readonly FetchRequest _request;
-    private readonly string _requestedUrl;
     private readonly string _initiatorType;
     private readonly long _startTimestamp;
     private bool _reported;
@@ -78,7 +77,6 @@ internal sealed class ResourceTiming
     {
         _global = global;
         _request = request;
-        _requestedUrl = request.Url.Serialize();
         _initiatorType = initiatorType;
         _startTimestamp = global.EventLoop.TimeProvider.GetTimestamp();
     }
@@ -236,7 +234,9 @@ internal sealed class ResourceTiming
     /// <summary>https://w3c.github.io/resource-timing/#dfn-mark-resource-timing</summary>
     private void Mark(FetchTimingInfo timingInfo, ResponseBodyInfo bodyInfo, int responseStatus, string contentEncoding, IReadOnlyList<PerformanceServerTiming> serverTiming)
     {
-        var entry = new PerformanceResourceTiming(_global, _requestedUrl, _initiatorType, timingInfo, bodyInfo, responseStatus, contentEncoding, serverTiming) { IsRenderBlocking = _request.RenderBlocking };
+        // https://fetch.spec.whatwg.org/#finalize-and-report-timing: the name is the first URL of the URL list of the response,
+        // i.e. the URL of the request once upgraded to https: by main fetch (mixed content, upgrade-insecure-requests)
+        var entry = new PerformanceResourceTiming(_global, _request.RedirectChain[0].Serialize(), _initiatorType, timingInfo, bodyInfo, responseStatus, contentEncoding, serverTiming) { IsRenderBlocking = _request.RenderBlocking };
         var performance = _global.Performance;
         performance.QueueEntry(entry);
         performance.AddResourceTimingEntry(entry);

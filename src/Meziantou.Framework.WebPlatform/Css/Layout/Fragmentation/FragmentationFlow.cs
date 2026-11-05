@@ -773,6 +773,7 @@ internal sealed class FragmentationFlow
         flow.ContentEnd = 0;
         flow.VisitChildren(children, children.Length, stripSize, writingDirection, parentTop: 0, context, CountLines(children), Math.Max(1, fragmentation.Orphans), Math.Max(1, fragmentation.Widows), lastLineEnd,
             firstLineIsTrimmed: context.LineStartTrim != FragmentainerTrim.None && container.ChildrenAreInline && InlineLayoutAlgorithm.IsTextBoxTrimmed(container, start: true));
+        flow.AddTrailingMarginGap(children, stripSize, writingDirection);
 
         // The strip is as tall as its content (a block formatting context root contains its floats); the floats of the
         // contents that overflow a box whose block size does not follow them are in a parallel flow, not in the flow of the strip
@@ -783,6 +784,36 @@ internal sealed class FragmentationFlow
 
         flow.Sort();
         return flow;
+    }
+
+    /// <summary>The block-end margin of the last in-flow child of the strip (see <see cref="AddTrailingMarginGap"/>), or null.</summary>
+    public (double Start, double End)? TrailingMargin { get; private set; }
+
+    /// <summary>
+    /// Records the block-end margin of the last in-flow child of the strip (the strip is a block formatting context root: the
+    /// margin is in it) as a gap: it is truncated when it adjoins a break (https://drafts.csswg.org/css-break-3/#break-margins),
+    /// and at the end of the last fragmentainer, which the content before it fits in.
+    /// </summary>
+    private void AddTrailingMarginGap(ReadOnlySpan<Fragment> children, PhysicalSize stripSize, WritingDirection writingDirection)
+    {
+        for (var i = children.Length - 1; i >= 0; i--)
+        {
+            if (children[i] is BoxFragment { Box.IsOutOfFlow: true } or BoxFragment { Box.IsOutsideMarker: true })
+                continue;
+
+            if (children[i] is BoxFragment last && !MultiColumnFlow.IsColumnSpanner(last.Box))
+            {
+                var (_, bottom, _) = GetBlockRange(last, stripSize, writingDirection, parentTop: 0);
+                var marginEnd = Math.Min(writingDirection.ToLogical(stripSize).Block, bottom + writingDirection.ToLogical(last.Margin).BlockEnd);
+                if (marginEnd > bottom + Epsilon)
+                {
+                    (_gaps ??= []).Add((bottom, marginEnd));
+                    TrailingMargin = (bottom, marginEnd);
+                }
+            }
+
+            return;
+        }
     }
 
     private void Sort()

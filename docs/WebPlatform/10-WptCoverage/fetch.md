@@ -9,17 +9,17 @@ description: "The results of the web-platform-tests of fetch, and why the tests 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 330 | 408 | 1 | 81% |
-| [Tentative](#tentative-tests) | 13 | 77 | 1 | 17% |
+| [Stable](#stable-tests) | 331 | 408 | 1 | 81% |
+| [Tentative](#tentative-tests) | 14 | 77 | 1 | 18% |
 | [Reftests](#reftests) | 9 | 11 | 0 | 82% |
-| **All** | **352** | **496** | **2** | **71%** |
+| **All** | **354** | **496** | **2** | **72%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 8
-- **TEST BUG**: 21
+- **BUG**: 5
+- **TEST BUG**: 22
 - **NOT IMPLEMENTED**: 91
 - **REQUIRES**: 3
   - `layout`: 2
@@ -144,7 +144,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`api/redirect/redirect-location.any.js`](https://wpt.fyi/results/fetch/api/redirect/redirect-location.any.js) | Pass | 165 / 165 |  |  |
 | [`api/redirect/redirect-method.any.js`](https://wpt.fyi/results/fetch/api/redirect/redirect-method.any.js) | Pass | 45 / 45 |  |  |
 | [`api/redirect/redirect-mode.any.js`](https://wpt.fyi/results/fetch/api/redirect/redirect-mode.any.js) | Pass | 122 / 122 |  |  |
-| [`api/redirect/redirect-origin.any.js`](https://wpt.fyi/results/fetch/api/redirect/redirect-origin.any.js) | Fail | 76 / 80 | BUG | an `Origin` header is sent with a same-origin POST redirected (307/308) to the same origin, where the test expects none |
+| [`api/redirect/redirect-origin.any.js`](https://wpt.fyi/results/fetch/api/redirect/redirect-origin.any.js) | Fail | 76 / 80 | TEST BUG | the test expects no `Origin` header for a same-origin POST redirected (307/308) to the same origin: the method stays POST, and "append a request `Origin` header" (https://fetch.spec.whatwg.org/#append-a-request-origin-header, step 4) appends the serialized origin to a request whose method is neither GET nor HEAD unless the referrer policy prevents it (the default `strict-origin-when-cross-origin` does not for a same-origin request); `fetch/origin/assorted.window.js` expects this header for a same-origin POST |
 | [`api/redirect/redirect-referrer-override.any.js`](https://wpt.fyi/results/fetch/api/redirect/redirect-referrer-override.any.js) | Pass | 256 / 256 |  |  |
 | [`api/redirect/redirect-referrer.any.js`](https://wpt.fyi/results/fetch/api/redirect/redirect-referrer.any.js) | Pass | 64 / 64 |  |  |
 | [`api/redirect/redirect-schemes.any.js`](https://wpt.fyi/results/fetch/api/redirect/redirect-schemes.any.js) | Pass | 18 / 18 |  |  |
@@ -240,7 +240,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`content-type/response.window.js`](https://wpt.fyi/results/fetch/content-type/response.window.js) | Fail | 120 / 121 | TEST BUG | the combined-header variant of `text/html;x="` + `text/plain` expects `text/html;x=", text/plain"`, but `content-type.py` joins the values of `single_header` with `,` (no space): the response has the single header `text/html;x=",text/plain"`, whose MIME type keeps the comma without the space; the other subtests pass |
 | [`content-type/script.window.js`](https://wpt.fyi/results/fetch/content-type/script.window.js) | Pass | 31 / 31 |  |  |
 | [`corb/script-html-js-polyglot.sub.html`](https://wpt.fyi/results/fetch/corb/script-html-js-polyglot.sub.html) | Pass | 2 / 2 |  |  |
-| [`corb/script-html-via-cross-origin-blob-url.sub.html`](https://wpt.fyi/results/fetch/corb/script-html-via-cross-origin-blob-url.sub.html) | Error | 0 / 1 | BUG | a `blob:` URL created by a cross-origin frame is loaded by `<script>` (it should be a network error) |
+| [`corb/script-html-via-cross-origin-blob-url.sub.html`](https://wpt.fyi/results/fetch/corb/script-html-via-cross-origin-blob-url.sub.html) | Pass | 1 / 1 |  |  |
 | [`corb/script-js-mislabeled-as-html-nosniff.sub.html`](https://wpt.fyi/results/fetch/corb/script-js-mislabeled-as-html-nosniff.sub.html) | Pass | 1 / 1 |  |  |
 | [`corb/script-js-mislabeled-as-html.sub.html`](https://wpt.fyi/results/fetch/corb/script-js-mislabeled-as-html.sub.html) | Pass | 1 / 1 |  |  |
 | [`corb/style-css-mislabeled-as-html-nosniff.sub.html`](https://wpt.fyi/results/fetch/corb/style-css-mislabeled-as-html-nosniff.sub.html) | Pass | 1 / 1 |  |  |
@@ -513,7 +513,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`orb/tentative/nosniff.sub.any.js`](https://wpt.fyi/results/fetch/orb/tentative/nosniff.sub.any.js) | Fail | 15 / 21 | NOT IMPLEMENTED | Opaque Response Blocking (ORB) of no-cors responses |
 | [`orb/tentative/script-js-unlabeled-gzipped.sub.html`](https://wpt.fyi/results/fetch/orb/tentative/script-js-unlabeled-gzipped.sub.html) | Pass | 1 / 1 |  |  |
 | [`orb/tentative/script-unlabeled.sub.html`](https://wpt.fyi/results/fetch/orb/tentative/script-unlabeled.sub.html) | Pass | 1 / 1 |  |  |
-| [`orb/tentative/script-utf16-without-bom-hint-charset.sub.html`](https://wpt.fyi/results/fetch/orb/tentative/script-utf16-without-bom-hint-charset.sub.html) | Fail | 0 / 1 | BUG | the `charset` attribute of `<script>` is ignored when decoding a classic script (the document's encoding is used), so the UTF-16 script is not decoded |
+| [`orb/tentative/script-utf16-without-bom-hint-charset.sub.html`](https://wpt.fyi/results/fetch/orb/tentative/script-utf16-without-bom-hint-charset.sub.html) | Pass | 1 / 1 |  |  |
 | [`orb/tentative/status.sub.any.js`](https://wpt.fyi/results/fetch/orb/tentative/status.sub.any.js) | Error | 7 / 12 | NOT IMPLEMENTED | Opaque Response Blocking (ORB) of no-cors responses |
 | [`orb/tentative/status.sub.html`](https://wpt.fyi/results/fetch/orb/tentative/status.sub.html) | Pass | 1 / 1 |  |  |
 | [`orb/tentative/unknown-mime-type.sub.any.js`](https://wpt.fyi/results/fetch/orb/tentative/unknown-mime-type.sub.any.js) | Pass | 12 / 12 |  |  |

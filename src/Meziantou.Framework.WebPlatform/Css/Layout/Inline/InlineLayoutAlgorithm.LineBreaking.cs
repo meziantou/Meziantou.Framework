@@ -212,10 +212,10 @@ internal sealed partial class InlineLayoutAlgorithm
                         pendingClonedEnd = clonedEnd;
                     }
 
-                    width += item.InlineSize;
+                    width += GetLineInlineSize(index, isFirstLine);
                     if (item.HasFlag(InlineItemFlags.ClonesEdges))
                     {
-                        var (endMargin, endBorderAndPadding) = GetInlineEdgeParts(item.Container, start: false);
+                        var (endMargin, endBorderAndPadding) = GetInlineEdgeParts(item.Container, start: false, isFirstLine);
                         clonedEnd += endMargin + endBorderAndPadding;
                     }
 
@@ -266,7 +266,7 @@ internal sealed partial class InlineLayoutAlgorithm
                 case InlineItemKind.CloseTag:
                     // The content of an inline box must fit before its negative inline-end margin is applied: as in the browsers,
                     // the margin does not bring back on the line the content that overflows it (WPT css/css-grid/firefox-bug-1881495.html)
-                    if (item.InlineSize < 0 && hasContent)
+                    if (GetLineInlineSize(index, isFirstLine) < 0 && hasContent)
                     {
                         var closeEdge = GetLineEndSpacing(lastContent, lastContentItem, item.Start, isHyphenated: false, isLastLine: false);
                         var closeWidth = width - trailing + closeEdge.Unconditional + closeEdge.Conditional;
@@ -274,11 +274,11 @@ internal sealed partial class InlineLayoutAlgorithm
                             return ToFallbackEnd();
                     }
 
-                    width += item.InlineSize;
+                    width += GetLineInlineSize(index, isFirstLine);
                     if (item.HasFlag(InlineItemFlags.ClonesEdges))
                     {
                         // The tag has the inline-end edges of the box, which is no longer open
-                        clonedEnd = Math.Max(0, clonedEnd - item.InlineSize);
+                        clonedEnd = Math.Max(0, clonedEnd - GetLineInlineSize(index, isFirstLine));
                     }
 
                     continue;
@@ -297,10 +297,10 @@ internal sealed partial class InlineLayoutAlgorithm
                     var next = index + 1;
                     while (next < items.Length && items[next].Kind is InlineItemKind.CloseTag or InlineItemKind.Control && items[next].Box is not TextRun)
                     {
-                        width += items[next].InlineSize;
+                        width += GetLineInlineSize(next, isFirstLine);
                         if (items[next].HasFlag(InlineItemFlags.ClonesEdges) && items[next].Kind == InlineItemKind.CloseTag)
                         {
-                            clonedEnd = Math.Max(0, clonedEnd - items[next].InlineSize);
+                            clonedEnd = Math.Max(0, clonedEnd - GetLineInlineSize(next, isFirstLine));
                         }
 
                         next++;
@@ -679,20 +679,20 @@ internal sealed partial class InlineLayoutAlgorithm
 
                 case InlineItemKind.OpenTag or InlineItemKind.CloseTag:
                     // (the content of an inline box must fit before its negative inline-end margin is applied: see BreakLine)
-                    if (item.InlineSize < 0 && item.Kind == InlineItemKind.CloseTag && width - trailing > availableSize)
+                    if (GetLineInlineSize(index, isFirstLine) < 0 && item.Kind == InlineItemKind.CloseTag && width - trailing > availableSize)
                         return false;
 
-                    width += item.InlineSize;
+                    width += GetLineInlineSize(index, isFirstLine);
                     if (item.HasFlag(InlineItemFlags.ClonesEdges))
                     {
                         if (item.Kind == InlineItemKind.OpenTag)
                         {
-                            var (endMargin, endBorderAndPadding) = GetInlineEdgeParts(item.Container, start: false);
+                            var (endMargin, endBorderAndPadding) = GetInlineEdgeParts(item.Container, start: false, isFirstLine);
                             clonedEnd += endMargin + endBorderAndPadding;
                         }
                         else
                         {
-                            clonedEnd = Math.Max(0, clonedEnd - item.InlineSize);
+                            clonedEnd = Math.Max(0, clonedEnd - GetLineInlineSize(index, isFirstLine));
                         }
                     }
 
@@ -736,10 +736,10 @@ internal sealed partial class InlineLayoutAlgorithm
                     var next = index + 1;
                     while (next < items.Length && items[next].Kind is InlineItemKind.CloseTag or InlineItemKind.Control && items[next].Box is not TextRun)
                     {
-                        width += items[next].InlineSize;
+                        width += GetLineInlineSize(next, isFirstLine);
                         if (items[next].HasFlag(InlineItemFlags.ClonesEdges) && items[next].Kind == InlineItemKind.CloseTag)
                         {
-                            clonedEnd = Math.Max(0, clonedEnd - items[next].InlineSize);
+                            clonedEnd = Math.Max(0, clonedEnd - GetLineInlineSize(next, isFirstLine));
                         }
 
                         next++;

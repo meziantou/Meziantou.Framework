@@ -18,8 +18,8 @@ description: "The results of the web-platform-tests of css/css-transitions, and 
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 3
-- **TEST BUG**: 6
+- **BUG**: 1
+- **TEST BUG**: 8
 - **NOT IMPLEMENTED**: 1
 
 ## Stable tests
@@ -97,7 +97,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`retargetted-transition-with-box-sizing.html`](https://wpt.fyi/results/css/css-transitions/retargetted-transition-with-box-sizing.html) | Pass | 1 / 1 |  |  |
 | [`shadow-root-insertion.html`](https://wpt.fyi/results/css/css-transitions/shadow-root-insertion.html) | Pass | 1 / 1 |  |  |
 | [`starting-of-transitions-001.html`](https://wpt.fyi/results/css/css-transitions/starting-of-transitions-001.html) | Pass | 1 / 1 |  |  |
-| [`starting-style-adjustment.html`](https://wpt.fyi/results/css/css-transitions/starting-style-adjustment.html) | Fail | 0 / 1 | BUG | the `display` of a `<legend>` in `@starting-style` is not blockified |
+| [`starting-style-adjustment.html`](https://wpt.fyi/results/css/css-transitions/starting-style-adjustment.html) | Fail | 0 / 1 | TEST BUG | the `<legend>` is not in a `fieldset`: only the rendered legend of a fieldset is "expected to behave as if its computed value was blockified", and "this does not change the computed value" (https://html.spec.whatwg.org/multipage/rendering.html#the-fieldset-and-legend-elements), so the `display: inline` of `@starting-style` is the before-change style and the discrete transition to `block` (`allow-discrete`) starts |
 | [`starting-style-cascade.html`](https://wpt.fyi/results/css/css-transitions/starting-style-cascade.html) | Pass | 6 / 6 |  |  |
 | [`starting-style-name-defining-rules.html`](https://wpt.fyi/results/css/css-transitions/starting-style-name-defining-rules.html) | Pass | 2 / 2 |  |  |
 | [`starting-style-revert-layer-cascade.html`](https://wpt.fyi/results/css/css-transitions/starting-style-revert-layer-cascade.html) | Pass | 2 / 2 |  |  |
@@ -153,7 +153,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`KeyframeEffect-getKeyframes.tentative.html`](https://wpt.fyi/results/css/css-transitions/KeyframeEffect-getKeyframes.tentative.html) | Pass | 5 / 5 |  |  |
 | [`KeyframeEffect-setKeyframes.tentative.html`](https://wpt.fyi/results/css/css-transitions/KeyframeEffect-setKeyframes.tentative.html) | Fail | 7 / 8 | BUG | the setters of `Animation` (`currentTime`) flush the pending style changes: the change of `left` is applied before the second `currentTime` is set, so the keyframes of the other transition that animate `left` are sampled at their old time and no reversed transition starts |
 | [`KeyframeEffect-target.tentative.html`](https://wpt.fyi/results/css/css-transitions/KeyframeEffect-target.tentative.html) | Pass | 3 / 3 |  |  |
-| [`event-dispatch.tentative.html`](https://wpt.fyi/results/css/css-transitions/event-dispatch.tentative.html) | Fail | 29 / 30 | BUG | the elapsed time of `transitioncancel` when the timeline of a transition with a negative delay is set to null just after seeking it to its end is its active time with a fill mode of both (100 s), the test expects 0 |
+| [`event-dispatch.tentative.html`](https://wpt.fyi/results/css/css-transitions/event-dispatch.tentative.html) | Fail | 29 / 30 | TEST BUG | `Active -> Idle, with negative delay (Animation.timeline = null)`: the elapsed time of `transitioncancel` is "the active time of the animation at the moment it was canceled calculated using a fill mode of both" (https://drafts.csswg.org/css-transitions-2/#event-dispatch); the transition (`100s`, delay `-50s`) is seeked to `50s` before its timeline is removed, so its active time is `100s`, not the `0` the test expects (the css-animations twin test, `Active -> Idle, setting Animation.timeline = null`, expects the active time before the timeline is removed) |
 | [`non-rendered-element-004.tentative.html`](https://wpt.fyi/results/css/css-transitions/non-rendered-element-004.tentative.html) | Pass | 1 / 1 |  |  |
 | [`ua-important.tentative.html`](https://wpt.fyi/results/css/css-transitions/ua-important.tentative.html) | Pass | 1 / 1 |  |  |
 

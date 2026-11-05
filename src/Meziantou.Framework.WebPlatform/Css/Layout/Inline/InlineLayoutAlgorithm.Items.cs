@@ -478,19 +478,44 @@ internal sealed partial class InlineLayoutAlgorithm
     /// its own direction (https://drafts.csswg.org/css2/#inline-width): the percentages refer to the inline size of the
     /// containing block.
     /// </summary>
-    private (double Margin, double BorderAndPadding) GetInlineEdgeParts(ContainerBox box, bool start)
+    private (double Margin, double BorderAndPadding) GetInlineEdgeParts(ContainerBox box, bool start, bool isFirstLine = false)
     {
-        if (!box.Style.Layout.MayHaveBoxEdges)
+        // On the first formatted line, the edges are resolved with the style that inherits from ::first-line (e.g. its font size
+        // for the em units: https://drafts.csswg.org/css-pseudo-4/#first-line-inheritance)
+        var style = isFirstLine && _firstLineRoot is not null ? GetFirstLineStyle(box) : box.Style;
+        if (!style.Layout.MayHaveBoxEdges)
             return default;
 
-        var boxModel = box.Style.Layout.Box;
-        var side = start ? WritingDirection.FromStyle(box.Style.Layout).InlineStart : WritingDirection.FromStyle(box.Style.Layout).InlineEnd;
+        var boxModel = style.Layout.Box;
+        var side = start ? WritingDirection.FromStyle(style.Layout).InlineStart : WritingDirection.FromStyle(style.Layout).InlineEnd;
         var marginValue = boxModel.Margin.Get(side);
         var paddingValue = boxModel.Padding.Get(side);
         _hasPercentageEdges |= (!marginValue.IsAuto && marginValue.Value.HasPercentage) || paddingValue.HasPercentage;
         var margin = marginValue.Resolve(_percentageBasis);
         var padding = Math.Max(0, paddingValue.Resolve(_percentageBasis));
         return (margin, boxModel.BorderWidth.Get(side) + padding);
+    }
+
+    /// <summary>
+    /// Returns the inline size of an item on a line: the edges of the tag of an inline box on the first formatted line are the
+    /// ones of its first-line style (<see cref="GetInlineEdgeParts"/>), the other items have their inline size.
+    /// </summary>
+    private double GetLineInlineSize(int index, bool isFirstLine)
+    {
+        ref readonly var item = ref Items[index];
+        if (!isFirstLine || _firstLineRoot is null || item.Kind is not (InlineItemKind.OpenTag or InlineItemKind.CloseTag))
+            return item.InlineSize;
+
+        var box = item.Container;
+        if (ReferenceEquals(GetFirstLineStyle(box), box.Style))
+            return item.InlineSize;
+
+        var start = item.Kind == InlineItemKind.OpenTag;
+        if (!item.HasFlag(InlineItemFlags.ClonesEdges) && (start ? box.PreviousContinuation : box.Continuation) is not null)
+            return item.InlineSize;
+
+        var (margin, borderAndPadding) = GetInlineEdgeParts(box, start, isFirstLine: true);
+        return margin + borderAndPadding;
     }
 
     /// <summary>Adds bidi control codes (or the U+200B of a <c>wbr</c>), which are not displayed.</summary>

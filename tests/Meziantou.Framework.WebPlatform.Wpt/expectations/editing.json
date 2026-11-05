@@ -2537,11 +2537,7 @@
     "total": 441
   },
   "editing/run/delete-list-items-in-table-cell.html": {
-    "total": 36,
-    "failures": {
-      "[[\"delete\",\"\"]] \"<div contenteditable=\\\"true\\\"><table><tr><td><ol><li>{}</li></ol></td></tr></table></div></table></div>\" compare innerHTML": "FAIL",
-      "[[\"delete\",\"\"]] \"<div contenteditable=\\\"true\\\"><table><tr><td><ul><li>{}</li></ul></td></tr></table></div></table></div>\" compare innerHTML": "FAIL"
-    }
+    "total": 36
   },
   "editing/run/delete-to-make-editing-host-empty.html": {
     "total": 12
@@ -2670,11 +2666,6 @@
   "editing/run/fontsize.html?2001-last": {
     "total": 422,
     "failures": {
-      "[[\"styleWithCSS\",\"false\"],[\"fontSize\",\"7\"]] \"<font color=#ff0000 face=monospace>[abc]</font>\" compare innerHTML": "FAIL",
-      "[[\"styleWithCSS\",\"false\"],[\"fontSize\",\"7\"]] \"<font color=#ff0000>[abc]</font>\" compare innerHTML": "FAIL",
-      "[[\"styleWithCSS\",\"false\"],[\"fontSize\",\"7\"]] \"<font face=monospace>[a]bc</font>\" compare innerHTML": "FAIL",
-      "[[\"styleWithCSS\",\"false\"],[\"fontSize\",\"7\"]] \"<font face=monospace>[abc]</font>\" compare innerHTML": "FAIL",
-      "[[\"styleWithCSS\",\"false\"],[\"fontSize\",\"7\"]] \"<font face=monospace>ab[c]</font>\" compare innerHTML": "FAIL",
       "[[\"stylewithcss\",\"false\"],[\"fontsize\",\"4\"]] \"foo<font size=2>ba[r</font>b]az\" queryCommandIndeterm(\"fontsize\") after": "FAIL",
       "[[\"stylewithcss\",\"false\"],[\"fontsize\",\"4\"]] \"foo<font size=2>ba[r</font>b]az\" queryCommandState(\"stylewithcss\") after": "FAIL",
       "[[\"stylewithcss\",\"false\"],[\"fontsize\",\"4\"]] \"foo<font size=2>ba[r</font>b]az\" queryCommandValue(\"fontsize\") after": "FAIL",
@@ -2885,8 +2876,6 @@
   "editing/run/hilitecolor.html": {
     "total": 1218,
     "failures": {
-      "[[\"stylewithcss\",\"false\"],[\"hilitecolor\",\"#00FFFF\"]] \"<font size=6>[foo]</font>\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"hilitecolor\",\"#00FFFF\"]] \"<font size=6>[foo]</font>\" compare innerHTML": "FAIL",
       "[[\"stylewithcss\",\"true\"],[\"hilitecolor\",\"#00FFFF\"]] \"<p>[foo</p> <p>bar]</p>\" queryCommandState(\"stylewithcss\") before": "FAIL"
     }
   },
@@ -3683,7 +3672,6 @@
       "[[\"styleWithCSS\",\"false\"],[\"delete\",\"\"],[\"insertText\",\"A\"]] \"<span style=\\\"color:rgb(0, 0, 255)\\\">foo<br></span><p><span style=\\\"color:rgb(255, 0, 0)\\\">[]bar</span></p>\" compare innerHTML": "FAIL",
       "[[\"styleWithCSS\",\"false\"],[\"delete\",\"\"],[\"insertparagraph\",\"\"],[\"inserttext\",\"a\"]] \"<div><b>[abc]</b></div>\" compare innerHTML": "FAIL",
       "[[\"styleWithCSS\",\"false\"],[\"delete\",\"\"],[\"inserttext\",\"a\"]] \"<div><b>[abc]</b></div>\" compare innerHTML": "FAIL",
-      "[[\"styleWithCSS\",\"false\"],[\"foreColor\",\"#ff0000\"],[\"bold\",\"\"],[\"fontSize\",\"5\"],[\"fontName\",\"monospace\"],[\"insertText\",\"b\"]] \"a[]c\" compare innerHTML": "FAIL",
       "[[\"styleWithCSS\",\"false\"],[\"forwardDelete\",\"\"],[\"fontSize\",\"5\"],[\"foreColor\",\"#ff0000\"],[\"insertText\",\"b\"]] \"<p><font size=\\\"5\\\" color=\\\"#ff0000\\\">a[]</font></p><p>c</p>\" compare innerHTML": "FAIL",
       "[[\"styleWithCSS\",\"false\"],[\"forwardDelete\",\"\"],[\"fontSize\",\"5\"],[\"insertText\",\"b\"]] \"<p><font size=\\\"5\\\"><b>a[]</b></font></p><p><i>c</i></p>\" compare innerHTML": "FAIL",
       "[[\"styleWithCSS\",\"false\"],[\"forwardDelete\",\"\"],[\"fontSize\",\"5\"],[\"insertText\",\"b\"]] \"<p><font size=\\\"5\\\"><b>a[]</b></font></p><p>c</p>\" compare innerHTML": "FAIL",
@@ -3697,7 +3685,6 @@
       "[[\"styleWithCSS\",\"false\"],[\"forwarddelete\",\"\"],[\"insertText\",\"A\"]] \"<span style=\\\"color:rgb(0, 0, 255)\\\">foo[]<br></span><p><span style=\\\"color:rgb(255, 0, 0)\\\">bar</span></p>\" compare innerHTML": "FAIL",
       "[[\"styleWithCSS\",\"false\"],[\"insertparagraph\",\"\"],[\"inserttext\",\"a\"]] \"<div><b>[abc]</b></div>\" compare innerHTML": "FAIL",
       "[[\"styleWithCSS\",\"false\"],[\"italic\",\"\"],[\"bold\",\"\"],[\"insertText\",\"b\"]] \"a[]c\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"false\"],[\"fontName\",\"monospace\"],[\"foreColor\",\"#ff0000\"],[\"fontSize\",\"7\"],[\"backColor\",\"#00dddd\"],[\"insertText\",\"d\"]] \"abc[]ef\" compare innerHTML": "FAIL",
       "[[\"stylewithcss\",\"true\"],[\"italic\",\"\"],[\"insertText\",\"a\"]] \"<span style=font-weight:bold>{}<br></span></b>\" compare innerHTML": "FAIL"
     }
   },
@@ -3781,33 +3768,13 @@
   "editing/run/subscript.html": {
     "total": 1241,
     "failures": {
-      "[[\"stylewithcss\",\"false\"],[\"subscript\",\"\"]] \"<sub>fo[o</sub><span style=vertical-align:sub>b]ar</span>\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"false\"],[\"subscript\",\"\"]] \"<sub>fo[o</sub><span style=vertical-align:top>b]ar</span>\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"false\"],[\"subscript\",\"\"]] \"foo<span style=vertical-align:sub>[bar]</span>baz\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"false\"],[\"subscript\",\"\"]] \"foo<span style=vertical-align:super>[bar]</span>baz\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"false\"],[\"subscript\",\"\"]] \"foo<span style=vertical-align:top>[bar]</span>baz\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"subscript\",\"\"]] \"<p>[foo</p> <p>bar]</p>\" queryCommandState(\"stylewithcss\") before": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"subscript\",\"\"]] \"<sub>fo[o</sub><span style=vertical-align:sub>b]ar</span>\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"subscript\",\"\"]] \"<sub>fo[o</sub><span style=vertical-align:top>b]ar</span>\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"subscript\",\"\"]] \"foo<span style=vertical-align:sub>[bar]</span>baz\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"subscript\",\"\"]] \"foo<span style=vertical-align:super>[bar]</span>baz\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"subscript\",\"\"]] \"foo<span style=vertical-align:top>[bar]</span>baz\" compare innerHTML": "FAIL"
+      "[[\"stylewithcss\",\"true\"],[\"subscript\",\"\"]] \"<p>[foo</p> <p>bar]</p>\" queryCommandState(\"stylewithcss\") before": "FAIL"
     }
   },
   "editing/run/superscript.html": {
     "total": 1273,
     "failures": {
-      "[[\"stylewithcss\",\"false\"],[\"superscript\",\"\"]] \"<sup>fo[o</sup><span style=vertical-align:bottom>b]ar</span>\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"false\"],[\"superscript\",\"\"]] \"<sup>fo[o</sup><span style=vertical-align:super>b]ar</span>\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"false\"],[\"superscript\",\"\"]] \"foo<span style=vertical-align:bottom>[bar]</span>baz\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"false\"],[\"superscript\",\"\"]] \"foo<span style=vertical-align:sub>[bar]</span>baz\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"false\"],[\"superscript\",\"\"]] \"foo<span style=vertical-align:super>[bar]</span>baz\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"superscript\",\"\"]] \"<p>[foo</p> <p>bar]</p>\" queryCommandState(\"stylewithcss\") before": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"superscript\",\"\"]] \"<sup>fo[o</sup><span style=vertical-align:bottom>b]ar</span>\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"superscript\",\"\"]] \"<sup>fo[o</sup><span style=vertical-align:super>b]ar</span>\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"superscript\",\"\"]] \"foo<span style=vertical-align:bottom>[bar]</span>baz\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"superscript\",\"\"]] \"foo<span style=vertical-align:sub>[bar]</span>baz\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"superscript\",\"\"]] \"foo<span style=vertical-align:super>[bar]</span>baz\" compare innerHTML": "FAIL"
+      "[[\"stylewithcss\",\"true\"],[\"superscript\",\"\"]] \"<p>[foo</p> <p>bar]</p>\" queryCommandState(\"stylewithcss\") before": "FAIL"
     }
   },
   "editing/run/typing-text-in-direct-child-of-editing-host.html?white-space=normal": {

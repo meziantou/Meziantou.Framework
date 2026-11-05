@@ -78,7 +78,7 @@
     "total": 14
   },
   "css/css-color/clip-opacity-out-of-flow.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-color/color-001.html": {
     "reftest": "PASS"

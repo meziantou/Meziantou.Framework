@@ -517,6 +517,16 @@ internal sealed class CssColor
 
             if (value is not CssFunction math || !CssCalc.IsMathFunction(math.Name))
             {
+                // sibling-index() and sibling-count() are <integer>s that are resolved at computed-value time, like a math
+                // function (https://drafts.csswg.org/css-values-5/#tree-counting)
+                if (value is CssFunction treeCounting && ValueMatcher.IsTreeCountingFunction(treeCounting))
+                {
+                    hasMathFunction = true;
+                    resolved = false;
+                    substituted.Value.Add(CreateNumericToken(0, ""));
+                    continue;
+                }
+
                 substituted.Value.Add(value);
                 continue;
             }
@@ -574,6 +584,10 @@ internal sealed class CssColor
             if (arguments[i] is CssFunction math && CssCalc.IsMathFunction(math.Name))
             {
                 serialized = CssCalc.SerializeSpecifiedValue(math);
+            }
+            else if (arguments[i] is CssFunction treeCounting && ValueMatcher.IsTreeCountingFunction(treeCounting))
+            {
+                serialized = InfraAscii.ToAsciiLowercase(treeCounting.Name) + "()";
             }
             else if (ParseArgument(arguments[i]) is not { } argument)
             {

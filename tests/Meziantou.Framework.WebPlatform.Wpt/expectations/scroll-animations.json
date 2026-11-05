@@ -142,243 +142,52 @@
     "total": 13
   },
   "scroll-animations/animation-trigger/parsing/timeline-trigger-active-range-end-valid.tentative.html": {
-    "total": 25,
-    "failures": {
-      "e.style['timeline-trigger-active-range-end'] = \"cover 100%\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-active-range-end'] = \"exit 1%, cover 2%, contain 100%\" should set the property value": "FAIL"
-    }
+    "total": 25
   },
   "scroll-animations/animation-trigger/parsing/timeline-trigger-active-range-end.computed.tentative.html": {
-    "total": 28,
-    "failures": {
-      "Property timeline-trigger-active-range-end value 'COVER 100%'": "FAIL",
-      "Property timeline-trigger-active-range-end value 'cover 100%'": "FAIL",
-      "Property timeline-trigger-active-range-end value 'exit 1%, cover 2%, contain 100%'": "FAIL"
-    }
+    "total": 28
   },
   "scroll-animations/animation-trigger/parsing/timeline-trigger-active-range-shorthand.tentative.html": {
     "total": 144,
     "failures": {
-      "Property timeline-trigger-active-range value '10% calc(70% + 10% * sign(100em - 1px))'": "FAIL",
-      "Property timeline-trigger-active-range value '10% normal'": "FAIL",
-      "Property timeline-trigger-active-range value '100px normal'": "FAIL",
-      "Property timeline-trigger-active-range value '100px'": "FAIL",
-      "Property timeline-trigger-active-range value '10em exit 20em'": "FAIL",
-      "Property timeline-trigger-active-range value 'auto auto'": "FAIL",
-      "Property timeline-trigger-active-range value 'auto normal'": "FAIL",
-      "Property timeline-trigger-active-range value 'auto'": "FAIL",
-      "Property timeline-trigger-active-range value 'contain 0% contain 100%'": "FAIL",
-      "Property timeline-trigger-active-range value 'contain 50%'": "FAIL",
-      "Property timeline-trigger-active-range value 'contain'": "FAIL",
-      "Property timeline-trigger-active-range value 'cover 0% cover 100%'": "FAIL",
-      "Property timeline-trigger-active-range value 'cover 50% entry 50%, contain 50% exit 50%'": "FAIL",
-      "Property timeline-trigger-active-range value 'cover 50%'": "FAIL",
-      "Property timeline-trigger-active-range value 'cover'": "FAIL",
-      "Property timeline-trigger-active-range value 'entry 0% entry 100%'": "FAIL",
-      "Property timeline-trigger-active-range value 'entry 10em exit 20em'": "FAIL",
-      "Property timeline-trigger-active-range value 'entry 50% exit 50%'": "FAIL",
-      "Property timeline-trigger-active-range value 'entry 50%'": "FAIL",
-      "Property timeline-trigger-active-range value 'entry 50px exit 100px'": "FAIL",
-      "Property timeline-trigger-active-range value 'entry calc(10% - 10%) entry calc(50% + 50%)'": "FAIL",
-      "Property timeline-trigger-active-range value 'entry'": "FAIL",
-      "Property timeline-trigger-active-range value 'entry, exit'": "FAIL",
-      "Property timeline-trigger-active-range value 'entry-crossing 0% entry-crossing 100%'": "FAIL",
-      "Property timeline-trigger-active-range value 'entry-crossing 50%'": "FAIL",
-      "Property timeline-trigger-active-range value 'entry-crossing'": "FAIL",
-      "Property timeline-trigger-active-range value 'exit 0% exit 100%'": "FAIL",
-      "Property timeline-trigger-active-range value 'exit 50%'": "FAIL",
-      "Property timeline-trigger-active-range value 'exit calc(10% + 50px)'": "FAIL",
-      "Property timeline-trigger-active-range value 'exit'": "FAIL",
-      "Property timeline-trigger-active-range value 'exit-crossing 0% exit-crossing 100%'": "FAIL",
-      "Property timeline-trigger-active-range value 'exit-crossing 50%'": "FAIL",
-      "Property timeline-trigger-active-range value 'exit-crossing'": "FAIL",
-      "Property timeline-trigger-active-range value 'normal 100px'": "FAIL",
-      "Property timeline-trigger-active-range value 'normal auto'": "FAIL",
-      "Property timeline-trigger-active-range value 'normal normal'": "FAIL",
-      "Property timeline-trigger-active-range value 'normal'": "FAIL",
-      "e.style['timeline-trigger-active-range'] = \"10%\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-active-range'] = \"10%\" should set timeline-trigger-active-range-end": "FAIL",
-      "e.style['timeline-trigger-active-range'] = \"100% auto\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-active-range'] = \"100% normal\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-active-range'] = \"100px auto\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-active-range'] = \"100px normal\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-active-range'] = \"100px\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-active-range'] = \"100px\" should set timeline-trigger-active-range-end": "FAIL",
-      "e.style['timeline-trigger-active-range'] = \"50% exit 50%\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-active-range'] = \"auto auto\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-active-range'] = \"auto normal\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-active-range'] = \"auto\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-active-range'] = \"contain 0% contain 100%\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-active-range'] = \"contain 50%\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-active-range'] = \"contain\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-active-range'] = \"cover 0% cover 100%\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-active-range'] = \"cover 0% normal\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-active-range'] = \"cover 50% normal\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-active-range'] = \"cover 50%\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-active-range'] = \"cover\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-active-range'] = \"entry 0% entry 100%\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-active-range'] = \"entry 0%, exit\" should set timeline-trigger-active-range-end": "FAIL",
-      "e.style['timeline-trigger-active-range'] = \"entry 0%, exit\" should set timeline-trigger-active-range-start": "FAIL",
-      "e.style['timeline-trigger-active-range'] = \"entry 50% exit 50%\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-active-range'] = \"entry 50%\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-active-range'] = \"entry 50px exit 100px\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-active-range'] = \"entry calc(10% - 10%) entry calc(50% + 50%)\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-active-range'] = \"entry\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-active-range'] = \"entry, exit\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-active-range'] = \"entry-crossing 0% entry-crossing 100%\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-active-range'] = \"entry-crossing 50%\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-active-range'] = \"entry-crossing\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-active-range'] = \"exit 0% exit 100%\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-active-range'] = \"exit 50%\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-active-range'] = \"exit calc(10% + 50px)\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-active-range'] = \"exit calc(10% + 50px)\" should set timeline-trigger-active-range-end": "FAIL",
-      "e.style['timeline-trigger-active-range'] = \"exit\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-active-range'] = \"exit-crossing 0% exit-crossing 100%\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-active-range'] = \"exit-crossing 50%\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-active-range'] = \"exit-crossing\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-active-range'] = \"normal 100px\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-active-range'] = \"normal auto\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-active-range'] = \"normal cover 100%\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-active-range'] = \"normal cover 50%\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-active-range'] = \"normal entry 100%\" should set timeline-trigger-active-range-end": "FAIL",
-      "e.style['timeline-trigger-active-range'] = \"normal normal\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-active-range'] = \"normal\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-active-range'] = \"normal\" should set timeline-trigger-active-range-end": "FAIL"
+      "e.style['timeline-trigger-active-range'] = \"entry calc(10% - 10%) entry calc(50% + 50%)\" should set the property value": "FAIL"
     }
   },
   "scroll-animations/animation-trigger/parsing/timeline-trigger-active-range-start-computed.tentative.html": {
-    "total": 28,
-    "failures": {
-      "Property timeline-trigger-active-range-start value 'COVER 0%'": "FAIL",
-      "Property timeline-trigger-active-range-start value 'cover 0%'": "FAIL",
-      "Property timeline-trigger-active-range-start value 'exit 1%, cover 2%, contain 0%'": "FAIL"
-    }
+    "total": 28
   },
   "scroll-animations/animation-trigger/parsing/timeline-trigger-active-range-start-invalid.tentative.html": {
     "total": 10
   },
   "scroll-animations/animation-trigger/parsing/timeline-trigger-active-range-start-valid.tentative.html": {
-    "total": 26,
-    "failures": {
-      "e.style['timeline-trigger-active-range-start'] = \"cover 0%\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-active-range-start'] = \"exit 1%, cover 2%, contain 0%\" should set the property value": "FAIL"
-    }
+    "total": 26
   },
   "scroll-animations/animation-trigger/parsing/timeline-trigger-empty-shorthand.tentative.html": {
-    "total": 2,
-    "failures": {
-      "timeline-trigger shorthand initially serialized for single value lists": "FAIL"
-    }
+    "total": 2
   },
   "scroll-animations/animation-trigger/parsing/timeline-trigger-entry-range-end-computed.tentative.html": {
-    "total": 27,
-    "failures": {
-      "Property timeline-trigger-activation-range-end value 'COVER 100%'": "FAIL",
-      "Property timeline-trigger-activation-range-end value 'cover 100%'": "FAIL",
-      "Property timeline-trigger-activation-range-end value 'exit 1%, cover 2%, contain 100%'": "FAIL"
-    }
+    "total": 27
   },
   "scroll-animations/animation-trigger/parsing/timeline-trigger-entry-range-end-invalid.tentative.html": {
     "total": 12
   },
   "scroll-animations/animation-trigger/parsing/timeline-trigger-entry-range-end-valid.tentative.html": {
-    "total": 23,
-    "failures": {
-      "e.style['timeline-trigger-activation-range-end'] = \"cover 100%\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-activation-range-end'] = \"exit 1%, cover 2%, contain 100%\" should set the property value": "FAIL"
-    }
+    "total": 23
   },
   "scroll-animations/animation-trigger/parsing/timeline-trigger-entry-range-shorthand.tentative.html": {
     "total": 129,
     "failures": {
-      "Property timeline-trigger-activation-range value '10% calc(70% + 10% * sign(100em - 1px))'": "FAIL",
-      "Property timeline-trigger-activation-range value '10% normal'": "FAIL",
-      "Property timeline-trigger-activation-range value '100px normal'": "FAIL",
-      "Property timeline-trigger-activation-range value '100px'": "FAIL",
-      "Property timeline-trigger-activation-range value '10em exit 20em'": "FAIL",
-      "Property timeline-trigger-activation-range value 'contain 0% contain 100%'": "FAIL",
-      "Property timeline-trigger-activation-range value 'contain 50%'": "FAIL",
-      "Property timeline-trigger-activation-range value 'contain'": "FAIL",
-      "Property timeline-trigger-activation-range value 'cover 0% cover 100%'": "FAIL",
-      "Property timeline-trigger-activation-range value 'cover 50% entry 50%, contain 50% exit 50%'": "FAIL",
-      "Property timeline-trigger-activation-range value 'cover 50%'": "FAIL",
-      "Property timeline-trigger-activation-range value 'cover'": "FAIL",
-      "Property timeline-trigger-activation-range value 'entry 0% entry 100%'": "FAIL",
-      "Property timeline-trigger-activation-range value 'entry 10em exit 20em'": "FAIL",
-      "Property timeline-trigger-activation-range value 'entry 50% exit 50%'": "FAIL",
-      "Property timeline-trigger-activation-range value 'entry 50%'": "FAIL",
-      "Property timeline-trigger-activation-range value 'entry 50px exit 100px'": "FAIL",
-      "Property timeline-trigger-activation-range value 'entry calc(10% - 10%) entry calc(50% + 50%)'": "FAIL",
-      "Property timeline-trigger-activation-range value 'entry'": "FAIL",
-      "Property timeline-trigger-activation-range value 'entry, exit'": "FAIL",
-      "Property timeline-trigger-activation-range value 'entry-crossing 0% entry-crossing 100%'": "FAIL",
-      "Property timeline-trigger-activation-range value 'entry-crossing 50%'": "FAIL",
-      "Property timeline-trigger-activation-range value 'entry-crossing'": "FAIL",
-      "Property timeline-trigger-activation-range value 'exit 0% exit 100%'": "FAIL",
-      "Property timeline-trigger-activation-range value 'exit 50%'": "FAIL",
-      "Property timeline-trigger-activation-range value 'exit calc(10% + 50px)'": "FAIL",
-      "Property timeline-trigger-activation-range value 'exit'": "FAIL",
-      "Property timeline-trigger-activation-range value 'exit-crossing 0% exit-crossing 100%'": "FAIL",
-      "Property timeline-trigger-activation-range value 'exit-crossing 50%'": "FAIL",
-      "Property timeline-trigger-activation-range value 'exit-crossing'": "FAIL",
-      "Property timeline-trigger-activation-range value 'normal 100px'": "FAIL",
-      "Property timeline-trigger-activation-range value 'normal normal'": "FAIL",
-      "Property timeline-trigger-activation-range value 'normal'": "FAIL",
-      "e.style['timeline-trigger-activation-range'] = \"10% normal\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-activation-range'] = \"10%\" should set timeline-trigger-activation-range-end": "FAIL",
-      "e.style['timeline-trigger-activation-range'] = \"100px normal\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-activation-range'] = \"100px\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-activation-range'] = \"100px\" should set timeline-trigger-activation-range-end": "FAIL",
-      "e.style['timeline-trigger-activation-range'] = \"50% exit 50%\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-activation-range'] = \"contain 0% contain 100%\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-activation-range'] = \"contain 50%\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-activation-range'] = \"contain\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-activation-range'] = \"cover 0% cover 100%\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-activation-range'] = \"cover 50%\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-activation-range'] = \"cover\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-activation-range'] = \"entry 0% entry 100%\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-activation-range'] = \"entry 0%, exit\" should set timeline-trigger-activation-range-end": "FAIL",
-      "e.style['timeline-trigger-activation-range'] = \"entry 0%, exit\" should set timeline-trigger-activation-range-start": "FAIL",
-      "e.style['timeline-trigger-activation-range'] = \"entry 50% exit 50%\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-activation-range'] = \"entry 50%\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-activation-range'] = \"entry 50px exit 100px\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-activation-range'] = \"entry calc(10% - 10%) entry calc(50% + 50%)\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-activation-range'] = \"entry\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-activation-range'] = \"entry, exit\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-activation-range'] = \"entry-crossing 0% entry-crossing 100%\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-activation-range'] = \"entry-crossing 50%\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-activation-range'] = \"entry-crossing\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-activation-range'] = \"exit 0% exit 100%\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-activation-range'] = \"exit 50%\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-activation-range'] = \"exit calc(10% + 50px)\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-activation-range'] = \"exit calc(10% + 50px)\" should set timeline-trigger-activation-range-end": "FAIL",
-      "e.style['timeline-trigger-activation-range'] = \"exit\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-activation-range'] = \"exit-crossing 0% exit-crossing 100%\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-activation-range'] = \"exit-crossing 50%\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-activation-range'] = \"exit-crossing\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-activation-range'] = \"normal 100px\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-activation-range'] = \"normal entry 100%\" should set timeline-trigger-activation-range-end": "FAIL",
-      "e.style['timeline-trigger-activation-range'] = \"normal normal\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-activation-range'] = \"normal\" should set the property value": "FAIL"
+      "e.style['timeline-trigger-activation-range'] = \"entry calc(10% - 10%) entry calc(50% + 50%)\" should set the property value": "FAIL"
     }
   },
   "scroll-animations/animation-trigger/parsing/timeline-trigger-entry-range-start-computed.tentative.html": {
-    "total": 27,
-    "failures": {
-      "Property timeline-trigger-activation-range-start value 'COVER 0%'": "FAIL",
-      "Property timeline-trigger-activation-range-start value 'cover 0%'": "FAIL",
-      "Property timeline-trigger-activation-range-start value 'exit 1%, cover 2%, contain 0%'": "FAIL"
-    }
+    "total": 27
   },
   "scroll-animations/animation-trigger/parsing/timeline-trigger-entry-range-start-invalid.tentative.html": {
     "total": 9
   },
   "scroll-animations/animation-trigger/parsing/timeline-trigger-entry-range-start-valid.tentative.html": {
-    "total": 25,
-    "failures": {
-      "e.style['timeline-trigger-activation-range-start'] = \"cover 0%\" should set the property value": "FAIL",
-      "e.style['timeline-trigger-activation-range-start'] = \"exit 1%, cover 2%, contain 0%\" should set the property value": "FAIL"
-    }
+    "total": 25
   },
   "scroll-animations/animation-trigger/parsing/timeline-trigger-name-parsing.html": {
     "total": 28,
@@ -394,43 +203,12 @@
     "failures": {
       "Property timeline-trigger value '--my-trigger --my-timeline / contain'": "FAIL",
       "Property timeline-trigger value '--my-trigger --my-timeline normal / contain'": "FAIL",
-      "Property timeline-trigger value '--my-trigger --my-timeline'": "FAIL",
-      "Property timeline-trigger value '--my-trigger none'": "FAIL",
-      "Property timeline-trigger value '--my-trigger view() contain 0% contain 100% / cover 0% cover 100%'": "FAIL",
-      "Property timeline-trigger value '--my-trigger view() contain 0% contain 100%'": "FAIL",
-      "Property timeline-trigger value '--my-trigger view() contain 20% contain 80% / cover 0%'": "FAIL",
-      "Property timeline-trigger value '--my-trigger view() contain 20% contain 80% / cover 10% cover 90%'": "FAIL",
-      "Property timeline-trigger value '--my-trigger view() contain 20% contain 80% / cover 10%'": "FAIL",
       "Property timeline-trigger value '--trigger1 none, --trigger2 view()'": "FAIL",
       "Property timeline-trigger value '--trigger1 view(), --trigger2 scroll()'": "FAIL",
       "Property timeline-trigger value '--trigger1, --trigger2'": "FAIL",
       "Property timeline-trigger value 'view()'": "FAIL",
       "e.style['timeline-trigger'] = \"--my-trigger --my-timeline / contain\" should set the property value": "FAIL",
       "e.style['timeline-trigger'] = \"--my-trigger --my-timeline normal / contain\" should set the property value": "FAIL",
-      "e.style['timeline-trigger'] = \"--my-trigger --my-timeline\" should set the property value": "FAIL",
-      "e.style['timeline-trigger'] = \"--my-trigger none\" should set the property value": "FAIL",
-      "e.style['timeline-trigger'] = \"--my-trigger view() contain 0% contain 100% / cover 0% cover 100%\" should set the property value": "FAIL",
-      "e.style['timeline-trigger'] = \"--my-trigger view() contain 0% contain 100% / cover 0% cover 100%\" should set timeline-trigger-activation-range-end": "FAIL",
-      "e.style['timeline-trigger'] = \"--my-trigger view() contain 0% contain 100% / cover 0% cover 100%\" should set timeline-trigger-activation-range-start": "FAIL",
-      "e.style['timeline-trigger'] = \"--my-trigger view() contain 0% contain 100% / cover 0% cover 100%\" should set timeline-trigger-active-range-end": "FAIL",
-      "e.style['timeline-trigger'] = \"--my-trigger view() contain 0% contain 100% / cover 0% cover 100%\" should set timeline-trigger-active-range-start": "FAIL",
-      "e.style['timeline-trigger'] = \"--my-trigger view() contain 0% contain 100% / cover 0%\" should set timeline-trigger-activation-range-end": "FAIL",
-      "e.style['timeline-trigger'] = \"--my-trigger view() contain 0% contain 100% / cover 0%\" should set timeline-trigger-activation-range-start": "FAIL",
-      "e.style['timeline-trigger'] = \"--my-trigger view() contain 0% contain 100% / cover 0%\" should set timeline-trigger-active-range-end": "FAIL",
-      "e.style['timeline-trigger'] = \"--my-trigger view() contain 0% contain 100% / cover 0%\" should set timeline-trigger-active-range-start": "FAIL",
-      "e.style['timeline-trigger'] = \"--my-trigger view() contain 0% contain 100% / cover\" should set timeline-trigger-activation-range-end": "FAIL",
-      "e.style['timeline-trigger'] = \"--my-trigger view() contain 0% contain 100% / cover\" should set timeline-trigger-activation-range-start": "FAIL",
-      "e.style['timeline-trigger'] = \"--my-trigger view() contain 0% contain 100%\" should set the property value": "FAIL",
-      "e.style['timeline-trigger'] = \"--my-trigger view() contain 0% contain 100%\" should set timeline-trigger-activation-range-end": "FAIL",
-      "e.style['timeline-trigger'] = \"--my-trigger view() contain 0% contain 100%\" should set timeline-trigger-activation-range-start": "FAIL",
-      "e.style['timeline-trigger'] = \"--my-trigger view() contain 0%\" should set timeline-trigger-activation-range-end": "FAIL",
-      "e.style['timeline-trigger'] = \"--my-trigger view() contain 0%\" should set timeline-trigger-activation-range-start": "FAIL",
-      "e.style['timeline-trigger'] = \"--my-trigger view() contain 10%\" should set timeline-trigger-activation-range-end": "FAIL",
-      "e.style['timeline-trigger'] = \"--my-trigger view() contain 20% contain 80% / cover 0%\" should set the property value": "FAIL",
-      "e.style['timeline-trigger'] = \"--my-trigger view() contain 20% contain 80% / cover 10% cover 90%\" should set the property value": "FAIL",
-      "e.style['timeline-trigger'] = \"--my-trigger view() contain 20% contain 80% / cover 10%\" should set the property value": "FAIL",
-      "e.style['timeline-trigger'] = \"--my-trigger view() contain 20% contain 80% / cover 10%\" should set timeline-trigger-active-range-end": "FAIL",
-      "e.style['timeline-trigger'] = \"--my-trigger view() normal normal / auto auto\" should set the property value": "FAIL",
       "e.style['timeline-trigger'] = \"--my-trigger view() normal normal / cover 10% auto\" should set the property value": "FAIL",
       "e.style['timeline-trigger'] = \"--my-trigger view() normal normal / cover auto\" should set the property value": "FAIL",
       "e.style['timeline-trigger'] = \"--my-trigger view() normal normal / normal auto\" should set the property value": "FAIL",
@@ -448,16 +226,12 @@
       "e.style['timeline-trigger'] = \"--my-trigger1 --my-timeline1 / cover exit 100%\" should set timeline-trigger-active-range-start": "FAIL",
       "e.style['timeline-trigger'] = \"--my-trigger1 --my-timeline1 / cover exit 100%\" should set timeline-trigger-name": "FAIL",
       "e.style['timeline-trigger'] = \"--my-trigger1 --my-timeline1 / cover exit 100%\" should set timeline-trigger-source": "FAIL",
-      "e.style['timeline-trigger'] = \"--my-trigger1 --my-timeline1 contain 50% / cover 50%\" should set timeline-trigger-activation-range-end": "FAIL",
-      "e.style['timeline-trigger'] = \"--my-trigger1 --my-timeline1 contain 50% / cover 50%\" should set timeline-trigger-active-range-end": "FAIL",
       "e.style['timeline-trigger'] = \"--my-trigger1 --my-timeline1 contain cover / normal exit, --my-trigger2 --my-timeline2 entry exit / contain normal\" should set timeline-trigger-activation-range-end": "FAIL",
       "e.style['timeline-trigger'] = \"--my-trigger1 --my-timeline1 contain cover / normal exit, --my-trigger2 --my-timeline2 entry exit / contain normal\" should set timeline-trigger-activation-range-start": "FAIL",
       "e.style['timeline-trigger'] = \"--my-trigger1 --my-timeline1 contain cover / normal exit, --my-trigger2 --my-timeline2 entry exit / contain normal\" should set timeline-trigger-active-range-end": "FAIL",
       "e.style['timeline-trigger'] = \"--my-trigger1 --my-timeline1 contain cover / normal exit, --my-trigger2 --my-timeline2 entry exit / contain normal\" should set timeline-trigger-active-range-start": "FAIL",
       "e.style['timeline-trigger'] = \"--my-trigger1 --my-timeline1 contain cover / normal exit, --my-trigger2 --my-timeline2 entry exit / contain normal\" should set timeline-trigger-name": "FAIL",
       "e.style['timeline-trigger'] = \"--my-trigger1 --my-timeline1 contain cover / normal exit, --my-trigger2 --my-timeline2 entry exit / contain normal\" should set timeline-trigger-source": "FAIL",
-      "e.style['timeline-trigger'] = \"--my-trigger1 --my-timeline1 contain cover 100% / cover exit 100%\" should set timeline-trigger-activation-range-end": "FAIL",
-      "e.style['timeline-trigger'] = \"--my-trigger1 --my-timeline1 contain cover 100% / cover exit 100%\" should set timeline-trigger-active-range-end": "FAIL",
       "e.style['timeline-trigger'] = \"--my-trigger1, --my-trigger2\" should not set unrelated longhands": "FAIL",
       "e.style['timeline-trigger'] = \"--my-trigger1, --my-trigger2\" should set timeline-trigger-activation-range-end": "FAIL",
       "e.style['timeline-trigger'] = \"--my-trigger1, --my-trigger2\" should set timeline-trigger-activation-range-start": "FAIL",

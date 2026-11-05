@@ -217,10 +217,7 @@
     "total": 54
   },
   "domparsing/tentative/stream-html-abort-unblocks-rendering.html": {
-    "total": 1,
-    "failures": {
-      "abort() unblocks rendering on a streamed render-blocking parser-blocking script": "FAIL"
-    }
+    "total": 1
   },
   "domparsing/tentative/stream-html-custom-element-sanitizer.html": {
     "total": 80
@@ -232,10 +229,8 @@
     "total": 12,
     "failures": {
       "element.streamAppendHTMLUnsafe with defer/async scripts": "FAIL",
-      "element.streamAppendHTMLUnsafe with defer/module scripts should not execute on abort": "FAIL",
       "element.streamAppendHTMLUnsafe: defer and module scripts run after close() resolves, one per task": "FAIL",
       "element.streamHTMLUnsafe with defer/async scripts": "FAIL",
-      "element.streamHTMLUnsafe with defer/module scripts should not execute on abort": "FAIL",
       "element.streamHTMLUnsafe: defer and module scripts run after close() resolves, one per task": "FAIL"
     }
   },

@@ -351,7 +351,7 @@
     "reftest": "PASS"
   },
   "css/css-sizing/aspect-ratio/block-aspect-ratio-shrink-to-fit-ancestor-relayout.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-sizing/aspect-ratio/block-aspect-ratio-with-margin-collapsing-001.html": {
     "reftest": "PASS"

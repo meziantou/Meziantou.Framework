@@ -2047,11 +2047,7 @@
     "total": 2
   },
   "fetch/corb/script-html-via-cross-origin-blob-url.sub.html": {
-    "harness": "ERROR",
-    "total": 1,
-    "failures": {
-      "script-html-via-cross-origin-blob-url": "FAIL"
-    }
+    "total": 1
   },
   "fetch/corb/script-js-mislabeled-as-html-nosniff.sub.html": {
     "total": 1
@@ -3449,10 +3445,7 @@
     "total": 1
   },
   "fetch/orb/tentative/script-utf16-without-bom-hint-charset.sub.html": {
-    "total": 1,
-    "failures": {
-      "script-utf16-without-bom-hint-charset": "FAIL"
-    }
+    "total": 1
   },
   "fetch/orb/tentative/status.sub.any.js": {
     "harness": "ERROR",

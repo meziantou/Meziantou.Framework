@@ -1588,6 +1588,15 @@ internal sealed partial class EditingAlgorithms
 
             FixDisallowedAncestors(node);
 
+            // As in the browsers, the empty item that became another block gets a line break, so that it keeps a line (the
+            // fix of the disallowed ancestors replaces the item by a new element, after which the active range is)
+            var block = node.ParentNode is null ? ChildAt(ActiveRange.StartContainer, (int)ActiveRange.StartOffset - 1) : node;
+            if (block is Element && !IsHtmlElement(block, ListItemNames) && !block.HasChildNodes() && IsEditable(block) && !IsInlineNode(block))
+            {
+                block.AppendChild(CreateElement("br"));
+                CollapseTo(block, 0);
+            }
+
             // As in the browsers, the item that only contained the list of the item (which the normalization of the
             // sublists moved after it) is removed: the item replaces it
             if (IsHtmlElement(node, "li") && IsHtmlElement(node.PreviousSibling, "li") && IsEditable(node.PreviousSibling) && !node.PreviousSibling.HasChildNodes())

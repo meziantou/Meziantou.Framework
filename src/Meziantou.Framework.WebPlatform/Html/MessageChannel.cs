@@ -54,7 +54,7 @@ public sealed class MessagePort : EventTarget, IStructuredTransferable
     // The port message queue (https://html.spec.whatwg.org/multipage/web-messaging.html#port-message-queue)
     private readonly Queue<PortMessage> _messages = new();
     private bool _enabled;
-    private bool _deliveryQueued;
+    private int _queuedDeliveries;
     private bool _detached;
     private bool _closed;
 
@@ -202,14 +202,21 @@ public sealed class MessagePort : EventTarget, IStructuredTransferable
         QueueDeliveryLocked();
     }
 
-    /// <summary>Queues a task to deliver the next message, when the port message queue is enabled.</summary>
+    /// <summary>
+    /// Queues a task to deliver each message of the port message queue, when it is enabled: the messages are tasks of the port
+    /// message queue (https://html.spec.whatwg.org/multipage/web-messaging.html#port-message-queue), so the tasks queued
+    /// while they are delivered run after all of them.
+    /// </summary>
     private void QueueDeliveryLocked()
     {
-        if (!_enabled || _deliveryQueued || _detached || _messages.Count == 0 || RelevantGlobal is not { } global)
+        if (!_enabled || _detached || RelevantGlobal is not { } global)
             return;
 
-        _deliveryQueued = true;
-        global.QueueGlobalTask(DeliverNextMessage);
+        while (_queuedDeliveries < _messages.Count)
+        {
+            _queuedDeliveries++;
+            global.QueueGlobalTask(DeliverNextMessage);
+        }
     }
 
     private void DeliverNextMessage()
@@ -217,11 +224,9 @@ public sealed class MessagePort : EventTarget, IStructuredTransferable
         PortMessage? message;
         lock (StateLock)
         {
-            _deliveryQueued = false;
+            _queuedDeliveries--;
             if (_detached || !_messages.TryDequeue(out message))
                 return;
-
-            QueueDeliveryLocked();
         }
 
         Deliver(message);

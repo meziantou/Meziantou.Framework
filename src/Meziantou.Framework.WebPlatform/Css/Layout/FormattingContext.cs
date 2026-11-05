@@ -865,6 +865,7 @@ internal abstract class FormattingContext
         var blockFormattingContext = space.BlockFormattingContext;
         var startMarginCollapsesWithChildren = blockFormattingContext is not null && paddingAndBorder.BlockStart == 0;
         var marginTrim = BlockFormattingContext.GetMarginTrim(box);
+        var isTableCell = box.Display.Internal == DisplayInternal.TableCell;
         var content = new ContentArea(writingDirection, new LogicalOffset(edges.InlineStart, edges.BlockStart), contentInlineSize, contentBlockSize)
         {
             IsBlockSizeIndefinite = space.IsFixedBlockSizeIndefinite && !isOrthogonal && fixedBlockSize is not null,
@@ -897,8 +898,9 @@ internal abstract class FormattingContext
             // their children (through the anonymous block boxes), as in the browsers
             StretchUsesQuirksPercentageBlockSize = contentBlockSize is null && (quirksFillBlockSize is not null
                 || space.StretchUsesQuirksPercentageBlockSize && !isOrthogonal && box is { Kind: ContainerBoxKind.Anonymous, IsInlineBox: false, Display.Internal: DisplayInternal.None }),
-            MinBlockSize = contentBlockSize is null ? ToContentBlockSize(blockSizing.Resolve(boxModel.GetMinSize(blockIsHorizontal), SizingProperty.Minimum)) : null,
-            MaxBlockSize = contentBlockSize is null ? ToContentBlockSize(blockSizing.Resolve(boxModel.GetMaxSize(blockIsHorizontal), SizingProperty.Maximum)) : null,
+            // (as in the browsers, min-height and max-height do not apply to the table cells: see TableLayoutAlgorithm.GetSpecifiedCellBlockSize)
+            MinBlockSize = contentBlockSize is null && !isTableCell ? ToContentBlockSize(blockSizing.Resolve(boxModel.GetMinSize(blockIsHorizontal), SizingProperty.Minimum)) : null,
+            MaxBlockSize = contentBlockSize is null && !isTableCell ? ToContentBlockSize(blockSizing.Resolve(boxModel.GetMaxSize(blockIsHorizontal), SizingProperty.Maximum)) : null,
             ResolveContentBasedBlockSize = contentBlockSize is null && preferredBlockSize.Kind == SizeKind.CalcSize && box.Kind != ContainerBoxKind.Replaced && !(space.MeasuresIntrinsicBlockSize && !isOrthogonal)
                 ? CreateContentBasedBlockSizeResolver(blockSizing, preferredBlockSize, edges.BlockSum())
                 : null,

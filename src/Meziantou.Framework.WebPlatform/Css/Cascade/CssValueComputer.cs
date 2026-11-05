@@ -206,7 +206,8 @@ internal static partial class CssValueComputer
                 return CssPropertyRules.ComputeFilter(ComputeGeneric(style, property, value, baseUrl));
             case "animation-timing-function" or "transition-timing-function":
                 return CssPropertyRules.ComputeEasing(ComputeGeneric(style, property, value, baseUrl));
-            case "animation-range-start" or "animation-range-end":
+            case "animation-range-start" or "animation-range-end" or "timeline-trigger-activation-range-start" or "timeline-trigger-activation-range-end"
+                or "timeline-trigger-active-range-start" or "timeline-trigger-active-range-end":
                 return CssPropertyRules.ComputeAnimationRange(property, ComputeGeneric(style, property, value, baseUrl));
             case "justify-items" when value == "legacy":
                 // https://drafts.csswg.org/css-align-3/#valdef-justify-items-legacy: the legacy keyword alone takes the
@@ -221,6 +222,10 @@ internal static partial class CssValueComputer
                 return value + " links";
             case "overflow-clip-margin-top" or "overflow-clip-margin-right" or "overflow-clip-margin-bottom" or "overflow-clip-margin-left":
                 return CssPropertyRules.CanonicalizeOverflowClipMargin(ComputeGeneric(style, property, value, baseUrl));
+            case "touch-action" when value == "pan-x pan-y pinch-zoom":
+                // https://w3c.github.io/pointerevents/#the-touch-action-css-property: manipulation is the panning in both axes
+                // and the zooming, so the shortest serialization of the same value is manipulation (https://drafts.csswg.org/cssom/#serializing-css-values)
+                return "manipulation";
             case "position-area":
                 return CssPropertyRules.ComputePositionArea(value);
             case "position-try-fallbacks":
@@ -2476,6 +2481,12 @@ internal static partial class CssValueComputer
                             "%" => new CssPreservedToken(new CssToken { Type = CssTokenType.Percentage, NumericValue = result.Value }),
                             var unit => Dimension(result.Value, unit),
                         });
+                    }
+                    else if (argument is CssFunction treeCounting && ValueMatcher.IsTreeCountingFunction(treeCounting))
+                    {
+                        // https://drafts.csswg.org/css-values-5/#tree-counting: an <integer> resolved at computed-value time
+                        hasMathFunction = true;
+                        copy.Value.Add(new CssPreservedToken(new CssToken { Type = CssTokenType.Number, NumericValue = ResolveTreeCountingFunction(InfraAscii.ToAsciiLowercase(treeCounting.Name), style.Element) ?? 1 }));
                     }
                     else
                     {

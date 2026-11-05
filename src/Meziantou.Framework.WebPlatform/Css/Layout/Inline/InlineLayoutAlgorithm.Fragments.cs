@@ -23,7 +23,7 @@ internal sealed partial class InlineLayoutAlgorithm
     /// its inline-start edges are on the fragment of its start in its direction, the inline-end ones on the fragment of its
     /// end (https://drafts.csswg.org/css-writing-modes-4/#bidi-box-model).
     /// </summary>
-    private void PlaceLeaves(bool reordered)
+    private void PlaceLeaves(bool reordered, bool isFirstLine)
     {
         _nodes.Clear();
         _openNodes.Clear();
@@ -72,12 +72,12 @@ internal sealed partial class InlineLayoutAlgorithm
 
             for (var i = common; i < _chain.Count; i++)
             {
-                OpenNode(_chain[i], reordered, ref x);
+                OpenNode(_chain[i], reordered, isFirstLine, ref x);
             }
 
             if (leaf.Kind == LineLeafKind.EmptyBox)
             {
-                OpenNode(leaf.Box!, reordered, ref x);
+                OpenNode(leaf.Box!, reordered, isFirstLine, ref x);
                 CloseNode(ref x);
                 continue;
             }
@@ -236,7 +236,7 @@ internal sealed partial class InlineLayoutAlgorithm
     }
 
     /// <summary>Opens a fragment of an inline box at the current position, with its line-left edges when they belong to it.</summary>
-    private void OpenNode(ContainerBox box, bool reordered, ref double x)
+    private void OpenNode(ContainerBox box, bool reordered, bool isFirstLine, ref double x)
     {
         // _lineBoxes lists the boxes that already have a fragment on the line (the line-left edges are on the first one)
         var isFirst = !ContainsBox(_lineBoxes, box);
@@ -262,8 +262,8 @@ internal sealed partial class InlineLayoutAlgorithm
         var endsHere = clones || (ContainsBox(_closeTags, box) && box.Continuation is null);
         var hasLeft = isFirst && (leftIsStart ? startsHere : endsHere);
         var hasRight = isLast && (leftIsStart ? endsHere : startsHere);
-        var (leftMargin, leftBorderPadding) = hasLeft ? GetInlineEdgeParts(box, start: leftIsStart) : default;
-        var (rightMargin, rightBorderPadding) = hasRight ? GetInlineEdgeParts(box, start: !leftIsStart) : default;
+        var (leftMargin, leftBorderPadding) = hasLeft ? GetInlineEdgeParts(box, start: leftIsStart, isFirstLine) : default;
+        var (rightMargin, rightBorderPadding) = hasRight ? GetInlineEdgeParts(box, start: !leftIsStart, isFirstLine) : default;
 
         // A ruby base records the start of its slot, a ruby annotation moves over the slots of its bases (see the ruby layout)
         var rubyExtra = HasRuby ? OnRubyBoxOpened(box, ref x) : 0;

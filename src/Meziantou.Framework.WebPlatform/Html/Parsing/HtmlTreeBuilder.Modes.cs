@@ -834,6 +834,7 @@ internal sealed partial class HtmlTreeBuilder
                     if (IsStreaming && ScriptingMode == ParserScriptingMode.Fragment)
                     {
                         script.ParserDocument = null;
+                        (_streamedScripts ??= []).Add(script);
                     }
 
                     // The characters written by the script are inserted just before the next input character

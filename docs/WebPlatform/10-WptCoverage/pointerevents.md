@@ -9,16 +9,16 @@ description: "The results of the web-platform-tests of pointerevents, and why th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 167 | 179 | 0 | 93% |
+| [Stable](#stable-tests) | 168 | 179 | 0 | 94% |
 | [Tentative](#tentative-tests) | 5 | 9 | 0 | 56% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **172** | **188** | **0** | **91%** |
+| **All** | **173** | **188** | **0** | **92%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 4
+- **BUG**: 3
 - **TEST BUG**: 5
 - **NOT IMPLEMENTED**: 6
 - **TEST RUNNER**: 1
@@ -44,7 +44,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`compat/pointerevent_mouse_target_after_pointer_target_slot_removed.html`](https://wpt.fyi/results/pointerevents/compat/pointerevent_mouse_target_after_pointer_target_slot_removed.html) | Fail | 0 / 3 | BUG | when a pointer event listener removes the `<slot>` its target is assigned to, the compatibility mouse event is fired at the slotted element (which stays connected, without box), not at the parent of the removed slot as the test expects (only Gecko passes) |
 | [`compat/pointerevent_mouseevent_key_pressed.html`](https://wpt.fyi/results/pointerevents/compat/pointerevent_mouseevent_key_pressed.html) | Pass | 5 / 5 |  |  |
 | [`compat/pointerevent_preventdefault_pointerdown_dblclick.html`](https://wpt.fyi/results/pointerevents/compat/pointerevent_preventdefault_pointerdown_dblclick.html) | Pass | 2 / 2 |  |  |
-| [`compat/pointerevent_touch-action-verification.html`](https://wpt.fyi/results/pointerevents/compat/pointerevent_touch-action-verification.html) | Fail | 3 / 4 | BUG | `getComputedStyle()` serializes `touch-action: pan-x pan-y pinch-zoom` as `manipulation` (its shortest serialization); the test expects the keywords as specified, as Blink (Gecko and WebKit fail the subtest too) |
+| [`compat/pointerevent_touch-action-verification.html`](https://wpt.fyi/results/pointerevents/compat/pointerevent_touch-action-verification.html) | Pass | 4 / 4 |  |  |
 | [`compat/pointerevent_touch-action_two-finger_interaction.html`](https://wpt.fyi/results/pointerevents/compat/pointerevent_touch-action_two-finger_interaction.html) | Pass | 2 / 2 |  |  |
 | [`idlharness.https.window.js`](https://wpt.fyi/results/pointerevents/idlharness.https.window.js) | Pass | 203 / 203 |  |  |
 | [`inheritance.html`](https://wpt.fyi/results/pointerevents/inheritance.html) | Pass | 2 / 2 |  |  |

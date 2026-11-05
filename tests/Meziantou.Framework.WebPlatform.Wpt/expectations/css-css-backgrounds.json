@@ -633,10 +633,7 @@
     "reftest": "PASS"
   },
   "css/css-backgrounds/background-image-cors-no-reload.html": {
-    "total": 1,
-    "failures": {
-      "CORS image from variable doesn't cause re-downloads": "FAIL"
-    }
+    "total": 1
   },
   "css/css-backgrounds/background-image-cover-zoomed-1.html": {
     "reftest": "PASS"

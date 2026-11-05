@@ -10,9 +10,9 @@ description: "The results of the web-platform-tests of scroll-animations, and wh
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 141 | 148 | 0 | 95% |
-| [Tentative](#tentative-tests) | 30 | 76 | 0 | 39% |
+| [Tentative](#tentative-tests) | 39 | 76 | 0 | 51% |
 | [Reftests](#reftests) | 30 | 37 | 0 | 81% |
-| **All** | **201** | **261** | **0** | **77%** |
+| **All** | **210** | **261** | **0** | **80%** |
 
 ## Failure reasons
 
@@ -20,7 +20,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 6
 - **TEST BUG**: 1
-- **NOT IMPLEMENTED**: 52
+- **NOT IMPLEMENTED**: 43
 - **OUT OF SCOPE**: 1
 
 ## Stable tests
@@ -200,21 +200,21 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`animation-trigger/animation-trigger-untriggered-animations-exposed.tentative.html`](https://wpt.fyi/results/scroll-animations/animation-trigger/animation-trigger-untriggered-animations-exposed.tentative.html) | Pass | 1 / 1 |  |  |
 | [`animation-trigger/parsing/animation-trigger-parsing.tentative.html`](https://wpt.fyi/results/scroll-animations/animation-trigger/parsing/animation-trigger-parsing.tentative.html) | Fail | 46 / 58 | NOT IMPLEMENTED | animation triggers (`animation-trigger`, `timeline-trigger`, `trigger-scope`, `TimelineTrigger`, Web Animations 2) |
 | [`animation-trigger/parsing/timeline-trigger-active-range-end-invalid.tentative.html`](https://wpt.fyi/results/scroll-animations/animation-trigger/parsing/timeline-trigger-active-range-end-invalid.tentative.html) | Pass | 13 / 13 |  |  |
-| [`animation-trigger/parsing/timeline-trigger-active-range-end-valid.tentative.html`](https://wpt.fyi/results/scroll-animations/animation-trigger/parsing/timeline-trigger-active-range-end-valid.tentative.html) | Fail | 23 / 25 | NOT IMPLEMENTED | animation triggers (`animation-trigger`, `timeline-trigger`, `trigger-scope`, `TimelineTrigger`, Web Animations 2) |
-| [`animation-trigger/parsing/timeline-trigger-active-range-end.computed.tentative.html`](https://wpt.fyi/results/scroll-animations/animation-trigger/parsing/timeline-trigger-active-range-end.computed.tentative.html) | Fail | 25 / 28 | NOT IMPLEMENTED | animation triggers (`animation-trigger`, `timeline-trigger`, `trigger-scope`, `TimelineTrigger`, Web Animations 2) |
-| [`animation-trigger/parsing/timeline-trigger-active-range-shorthand.tentative.html`](https://wpt.fyi/results/scroll-animations/animation-trigger/parsing/timeline-trigger-active-range-shorthand.tentative.html) | Fail | 59 / 144 | NOT IMPLEMENTED | animation triggers (`animation-trigger`, `timeline-trigger`, `trigger-scope`, `TimelineTrigger`, Web Animations 2) |
-| [`animation-trigger/parsing/timeline-trigger-active-range-start-computed.tentative.html`](https://wpt.fyi/results/scroll-animations/animation-trigger/parsing/timeline-trigger-active-range-start-computed.tentative.html) | Fail | 25 / 28 | NOT IMPLEMENTED | animation triggers (`animation-trigger`, `timeline-trigger`, `trigger-scope`, `TimelineTrigger`, Web Animations 2) |
+| [`animation-trigger/parsing/timeline-trigger-active-range-end-valid.tentative.html`](https://wpt.fyi/results/scroll-animations/animation-trigger/parsing/timeline-trigger-active-range-end-valid.tentative.html) | Pass | 25 / 25 |  |  |
+| [`animation-trigger/parsing/timeline-trigger-active-range-end.computed.tentative.html`](https://wpt.fyi/results/scroll-animations/animation-trigger/parsing/timeline-trigger-active-range-end.computed.tentative.html) | Pass | 28 / 28 |  |  |
+| [`animation-trigger/parsing/timeline-trigger-active-range-shorthand.tentative.html`](https://wpt.fyi/results/scroll-animations/animation-trigger/parsing/timeline-trigger-active-range-shorthand.tentative.html) | Fail | 143 / 144 | NOT IMPLEMENTED | animation triggers (`animation-trigger`, `timeline-trigger`, `trigger-scope`, `TimelineTrigger`, Web Animations 2) |
+| [`animation-trigger/parsing/timeline-trigger-active-range-start-computed.tentative.html`](https://wpt.fyi/results/scroll-animations/animation-trigger/parsing/timeline-trigger-active-range-start-computed.tentative.html) | Pass | 28 / 28 |  |  |
 | [`animation-trigger/parsing/timeline-trigger-active-range-start-invalid.tentative.html`](https://wpt.fyi/results/scroll-animations/animation-trigger/parsing/timeline-trigger-active-range-start-invalid.tentative.html) | Pass | 10 / 10 |  |  |
-| [`animation-trigger/parsing/timeline-trigger-active-range-start-valid.tentative.html`](https://wpt.fyi/results/scroll-animations/animation-trigger/parsing/timeline-trigger-active-range-start-valid.tentative.html) | Fail | 24 / 26 | NOT IMPLEMENTED | animation triggers (`animation-trigger`, `timeline-trigger`, `trigger-scope`, `TimelineTrigger`, Web Animations 2) |
-| [`animation-trigger/parsing/timeline-trigger-empty-shorthand.tentative.html`](https://wpt.fyi/results/scroll-animations/animation-trigger/parsing/timeline-trigger-empty-shorthand.tentative.html) | Fail | 1 / 2 | NOT IMPLEMENTED | animation triggers (`animation-trigger`, `timeline-trigger`, `trigger-scope`, `TimelineTrigger`, Web Animations 2) |
-| [`animation-trigger/parsing/timeline-trigger-entry-range-end-computed.tentative.html`](https://wpt.fyi/results/scroll-animations/animation-trigger/parsing/timeline-trigger-entry-range-end-computed.tentative.html) | Fail | 24 / 27 | NOT IMPLEMENTED | animation triggers (`animation-trigger`, `timeline-trigger`, `trigger-scope`, `TimelineTrigger`, Web Animations 2) |
+| [`animation-trigger/parsing/timeline-trigger-active-range-start-valid.tentative.html`](https://wpt.fyi/results/scroll-animations/animation-trigger/parsing/timeline-trigger-active-range-start-valid.tentative.html) | Pass | 26 / 26 |  |  |
+| [`animation-trigger/parsing/timeline-trigger-empty-shorthand.tentative.html`](https://wpt.fyi/results/scroll-animations/animation-trigger/parsing/timeline-trigger-empty-shorthand.tentative.html) | Pass | 2 / 2 |  |  |
+| [`animation-trigger/parsing/timeline-trigger-entry-range-end-computed.tentative.html`](https://wpt.fyi/results/scroll-animations/animation-trigger/parsing/timeline-trigger-entry-range-end-computed.tentative.html) | Pass | 27 / 27 |  |  |
 | [`animation-trigger/parsing/timeline-trigger-entry-range-end-invalid.tentative.html`](https://wpt.fyi/results/scroll-animations/animation-trigger/parsing/timeline-trigger-entry-range-end-invalid.tentative.html) | Pass | 12 / 12 |  |  |
-| [`animation-trigger/parsing/timeline-trigger-entry-range-end-valid.tentative.html`](https://wpt.fyi/results/scroll-animations/animation-trigger/parsing/timeline-trigger-entry-range-end-valid.tentative.html) | Fail | 21 / 23 | NOT IMPLEMENTED | animation triggers (`animation-trigger`, `timeline-trigger`, `trigger-scope`, `TimelineTrigger`, Web Animations 2) |
-| [`animation-trigger/parsing/timeline-trigger-entry-range-shorthand.tentative.html`](https://wpt.fyi/results/scroll-animations/animation-trigger/parsing/timeline-trigger-entry-range-shorthand.tentative.html) | Fail | 60 / 129 | NOT IMPLEMENTED | animation triggers (`animation-trigger`, `timeline-trigger`, `trigger-scope`, `TimelineTrigger`, Web Animations 2) |
-| [`animation-trigger/parsing/timeline-trigger-entry-range-start-computed.tentative.html`](https://wpt.fyi/results/scroll-animations/animation-trigger/parsing/timeline-trigger-entry-range-start-computed.tentative.html) | Fail | 24 / 27 | NOT IMPLEMENTED | animation triggers (`animation-trigger`, `timeline-trigger`, `trigger-scope`, `TimelineTrigger`, Web Animations 2) |
+| [`animation-trigger/parsing/timeline-trigger-entry-range-end-valid.tentative.html`](https://wpt.fyi/results/scroll-animations/animation-trigger/parsing/timeline-trigger-entry-range-end-valid.tentative.html) | Pass | 23 / 23 |  |  |
+| [`animation-trigger/parsing/timeline-trigger-entry-range-shorthand.tentative.html`](https://wpt.fyi/results/scroll-animations/animation-trigger/parsing/timeline-trigger-entry-range-shorthand.tentative.html) | Fail | 128 / 129 | NOT IMPLEMENTED | animation triggers (`animation-trigger`, `timeline-trigger`, `trigger-scope`, `TimelineTrigger`, Web Animations 2) |
+| [`animation-trigger/parsing/timeline-trigger-entry-range-start-computed.tentative.html`](https://wpt.fyi/results/scroll-animations/animation-trigger/parsing/timeline-trigger-entry-range-start-computed.tentative.html) | Pass | 27 / 27 |  |  |
 | [`animation-trigger/parsing/timeline-trigger-entry-range-start-invalid.tentative.html`](https://wpt.fyi/results/scroll-animations/animation-trigger/parsing/timeline-trigger-entry-range-start-invalid.tentative.html) | Pass | 9 / 9 |  |  |
-| [`animation-trigger/parsing/timeline-trigger-entry-range-start-valid.tentative.html`](https://wpt.fyi/results/scroll-animations/animation-trigger/parsing/timeline-trigger-entry-range-start-valid.tentative.html) | Fail | 23 / 25 | NOT IMPLEMENTED | animation triggers (`animation-trigger`, `timeline-trigger`, `trigger-scope`, `TimelineTrigger`, Web Animations 2) |
-| [`animation-trigger/parsing/timeline-trigger-shorthand.tentative.html`](https://wpt.fyi/results/scroll-animations/animation-trigger/parsing/timeline-trigger-shorthand.tentative.html) | Fail | 119 / 196 | NOT IMPLEMENTED | animation triggers (`animation-trigger`, `timeline-trigger`, `trigger-scope`, `TimelineTrigger`, Web Animations 2) |
+| [`animation-trigger/parsing/timeline-trigger-entry-range-start-valid.tentative.html`](https://wpt.fyi/results/scroll-animations/animation-trigger/parsing/timeline-trigger-entry-range-start-valid.tentative.html) | Pass | 25 / 25 |  |  |
+| [`animation-trigger/parsing/timeline-trigger-shorthand.tentative.html`](https://wpt.fyi/results/scroll-animations/animation-trigger/parsing/timeline-trigger-shorthand.tentative.html) | Fail | 154 / 196 | NOT IMPLEMENTED | animation triggers (`animation-trigger`, `timeline-trigger`, `trigger-scope`, `TimelineTrigger`, Web Animations 2) |
 | [`animation-trigger/parsing/timeline-trigger-source-parsing.tentative.html`](https://wpt.fyi/results/scroll-animations/animation-trigger/parsing/timeline-trigger-source-parsing.tentative.html) | Fail | 53 / 69 | NOT IMPLEMENTED | animation triggers (`animation-trigger`, `timeline-trigger`, `trigger-scope`, `TimelineTrigger`, Web Animations 2) |
 | [`animation-trigger/parsing/trigger-scope.tentative.html`](https://wpt.fyi/results/scroll-animations/animation-trigger/parsing/trigger-scope.tentative.html) | Pass | 25 / 25 |  |  |
 | [`animation-trigger/timeline-trigger-none-auto.tentative.html`](https://wpt.fyi/results/scroll-animations/animation-trigger/timeline-trigger-none-auto.tentative.html) | Fail | 0 / 1 | NOT IMPLEMENTED | animation triggers (`animation-trigger`, `timeline-trigger`, `trigger-scope`, `TimelineTrigger`, Web Animations 2) |

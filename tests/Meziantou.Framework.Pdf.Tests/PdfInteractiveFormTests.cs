@@ -42,6 +42,25 @@ public sealed class PdfInteractiveFormTests
     }
 
     [Fact]
+    public void AFontNameWithTheNullCharacterInTheDefaultAppearanceIsNotAResource()
+    {
+        // The /Ti#00Ro of the default appearance names no font of /DR: the value is shown in the default font
+        var data = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [10 0 R] /DR << /Font << /TiRo 41 0 R >> >> >> >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 300 300] >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /Annots [10 0 R] >>")
+            .Add(10, "<< /FT /Tx /T (name) /Type /Annot /Subtype /Widget /Rect [10 250 150 270] /P 3 0 R /DA (/Ti#00Ro 12 Tf 0 g) >>")
+            .Add(41, "<< /Type /Font /Subtype /Type1 /BaseFont /Times-Roman /Encoding /WinAnsiEncoding >>")
+            .ToArray();
+        var document = PdfDocument.Open(data);
+
+        document.Form.FindField("name")!.Value = "Jane Doe";
+
+        var appearance = PdfDocument.Open(document.ToByteArray()).Form.FindField("name")!.Dictionary.Get<PdfDictionary>(AP)!.Get<PdfStream>(PdfNames.N)!;
+        Assert.Contains("(Jane Doe) Tj", Encoding.Latin1.GetString(appearance.GetDecodedData()), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void FieldsAreRead()
     {
         var form = PdfDocument.Open(CreateForm()).Form;

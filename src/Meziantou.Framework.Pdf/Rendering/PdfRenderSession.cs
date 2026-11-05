@@ -65,7 +65,17 @@ public sealed class PdfRenderSession : IDisposable
     {
         CheckPage(page);
         var (width, height, _) = PageGeometry.Compute(page, Options);
-        var image = new Image<Rgba32>(width, height, Options.Configuration);
+        Image<Rgba32> image;
+        try
+        {
+            image = new Image<Rgba32>(width, height, Options.Configuration);
+        }
+        catch (ImageResourceLimitException ex)
+        {
+            // The limits of the image configuration can be lower than the largest page the renderer accepts
+            throw new PdfResourceLimitException($"The page is {width} x {height} pixels at {Options.Dpi} dpi: {ex.Message}", ex);
+        }
+
         try
         {
             Render(page, image, backgroundBehind: true, cancellationToken);

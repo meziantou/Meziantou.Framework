@@ -224,7 +224,7 @@ internal static class PdfFieldAppearance
     private static (PdfFont Font, double Size, PdfColor Color) ReadDefaultAppearance(PdfFormField field, PdfDictionary widget)
     {
         var appearance = field.GetInherited(PdfFormField.DAName) as PdfString ?? widget.Get<PdfString>(PdfFormField.DAName) ?? field.Form.Dictionary?.Get<PdfString>(PdfFormField.DAName);
-        string? fontName = null;
+        PdfName? fontName = null;
         var size = 0d;
         var color = PdfColor.FromGray(0);
         if (appearance is not null)
@@ -239,7 +239,7 @@ internal static class PdfFieldAppearance
                     switch (name)
                     {
                         case "Tf" when operands.Count >= 2 && operands[0] is PdfName font && operands[1] is PdfNumber fontSize:
-                            fontName = font.Value;
+                            fontName = font;
                             size = double.IsFinite(fontSize.DoubleValue) ? Math.Clamp(fontSize.DoubleValue, 0, 1000) : 0;
                             break;
                         case "g" when operands.Count == 1:
@@ -261,8 +261,8 @@ internal static class PdfFieldAppearance
         }
 
         var resources = widget.Get<PdfDictionary>(DRName) ?? field.Form.Dictionary?.Get<PdfDictionary>(DRName);
-        var baseFont = fontName is null ? null : resources?.Get<PdfDictionary>(PdfNames.Font)?.Get<PdfDictionary>(PdfName.Create(fontName))?.GetName(PdfNames.BaseFont)?.Value;
-        return (PdfFont.GetStandardFont(MatchStandardFont(baseFont ?? fontName ?? "")), size, color);
+        var baseFont = fontName is null ? null : resources?.Get<PdfDictionary>(PdfNames.Font)?.Get<PdfDictionary>(fontName)?.GetName(PdfNames.BaseFont)?.Value;
+        return (PdfFont.GetStandardFont(MatchStandardFont(baseFont ?? fontName?.Value ?? "")), size, color);
     }
 
     /// <summary>Finds the standard font of a font name, such as <c>Helvetica-Bold</c>, <c>Arial,Bold</c>, <c>TimesNewRomanPSMT</c> or the resource names of Acrobat (<c>Helv</c>, <c>TiRo</c>, <c>Cour</c>, <c>ZaDb</c>).</summary>

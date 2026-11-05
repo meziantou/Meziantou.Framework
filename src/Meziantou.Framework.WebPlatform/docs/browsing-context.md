@@ -780,7 +780,7 @@ of its parent document until the new document is loaded; a reload or a traversal
   | Header | Effect |
   | --- | --- |
   | `Accept-CH`, `Critical-CH` | The client hints that the origin of a top-level document opts into, and the ones that restart the navigation (see [Client hints](#client-hints)) |
-  | `Clear-Site-Data` | `"clientHints"`, `"cookies"`, `"cache"` and `"*"` clear the client hints of the origin (see [Client hints](#client-hints)); `"prefetchCache"`, `"prerenderCache"`, `"cache"` and `"*"` discard the prefetches and the prerenders of the documents of the origin (see [Speculative loading](#speculative-loading)); nothing else is cleared |
+  | `Clear-Site-Data` | `"clientHints"`, `"cookies"`, `"cache"` and `"*"` clear the client hints of the origin (see [Client hints](#client-hints)); `"prefetchCache"`, `"prerenderCache"`, `"cache"` and `"*"` discard the prefetches and the prerenders of the documents of the origin (see [Speculative loading](#speculative-loading)); the other types clear the data of the origin (see [Clear-Site-Data](#clear-site-data)) |
   | `Content-Type` | The MIME type and the encoding of the resource |
   | `Content-Disposition` | `attachment`: the navigation does not create a document |
   | `Last-Modified` | `document.lastModified` (the current date and time when there is none) |
@@ -1935,8 +1935,7 @@ using var context = new BrowsingContext(new BrowsingContextOptions
   clear it with them). The `Clear-Site-Data` header of a response clears the entry of the origin of its URL with the
   `"clientHints"`, `"cookies"`, `"cache"` and `"*"` types (also the entry that the same response creates); as the cache
   is only written by the top-level documents, a response in a document whose top-level document has another origin
-  clears nothing. The header clears nothing else of the user data: the cookies and the storage are kept (it also
-  discards the speculative loads, see [Speculative loading](#speculative-loading)).
+  clears nothing. The header also clears the other data of the origin (see [Clear-Site-Data](#clear-site-data)).
 - The speculative loads: a cross-site navigational prefetch is isolated, so its request only has the hints that are sent
   by default. As in Chromium, a prerendering traversable has its own cache over the one of the group: the hints that its
   documents opt into are sent with the requests of the prerendered page (with the ones of the group), and they are stored
@@ -3344,6 +3343,23 @@ it (see [Disabling features](#disabling-features)).
   `unlock()` and when the document is unloaded. A document whose keyboard is locked is not kept in the back/forward
   cache (`keyboardlock`), as in Chromium. The `layoutchange` event and `getLayoutMap()` (Keyboard Map) are not
   implemented.
+- **Network Information** ([Network Information API](https://wicg.github.io/netinfo/)): `navigator.connection` (the
+  same `NetworkInformation` object at each read) in the windows and the workers, read from the
+  `NetworkInformationProvider` of `NetworkInformation.Provider`. Set its `Status` (a `NetworkConnectionStatus`: `Type`,
+  `EffectiveType`, `Downlink`, `DownlinkMax` and `RoundTripTime`) to simulate a network; setting it fires `change`
+  from a task in the documents and workers that see a different value. As in Chromium, `downlink` is a multiple of
+  50 kbit/s (10 Mbit/s at most) and `rtt` a multiple of 50 ms (3 seconds at most). The provider also gives the `RTT`,
+  `Downlink` and `ECT` client hints that `ClientHintsOptions` does not set. Without provider, the type is `unknown`,
+  the connection is a 4G one (10 Mbit/s, 50 ms) and the network values of `ClientHintsOptions` are used. `saveData`
+  ([Save Data API](https://wicg.github.io/savedata/)) is `ClientHintsOptions.SaveData`, which also sends `Save-Data: on`.
+- **Device Memory** ([Device Memory](https://www.w3.org/TR/device-memory/)): `navigator.deviceMemory`, in the secure
+  windows and workers, is `ClientHintsOptions.DeviceMemory` rounded down to a power of two between 0.25 and 8 (8
+  without value; the `Sec-CH-Device-Memory` hint is then not sent). Webref has no IDL of the specification: the
+  attribute is defined by hand.
+- **Global Privacy Control** ([GPC](https://w3c.github.io/gpc/)): `navigator.globalPrivacyControl` in the windows and the
+  workers, and the `Sec-GPC: 1` header of every request, when `GlobalPrivacyControl.Enabled` is set or
+  `GlobalPrivacyControl.IsEnabled` returns true (read at each request). Without options, the value is false and the
+  header is not sent.
 
 ## Cross-document messaging
 
@@ -3522,7 +3538,7 @@ await context.WaitUntilIdleAsync();
   of a window whose document is not fully active (e.g. a removed iframe), and `register()` is rejected with an
   `InvalidStateError` in a window that is closing.
 - Not implemented: the idle termination of the service workers and
-  the timeouts of their events, `Clear-Site-Data` (it only clears the client hints and the speculative loads), the storage partitioning by top-level site, the `cookieStore` of the
+  the timeouts of their events, the removal of the controller of the clients by `Clear-Site-Data` (the registrations are unregistered), the storage partitioning by top-level site, the `cookieStore` of the
   service workers, and the reserved clients (`clients.get(event.resultingClientId)` resolves with `undefined` until the
   document or the worker of the navigation exists, and the document that replaces the initial `about:blank` document of
   an iframe is another client).
@@ -3580,6 +3596,36 @@ foreach (var cookie in cookies.GetCookies("https://example.com/")) { /* name, va
 
   var cookies = new CookieJar(new FileCookiePersistence(path), timeProvider);
   ```
+
+## Clear-Site-Data
+
+The `Clear-Site-Data` header ([Clear Site Data](https://w3c.github.io/webappsec-clear-site-data/)) of a response of the
+network to a request that includes the credentials clears the data of the origin of the response, once its cookies are
+stored and before it is stored in the HTTP cache. The responses of a URL that is not potentially trustworthy, and the
+responses of a service worker, clear nothing. The types are quoted strings separated by commas; the unknown types are
+ignored.
+
+- `"cache"`: the stored responses of the URLs of the origin in the partition of the request of the HTTP cache of the
+  `DocumentLoader` (its top-level site and its cross-site bit: as in Chromium, the other partitions are kept), the
+  documents of the back/forward caches of the group whose top-level document has the top-level site of the request and
+  whose document tree has a document of the origin, and the prefetches and the prerenders (see
+  [Speculative loading](#speculative-loading)).
+- `"cookies"`: the cookies of the cookie jar of the request whose domain is the registrable domain of the origin, or one
+  of its subdomains (the cookies set by the response included).
+- `"storage"`: the local storage and the session storage of the origin, its IndexedDB databases without open
+  connection, its caches of the Cache API, and its service worker registrations (unregistered: the controlled clients
+  keep their controller until they are unloaded). The origin private file system is not cleared.
+- `"executionContexts"`: the navigables of the tree of the top-level traversable of the request whose active document
+  has the origin are reloaded, except the navigable that the response navigates. The browsing contexts are not
+  sandboxed while they reload.
+- `"clientHints"` (also `"cache"` and `"cookies"`): the client hints of the origin (see [Client hints](#client-hints)).
+- `"*"`: all of the above.
+
+As in the browsers, the response to a request whose top-level origin is not same site with the origin (a third-party
+context) only clears the partitioned data of that top-level site: the cookies partitioned by it (CHIPS), the stored
+responses and the back/forward cache of its partition, and the reload of the documents of the tree. The other storage
+of the origin is not partitioned, so it is kept. The cookies partitioned by the site of the origin are cleared with the
+unpartitioned cookies.
 
 ## Web Storage
 
@@ -3927,6 +3973,9 @@ using var context = new BrowsingContext(new BrowsingContextOptions
 | `BatteryStatusEnabled` | The [Battery Status API](#device-apis): `navigator.getBattery()`, `BatteryManager` |
 | `WakeLockEnabled` | The [Screen Wake Lock API](#device-apis): `navigator.wakeLock`, `WakeLock`, `WakeLockSentinel` |
 | `KeyboardLockEnabled` | The [Keyboard Lock API](#device-apis): `navigator.keyboard`, `Keyboard` |
+| `NetworkInformationEnabled` | The [Network Information API](#device-apis): `navigator.connection`, `NetworkInformation` |
+| `DeviceMemoryEnabled` | The [Device Memory API](#device-apis): `navigator.deviceMemory` |
+| `GlobalPrivacyControlEnabled` | [Global Privacy Control](#device-apis): `navigator.globalPrivacyControl` (the `Sec-GPC` header depends on `BrowsingContextOptions.GlobalPrivacyControl` only) |
 | `WebStorageEnabled` | `localStorage`, `sessionStorage`, `Storage`, `StorageEvent` |
 | `IndexedDBEnabled` | `indexedDB` and the `IDB*` interfaces |
 | `CacheStorageEnabled` | `caches`, `Cache`, `CacheStorage` (also hidden when `FetchEnabled` is false) |

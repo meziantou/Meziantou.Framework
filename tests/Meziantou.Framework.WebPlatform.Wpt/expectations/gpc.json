@@ -1,0 +1,20 @@
+{
+  "gpc/global_privacy_control.testdriver.html": {
+    "total": 1
+  },
+  "gpc/idlharness.any.js": {
+    "total": 19
+  },
+  "gpc/idlharness.any.js#dedicatedworker": {
+    "total": 19
+  },
+  "gpc/idlharness.any.js#sharedworker": {
+    "total": 19
+  },
+  "gpc/navigator-globalPrivacyControl.https.html": {
+    "total": 8
+  },
+  "gpc/sec-gpc.https.html": {
+    "total": 16
+  }
+}

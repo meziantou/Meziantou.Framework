@@ -1,3 +1,5 @@
+using Meziantou.Framework.WebPlatform.Urls;
+
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 // The back/forward cache (https://html.spec.whatwg.org/multipage/browsing-the-web.html#note-bfcache): a top-level traversable
@@ -295,6 +297,28 @@ public sealed partial class BrowsingContext
         }
 
         DestroyDocument(document);
+    }
+
+    /// <summary>
+    /// Evicts the documents of the back/forward cache of the traversable whose top-level site is <paramref name="topLevelSite"/>
+    /// (<c>scheme://site</c>) and whose document tree has a document of an origin
+    /// (https://w3c.github.io/webappsec-clear-site-data/#clear-cache: the back/forward cache is a cache of the user agent).
+    /// </summary>
+    internal void EvictFromBackForwardCache(OriginRecord origin, string topLevelSite)
+    {
+        foreach (var document in _backForwardCache.ToArray())
+        {
+            if (document.Origin is not { IsOpaque: false } topLevelOrigin
+                || topLevelOrigin.Scheme + "://" + (PublicSuffixList.GetRegistrableDomain(topLevelOrigin.Host) ?? topLevelOrigin.Host.Serialized) != topLevelSite)
+            {
+                continue;
+            }
+
+            if (GetDocumentTree(document).Exists(cachedDocument => OriginRecord.IsSameOrigin(cachedDocument.Origin, origin)))
+            {
+                EvictFromBackForwardCache(document);
+            }
+        }
     }
 
     /// <summary>Evicts all the documents of the back/forward cache of the traversable (e.g. it is closed).</summary>

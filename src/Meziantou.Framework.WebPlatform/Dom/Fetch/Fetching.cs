@@ -838,6 +838,9 @@ internal static class Fetching
         // The end of step 8: the client hints (https://wicg.github.io/client-hints-infrastructure/#fetch)
         ClientHints.AppendToRequest(request, headers);
 
+        // https://w3c.github.io/gpc/#the-sec-gpc-header-field-for-http-requests
+        GlobalPrivacyControlOptions.AppendToRequest(request, headers);
+
         // Steps 9 and 10: the stored response of the HTTP cache, used as is when it is fresh (or with the "force-cache" and
         // "only-if-cached" modes), else validated with the validators of the stored response
         string? cacheKey = null;
@@ -902,7 +905,12 @@ internal static class Fetching
         if (response.IsNetworkError)
             return response;
 
-        if (cache is not null)
+        // https://w3c.github.io/webappsec-clear-site-data/#fetch-integration: the Clear-Site-Data header clears the data of
+        // the origin once the cookies of the response are stored, before the response is stored in the HTTP cache
+        // (as in the browsers, the response that clears the cache is not stored either)
+        var clearedCache = ClearSiteData.ProcessResponse(request, response, includeCredentials, (cacheKey ?? GetHttpCacheKey(request)) is { } partitionKey ? HttpCache.GetPartition(partitionKey) : null);
+
+        if (cache is not null && (!clearedCache || response.Status == 304))
         {
             response = UpdateHttpCache(request, response, cache, cacheKey!, requestHeaders, includeCredentials, revalidating ? storedResponse : null, now, GetHttpCacheTime(request));
         }
@@ -969,6 +977,13 @@ internal static class Fetching
 
         key = HttpCache.GetKey(topLevelOrigin ?? request.CurrentUrl.SerializeOrigin(), crossSite: siteForCookies == "null", request.CurrentUrl);
         return key is null ? null : HttpCache.Get(loader);
+    }
+
+    /// <summary>The key of the URL of a request in its partition of the HTTP cache, or null when it has none.</summary>
+    private static string? GetHttpCacheKey(FetchRequest request)
+    {
+        _ = GetHttpCache(request, out var key);
+        return key;
     }
 
     /// <summary>The current time of the HTTP cache: the time of the event loop of the request.</summary>

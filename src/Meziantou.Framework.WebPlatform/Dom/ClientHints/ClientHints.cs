@@ -206,7 +206,7 @@ internal static class ClientHints
         // navigation of a sandboxed iframe would create (only the features whose allowlist is * are delegated to it)
         var origin = container is not null && request.Navigable is { HasSandboxedOriginFlag: true } ? OriginRecord.CreateOpaque() : OriginRecord.FromUrl(url);
         var containerPolicy = container is null ? null : PermissionsPolicyAlgorithms.ProcessPolicyAttributes(container);
-        var values = new ValueProvider(options.GetClientHints(), valuesDocument, request);
+        var values = new ValueProvider(options.GetClientHints(), options.NetworkInformation?.Provider is null ? null : NetworkConnectionStatus.Get(options), valuesDocument, request);
         foreach (var token in ClientHintToken.All)
         {
             if (!hints.Contains(token) || FetchHeaders.Contains(headers, token.HeaderName))
@@ -236,7 +236,11 @@ internal static class ClientHints
     }
 
     /// <summary>https://wicg.github.io/client-hints-infrastructure/#find-client-hint-value: the values of the hints of a request (null: the hint is omitted).</summary>
-    private struct ValueProvider(ClientHintsOptions options, Document document, FetchRequest request)
+    /// <remarks>
+    /// The network hints that <paramref name="options"/> does not set are the values of the <see cref="NetworkInformationProvider"/>
+    /// of the browsing context (<paramref name="network"/>), as <c>navigator.connection</c>.
+    /// </remarks>
+    private struct ValueProvider(ClientHintsOptions options, NetworkConnectionStatus? network, Document document, FetchRequest request)
     {
         private Css.Om.MediaEnvironment? _environment;
 
@@ -258,9 +262,9 @@ internal static class ClientHints
             ClientHintValue.UserAgentFullVersion => SerializeString(options.FullVersion),
             ClientHintValue.UserAgentFormFactors => SerializeStrings(options.FormFactors),
             ClientHintValue.DeviceMemory => options.DeviceMemory is { } memory && double.IsFinite(memory) && memory > 0 ? SerializeNumber(GetDeviceMemory(memory)) : null,
-            ClientHintValue.RoundTripTime => options.RoundTripTime is { } roundTripTime ? SerializeNumber(Math.Min(3000, Math.Round(Math.Max(0, roundTripTime.TotalMilliseconds) / 50, MidpointRounding.AwayFromZero) * 50)) : null,
-            ClientHintValue.Downlink => options.Downlink is { } downlink && double.IsFinite(downlink) ? SerializeNumber(Math.Min(10, Math.Round(Math.Max(0, downlink) * 20, MidpointRounding.AwayFromZero) / 20)) : null,
-            ClientHintValue.EffectiveConnectionType => options.EffectiveConnectionType is { Length: > 0 } type && FetchHeaders.IsToken(type) ? type : null,
+            ClientHintValue.RoundTripTime => (options.RoundTripTime ?? network?.RoundTripTime) is { } roundTripTime ? SerializeNumber(NetworkConnectionStatus.RoundRoundTripTime(roundTripTime)) : null,
+            ClientHintValue.Downlink => (options.Downlink ?? network?.Downlink) is { } downlink && double.IsFinite(downlink) ? SerializeNumber(NetworkConnectionStatus.RoundDownlink(downlink)) : null,
+            ClientHintValue.EffectiveConnectionType => (options.EffectiveConnectionType ?? (network is null ? null : NetworkConnectionStatus.Serialize(network.EffectiveType))) is { Length: > 0 } type && FetchHeaders.IsToken(type) ? type : null,
             ClientHintValue.DevicePixelRatio => SerializeNumber(Environment.DevicePixelRatio),
             ClientHintValue.ViewportWidth => SerializeNumber(Math.Round(Environment.Width, MidpointRounding.AwayFromZero)),
             ClientHintValue.ViewportHeight => SerializeNumber(Math.Round(Environment.Height, MidpointRounding.AwayFromZero)),
@@ -285,6 +289,13 @@ internal static class ClientHints
                 : null;
         }
     }
+
+    /// <summary>
+    /// The value of <c>navigator.deviceMemory</c>: <see cref="ClientHintsOptions.DeviceMemory"/> rounded down to a power of two
+    /// between 0.25 and 8 GiB, or 8 GiB when it is not set (the library does not expose the memory of the machine).
+    /// </summary>
+    internal static double GetReportedDeviceMemory(BrowsingContextOptions options)
+        => options.GetClientHints().DeviceMemory is { } memory && double.IsFinite(memory) && memory > 0 ? GetDeviceMemory(memory) : 8;
 
     /// <summary>https://www.w3.org/TR/device-memory/#computing-device-memory-value: a power of two between 0.25 and 8 GiB.</summary>
     private static double GetDeviceMemory(double memory)
@@ -371,7 +382,7 @@ internal static class ClientHints
     /// https://w3c.github.io/webappsec-clear-site-data/#clear-site-data-for-response, for the client hints only: the
     /// <c>"clientHints"</c>, <c>"cookies"</c>, <c>"cache"</c> and <c>"*"</c> types of the <c>Clear-Site-Data</c> header of a
     /// response of a potentially trustworthy URL remove the entry of the origin of the URL from the Accept-CH cache (the
-    /// other data of the origin is not cleared: the header is not implemented otherwise).
+    /// other data of the origin is cleared by <see cref="ClearSiteData"/>).
     /// </summary>
     public static void ProcessClearSiteData(AcceptCHCache cache, UrlRecord url, IReadOnlyList<KeyValuePair<string, string>> headers)
     {

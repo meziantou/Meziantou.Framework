@@ -9,19 +9,13 @@ description: "The results of the web-platform-tests of savedata, and why the tes
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 1 | 1 | – |
+| [Stable](#stable-tests) | 1 | 1 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **0** | **1** | **1** | **–** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **NOT IMPLEMENTED**: 1
+| **All** | **1** | **1** | **0** | **100%** |
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`idlharness.any.js`](https://wpt.fyi/results/savedata/idlharness.any.js) | Disabled | – | NOT IMPLEMENTED | Save-Data (Network Information API) |
+| [`idlharness.any.js`](https://wpt.fyi/results/savedata/idlharness.any.js) | Pass | 10 / 10 |  |  |

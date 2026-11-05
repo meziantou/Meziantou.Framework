@@ -232,6 +232,16 @@ public sealed class WptTests
 
     public static TheoryData<string> KeyboardLockTests => GetTests("keyboard-lock");
 
+    public static TheoryData<string> NetInfoTests => GetTests("netinfo");
+
+    public static TheoryData<string> DeviceMemoryTests => GetTests("device-memory");
+
+    public static TheoryData<string> SaveDataTests => GetTests("savedata");
+
+    public static TheoryData<string> GpcTests => GetTests("gpc");
+
+    public static TheoryData<string> ClearSiteDataTests => GetTests("clear-site-data");
+
     public static TheoryData<string> ClientHintsTests => GetTests("client-hints");
 
     public static TheoryData<string> UAClientHintsTests => GetTests("ua-client-hints");
@@ -1120,6 +1130,26 @@ public sealed class WptTests
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(KeyboardLockTests))]
     public void KeyboardLock(string test) => Run("keyboard-lock", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(NetInfoTests))]
+    public void NetInfo(string test) => Run("netinfo", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(DeviceMemoryTests))]
+    public void DeviceMemory(string test) => Run("device-memory", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(SaveDataTests))]
+    public void SaveData(string test) => Run("savedata", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(GpcTests))]
+    public void Gpc(string test) => Run("gpc", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(ClearSiteDataTests))]
+    public void ClearSiteData(string test) => Run("clear-site-data", test);
 
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(ClientHintsTests))]

@@ -9,20 +9,20 @@ description: "The results of the web-platform-tests of device-memory, and why th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 2 | 2 | – |
+| [Stable](#stable-tests) | 1 | 2 | 0 | 50% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **0** | **2** | **2** | **–** |
+| **All** | **1** | **2** | **0** | **50%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 2
+- **TEST BUG**: 1
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`device-memory.https.any.js`](https://wpt.fyi/results/device-memory/device-memory.https.any.js) | Disabled | – | NOT IMPLEMENTED | Device Memory API |
-| [`idlharness.https.any.js`](https://wpt.fyi/results/device-memory/idlharness.https.any.js) | Disabled | – | NOT IMPLEMENTED | Device Memory API |
+| [`device-memory.https.any.js`](https://wpt.fyi/results/device-memory/device-memory.https.any.js) | Pass | 2 / 2 |  |  |
+| [`idlharness.https.any.js`](https://wpt.fyi/results/device-memory/idlharness.https.any.js) | Fail | 0 / 2 | TEST BUG | `idl_test` fetches `/interfaces/device-memory.idl`, which the sync of `interfaces/` with @webref/idl 3.86.0 (web-platform-tests/wpt#64122) deleted: the setup fails before any member is tested; `device-memory.https.any.js` tests `navigator.deviceMemory` |

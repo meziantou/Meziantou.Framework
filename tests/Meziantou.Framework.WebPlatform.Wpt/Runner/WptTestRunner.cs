@@ -93,6 +93,9 @@ internal sealed partial class WptTestRunner
 
     /// <summary>The position of the device, overridden by test_driver.bidi.emulation.set_geolocation_override().</summary>
     private readonly GeolocationProvider _geolocation = new() { Position = DefaultGeolocationPosition };
+
+    /// <summary>The preference of Global Privacy Control, set by test_driver.set_global_privacy_control().</summary>
+    private volatile bool _globalPrivacyControl;
     private readonly WptStash _stash = new();
 
     /// <summary>The WebSocket server of wptserve (its connections are in-memory pipes).</summary>
@@ -188,6 +191,9 @@ internal sealed partial class WptTestRunner
 
                 // The device knows its position (overridden by test_driver.bidi.emulation.set_geolocation_override)
                 Geolocation = _geolocation,
+
+                // The preference of the user, set by test_driver.set_global_privacy_control() (disabled at the start of a test)
+                GlobalPrivacyControl = new GlobalPrivacyControlOptions { IsEnabled = _ => _globalPrivacyControl },
 
                 // The pages of the reftests are rasterized; the images of all the tests are decoded by the backend
                 RenderingBackend = _renderingBackend,
@@ -1583,6 +1589,22 @@ internal sealed partial class WptTestRunner
             {
                 _geolocation.Position = position;
                 completion(null);
+            });
+            return adapter.Undefined;
+        });
+        Define("__wpt_global_privacy_control", 2, (_, args) =>
+        {
+            // As a WebDriver command, the value is set after the tasks that are already queued
+            bool? value = adapter.IsUndefined(args[0]) ? null : adapter.ToBoolean(args[0]);
+            var resolve = args[1];
+            QueueTask(() =>
+            {
+                if (value is { } enabled)
+                {
+                    _globalPrivacyControl = enabled;
+                }
+
+                realm.Run(() => adapter.Call(resolve, adapter.Undefined, [adapter.FromBoolean(_globalPrivacyControl)]));
             });
             return adapter.Undefined;
         });

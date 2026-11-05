@@ -9,20 +9,14 @@ description: "The results of the web-platform-tests of netinfo, and why the test
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 2 | 2 | – |
+| [Stable](#stable-tests) | 2 | 2 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **0** | **2** | **2** | **–** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **NOT IMPLEMENTED**: 2
+| **All** | **2** | **2** | **0** | **100%** |
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`idlharness.any.js`](https://wpt.fyi/results/netinfo/idlharness.any.js) | Disabled | – | NOT IMPLEMENTED | Network Information API |
-| [`netinfo-basics.html`](https://wpt.fyi/results/netinfo/netinfo-basics.html) | Disabled | – | NOT IMPLEMENTED | Network Information API |
+| [`idlharness.any.js`](https://wpt.fyi/results/netinfo/idlharness.any.js) | Pass | 78 / 78 |  |  |
+| [`netinfo-basics.html`](https://wpt.fyi/results/netinfo/netinfo-basics.html) | Pass | 6 / 6 |  |  |

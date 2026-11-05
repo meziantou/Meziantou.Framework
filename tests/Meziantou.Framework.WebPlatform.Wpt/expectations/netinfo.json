@@ -1,0 +1,11 @@
+{
+  "netinfo/idlharness.any.js": {
+    "total": 39
+  },
+  "netinfo/idlharness.any.js#dedicatedworker": {
+    "total": 39
+  },
+  "netinfo/netinfo-basics.html": {
+    "total": 6
+  }
+}

@@ -9,22 +9,16 @@ description: "The results of the web-platform-tests of gpc, and why the tests th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 4 | 4 | – |
+| [Stable](#stable-tests) | 4 | 4 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **0** | **4** | **4** | **–** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **NOT IMPLEMENTED**: 4
+| **All** | **4** | **4** | **0** | **100%** |
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`global_privacy_control.testdriver.html`](https://wpt.fyi/results/gpc/global_privacy_control.testdriver.html) | Disabled | – | NOT IMPLEMENTED | Global Privacy Control |
-| [`idlharness.any.js`](https://wpt.fyi/results/gpc/idlharness.any.js) | Disabled | – | NOT IMPLEMENTED | Global Privacy Control |
-| [`navigator-globalPrivacyControl.https.html`](https://wpt.fyi/results/gpc/navigator-globalPrivacyControl.https.html) | Disabled | – | NOT IMPLEMENTED | Global Privacy Control |
-| [`sec-gpc.https.html`](https://wpt.fyi/results/gpc/sec-gpc.https.html) | Disabled | – | NOT IMPLEMENTED | Global Privacy Control |
+| [`global_privacy_control.testdriver.html`](https://wpt.fyi/results/gpc/global_privacy_control.testdriver.html) | Pass | 1 / 1 |  |  |
+| [`idlharness.any.js`](https://wpt.fyi/results/gpc/idlharness.any.js) | Pass | 57 / 57 |  |  |
+| [`navigator-globalPrivacyControl.https.html`](https://wpt.fyi/results/gpc/navigator-globalPrivacyControl.https.html) | Pass | 8 / 8 |  |  |
+| [`sec-gpc.https.html`](https://wpt.fyi/results/gpc/sec-gpc.https.html) | Pass | 16 / 16 |  |  |

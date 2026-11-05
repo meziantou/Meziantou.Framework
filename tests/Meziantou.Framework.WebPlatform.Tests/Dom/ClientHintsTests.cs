@@ -55,6 +55,10 @@ public sealed class ClientHintsTests : IDisposable
             Features = options.Features,
             Viewport = options.Viewport,
             UserAgent = options.UserAgent,
+            CookieJar = options.CookieJar,
+            LocalStorage = options.LocalStorage,
+            NetworkInformation = options.NetworkInformation,
+            GlobalPrivacyControl = options.GlobalPrivacyControl,
         });
     }
 
@@ -392,6 +396,118 @@ public sealed class ClientHintsTests : IDisposable
     }
 
     [Fact]
+    public void NetworkHints_WithoutValue_AreTheValuesOfTheNetworkInformationProvider()
+    {
+        var network = new NetworkInformationProvider { Status = new NetworkConnectionStatus { EffectiveType = EffectiveConnectionType.Cellular3G, Downlink = 1.53, RoundTripTime = TimeSpan.FromMilliseconds(310) } };
+        var context = CreateContext(new BrowsingContextOptions { ClientHints = new ClientHintsOptions(), NetworkInformation = new NetworkInformationOptions { Provider = network } });
+        AddPage(PageUrl, "", new KeyValuePair<string, string>("Accept-CH", "RTT, Downlink, ECT"));
+        Load(context);
+        Load(context);
+
+        Assert.Equal("300", Header(Request(PageUrl), "RTT"));
+        Assert.Equal("1.55", Header(Request(PageUrl), "Downlink"));
+        Assert.Equal("3g", Header(Request(PageUrl), "ECT"));
+    }
+
+    [Fact]
+    public void GlobalPrivacyControl_SendsTheSecGpcHeader()
+    {
+        AddPage(PageUrl, "<img src='image.png'>");
+        _resources["https://example.com/image.png"] = new DocumentResource("");
+        Load(CreateContext(new BrowsingContextOptions { GlobalPrivacyControl = new GlobalPrivacyControlOptions { Enabled = true } }));
+        Assert.Equal("1", Header(Request(PageUrl), "Sec-GPC"));
+        Assert.Equal("1", Header(Request("https://example.com/image.png"), "Sec-GPC"));
+
+        Load(CreateContext(new BrowsingContextOptions { GlobalPrivacyControl = new GlobalPrivacyControlOptions { Enabled = false } }));
+        Assert.Null(Header(Request(PageUrl), "Sec-GPC"));
+
+        Load(CreateContext(new BrowsingContextOptions()));
+        Assert.Null(Header(Request(PageUrl), "Sec-GPC"));
+    }
+
+    [Fact]
+    public void ClearSiteData_ClearsTheCookiesOfTheRegistrableDomain()
+    {
+        var jar = new CookieJar();
+        var context = CreateContext(new BrowsingContextOptions { CookieJar = jar });
+        jar.SetCookie("https://www.example.com/", "a=1; Domain=example.com");
+        jar.SetCookie("https://sub.example.com/", "b=2");
+        jar.SetCookie("https://other.example/", "c=3");
+
+        // The cookies set by the response are cleared too
+        AddPage(PageUrl, "", new KeyValuePair<string, string>("Set-Cookie", "d=4"), new KeyValuePair<string, string>("Clear-Site-Data", "\"cookies\""));
+        Load(context);
+
+        Assert.Equal(["c"], jar.GetCookies().Select(cookie => cookie.Name));
+    }
+
+    [Fact]
+    public void ClearSiteData_ClearsTheStorageOfTheOrigin()
+    {
+        var shed = new StorageShed();
+        var context = CreateContext(new BrowsingContextOptions { LocalStorage = shed });
+        shed.SetItem("https://example.com", "key", "value");
+        shed.SetItem("https://sub.example.com", "key", "value");
+
+        // A response of an insecure URL clears nothing
+        AddPage("http://example.com/page.html", "", new KeyValuePair<string, string>("Clear-Site-Data", "\"storage\""));
+        Load(context, "http://example.com/page.html");
+        AddPage(PageUrl, "", new KeyValuePair<string, string>("Clear-Site-Data", "\"cookies\""));
+        Load(context);
+        Assert.Single(shed.GetItems("https://example.com"));
+
+        AddPage(PageUrl, "", new KeyValuePair<string, string>("Clear-Site-Data", "\"storage\""));
+        Load(context);
+        Assert.Empty(shed.GetItems("https://example.com"));
+        Assert.Single(shed.GetItems("https://sub.example.com"));
+    }
+
+    [Fact]
+    public void ClearSiteData_ThirdParty_OnlyClearsThePartitionedData()
+    {
+        var jar = new CookieJar();
+        var shed = new StorageShed();
+        var context = CreateContext(new BrowsingContextOptions { CookieJar = jar, LocalStorage = shed });
+        jar.SetCookie("https://example.com/", "a=1");
+        shed.SetItem("https://example.com", "key", "value");
+        AddPage("https://other.example/page.html", "<img src='https://example.com/clear.png'>");
+        _resources["https://example.com/clear.png"] = new DocumentResource("") { Headers = [new("Clear-Site-Data", "\"*\"")] };
+        Load(context, "https://other.example/page.html");
+
+        Assert.Single(jar.GetCookies());
+        Assert.Single(shed.GetItems("https://example.com"));
+    }
+
+    [Fact]
+    public void ClearSiteData_ClearsTheHttpCacheOfTheOrigin()
+    {
+        AddPage(PageUrl, "<img src='image.png'>");
+        _resources["https://example.com/image.png"] = new DocumentResource("") { Headers = [new("Cache-Control", "max-age=3600")] };
+        var context = CreateContext(new BrowsingContextOptions());
+        Load(context);
+        Load(context);
+        Assert.Single(_requests, request => request.Url == "https://example.com/image.png");
+
+        AddPage("https://example.com/clear.html", "", new KeyValuePair<string, string>("Clear-Site-Data", "\"cache\""));
+        Load(context, "https://example.com/clear.html");
+        Load(context);
+        Assert.Equal(2, _requests.Count(request => request.Url == "https://example.com/image.png"));
+    }
+
+    [Fact]
+    public void ClearSiteData_ExecutionContexts_ReloadsTheDocumentsOfTheOrigin()
+    {
+        // The image is loaded once the iframe is loaded: the response reloads the iframe, not the page of another origin
+        AddPage(PageUrl, "<iframe src='https://sub.example.com/frame.html' onload=\"if (!window.started) { window.started = true; new Image().src = 'https://sub.example.com/clear.png'; }\"></iframe>");
+        AddPage("https://sub.example.com/frame.html", "");
+        _resources["https://sub.example.com/clear.png"] = new DocumentResource("") { Headers = [new("Clear-Site-Data", "\"executionContexts\"")] };
+        Load(CreateContext(new BrowsingContextOptions { ScriptEngine = _engine }));
+
+        Assert.Equal(2, _requests.Count(request => request.Url == "https://sub.example.com/frame.html"));
+        Assert.Single(_requests, request => request.Url == PageUrl);
+    }
+
+    [Fact]
     public void DelegateCH_AddsHintsAndDelegatesThem()
     {
         var cache = new AcceptCHCache();
@@ -565,7 +681,13 @@ public sealed class ClientHintsTests : IDisposable
         {
             test._requests.Add(request);
             test._onRequest?.Invoke();
-            return ValueTask.FromResult(test._resources.GetValueOrDefault(request.Url));
+            var resource = test._resources.GetValueOrDefault(request.Url);
+            if (resource?.Headers is { } headers)
+            {
+                request.StoreCookies(headers.Where(header => header.Key.Equals("Set-Cookie", StringComparison.OrdinalIgnoreCase)).Select(header => header.Value));
+            }
+
+            return ValueTask.FromResult(resource);
         }
     }
 }

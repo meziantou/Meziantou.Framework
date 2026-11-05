@@ -1,6 +1,6 @@
 ---
 title: Cookies and storage
-description: Give pages cookies, local storage and the other stores of the browsers, share them between pages, and persist them.
+description: Give pages cookies, local storage and the other stores of the browsers, share them between pages, persist them, and let sites clear them.
 ---
 
 ## Cookies
@@ -74,3 +74,27 @@ The other storage APIs of the browsers keep their data in backends that you can 
 | [ServiceWorkers](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.ServiceWorkers) | The registrations of the service workers | In memory |
 
 These stores are used by the scripts of the pages: they need a [script engine](../06-Scripting/01-Overview.md).
+
+## Clear-Site-Data
+
+A site clears the data that the browser keeps for it with the `Clear-Site-Data` header of a response. The header is
+honored on the responses of the secure URLs (`https`, and `http://localhost`), when the request sends credentials:
+
+| Type | What is cleared for the origin of the response |
+| --- | --- |
+| `"cache"` | The responses of its URLs in the HTTP cache and its pages in the back/forward cache (for the tab's site only, as the browsers partition their caches), and its prefetched and prerendered pages |
+| `"cookies"` | The cookies of its registrable domain (`"cookies"` for `https://www.example.com` removes the cookies of `example.com` and of its subdomains) |
+| `"storage"` | Its local storage, its session storage, its IndexedDB databases, its caches of the Cache API, and its service worker registrations |
+| `"executionContexts"` | Its pages are reloaded |
+| `"clientHints"` | The client hints it opted into (also cleared by `"cache"` and `"cookies"`) |
+| `"*"` | All of the above |
+
+The cookies that the response sets are cleared too. As in the browsers, a response loaded by a page of another site
+(a third-party resource or frame) only clears the data of that page's partition: the partitioned cookies and the
+caches. Its local storage, IndexedDB databases and other stores are kept. Some data is always kept:
+
+- An IndexedDB database that a page still has open.
+- The origin private file system.
+- The pages that a service worker controls keep it until they are unloaded: unregistering does not remove the
+  controller.
+- `"executionContexts"` only reloads the pages in the tab of the request, not the frame that the response loads.

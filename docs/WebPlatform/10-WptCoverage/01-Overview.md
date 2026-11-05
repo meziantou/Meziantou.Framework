@@ -48,18 +48,18 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 25,910 | 29,691 | 2,350 | 95% |
-| [Tentative](#tentative-tests) | 1,339 | 3,074 | 709 | 57% |
+| [Stable](#stable-tests) | 25,928 | 29,691 | 2,328 | 95% |
+| [Tentative](#tentative-tests) | 1,341 | 3,074 | 707 | 57% |
 | [Reftests](#reftests) | 27,901 | 29,220 | 173 | 96% |
-| **All** | **55,150** | **61,985** | **3,232** | **94%** |
+| **All** | **55,170** | **61,985** | **3,208** | **94%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **BUG**: 308
-- **TEST BUG**: 1,010
-- **NOT IMPLEMENTED**: 4,413
+- **TEST BUG**: 1,012
+- **NOT IMPLEMENTED**: 4,391
 - **REQUIRES**: 927
   - `hardware`: 730
   - `layout`: 30
@@ -94,7 +94,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`beacon`](beacon.md) | 16 | 16 | 0 | 100% |
 | [`bluetooth`](bluetooth.md) | 0 | 154 | 154 | – |
 | [`captured-mouse-events`](captured-mouse-events.md) | 0 | 4 | 4 | – |
-| [`clear-site-data`](clear-site-data.md) | 0 | 13 | 13 | – |
+| [`clear-site-data`](clear-site-data.md) | 10 | 13 | 0 | 77% |
 | [`client-hints`](client-hints.md) | 121 | 132 | 0 | 92% |
 | [`clipboard-apis`](clipboard-apis.md) | 32 | 38 | 0 | 84% |
 | [`close-watcher`](close-watcher.md) | 52 | 52 | 0 | 100% |
@@ -199,7 +199,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`density-size-correction`](density-size-correction.md) | 1 | 2 | 0 | 50% |
 | [`deprecation-reporting`](deprecation-reporting.md) | 1 | 1 | 0 | 100% |
 | [`device-bound-session-credentials`](device-bound-session-credentials.md) | 0 | 27 | 27 | – |
-| [`device-memory`](device-memory.md) | 0 | 2 | 2 | – |
+| [`device-memory`](device-memory.md) | 1 | 2 | 0 | 50% |
 | [`device-posture`](device-posture.md) | 0 | 5 | 5 | – |
 | [`digital-credentials`](digital-credentials.md) | 0 | 24 | 24 | – |
 | [`direct-sockets`](direct-sockets.md) | 0 | 4 | 4 | – |
@@ -233,7 +233,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`generic-sensor`](generic-sensor.md) | 0 | 3 | 3 | – |
 | [`geolocation`](geolocation.md) | 20 | 23 | 0 | 87% |
 | [`geolocation-sensor`](geolocation-sensor.md) | 0 | 1 | 1 | – |
-| [`gpc`](gpc.md) | 0 | 4 | 4 | – |
+| [`gpc`](gpc.md) | 4 | 4 | 0 | 100% |
 | [`graphics-aria`](graphics-aria.md) | 0 | 1 | 1 | – |
 | [`gyroscope`](gyroscope.md) | 0 | 10 | 10 | – |
 | [`hr-time`](hr-time.md) | 13 | 13 | 0 | 100% |
@@ -303,7 +303,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`nav-tracking-mitigations`](nav-tracking-mitigations.md) | 0 | 2 | 2 | – |
 | [`navigation-api`](navigation-api.md) | 445 | 458 | 0 | 97% |
 | [`navigation-timing`](navigation-timing.md) | 54 | 58 | 0 | 93% |
-| [`netinfo`](netinfo.md) | 0 | 2 | 2 | – |
+| [`netinfo`](netinfo.md) | 2 | 2 | 0 | 100% |
 | [`network-error-logging`](network-error-logging.md) | 0 | 12 | 12 | – |
 | [`notifications`](notifications.md) | 12 | 20 | 0 | 60% |
 | [`old-tests`](old-tests.md) | 0 | 15 | 15 | – |
@@ -339,7 +339,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`resize-observer`](resize-observer.md) | 35 | 35 | 0 | 100% |
 | [`resource-timing`](resource-timing.md) | 106 | 118 | 0 | 90% |
 | [`sanitizer-api`](sanitizer-api.md) | 48 | 50 | 0 | 96% |
-| [`savedata`](savedata.md) | 0 | 1 | 1 | – |
+| [`savedata`](savedata.md) | 1 | 1 | 0 | 100% |
 | [`scheduler`](scheduler.md) | 24 | 24 | 0 | 100% |
 | [`screen-capture`](screen-capture.md) | 0 | 13 | 13 | – |
 | [`screen-details`](screen-details.md) | 0 | 1 | 1 | – |
@@ -419,7 +419,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 318 | 330 | 0 | 96% |
 | [`xml`](xml.md) | 0 | 12 | 12 | – |
-| **Total (343 sections)** | **25,910** | **29,691** | **2,350** | **95%** |
+| **Total (343 sections)** | **25,928** | **29,691** | **2,328** | **95%** |
 
 ## Tentative tests
 
@@ -428,7 +428,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`accname`](accname.md#tentative-tests) | 4 | 4 | 0 | 100% |
 | [`ai`](ai.md#tentative-tests) | 0 | 177 | 177 | – |
 | [`bluetooth`](bluetooth.md#tentative-tests) | 0 | 1 | 1 | – |
-| [`clear-site-data`](clear-site-data.md#tentative-tests) | 0 | 2 | 2 | – |
+| [`clear-site-data`](clear-site-data.md#tentative-tests) | 2 | 2 | 0 | 100% |
 | [`clipboard-apis`](clipboard-apis.md#tentative-tests) | 14 | 20 | 0 | 70% |
 | [`compression`](compression.md#tentative-tests) | 0 | 1 | 0 | 0% |
 | [`connection-allowlist`](connection-allowlist.md#tentative-tests) | 0 | 88 | 88 | – |
@@ -589,7 +589,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`workers`](workers.md#tentative-tests) | 0 | 8 | 0 | 0% |
 | [`xhr`](xhr.md#tentative-tests) | 2 | 2 | 0 | 100% |
 | [`xml`](xml.md#tentative-tests) | 0 | 2 | 2 | – |
-| **Total (164 sections)** | **1,339** | **3,074** | **709** | **57%** |
+| **Total (164 sections)** | **1,341** | **3,074** | **707** | **57%** |
 
 ## Reftests
 

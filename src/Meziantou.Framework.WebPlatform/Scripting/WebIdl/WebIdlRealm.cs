@@ -178,6 +178,12 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             DefineFileSystemGlobals();
         }
 
+        // The Device Memory API has no IDL in webref: navigator.deviceMemory is defined by hand (WebIdlRealm.DeviceMemory.cs)
+        if (Features.DeviceMemoryEnabled && isSecureContext && isWindowOrWorker)
+        {
+            DefineDeviceMemory();
+        }
+
         DefineConsoleGlobal();
         DefineWebAssemblyGlobal();
         if (Window is null)

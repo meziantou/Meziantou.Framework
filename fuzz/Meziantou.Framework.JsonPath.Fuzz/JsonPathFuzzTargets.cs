@@ -26,6 +26,13 @@ public static class JsonPathFuzzTargets
     // Only the first matches go through the normalized-path check, which evaluates one query per match
     private const int MaxCheckedNormalizedPaths = 16;
 
+    // The checks evaluate a query about twenty times, so they only run on the queries one evaluation completes within this
+    // work budget. A result can grow exponentially with the length of a query, as each segment applies to every node of the
+    // previous one and a union keeps its duplicates: "$.*[0,:,1:][0,:,1:]..." multiplies the nodes at each segment.
+    private const long MaximumWork = 1_000_000;
+
+    private const string WorkBudgetExceededMessage = "The maximum evaluation work budget was exceeded.";
+
     private static readonly string[] Tokens =
     [
         "$", "@", ".", "..", "*", "[", "]", "[*]", "[0]", "[-1]", "[1:3]", "[::-1]", "[::2]", ":", ",", "?", "[?", "(", ")", "'", "\"", "\\", "\\'", "\\u0041", "\\uD83D\\uDE00", "\\b", "\\f", "\\n", "\\r", "\\t", "\\/",
@@ -147,6 +154,9 @@ public static class JsonPathFuzzTargets
                 return;
             }
 
+            if (!CompletesWithinWorkBudget(path, node))
+                return;
+
             var nodeMatches = path.Evaluate(node);
             var elementMatches = path.Evaluate(document);
             FuzzAssert.Equal(nodeMatches.Count, elementMatches.Count, "The JsonNode and JsonDocument navigators give a different number of matches");
@@ -167,6 +177,20 @@ public static class JsonPathFuzzTargets
             CheckStrictModeOnDocument(path, document, elementMatches, strictFails);
             CheckCustomNavigator(path, node, nodeMatches, strictFails);
             CheckNormalizedPaths(node, nodeMatches);
+        }
+    }
+
+    // Lax mode never throws on a document of System.Text.Json, so any other error still fails the target
+    private static bool CompletesWithinWorkBudget(JsonPathQuery path, JsonNode? node)
+    {
+        try
+        {
+            _ = path.Evaluate(node, new JsonPathEvaluationOptions { MaximumWork = MaximumWork });
+            return true;
+        }
+        catch (JsonPathEvaluationException ex) when (ex.Message is WorkBudgetExceededMessage)
+        {
+            return false;
         }
     }
 

@@ -53,6 +53,9 @@ internal sealed partial class Painter
         /// <summary>Whether the highlight is the selection (<c>::selection</c>).</summary>
         public bool IsSelection { get; init; }
 
+        /// <summary>Whether the highlight is a block caret (https://drafts.csswg.org/css-ui-4/#caret-shape), not a highlight pseudo-element.</summary>
+        public bool IsCaret { get; init; }
+
         /// <summary>Whether the color of the text of the highlight is not the color of the text below: the decorations of the text are painted in it.</summary>
         public bool Recolors { get; init; }
 

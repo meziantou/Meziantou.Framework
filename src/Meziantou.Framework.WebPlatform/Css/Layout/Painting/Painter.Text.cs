@@ -447,9 +447,9 @@ internal sealed partial class Painter
     }
 
     /// <summary>
-    /// Returns the backgrounds of the highlights of a text fragment (the range of their characters along the inline axis and their
-    /// rectangle), and the parts of the inline axis they cover (disjoint ranges in order, the overlapping ones merged); null when
-    /// no highlight has a background.
+    /// Returns the backgrounds of the highlight pseudo-elements of a text fragment (the range of their characters along the inline
+    /// axis and their rectangle), and the parts of the inline axis they cover (disjoint ranges in order, the overlapping ones
+    /// merged); null when no highlight has a background.
     /// </summary>
     private static (List<(double Start, double End)> Ranges, List<(double Start, double End, PhysicalRect Rect, bool IsSelection)> Backgrounds)? GetHighlightBackgrounds(List<TextHighlight>? highlights, bool horizontal)
     {
@@ -459,7 +459,8 @@ internal sealed partial class Painter
         List<(double Start, double End, PhysicalRect Rect, bool IsSelection)>? backgrounds = null;
         foreach (var highlight in highlights)
         {
-            if (highlight.Background.IsTransparent || highlight.Rect.Width <= 0 || highlight.Rect.Height <= 0)
+            // (the text next to a block caret is painted over it)
+            if (highlight.IsCaret || highlight.Background.IsTransparent || highlight.Rect.Width <= 0 || highlight.Rect.Height <= 0)
                 continue;
 
             var bounds = highlight.Bounds;

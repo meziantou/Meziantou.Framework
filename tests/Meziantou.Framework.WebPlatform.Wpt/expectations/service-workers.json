@@ -1159,13 +1159,7 @@
     "total": 5
   },
   "service-workers/service-worker/worker-interception-redirect.https.html": {
-    "total": 54,
-    "failures": {
-      "Case #1: network scope1->scope2 (module SharedWorker)": "FAIL",
-      "Case #2: network scope1->out-scope (module SharedWorker)": "FAIL",
-      "Case #3: sw scope1->scope2 (module SharedWorker)": "FAIL",
-      "Case #4: sw scope1->out-scope (module SharedWorker)": "FAIL"
-    }
+    "total": 66
   },
   "service-workers/service-worker/worker-interception.https.html": {
     "total": 16

@@ -77,6 +77,9 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
     private CancellationTokenSource? _fetchController;
     private IDisposable? _fetchGroupRecord;
     private long _fetchStart;
+
+    // The fetch of the current request, complete once the whole response is received (the done flag of the request)
+    private Task<FetchResponse>? _fetchTask;
     private long _lastProgressLoaded = -1;
 
     /// <summary>Creates a request object in the <see cref="Unsent"/> state.</summary>
@@ -419,6 +422,7 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
 
         var timing = RelevantGlobal is { } relevantGlobal ? ResourceTiming.Start(relevantGlobal, request, "xmlhttprequest") : null;
         var task = Fetching.FetchAsync(request, controller.Token);
+        _fetchTask = task;
         _ = task.ContinueWith(
             completed =>
             {
@@ -988,14 +992,17 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
         var clock = window.EventLoop.TimeProvider;
         var elapsed = clock.GetElapsedTime(_fetchStart);
         var timeout = _timeout;
-        window.EventLoop.QueueTimer(TimeSpan.FromMilliseconds(timeout) - elapsed, () =>
+        // The timeout runs in parallel with the fetch: once the timer is due, the tasks that the network queued until then
+        // (e.g. during a long task that delayed the timer) run first, and the timeout is ignored when the response was
+        // received (req's done flag is set)
+        window.EventLoop.QueueTimer(TimeSpan.FromMilliseconds(timeout) - elapsed, () => QueueFetchTask(fetchId, () =>
         {
-            if (fetchId != _fetchId || !_sendFlag || _timeout != timeout)
+            if (!_sendFlag || _timeout != timeout || _fetchTask is { IsCompletedSuccessfully: true })
                 return;
 
             _timedOut = true;
             TerminateFetch();
             HandleErrors();
-        });
+        }));
     }
 }

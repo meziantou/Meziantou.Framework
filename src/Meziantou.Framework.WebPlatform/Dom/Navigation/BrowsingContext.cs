@@ -3450,6 +3450,7 @@ public sealed partial class BrowsingContext : IDisposable
         DestroyDocument(Document);
         if (window is not null)
         {
+            SharedWorkerManager.RemoveOwner(window);
             Options.ScriptEngine?.DestroyRealm(window);
         }
 
@@ -3625,6 +3626,7 @@ public sealed partial class BrowsingContext : IDisposable
         }
         if (window is not null)
         {
+            SharedWorkerManager.RemoveOwner(window);
             Options.ScriptEngine?.DestroyRealm(window);
         }
 

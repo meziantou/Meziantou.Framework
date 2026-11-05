@@ -996,9 +996,12 @@ internal sealed partial class WptTestRunner
         if (delay <= TimeSpan.Zero || (request.IsSynchronous && Environment.CurrentManagedThreadId == _eventLoopThreadId))
             return ValueTask.FromResult(resource);
 
+        // The delay of an asynchronous request of a worker is measured by the timers of the worker, so that it is ordered
+        // with the other timers of the worker (e.g. the timeout of an XMLHttpRequest after a long task of the worker)
+        var timerLoop = !request.IsSynchronous && DomEventLoop.CurrentWorkerLoop is { } workerLoop ? workerLoop : _eventLoop;
         var completion = new TaskCompletionSource<DocumentResource?>();
         cancellationToken.Register(() => completion.TrySetCanceled(cancellationToken));
-        _eventLoop.QueueTimer(delay, () => completion.TrySetResult(resource));
+        timerLoop.QueueTimer(delay, () => completion.TrySetResult(resource));
         return new ValueTask<DocumentResource?>(completion.Task);
     }
 

@@ -3472,7 +3472,9 @@ The dedicated workers (`Worker`) and the shared workers (`SharedWorker`) are imp
 - The dedicated workers of a window are terminated when its document is discarded; the workers are terminated when the
   browsing context group is disposed (`BrowsingContext.Dispose()`). The shared workers are shared by the objects of the
   browsing context group with the same constructor origin, URL, name, type, credentials and extended lifetime, and live
-  until they call `close()` or the group is disposed.
+  until they call `close()`, the group is disposed, or the navigables of all the windows of their `SharedWorker` objects
+  are destroyed (e.g. their `iframe` elements are removed): the worker is then terminated, so the next constructor creates
+  a new worker. A worker whose last owner document is replaced by a navigation is kept.
 
 ## Worklets
 
@@ -3940,8 +3942,8 @@ LockManagerSnapshot state = await locks.Query();   // the held locks and the pen
   loop of the environment of the request, whatever the thread that released the lock.
 - **Termination.** The locks of a window are released and its requests are removed when its document is unloaded or
   destroyed (a navigation, the removal of its `iframe`, the disposal of its browsing context), and the ones of a worker
-  when it ends (`terminate()`, `close()`, the discard of its owner). A shared worker lives until it calls `close()` or
-  its group is disposed (see [Workers](#workers)): it keeps its locks meanwhile.
+  when it ends (`terminate()`, `close()`, the discard of its owner). A shared worker lives until it calls `close()`, its
+  group is disposed or the navigables of its owners are destroyed (see [Workers](#workers)): it keeps its locks meanwhile.
 - **Not done.** The back/forward cache (a page that holds a lock is unloaded by a navigation), and the lock managers
   of the storage buckets (`navigator.storageBuckets`).
 

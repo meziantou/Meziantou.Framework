@@ -331,6 +331,19 @@ internal sealed class SnapContainer
             }
         }
 
+        // An absolute scroll snaps to the closest combination of the snap positions of both axes whose snap areas are visible
+        // together, as Gecko (WPT snap-to-combination-of-two-elements-2.html): the search in each axis only considers the snap
+        // areas visible from the current position in the other axis
+        if (shouldSnapOnX && shouldSnapOnY && selectedX is not null && selectedY is not null && !strategy.HasIntendedDirection && !prioritizeX && !prioritizeY
+            && Type.Axis != ScrollSnapAxis.Pair && FindClosestMutuallyVisibleCombination(strategy) is { } combination)
+        {
+            var selectedDistance = GetDistanceSquared(selectedX.SnapOffset - basePosition.X, selectedY.SnapOffset - basePosition.Y);
+            if (GetDistanceSquared(combination.X.SnapOffset - basePosition.X, combination.Y.SnapOffset - basePosition.Y) < selectedDistance)
+            {
+                (selectedX, selectedY) = combination;
+            }
+        }
+
         // For each axis, the alternative is a better selection when it is also aligned in the cross axis
         if (selectedY is { Alternative: not null })
         {
@@ -358,6 +371,93 @@ internal sealed class SnapContainer
         }
 
         return new SnapPosition(Found: true, position, targetX, targetY);
+    }
+
+    /// <summary>
+    /// Whether a scroll from the current position to a snap position passes over a snap area that is not entirely visible from
+    /// the current position (an area that fits in the snapport): the snapport at the snap position is beyond the start of the
+    /// area in the direction of the scroll, so a part of the area is never shown.
+    /// </summary>
+    private bool SkipsSnapArea(SnapSearchAxis axis, SnapSelectionStrategy strategy, double position)
+    {
+        var current = Get(strategy.CurrentPosition, axis);
+        if (position == current)
+            return false;
+
+        var snapport = GetRange(Snapport, axis);
+        foreach (var area in _areas)
+        {
+            if (!strategy.IsValidSnapArea(axis, area))
+                continue;
+
+            var range = GetRange(area.Rect, axis);
+            if (range.End - range.Start > snapport.End - snapport.Start)
+                continue;
+
+            var skipped = position > current
+                ? range.End > current + snapport.End && range.Start < position + snapport.Start
+                : range.Start < current + snapport.Start && range.End > position + snapport.End;
+            if (skipped)
+                return true;
+        }
+
+        return false;
+    }
+
+    private static double GetDistanceSquared(double dx, double dy) => (dx * dx) + (dy * dy);
+
+    /// <summary>
+    /// Finds the combination of a snap position in each axis (of possibly different snap areas) that are mutually visible and
+    /// closest to the base position (the euclidean distance), or null.
+    /// </summary>
+    private (SnapSearchResult X, SnapSearchResult Y)? FindClosestMutuallyVisibleCombination(SnapSelectionStrategy strategy)
+    {
+        // (the combinations are quadratic in the number of snap areas)
+        const int MaxAreas = 64;
+        if (_areas.Count > MaxAreas)
+            return null;
+
+        (SnapSearchResult X, SnapSearchResult Y)? result = null;
+        var smallestDistance = double.MaxValue;
+        var basePosition = strategy.BasePosition;
+        foreach (var areaX in _areas)
+        {
+            if (!IsValidSnapArea(SnapSearchAxis.X, strategy, areaX))
+                continue;
+
+            var x = GetSnapSearchResult(SnapSearchAxis.X, areaX);
+            var dx = x.SnapOffset - basePosition.X;
+            if (Math.Abs(dx) > ProximityRange.X || !strategy.IsValidSnapPosition(SnapSearchAxis.X, x.SnapOffset))
+                continue;
+
+            foreach (var areaY in _areas)
+            {
+                if (!IsValidSnapArea(SnapSearchAxis.Y, strategy, areaY))
+                    continue;
+
+                var y = GetSnapSearchResult(SnapSearchAxis.Y, areaY);
+                var dy = y.SnapOffset - basePosition.Y;
+                if (Math.Abs(dy) > ProximityRange.Y || !strategy.IsValidSnapPosition(SnapSearchAxis.Y, y.SnapOffset) || !IsMutualVisible(x, y)
+                    || !IntersectsSnapport(areaX.Rect.Top, areaX.Rect.Bottom, y.SnapOffset + Snapport.Top, y.SnapOffset + Snapport.Bottom)
+                    || !IntersectsSnapport(areaY.Rect.Left, areaY.Rect.Right, x.SnapOffset + Snapport.Left, x.SnapOffset + Snapport.Right))
+                {
+                    continue;
+                }
+
+                var distance = GetDistanceSquared(dx, dy);
+                if (distance < smallestDistance)
+                {
+                    smallestDistance = distance;
+                    result = (x, y);
+                }
+            }
+        }
+
+        return result;
+
+        // A snap area that only touches the edge of the snapport is not visible (unless it is empty)
+        static bool IntersectsSnapport(double start, double end, double snapportStart, double snapportEnd)
+            => end > start ? start < snapportEnd && end > snapportStart : start <= snapportEnd && end >= snapportStart;
     }
 
     /// <summary>
@@ -506,6 +606,9 @@ internal sealed class SnapContainer
         void Evaluate(SnapSearchResult candidate, SnapArea area, int index)
         {
             if (!IsMutualVisible(candidate, crossAxisResult) || !strategy.IsValidSnapPosition(axis, candidate.SnapOffset))
+                return;
+
+            if (strategy.AvoidsSkippingSnapAreas && SkipsSnapArea(axis, strategy, candidate.SnapOffset))
                 return;
 
             var distance = Math.Abs(candidate.SnapOffset - basePosition);

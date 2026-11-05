@@ -163,6 +163,12 @@ internal sealed partial class EditingAlgorithms
                 : !nonBreakingStart ? " " + NoBreakSpace + NoBreakSpace
                 : NoBreakSpace + " " + NoBreakSpace);
         }
+        else if (buffer.Length > 0 && !nonBreakingStart && !nonBreakingEnd)
+        {
+            // The specification ends the sequence with a no-break space followed by a space (4 spaces give a space, two
+            // no-break spaces and a space). As in the browsers, the spaces keep alternating
+            buffer.Append(" " + NoBreakSpace);
+        }
         else
         {
             buffer.Append(!nonBreakingEnd ? NoBreakSpace + " " : !nonBreakingStart ? " " + NoBreakSpace : NoBreakSpace + NoBreakSpace);
@@ -1211,6 +1217,32 @@ internal sealed partial class EditingAlgorithms
         }
     }
 
+    /// <summary>
+    /// The sequence of white space that contains the character at the offset when it contains a line feed that collapses
+    /// (white-space is normal or nowrap): it is rendered as one space, which the deletion of one of its characters removes
+    /// whole, as in the browsers.
+    /// </summary>
+    private (int Start, int End)? GetCollapsibleWhiteSpaceRunWithLineFeed(Text text, int offset)
+    {
+        var data = text.Data;
+        if (offset < 0 || offset >= data.Length || data[offset] is not (' ' or '\t' or '\n') || GetWhiteSpace(text) is not ("normal" or "nowrap"))
+            return null;
+
+        var start = offset;
+        while (start > 0 && data[start - 1] is ' ' or '\t' or '\n')
+        {
+            start--;
+        }
+
+        var end = offset + 1;
+        while (end < data.Length && data[end] is ' ' or '\t' or '\n')
+        {
+            end++;
+        }
+
+        return data.AsSpan(start, end - start).Contains('\n') ? (start, end) : null;
+    }
+
     /// <summary>Replaces a character of a Text node without moving the boundary points that are after it.</summary>
     private static void ReplaceCharacter(Text text, int offset, char character)
     {
@@ -1552,6 +1584,10 @@ internal sealed partial class EditingAlgorithms
             if (node is Text text && start > 0 && char.IsLowSurrogate(text.Data[start]) && char.IsHighSurrogate(text.Data[start - 1]))
             {
                 start--;
+            }
+            else if (node is Text whiteSpaceText && GetCollapsibleWhiteSpaceRunWithLineFeed(whiteSpaceText, start) is { } previousRun)
+            {
+                start = previousRun.Start;
             }
 
             SetRange(node, start, node, offset);
@@ -1912,6 +1948,11 @@ internal sealed partial class EditingAlgorithms
             while (endOffset != data.Length && IsCombiningMark(data[endOffset]))
             {
                 endOffset++;
+            }
+
+            if (GetCollapsibleWhiteSpaceRunWithLineFeed(text, offset) is { } nextRun)
+            {
+                endOffset = nextRun.End;
             }
 
             SetRange(node, offset, node, endOffset);

@@ -541,6 +541,12 @@ internal static class CssGenericInterpolation
 
         var textA = Serialize(a);
         var textB = Serialize(b);
+
+        // The sum of a value and itself (e.g. the accumulation of the iterations of a min() or max() that cannot be simplified)
+        // is a product, as in the browsers: max(20px, 15%) + max(20px, 15%) is 2 * max(20px, 15%)
+        if (operation != CssCombineOperation.Interpolate && string.Equals(textA, textB, StringComparison.Ordinal))
+            return "calc(2 * " + textA + ")";
+
         return operation == CssCombineOperation.Interpolate
             ? "calc(" + textA + " * " + FormatNumber(1 - progress) + " + " + textB + " * " + FormatNumber(progress) + ")"
             : "calc(" + textA + " + " + textB + ")";

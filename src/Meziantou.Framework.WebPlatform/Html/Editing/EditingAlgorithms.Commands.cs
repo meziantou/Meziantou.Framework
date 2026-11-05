@@ -447,7 +447,17 @@ internal sealed partial class EditingAlgorithms
             case "formatblock":
             {
                 var nodes = GetAllContainedNodes(BlockExtend(range), node => IsVisible(node) && IsEditable(node) && !node.HasChildNodes());
-                return nodes.Count == 0 ? "" : IsDefinitionList(nodes) ? "dl" : GetFormatBlockType(nodes[0]);
+                if (nodes.Count == 0)
+                    return "";
+
+                if (IsDefinitionList(nodes))
+                    return "dl";
+
+                // The specification returns the type of the first node. As in the browsers, the value is the name of the
+                // closest formattable block (even when it contains a prohibited paragraph child), and it is empty when
+                // the nodes do not have the same one
+                var type = GetFormatBlockValue(nodes[0]);
+                return nodes.TrueForAll(node => GetFormatBlockValue(node) == type) ? type : "";
             }
 
             case "justifycenter" or "justifyfull" or "justifyleft" or "justifyright":
@@ -532,6 +542,17 @@ internal sealed partial class EditingAlgorithms
             return ((Element)node).LocalName;
 
         return "";
+    }
+
+    /// <summary>The local name of the closest formattable block of a node in its table cell, or the empty string.</summary>
+    private static string GetFormatBlockValue(Node node)
+    {
+        while (IsEditable(node.ParentNode) && InSameEditingHost(node, node.ParentNode) && !IsHtmlElement(node, FormattableBlockNames) && !IsHtmlElement(node, TableCellNames))
+        {
+            node = node.ParentNode;
+        }
+
+        return IsEditable(node) && IsHtmlElement(node, FormattableBlockNames) ? ((Element)node).LocalName : "";
     }
 
     /// <summary>
@@ -703,7 +724,7 @@ internal sealed partial class EditingAlgorithms
 
         var newRange = BlockExtend(ActiveRange);
         var nodeList = GetContainedNodes(newRange, static node => IsEditable(node)
-            && (IsReplacedByFormatBlock(node) || IsAllowedChild(node, "p") || IsHtmlElement(node, DefinitionItemNames))
+            && (IsSingleLineContainer(node) || IsAllowedChild(node, "p") || IsHtmlElement(node, DefinitionItemNames))
             && !AnyDescendant(node, IsProhibitedParagraphChild));
         var values = RecordValues(nodeList);
         foreach (var node in nodeList)
@@ -718,16 +739,27 @@ internal sealed partial class EditingAlgorithms
         }
 
         RestoreValues(values);
+        var createdBlocks = new HashSet<Node>(ReferenceEqualityComparer.Instance);
         var index = 0;
         while (index < nodeList.Count)
         {
             List<Node> sublist;
+            string? replacedStyle = null;
+            List<(Node Node, string Command, string? Value)>? childValues = null;
             if (IsReplacedByFormatBlock(nodeList[index]))
             {
+                // As in the browsers, the style attribute of the replaced element is moved to the new block, and the values
+                // of its children are restored after they are wrapped in it
+                replacedStyle = ((Element)nodeList[index]).GetAttributeValue("style");
                 sublist = GetChildren(nodeList[index]);
-                var childValues = RecordValues(sublist);
+                childValues = RecordValues(sublist);
                 RemovePreservingDescendants(nodeList[index]);
-                RestoreValues(childValues);
+                if (string.IsNullOrEmpty(replacedStyle))
+                {
+                    RestoreValues(childValues);
+                    childValues = null;
+                }
+
                 index++;
             }
             else
@@ -739,10 +771,27 @@ internal sealed partial class EditingAlgorithms
                 }
             }
 
+            // The specification merges the line with the adjacent blocks of the new type. As in the browsers, only the blocks
+            // that the command creates are merged (an existing blockquote is not merged with the new one)
+            Element? createdBlock = null;
             FixDisallowedAncestors(Wrap(
                 sublist,
-                value is "div" or "p" ? null : node => IsHtmlElement(node, value) && ((Element)node).AttributeCount == 0,
-                () => CreateElement(value)));
+                value is "div" or "p" || childValues is not null ? null : node => createdBlocks.Contains(node) && ((Element)node).AttributeCount == 0,
+                () => createdBlock = CreateElement(value)));
+            if (createdBlock is not null)
+            {
+                createdBlocks.Add(createdBlock);
+            }
+
+            if (childValues is not null)
+            {
+                if (createdBlock is not null && createdBlock.ParentNode is not null)
+                {
+                    createdBlock.SetAttribute("style", replacedStyle!);
+                }
+
+                RestoreValues(childValues);
+            }
         }
 
         return true;
@@ -1391,6 +1440,12 @@ internal sealed partial class EditingAlgorithms
         }
 
         CollapseTo(node, offset);
+        if (isCaret && GetFlexOrGridItem(node) is { } item)
+        {
+            SplitFlexOrGridItem(item, node, offset);
+            return true;
+        }
+
         var caretNode = node;
         var container = node;
         while (!IsParagraphContainer(container) && IsEditable(container.ParentNode) && InSameEditingHost(node, container.ParentNode))
@@ -1437,8 +1492,9 @@ internal sealed partial class EditingAlgorithms
                 return true;
             }
 
+            // The line ends before an element that is a block by its style (a span with display:block)
             nodeList.RemoveRange(1, nodeList.Count - 1);
-            while (nodeList[^1].NextSibling is { } next && (IsAllowedChild(next, "p") || IsInlineLevelContainer(next)))
+            while (nodeList[^1].NextSibling is { } next && (IsAllowedChild(next, "p") || IsInlineLevelContainer(next)) && !IsBlockNode(next))
             {
                 nodeList.Add(next);
             }
@@ -1633,6 +1689,58 @@ internal sealed partial class EditingAlgorithms
         return true;
     }
 
+    /// <summary>
+    /// The item of a flex or grid container that contains the node, when the node is not in a block of this item: the
+    /// specification splits the container (the block of the line). As in Chromium and WebKit, and as the tests expect, the
+    /// item is split instead (<c>&lt;div style=display:flex&gt;&lt;span&gt;a[]bc&lt;/span&gt;&lt;/div&gt;</c> gives two spans).
+    /// </summary>
+    private Element? GetFlexOrGridItem(Node node)
+    {
+        for (var current = node; current is not null && IsEditable(current); current = current.ParentNode)
+        {
+            if (current.ParentNode is Element parent && IsEditable(parent) && InSameEditingHost(current, parent)
+                && GetDisplay(parent) is var display && (display.IsFlexContainer || display.IsGridContainer))
+            {
+                return current is Element element && IsHtmlElement(element) && !IsProhibitedParagraphChild(element) && !IsAtomicElement(element) ? element : null;
+            }
+
+            if (IsBlockNode(current))
+                return null;
+        }
+
+        return null;
+    }
+
+    /// <summary>Splits the item of a flex or grid container at the caret: the contents that follow the caret are moved to a clone of the item.</summary>
+    private void SplitFlexOrGridItem(Element item, Node node, int offset)
+    {
+        var range = _document.CreateRange();
+        range.SetStart(node, (uint)offset);
+        range.SetEnd(item, (uint)NodeLength(item));
+        var fragment = range.ExtractContents();
+        var clone = (Element)item.CloneNode();
+        clone.RemoveAttribute("id");
+        clone.AppendChild(fragment);
+        InsertAfter(clone, item);
+        if (!HasVisibleChild(item))
+        {
+            item.AppendChild(CreateElement("br"));
+        }
+
+        if (!HasVisibleChild(clone))
+        {
+            clone.AppendChild(CreateElement("br"));
+        }
+
+        Node caretContainer = clone;
+        while (caretContainer.FirstChild is Element child && !IsHtmlElement(child, "br") && IsEditable(child) && IsInlineNode(child) && !IsAtomicElement(child) && IsAllowedChild("br", child))
+        {
+            caretContainer = child;
+        }
+
+        CollapseTo(caretContainer, 0);
+    }
+
     /// <summary>The closest editable inclusive ancestor of the node that is a link (an a element with an href attribute).</summary>
     private static Element? GetLinkOf(Node node)
     {
@@ -1706,8 +1814,18 @@ internal sealed partial class EditingAlgorithms
 
         // The text that replaces a selection is in a link when the whole selection is in this link
         replacesSelection |= deletesSelection && GetLinkOf(ActiveRange.StartContainer) is { } link && ReferenceEquals(link, GetLinkOf(ActiveRange.EndContainer));
+
+        // As in the browsers, the text that replaces a selection that begins with an image (or another atomic element)
+        // after a text is inserted at the end of this text: it does not get the formatting of the image
+        var precedingText = deletesSelection && ActiveRange.StartContainer is Text startText && ActiveRange.StartOffset == startText.Length
+            && GetAllEffectivelyContainedNodes(ActiveRange).Find(IsFormattableNode) is { } firstNode && IsAtomicElement(firstNode) ? startText : null;
         DeleteSelection(stripWrappers: false);
         var range = ActiveRange;
+        if (precedingText is { ParentNode: not null } && IsEditable(precedingText) && range.Collapsed)
+        {
+            CollapseTo(precedingText, NodeLength(precedingText));
+        }
+
         if (!IsEditableOrEditingHost(range.StartContainer))
             return true;
 

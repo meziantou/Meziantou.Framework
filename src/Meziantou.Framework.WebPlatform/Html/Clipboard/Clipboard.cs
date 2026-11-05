@@ -166,6 +166,13 @@ public sealed class Clipboard : EventTarget
                     return;
                 }
 
+                // As in the browsers, the image/png data is decoded before it is written: data that is not a PNG image is rejected
+                if (itemsData.SelectMany(item => item.Data).Any(r => !r.Representation.IsCustom && r.Representation.Essence == "image/png" && !IsPngImage(r.Data.Result)))
+                {
+                    completion.TrySetException(new DomException("The image/png data of the clipboard item is not a PNG image", "DataError"));
+                    return;
+                }
+
                 var systemItems = new List<SystemClipboardItem>();
                 foreach (var (item, itemData) in itemsData)
                 {
@@ -201,6 +208,13 @@ public sealed class Clipboard : EventTarget
             completion.TrySetResult();
         });
         return completion.Task;
+    }
+
+    /// <summary>Whether the data starts with the PNG signature followed by the IHDR chunk (https://www.w3.org/TR/png-3/#5PNG-file-signature).</summary>
+    private static bool IsPngImage(StringOrBlob value)
+    {
+        ReadOnlySpan<byte> data = value.Blob is { } blob ? blob.Data.Span : Encoding.UTF8.GetBytes(value.StringValue ?? "");
+        return data.Length >= 16 && data[..8].SequenceEqual((ReadOnlySpan<byte>)[0x89, (byte)'P', (byte)'N', (byte)'G', 0x0D, 0x0A, 0x1A, 0x0A]) && data[12..16].SequenceEqual("IHDR"u8);
     }
 
     /// <summary>

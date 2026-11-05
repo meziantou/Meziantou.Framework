@@ -62,8 +62,11 @@ internal static class CssColorInterpolation
 
     private static string CombineLegacy(CssColor a, CssColor b, CssCombineOperation operation, double progress)
     {
-        var alphaA = a.Alpha ?? 0;
-        var alphaB = b.Alpha ?? 0;
+        // As in the browsers, the alpha of the legacy colors is an 8-bit value: the alpha of the operands is quantized, and the
+        // result is serialized as the shortest decimal that round-trips to its 8-bit value
+        // (https://drafts.csswg.org/css-color-4/#serializing-alpha-values, e.g. 0.596 for 152 / 255)
+        var alphaA = QuantizeAlpha(a.Alpha ?? 0);
+        var alphaB = QuantizeAlpha(b.Alpha ?? 0);
         var alpha = operation == CssCombineOperation.Interpolate ? CssGenericInterpolation.Lerp(alphaA, alphaB, progress) : alphaA + alphaB;
         alpha = Math.Clamp(alpha, 0, 1);
         Span<double> channels = stackalloc double[3];
@@ -76,7 +79,17 @@ internal static class CssColorInterpolation
             channels[i] = alpha == 0 ? 0 : value / alpha;
         }
 
-        return "rgba(" + CssGenericInterpolation.FormatNumber(channels[0]) + ", " + CssGenericInterpolation.FormatNumber(channels[1]) + ", " + CssGenericInterpolation.FormatNumber(channels[2]) + ", " + CssGenericInterpolation.FormatNumber(alpha) + ")";
+        return "rgba(" + CssGenericInterpolation.FormatNumber(channels[0]) + ", " + CssGenericInterpolation.FormatNumber(channels[1]) + ", " + CssGenericInterpolation.FormatNumber(channels[2]) + ", " + CssGenericInterpolation.FormatNumber(SerializableAlpha(alpha)) + ")";
+    }
+
+    private static double QuantizeAlpha(double alpha) => Math.Round(Math.Clamp(alpha, 0, 1) * 255, MidpointRounding.AwayFromZero) / 255;
+
+    /// <summary>Returns the shortest decimal (2 or 3 digits) that round-trips to the 8-bit value of an alpha.</summary>
+    private static double SerializableAlpha(double alpha)
+    {
+        var value = (int)Math.Round(alpha * 255, MidpointRounding.AwayFromZero);
+        var rounded = Math.Round(value / 255.0, 2, MidpointRounding.AwayFromZero);
+        return (int)Math.Round(rounded * 255, MidpointRounding.AwayFromZero) == value ? rounded : Math.Round(value / 255.0, 3, MidpointRounding.AwayFromZero);
     }
 
     private static CssColor? Resolve(CssInterpolationContext context, string property, CssComponentValue value, bool isCurrentColor)

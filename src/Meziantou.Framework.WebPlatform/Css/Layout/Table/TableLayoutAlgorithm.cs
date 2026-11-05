@@ -375,7 +375,16 @@ internal sealed partial class TableLayoutAlgorithm
             return cached;
 
         var columns = new TableColumnMeasure[Model.Columns.Count];
-        if (IsFixed)
+        if (Model.Rows.Count == 0)
+        {
+            // https://drafts.csswg.org/css-tables-3/#table-layout-algorithm: a table without slot is empty, its columns take no
+            // space (WPT css/css-tables/html5-table-formatting-1.html)
+            for (var i = 0; i < columns.Length; i++)
+            {
+                columns[i].IsMergeable = true;
+            }
+        }
+        else if (IsFixed)
         {
             ComputeFixedColumnMeasures(columns);
         }

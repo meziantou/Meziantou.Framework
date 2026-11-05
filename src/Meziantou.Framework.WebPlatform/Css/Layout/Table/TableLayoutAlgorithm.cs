@@ -500,10 +500,16 @@ internal sealed partial class TableLayoutAlgorithm
 
         // The cells that span one column
         var maxSpan = 1;
+        var spanned = new bool[columns.Length];
         foreach (var cell in Model.Cells)
         {
             MeasureCell(cell);
             columns[cell.Column].HasOriginatingCell = true;
+            for (var i = cell.Column + 1; i < Math.Min(columns.Length, cell.Column + cell.ColumnSpan); i++)
+            {
+                spanned[i] = true;
+            }
+
             if (cell.ColumnSpan > 1)
             {
                 maxSpan = Math.Max(maxSpan, cell.ColumnSpan);
@@ -522,8 +528,9 @@ internal sealed partial class TableLayoutAlgorithm
             // originates are merged, unless a column box gives them a width that is not 0: its length width limited by its
             // length max-width, at least its length min-width (a mix of a length and a percentage is ignored: WPT
             // css/css-tables/col-definite-size-001.html, col-definite-min-size-001.html, col-definite-max-size-001.html), or a
-            // percentage (see below)
-            if (!columns[i].HasOriginatingCell)
+            // percentage (see below). A column defined by a table-column box that a cell spans is not merged either: only the
+            // implicit tracks are (WPT css/css-tables/html5-table-formatting-3.html)
+            if (!columns[i].HasOriginatingCell && !(spanned[i] && Model.Columns[i].Column is not null))
             {
                 columns[i].IsMergeable = GetColumnSizingBox(i) is not { } box || GetDefiniteColumnWidth(box.Style.Layout.Box, horizontal) == 0;
             }
@@ -796,8 +803,9 @@ internal sealed partial class TableLayoutAlgorithm
 
                 case TableSizeKind.Percent:
                     // https://drafts.csswg.org/css-tables-3/#width-distribution-in-fixed-mode: "Cells ignore their border and padding
-                    // size if their width is a percentage"; the browsers add them for box-sizing: content-box
-                    var percentEdges = layout.BoxSizing == BoxSizing.ContentBox ? edges / count : 0;
+                    // size if their width is a percentage"; the browsers add them for box-sizing: content-box, unless the cell
+                    // spans several columns (WPT css/css-tables/tentative/table-width-redistribution-fixed-padding.html)
+                    var percentEdges = layout.BoxSizing == BoxSizing.ContentBox && count == 1 ? edges : 0;
                     for (var i = cell.Column; i < end; i++)
                     {
                         if (!defined[i])
@@ -1075,14 +1083,13 @@ internal sealed partial class TableLayoutAlgorithm
     /// The width distribution in fixed mode (https://drafts.csswg.org/css-tables-3/#width-distribution-in-fixed-mode): the
     /// constrained columns get their width, the percentage columns their percentage of the assignable width (scaled down to fit
     /// in the remaining width), the auto columns share the remaining width equally; without auto column, the excess goes to the
-    /// constrained columns in proportion to their widths, else to the percentage columns in proportion to their percentages,
-    /// else equally to all the columns.
+    /// constrained columns in proportion to their widths, else to the percentage columns in proportion to their widths, else
+    /// equally to all the columns.
     /// </summary>
     private static void DistributeFixed(double target, ReadOnlySpan<TableColumnMeasure> columns, Span<double> sizes)
     {
         var fixedTotal = 0d;
         var percentTotal = 0d;
-        var totalPercent = 0d;
         var autoCount = 0;
         var fixedCount = 0;
         var percentCount = 0;
@@ -1096,7 +1103,6 @@ internal sealed partial class TableLayoutAlgorithm
             else if (column.Percent > 0)
             {
                 percentCount++;
-                totalPercent += column.Percent;
                 percentTotal += (column.Percent * target / 100) + column.PercentEdges;
             }
             else
@@ -1147,13 +1153,14 @@ internal sealed partial class TableLayoutAlgorithm
                 }
             }
         }
-        else if (percentCount > 0 && totalPercent > 0)
+        else if (percentCount > 0 && percentTotal > 0)
         {
+            // In proportion to their widths (with the borders and paddings of their content-box cells)
             for (var i = 0; i < columns.Length; i++)
             {
                 if (!columns[i].IsConstrained && columns[i].Percent > 0)
                 {
-                    sizes[i] += excess * columns[i].Percent / totalPercent;
+                    sizes[i] += excess * ((columns[i].Percent * target / 100) + columns[i].PercentEdges) / percentTotal;
                 }
             }
         }

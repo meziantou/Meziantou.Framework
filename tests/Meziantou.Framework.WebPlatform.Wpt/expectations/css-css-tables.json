@@ -297,10 +297,7 @@
     "total": 1
   },
   "css/css-tables/height-distribution/extra-height-given-to-all-row-groups-004.html": {
-    "total": 1,
-    "failures": {
-      "#theTable 1": "FAIL"
-    }
+    "total": 1
   },
   "css/css-tables/height-distribution/extra-height-given-to-all-row-groups-005.html": {
     "reftest": "PASS"
@@ -373,8 +370,6 @@
   "css/css-tables/html5-table-formatting-3.html": {
     "total": 8,
     "failures": {
-      "Explicitely-defined consecutive columns spanned by the same set of cells are not merged": "FAIL",
-      "Explicitely-defined consecutive columns spanned by the same set of cells are not merged, and cells span across border-spacing": "FAIL",
       "Explicitely-defined consecutive rows spanned by the same set of cells are not merged, and cells span across border-spacing": "FAIL"
     }
   },
@@ -784,11 +779,7 @@
     "total": 12
   },
   "css/css-tables/tentative/table-width-redistribution-fixed-padding.html": {
-    "total": 15,
-    "failures": {
-      "table 12": "FAIL",
-      "table 8": "FAIL"
-    }
+    "total": 15
   },
   "css/css-tables/tentative/table-width-redistribution-fixed.html": {
     "total": 26

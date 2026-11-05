@@ -64,6 +64,8 @@ public class TestEmphasisRoundtrip
     [InlineData("+++a+++++ tail\n", "<p>+<ins>a+++</ins> tail</p>")]
     [InlineData("*===a===== tail*\n", "<p><em>=<mark>a===</mark> tail</em></p>")]
     [InlineData("===a===== tail ==next==\n", "<p>=<mark>a===</mark> tail <mark>next</mark></p>")]
+    [InlineData("===[===) tail\n", "<p>=<mark>[=</mark>) tail</p>")]
+    [InlineData("*a ===[===) b*\n", "<p><em>a =<mark>[=</mark>) b</em></p>")]
     public void UnmatchedCloserPreservesTrailingContent(string markdown, string expectedHtml)
     {
         var pipeline = new MarkdownPipelineBuilder().UseEmphasisExtras().EnableTrackTrivia().Build();

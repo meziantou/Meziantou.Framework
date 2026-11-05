@@ -621,12 +621,28 @@ public class TestHtmlAttributes
     [InlineData("a www.x.y b\n", nameof(LinkInline), "autolinks+attributes")]
     [InlineData("a tel:1[l](u) b\n", nameof(LinkInline), "autolinks+attributes")]
     [InlineData("a | b\n", nameof(ParagraphBlock), "attributes")]
+    [InlineData("a `x`\nb|\n|-\n", nameof(CodeInline), "pipetables+attributes")]
     [InlineData("a\n| b\n|---|\n", nameof(ParagraphBlock), "pipetables+attributes")]
     [InlineData("::: {#a}\nx\n:::\n", "CustomContainer", "attributes+customcontainers")]
     public void GenericAttributesRoundtripThrowsForAttributesThatCannotBeWritten(string markdown, string type, string extensions)
     {
         var exception = Assert.Throws<InvalidOperationException>(() => RoundtripWithChangedAttributes(markdown, new MarkdownPipelineBuilder().Configure(extensions), type, attributes => attributes.Id = "x"));
         Assert.StartsWith("The attributes of the " + type + " cannot be written: ", exception.Message);
+    }
+
+    [Fact]
+    public void GenericAttributesRoundtripThrowsForAttributesAfterAPipeTableThatEndAttributesBeforeIt()
+    {
+        // The inline parser of the pipe tables parses the paragraphs before and after a table as one text, so the attributes of
+        // the paragraph after the table could end the attributes that start in the paragraph before it
+        var pipeline = new MarkdownPipelineBuilder().UsePipeTables().UseGenericAttributes().EnableTrackTrivia().Build();
+        var document = MarkdownConverter.Parse("{o=\"\nA|\n-|\nB|\np\n", pipeline);
+        document.Descendants<ParagraphBlock>().Last().GetAttributes().Id = "\"";
+
+        var renderer = new RoundtripRenderer(new StringWriter());
+        pipeline.Setup(renderer);
+        var exception = Assert.Throws<InvalidOperationException>(() => renderer.Write(document));
+        Assert.StartsWith("The attributes of the ParagraphBlock cannot be written: ", exception.Message);
     }
 
     private static string RoundtripWithChangedAttributes(string markdown, MarkdownPipelineBuilder pipelineBuilder, string type, Action<HtmlAttributes> change)

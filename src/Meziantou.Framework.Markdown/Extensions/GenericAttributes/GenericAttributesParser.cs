@@ -50,6 +50,13 @@ public class GenericAttributesParser : InlineParser
 
         if (TryParse(ref slice, out HtmlAttributes? attributes, out var scanEnd))
         {
+            // The line ending after the attributes is skipped, so that attributes on their own line apply to the text after
+            // them. In a row of a pipe table, it ends the row, which the table parser must see.
+            if (slice.PeekCharExtra(-1) == '\n' && processor.Inline is not null && processor.ContainsPipeTableDelimiter(processor.Inline))
+            {
+                slice.Start -= slice.PeekCharExtra(-2) == '\r' ? 2 : 1;
+            }
+
             RemoveFilteredProperties(attributes, AttributeFilter);
 
             var inline = processor.Inline;

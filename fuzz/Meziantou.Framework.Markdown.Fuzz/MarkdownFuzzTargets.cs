@@ -148,7 +148,15 @@ public static class MarkdownFuzzTargets
             CheckRenderedHtml(html);
         }
 
-        _ = MarkdownConverter.ToPlainText(markdown, GetPipeline(extensions, flags, trackTrivia: false, minimumThresholds: false));
+        // Without HTML, the renderers of some extensions write the inlines that their HTML replaces, such as the description of a
+        // media link that is written as an iframe, which can be nested too deeply
+        try
+        {
+            _ = MarkdownConverter.ToPlainText(markdown, GetPipeline(extensions, flags, trackTrivia: false, minimumThresholds: false));
+        }
+        catch (ArgumentException ex) when (IsDepthLimitExceeded(ex))
+        {
+        }
     }
 
     private static void Roundtrip(ReadOnlySpan<byte> data)

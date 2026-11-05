@@ -1126,12 +1126,23 @@ Text following the table.");
     }
 
     [Theory]
-    [InlineData("- T\n  a | b\n:---\n  | H1 | H2 |\n  |---|---|", "- T\n  a | b\n      :---\n  | H1 | H2 |\n  | --- | --- |")]
+    [InlineData("- T\n  a | b\n:---\n  | H1 | H2 |\n  |---|---|", "- T\n  a \\| b\n      :---\n  | H1 | H2 |\n  | --- | --- |")]
     [InlineData("2. T\n   a\n:-|\n   | H |\n   |---|", "2. T\n   a\n   :-\\|\n   | H |\n   | --- |")]
     public void LazyDelimiterRowBeforeAGfmTable(string markdown, string expected)
     {
         // A GFM table is tried once per paragraph, and a lazy line is not tried: the delimiter row written in the list item was
         // tried, which made the table after it part of the paragraph
+        var pipeline = new MarkdownPipelineBuilder().Configure("gfm-pipetables").Build();
+        AssertNormalizePreservesHtml(markdown, expected, pipeline);
+    }
+
+    [Theory]
+    [InlineData("* \\\\|\na|b\n  -|-", "* \\|\n  | a | b |\n  | --- | --- |")]
+    [InlineData("* a\\\\\\|b\na|b\n  -|-", "* a\\\\\\|b\n  | a | b |\n  | --- | --- |")]
+    public void PipesOfAParagraphBeforeAGfmTableAreEscapedAsInItsCells(string markdown, string expected)
+    {
+        // The pipes of the paragraph before the header row are unescaped before its inlines are parsed: an escaped pipe written
+        // "\|" was read back as a pipe that is not escaped, written without the backslash
         var pipeline = new MarkdownPipelineBuilder().Configure("gfm-pipetables").Build();
         AssertNormalizePreservesHtml(markdown, expected, pipeline);
     }

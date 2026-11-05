@@ -294,6 +294,8 @@ public class EmphasisInlineParser : InlineParser, IPostInlineProcessor
 
             if (closeDelimiter.Type.HasFlag(DelimiterType.Close))
             {
+                // Each match of the closer wraps the previous one, so the last emphasis is the outermost
+                EmphasisInline? closerEmphasis = null;
                 var characterIndex = -2;
                 while (closeDelimiter.DelimiterCount >= emphasisDesc.MinimumCount)
                 {
@@ -390,6 +392,7 @@ public class EmphasisInlineParser : InlineParser, IPostInlineProcessor
 
                         // Embrace all delimiters
                         embracer.EmbraceChildrenBy(emphasis);
+                        closerEmphasis = emphasis;
 
                         // Remove any intermediate emphasis
                         for (int k = i - 1; k >= openDelimiterIndex + 1; k--)
@@ -464,16 +467,12 @@ public class EmphasisInlineParser : InlineParser, IPostInlineProcessor
                 }
 
                 // Leftover delimiter characters keep the following inlines nested inside
-                // the emphasis; move them out so they keep their original position.
-                if (closeDelimiter.DelimiterCount > 0 && closeDelimiter.Parent is EmphasisInline closerParentEmphasis)
+                // the emphasis; move them out so they keep their original position. The
+                // closer can be nested deeper than the emphasis, such as in the unresolved
+                // link delimiter of a '[' between the opener and the closer.
+                if (closeDelimiter.DelimiterCount > 0 && closerEmphasis is not null && IsDescendantOf(closeDelimiter, closerEmphasis))
                 {
-                    var outermostEmphasis = closerParentEmphasis;
-                    while (outermostEmphasis.Parent is EmphasisInline ancestorEmphasis)
-                    {
-                        outermostEmphasis = ancestorEmphasis;
-                    }
-
-                    closeDelimiter.MoveChildrenAfter(outermostEmphasis);
+                    closeDelimiter.MoveChildrenAfter(closerEmphasis);
                 }
 
                 if (closeDelimiter.DelimiterCount > 0 && !closeDelimiter.Type.HasFlag(DelimiterType.Open))
@@ -501,6 +500,17 @@ public class EmphasisInlineParser : InlineParser, IPostInlineProcessor
             }
 
             return characterIndex < 0 ? -1 : (characterIndex * 6) + (closeDelimiter.Type.HasFlag(DelimiterType.Open) ? 3 : 0) + (closeDelimiter.RunLength % 3);
+        }
+
+        static bool IsDescendantOf(Inline inline, ContainerInline ancestor)
+        {
+            for (var parent = inline.Parent; parent is not null; parent = parent.Parent)
+            {
+                if (parent == ancestor)
+                    return true;
+            }
+
+            return false;
         }
 
         static void RemoveFromStack(List<EmphasisDelimiterInline> delimiters, ref int stackCount, int index)

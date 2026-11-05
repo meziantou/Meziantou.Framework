@@ -197,7 +197,9 @@ The renderer throws an `InvalidOperationException` when the parser would not rea
 - a value cannot be written, such as an identifier with a space or a value with a line break;
 - the element has no syntax for attributes: a list item, a table, an indented code block, a literal;
 - the text before them would read them: an unfinished `{name=`, an unclosed code span, a link found by the autolinks
-  extension;
+  extension. A pipe table is parsed with the paragraphs right before and after it, so their text counts too;
+- an inline ends a line: the parser reads the line ending after attributes as part of them, which would join the next
+  line, or the first row of a table that follows the paragraph;
 - the last line of a paragraph would then start another block, such as `*` or `|`;
 - a new attribute line would join the paragraph before the block.
 

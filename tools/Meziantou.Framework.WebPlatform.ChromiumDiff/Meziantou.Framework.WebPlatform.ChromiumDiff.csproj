@@ -8,7 +8,7 @@
     <NoWarn>$(NoWarn);CA1303;CA1515;CA2007;CA1031;CA5394</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.Playwright" Version="1.64.0" />
+    <PackageReference Include="Microsoft.Playwright" Version="1.64.1" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform\Meziantou.Framework.WebPlatform.csproj" />

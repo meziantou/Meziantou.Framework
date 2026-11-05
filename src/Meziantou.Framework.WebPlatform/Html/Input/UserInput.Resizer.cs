@@ -32,18 +32,23 @@ public sealed partial class UserInput
         if (HitTest(pointer.X, pointer.Y, out _) is not { } hit)
             return null;
 
-        var document = hit.NodeDocument;
-        if (document.BrowsingContext is null || FocusModel.IsInert(hit))
+        if (hit.NodeDocument.BrowsingContext is null || FocusModel.IsInert(hit))
             return null;
 
-        var engine = document.GetLayoutEngine();
-        var (x, y) = MapToDocument(document, pointer.X, pointer.Y);
-        var point = engine.FromViewport(new PhysicalOffset(x, y));
-        for (var element = hit; element is not null; element = element.ParentElement)
+        // The resizer of an iframe is in its content box: the element hit is in its content document, whose container is an
+        // ancestor (the resize property applies to the iframes too, as in the browsers: WPT css/css-ui/resize-iframe-3d-transform.tentative.html)
+        for (var element = hit; element is not null; element = element.ParentElement ?? (element.NodeDocument.BrowsingContext is { Parent: not null, Container: { } container } ? container : null))
         {
+            var document = element.NodeDocument;
+            if (document.BrowsingContext is null)
+                return null;
+
+            var engine = document.GetLayoutEngine();
+            var (x, y) = MapToDocument(document, pointer.X, pointer.Y);
+            var point = engine.FromViewport(new PhysicalOffset(x, y));
             var style = document.GetStyleEngine().GetStyle(element);
             var resize = style.GetComputedValue("resize");
-            if (resize is "none" or "" || !style.Layout.IsScrollContainer || engine.GetFragments(element) is not [var fragment]
+            if (resize is "none" or "" || !(style.Layout.IsScrollContainer || element is HtmlIFrameElement) || engine.GetFragments(element) is not [var fragment]
                 || !LayoutEngine.TryMapFromRoot(fragment, point, out var local))
             {
                 continue;

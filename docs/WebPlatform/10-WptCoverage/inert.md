@@ -9,16 +9,15 @@ description: "The results of the web-platform-tests of inert, and why the tests 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 24 | 29 | 0 | 83% |
+| [Stable](#stable-tests) | 25 | 29 | 0 | 86% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **24** | **29** | **0** | **83%** |
+| **All** | **25** | **29** | **0** | **86%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
 - **NOT IMPLEMENTED**: 4
 
 ## Stable tests
@@ -37,7 +36,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`inert-iframe-hittest.html`](https://wpt.fyi/results/inert/inert-iframe-hittest.html) | Pass | 2 / 2 |  |  |
 | [`inert-iframe-tabbing.html`](https://wpt.fyi/results/inert/inert-iframe-tabbing.html) | Pass | 6 / 6 |  |  |
 | [`inert-in-shadow-dom.html`](https://wpt.fyi/results/inert/inert-in-shadow-dom.html) | Pass | 1 / 1 |  |  |
-| [`inert-inlines-around-selection-range-in-contenteditable.html`](https://wpt.fyi/results/inert/inert-inlines-around-selection-range-in-contenteditable.html) | Fail | 11 / 13 | BUG | 2 of 13 subtests: when the anchor of the selection is editable and its focus is in an inert `span`, `execCommand("delete")` is not enabled (a boundary point of the active range is not editable, as an inert node behaves as a non-editable one), so nothing is deleted; Chrome and Firefox delete the editable part of the selection |
+| [`inert-inlines-around-selection-range-in-contenteditable.html`](https://wpt.fyi/results/inert/inert-inlines-around-selection-range-in-contenteditable.html) | Pass | 13 / 13 |  |  |
 | [`inert-inlines.html`](https://wpt.fyi/results/inert/inert-inlines.html) | Pass | 1 / 1 |  |  |
 | [`inert-label-focus.html`](https://wpt.fyi/results/inert/inert-label-focus.html) | Pass | 3 / 3 |  |  |
 | [`inert-node-is-uneditable.html`](https://wpt.fyi/results/inert/inert-node-is-uneditable.html) | Pass | 3 / 3 |  |  |

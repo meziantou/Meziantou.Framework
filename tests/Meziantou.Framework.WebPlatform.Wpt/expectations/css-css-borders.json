@@ -357,11 +357,7 @@
     "total": 7
   },
   "css/css-borders/corner-shape/corner-shape-outside-right.html": {
-    "total": 8,
-    "failures": {
-      "corner-shape: notch bevel with shape-outside": "FAIL",
-      "corner-shape: notch with shape-outside": "FAIL"
-    }
+    "total": 8
   },
   "css/css-borders/corner-shape/corner-shape-outside-shape-margin.html": {
     "total": 7
@@ -529,7 +525,7 @@
     "reftest": "PASS"
   },
   "css/css-borders/corner-shape/render-corner-shape.html?border-top-right-radius=100%&shadow-position=inset&shadow-spread=20": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-borders/corner-shape/render-corner-shape.html?border-top-right-radius=100&corner-top-right-shape=0&shadow-spread=30": {
     "reftest": "PASS"
@@ -664,10 +660,10 @@
     "reftest": "PASS"
   },
   "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=1&border-top-left-radius=100%&border-width=20": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=1&border-top-right-radius=100%&border-top-width=20&border-bottom-width=20&shadow-position=inset&shadow-spread=10": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=1&border-top-right-radius=40,60&shadow-spread=90&clip-path=margin-box&margin-top=30&margin-right=-20&border-width=10": {
     "reftest": "PASS"

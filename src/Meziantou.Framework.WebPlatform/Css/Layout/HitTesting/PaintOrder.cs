@@ -375,12 +375,93 @@ internal static class PaintOrder
         return null;
     }
 
-    /// <summary>Whether a fragment is painted in the layer of an inline box it was split out of (see <see cref="GetSplitInlineLayerBox"/>).</summary>
+    /// <summary>
+    /// Whether a fragment is painted in the layer of an inline box it was split out of (see <see cref="GetSplitInlineLayerBox"/>),
+    /// or in the stacking context of an ancestor of a column spanner (see <see cref="GetSpannerStackingContext"/>).
+    /// </summary>
     private static bool IsPaintedInInlineLayer(BoxFragment fragment)
-        => fragment.Box.SplitInlineParent is not null && IsSplitOutOfInline(fragment) && !IsLayer(fragment) && ReferenceEquals(fragment.Box.FirstFragment, fragment) && GetSplitInlineLayerBox(fragment.Box) is not null;
+        => (fragment.Box.SplitInlineParent is not null && IsSplitOutOfInline(fragment) && !IsLayer(fragment) && ReferenceEquals(fragment.Box.FirstFragment, fragment) && GetSplitInlineLayerBox(fragment.Box) is not null)
+            || GetSpannerStackingContext(fragment) is not null;
+
+    /// <summary>Returns the box of the layer where a fragment painted in another layer is painted (see <see cref="IsPaintedInInlineLayer"/>).</summary>
+    private static ContainerBox GetInlineLayerBox(BoxFragment fragment) => GetSpannerStackingContext(fragment)?.Box ?? GetSplitInlineLayerBox(fragment.Box)!;
+
+    /// <summary>
+    /// Returns the first fragment of the nearest ancestor of a column spanner, inside its multi-column container, that establishes
+    /// a stacking context, or null (also when the fragment is not a spanner or is itself a layer). The fragment of a spanner is a
+    /// child of the fragment of the multi-column container, but the spanner is a descendant of its ancestors
+    /// (https://drafts.csswg.org/css2/#stacking-context: a stacking context contains its descendants in the DOM): it is painted in
+    /// their stacking context, and their effects (e.g. the opacity) apply to it, as in the browsers.
+    /// </summary>
+    private static BoxFragment? GetSpannerStackingContext(BoxFragment fragment)
+    {
+        if (fragment.Parent is not BoxFragment { Box: { } container } || !container.Style.Layout.IsMultiColumnContainer || ReferenceEquals(fragment.Box.Parent, container)
+            || IsLayer(fragment) || !MultiColumnFlow.IsColumnSpanner(fragment.Box))
+        {
+            return null;
+        }
+
+        for (var ancestor = fragment.Box.Parent; ancestor is not null && !ReferenceEquals(ancestor, container); ancestor = ancestor.Parent)
+        {
+            if (ancestor.IsAnonymous)
+                continue;
+
+            if (ancestor.FirstFragment is BoxFragment { EstablishesStackingContext: true } context)
+                return ReferenceEquals(GetRoot(context), GetRoot(fragment)) ? context : null;
+        }
+
+        return null;
+
+        static Fragment GetRoot(Fragment fragment)
+        {
+            var current = fragment;
+            while (current.Parent is { } parent)
+            {
+                current = parent;
+            }
+
+            return current;
+        }
+    }
+
+    /// <summary>Returns the column spanners painted in a stacking context of one of their ancestors (see <see cref="GetSpannerStackingContext"/>).</summary>
+    private static List<BoxFragment>? GetSpannersPaintedInLayer(BoxFragment layer, List<BoxFragment>? blocks)
+    {
+        if (!layer.EstablishesStackingContext || !ReferenceEquals(layer.Box.FirstFragment, layer))
+            return blocks;
+
+        // (the spanners are children of the fragments of the nearest multi-column container that contains the stacking context)
+        var container = layer.Box.Parent;
+        while (container is not null && !container.Style.Layout.IsMultiColumnContainer)
+        {
+            container = container.Parent;
+        }
+
+        if (container is null)
+            return blocks;
+
+        for (var containerFragment = container.FirstFragment; containerFragment is not null; containerFragment = containerFragment.NextFragmentOfBox)
+        {
+            foreach (var child in containerFragment.ChildrenSpan)
+            {
+                if (child is BoxFragment { IsHiddenForPaint: false } spanner && ReferenceEquals(GetSpannerStackingContext(spanner), layer))
+                {
+                    (blocks ??= []).Add(spanner);
+                }
+            }
+        }
+
+        return blocks;
+    }
+
+    /// <summary>
+    /// Returns the fragments of the blocks painted in a layer: the blocks split out of an inline box, when the fragment is the
+    /// first fragment of the inline box, and the column spanners of the stacking contexts of their ancestors (see <see cref="IsPaintedInInlineLayer"/>).
+    /// </summary>
+    private static List<BoxFragment>? GetBlocksPaintedInInlineLayer(BoxFragment layer) => GetSpannersPaintedInLayer(layer, GetSplitBlocksPaintedInInlineLayer(layer));
 
     /// <summary>Returns the fragments of the blocks split out of an inline box that are painted in its layer, when the fragment is the first fragment of the inline box.</summary>
-    private static List<BoxFragment>? GetBlocksPaintedInInlineLayer(BoxFragment layer)
+    private static List<BoxFragment>? GetSplitBlocksPaintedInInlineLayer(BoxFragment layer)
     {
         var box = layer.Box;
         if (!box.IsInlineBox || box.Continuation is null || box.PreviousContinuation is not null || !ReferenceEquals(box.FirstFragment, layer))
@@ -413,7 +494,11 @@ internal static class PaintOrder
 
         foreach (var block in blocks)
         {
-            output.Add(new PaintItem(block, IsSplitInlineBand: true));
+            if (IsSplitOutOfInline(block))
+            {
+                output.Add(new PaintItem(block, IsSplitInlineBand: true));
+            }
+
             output.Add(new PaintItem(block));
             if (!block.Box.SkipsContents)
             {
@@ -940,7 +1025,7 @@ internal static class PaintOrder
                     continue;
 
                 // The layers of a block split out of an inline box that establishes a stacking context are in that stacking context
-                if (IsPaintedInInlineLayer(box) && !ReferenceEquals(box, fragment) && GetSplitInlineLayerBox(box.Box)!.FirstFragment is BoxFragment { EstablishesStackingContext: true })
+                if (IsPaintedInInlineLayer(box) && !ReferenceEquals(box, fragment) && GetInlineLayerBox(box).FirstFragment is BoxFragment { EstablishesStackingContext: true })
                     continue;
 
                 // The ::view-transition pseudo-element of a scoped view transition is painted after the stacking context of its

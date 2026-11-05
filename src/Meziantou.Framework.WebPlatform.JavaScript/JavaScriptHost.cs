@@ -162,7 +162,7 @@ internal sealed class JavaScriptHost(JavaScriptScriptEngine owner) : JsHost
 }
 
 /// <summary>The services of the script engine used by the WebIDL bindings.</summary>
-internal sealed class WebIdlHost(JavaScriptScriptEngine engine) : IWebIdlHost
+internal sealed class WebIdlHost(JavaScriptScriptEngine engine) : IWebIdlHost, IWebIdlIncumbentHost
 {
     public void ReportException(GlobalScope global, Exception exception) => global.ReportException(engine.ExtractErrorInformation(exception));
 
@@ -177,6 +177,19 @@ internal sealed class WebIdlHost(JavaScriptScriptEngine engine) : IWebIdlHost
     {
         engine.ExitJavaScript();
         engine.CleanUpAfterRunningScript(global);
+    }
+
+    public GlobalScope? GetIncumbentGlobal() => engine.IsScriptRunning ? engine.GetIncumbentGlobal() : null;
+
+    public IDisposable EnterBackupIncumbent(GlobalScope incumbent)
+    {
+        engine.BackupIncumbentGlobals.Push(incumbent);
+        return new BackupIncumbentScope(engine);
+    }
+
+    private sealed class BackupIncumbentScope(JavaScriptScriptEngine engine) : IDisposable
+    {
+        public void Dispose() => engine.BackupIncumbentGlobals.Pop();
     }
 }
 

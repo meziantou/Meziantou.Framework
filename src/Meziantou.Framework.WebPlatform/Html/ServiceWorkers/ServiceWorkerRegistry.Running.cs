@@ -22,7 +22,7 @@ internal sealed partial class ServiceWorkerRegistry
             if (worker.State == ServiceWorkerState.Redundant || EventLoop.IsDisposed || (mainScript = worker.MainScript) is null)
                 return Task.FromResult(ServiceWorkerStartStatus.Failure);
 
-            agent = new WorkerAgent(GroupOwner, worker.ScriptUrl, worker.Type) { ServiceWorker = worker };
+            agent = new WorkerAgent(GroupOwner, worker.ScriptUrl, worker.Type, GetCookieJar(worker.Registration.StorageKey)) { ServiceWorker = worker };
             start = new TaskCompletionSource<ServiceWorkerStartStatus>(TaskCreationOptions.RunContinuationsAsynchronously);
             worker.Agent = agent;
             worker.StartStatus = start.Task;

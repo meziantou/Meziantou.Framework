@@ -3589,7 +3589,7 @@
     "total": 1
   },
   "html/canvas/element/manual/drawing-text-to-the-canvas/canvas.2d.disconnected-font-size-math.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/manual/fill-and-stroke-styles/2d.fillStyle.parse.current.notrendered.html": {
     "total": 1

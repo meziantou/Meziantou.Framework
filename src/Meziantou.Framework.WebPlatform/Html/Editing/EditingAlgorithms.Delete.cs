@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Meziantou.Framework.WebPlatform.Dom;
 
@@ -1525,6 +1526,40 @@ internal sealed partial class EditingAlgorithms
         return block;
     }
 
+    /// <summary>
+    /// Whether the delete command removes a node before the caret because it is an editable node that is not rendered (the
+    /// specification removes any invisible node). As in the browsers, the head element of an editable document element is
+    /// kept.
+    /// </summary>
+    private bool IsDeletableInvisibleNode([NotNullWhen(true)] Node? node) => IsEditable(node) && IsInvisible(node) && !IsHtmlElement(node, "head");
+
+    /// <summary>
+    /// Whether the characters from <paramref name="start"/> to <paramref name="end"/> of an editable Text node are white
+    /// space that collapses (white-space is normal or nowrap) at the start of its editing host (<paramref name="forward"/>
+    /// is false: they start the Text node, and no node precedes it in the editing host) or at its end (they end the Text
+    /// node, and no node follows it in the editing host).
+    /// </summary>
+    private bool IsCollapsedWhiteSpaceAtEditingHostEdge(Text text, int start, int end, bool forward)
+    {
+        if (!IsEditable(text) || GetWhiteSpace(text) is not ("normal" or "nowrap") || text.Data.AsSpan(start, end - start).ContainsAnyExcept(" \t\n\f\r"))
+            return false;
+
+        Node? node = text;
+        while (node is not null && !IsEditingHost(node))
+        {
+            if ((forward ? node.NextSibling : node.PreviousSibling) is not null)
+                return false;
+
+            node = node.ParentNode;
+        }
+
+        return node is not null;
+    }
+
+    /// <summary>Whether a node is an editable element that is a block without children (e.g. <c>&lt;div&gt;&lt;/div&gt;</c>): it has no line box.</summary>
+    private bool IsEmptyEditableBlock(Node node)
+        => node is Element && !node.HasChildNodes() && IsEditable(node) && IsBlockNode(node) && !IsHtmlElement(node, "hr") && !IsHtmlElement(node, "table") && !IsAtomicElement(node);
+
     /// <summary>https://w3c.github.io/editing/docs/execCommand/#the-delete-command</summary>
     private bool DeleteAction()
     {
@@ -1535,16 +1570,21 @@ internal sealed partial class EditingAlgorithms
             return true;
         }
 
+        // As in the browsers, a caret after the white space that collapses at the start of the editing host has nothing to
+        // delete before it: the white space is kept
+        if (range.StartContainer is Text startText && range.StartOffset > 0 && IsCollapsedWhiteSpaceAtEditingHostEdge(startText, 0, (int)range.StartOffset, forward: false))
+            return true;
+
         CanonicalizeWhitespace(range.StartContainer, (int)range.StartOffset, replaceSpaces: false);
         var node = range.StartContainer;
         var offset = (int)range.StartOffset;
         while (true)
         {
-            if (offset == 0 && IsEditable(node.PreviousSibling) && IsInvisible(node.PreviousSibling))
+            if (offset == 0 && IsDeletableInvisibleNode(node.PreviousSibling))
             {
                 RemoveNode(node.PreviousSibling);
             }
-            else if (ChildAt(node, offset - 1) is { } invisibleChild && IsEditable(invisibleChild) && IsInvisible(invisibleChild))
+            else if (ChildAt(node, offset - 1) is { } invisibleChild && IsDeletableInvisibleNode(invisibleChild))
             {
                 node.RemoveChild(invisibleChild);
                 offset--;
@@ -1655,7 +1695,7 @@ internal sealed partial class EditingAlgorithms
                 startOffset = NodeIndex(startNode);
                 startNode = startNode.ParentNode;
             }
-            else if (ChildAt(startNode, startOffset - 1) is { } invisibleChild && IsEditable(invisibleChild) && IsInvisible(invisibleChild))
+            else if (ChildAt(startNode, startOffset - 1) is { } invisibleChild && IsDeletableInvisibleNode(invisibleChild))
             {
                 startNode.RemoveChild(invisibleChild);
                 startOffset--;
@@ -1665,6 +1705,10 @@ internal sealed partial class EditingAlgorithms
                 break;
             }
         }
+
+        // As in the browsers, the head element, when it is not rendered, is not a line that the block after it can join
+        if (ChildAt(startNode, startOffset - 1) is { } previousHead && IsHtmlElement(previousHead, "head") && IsInvisible(previousHead))
+            return true;
 
         if (offset == 0 && HasIndentationAncestor(node) && !JoinsFirstLineOfIndentationElement(node, startNode, startOffset))
         {
@@ -1761,7 +1805,8 @@ internal sealed partial class EditingAlgorithms
 
         while (ChildAt(startNode, startOffset - 1) is { } child)
         {
-            if (IsEditable(child) && IsInvisible(child))
+            // As in the browsers, an empty block, which has no line, is removed: the line before it is joined
+            if ((IsEditable(child) && IsInvisible(child)) || (IsEmptyEditableBlock(child) && child.PreviousSibling is not null))
             {
                 startNode.RemoveChild(child);
                 startOffset--;
@@ -1892,6 +1937,11 @@ internal sealed partial class EditingAlgorithms
             return true;
         }
 
+        // As in the browsers, a caret before the white space that collapses at the end of the editing host has nothing to
+        // delete after it: the white space is kept
+        if (range.StartContainer is Text startText && range.StartOffset < startText.Length && IsCollapsedWhiteSpaceAtEditingHostEdge(startText, (int)range.StartOffset, (int)startText.Length, forward: true))
+            return true;
+
         CanonicalizeWhitespace(range.StartContainer, (int)range.StartOffset, replaceSpaces: false);
         var node = range.StartContainer;
         var offset = (int)range.StartOffset;
@@ -2018,7 +2068,8 @@ internal sealed partial class EditingAlgorithms
 
         while (ChildAt(endNode, end) is { } child)
         {
-            if (IsEditable(child) && IsInvisible(child))
+            // As in the browsers, an empty block, which has no line, is removed: the line after it is joined
+            if ((IsEditable(child) && IsInvisible(child)) || (IsEmptyEditableBlock(child) && child.NextSibling is not null))
             {
                 endNode.RemoveChild(child);
             }

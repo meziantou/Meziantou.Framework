@@ -39,10 +39,7 @@
     "total": 5
   },
   "css/css-transitions/KeyframeEffect-setKeyframes.tentative.html": {
-    "total": 8,
-    "failures": {
-      "A transition with replaced keyframes animating nothing on a property being controlled by another modified transition exhibits normal reversing behavior and reverses from the other transition's current value.": "FAIL"
-    }
+    "total": 8
   },
   "css/css-transitions/KeyframeEffect-target.tentative.html": {
     "total": 3

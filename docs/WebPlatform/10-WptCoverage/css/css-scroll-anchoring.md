@@ -10,15 +10,14 @@ description: "The results of the web-platform-tests of css/css-scroll-anchoring,
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 69 | 70 | 0 | 99% |
-| [Tentative](#tentative-tests) | 5 | 7 | 0 | 71% |
+| [Tentative](#tentative-tests) | 6 | 7 | 0 | 86% |
 | [Reftests](#reftests) | 4 | 4 | 0 | 100% |
-| **All** | **78** | **81** | **0** | **96%** |
+| **All** | **79** | **81** | **0** | **98%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **TEST BUG**: 1
 - **NOT IMPLEMENTED**: 2
 
 ## Stable tests
@@ -103,7 +102,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`adjustments-in-scroll-event-handler.tentative.html`](https://wpt.fyi/results/css/css-scroll-anchoring/adjustments-in-scroll-event-handler.tentative.html) | Pass | 1 / 1 |  |  |
 | [`anchor-inside-textarea.tentative.html`](https://wpt.fyi/results/css/css-scroll-anchoring/anchor-inside-textarea.tentative.html) | Pass | 1 / 1 |  |  |
 | [`contenteditable-insert-line-at-top.tentative.html`](https://wpt.fyi/results/css/css-scroll-anchoring/contenteditable-insert-line-at-top.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | `Ctrl+Home` does not move the caret to the start of the editing host (nor scroll to it), so the line is not inserted at the top |
-| [`contenteditable-near-cursor.tentative.html`](https://wpt.fyi/results/css/css-scroll-anchoring/contenteditable-near-cursor.tentative.html) | Fail | 0 / 1 | TEST BUG | expects `focus()` not to scroll a partially visible element: the focusing steps scroll the element to the center of its scrolling boxes (`center`, `center`: https://html.spec.whatwg.org/multipage/interaction.html#dom-focus) while the browsers only scroll an element that is not visible |
+| [`contenteditable-near-cursor.tentative.html`](https://wpt.fyi/results/css/css-scroll-anchoring/contenteditable-near-cursor.tentative.html) | Pass | 1 / 1 |  |  |
 | [`dirty-contents-reselect-anchor.tentative.html`](https://wpt.fyi/results/css/css-scroll-anchoring/dirty-contents-reselect-anchor.tentative.html) | Pass | 1 / 1 |  |  |
 | [`ignore-adjustments-while-scrolling-to-anchor.tentative.html`](https://wpt.fyi/results/css/css-scroll-anchoring/ignore-adjustments-while-scrolling-to-anchor.tentative.html) | Pass | 1 / 1 |  |  |
 | [`infinite-scroll-event.tentative.html`](https://wpt.fyi/results/css/css-scroll-anchoring/infinite-scroll-event.tentative.html) | Pass | 1 / 1 |  |  |

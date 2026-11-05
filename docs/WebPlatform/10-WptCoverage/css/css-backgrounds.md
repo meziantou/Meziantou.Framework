@@ -11,14 +11,14 @@ description: "The results of the web-platform-tests of css/css-backgrounds, and 
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 130 | 132 | 0 | 98% |
 | Tentative | 0 | 0 | 0 | – |
-| [Reftests](#reftests) | 705 | 719 | 1 | 98% |
-| **All** | **835** | **851** | **1** | **98%** |
+| [Reftests](#reftests) | 707 | 719 | 1 | 98% |
+| **All** | **837** | **851** | **1** | **98%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 9
+- **BUG**: 7
 - **TEST BUG**: 5
 - **NOT IMPLEMENTED**: 1
 - **FLAKY**: 1
@@ -409,7 +409,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`background-repeat/background-repeat-repeat-x.xht`](https://wpt.fyi/results/css/css-backgrounds/background-repeat/background-repeat-repeat-x.xht) | Pass | 1 / 1 |  |  |
 | [`background-repeat/background-repeat-repeat-y.xht`](https://wpt.fyi/results/css/css-backgrounds/background-repeat/background-repeat-repeat-y.xht) | Pass | 1 / 1 |  |  |
 | [`background-repeat/background-repeat-round-roundup.xht`](https://wpt.fyi/results/css/css-backgrounds/background-repeat/background-repeat-round-roundup.xht) | Pass | 1 / 1 |  |  |
-| [`background-repeat/background-repeat-round.xht`](https://wpt.fyi/results/css/css-backgrounds/background-repeat/background-repeat-round.xht) | Fail | 0 / 1 | BUG | only the antialiased edges of what is painted differ, or a box is painted 1px away (not analyzed individually; the causes fixed with #461 are not involved: the Ahem glyphs are not antialiased, the joins of the sides of the borders, the glyphs of the highlights painted once, the slices of the border images, the transformed rectangles that are almost on the pixels) |
+| [`background-repeat/background-repeat-round.xht`](https://wpt.fyi/results/css/css-backgrounds/background-repeat/background-repeat-round.xht) | Pass | 1 / 1 |  |  |
 | [`background-repeat/background-repeat-space.xht`](https://wpt.fyi/results/css/css-backgrounds/background-repeat/background-repeat-space.xht) | Pass | 1 / 1 |  |  |
 | [`background-repeat/gradient-repeat-spaced-with-borders.html`](https://wpt.fyi/results/css/css-backgrounds/background-repeat/gradient-repeat-spaced-with-borders.html) | Pass | 1 / 1 |  |  |
 | [`background-rounded-image-clip-001.html`](https://wpt.fyi/results/css/css-backgrounds/background-rounded-image-clip-001.html) | Pass | 1 / 1 |  |  |
@@ -453,7 +453,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`background-size-percentage-root.html`](https://wpt.fyi/results/css/css-backgrounds/background-size-percentage-root.html) | Pass | 1 / 1 |  |  |
 | [`background-size-with-negative-value.html`](https://wpt.fyi/results/css/css-backgrounds/background-size-with-negative-value.html) | Pass | 1 / 1 |  |  |
 | [`background-size/background-size-contain-svg-view.html`](https://wpt.fyi/results/css/css-backgrounds/background-size/background-size-contain-svg-view.html) | Pass | 1 / 1 |  |  |
-| [`background-size/background-size-contain.xht`](https://wpt.fyi/results/css/css-backgrounds/background-size/background-size-contain.xht) | Fail | 0 / 1 | BUG | a scaled repeated raster background (`background-size: contain`: the 96x60 image in 200x125 tiles) is sampled with a linear filter that wraps around the edges of the image: the first row and column of each tile are mixed with the opposite edge of the image (e.g. the orange top line is (191,129,0), with 25% of the green bottom line, instead of (254,129,0)), where the scaled `img` elements of the reference clamp; Chrome fails too |
+| [`background-size/background-size-contain.xht`](https://wpt.fyi/results/css/css-backgrounds/background-size/background-size-contain.xht) | Pass | 1 / 1 |  |  |
 | [`background-size/background-size-cover-contain-001.xht`](https://wpt.fyi/results/css/css-backgrounds/background-size/background-size-cover-contain-001.xht) | Pass | 1 / 1 |  |  |
 | [`background-size/background-size-cover-contain-002.xht`](https://wpt.fyi/results/css/css-backgrounds/background-size/background-size-cover-contain-002.xht) | Pass | 1 / 1 |  |  |
 | [`background-size/background-size-cover-svg-view.html`](https://wpt.fyi/results/css/css-backgrounds/background-size/background-size-cover-svg-view.html) | Pass | 1 / 1 |  |  |

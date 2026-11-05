@@ -54,7 +54,9 @@ The script API is the same: `document.startViewTransition(callback | { update, t
 - `StartViewTransition()` skips the active transition of the document (its `Ready` task fails with an `AbortError`) and
   schedules a rendering opportunity. A transition started in a hidden document is skipped with an `InvalidStateError`, and
   the one of a document that is not fully active (e.g. the document of a removed iframe) with an `AbortError`, without
-  calling the callback (no task of such a document runs).
+  calling the callback (no task of such a document runs). An update callback whose realm is not fully active (a function
+  of a removed iframe) is not called either: the update callback done promise is rejected with an `AbortError`, as in
+  Blink.
 - **Capture of the old state** ("perform pending transition operations", in the rendering update after the layout): the
   elements whose `view-transition-name` is not `none` are captured in paint order (the elements in the skipped contents of
   `content-visibility` and the fragmented boxes are ignored; two elements with the same name skip the transition). The
@@ -203,7 +205,8 @@ A navigation between two same-origin documents that both opt in with `@view-tran
   same-origin navigation, and `viewTransition`) is fired at its window before it is unloaded, for every navigation that
   replaces a document (except the initial `about:blank`). When the document opts in, is visible, and the navigation is
   not a reload, its old state is captured right after the event (the specification waits for its next rendering
-  opportunity; nothing renders in between) and given to the new document. A handler that delays the navigation for more
+  opportunity: the animation frame callbacks of the old document, e.g. the ones requested by a `pageswap` listener, run
+  first) and given to the new document. A handler that delays the navigation for more
   than 4 seconds, or that calls `skipTransition()`, cancels the transition.
 - **New document**: the `pagereveal` event (`PageRevealEvent`: `viewTransition`) is fired by its first rendering update
   once its body exists, or its parser stopped. When the document opts in, `viewTransition` is the inbound transition (its

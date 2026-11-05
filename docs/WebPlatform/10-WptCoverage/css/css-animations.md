@@ -10,15 +10,14 @@ description: "The results of the web-platform-tests of css/css-animations, and w
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 95 | 98 | 0 | 97% |
-| [Tentative](#tentative-tests) | 27 | 29 | 0 | 93% |
+| [Tentative](#tentative-tests) | 28 | 29 | 0 | 97% |
 | [Reftests](#reftests) | 36 | 36 | 0 | 100% |
-| **All** | **158** | **163** | **0** | **97%** |
+| **All** | **159** | **163** | **0** | **98%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
 - **NOT IMPLEMENTED**: 4
 
 ## Stable tests
@@ -149,7 +148,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`KeyframeEffect-target.tentative.html`](https://wpt.fyi/results/css/css-animations/KeyframeEffect-target.tentative.html) | Pass | 3 / 3 |  |  |
 | [`animation-play-state-005.tentative.html`](https://wpt.fyi/results/css/css-animations/animation-play-state-005.tentative.html) | Pass | 1 / 1 |  |  |
 | [`display-none-dont-cancel-pseudo.tentative.html`](https://wpt.fyi/results/css/css-animations/display-none-dont-cancel-pseudo.tentative.html) | Pass | 1 / 1 |  |  |
-| [`display-none-dont-cancel.tentative.html`](https://wpt.fyi/results/css/css-animations/display-none-dont-cancel.tentative.html) | Fail | 4 / 5 | BUG | a `display: none` computed from an animated custom property cancels the animation |
+| [`display-none-dont-cancel.tentative.html`](https://wpt.fyi/results/css/css-animations/display-none-dont-cancel.tentative.html) | Pass | 5 / 5 |  |  |
 | [`display-none-to-display-block-dont-cancel.tentative.html`](https://wpt.fyi/results/css/css-animations/display-none-to-display-block-dont-cancel.tentative.html) | Pass | 1 / 1 |  |  |
 | [`display-none-to-display-block-while-running.tentative.html`](https://wpt.fyi/results/css/css-animations/display-none-to-display-block-while-running.tentative.html) | Pass | 1 / 1 |  |  |
 | [`event-dispatch.tentative.html`](https://wpt.fyi/results/css/css-animations/event-dispatch.tentative.html) | Pass | 32 / 32 |  |  |

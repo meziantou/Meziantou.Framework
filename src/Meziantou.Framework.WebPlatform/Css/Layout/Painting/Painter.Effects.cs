@@ -147,11 +147,14 @@ internal sealed partial class Painter
         // filtered backdrop of the element (https://drafts.fxtf.org/filter-effects-2/#BackdropFilterProperty: the filtered backdrop
         // is painted as the bottom of the content of the element)
         var mergeFilters = filters is not null && !hasMask;
+        // (the bounds of a filtered layer are the ink overflow of the box: the filters are applied around them under a 3D transform)
+        var filteredBounds = fragment.InkOverflow.Translate(offset);
         _builder.SaveLayer(new SaveLayerItem(opacity, blendMode, mergeFilters ? filters : null)
         {
             Source = style.Element,
             BackdropFilters = backdropFilters,
             BackdropClip = backdropFilters is null ? null : RoundedRect.FromBorderBox(fragment, borderBox),
+            Bounds = mergeFilters ? filteredBounds : null,
         });
 
         if (hasMask)
@@ -162,7 +165,7 @@ internal sealed partial class Painter
 
         if (filters is not null && !mergeFilters)
         {
-            _builder.SaveLayer(new SaveLayerItem(1, BlendMode.Normal, filters) { Source = style.Element });
+            _builder.SaveLayer(new SaveLayerItem(1, BlendMode.Normal, filters) { Source = style.Element, Bounds = filteredBounds });
         }
     }
 

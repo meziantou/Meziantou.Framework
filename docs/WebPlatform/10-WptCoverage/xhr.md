@@ -9,16 +9,16 @@ description: "The results of the web-platform-tests of xhr, and why the tests th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 319 | 330 | 0 | 97% |
+| [Stable](#stable-tests) | 320 | 330 | 0 | 97% |
 | [Tentative](#tentative-tests) | 2 | 2 | 0 | 100% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **321** | **332** | **0** | **97%** |
+| **All** | **322** | **332** | **0** | **97%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 2
+- **BUG**: 1
 - **TEST BUG**: 2
 - **NOT IMPLEMENTED**: 2
 - **TEST RUNNER**: 5
@@ -334,7 +334,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`timeout-multiple-fetches.html`](https://wpt.fyi/results/xhr/timeout-multiple-fetches.html) | Pass | 2 / 2 |  |  |
 | [`timeout-sync.htm`](https://wpt.fyi/results/xhr/timeout-sync.htm) | Pass | 2 / 2 |  |  |
 | [`xhr-authorization-redirect.any.js`](https://wpt.fyi/results/xhr/xhr-authorization-redirect.any.js) | Pass | 9 / 9 |  |  |
-| [`xhr-timeout-longtask.any.js`](https://wpt.fyi/results/xhr/xhr-timeout-longtask.any.js) | Fail | 0 / 2 | BUG | after a long task, the expired `timeout` timer fires before the task of the response that arrived in time (the busy loop advances the virtual clock) |
+| [`xhr-timeout-longtask.any.js`](https://wpt.fyi/results/xhr/xhr-timeout-longtask.any.js) | Pass | 2 / 2 |  |  |
 | [`xmlhttprequest-basic.htm`](https://wpt.fyi/results/xhr/xmlhttprequest-basic.htm) | Pass | 1 / 1 |  |  |
 | [`xmlhttprequest-eventtarget.htm`](https://wpt.fyi/results/xhr/xmlhttprequest-eventtarget.htm) | Pass | 1 / 1 |  |  |
 | [`xmlhttprequest-network-error-sync.htm`](https://wpt.fyi/results/xhr/xmlhttprequest-network-error-sync.htm) | Pass | 1 / 1 |  |  |

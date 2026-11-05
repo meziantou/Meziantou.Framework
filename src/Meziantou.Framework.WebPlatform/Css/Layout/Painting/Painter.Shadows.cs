@@ -176,6 +176,14 @@ internal sealed partial class Painter
 
                 // The area of the padding box outside of the hole: the padding box shrunk by the spread distance and offset
                 var hole = Spread(padding, -shadow.Spread, borderBox.Size).Translate(new PhysicalOffset(shadow.X, shadow.Y));
+                if (hole.Contour is null && RoundedRect.HasOverflowingRadii(hole.Rect, hole.Radii))
+                {
+                    // The radii decreased by the spread are not scaled down to fit the hole: the curves of the corners that
+                    // reach beyond the hole are clipped out of its rectangle, as the corners of the contour path
+                    // (https://drafts.csswg.org/css-borders-4/#border-contour-path), instead of crossing its sides
+                    hole = hole with { Contour = new CornerContour(hole.Rect, hole.Radii, CornerShapes.Round) };
+                }
+
                 _builder.Add(new DrawPathItem(DisplayPath.CreateComplement(Inflate(padding.Rect, extent), hole), paint) { Source = source });
             }
 

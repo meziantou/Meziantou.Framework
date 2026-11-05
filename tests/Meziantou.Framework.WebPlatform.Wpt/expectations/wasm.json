@@ -1178,10 +1178,7 @@
     "total": 2
   },
   "wasm/jsapi/functions/incumbent.html": {
-    "total": 2,
-    "failures": {
-      "Start function": "FAIL"
-    }
+    "total": 2
   },
   "wasm/jsapi/gc/casts.tentative.any.js": {
     "total": 11

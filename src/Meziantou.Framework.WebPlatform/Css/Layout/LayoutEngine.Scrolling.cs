@@ -20,7 +20,7 @@ internal sealed partial class LayoutEngine
     private readonly List<PendingScrollEvent> _pendingScrollEvents = [];
 
     /// <summary>The target scrolled into view once the document is laid out (the last fragment navigation or focus() call of a document whose geometry was never read).</summary>
-    private (Element Target, ScrollLogicalPosition Block, ScrollLogicalPosition Inline, Dom.Range? Range, bool SnapsToTarget)? _pendingScrollIntoView;
+    private (Element Target, ScrollLogicalPosition Block, ScrollLogicalPosition Inline, Dom.Range? Range, bool SnapsToTarget, bool IfNeeded)? _pendingScrollIntoView;
 
     /// <summary>Whether a scrolling box has a deferred scroll event (see <see cref="DeferScrollEvent"/>).</summary>
     private bool _hasDeferredScrollEvents;
@@ -528,19 +528,20 @@ internal sealed partial class LayoutEngine
     /// <param name="inline">The alignment in the inline base direction.</param>
     /// <param name="range">The range to scroll into view instead of the box of the element (the target text of a text directive), or null.</param>
     /// <param name="snapsToTarget">Whether the nearest scroll snap container of the target snaps to one of its snap positions (see <see cref="ScrollIntoView.Run"/>).</param>
-    public void ScrollIntoViewWhenLaidOut(Element target, ScrollLogicalPosition block, ScrollLogicalPosition inline, Dom.Range? range = null, bool snapsToTarget = false)
+    /// <param name="ifNeeded">Whether the target is only aligned as requested with the scrolling boxes where it is not visible (see <see cref="ScrollIntoView.Run"/>).</param>
+    public void ScrollIntoViewWhenLaidOut(Element target, ScrollLogicalPosition block, ScrollLogicalPosition inline, Dom.Range? range = null, bool snapsToTarget = false, bool ifNeeded = false)
     {
         // The scroll events of the viewport make the scroll observable: the document is laid out at once when they are listened to
         if (IsLayoutRequested || HasViewportScrollListeners())
         {
-            RunScrollIntoView(target, block, inline, range, snapsToTarget);
+            RunScrollIntoView(target, block, inline, range, snapsToTarget, ifNeeded);
             return;
         }
 
-        _pendingScrollIntoView = (target, block, inline, range, snapsToTarget);
+        _pendingScrollIntoView = (target, block, inline, range, snapsToTarget, ifNeeded);
     }
 
-    private void RunScrollIntoView(Element target, ScrollLogicalPosition block, ScrollLogicalPosition inline, Dom.Range? range, bool snapsToTarget)
+    private void RunScrollIntoView(Element target, ScrollLogicalPosition block, ScrollLogicalPosition inline, Dom.Range? range, bool snapsToTarget, bool ifNeeded)
     {
         // https://wicg.github.io/scroll-to-text-fragment/#invoking-text-directives: "scroll a target into view, with target set
         // to scrollTarget" (the range: its bounding box). As in the browsers, the start of a range that is larger than the
@@ -558,7 +559,7 @@ internal sealed partial class LayoutEngine
             }
         }
 
-        _ = ScrollIntoView.Run(this, target, ScrollBehavior.Auto, block, inline, container: null, targetRect: rangeRect, snapsToTarget: snapsToTarget);
+        _ = ScrollIntoView.Run(this, target, ScrollBehavior.Auto, block, inline, container: null, targetRect: rangeRect, snapsToTarget: snapsToTarget, ifNeeded: ifNeeded);
     }
 
     private bool HasViewportScrollListeners()
@@ -574,10 +575,10 @@ internal sealed partial class LayoutEngine
             return;
 
         _pendingScrollIntoView = null;
-        var (target, block, inline, range, snapsToTarget) = pending;
+        var (target, block, inline, range, snapsToTarget, ifNeeded) = pending;
         if (target.IsConnected && ReferenceEquals(target.NodeDocument, _document))
         {
-            RunScrollIntoView(target, block, inline, range, snapsToTarget);
+            RunScrollIntoView(target, block, inline, range, snapsToTarget, ifNeeded);
         }
     }
 }

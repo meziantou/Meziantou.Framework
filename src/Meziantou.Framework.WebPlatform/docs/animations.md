@@ -66,6 +66,11 @@ var all = document.GetAnimations(); // the animations of the document, in compos
   pseudo-element (`::before`, `::after`, `::marker`, the `::view-transition-*()` pseudo-elements of an active
   [view transition](view-transitions.md)), `Composite` and `IterationComposite`.
 - `DocumentTimeline` (with an origin time). The timeline is inactive in a document without browsing context.
+- The CSS animations and transitions: the members of `Animation` flush the pending style changes (the animations that
+  they create, update or cancel), except the `CurrentTime` setter, so that the changes of the current time and of the
+  style made in the same task form a single style change, as in Gecko. An animation is canceled by a `display: none` of
+  the style of its element without its animations, including the animations of the custom properties that the `display`
+  uses.
 
 The script API is the same: `element.animate()`, `new Animation()`, `new KeyframeEffect()`, `document.timeline`...
 

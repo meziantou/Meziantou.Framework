@@ -2868,7 +2868,20 @@ specification, the browsers are followed, as the tests expect:
 - the head and the body elements are never deleted: a boundary point of the range that is in the document element
   (`selectAllChildren(document.documentElement)` in an editable `html` element) is moved into the body element, and
   `delete` does nothing at the start of an editing host (the caret does not leave it, e.g. when the host only contains
-  collapsed white space).
+  collapsed white space). Backspace at the start of a block that follows a `head` element that is not rendered does
+  nothing (the specification removes the invisible `head`, then joins the block to it);
+- `delete` and `forwardDelete` keep the white space that collapses at the start (or at the end) of an editing host when the
+  caret is after (or before) it: there is nothing to delete (`<div> []abc</div>` is unchanged), and they remove an empty block
+  (without children, so without a line) between the lines that they join (`<div>foo</div><div></div><div>[]bar</div>` gives
+  `<div>foobar</div>`);
+- `insertOrderedList` and `insertUnorderedList` at a caret in an empty editing host create a list with an empty item
+  (`<ol><li><br></li></ol>`) that contains the caret; the specification creates no list when the range contains no node;
+- `insertLineBreak` replaces the space that follows the new `br` with a no-break space when the space was rendered (content
+  precedes the caret on its line): it would collapse at the start of the new line;
+- `insertHTML` removes the collapsed block prop (`<p><br>{}</p>`) that precedes the caret when the fragment has text, which
+  replaces it (the specification only removes the ones that follow the caret);
+- the text of the options of an editable `select` element is not a formattable node: the formatting that a deletion records
+  and that the text typed afterwards gets does not come from it (the background color of the `select` element).
 
 An inert node behaves as a node that is not editable (https://html.spec.whatwg.org/multipage/interaction.html#inert): the
 subtree of an element with the `inert` attribute is not editable, the commands are not enabled in an inert editing host,
@@ -3165,9 +3178,10 @@ input.Wheel(120, 80, deltaX: 0, deltaY: 100);
   the release (the scrollbar captures the pointer); the press focuses as a press on the scroll container does, except on
   a scrollbar of the viewport, which keeps the focus where it is. The scrollbars of an inert element do not react. A touch
   that starts on a scrollbar neither pans nor scrolls.
-- **Resizer.** The press of the primary button of the mouse or of a pen on the resizer of a scroll container whose `resize`
-  is not `none` (`UserInput.Resizer.cs`: a square as large as its classic scrollbars, 15px without them, at its bottom
-  corner on the side of its vertical scrollbar, inside its borders) is handled as a press on a scrollbar (no selection, no
+- **Resizer.** The press of the primary button of the mouse or of a pen on the resizer of a scroll container or an `iframe`
+  whose `resize` is not `none` (`UserInput.Resizer.cs`: a square as large as its classic scrollbars, 15px without them, at
+  its bottom corner on the side of its vertical scrollbar, inside its borders; the resizer of an `iframe` is over its
+  content document) is handled as a press on a scrollbar (no selection, no
   drag-and-drop, no `click`, no move event until the release): a move of the pointer, mapped to the coordinates of the box
   (its transforms included), changes its size by as much ([css-ui-4](https://drafts.csswg.org/css-ui-4/#resize)): the
   `width` and/or `height` (the axes of `resize`) that change are set in px in its `style` attribute, rounded to 1/64px, and
@@ -3599,7 +3613,9 @@ The dedicated workers (`Worker`) and the shared workers (`SharedWorker`) are imp
 - The dedicated workers of a window are terminated when its document is discarded; the workers are terminated when the
   browsing context group is disposed (`BrowsingContext.Dispose()`). The shared workers are shared by the objects of the
   browsing context group with the same constructor origin, URL, name, type, credentials and extended lifetime, and live
-  until they call `close()` or the group is disposed.
+  until they call `close()`, the group is disposed, or the navigables of all the windows of their `SharedWorker` objects
+  are destroyed (e.g. their `iframe` elements are removed): the worker is then terminated, so the next constructor creates
+  a new worker. A worker whose last owner document is replaced by a navigation is kept.
 
 ## Worklets
 
@@ -4099,8 +4115,8 @@ LockManagerSnapshot state = await locks.Query();   // the held locks and the pen
   loop of the environment of the request, whatever the thread that released the lock.
 - **Termination.** The locks of a window are released and its requests are removed when its document is unloaded or
   destroyed (a navigation, the removal of its `iframe`, the disposal of its browsing context), and the ones of a worker
-  when it ends (`terminate()`, `close()`, the discard of its owner). A shared worker lives until it calls `close()` or
-  its group is disposed (see [Workers](#workers)): it keeps its locks meanwhile.
+  when it ends (`terminate()`, `close()`, the discard of its owner). A shared worker lives until it calls `close()`, its
+  group is disposed or the navigables of its owners are destroyed (see [Workers](#workers)): it keeps its locks meanwhile.
 - **Not done.** The back/forward cache (a page that holds a lock is unloaded by a navigation), and the lock managers
   of the storage buckets (`navigator.storageBuckets`).
 

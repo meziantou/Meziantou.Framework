@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using Meziantou.Framework.WebPlatform.Css.Cascade;
 using Meziantou.Framework.WebPlatform.Css.Fonts;
 using Meziantou.Framework.WebPlatform.Css.Layout;
+using Meziantou.Framework.WebPlatform.Css.Om;
 
 using Meziantou.Framework.WebPlatform.Css.Syntax;
 using Meziantou.Framework.WebPlatform.Css.Values;
@@ -130,6 +131,15 @@ public abstract partial class CanvasRenderingContext2DBase
 
     /// <summary>The documents that hold the fonts of the canvases of the global objects that are neither a window nor a worker, e.g. a worklet (the bundled fonts only).</summary>
     private static readonly ConditionalWeakTable<GlobalScope, Document> WorkerFontDocuments = [];
+
+    /// <summary>The styles that resolve the relative lengths of the filters of the contexts without font and viewport (see <see cref="GetFilterStyleWithoutViewport"/>).</summary>
+    private static readonly ConditionalWeakTable<GlobalScope, ComputedStyle> WorkletFilterStyles = [];
+
+    /// <summary>The last computed filter (see <see cref="GetComputedFilter"/>): the filter of the drawing state, the style that resolved it, and its computed value.</summary>
+    private (string Filter, ComputedStyle Style, List<CssComponentValue> Components)? _computedFilter;
+
+    /// <summary>The initial value of the <c>font</c> shorthand, used by the contexts that have no font.</summary>
+    private const string InitialFont = "medium sans-serif";
 
     // ----------------------------------------------------------------------------------------------------------------
     // CanvasTextDrawingStyles (https://html.spec.whatwg.org/multipage/canvas.html#text-styles)
@@ -662,7 +672,18 @@ public abstract partial class CanvasRenderingContext2DBase
         if (!IsValidFontValue(components) || CssShorthands.ParseValue("font", components, source.Trim()) is not { } longhands)
             return null;
 
-        var (engine, element, parent) = GetFontEnvironment();
+        var (engine, element, parent, isDefault) = GetFontEnvironment();
+        if (isDefault)
+        {
+            // Without the computed style of a canvas element, font-size: math (a scale of the font size of the parent by the
+            // math depth) is treated as medium, as in the browsers
+            var index = longhands.FindIndex(static longhand => longhand.Name == "font-size");
+            if (index >= 0 && InfraAscii.EqualsIgnoreAsciiCase(longhands[index].Value, "math"))
+            {
+                longhands[index] = longhands[index] with { Value = "medium" };
+            }
+        }
+
         var style = CreateFontStyle(engine, element, parent, longhands);
         return new CanvasFont(SerializeFont(style), style);
     }
@@ -694,18 +715,18 @@ public abstract partial class CanvasRenderingContext2DBase
 
     /// <summary>
     /// Returns the style engine, an element and the parent style the fonts of the canvas are computed with: the computed style of
-    /// the canvas element when it is connected, else a style of the default font (in the document of the canvas element, of the
+    /// the canvas element when it is connected, else (<c>IsDefault</c>) a style of the default font (in the document of the canvas element, of the
     /// window of an <c>OffscreenCanvas</c>, or in the document of the font source of the worker, see <see cref="WorkerGlobalScope.FontSourceDocument"/>).
     /// </summary>
-    private (StyleEngine Engine, Element Element, ComputedStyle Parent) GetFontEnvironment()
+    private (StyleEngine Engine, Element Element, ComputedStyle Parent, bool IsDefault) GetFontEnvironment()
     {
         if (CanvasElement is { } canvas)
         {
             var engine = canvas.NodeDocument.GetStyleEngine();
             if (canvas.IsConnected)
-                return (engine, canvas, engine.GetStyle(canvas));
+                return (engine, canvas, engine.GetStyle(canvas), false);
 
-            return (engine, canvas, CreateDefaultFontStyle(engine, canvas));
+            return (engine, canvas, CreateDefaultFontStyle(engine, canvas), true);
         }
 
         var document = Global switch
@@ -718,7 +739,7 @@ public abstract partial class CanvasRenderingContext2DBase
 
         var documentEngine = document.GetStyleEngine();
         var element = document.DocumentElement ?? document.CreateElement("canvas");
-        return (documentEngine, element, CreateDefaultFontStyle(documentEngine, element));
+        return (documentEngine, element, CreateDefaultFontStyle(documentEngine, element), true);
     }
 
     private static ComputedStyle CreateDefaultFontStyle(StyleEngine engine, Element element)
@@ -878,9 +899,11 @@ public abstract partial class CanvasRenderingContext2DBase
         if (_state.Filter == "none")
             return null;
 
+        var filterStyle = GetFilterStyle();
         var components = ValueMatcher.RemoveWhitespace(CssParser.ParseListOfComponentValues(_state.Filter));
+        var computed = GetComputedFilter(filterStyle);
         if (!components.Exists(IsUrl))
-            return FilterEffects.Get(components, GetFont().Style, space: null);
+            return FilterEffects.Get(computed, filterStyle, space: null);
 
         // The references to SVG filter elements of the document of the canvas element: the user space of the filter is the
         // coordinate space of the canvas (its bitmap), which is also the object bounding box and the viewport of the percentages
@@ -890,10 +913,12 @@ public abstract partial class CanvasRenderingContext2DBase
         var size = new PhysicalSize(Bitmap.Width, Bitmap.Height);
         var space = new SvgResourceSpace(new PhysicalRect(PhysicalOffset.Zero, size), size, PhysicalOffset.Zero, 1);
         var filters = new List<DisplayFilter>();
-        foreach (var component in components)
+        for (var i = 0; i < components.Count; i++)
         {
             // The drawings of a canvas that is not origin-clean taint the source graphic (https://drafts.fxtf.org/filter-effects/#tainted-filter-primitives)
-            if ((IsUrl(component) ? FilterEffects.Get([component], canvasStyle, space, taintedSource: !Bitmap.IsOriginClean) : FilterEffects.Get([component], GetFont().Style, space: null)) is not { } filter)
+            var component = components[i];
+            var computedComponent = computed.Count == components.Count ? computed[i] : component;
+            if ((IsUrl(component) ? FilterEffects.Get([component], canvasStyle, space, taintedSource: !Bitmap.IsOriginClean) : FilterEffects.Get([computedComponent], filterStyle, space: null)) is not { } filter)
                 return null;
 
             filters.AddRange(filter);
@@ -903,5 +928,46 @@ public abstract partial class CanvasRenderingContext2DBase
 
         static bool IsUrl(CssComponentValue component)
             => component is CssPreservedToken { Type: CssTokenType.Url } || (component is CssFunction function && InfraAscii.ToAsciiLowercase(function.Name) is "url" or "src");
+    }
+
+    /// <summary>
+    /// Returns the computed value of the filter of the drawing state (a list of filter functions, whose relative lengths are
+    /// resolved against a style, see <see cref="GetFilterStyle"/>): the filters use absolute lengths.
+    /// </summary>
+    private List<CssComponentValue> GetComputedFilter(ComputedStyle style)
+    {
+        if (_computedFilter is { } cached && cached.Filter == _state.Filter && ReferenceEquals(cached.Style, style))
+            return cached.Components;
+
+        var value = _state.Filter;
+        if (CssShorthands.ParseValue("filter", CssParser.ParseListOfComponentValues(value), value.Trim()) is { } longhands)
+        {
+            value = style.WithDeclarations(longhands).GetComputedValue("filter");
+        }
+
+        var components = ValueMatcher.RemoveWhitespace(CssParser.ParseListOfComponentValues(value));
+        _computedFilter = (_state.Filter, style, components);
+        return components;
+    }
+
+    /// <summary>Returns the style that resolves the relative lengths of the filters: the style of the current font.</summary>
+    private protected virtual ComputedStyle GetFilterStyle() => GetFont().Style;
+
+    /// <summary>
+    /// Returns the style that resolves the relative lengths of the filters of a context that has no font and no viewport, e.g.
+    /// the context of a paint callback of a worklet: the initial font (<c>medium sans-serif</c>) and a viewport of size zero,
+    /// as in Blink.
+    /// </summary>
+    private protected static ComputedStyle GetFilterStyleWithoutViewport(GlobalScope global)
+    {
+        return WorkletFilterStyles.GetValue(global, static _ =>
+        {
+            var document = new Document();
+            var engine = new StyleEngine(document, MediaEnvironment.Default with { Width = 0, Height = 0, DeviceWidth = 0, DeviceHeight = 0 });
+            document.SetEngines(engine, layoutEngine: null);
+            var element = document.CreateElement("canvas");
+            var longhands = CssShorthands.ParseValue("font", CssParser.ParseListOfComponentValues(InitialFont), InitialFont)!;
+            return CreateFontStyle(engine, element, parent: null, longhands);
+        });
     }
 }

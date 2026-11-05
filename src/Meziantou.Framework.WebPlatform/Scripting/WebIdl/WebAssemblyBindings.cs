@@ -112,7 +112,7 @@ internal static class WebAssemblyBindings<TAdapter, TValue>
 
             var moduleObject = r.ToInterface<WebAssemblyModuleObject>(a[0], "Module");
             var importObject = r.ToWasmImportObject(a, 1);
-            var imports = r.ReadWasmImports(moduleObject, importObject);
+            var imports = r.ReadWasmImports(moduleObject, importObject, r.GetWasmIncumbentGlobal());
             return r.InstantiateWasmModule(moduleObject, imports);
         },
         DefineMembers = static (r, interfaceObject, prototype, instanceTarget) =>

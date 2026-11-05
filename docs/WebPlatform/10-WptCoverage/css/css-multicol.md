@@ -11,14 +11,14 @@ description: "The results of the web-platform-tests of css/css-multicol, and why
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 89 | 91 | 0 | 98% |
 | [Tentative](#tentative-tests) | 0 | 1 | 0 | 0% |
-| [Reftests](#reftests) | 461 | 467 | 0 | 99% |
-| **All** | **550** | **559** | **0** | **98%** |
+| [Reftests](#reftests) | 462 | 467 | 0 | 99% |
+| **All** | **551** | **559** | **0** | **99%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 4
+- **BUG**: 3
 - **NOT IMPLEMENTED**: 5
 
 ## Stable tests
@@ -580,7 +580,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`spanner-in-child-after-parallel-flow-002.html`](https://wpt.fyi/results/css/css-multicol/spanner-in-child-after-parallel-flow-002.html) | Pass | 1 / 1 |  |  |
 | [`spanner-in-child-after-parallel-flow-003.html`](https://wpt.fyi/results/css/css-multicol/spanner-in-child-after-parallel-flow-003.html) | Pass | 1 / 1 |  |  |
 | [`spanner-in-child-after-parallel-flow-004.html`](https://wpt.fyi/results/css/css-multicol/spanner-in-child-after-parallel-flow-004.html) | Pass | 1 / 1 |  |  |
-| [`spanner-in-opacity.html`](https://wpt.fyi/results/css/css-multicol/spanner-in-opacity.html) | Fail | 0 / 1 | BUG | a column spanner is a child of the fragment of the multi-column container: the effects of its ancestors inside the container are not applied to it (the `opacity: 0.5` of its parent: the spanner is painted opaque) |
+| [`spanner-in-opacity.html`](https://wpt.fyi/results/css/css-multicol/spanner-in-opacity.html) | Pass | 1 / 1 |  |  |
 | [`subpixel-column-rule-width.tentative.html`](https://wpt.fyi/results/css/css-multicol/subpixel-column-rule-width.tentative.html) | Pass | 1 / 1 |  |  |
 | [`table/multicol-table-cell-001.xht`](https://wpt.fyi/results/css/css-multicol/table/multicol-table-cell-001.xht) | Pass | 1 / 1 |  |  |
 | [`table/multicol-table-cell-height-001.xht`](https://wpt.fyi/results/css/css-multicol/table/multicol-table-cell-height-001.xht) | Pass | 1 / 1 |  |  |

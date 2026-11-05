@@ -10,15 +10,15 @@ description: "The results of the web-platform-tests of selection, and why the te
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 83 | 91 | 0 | 91% |
-| [Tentative](#tentative-tests) | 25 | 33 | 0 | 76% |
+| [Tentative](#tentative-tests) | 26 | 33 | 0 | 79% |
 | [Reftests](#reftests) | 19 | 19 | 0 | 100% |
-| **All** | **127** | **143** | **0** | **89%** |
+| **All** | **128** | **143** | **0** | **90%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 3
+- **BUG**: 2
 - **TEST BUG**: 9
 - **NOT IMPLEMENTED**: 4
 
@@ -138,7 +138,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`move-paragraph-cross-editing-boundary.tentative.html`](https://wpt.fyi/results/selection/move-paragraph-cross-editing-boundary.tentative.html) | Pass | 2 / 2 |  |  |
 | [`move-paragraphboundary-cross-editing-boundary.tentative.html`](https://wpt.fyi/results/selection/move-paragraphboundary-cross-editing-boundary.tentative.html) | Pass | 2 / 2 |  |  |
 | [`move-selection-range-into-different-root.tentative.html`](https://wpt.fyi/results/selection/move-selection-range-into-different-root.tentative.html) | Pass | 16 / 16 |  |  |
-| [`select-end-of-line-image.tentative.html`](https://wpt.fyi/results/selection/select-end-of-line-image.tentative.html) | Fail | 0 / 1 | BUG | a drag from the left of an `<img>` that ends a line to the empty area at its right selects nothing: the position of a point at the right of the last atomic inline of a line is not the position after it (the caret positions are only resolved in the texts and at the halves of a replaced element under the point), so the selection stays collapsed before the image and Backspace does not delete it. |
+| [`select-end-of-line-image.tentative.html`](https://wpt.fyi/results/selection/select-end-of-line-image.tentative.html) | Pass | 1 / 1 |  |  |
 | [`selection-direction-on-double-click.tentative.html`](https://wpt.fyi/results/selection/selection-direction-on-double-click.tentative.html) | Pass | 1 / 1 |  |  |
 | [`selection-direction-on-triple-click.tentative.html`](https://wpt.fyi/results/selection/selection-direction-on-triple-click.tentative.html) | Pass | 1 / 1 |  |  |
 | [`selection-range-in-shadow-after-the-shadow-removed.tentative.html`](https://wpt.fyi/results/selection/selection-range-in-shadow-after-the-shadow-removed.tentative.html) | Fail | 0 / 8 | TEST BUG | the tentative test selects the text of a shadow tree and reads the range with `getRangeAt(0)` before it removes the host: the Selection API returns null from `anchorNode` and `focusNode`, 0 from `rangeCount` and throws an `IndexSizeError` from `getRangeAt()` when the anchor or the focus is not in the document tree (https://w3c.github.io/selection-api/#dom-selection-rangecount), and `addRange()` ignores a range whose root is not the document |

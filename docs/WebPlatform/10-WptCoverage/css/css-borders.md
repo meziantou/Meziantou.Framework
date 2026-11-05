@@ -9,16 +9,16 @@ description: "The results of the web-platform-tests of css/css-borders, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 35 | 37 | 0 | 95% |
+| [Stable](#stable-tests) | 36 | 37 | 0 | 97% |
 | [Tentative](#tentative-tests) | 38 | 47 | 0 | 81% |
-| [Reftests](#reftests) | 101 | 114 | 0 | 89% |
-| **All** | **174** | **198** | **0** | **88%** |
+| [Reftests](#reftests) | 102 | 114 | 0 | 89% |
+| **All** | **176** | **198** | **0** | **89%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 10
+- **BUG**: 8
 - **TEST BUG**: 10
 - **NOT IMPLEMENTED**: 4
 
@@ -50,10 +50,10 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`corner-shape/corner-shape-invalid.html`](https://wpt.fyi/results/css/css-borders/corner-shape/corner-shape-invalid.html) | Pass | 71 / 71 |  |  |
 | [`corner-shape/corner-shape-outside-content-box.html`](https://wpt.fyi/results/css/css-borders/corner-shape/corner-shape-outside-content-box.html) | Pass | 7 / 7 |  |  |
 | [`corner-shape/corner-shape-outside-corners.html`](https://wpt.fyi/results/css/css-borders/corner-shape/corner-shape-outside-corners.html) | Pass | 5 / 5 |  |  |
-| [`corner-shape/corner-shape-outside-left.html`](https://wpt.fyi/results/css/css-borders/corner-shape/corner-shape-outside-left.html) | Fail | 7 / 8 | BUG | `superellipse(-.8)`: the line next to the corner starts at 90.1px where the test expects 88px with a tolerance of 2px: the extent of the flattened contour in the band of the line is the exact one, the browsers sample the shape per pixel row |
+| [`corner-shape/corner-shape-outside-left.html`](https://wpt.fyi/results/css/css-borders/corner-shape/corner-shape-outside-left.html) | Fail | 7 / 8 | BUG | `superellipse(-.8)`: the line next to the corner starts at 90.1px where the test expects 88px with a tolerance of 2px: the curve of the contour is the quarter of an ellipse between the tangents of its two ends for the parameters between -1 and 0 (https://drafts.csswg.org/css-borders-4/#border-aligned-corner-clip-out-path), where Blink intercepts the band with the mirrored superellipse (89.98px, just within the tolerance) |
 | [`corner-shape/corner-shape-outside-margin-box.html`](https://wpt.fyi/results/css/css-borders/corner-shape/corner-shape-outside-margin-box.html) | Pass | 7 / 7 |  |  |
 | [`corner-shape/corner-shape-outside-padding-box.html`](https://wpt.fyi/results/css/css-borders/corner-shape/corner-shape-outside-padding-box.html) | Pass | 7 / 7 |  |  |
-| [`corner-shape/corner-shape-outside-right.html`](https://wpt.fyi/results/css/css-borders/corner-shape/corner-shape-outside-right.html) | Fail | 6 / 8 | BUG | `notch` and `notch bevel` with `border-radius: 50%`: a horizontal edge of the contour lies on the boundary between the two middle line boxes (an arm of the zero-width cross that four notches leave, a side of the triangle that a notch and a bevel leave); an edge that only touches the block-start or the block-end of the band of a line is not in the band, so the line above the edge is not shortened (120px instead of 60px) |
+| [`corner-shape/corner-shape-outside-right.html`](https://wpt.fyi/results/css/css-borders/corner-shape/corner-shape-outside-right.html) | Pass | 8 / 8 |  |  |
 | [`corner-shape/corner-shape-outside-shape-margin.html`](https://wpt.fyi/results/css/css-borders/corner-shape/corner-shape-outside-shape-margin.html) | Pass | 7 / 7 |  |  |
 | [`corner-shape/corner-shape-valid.html`](https://wpt.fyi/results/css/css-borders/corner-shape/corner-shape-valid.html) | Pass | 241 / 241 |  |  |
 | [`corner-shape/corner-top-computed.html`](https://wpt.fyi/results/css/css-borders/corner-shape/corner-top-computed.html) | Pass | 4 / 4 |  |  |
@@ -228,7 +228,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`corner-shape/corner-shape-svg-border.html`](https://wpt.fyi/results/css/css-borders/corner-shape/corner-shape-svg-border.html) | Pass | 1 / 1 |  |  |
 | [`corner-shape/corner-shape-video-border.html`](https://wpt.fyi/results/css/css-borders/corner-shape/corner-shape-video-border.html) | Pass | 1 / 1 |  |  |
 | [`corner-shape/corner-shorthand-rendering.html`](https://wpt.fyi/results/css/css-borders/corner-shape/corner-shorthand-rendering.html) | Pass | 1 / 1 |  |  |
-| [`corner-shape/render-corner-shape.html`](https://wpt.fyi/results/css/css-borders/corner-shape/render-corner-shape.html) | Fail | 110 / 113 | BUG | 3 of the variants differ from the reference: a 100% `border-top-left-radius` with `corner-shape: 1` and a 20px border, and a 100% `border-top-right-radius` with an inset shadow (with `corner-shape: 1` and 20px top and bottom borders, or without `corner-shape`) |
+| [`corner-shape/render-corner-shape.html`](https://wpt.fyi/results/css/css-borders/corner-shape/render-corner-shape.html) | Pass | 113 / 113 |  |  |
 | [`subpixel-border-width.tentative.html`](https://wpt.fyi/results/css/css-borders/subpixel-border-width.tentative.html) | Pass | 1 / 1 |  |  |
 | [`subpixel-borders-with-child-border-box-sizing.html`](https://wpt.fyi/results/css/css-borders/subpixel-borders-with-child-border-box-sizing.html) | Pass | 1 / 1 |  |  |
 | [`subpixel-borders-with-child.html`](https://wpt.fyi/results/css/css-borders/subpixel-borders-with-child.html) | Pass | 1 / 1 |  |  |

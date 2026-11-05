@@ -10,15 +10,14 @@ description: "The results of the web-platform-tests of css/css-transitions, and 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 99 | 107 | 0 | 93% |
-| [Tentative](#tentative-tests) | 16 | 18 | 0 | 89% |
+| [Tentative](#tentative-tests) | 17 | 18 | 0 | 94% |
 | [Reftests](#reftests) | 6 | 6 | 0 | 100% |
-| **All** | **121** | **131** | **0** | **92%** |
+| **All** | **122** | **131** | **0** | **93%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
 - **TEST BUG**: 8
 - **NOT IMPLEMENTED**: 1
 
@@ -151,7 +150,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`Element-getAnimations.tentative.html`](https://wpt.fyi/results/css/css-transitions/Element-getAnimations.tentative.html) | Pass | 7 / 7 |  |  |
 | [`KeyframeEffect-getKeyframes-width-and-height-transition.tentative.html`](https://wpt.fyi/results/css/css-transitions/KeyframeEffect-getKeyframes-width-and-height-transition.tentative.html) | Pass | 2 / 2 |  |  |
 | [`KeyframeEffect-getKeyframes.tentative.html`](https://wpt.fyi/results/css/css-transitions/KeyframeEffect-getKeyframes.tentative.html) | Pass | 5 / 5 |  |  |
-| [`KeyframeEffect-setKeyframes.tentative.html`](https://wpt.fyi/results/css/css-transitions/KeyframeEffect-setKeyframes.tentative.html) | Fail | 7 / 8 | BUG | the setters of `Animation` (`currentTime`) flush the pending style changes: the change of `left` is applied before the second `currentTime` is set, so the keyframes of the other transition that animate `left` are sampled at their old time and no reversed transition starts |
+| [`KeyframeEffect-setKeyframes.tentative.html`](https://wpt.fyi/results/css/css-transitions/KeyframeEffect-setKeyframes.tentative.html) | Pass | 8 / 8 |  |  |
 | [`KeyframeEffect-target.tentative.html`](https://wpt.fyi/results/css/css-transitions/KeyframeEffect-target.tentative.html) | Pass | 3 / 3 |  |  |
 | [`event-dispatch.tentative.html`](https://wpt.fyi/results/css/css-transitions/event-dispatch.tentative.html) | Fail | 29 / 30 | TEST BUG | `Active -> Idle, with negative delay (Animation.timeline = null)`: the elapsed time of `transitioncancel` is "the active time of the animation at the moment it was canceled calculated using a fill mode of both" (https://drafts.csswg.org/css-transitions-2/#event-dispatch); the transition (`100s`, delay `-50s`) is seeked to `50s` before its timeline is removed, so its active time is `100s`, not the `0` the test expects (the css-animations twin test, `Active -> Idle, setting Animation.timeline = null`, expects the active time before the timeline is removed) |
 | [`non-rendered-element-004.tentative.html`](https://wpt.fyi/results/css/css-transitions/non-rendered-element-004.tentative.html) | Pass | 1 / 1 |  |  |

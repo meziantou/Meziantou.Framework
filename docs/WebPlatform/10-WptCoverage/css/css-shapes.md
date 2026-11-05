@@ -9,16 +9,15 @@ description: "The results of the web-platform-tests of css/css-shapes, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 146 | 147 | 0 | 99% |
+| [Stable](#stable-tests) | 147 | 147 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
 | [Reftests](#reftests) | 237 | 238 | 0 | 99.5% |
-| **All** | **383** | **385** | **0** | **99%** |
+| **All** | **384** | **385** | **0** | **99.7%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
 - **TEST BUG**: 1
 
 ## Stable tests
@@ -31,7 +30,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`animation/shape-outside-composition.html`](https://wpt.fyi/results/css/css-shapes/animation/shape-outside-composition.html) | Pass | 140 / 140 |  |  |
 | [`animation/shape-outside-interpolation.html`](https://wpt.fyi/results/css/css-shapes/animation/shape-outside-interpolation.html) | Pass | 780 / 780 |  |  |
 | [`animation/shape-outside-path-interpolation.html`](https://wpt.fyi/results/css/css-shapes/animation/shape-outside-path-interpolation.html) | Pass | 478 / 478 |  |  |
-| [`animation/shape-outside-shape-interpolation.html`](https://wpt.fyi/results/css/css-shapes/animation/shape-outside-shape-interpolation.html) | Fail | 538 / 546 | BUG | a `path()` with relative commands is not interpolated with the `by` commands of a `shape()`: the computed `path()` of `shape-outside` has absolute commands (as css/css-shapes/parsing/shape-outside-computed.html requires, unlike `clip-path` and `offset-path`), so the relative commands are lost before the `path()` is converted to the equivalent `shape()` (https://drafts.csswg.org/css-shapes-2/#interpolating-shape) |
+| [`animation/shape-outside-shape-interpolation.html`](https://wpt.fyi/results/css/css-shapes/animation/shape-outside-shape-interpolation.html) | Pass | 546 / 546 |  |  |
 | [`basic-shape-circle-ellipse-serialization.html`](https://wpt.fyi/results/css/css-shapes/basic-shape-circle-ellipse-serialization.html) | Pass | 27 / 27 |  |  |
 | [`basic-shape-interpolation.html`](https://wpt.fyi/results/css/css-shapes/basic-shape-interpolation.html) | Pass | 3 / 3 |  |  |
 | [`inheritance.html`](https://wpt.fyi/results/css/css-shapes/inheritance.html) | Pass | 6 / 6 |  |  |

@@ -9,16 +9,15 @@ description: "The results of the web-platform-tests of css/css-view-transitions,
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 152 | 164 | 0 | 93% |
+| [Stable](#stable-tests) | 155 | 164 | 0 | 95% |
 | [Tentative](#tentative-tests) | 4 | 7 | 0 | 57% |
 | [Reftests](#reftests) | 308 | 318 | 0 | 97% |
-| **All** | **464** | **489** | **0** | **95%** |
+| **All** | **467** | **489** | **0** | **96%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 3
 - **TEST BUG**: 9
 - **NOT IMPLEMENTED**: 9
 - **TEST RUNNER**: 3
@@ -95,8 +94,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`navigation/pageswap-traverse-navigation-no-bfcache.https.html`](https://wpt.fyi/results/css/css-view-transitions/navigation/pageswap-traverse-navigation-no-bfcache.https.html) | Pass | 1 / 1 |  |  |
 | [`navigation/prerender-coop.https.html`](https://wpt.fyi/results/css/css-view-transitions/navigation/prerender-coop.https.html) | Pass | 1 / 1 |  |  |
 | [`navigation/prerender-removed-during-navigation.html`](https://wpt.fyi/results/css/css-view-transitions/navigation/prerender-removed-during-navigation.html) | Pass | 1 / 1 |  |  |
-| [`navigation/raf-before-outbound-capture-subframe.html`](https://wpt.fyi/results/css/css-view-transitions/navigation/raf-before-outbound-capture-subframe.html) | Fail | 0 / 1 | BUG | the old state of an outbound cross-document view transition is captured when the `pageswap` event is dispatched, not in the next rendering update: the `requestAnimationFrame` callbacks queued by the `pageswap` handler have not run yet |
-| [`navigation/raf-before-outbound-capture.html`](https://wpt.fyi/results/css/css-view-transitions/navigation/raf-before-outbound-capture.html) | Fail | 0 / 1 | BUG | the old state of an outbound cross-document view transition is captured when the `pageswap` event is dispatched, not in the next rendering update: the `requestAnimationFrame` callbacks queued by the `pageswap` handler have not run yet |
+| [`navigation/raf-before-outbound-capture-subframe.html`](https://wpt.fyi/results/css/css-view-transitions/navigation/raf-before-outbound-capture-subframe.html) | Pass | 1 / 1 |  |  |
+| [`navigation/raf-before-outbound-capture.html`](https://wpt.fyi/results/css/css-view-transitions/navigation/raf-before-outbound-capture.html) | Pass | 1 / 1 |  |  |
 | [`navigation/reveal-after-aborted-navigation.html`](https://wpt.fyi/results/css/css-view-transitions/navigation/reveal-after-aborted-navigation.html) | Pass | 1 / 1 |  |  |
 | [`navigation/root-element-transition-no-opt-in-on-new.html`](https://wpt.fyi/results/css/css-view-transitions/navigation/root-element-transition-no-opt-in-on-new.html) | Pass | 1 / 1 |  |  |
 | [`navigation/root-element-transition-opt-in-removed-on-new.html`](https://wpt.fyi/results/css/css-view-transitions/navigation/root-element-transition-opt-in-removed-on-new.html) | Pass | 1 / 1 |  |  |
@@ -180,7 +179,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`transition-in-hidden-page.html`](https://wpt.fyi/results/css/css-view-transitions/transition-in-hidden-page.html) | Pass | 3 / 3 |  |  |
 | [`transition-in-removed-iframe.html`](https://wpt.fyi/results/css/css-view-transitions/transition-in-removed-iframe.html) | Pass | 2 / 2 |  |  |
 | [`transition-skipped-after-animation-started.html`](https://wpt.fyi/results/css/css-view-transitions/transition-skipped-after-animation-started.html) | Pass | 1 / 1 |  |  |
-| [`transition-skipped-callback-from-detached-iframe.html`](https://wpt.fyi/results/css/css-view-transitions/transition-skipped-callback-from-detached-iframe.html) | Fail | 0 / 1 | BUG | calling an update callback whose realm is not fully active (a function of a removed iframe) rejects the promises with the `InvalidStateError` of the callback invocation instead of an `AbortError` |
+| [`transition-skipped-callback-from-detached-iframe.html`](https://wpt.fyi/results/css/css-view-transitions/transition-skipped-callback-from-detached-iframe.html) | Pass | 1 / 1 |  |  |
 | [`transition-skipped-from-invalid-callback.html`](https://wpt.fyi/results/css/css-view-transitions/transition-skipped-from-invalid-callback.html) | Pass | 1 / 1 |  |  |
 | [`unhandled-rejection.html`](https://wpt.fyi/results/css/css-view-transitions/unhandled-rejection.html) | Timeout | 2 / 4 | TEST BUG | the test expects an `unhandledrejection` event for the `ready` and `finished` promises when the update callback rejects (Chrome only): the specification marks them as handled ("Mark as handled transition's ready promise", the finished promise is "marked as handled"), as Firefox and Safari do, so the third subtest times out |
 | [`unset-and-initial-view-transition-name.html`](https://wpt.fyi/results/css/css-view-transitions/unset-and-initial-view-transition-name.html) | Pass | 1 / 1 |  |  |

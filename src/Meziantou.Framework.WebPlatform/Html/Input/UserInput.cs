@@ -349,7 +349,7 @@ public sealed partial class UserInput
         var parent = GetEventPathParent(node);
         foreach (var pointer in _pointers)
         {
-            if (pointer.PreviousTarget is { } previous && node.IsShadowIncludingInclusiveAncestorOf(previous))
+            if (pointer.PreviousTarget is { } previous && IsInEventPathOf(node, previous))
             {
                 pointer.PreviousTarget = parent;
                 pointer.NeedsOverEvent = true;
@@ -378,13 +378,48 @@ public sealed partial class UserInput
             }
         }
 
-        if (_mouseOverTarget is { } mouseOver && node.IsShadowIncludingInclusiveAncestorOf(mouseOver))
+        if (_mouseOverTarget is { } mouseOver && IsInEventPathOf(node, mouseOver))
         {
             _mouseOverTarget = parent;
             _mouseNeedsOverEvent = true;
         }
 
+        // As in the browsers, the element designated by the pointer (:hover) is then its nearest ancestor that stays connected
+        // (a pointer that hovers designates the element under it again after the layout, a touch pointer does not: WPT
+        // hover-state-caused-by-compatibility-mouse-events.tentative.html)
+        var document = node.NodeDocument;
+        if (document.DesignatedElement is { } designated && node.IsShadowIncludingInclusiveAncestorOf(designated))
+        {
+            Node? ancestor = parent;
+            while (ancestor is not null and not Element)
+            {
+                ancestor = GetEventPathParent(ancestor);
+            }
+
+            document.DesignatedElement = (Element?)ancestor;
+        }
+
         OnRemovingWheelTransactionTarget(node);
+    }
+
+    /// <summary>
+    /// Whether a node is a shadow-including inclusive ancestor of a target, or of a slot of the path of the events dispatched to
+    /// it: the target leaves the flat tree when the slot is removed, and its events are then fired at the parent of the slot, as
+    /// in Gecko (WPT pointerevent_mouse_target_after_pointer_target_slot_removed.html).
+    /// </summary>
+    private static bool IsInEventPathOf(Node node, Node target)
+    {
+        if (node.IsShadowIncludingInclusiveAncestorOf(target))
+            return true;
+
+        // A slot of the event path that is removed (the node or one of its descendants)
+        for (var current = GetEventPathParent(target); current is not null; current = GetEventPathParent(current))
+        {
+            if (current is HtmlSlotElement && node.IsShadowIncludingInclusiveAncestorOf(current))
+                return true;
+        }
+
+        return false;
     }
 
     /// <summary>The parent of a node in the path of the events dispatched to it: its assigned slot, its parent, or the host of its shadow root.</summary>

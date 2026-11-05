@@ -348,6 +348,13 @@ internal sealed record ImageShader(PaintImage Image, SpreadMode SpreadX, SpreadM
     /// image (a slice of a border image) has no color of the pixels next to it at its edges.
     /// </summary>
     public PhysicalRect? SourceRect { get; init; }
+
+    /// <summary>
+    /// Whether each repeated tile is the image scaled alone, as the image of a replaced box (the tiles of a background image):
+    /// the edges of a scaled tile are then interpolated with the pixels of the image only, where the filter of a repeated image
+    /// mixes its first row with its last one. A canvas pattern is a repeated image (its edges are mixed, as in the browsers).
+    /// </summary>
+    public bool ScalesTiles { get; init; }
 }
 
 /// <summary>

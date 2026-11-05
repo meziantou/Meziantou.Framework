@@ -42,6 +42,19 @@ public interface IWebIdlHost
 }
 
 /// <summary>
+/// The incumbent settings object of the script engine (https://html.spec.whatwg.org/multipage/webappapis.html#incumbent),
+/// for the callbacks that store it (e.g. the host functions of WebAssembly).
+/// </summary>
+internal interface IWebIdlIncumbentHost
+{
+    /// <summary>Returns the global object of the incumbent settings object, or null when no script is running.</summary>
+    GlobalScope? GetIncumbentGlobal();
+
+    /// <summary>Pushes <paramref name="incumbent"/> onto the backup incumbent settings object stack, until the result is disposed.</summary>
+    IDisposable EnterBackupIncumbent(GlobalScope incumbent);
+}
+
+/// <summary>
 /// The WebIDL bindings of the DOM for a JavaScript engine (an agent: the similar-origin window agent, or the agent of a
 /// worker): the realms of the global objects, and the JavaScript objects of the .NET objects. A platform object has a single JavaScript object, whichever realm
 /// accesses it, so the wrappers and the callbacks are shared by the realms.

@@ -220,7 +220,8 @@ public partial class Animation : EventTarget, IRealmBoundPlatformObject
         }
         set
         {
-            FlushPendingStyle();
+            // The pending style changes are not flushed: the changes of the current time and the changes of the style made in
+            // the same task form a single style change (WPT css/css-transitions/KeyframeEffect-setKeyframes.tentative.html)
             SetCurrentTime(ValidateTime(value));
             OnCurrentTimeSetByScript();
         }

@@ -25,6 +25,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
 
     private static readonly global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssMatrixComponentOptions Defaults_Css_TypedOm_CssMatrixComponentOptions = new();
 
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.AccelerometerSensorOptions Defaults_Dom_AccelerometerSensorOptions = new();
+
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.AddEventListenerOptions Defaults_Dom_AddEventListenerOptions = new();
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.BoxQuadOptions Defaults_Dom_BoxQuadOptions = new();
@@ -44,6 +46,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.CookieListItem Defaults_Dom_CookieListItem = new();
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.CookieStoreGetOptions Defaults_Dom_CookieStoreGetOptions = new();
+
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.DeviceMotionEventInit Defaults_Dom_DeviceMotionEventInit = new();
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.DomMatrix2DInit Defaults_Dom_DomMatrix2DInit = new();
 
@@ -69,6 +73,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.FragmentResultOptions Defaults_Dom_FragmentResultOptions = new();
 
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.GyroscopeSensorOptions Defaults_Dom_GyroscopeSensorOptions = new();
+
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.IdbGetAllOptions Defaults_Dom_IdbGetAllOptions = new();
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.IdleOptions Defaults_Dom_IdleOptions = new();
@@ -91,6 +97,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.LockOptions Defaults_Dom_LockOptions = new();
 
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.MagnetometerSensorOptions Defaults_Dom_MagnetometerSensorOptions = new();
+
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.MediaPositionState Defaults_Dom_MediaPositionState = new();
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.MouseEventInit Defaults_Dom_MouseEventInit = new();
@@ -110,6 +118,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.NotificationAction Defaults_Dom_NotificationAction = new() { Action = default!, Title = default! };
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.NotificationOptions Defaults_Dom_NotificationOptions = new();
+
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.OrientationSensorOptions Defaults_Dom_OrientationSensorOptions = new();
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.ParseHtmlUnsafeOptions Defaults_Dom_ParseHtmlUnsafeOptions = new();
 
@@ -140,6 +150,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.SchedulerPostTaskOptions Defaults_Dom_SchedulerPostTaskOptions = new();
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.ScrollToOptions Defaults_Dom_ScrollToOptions = new();
+
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.SensorOptions Defaults_Dom_SensorOptions = new();
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.SetHtmlUnsafeOptions Defaults_Dom_SetHtmlUnsafeOptions = new();
 
@@ -192,6 +204,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     private static readonly global::Meziantou.Framework.WebPlatform.WebAudio.StereoPannerOptions Defaults_WebAudio_StereoPannerOptions = new();
 
     private static readonly global::Meziantou.Framework.WebPlatform.WebAudio.WaveShaperOptions Defaults_WebAudio_WaveShaperOptions = new();
+
+    internal static readonly string[] Enum_AccelerometerLocalCoordinateSystem_Values = new[] { "device", "screen" };
 
     internal static readonly string[] Enum_AlignSetting_Values = new[] { "start", "center", "end", "left", "right" };
 
@@ -265,6 +279,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
 
     internal static readonly string[] Enum_FullscreenNavigationUI_Values = new[] { "auto", "show", "hide" };
 
+    internal static readonly string[] Enum_GyroscopeLocalCoordinateSystem_Values = new[] { "device", "screen" };
+
     internal static readonly string[] Enum_HighlightType_Values = new[] { "highlight", "spelling-error", "grammar-error" };
 
     internal static readonly string[] Enum_IDBCursorDirection_Values = new[] { "next", "nextunique", "prev", "prevunique" };
@@ -285,6 +301,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
 
     internal static readonly string[] Enum_LockMode_Values = new[] { "shared", "exclusive" };
 
+    internal static readonly string[] Enum_MagnetometerLocalCoordinateSystem_Values = new[] { "device", "screen" };
+
     internal static readonly string[] Enum_MediaSessionAction_Values = new[] { "play", "pause", "seekbackward", "seekforward", "previoustrack", "nexttrack", "skipad", "stop", "seekto", "togglemicrophone", "togglecamera", "togglescreenshare", "hangup", "previousslide", "nextslide", "enterpictureinpicture", "voiceactivity" };
 
     internal static readonly string[] Enum_MediaSessionPlaybackState_Values = new[] { "none", "paused", "playing" };
@@ -302,6 +320,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     internal static readonly string[] Enum_OffscreenRenderingContextId_Values = new[] { "2d", "bitmaprenderer", "webgl", "webgl2", "webgpu" };
 
     internal static readonly string[] Enum_OrientationLockType_Values = new[] { "any", "natural", "landscape", "portrait", "portrait-primary", "portrait-secondary", "landscape-primary", "landscape-secondary" };
+
+    internal static readonly string[] Enum_OrientationSensorLocalCoordinateSystem_Values = new[] { "device", "screen" };
 
     internal static readonly string[] Enum_OscillatorType_Values = new[] { "sine", "square", "sawtooth", "triangle", "custom" };
 
@@ -667,6 +687,14 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return result;
     }
 
+    internal static TValue FromDictionary_Dom_AccelerometerSensorOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.AccelerometerSensorOptions value)
+    {
+        var result = r.CreateObject();
+        if (value.Frequency is not null) r.SetMember(result, "frequency", (value.Frequency.HasValue ? r.FromNumber((double)value.Frequency.GetValueOrDefault()) : r.Adapter.Null));
+        r.SetMember(result, "referenceFrame", r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_AccelerometerLocalCoordinateSystem(value.ReferenceFrame)));
+        return result;
+    }
+
     internal static TValue FromDictionary_Dom_AddEventListenerOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.AddEventListenerOptions value)
     {
         var result = r.CreateObject();
@@ -919,6 +947,50 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         r.SetMember(result, "cancelable", r.FromBoolean(value.Cancelable));
         r.SetMember(result, "composed", r.FromBoolean(value.Composed));
         r.SetMember(result, "detail", r.ToJs((object?)value.Detail));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_DeviceMotionEventAccelerationInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.DeviceMotionEventAccelerationInit value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "x", (value.X.HasValue ? r.FromNumber((double)value.X.GetValueOrDefault()) : r.Adapter.Null));
+        r.SetMember(result, "y", (value.Y.HasValue ? r.FromNumber((double)value.Y.GetValueOrDefault()) : r.Adapter.Null));
+        r.SetMember(result, "z", (value.Z.HasValue ? r.FromNumber((double)value.Z.GetValueOrDefault()) : r.Adapter.Null));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_DeviceMotionEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.DeviceMotionEventInit value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "bubbles", r.FromBoolean(value.Bubbles));
+        r.SetMember(result, "cancelable", r.FromBoolean(value.Cancelable));
+        r.SetMember(result, "composed", r.FromBoolean(value.Composed));
+        if (value.Acceleration is not null) r.SetMember(result, "acceleration", (value.Acceleration is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_DeviceMotionEventAccelerationInit(r, dictionaryValue) : r.Adapter.Null));
+        if (value.AccelerationIncludingGravity is not null) r.SetMember(result, "accelerationIncludingGravity", (value.AccelerationIncludingGravity is { } dictionaryValue2 ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_DeviceMotionEventAccelerationInit(r, dictionaryValue2) : r.Adapter.Null));
+        r.SetMember(result, "interval", r.FromNumber((double)value.Interval));
+        if (value.RotationRate is not null) r.SetMember(result, "rotationRate", (value.RotationRate is { } dictionaryValue3 ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_DeviceMotionEventRotationRateInit(r, dictionaryValue3) : r.Adapter.Null));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_DeviceMotionEventRotationRateInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.DeviceMotionEventRotationRateInit value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "alpha", (value.Alpha.HasValue ? r.FromNumber((double)value.Alpha.GetValueOrDefault()) : r.Adapter.Null));
+        r.SetMember(result, "beta", (value.Beta.HasValue ? r.FromNumber((double)value.Beta.GetValueOrDefault()) : r.Adapter.Null));
+        r.SetMember(result, "gamma", (value.Gamma.HasValue ? r.FromNumber((double)value.Gamma.GetValueOrDefault()) : r.Adapter.Null));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_DeviceOrientationEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.DeviceOrientationEventInit value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "bubbles", r.FromBoolean(value.Bubbles));
+        r.SetMember(result, "cancelable", r.FromBoolean(value.Cancelable));
+        r.SetMember(result, "composed", r.FromBoolean(value.Composed));
+        r.SetMember(result, "absolute", r.FromBoolean(value.Absolute));
+        r.SetMember(result, "alpha", (value.Alpha.HasValue ? r.FromNumber((double)value.Alpha.GetValueOrDefault()) : r.Adapter.Null));
+        r.SetMember(result, "beta", (value.Beta.HasValue ? r.FromNumber((double)value.Beta.GetValueOrDefault()) : r.Adapter.Null));
+        r.SetMember(result, "gamma", (value.Gamma.HasValue ? r.FromNumber((double)value.Gamma.GetValueOrDefault()) : r.Adapter.Null));
         return result;
     }
 
@@ -1299,6 +1371,14 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return result;
     }
 
+    internal static TValue FromDictionary_Dom_GyroscopeSensorOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.GyroscopeSensorOptions value)
+    {
+        var result = r.CreateObject();
+        if (value.Frequency is not null) r.SetMember(result, "frequency", (value.Frequency.HasValue ? r.FromNumber((double)value.Frequency.GetValueOrDefault()) : r.Adapter.Null));
+        r.SetMember(result, "referenceFrame", r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_GyroscopeLocalCoordinateSystem(value.ReferenceFrame)));
+        return result;
+    }
+
     internal static TValue FromDictionary_Dom_HashChangeEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.HashChangeEventInit value)
     {
         var result = r.CreateObject();
@@ -1598,6 +1678,14 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return result;
     }
 
+    internal static TValue FromDictionary_Dom_MagnetometerSensorOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.MagnetometerSensorOptions value)
+    {
+        var result = r.CreateObject();
+        if (value.Frequency is not null) r.SetMember(result, "frequency", (value.Frequency.HasValue ? r.FromNumber((double)value.Frequency.GetValueOrDefault()) : r.Adapter.Null));
+        r.SetMember(result, "referenceFrame", r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_MagnetometerLocalCoordinateSystem(value.ReferenceFrame)));
+        return result;
+    }
+
     internal static TValue FromDictionary_Dom_MediaImage(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.MediaImage value)
     {
         var result = r.CreateObject();
@@ -1825,6 +1913,14 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         r.SetMember(result, "silent", r.FromBoolean(value.Silent));
         r.SetMember(result, "tag", r.FromString(value.Tag));
         if (value.Timestamp is not null) r.SetMember(result, "timestamp", (value.Timestamp.HasValue ? r.FromNumber((double)value.Timestamp.GetValueOrDefault()) : r.Adapter.Null));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_OrientationSensorOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.OrientationSensorOptions value)
+    {
+        var result = r.CreateObject();
+        if (value.Frequency is not null) r.SetMember(result, "frequency", (value.Frequency.HasValue ? r.FromNumber((double)value.Frequency.GetValueOrDefault()) : r.Adapter.Null));
+        r.SetMember(result, "referenceFrame", r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_OrientationSensorLocalCoordinateSystem(value.ReferenceFrame)));
         return result;
     }
 
@@ -2200,6 +2296,23 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         r.SetMember(result, "sourceFile", r.FromString(value.SourceFile));
         r.SetMember(result, "statusCode", r.FromNumber((double)value.StatusCode));
         r.SetMember(result, "violatedDirective", r.FromString(value.ViolatedDirective));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_SensorErrorEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.SensorErrorEventInit value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "bubbles", r.FromBoolean(value.Bubbles));
+        r.SetMember(result, "cancelable", r.FromBoolean(value.Cancelable));
+        r.SetMember(result, "composed", r.FromBoolean(value.Composed));
+        r.SetMember(result, "error", r.Wrap(value.Error));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_SensorOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.SensorOptions value)
+    {
+        var result = r.CreateObject();
+        if (value.Frequency is not null) r.SetMember(result, "frequency", (value.Frequency.HasValue ? r.FromNumber((double)value.Frequency.GetValueOrDefault()) : r.Adapter.Null));
         return result;
     }
 
@@ -3062,6 +3175,13 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         _ => value.ToString(),
     };
 
+    internal static string FromEnum_Dom_AccelerometerLocalCoordinateSystem(global::Meziantou.Framework.WebPlatform.Dom.AccelerometerLocalCoordinateSystem value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.AccelerometerLocalCoordinateSystem.Device => "device",
+        global::Meziantou.Framework.WebPlatform.Dom.AccelerometerLocalCoordinateSystem.Screen => "screen",
+        _ => value.ToString(),
+    };
+
     internal static string FromEnum_Dom_AlignSetting(global::Meziantou.Framework.WebPlatform.Dom.AlignSetting value) => value switch
     {
         global::Meziantou.Framework.WebPlatform.Dom.AlignSetting.Start => "start",
@@ -3354,6 +3474,13 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         _ => value.ToString(),
     };
 
+    internal static string FromEnum_Dom_GyroscopeLocalCoordinateSystem(global::Meziantou.Framework.WebPlatform.Dom.GyroscopeLocalCoordinateSystem value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.GyroscopeLocalCoordinateSystem.Device => "device",
+        global::Meziantou.Framework.WebPlatform.Dom.GyroscopeLocalCoordinateSystem.Screen => "screen",
+        _ => value.ToString(),
+    };
+
     internal static string FromEnum_Dom_IdbCursorDirection(global::Meziantou.Framework.WebPlatform.Dom.IdbCursorDirection value) => value switch
     {
         global::Meziantou.Framework.WebPlatform.Dom.IdbCursorDirection.Next => "next",
@@ -3427,6 +3554,13 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     {
         global::Meziantou.Framework.WebPlatform.Dom.LockMode.Shared => "shared",
         global::Meziantou.Framework.WebPlatform.Dom.LockMode.Exclusive => "exclusive",
+        _ => value.ToString(),
+    };
+
+    internal static string FromEnum_Dom_MagnetometerLocalCoordinateSystem(global::Meziantou.Framework.WebPlatform.Dom.MagnetometerLocalCoordinateSystem value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.MagnetometerLocalCoordinateSystem.Device => "device",
+        global::Meziantou.Framework.WebPlatform.Dom.MagnetometerLocalCoordinateSystem.Screen => "screen",
         _ => value.ToString(),
     };
 
@@ -3551,6 +3685,13 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         global::Meziantou.Framework.WebPlatform.Dom.OrientationLockType.PortraitSecondary => "portrait-secondary",
         global::Meziantou.Framework.WebPlatform.Dom.OrientationLockType.LandscapePrimary => "landscape-primary",
         global::Meziantou.Framework.WebPlatform.Dom.OrientationLockType.LandscapeSecondary => "landscape-secondary",
+        _ => value.ToString(),
+    };
+
+    internal static string FromEnum_Dom_OrientationSensorLocalCoordinateSystem(global::Meziantou.Framework.WebPlatform.Dom.OrientationSensorLocalCoordinateSystem value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.OrientationSensorLocalCoordinateSystem.Device => "device",
+        global::Meziantou.Framework.WebPlatform.Dom.OrientationSensorLocalCoordinateSystem.Screen => "screen",
         _ => value.ToString(),
     };
 
@@ -4407,6 +4548,21 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         };
     }
 
+    internal static global::Meziantou.Framework.WebPlatform.Dom.AccelerometerSensorOptions ToDictionary_Dom_AccelerometerSensorOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "AccelerometerSensorOptions");
+        var m0_value = r.GetDictionaryMember(value, "frequency");
+        var m0_present = !r.Adapter.IsUndefined(m0_value);
+        var m0 = m0_present ? (double?)r.ToDouble(m0_value, restricted: true) : default;
+        var m1_value = r.GetDictionaryMember(value, "referenceFrame");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (string)"device" : r.ToEnumerationValue(m1_value, "AccelerometerLocalCoordinateSystem", WebIdlHelpers<TAdapter, TValue>.Enum_AccelerometerLocalCoordinateSystem_Values);
+        return new global::Meziantou.Framework.WebPlatform.Dom.AccelerometerSensorOptions
+        {
+            Frequency = m0_present ? m0 : Defaults_Dom_AccelerometerSensorOptions.Frequency,
+            ReferenceFrame = WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_AccelerometerLocalCoordinateSystem(m1),
+        };
+    }
+
     internal static global::Meziantou.Framework.WebPlatform.Dom.AddEventListenerOptions ToDictionary_Dom_AddEventListenerOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
     {
         r.CheckDictionary(value, "AddEventListenerOptions");
@@ -4886,6 +5042,101 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
             Cancelable = m1,
             Composed = m2,
             Detail = m3,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.DeviceMotionEventAccelerationInit ToDictionary_Dom_DeviceMotionEventAccelerationInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "DeviceMotionEventAccelerationInit");
+        var m0_value = r.GetDictionaryMember(value, "x");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (double?)(double?)null : (r.IsNullOrUndefined(m0_value) ? (double?)null : r.ToDouble(m0_value, restricted: true));
+        var m1_value = r.GetDictionaryMember(value, "y");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (double?)(double?)null : (r.IsNullOrUndefined(m1_value) ? (double?)null : r.ToDouble(m1_value, restricted: true));
+        var m2_value = r.GetDictionaryMember(value, "z");
+        var m2 = r.Adapter.IsUndefined(m2_value) ? (double?)(double?)null : (r.IsNullOrUndefined(m2_value) ? (double?)null : r.ToDouble(m2_value, restricted: true));
+        return new global::Meziantou.Framework.WebPlatform.Dom.DeviceMotionEventAccelerationInit
+        {
+            X = m0,
+            Y = m1,
+            Z = m2,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.DeviceMotionEventInit ToDictionary_Dom_DeviceMotionEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "DeviceMotionEventInit");
+        var m0_value = r.GetDictionaryMember(value, "bubbles");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (bool)false : r.ToBoolean(m0_value);
+        var m1_value = r.GetDictionaryMember(value, "cancelable");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (bool)false : r.ToBoolean(m1_value);
+        var m2_value = r.GetDictionaryMember(value, "composed");
+        var m2 = r.Adapter.IsUndefined(m2_value) ? (bool)false : r.ToBoolean(m2_value);
+        var m3_value = r.GetDictionaryMember(value, "acceleration");
+        var m3_present = !r.Adapter.IsUndefined(m3_value);
+        var m3 = m3_present ? (global::Meziantou.Framework.WebPlatform.Dom.DeviceMotionEventAccelerationInit?)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_DeviceMotionEventAccelerationInit(r, m3_value) : default;
+        var m4_value = r.GetDictionaryMember(value, "accelerationIncludingGravity");
+        var m4_present = !r.Adapter.IsUndefined(m4_value);
+        var m4 = m4_present ? (global::Meziantou.Framework.WebPlatform.Dom.DeviceMotionEventAccelerationInit?)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_DeviceMotionEventAccelerationInit(r, m4_value) : default;
+        var m5_value = r.GetDictionaryMember(value, "interval");
+        var m5 = r.Adapter.IsUndefined(m5_value) ? (double)(double)(0d) : r.ToDouble(m5_value, restricted: true);
+        var m6_value = r.GetDictionaryMember(value, "rotationRate");
+        var m6_present = !r.Adapter.IsUndefined(m6_value);
+        var m6 = m6_present ? (global::Meziantou.Framework.WebPlatform.Dom.DeviceMotionEventRotationRateInit?)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_DeviceMotionEventRotationRateInit(r, m6_value) : default;
+        return new global::Meziantou.Framework.WebPlatform.Dom.DeviceMotionEventInit
+        {
+            Bubbles = m0,
+            Cancelable = m1,
+            Composed = m2,
+            Acceleration = m3_present ? m3 : Defaults_Dom_DeviceMotionEventInit.Acceleration,
+            AccelerationIncludingGravity = m4_present ? m4 : Defaults_Dom_DeviceMotionEventInit.AccelerationIncludingGravity,
+            Interval = m5,
+            RotationRate = m6_present ? m6 : Defaults_Dom_DeviceMotionEventInit.RotationRate,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.DeviceMotionEventRotationRateInit ToDictionary_Dom_DeviceMotionEventRotationRateInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "DeviceMotionEventRotationRateInit");
+        var m0_value = r.GetDictionaryMember(value, "alpha");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (double?)(double?)null : (r.IsNullOrUndefined(m0_value) ? (double?)null : r.ToDouble(m0_value, restricted: true));
+        var m1_value = r.GetDictionaryMember(value, "beta");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (double?)(double?)null : (r.IsNullOrUndefined(m1_value) ? (double?)null : r.ToDouble(m1_value, restricted: true));
+        var m2_value = r.GetDictionaryMember(value, "gamma");
+        var m2 = r.Adapter.IsUndefined(m2_value) ? (double?)(double?)null : (r.IsNullOrUndefined(m2_value) ? (double?)null : r.ToDouble(m2_value, restricted: true));
+        return new global::Meziantou.Framework.WebPlatform.Dom.DeviceMotionEventRotationRateInit
+        {
+            Alpha = m0,
+            Beta = m1,
+            Gamma = m2,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.DeviceOrientationEventInit ToDictionary_Dom_DeviceOrientationEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "DeviceOrientationEventInit");
+        var m0_value = r.GetDictionaryMember(value, "bubbles");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (bool)false : r.ToBoolean(m0_value);
+        var m1_value = r.GetDictionaryMember(value, "cancelable");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (bool)false : r.ToBoolean(m1_value);
+        var m2_value = r.GetDictionaryMember(value, "composed");
+        var m2 = r.Adapter.IsUndefined(m2_value) ? (bool)false : r.ToBoolean(m2_value);
+        var m3_value = r.GetDictionaryMember(value, "absolute");
+        var m3 = r.Adapter.IsUndefined(m3_value) ? (bool)false : r.ToBoolean(m3_value);
+        var m4_value = r.GetDictionaryMember(value, "alpha");
+        var m4 = r.Adapter.IsUndefined(m4_value) ? (double?)(double?)null : (r.IsNullOrUndefined(m4_value) ? (double?)null : r.ToDouble(m4_value, restricted: true));
+        var m5_value = r.GetDictionaryMember(value, "beta");
+        var m5 = r.Adapter.IsUndefined(m5_value) ? (double?)(double?)null : (r.IsNullOrUndefined(m5_value) ? (double?)null : r.ToDouble(m5_value, restricted: true));
+        var m6_value = r.GetDictionaryMember(value, "gamma");
+        var m6 = r.Adapter.IsUndefined(m6_value) ? (double?)(double?)null : (r.IsNullOrUndefined(m6_value) ? (double?)null : r.ToDouble(m6_value, restricted: true));
+        return new global::Meziantou.Framework.WebPlatform.Dom.DeviceOrientationEventInit
+        {
+            Bubbles = m0,
+            Cancelable = m1,
+            Composed = m2,
+            Absolute = m3,
+            Alpha = m4,
+            Beta = m5,
+            Gamma = m6,
         };
     }
 
@@ -5621,6 +5872,21 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         };
     }
 
+    internal static global::Meziantou.Framework.WebPlatform.Dom.GyroscopeSensorOptions ToDictionary_Dom_GyroscopeSensorOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "GyroscopeSensorOptions");
+        var m0_value = r.GetDictionaryMember(value, "frequency");
+        var m0_present = !r.Adapter.IsUndefined(m0_value);
+        var m0 = m0_present ? (double?)r.ToDouble(m0_value, restricted: true) : default;
+        var m1_value = r.GetDictionaryMember(value, "referenceFrame");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (string)"device" : r.ToEnumerationValue(m1_value, "GyroscopeLocalCoordinateSystem", WebIdlHelpers<TAdapter, TValue>.Enum_GyroscopeLocalCoordinateSystem_Values);
+        return new global::Meziantou.Framework.WebPlatform.Dom.GyroscopeSensorOptions
+        {
+            Frequency = m0_present ? m0 : Defaults_Dom_GyroscopeSensorOptions.Frequency,
+            ReferenceFrame = WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_GyroscopeLocalCoordinateSystem(m1),
+        };
+    }
+
     internal static global::Meziantou.Framework.WebPlatform.Dom.HashChangeEventInit ToDictionary_Dom_HashChangeEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
     {
         r.CheckDictionary(value, "HashChangeEventInit");
@@ -6216,6 +6482,21 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         };
     }
 
+    internal static global::Meziantou.Framework.WebPlatform.Dom.MagnetometerSensorOptions ToDictionary_Dom_MagnetometerSensorOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "MagnetometerSensorOptions");
+        var m0_value = r.GetDictionaryMember(value, "frequency");
+        var m0_present = !r.Adapter.IsUndefined(m0_value);
+        var m0 = m0_present ? (double?)r.ToDouble(m0_value, restricted: true) : default;
+        var m1_value = r.GetDictionaryMember(value, "referenceFrame");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (string)"device" : r.ToEnumerationValue(m1_value, "MagnetometerLocalCoordinateSystem", WebIdlHelpers<TAdapter, TValue>.Enum_MagnetometerLocalCoordinateSystem_Values);
+        return new global::Meziantou.Framework.WebPlatform.Dom.MagnetometerSensorOptions
+        {
+            Frequency = m0_present ? m0 : Defaults_Dom_MagnetometerSensorOptions.Frequency,
+            ReferenceFrame = WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_MagnetometerLocalCoordinateSystem(m1),
+        };
+    }
+
     internal static global::Meziantou.Framework.WebPlatform.Dom.MediaImage ToDictionary_Dom_MediaImage(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
     {
         r.CheckDictionary(value, "MediaImage");
@@ -6695,6 +6976,21 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
             Silent = m11,
             Tag = m12,
             Timestamp = m13_present ? m13 : Defaults_Dom_NotificationOptions.Timestamp,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.OrientationSensorOptions ToDictionary_Dom_OrientationSensorOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "OrientationSensorOptions");
+        var m0_value = r.GetDictionaryMember(value, "frequency");
+        var m0_present = !r.Adapter.IsUndefined(m0_value);
+        var m0 = m0_present ? (double?)r.ToDouble(m0_value, restricted: true) : default;
+        var m1_value = r.GetDictionaryMember(value, "referenceFrame");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (string)"device" : r.ToEnumerationValue(m1_value, "OrientationSensorLocalCoordinateSystem", WebIdlHelpers<TAdapter, TValue>.Enum_OrientationSensorLocalCoordinateSystem_Values);
+        return new global::Meziantou.Framework.WebPlatform.Dom.OrientationSensorOptions
+        {
+            Frequency = m0_present ? m0 : Defaults_Dom_OrientationSensorOptions.Frequency,
+            ReferenceFrame = WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_OrientationSensorLocalCoordinateSystem(m1),
         };
     }
 
@@ -7443,6 +7739,39 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
             SourceFile = m12,
             StatusCode = m13,
             ViolatedDirective = m14,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.SensorErrorEventInit ToDictionary_Dom_SensorErrorEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "SensorErrorEventInit");
+        var m0_value = r.GetDictionaryMember(value, "bubbles");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (bool)false : r.ToBoolean(m0_value);
+        var m1_value = r.GetDictionaryMember(value, "cancelable");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (bool)false : r.ToBoolean(m1_value);
+        var m2_value = r.GetDictionaryMember(value, "composed");
+        var m2 = r.Adapter.IsUndefined(m2_value) ? (bool)false : r.ToBoolean(m2_value);
+        var m3_value = r.GetDictionaryMember(value, "error");
+        if (r.Adapter.IsUndefined(m3_value)) throw r.MissingRequiredDictionaryMember("SensorErrorEventInit", "error");
+        var m3 = r.ToInterface<global::Meziantou.Framework.WebPlatform.Dom.DomException>(m3_value, "DOMException");
+        return new global::Meziantou.Framework.WebPlatform.Dom.SensorErrorEventInit
+        {
+            Bubbles = m0,
+            Cancelable = m1,
+            Composed = m2,
+            Error = m3,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.SensorOptions ToDictionary_Dom_SensorOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "SensorOptions");
+        var m0_value = r.GetDictionaryMember(value, "frequency");
+        var m0_present = !r.Adapter.IsUndefined(m0_value);
+        var m0 = m0_present ? (double?)r.ToDouble(m0_value, restricted: true) : default;
+        return new global::Meziantou.Framework.WebPlatform.Dom.SensorOptions
+        {
+            Frequency = m0_present ? m0 : Defaults_Dom_SensorOptions.Frequency,
         };
     }
 
@@ -8963,6 +9292,13 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
     };
 
+    internal static global::Meziantou.Framework.WebPlatform.Dom.AccelerometerLocalCoordinateSystem ToEnum_Dom_AccelerometerLocalCoordinateSystem(string value) => value switch
+    {
+        "device" => global::Meziantou.Framework.WebPlatform.Dom.AccelerometerLocalCoordinateSystem.Device,
+        "screen" => global::Meziantou.Framework.WebPlatform.Dom.AccelerometerLocalCoordinateSystem.Screen,
+        _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
+    };
+
     internal static global::Meziantou.Framework.WebPlatform.Dom.AlignSetting ToEnum_Dom_AlignSetting(string value) => value switch
     {
         "start" => global::Meziantou.Framework.WebPlatform.Dom.AlignSetting.Start,
@@ -9177,6 +9513,13 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
     };
 
+    internal static global::Meziantou.Framework.WebPlatform.Dom.GyroscopeLocalCoordinateSystem ToEnum_Dom_GyroscopeLocalCoordinateSystem(string value) => value switch
+    {
+        "device" => global::Meziantou.Framework.WebPlatform.Dom.GyroscopeLocalCoordinateSystem.Device,
+        "screen" => global::Meziantou.Framework.WebPlatform.Dom.GyroscopeLocalCoordinateSystem.Screen,
+        _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
+    };
+
     internal static global::Meziantou.Framework.WebPlatform.Dom.IdbCursorDirection ToEnum_Dom_IdbCursorDirection(string value) => value switch
     {
         "next" => global::Meziantou.Framework.WebPlatform.Dom.IdbCursorDirection.Next,
@@ -9236,6 +9579,13 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     {
         "shared" => global::Meziantou.Framework.WebPlatform.Dom.LockMode.Shared,
         "exclusive" => global::Meziantou.Framework.WebPlatform.Dom.LockMode.Exclusive,
+        _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
+    };
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.MagnetometerLocalCoordinateSystem ToEnum_Dom_MagnetometerLocalCoordinateSystem(string value) => value switch
+    {
+        "device" => global::Meziantou.Framework.WebPlatform.Dom.MagnetometerLocalCoordinateSystem.Device,
+        "screen" => global::Meziantou.Framework.WebPlatform.Dom.MagnetometerLocalCoordinateSystem.Screen,
         _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
     };
 
@@ -9328,6 +9678,13 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         "portrait-secondary" => global::Meziantou.Framework.WebPlatform.Dom.OrientationLockType.PortraitSecondary,
         "landscape-primary" => global::Meziantou.Framework.WebPlatform.Dom.OrientationLockType.LandscapePrimary,
         "landscape-secondary" => global::Meziantou.Framework.WebPlatform.Dom.OrientationLockType.LandscapeSecondary,
+        _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
+    };
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.OrientationSensorLocalCoordinateSystem ToEnum_Dom_OrientationSensorLocalCoordinateSystem(string value) => value switch
+    {
+        "device" => global::Meziantou.Framework.WebPlatform.Dom.OrientationSensorLocalCoordinateSystem.Device,
+        "screen" => global::Meziantou.Framework.WebPlatform.Dom.OrientationSensorLocalCoordinateSystem.Screen,
         _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
     };
 
@@ -10694,6 +11051,20 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
             return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Animations_TimelineRangeOffset(r, value);
         }
         return r.ToDomString(value);
+    }
+
+    /// <summary>(Float32Array or Float64Array or DOMMatrix)</summary>
+    internal static object? ToUnion_b9ce9e46(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.Unwrap(value) is { } platformObject)
+        {
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.DomMatrix) return platformObject;
+        }
+        if (r.Adapter.IsObject(value))
+        {
+            if (r.TryToBufferSource(value, 24576u, false) is { } buffer) return buffer;
+        }
+        throw r.CreateTypeError("The value cannot be converted to (Float32Array or Float64Array or DOMMatrix)");
     }
 
     /// <summary>(Element or Text)</summary>

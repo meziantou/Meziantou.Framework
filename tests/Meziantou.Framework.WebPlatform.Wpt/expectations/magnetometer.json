@@ -1,0 +1,59 @@
+{
+  "magnetometer/Magnetometer-disabled-by-permissions-policy.https.html": {
+    "total": 6
+  },
+  "magnetometer/Magnetometer-enabled-by-permissions-policy-attribute-redirect-on-load.https.html": {
+    "total": 4
+  },
+  "magnetometer/Magnetometer-enabled-by-permissions-policy-attribute.https.html": {
+    "total": 4
+  },
+  "magnetometer/Magnetometer-enabled-by-permissions-policy.https.html": {
+    "total": 6
+  },
+  "magnetometer/Magnetometer-enabled-on-self-origin-by-permissions-policy.https.html": {
+    "total": 6
+  },
+  "magnetometer/Magnetometer-iframe-access.https.html": {
+    "harness": "TIMEOUT",
+    "total": 8,
+    "failures": {
+      "UncalibratedMagnetometer: calling start() in a non-fully active document does not crash": "NOTRUN",
+      "UncalibratedMagnetometer: losing a document's frame with an active sensor does not crash": "TIMEOUT",
+      "UncalibratedMagnetometer: sensors in same-origin frames are updated if one of the frames is focused": "FAIL",
+      "UncalibratedMagnetometer: unfocused sensors in cross-origin frames are not updated": "FAIL"
+    }
+  },
+  "magnetometer/Magnetometer-supported-by-permissions-policy.html": {
+    "total": 1
+  },
+  "magnetometer/Magnetometer.https.html": {
+    "harness": "TIMEOUT",
+    "total": 40,
+    "failures": {
+      "Magnetometer: sensor reading is correct when options.referenceFrame is 'screen'.": "FAIL",
+      "UncalibratedMagnetometer: Readings are not delivered when the page has no visibility": "FAIL",
+      "UncalibratedMagnetometer: Readings delivered by shared platform sensor are immediately accessible to all sensors.": "NOTRUN",
+      "UncalibratedMagnetometer: Test that 'onreading' is called and sensor reading is valid.": "FAIL",
+      "UncalibratedMagnetometer: Test that frequency is capped to allowed maximum.": "FAIL",
+      "UncalibratedMagnetometer: Test that frequency is capped to the maximum supported frequency.": "FAIL",
+      "UncalibratedMagnetometer: Test that frequency is limited to the minimum supported frequency.": "FAIL",
+      "UncalibratedMagnetometer: Test that fresh reading is fetched on start().": "FAIL",
+      "UncalibratedMagnetometer: Test that readings are all mapped to expectedReadings correctly.": "FAIL",
+      "UncalibratedMagnetometer: Test that sensor can be successfully created and its states are correct.": "FAIL",
+      "UncalibratedMagnetometer: frequency hint works.": "TIMEOUT",
+      "UncalibratedMagnetometer: no exception is thrown when calling start() on already started sensor.": "FAIL",
+      "UncalibratedMagnetometer: no exception is thrown when calling stop() on already stopped sensor.": "FAIL",
+      "UncalibratedMagnetometer: sensor reading is correct when options.referenceFrame is 'screen'.": "NOTRUN",
+      "UncalibratedMagnetometer: sensor reading is correct.": "FAIL",
+      "UncalibratedMagnetometer: sensor timestamp is updated when time passes.": "FAIL",
+      "UncalibratedMagnetometer: throw 'TypeError' if frequency is invalid.": "NOTRUN"
+    }
+  },
+  "magnetometer/Magnetometer_insecure_context.html": {
+    "total": 2
+  },
+  "magnetometer/idlharness.https.window.js": {
+    "total": 36
+  }
+}

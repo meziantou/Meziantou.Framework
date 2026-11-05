@@ -91,6 +91,9 @@ internal sealed partial class WptTestRunner
     /// <summary>The permission store of the browsing contexts, whose states are set by test_driver.set_permission().</summary>
     private readonly PermissionStore _permissionStore = new();
 
+    /// <summary>The sensors of the device, created by test_driver.create_virtual_sensor() (https://w3c.github.io/sensors/#virtual-sensors).</summary>
+    private readonly DeviceSensorProvider _sensors = new();
+
     /// <summary>The position of the device, overridden by test_driver.bidi.emulation.set_geolocation_override().</summary>
     private readonly GeolocationProvider _geolocation = new() { Position = DefaultGeolocationPosition };
 
@@ -170,6 +173,12 @@ internal sealed partial class WptTestRunner
             // handler itself) aborts the page instead of overflowing the stack of the thread
             _engine = WptEngine.Create(this, _reftestWait is null ? null : ReftestRecursionLimit);
 
+            // As in Chromium, the permissions of the sensors are granted by default (test_driver.set_permission() changes them)
+            foreach (var name in (ReadOnlySpan<string>)["accelerometer", "gyroscope", "magnetometer", "ambient-light-sensor"])
+            {
+                _permissionStore.SetState(name, PermissionState.Granted);
+            }
+
             // The test page is loaded in a top-level browsing context. The documents of its iframes and the scripts are the files of the test suite.
             browsingContext = new BrowsingContext(new BrowsingContextOptions
             {
@@ -203,6 +212,9 @@ internal sealed partial class WptTestRunner
 
                 // The device knows its position (overridden by test_driver.bidi.emulation.set_geolocation_override)
                 Geolocation = _geolocation,
+
+                // The virtual sensors of test_driver.create_virtual_sensor()
+                Sensors = new DeviceSensorsOptions { Provider = _sensors },
 
                 // The preference of the user, set by test_driver.set_global_privacy_control() (disabled at the start of a test)
                 GlobalPrivacyControl = new GlobalPrivacyControlOptions { IsEnabled = _ => _globalPrivacyControl },
@@ -1776,6 +1788,82 @@ internal sealed partial class WptTestRunner
             });
             return adapter.Undefined;
         });
+        // The virtual sensors (https://w3c.github.io/sensors/#automation): as WebDriver commands, they run after the tasks that are already queued
+        Define("__wpt_create_virtual_sensor", 6, (_, args) =>
+        {
+            var type = adapter.ToString(args[0]);
+            var connected = adapter.ToBoolean(args[1]);
+            double? Optional(TValue value) => adapter.ToNumber(value) is var number && double.IsNaN(number) ? null : number;
+            var (minimum, maximum) = (Optional(args[2]), Optional(args[3]));
+            var completion = CreateCompletion(args[4], args[5]);
+            QueueTask(() =>
+            {
+                try
+                {
+                    _sensors.AddSensor(GetVirtualSensorType(type), connected, minimum, maximum);
+                    completion(null);
+                }
+                catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
+                {
+                    completion("invalid argument: " + ex.Message);
+                }
+            });
+            return adapter.Undefined;
+        });
+        Define("__wpt_update_virtual_sensor", 4, (_, args) =>
+        {
+            var type = adapter.ToString(args[0]);
+            var reading = adapter.ToString(args[1]);
+            var completion = CreateCompletion(args[2], args[3]);
+            QueueTask(() =>
+            {
+                try
+                {
+                    var sensorType = GetVirtualSensorType(type);
+                    if (_sensors.GetSensor(sensorType) is not { } sensor)
+                    {
+                        completion($"invalid argument: there is no virtual sensor of type '{type}'");
+                        return;
+                    }
+
+                    sensor.Update(ParseVirtualSensorReading(sensorType, reading));
+                    completion(null);
+                }
+                catch (Exception ex) when (ex is ArgumentException or System.Text.Json.JsonException or InvalidOperationException or KeyNotFoundException)
+                {
+                    completion("invalid argument: " + ex.Message);
+                }
+            });
+            return adapter.Undefined;
+        });
+        Define("__wpt_remove_virtual_sensor", 2, (_, args) =>
+        {
+            var type = adapter.ToString(args[0]);
+            var completion = CreateCompletion(args[1], args[1]);
+            QueueTask(() =>
+            {
+                if (TryGetVirtualSensorType(type, out var sensorType))
+                {
+                    _sensors.RemoveSensor(sensorType);
+                }
+
+                completion(null);
+            });
+            return adapter.Undefined;
+        });
+        Define("__wpt_get_virtual_sensor_information", 3, (_, args) =>
+        {
+            var type = adapter.ToString(args[0]);
+            var (resolve, reject) = (args[1], args[2]);
+            QueueTask(() => realm.Run(() =>
+            {
+                if (!TryGetVirtualSensorType(type, out var sensorType) || _sensors.GetSensor(sensorType) is not { } sensor)
+                    return adapter.Call(reject, adapter.Undefined, [adapter.FromString($"invalid argument: there is no virtual sensor of type '{type}'")]);
+
+                return adapter.Call(resolve, adapter.Undefined, [adapter.FromNumber(sensor.RequestedSamplingFrequency)]);
+            }));
+            return adapter.Undefined;
+        });
         Define("__wpt_generate_test_report", 1, (_, args) =>
         {
             realm.Window.GenerateAndQueueReport(new TestReportBody(adapter.ToString(args[0])), "test", "default");
@@ -1789,6 +1877,45 @@ internal sealed partial class WptTestRunner
         Define("__wpt_get_cookies", 1, (_, args) => adapter.FromString(GetWebDriverCookies(realm.Window.Document, args.Length > 0 && !adapter.IsUndefined(args[0]) ? adapter.ToString(args[0]) : null)));
         Define("__wpt_computed_role", 1, (_, args) => adapter.FromString(realm.ToInterface<Element>(args[0], "Element").ComputedRole));
         Define("__wpt_computed_label", 1, (_, args) => adapter.FromString(realm.ToInterface<Element>(args[0], "Element").ComputedName));
+    }
+
+    /// <summary>The virtual sensor types (https://w3c.github.io/sensors/#virtual-sensor-type) of the sensors of the device.</summary>
+    private static bool TryGetVirtualSensorType(string type, out DeviceSensorType result)
+    {
+        DeviceSensorType? sensorType = type switch
+        {
+            "accelerometer" => DeviceSensorType.Accelerometer,
+            "linear-acceleration" => DeviceSensorType.LinearAcceleration,
+            "gravity" => DeviceSensorType.Gravity,
+            "gyroscope" => DeviceSensorType.Gyroscope,
+            "magnetometer" => DeviceSensorType.Magnetometer,
+            "uncalibrated-magnetometer" => DeviceSensorType.UncalibratedMagnetometer,
+            "ambient-light" => DeviceSensorType.AmbientLight,
+            "proximity" => DeviceSensorType.Proximity,
+            "absolute-orientation" => DeviceSensorType.AbsoluteOrientation,
+            "relative-orientation" => DeviceSensorType.RelativeOrientation,
+            _ => null,
+        };
+        result = sensorType.GetValueOrDefault();
+        return sensorType is not null;
+    }
+
+    private static DeviceSensorType GetVirtualSensorType(string type) => TryGetVirtualSensorType(type, out var result) ? result : throw new ArgumentException($"'{type}' is not a virtual sensor type", nameof(type));
+
+    /// <summary>The reading parsing algorithm of a virtual sensor type (https://w3c.github.io/sensors/#virtual-sensor-metadata-reading-parsing-algorithm).</summary>
+    private static DeviceSensorReading ParseVirtualSensorReading(DeviceSensorType type, string json)
+    {
+        using var document = System.Text.Json.JsonDocument.Parse(json);
+        var reading = document.RootElement;
+        double Number(string name) => reading.GetProperty(name) is { ValueKind: System.Text.Json.JsonValueKind.Number } value ? value.GetDouble() : throw new ArgumentException($"'{name}' is not a number", nameof(json));
+        return type switch
+        {
+            DeviceSensorType.UncalibratedMagnetometer => DeviceSensorReading.FromUncalibratedMagnetometer(Number("x"), Number("y"), Number("z"), Number("xBias"), Number("yBias"), Number("zBias")),
+            DeviceSensorType.AmbientLight => DeviceSensorReading.FromIlluminance(Number("illuminance")),
+            DeviceSensorType.Proximity => DeviceSensorReading.FromProximity(Number("distance"), Number("max"), reading.GetProperty("near") is { ValueKind: System.Text.Json.JsonValueKind.True or System.Text.Json.JsonValueKind.False } near ? near.GetBoolean() : throw new ArgumentException("'near' is not a boolean", nameof(json))),
+            DeviceSensorType.AbsoluteOrientation or DeviceSensorType.RelativeOrientation => DeviceSensorReading.FromEulerAngles(Number("alpha"), Number("beta"), Number("gamma")),
+            _ => DeviceSensorReading.FromXyz(Number("x"), Number("y"), Number("z")),
+        };
     }
 
     /// <summary>The state of a sample of a virtual pressure source (https://w3c.github.io/compute-pressure/#dom-pressurestate), or null when it is not valid.</summary>

@@ -9,31 +9,30 @@ description: "The results of the web-platform-tests of accelerometer, and why th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 12 | 12 | – |
+| [Stable](#stable-tests) | 9 | 12 | 0 | 75% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **0** | **12** | **12** | **–** |
+| **All** | **9** | **12** | **0** | **75%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **REQUIRES**: 12
-  - `hardware`: 12
+- **TEST RUNNER**: 3
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`Accelerometer-disabled-by-permissions-policy.https.html`](https://wpt.fyi/results/accelerometer/Accelerometer-disabled-by-permissions-policy.https.html) | Disabled | – | REQUIRES(hardware) | Accelerometer sensor |
-| [`Accelerometer-enabled-by-permissions-policy-attribute-redirect-on-load.https.html`](https://wpt.fyi/results/accelerometer/Accelerometer-enabled-by-permissions-policy-attribute-redirect-on-load.https.html) | Disabled | – | REQUIRES(hardware) | Accelerometer sensor |
-| [`Accelerometer-enabled-by-permissions-policy-attribute.https.html`](https://wpt.fyi/results/accelerometer/Accelerometer-enabled-by-permissions-policy-attribute.https.html) | Disabled | – | REQUIRES(hardware) | Accelerometer sensor |
-| [`Accelerometer-enabled-by-permissions-policy.https.html`](https://wpt.fyi/results/accelerometer/Accelerometer-enabled-by-permissions-policy.https.html) | Disabled | – | REQUIRES(hardware) | Accelerometer sensor |
-| [`Accelerometer-enabled-on-self-origin-by-permissions-policy.https.html`](https://wpt.fyi/results/accelerometer/Accelerometer-enabled-on-self-origin-by-permissions-policy.https.html) | Disabled | – | REQUIRES(hardware) | Accelerometer sensor |
-| [`Accelerometer-iframe-access.https.html`](https://wpt.fyi/results/accelerometer/Accelerometer-iframe-access.https.html) | Disabled | – | REQUIRES(hardware) | Accelerometer sensor |
-| [`Accelerometer-supported-by-permissions-policy.html`](https://wpt.fyi/results/accelerometer/Accelerometer-supported-by-permissions-policy.html) | Disabled | – | REQUIRES(hardware) | Accelerometer sensor |
-| [`Accelerometer.https.html`](https://wpt.fyi/results/accelerometer/Accelerometer.https.html) | Disabled | – | REQUIRES(hardware) | Accelerometer sensor |
-| [`Accelerometer_insecure_context.html`](https://wpt.fyi/results/accelerometer/Accelerometer_insecure_context.html) | Disabled | – | REQUIRES(hardware) | Accelerometer sensor |
-| [`GravitySensor.https.html`](https://wpt.fyi/results/accelerometer/GravitySensor.https.html) | Disabled | – | REQUIRES(hardware) | Accelerometer sensor |
-| [`LinearAccelerationSensor.https.html`](https://wpt.fyi/results/accelerometer/LinearAccelerationSensor.https.html) | Disabled | – | REQUIRES(hardware) | Accelerometer sensor |
-| [`idlharness.https.window.js`](https://wpt.fyi/results/accelerometer/idlharness.https.window.js) | Disabled | – | REQUIRES(hardware) | Accelerometer sensor |
+| [`Accelerometer-disabled-by-permissions-policy.https.html`](https://wpt.fyi/results/accelerometer/Accelerometer-disabled-by-permissions-policy.https.html) | Pass | 9 / 9 |  |  |
+| [`Accelerometer-enabled-by-permissions-policy-attribute-redirect-on-load.https.html`](https://wpt.fyi/results/accelerometer/Accelerometer-enabled-by-permissions-policy-attribute-redirect-on-load.https.html) | Pass | 6 / 6 |  |  |
+| [`Accelerometer-enabled-by-permissions-policy-attribute.https.html`](https://wpt.fyi/results/accelerometer/Accelerometer-enabled-by-permissions-policy-attribute.https.html) | Pass | 6 / 6 |  |  |
+| [`Accelerometer-enabled-by-permissions-policy.https.html`](https://wpt.fyi/results/accelerometer/Accelerometer-enabled-by-permissions-policy.https.html) | Pass | 9 / 9 |  |  |
+| [`Accelerometer-enabled-on-self-origin-by-permissions-policy.https.html`](https://wpt.fyi/results/accelerometer/Accelerometer-enabled-on-self-origin-by-permissions-policy.https.html) | Pass | 9 / 9 |  |  |
+| [`Accelerometer-iframe-access.https.html`](https://wpt.fyi/results/accelerometer/Accelerometer-iframe-access.https.html) | Pass | 12 / 12 |  |  |
+| [`Accelerometer-supported-by-permissions-policy.html`](https://wpt.fyi/results/accelerometer/Accelerometer-supported-by-permissions-policy.html) | Pass | 1 / 1 |  |  |
+| [`Accelerometer.https.html`](https://wpt.fyi/results/accelerometer/Accelerometer.https.html) | Fail | 19 / 20 | TEST RUNNER | the `referenceFrame: 'screen'` subtest calls `test_driver.bidi.emulation.set_screen_orientation_override()`, which the runner does not implement (the natural orientation of its `ScreenOrientationProvider` is fixed), so the screen stays in its natural orientation and the screen coordinate system is the device one |
+| [`Accelerometer_insecure_context.html`](https://wpt.fyi/results/accelerometer/Accelerometer_insecure_context.html) | Pass | 3 / 3 |  |  |
+| [`GravitySensor.https.html`](https://wpt.fyi/results/accelerometer/GravitySensor.https.html) | Fail | 19 / 20 | TEST RUNNER | the `referenceFrame: 'screen'` subtest calls `test_driver.bidi.emulation.set_screen_orientation_override()`, which the runner does not implement (the natural orientation of its `ScreenOrientationProvider` is fixed), so the screen stays in its natural orientation and the screen coordinate system is the device one |
+| [`LinearAccelerationSensor.https.html`](https://wpt.fyi/results/accelerometer/LinearAccelerationSensor.https.html) | Fail | 19 / 20 | TEST RUNNER | the `referenceFrame: 'screen'` subtest calls `test_driver.bidi.emulation.set_screen_orientation_override()`, which the runner does not implement (the natural orientation of its `ScreenOrientationProvider` is fixed), so the screen stays in its natural orientation and the screen coordinate system is the device one |
+| [`idlharness.https.window.js`](https://wpt.fyi/results/accelerometer/idlharness.https.window.js) | Pass | 38 / 38 |  |  |

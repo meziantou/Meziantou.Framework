@@ -594,6 +594,16 @@ public sealed partial class BrowsingContextOptions
     public KeyboardLockOptions? KeyboardLock { get; init; }
 
     /// <summary>
+    /// Gets or sets the host hooks of the sensor APIs (https://w3c.github.io/sensors/, <c>Accelerometer</c>, <c>Gyroscope</c>,
+    /// <c>Magnetometer</c>, <c>AmbientLightSensor</c>, the orientation sensors, etc.) and of the device orientation and
+    /// motion events (https://w3c.github.io/deviceorientation/): <see cref="DeviceSensorsOptions.Provider"/> holds the
+    /// sensors of the device, whose readings are pushed by the application. The permissions of the sensors are checked with
+    /// <see cref="Permissions"/> and <see cref="RequestPermission"/>. The default is null: the device has no sensor, so the
+    /// sensor objects fail to start with a <c>NotReadableError</c>, and the events are fired once with null values.
+    /// </summary>
+    public DeviceSensorsOptions? Sensors { get; init; }
+
+    /// <summary>
     /// Gets or sets the host hooks of the Keyboard Map API (https://wicg.github.io/keyboard-map/, <c>navigator.keyboard.getLayoutMap()</c>):
     /// <see cref="KeyboardMapOptions.Provider"/> is the source of the keyboard layout. The default is null: the layout is US
     /// QWERTY, and it never changes.

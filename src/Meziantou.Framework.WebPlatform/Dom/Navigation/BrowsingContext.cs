@@ -3420,8 +3420,9 @@ public sealed partial class BrowsingContext : IDisposable
 
     /// <summary>
     /// The document is no longer fully active: its wake locks are released (https://w3c.github.io/screen-wake-lock/#handling-document-loss-of-full-activity),
-    /// its keyboard is unlocked (https://wicg.github.io/keyboard-lock/#h-keyboard-unlock), and the data collection of its
-    /// pressure observers stops (https://w3c.github.io/compute-pressure/#handling-change-of-fully-active-status).
+    /// its keyboard is unlocked (https://wicg.github.io/keyboard-lock/#h-keyboard-unlock), its sensor objects are disconnected
+    /// from the sensors of the device, and the data collection of its pressure observers stops
+    /// (https://w3c.github.io/compute-pressure/#handling-change-of-fully-active-status).
     /// </summary>
     private static void ReleaseDeviceLocks(Document document)
     {
@@ -3437,6 +3438,12 @@ public sealed partial class BrowsingContext : IDisposable
             }
 
             PressureObserverRegistry.OnUnloaded(window);
+        }
+
+        // The sensor objects are disconnected from the sensors of the device
+        if (document.RelevantWindow is { SensorsOrNull: { } sensors } sensorsWindow && ReferenceEquals(sensorsWindow.Document, document))
+        {
+            sensors.OnDocumentUnloaded();
         }
     }
 

@@ -9,20 +9,21 @@ description: "The results of the web-platform-tests of dom, and why the tests th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 664 | 684 | 6 | 98% |
+| [Stable](#stable-tests) | 665 | 684 | 6 | 98% |
 | [Tentative](#tentative-tests) | 30 | 55 | 2 | 57% |
 | [Reftests](#reftests) | 4 | 4 | 0 | 100% |
-| **All** | **698** | **743** | **8** | **95%** |
+| **All** | **699** | **743** | **8** | **95%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **TEST BUG**: 7
-- **NOT IMPLEMENTED**: 29
+- **NOT IMPLEMENTED**: 27
 - **REQUIRES**: 1
   - `user-input`: 1
 - **TEST RUNNER**: 2
+- **OUT OF SCOPE**: 1
 - **PERFORMANCE**: 6
 
 ## Stable tests
@@ -108,7 +109,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`events/EventTarget-addEventListener.any.js`](https://wpt.fyi/results/dom/events/EventTarget-addEventListener.any.js) | Pass | 2 / 2 |  |  |
 | [`events/EventTarget-constructible.any.js`](https://wpt.fyi/results/dom/events/EventTarget-constructible.any.js) | Pass | 6 / 6 |  |  |
 | [`events/EventTarget-dispatchEvent-returnvalue.html`](https://wpt.fyi/results/dom/events/EventTarget-dispatchEvent-returnvalue.html) | Pass | 2 / 2 |  |  |
-| [`events/EventTarget-dispatchEvent.html`](https://wpt.fyi/results/dom/events/EventTarget-dispatchEvent.html) | Fail | 23 / 25 | NOT IMPLEMENTED | `DeviceMotionEvent` and `DeviceOrientationEvent` |
+| [`events/EventTarget-dispatchEvent.html`](https://wpt.fyi/results/dom/events/EventTarget-dispatchEvent.html) | Pass | 25 / 25 |  |  |
 | [`events/EventTarget-removeEventListener.any.js`](https://wpt.fyi/results/dom/events/EventTarget-removeEventListener.any.js) | Pass | 2 / 2 |  |  |
 | [`events/EventTarget-this-of-listener.html`](https://wpt.fyi/results/dom/events/EventTarget-this-of-listener.html) | Pass | 6 / 6 |  |  |
 | [`events/EventTarget-window-constructor.html`](https://wpt.fyi/results/dom/events/EventTarget-window-constructor.html) | Pass | 1 / 1 |  |  |
@@ -298,7 +299,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`nodes/Document-createElement.html`](https://wpt.fyi/results/dom/nodes/Document-createElement.html) | Pass | 147 / 147 |  |  |
 | [`nodes/Document-createElementNS.html`](https://wpt.fyi/results/dom/nodes/Document-createElementNS.html) | Pass | 596 / 596 |  |  |
 | [`nodes/Document-createEvent-touchevent.window.js`](https://wpt.fyi/results/dom/nodes/Document-createEvent-touchevent.window.js) | Pass | 3 / 3 |  |  |
-| [`nodes/Document-createEvent.https.html`](https://wpt.fyi/results/dom/nodes/Document-createEvent.https.html) | Fail | 261 / 279 | NOT IMPLEMENTED | `DeviceMotionEvent` and `DeviceOrientationEvent` (`createEvent()` aliases) |
+| [`nodes/Document-createEvent.https.html`](https://wpt.fyi/results/dom/nodes/Document-createEvent.https.html) | Fail | 273 / 279 | OUT OF SCOPE | the `TouchEvent` aliases: as the desktop browsers, the library does not expose the legacy touch event APIs, so the subtests report a failed precondition |
 | [`nodes/Document-createProcessingInstruction-xhtml.xhtml`](https://wpt.fyi/results/dom/nodes/Document-createProcessingInstruction-xhtml.xhtml) | Pass | 12 / 12 |  |  |
 | [`nodes/Document-createProcessingInstruction.html`](https://wpt.fyi/results/dom/nodes/Document-createProcessingInstruction.html) | Pass | 12 / 12 |  |  |
 | [`nodes/Document-createTextNode.html`](https://wpt.fyi/results/dom/nodes/Document-createTextNode.html) | Pass | 6 / 6 |  |  |

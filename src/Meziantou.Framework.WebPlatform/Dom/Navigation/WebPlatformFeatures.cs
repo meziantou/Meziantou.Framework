@@ -220,6 +220,23 @@ public sealed record WebPlatformFeatures
     public bool KeyboardLockEnabled { get; init; } = true;
 
     /// <summary>
+    /// Gets or sets whether the sensor APIs are exposed (https://w3c.github.io/sensors/): <c>Sensor</c>,
+    /// <c>SensorErrorEvent</c>, <c>Accelerometer</c>, <c>LinearAccelerationSensor</c>, <c>GravitySensor</c>,
+    /// <c>Gyroscope</c>, <c>Magnetometer</c>, <c>UncalibratedMagnetometer</c>, <c>AmbientLightSensor</c>,
+    /// <c>ProximitySensor</c>, <c>OrientationSensor</c>, <c>AbsoluteOrientationSensor</c> and
+    /// <c>RelativeOrientationSensor</c> (see <see cref="BrowsingContextOptions.Sensors"/>). The default is true.
+    /// </summary>
+    public bool SensorsEnabled { get; init; } = true;
+
+    /// <summary>
+    /// Gets or sets whether the device orientation and motion events are exposed (https://w3c.github.io/deviceorientation/):
+    /// <c>DeviceOrientationEvent</c>, <c>DeviceMotionEvent</c>, <c>DeviceMotionEventAcceleration</c>,
+    /// <c>DeviceMotionEventRotationRate</c> and the <c>ondeviceorientation</c>, <c>ondeviceorientationabsolute</c> and
+    /// <c>ondevicemotion</c> event handlers of the window (see <see cref="BrowsingContextOptions.Sensors"/>). The default is true.
+    /// </summary>
+    public bool DeviceOrientationEnabled { get; init; } = true;
+
+    /// <summary>
     /// Gets or sets whether the Network Information API is exposed (https://wicg.github.io/netinfo/): <c>navigator.connection</c>
     /// and the <c>NetworkInformation</c> interface, in the windows and the workers (see <see cref="BrowsingContextOptions.NetworkInformation"/>).
     /// The default is true.

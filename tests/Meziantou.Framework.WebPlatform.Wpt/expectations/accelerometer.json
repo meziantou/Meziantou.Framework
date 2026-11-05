@@ -1,0 +1,47 @@
+{
+  "accelerometer/Accelerometer-disabled-by-permissions-policy.https.html": {
+    "total": 9
+  },
+  "accelerometer/Accelerometer-enabled-by-permissions-policy-attribute-redirect-on-load.https.html": {
+    "total": 6
+  },
+  "accelerometer/Accelerometer-enabled-by-permissions-policy-attribute.https.html": {
+    "total": 6
+  },
+  "accelerometer/Accelerometer-enabled-by-permissions-policy.https.html": {
+    "total": 9
+  },
+  "accelerometer/Accelerometer-enabled-on-self-origin-by-permissions-policy.https.html": {
+    "total": 9
+  },
+  "accelerometer/Accelerometer-iframe-access.https.html": {
+    "total": 12
+  },
+  "accelerometer/Accelerometer-supported-by-permissions-policy.html": {
+    "total": 1
+  },
+  "accelerometer/Accelerometer.https.html": {
+    "total": 20,
+    "failures": {
+      "Accelerometer: sensor reading is correct when options.referenceFrame is 'screen'.": "FAIL"
+    }
+  },
+  "accelerometer/Accelerometer_insecure_context.html": {
+    "total": 3
+  },
+  "accelerometer/GravitySensor.https.html": {
+    "total": 20,
+    "failures": {
+      "GravitySensor: sensor reading is correct when options.referenceFrame is 'screen'.": "FAIL"
+    }
+  },
+  "accelerometer/LinearAccelerationSensor.https.html": {
+    "total": 20,
+    "failures": {
+      "LinearAccelerationSensor: sensor reading is correct when options.referenceFrame is 'screen'.": "FAIL"
+    }
+  },
+  "accelerometer/idlharness.https.window.js": {
+    "total": 38
+  }
+}

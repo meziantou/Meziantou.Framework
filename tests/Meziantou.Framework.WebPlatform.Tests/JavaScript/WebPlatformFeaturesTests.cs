@@ -31,6 +31,8 @@ public sealed class WebPlatformFeaturesTests : IDisposable
           BatteryStatusEnabled: typeof navigator.getBattery + typeof BatteryManager + ('getBattery' in navigator),
           WakeLockEnabled: typeof navigator.wakeLock + typeof WakeLock + typeof WakeLockSentinel + ('wakeLock' in navigator),
           KeyboardLockEnabled: typeof navigator.keyboard + typeof Keyboard + ('keyboard' in navigator),
+          ScreenOrientationEnabled: typeof screen.orientation + typeof ScreenOrientation + ('orientation' in screen),
+          VirtualKeyboardEnabled: typeof navigator.virtualKeyboard + typeof VirtualKeyboard + ('virtualKeyboard' in navigator) + ('virtualKeyboardPolicy' in HTMLElement.prototype),
           IndexedDBEnabled: typeof indexedDB + typeof IDBFactory + typeof IDBKeyRange + ('indexedDB' in self),
           CacheStorageEnabled: typeof caches + typeof Cache + typeof CacheStorage + ('caches' in self),
           WebStorageEnabled: typeof localStorage + typeof sessionStorage + typeof Storage + typeof StorageEvent + ('localStorage' in window),

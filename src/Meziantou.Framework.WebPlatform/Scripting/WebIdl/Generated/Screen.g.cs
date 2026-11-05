@@ -24,6 +24,7 @@ internal static class Binding_Screen<TAdapter, TValue> where TAdapter : struct, 
     private static TValue Get_height(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Screen>(t, Binding); return r.FromNumber((double)o.Height); }
     private static TValue Get_colorDepth(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Screen>(t, Binding); return r.FromNumber((double)o.ColorDepth); }
     private static TValue Get_pixelDepth(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Screen>(t, Binding); return r.FromNumber((double)o.PixelDepth); }
+    private static TValue Get_orientation(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Screen>(t, Binding); return r.Wrap(o.Orientation); }
     private static void DefineMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue interfaceObject, TValue prototype, TValue instanceTarget)
     {
         r.DefineAttribute(instanceTarget, "availWidth", Get_availWidth, null);
@@ -32,5 +33,6 @@ internal static class Binding_Screen<TAdapter, TValue> where TAdapter : struct, 
         r.DefineAttribute(instanceTarget, "height", Get_height, null);
         r.DefineAttribute(instanceTarget, "colorDepth", Get_colorDepth, null);
         r.DefineAttribute(instanceTarget, "pixelDepth", Get_pixelDepth, null);
+        r.DefineAttribute(instanceTarget, "orientation", Get_orientation, null);
     }
 }

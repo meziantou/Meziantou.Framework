@@ -3305,8 +3305,8 @@ text).
 ## Device APIs
 
 The APIs whose behavior depends on the device or on the user are answered by the host, with callbacks of
-`BrowsingContextOptions` (grouped in a nested options object for the newer APIs: `Badging`, `BatteryStatus`, `WakeLock`
-and `KeyboardLock`). Each one has a default that works without a host, and a flag of `WebPlatformFeatures` that hides
+`BrowsingContextOptions` (grouped in a nested options object for the newer APIs: `Badging`, `BatteryStatus`, `WakeLock`,
+`KeyboardLock`, `ScreenOrientation`, `VirtualKeyboard` and `ViewportSegments`). Each one has a default that works without a host, and a flag of `WebPlatformFeatures` that hides
 it (see [Disabling features](#disabling-features)).
 
 - **Web Share** ([Web Share API](https://w3c.github.io/web-share/)): `navigator.share()` and `navigator.canShare()`, in
@@ -3367,6 +3367,35 @@ it (see [Disabling features](#disabling-features)).
   `unlock()` and when the document is unloaded. A document whose keyboard is locked is not kept in the back/forward
   cache (`keyboardlock`), as in Chromium. The `layoutchange` event and `getLayoutMap()` (Keyboard Map) are not
   implemented.
+- **Screen Orientation** ([Screen Orientation](https://w3c.github.io/screen-orientation/)): `screen.orientation` (`type`,
+  `angle`, `change`), `lock()` and `unlock()`, on the `ScreenOrientationProvider` of `ScreenOrientation.Provider` (its
+  natural orientation, the `DeviceOrientation` the user holds the device in, and `TryLock` to lock the screen of the
+  operating system). The common safety checks reject the calls of a document that is not fully active
+  (`InvalidStateError`), sandboxed without `allow-orientation-lock` or hidden (`SecurityError`); a lock needs the
+  top-level document to be fullscreen (`NotAllowedError`, as Chromium requires fullscreen). The lock is applied when it
+  is requested, and completes after a frame: the `change` events are fired from the top-level document down to its
+  frames, then the promise is resolved. A new lock request, `unlock()`, or a lock request of another document of the tab
+  aborts the pending request (`AbortError`), as does unloading its document; exiting fullscreen and unloading the
+  top-level document unlock the screen. A hidden document gets the `change` event when it becomes visible. Without
+  provider, the screen is a desktop screen (the primary orientation of its shape, angle 0) that cannot be locked
+  (`NotSupportedError`). The size of the viewport does not follow the orientation.
+- **VirtualKeyboard** ([VirtualKeyboard API](https://w3c.github.io/virtual-keyboard/)): `navigator.virtualKeyboard`
+  (`show()`, `hide()`, `boundingRect`, `overlaysContent`, `geometrychange`), the `virtualKeyboardPolicy` attribute and the
+  `keyboard-inset-*` environment variables. `show()` calls `VirtualKeyboard.Show` when the window has sticky activation
+  and its focused element (a text field or an editing host) has the `manual` policy and an `inputmode` other than `none`;
+  `hide()` calls `VirtualKeyboard.Hide`. The host reports the rectangle of its keyboard (relative to the viewport) with the
+  `BoundingRect` of the `VirtualKeyboardProvider` of `VirtualKeyboard.Provider`: the top-level documents get its
+  intersection with their viewport and fire `geometrychange`, and their `keyboard-inset-*` variables (the top, left,
+  bottom and right edges, the width and the height, as in Chromium) are the rectangle while `overlaysContent` is true.
+  The frames keep an empty rectangle, and cannot set `overlaysContent`. The viewport is not resized by the keyboard.
+- **Viewport segments** ([CSS Viewport](https://drafts.csswg.org/css-viewport/#viewport-segments),
+  [CSS Environment Variables](https://drafts.csswg.org/css-env-1/#viewport-segments)): the `DisplayFeature` items of the
+  `DisplayFeaturesProvider` of `ViewportSegments.Provider` (vertical or horizontal folds, with an offset and a mask
+  length) split the viewport of the top-level documents in a grid of segments: `window.viewport.segments` (in row-major
+  order), the `horizontal-viewport-segments` and `vertical-viewport-segments` media features (the number of columns and
+  rows), and the `viewport-segment-{width,height,top,left,bottom,right} <column> <row>` environment variables, defined
+  when there are several segments. Changing the display features evaluates the media queries again. As in Chromium, the
+  frames have a single segment, and their `viewport.segments` is null.
 
 ## Cross-document messaging
 
@@ -3950,6 +3979,8 @@ using var context = new BrowsingContext(new BrowsingContextOptions
 | `BatteryStatusEnabled` | The [Battery Status API](#device-apis): `navigator.getBattery()`, `BatteryManager` |
 | `WakeLockEnabled` | The [Screen Wake Lock API](#device-apis): `navigator.wakeLock`, `WakeLock`, `WakeLockSentinel` |
 | `KeyboardLockEnabled` | The [Keyboard Lock API](#device-apis): `navigator.keyboard`, `Keyboard` |
+| `ScreenOrientationEnabled` | The [Screen Orientation API](#device-apis): `screen.orientation`, `ScreenOrientation` |
+| `VirtualKeyboardEnabled` | The [VirtualKeyboard API](#device-apis): `navigator.virtualKeyboard`, `VirtualKeyboard`, `virtualKeyboardPolicy` |
 | `InputPendingEnabled` | `navigator.scheduling.isInputPending()` (see [User input](#user-input)): `navigator.scheduling`, `Scheduling` |
 | `WebStorageEnabled` | `localStorage`, `sessionStorage`, `Storage`, `StorageEvent` |
 | `IndexedDBEnabled` | `indexedDB` and the `IDB*` interfaces |

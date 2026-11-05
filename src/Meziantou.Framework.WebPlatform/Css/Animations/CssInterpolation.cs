@@ -160,6 +160,11 @@ internal static class CssInterpolation
         // Binary exponentiation of the accumulation of the final value (the accumulation is associative), then the value of the
         // keyframe is accumulated onto it: the accumulated final value is the underlying value (the keyframe value replaces it
         // when they cannot be added, e.g. a number and a length of line-height)
+        if (GetKind(property, context.Style) == CssInterpolationKind.TransformList)
+        {
+            finalValue = CssTransformInterpolation.GetIterationFinalValue(context, finalValue, value);
+        }
+
         var count = (long)Math.Min(Math.Floor(iterations), long.MaxValue / 2);
         string? accumulated = null;
         var power = finalValue;

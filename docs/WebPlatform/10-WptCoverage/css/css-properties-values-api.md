@@ -9,16 +9,16 @@ description: "The results of the web-platform-tests of css/css-properties-values
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 97 | 105 | 0 | 92% |
+| [Stable](#stable-tests) | 99 | 105 | 0 | 94% |
 | [Tentative](#tentative-tests) | 3 | 6 | 0 | 50% |
 | [Reftests](#reftests) | 7 | 7 | 0 | 100% |
-| **All** | **107** | **118** | **0** | **91%** |
+| **All** | **109** | **118** | **0** | **92%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 3
+- **BUG**: 1
 - **TEST BUG**: 5
 - **NOT IMPLEMENTED**: 4
 
@@ -45,7 +45,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`animation/custom-property-animation-length-percentage.html`](https://wpt.fyi/results/css/css-properties-values-api/animation/custom-property-animation-length-percentage.html) | Pass | 5 / 5 |  |  |
 | [`animation/custom-property-animation-length-space-list.html`](https://wpt.fyi/results/css/css-properties-values-api/animation/custom-property-animation-length-space-list.html) | Pass | 6 / 6 |  |  |
 | [`animation/custom-property-animation-length.html`](https://wpt.fyi/results/css/css-properties-values-api/animation/custom-property-animation-length.html) | Pass | 5 / 5 |  |  |
-| [`animation/custom-property-animation-list-type-mismatch.html`](https://wpt.fyi/results/css/css-properties-values-api/animation/custom-property-animation-list-type-mismatch.html) | Fail | 6 / 7 | BUG | the addition of the items of a `<transform-function>#` list adds the arguments of the functions (`scale(2)` plus `scale(4)` is `scale(6)`); the test expects the accumulation of the transform functions (`scale(5)`), which css-properties-values-api does not define for the items of a list |
+| [`animation/custom-property-animation-list-type-mismatch.html`](https://wpt.fyi/results/css/css-properties-values-api/animation/custom-property-animation-list-type-mismatch.html) | Pass | 7 / 7 |  |  |
 | [`animation/custom-property-animation-non-inherited-used-by-standard-property.html`](https://wpt.fyi/results/css/css-properties-values-api/animation/custom-property-animation-non-inherited-used-by-standard-property.html) | Pass | 1 / 1 |  |  |
 | [`animation/custom-property-animation-number-comma-list.html`](https://wpt.fyi/results/css/css-properties-values-api/animation/custom-property-animation-number-comma-list.html) | Pass | 6 / 6 |  |  |
 | [`animation/custom-property-animation-number-space-list.html`](https://wpt.fyi/results/css/css-properties-values-api/animation/custom-property-animation-number-space-list.html) | Pass | 6 / 6 |  |  |
@@ -60,7 +60,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`animation/custom-property-animation-time-space-list.html`](https://wpt.fyi/results/css/css-properties-values-api/animation/custom-property-animation-time-space-list.html) | Pass | 6 / 6 |  |  |
 | [`animation/custom-property-animation-time.html`](https://wpt.fyi/results/css/css-properties-values-api/animation/custom-property-animation-time.html) | Pass | 5 / 5 |  |  |
 | [`animation/custom-property-animation-transform-function.html`](https://wpt.fyi/results/css/css-properties-values-api/animation/custom-property-animation-transform-function.html) | Pass | 5 / 5 |  |  |
-| [`animation/custom-property-animation-transform-list-multiple-values.html`](https://wpt.fyi/results/css/css-properties-values-api/animation/custom-property-animation-transform-list-multiple-values.html) | Fail | 10 / 11 | BUG | an additive `<transform-list>` animation stacked on a discrete `var(--invalid, invalid)` animation is added to the registered initial value (the value of the discrete animation, invalid at computed-value time) instead of replacing it |
+| [`animation/custom-property-animation-transform-list-multiple-values.html`](https://wpt.fyi/results/css/css-properties-values-api/animation/custom-property-animation-transform-list-multiple-values.html) | Pass | 11 / 11 |  |  |
 | [`animation/custom-property-animation-transform-list-single-values.html`](https://wpt.fyi/results/css/css-properties-values-api/animation/custom-property-animation-transform-list-single-values.html) | Pass | 5 / 5 |  |  |
 | [`animation/custom-property-animation-url.html`](https://wpt.fyi/results/css/css-properties-values-api/animation/custom-property-animation-url.html) | Pass | 3 / 3 |  |  |
 | [`animation/custom-property-animation-used-in-shorthand.html`](https://wpt.fyi/results/css/css-properties-values-api/animation/custom-property-animation-used-in-shorthand.html) | Pass | 1 / 1 |  |  |

@@ -31,6 +31,28 @@ internal sealed class CssDeclarationEntry(CssLonghandValue value, bool important
     public string Name => Value.Name;
 
     public bool Important { get; set; } = important;
+
+    /// <summary>
+    /// The document base URL when the declaration of a style attribute that may contain a URL was parsed, or null: its url()
+    /// are resolved against it, not against the base URL of the document when the style is computed
+    /// (https://drafts.csswg.org/css-values-4/#relative-urls).
+    /// </summary>
+    public string? BaseUrl { get; private set; }
+
+    /// <summary>The document whose base URL is <see cref="BaseUrl"/>: an element adopted by another document uses the base URL of its new document.</summary>
+    public Document? BaseUrlDocument { get; private set; }
+
+    public void SetBaseUrl(Document? document, string? baseUrl)
+    {
+        BaseUrlDocument = document;
+        BaseUrl = baseUrl;
+    }
+
+    /// <summary>Returns the base URL of the declaration in a document, or null when it is the document base URL.</summary>
+    public string? GetBaseUrl(Document document) => ReferenceEquals(BaseUrlDocument, document) ? BaseUrl : null;
+
+    /// <summary>Returns whether the value of a declaration may contain a URL (a function or a string).</summary>
+    public static bool MayContainUrl(string value) => value.AsSpan().IndexOfAny('(', '"', '\'') >= 0;
 }
 
 /// <summary>
@@ -100,6 +122,7 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
                     if (value is not null && !ReferenceEquals(value, (_ownerNode.RareDataOrNull as Dom.ElementRareData)?.BlockedStyleAttribute))
                     {
                         ParseDeclarationBlock(value, _declarations, atRule: null, IsQuirksMode);
+                        SetBaseUrls(_declarations);
                     }
 
                     _source = value;
@@ -125,6 +148,7 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
             var declarations = Declarations;
             declarations.Clear();
             ParseDeclarationBlock(value ?? "", declarations, _atRule, IsQuirksMode);
+            SetBaseUrls(declarations);
             UpdateStyleAttribute();
         }
     }
@@ -830,6 +854,32 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
         return closeBlocks ? text + closers : text;
     }
 
+    /// <summary>Sets the base URL of the declarations of a style attribute that may contain a URL (see <see cref="CssDeclarationEntry.BaseUrl"/>).</summary>
+    private void SetBaseUrls(List<CssDeclarationEntry> declarations)
+    {
+        if (_ownerNode is null)
+            return;
+
+        var document = _ownerNode.NodeDocument;
+        string? baseUrl = null;
+        foreach (var declaration in declarations)
+        {
+            if (CssDeclarationEntry.MayContainUrl(declaration.Value.Value))
+            {
+                declaration.SetBaseUrl(document, baseUrl ??= document.DocumentBaseUrl.Serialize());
+            }
+        }
+    }
+
+    private void SetBaseUrl(CssDeclarationEntry declaration)
+    {
+        if (_ownerNode is not null)
+        {
+            var document = _ownerNode.NodeDocument;
+            declaration.SetBaseUrl(document, CssDeclarationEntry.MayContainUrl(declaration.Value.Value) ? document.DocumentBaseUrl.Serialize() : null);
+        }
+    }
+
     private static int CountTrailingBackslashes(string text)
     {
         var count = 0;
@@ -856,13 +906,19 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
             if (!HasLaterDeclarationWithDifferentMappingLogic(declarations, declaration))
             {
                 if (declaration.Value == value && declaration.Important == important)
-                    return false;
+                {
+                    // The url() of the value are resolved again against the current base URL
+                    var baseUrl = declaration.BaseUrl;
+                    SetBaseUrl(declaration);
+                    return !string.Equals(baseUrl, declaration.BaseUrl, StringComparison.Ordinal);
+                }
 
                 // The value as specified (reified by the Typed OM) is not part of the serialization of the declaration: the
                 // declaration block is not updated when only it changes (e.g. 10PX then 10px)
                 var updated = declaration.Important != important || declaration.Value with { TypedValue = null, TypedValueIsRepresentation = false } != value with { TypedValue = null, TypedValueIsRepresentation = false };
                 declaration.Value = value;
                 declaration.Important = important;
+                SetBaseUrl(declaration);
                 return updated;
             }
 
@@ -870,6 +926,7 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
         }
 
         var entry = new CssDeclarationEntry(value, important);
+        SetBaseUrl(entry);
         declarations.Add(entry);
         index?[value.Name] = entry;
         return true;

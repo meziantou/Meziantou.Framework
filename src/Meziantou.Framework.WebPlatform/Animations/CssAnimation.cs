@@ -318,6 +318,13 @@ public sealed class CssAnimation : Animation
         {
             scheduledTime = Timeline?.ToOriginRelativeTime(startTime + ((delay + elapsedTime) / PlaybackRate));
         }
+        else if (StartTimeValue is null)
+        {
+            // An animation without start time (e.g. paused, with a hold time) reaches the phase now: as in the browsers, its
+            // events are not dispatched before the events that occurred earlier (e.g. the animationcancel event of the animation
+            // it replaced, when its element is re-parented)
+            scheduledTime = Timeline?.ToOriginRelativeTime(Timeline.CurrentTimeValue);
+        }
 
         // The events of a phase change are dispatched in the order of the table, even when an event would occur earlier than the
         // previous one (e.g. the end event at the interval start after the start event at the interval end when seeking backwards)

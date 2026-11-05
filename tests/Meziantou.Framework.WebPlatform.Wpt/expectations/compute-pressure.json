@@ -1,0 +1,141 @@
+{
+  "compute-pressure/compute_pressure_basic.https.window.js?globalScope=dedicated_worker": {
+    "total": 5
+  },
+  "compute-pressure/compute_pressure_basic.https.window.js?globalScope=window": {
+    "total": 5
+  },
+  "compute-pressure/compute_pressure_detached_iframe.https.window.js?globalScope=window": {
+    "total": 5,
+    "failures": {
+      "PressureObserver constructor does not exist in detached iframes": "FAIL",
+      "PressureObserver.observe() on detached frame rejects": "FAIL"
+    }
+  },
+  "compute-pressure/compute_pressure_disconnect.https.window.js?globalScope=dedicated_worker": {
+    "total": 2
+  },
+  "compute-pressure/compute_pressure_disconnect.https.window.js?globalScope=window": {
+    "total": 2
+  },
+  "compute-pressure/compute_pressure_disconnect_idempotent.https.window.js?globalScope=dedicated_worker": {
+    "total": 1
+  },
+  "compute-pressure/compute_pressure_disconnect_idempotent.https.window.js?globalScope=window": {
+    "total": 1
+  },
+  "compute-pressure/compute_pressure_disconnect_immediately.https.window.js?globalScope=dedicated_worker": {
+    "total": 2
+  },
+  "compute-pressure/compute_pressure_disconnect_immediately.https.window.js?globalScope=window": {
+    "total": 2
+  },
+  "compute-pressure/compute_pressure_duplicate_updates.https.window.js?globalScope=dedicated_worker": {
+    "total": 2
+  },
+  "compute-pressure/compute_pressure_duplicate_updates.https.window.js?globalScope=window": {
+    "total": 2
+  },
+  "compute-pressure/compute_pressure_known_sources.https.any.js": {
+    "total": 3
+  },
+  "compute-pressure/compute_pressure_known_sources.https.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "compute-pressure/compute_pressure_known_sources.https.any.js#sharedworker": {
+    "total": 3
+  },
+  "compute-pressure/compute_pressure_multiple.https.window.js?globalScope=dedicated_worker": {
+    "total": 1
+  },
+  "compute-pressure/compute_pressure_multiple.https.window.js?globalScope=window": {
+    "total": 1
+  },
+  "compute-pressure/compute_pressure_observe_idempotent.https.window.js?globalScope=dedicated_worker": {
+    "total": 1
+  },
+  "compute-pressure/compute_pressure_observe_idempotent.https.window.js?globalScope=window": {
+    "total": 1
+  },
+  "compute-pressure/compute_pressure_observe_unobserve_failure.https.any.js": {
+    "total": 2
+  },
+  "compute-pressure/compute_pressure_observe_unobserve_failure.https.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "compute-pressure/compute_pressure_observe_unobserve_failure.https.any.js#sharedworker": {
+    "total": 2
+  },
+  "compute-pressure/compute_pressure_options.https.window.js?globalScope=dedicated_worker": {
+    "total": 3
+  },
+  "compute-pressure/compute_pressure_options.https.window.js?globalScope=window": {
+    "total": 3
+  },
+  "compute-pressure/compute_pressure_take_records.https.window.js?globalScope=dedicated_worker": {
+    "total": 2
+  },
+  "compute-pressure/compute_pressure_take_records.https.window.js?globalScope=window": {
+    "total": 2
+  },
+  "compute-pressure/compute_pressure_timestamp.https.window.js?globalScope=dedicated_worker": {
+    "total": 2
+  },
+  "compute-pressure/compute_pressure_timestamp.https.window.js?globalScope=window": {
+    "total": 2
+  },
+  "compute-pressure/compute_pressure_timestamp_continuously_increasing.https.window.js?globalScope=dedicated_worker": {
+    "total": 1
+  },
+  "compute-pressure/compute_pressure_timestamp_continuously_increasing.https.window.js?globalScope=window": {
+    "total": 1
+  },
+  "compute-pressure/compute_pressure_timestamp_faster_collector.https.window.js?globalScope=dedicated_worker": {
+    "total": 1
+  },
+  "compute-pressure/compute_pressure_timestamp_faster_collector.https.window.js?globalScope=window": {
+    "total": 1
+  },
+  "compute-pressure/compute_pressure_update_toJSON.https.window.js?globalScope=dedicated_worker": {
+    "total": 1
+  },
+  "compute-pressure/compute_pressure_update_toJSON.https.window.js?globalScope=window": {
+    "total": 1
+  },
+  "compute-pressure/idlharness.https.any.js": {
+    "total": 32
+  },
+  "compute-pressure/idlharness.https.any.js#dedicatedworker": {
+    "total": 32
+  },
+  "compute-pressure/idlharness.https.any.js#sharedworker": {
+    "total": 32
+  },
+  "compute-pressure/observe_return_type.https.window.js?globalScope=dedicated_worker": {
+    "total": 1
+  },
+  "compute-pressure/observe_return_type.https.window.js?globalScope=window": {
+    "total": 1
+  },
+  "compute-pressure/permissions-policy/compute-pressure-allowed-by-permissions-policy-attribute-redirect-on-load.https.html": {
+    "total": 2
+  },
+  "compute-pressure/permissions-policy/compute-pressure-allowed-by-permissions-policy-attribute.https.html": {
+    "total": 2
+  },
+  "compute-pressure/permissions-policy/compute-pressure-allowed-by-permissions-policy.https.html": {
+    "total": 5
+  },
+  "compute-pressure/permissions-policy/compute-pressure-allowed-on-self-origin-by-permissions-policy.https.html": {
+    "total": 3
+  },
+  "compute-pressure/permissions-policy/compute-pressure-default-permissions-policy.https.html": {
+    "total": 2
+  },
+  "compute-pressure/permissions-policy/compute-pressure-disabled-by-permissions-policy.https.html": {
+    "total": 6
+  },
+  "compute-pressure/permissions-policy/compute-pressure-supported-by-permissions-policy.html": {
+    "total": 1
+  }
+}

@@ -9,44 +9,43 @@ description: "The results of the web-platform-tests of compute-pressure, and why
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 25 | 25 | – |
+| [Stable](#stable-tests) | 24 | 25 | 0 | 96% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **0** | **25** | **25** | **–** |
+| **All** | **24** | **25** | **0** | **96%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **REQUIRES**: 25
-  - `hardware`: 25
+- **TEST BUG**: 1
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`compute_pressure_basic.https.window.js`](https://wpt.fyi/results/compute-pressure/compute_pressure_basic.https.window.js) | Disabled | – | REQUIRES(hardware) | Compute Pressure API |
-| [`compute_pressure_detached_iframe.https.window.js`](https://wpt.fyi/results/compute-pressure/compute_pressure_detached_iframe.https.window.js) | Disabled | – | REQUIRES(hardware) | Compute Pressure API |
-| [`compute_pressure_disconnect.https.window.js`](https://wpt.fyi/results/compute-pressure/compute_pressure_disconnect.https.window.js) | Disabled | – | REQUIRES(hardware) | Compute Pressure API |
-| [`compute_pressure_disconnect_idempotent.https.window.js`](https://wpt.fyi/results/compute-pressure/compute_pressure_disconnect_idempotent.https.window.js) | Disabled | – | REQUIRES(hardware) | Compute Pressure API |
-| [`compute_pressure_disconnect_immediately.https.window.js`](https://wpt.fyi/results/compute-pressure/compute_pressure_disconnect_immediately.https.window.js) | Disabled | – | REQUIRES(hardware) | Compute Pressure API |
-| [`compute_pressure_duplicate_updates.https.window.js`](https://wpt.fyi/results/compute-pressure/compute_pressure_duplicate_updates.https.window.js) | Disabled | – | REQUIRES(hardware) | Compute Pressure API |
-| [`compute_pressure_known_sources.https.any.js`](https://wpt.fyi/results/compute-pressure/compute_pressure_known_sources.https.any.js) | Disabled | – | REQUIRES(hardware) | Compute Pressure API |
-| [`compute_pressure_multiple.https.window.js`](https://wpt.fyi/results/compute-pressure/compute_pressure_multiple.https.window.js) | Disabled | – | REQUIRES(hardware) | Compute Pressure API |
-| [`compute_pressure_observe_idempotent.https.window.js`](https://wpt.fyi/results/compute-pressure/compute_pressure_observe_idempotent.https.window.js) | Disabled | – | REQUIRES(hardware) | Compute Pressure API |
-| [`compute_pressure_observe_unobserve_failure.https.any.js`](https://wpt.fyi/results/compute-pressure/compute_pressure_observe_unobserve_failure.https.any.js) | Disabled | – | REQUIRES(hardware) | Compute Pressure API |
-| [`compute_pressure_options.https.window.js`](https://wpt.fyi/results/compute-pressure/compute_pressure_options.https.window.js) | Disabled | – | REQUIRES(hardware) | Compute Pressure API |
-| [`compute_pressure_take_records.https.window.js`](https://wpt.fyi/results/compute-pressure/compute_pressure_take_records.https.window.js) | Disabled | – | REQUIRES(hardware) | Compute Pressure API |
-| [`compute_pressure_timestamp.https.window.js`](https://wpt.fyi/results/compute-pressure/compute_pressure_timestamp.https.window.js) | Disabled | – | REQUIRES(hardware) | Compute Pressure API |
-| [`compute_pressure_timestamp_continuously_increasing.https.window.js`](https://wpt.fyi/results/compute-pressure/compute_pressure_timestamp_continuously_increasing.https.window.js) | Disabled | – | REQUIRES(hardware) | Compute Pressure API |
-| [`compute_pressure_timestamp_faster_collector.https.window.js`](https://wpt.fyi/results/compute-pressure/compute_pressure_timestamp_faster_collector.https.window.js) | Disabled | – | REQUIRES(hardware) | Compute Pressure API |
-| [`compute_pressure_update_toJSON.https.window.js`](https://wpt.fyi/results/compute-pressure/compute_pressure_update_toJSON.https.window.js) | Disabled | – | REQUIRES(hardware) | Compute Pressure API |
-| [`idlharness.https.any.js`](https://wpt.fyi/results/compute-pressure/idlharness.https.any.js) | Disabled | – | REQUIRES(hardware) | Compute Pressure API |
-| [`observe_return_type.https.window.js`](https://wpt.fyi/results/compute-pressure/observe_return_type.https.window.js) | Disabled | – | REQUIRES(hardware) | Compute Pressure API |
-| [`permissions-policy/compute-pressure-allowed-by-permissions-policy-attribute-redirect-on-load.https.html`](https://wpt.fyi/results/compute-pressure/permissions-policy/compute-pressure-allowed-by-permissions-policy-attribute-redirect-on-load.https.html) | Disabled | – | REQUIRES(hardware) | Compute Pressure API |
-| [`permissions-policy/compute-pressure-allowed-by-permissions-policy-attribute.https.html`](https://wpt.fyi/results/compute-pressure/permissions-policy/compute-pressure-allowed-by-permissions-policy-attribute.https.html) | Disabled | – | REQUIRES(hardware) | Compute Pressure API |
-| [`permissions-policy/compute-pressure-allowed-by-permissions-policy.https.html`](https://wpt.fyi/results/compute-pressure/permissions-policy/compute-pressure-allowed-by-permissions-policy.https.html) | Disabled | – | REQUIRES(hardware) | Compute Pressure API |
-| [`permissions-policy/compute-pressure-allowed-on-self-origin-by-permissions-policy.https.html`](https://wpt.fyi/results/compute-pressure/permissions-policy/compute-pressure-allowed-on-self-origin-by-permissions-policy.https.html) | Disabled | – | REQUIRES(hardware) | Compute Pressure API |
-| [`permissions-policy/compute-pressure-default-permissions-policy.https.html`](https://wpt.fyi/results/compute-pressure/permissions-policy/compute-pressure-default-permissions-policy.https.html) | Disabled | – | REQUIRES(hardware) | Compute Pressure API |
-| [`permissions-policy/compute-pressure-disabled-by-permissions-policy.https.html`](https://wpt.fyi/results/compute-pressure/permissions-policy/compute-pressure-disabled-by-permissions-policy.https.html) | Disabled | – | REQUIRES(hardware) | Compute Pressure API |
-| [`permissions-policy/compute-pressure-supported-by-permissions-policy.html`](https://wpt.fyi/results/compute-pressure/permissions-policy/compute-pressure-supported-by-permissions-policy.html) | Disabled | – | REQUIRES(hardware) | Compute Pressure API |
+| [`compute_pressure_basic.https.window.js`](https://wpt.fyi/results/compute-pressure/compute_pressure_basic.https.window.js) | Pass | 10 / 10 |  |  |
+| [`compute_pressure_detached_iframe.https.window.js`](https://wpt.fyi/results/compute-pressure/compute_pressure_detached_iframe.https.window.js) | Fail | 3 / 5 | TEST BUG | expects the behavior of Chromium: the interface objects of the window of a detached iframe are removed, and `observe()` rejects with a `NotSupportedError`; per the specification the window keeps its interfaces, and a detached document is not allowed to use the `compute-pressure` feature, so `observe()` rejects with a `NotAllowedError` |
+| [`compute_pressure_disconnect.https.window.js`](https://wpt.fyi/results/compute-pressure/compute_pressure_disconnect.https.window.js) | Pass | 4 / 4 |  |  |
+| [`compute_pressure_disconnect_idempotent.https.window.js`](https://wpt.fyi/results/compute-pressure/compute_pressure_disconnect_idempotent.https.window.js) | Pass | 2 / 2 |  |  |
+| [`compute_pressure_disconnect_immediately.https.window.js`](https://wpt.fyi/results/compute-pressure/compute_pressure_disconnect_immediately.https.window.js) | Pass | 4 / 4 |  |  |
+| [`compute_pressure_duplicate_updates.https.window.js`](https://wpt.fyi/results/compute-pressure/compute_pressure_duplicate_updates.https.window.js) | Pass | 4 / 4 |  |  |
+| [`compute_pressure_known_sources.https.any.js`](https://wpt.fyi/results/compute-pressure/compute_pressure_known_sources.https.any.js) | Pass | 9 / 9 |  |  |
+| [`compute_pressure_multiple.https.window.js`](https://wpt.fyi/results/compute-pressure/compute_pressure_multiple.https.window.js) | Pass | 2 / 2 |  |  |
+| [`compute_pressure_observe_idempotent.https.window.js`](https://wpt.fyi/results/compute-pressure/compute_pressure_observe_idempotent.https.window.js) | Pass | 2 / 2 |  |  |
+| [`compute_pressure_observe_unobserve_failure.https.any.js`](https://wpt.fyi/results/compute-pressure/compute_pressure_observe_unobserve_failure.https.any.js) | Pass | 6 / 6 |  |  |
+| [`compute_pressure_options.https.window.js`](https://wpt.fyi/results/compute-pressure/compute_pressure_options.https.window.js) | Pass | 6 / 6 |  |  |
+| [`compute_pressure_take_records.https.window.js`](https://wpt.fyi/results/compute-pressure/compute_pressure_take_records.https.window.js) | Pass | 4 / 4 |  |  |
+| [`compute_pressure_timestamp.https.window.js`](https://wpt.fyi/results/compute-pressure/compute_pressure_timestamp.https.window.js) | Pass | 4 / 4 |  |  |
+| [`compute_pressure_timestamp_continuously_increasing.https.window.js`](https://wpt.fyi/results/compute-pressure/compute_pressure_timestamp_continuously_increasing.https.window.js) | Pass | 2 / 2 |  |  |
+| [`compute_pressure_timestamp_faster_collector.https.window.js`](https://wpt.fyi/results/compute-pressure/compute_pressure_timestamp_faster_collector.https.window.js) | Pass | 2 / 2 |  |  |
+| [`compute_pressure_update_toJSON.https.window.js`](https://wpt.fyi/results/compute-pressure/compute_pressure_update_toJSON.https.window.js) | Pass | 2 / 2 |  |  |
+| [`idlharness.https.any.js`](https://wpt.fyi/results/compute-pressure/idlharness.https.any.js) | Pass | 96 / 96 |  |  |
+| [`observe_return_type.https.window.js`](https://wpt.fyi/results/compute-pressure/observe_return_type.https.window.js) | Pass | 2 / 2 |  |  |
+| [`permissions-policy/compute-pressure-allowed-by-permissions-policy-attribute-redirect-on-load.https.html`](https://wpt.fyi/results/compute-pressure/permissions-policy/compute-pressure-allowed-by-permissions-policy-attribute-redirect-on-load.https.html) | Pass | 2 / 2 |  |  |
+| [`permissions-policy/compute-pressure-allowed-by-permissions-policy-attribute.https.html`](https://wpt.fyi/results/compute-pressure/permissions-policy/compute-pressure-allowed-by-permissions-policy-attribute.https.html) | Pass | 2 / 2 |  |  |
+| [`permissions-policy/compute-pressure-allowed-by-permissions-policy.https.html`](https://wpt.fyi/results/compute-pressure/permissions-policy/compute-pressure-allowed-by-permissions-policy.https.html) | Pass | 5 / 5 |  |  |
+| [`permissions-policy/compute-pressure-allowed-on-self-origin-by-permissions-policy.https.html`](https://wpt.fyi/results/compute-pressure/permissions-policy/compute-pressure-allowed-on-self-origin-by-permissions-policy.https.html) | Pass | 3 / 3 |  |  |
+| [`permissions-policy/compute-pressure-default-permissions-policy.https.html`](https://wpt.fyi/results/compute-pressure/permissions-policy/compute-pressure-default-permissions-policy.https.html) | Pass | 2 / 2 |  |  |
+| [`permissions-policy/compute-pressure-disabled-by-permissions-policy.https.html`](https://wpt.fyi/results/compute-pressure/permissions-policy/compute-pressure-disabled-by-permissions-policy.https.html) | Pass | 6 / 6 |  |  |
+| [`permissions-policy/compute-pressure-supported-by-permissions-policy.html`](https://wpt.fyi/results/compute-pressure/permissions-policy/compute-pressure-supported-by-permissions-policy.html) | Pass | 1 / 1 |  |  |

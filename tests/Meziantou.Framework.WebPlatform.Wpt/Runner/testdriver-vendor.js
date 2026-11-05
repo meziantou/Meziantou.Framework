@@ -178,6 +178,34 @@
       resolve));
   };
 
+  // The virtual pressure sources (https://w3c.github.io/compute-pressure/#automation): the samples of the
+  // PressureSourceProvider of the runner, set by a task (see __wpt_create_virtual_pressure_source)
+  const pressureCommand = (command, ...args) => new Promise((resolve, reject) => command(...args, resolve, (message) => reject(new Error(message))));
+
+  internal.create_virtual_pressure_source = function (source_type, metadata, context) {
+    const supported = !metadata || metadata.supported === undefined ? true : !!metadata.supported;
+    return pressureCommand(__wpt_create_virtual_pressure_source, String(source_type), supported);
+  };
+
+  internal.update_virtual_pressure_source = function (source_type, sample, own_contribution_estimate, context) {
+    const estimate = own_contribution_estimate === undefined || own_contribution_estimate === null ? NaN : Number(own_contribution_estimate);
+    return pressureCommand(__wpt_update_virtual_pressure_source, String(source_type), String(sample), estimate);
+  };
+
+  internal.remove_virtual_pressure_source = function (source_type, context) {
+    return pressureCommand(__wpt_remove_virtual_pressure_source, String(source_type));
+  };
+
+  // The posture override of the top-level traversable (https://w3c.github.io/device-posture/#automation): the posture of
+  // the DevicePostureProvider of the runner; clearing the override restores the posture of the device (continuous)
+  internal.set_device_posture = function (posture, context) {
+    return pressureCommand(__wpt_set_device_posture, String(posture));
+  };
+
+  internal.clear_device_posture = function (context) {
+    return pressureCommand(__wpt_set_device_posture, null);
+  };
+
   // The display features of the screen (https://drafts.csswg.org/css-viewport/#set-display-features): the DisplayFeaturesProvider
   // of the runner, which splits the viewport of the top-level documents in segments
   internal.set_display_features = function (features, context) {

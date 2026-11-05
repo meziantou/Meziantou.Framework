@@ -95,6 +95,9 @@ internal sealed record MediaEnvironment
     /// <summary>fullscreen | standalone | minimal-ui | browser | picture-in-picture (https://drafts.csswg.org/mediaqueries-5/#display-mode).</summary>
     public string DisplayMode { get; init; } = "browser";
 
+    /// <summary>continuous | folded (https://w3c.github.io/device-posture/#the-device-posture-media-feature).</summary>
+    public string DevicePosture { get; init; } = "continuous";
+
     /// <summary>
     /// Whether every media query list matches, whatever the other values of the environment: the cascade then uses the
     /// rules of all the media (e.g. to know the styles an element may have in any environment).
@@ -748,8 +751,8 @@ internal static class MediaQueryEvaluator
             ["horizontal-viewport-segments"] = Range(MediaFeatureType.Integer, environment => environment.ViewportSegments?.Columns.Length ?? 1),
             ["vertical-viewport-segments"] = Range(MediaFeatureType.Integer, environment => environment.ViewportSegments?.Rows.Length ?? 1),
 
-            // https://www.w3.org/TR/device-posture/#the-device-posture-media-feature
-            ["device-posture"] = Keywords(["continuous", "folded"], _ => "continuous"),
+            // https://w3c.github.io/device-posture/#the-device-posture-media-feature
+            ["device-posture"] = Keywords(["continuous", "folded"], environment => environment.DevicePosture),
 
             // https://compat.spec.whatwg.org/#css-media-queries-webkit-device-pixel-ratio
             ["-webkit-device-pixel-ratio"] = Range(MediaFeatureType.Number, environment => environment.DevicePixelRatio),

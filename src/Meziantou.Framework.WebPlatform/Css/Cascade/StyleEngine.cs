@@ -2452,6 +2452,9 @@ internal sealed partial class StyleEngine
         var pageColorSchemes = document.PageColorSchemes;
         var scriptingEnabled = browsingContext.Options.ScriptingEnabled;
 
+        // https://w3c.github.io/device-posture/#the-device-posture-media-feature: the navigables reflect the posture of their top-level traversable
+        var devicePosture = DevicePosture.GetPosture(browsingContext) == DevicePostureType.Folded ? "folded" : "continuous";
+
         // The display features split the viewport of a top-level document (the nested documents have a single segment), and
         // the virtual keyboard overlays it
         Dom.ViewportSegmentGrid? segments = null;
@@ -2483,6 +2486,7 @@ internal sealed partial class StyleEngine
             && last.ForcedColors == viewport.ForcedColors
             && ReferenceEquals(last.ForcedColorsPalette, forcedColors)
             && last.ScriptingEnabled == scriptingEnabled
+            && last.DevicePosture == devicePosture
             && Equals(last.ViewportSegments, segments)
             && last.KeyboardInsets == keyboardInsets)
         {
@@ -2507,6 +2511,7 @@ internal sealed partial class StyleEngine
             ForcedColors = viewport.ForcedColors,
             ForcedColorsPalette = forcedColors,
             ScriptingEnabled = scriptingEnabled,
+            DevicePosture = devicePosture,
             ViewportSegments = segments,
             KeyboardInsets = keyboardInsets,
         };

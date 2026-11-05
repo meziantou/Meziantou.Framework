@@ -368,7 +368,7 @@ internal sealed class JavaScriptModuleLoader(JavaScriptScriptEngine owner) : JsM
             return;
         }
 
-        Load(window, url!, type, fetchOptions ?? new ModuleFetchOptions(), referrer, initiator: null, entry =>
+        Load(window, url!, type, fetchOptions ?? new ModuleFetchOptions(), referrer, initiator: null, isDynamicImport: request.IsDynamicImport, onLoaded: entry =>
         {
             if (entry.Module is { } module)
             {
@@ -391,7 +391,7 @@ internal sealed class JavaScriptModuleLoader(JavaScriptScriptEngine owner) : JsM
     /// of the window for the URL and the type, fetched and parsed in the realm of the window the first time.
     /// <paramref name="onLoaded"/> is called once the entry is fetched (synchronously when it is).
     /// </summary>
-    public void Load(GlobalScope window, string url, ModuleType type, ModuleFetchOptions fetchOptions, string? referrer, Element? initiator, Action<ModuleMapEntry> onLoaded, RequestDestination? destination = null)
+    public void Load(GlobalScope window, string url, ModuleType type, ModuleFetchOptions fetchOptions, string? referrer, Element? initiator, Action<ModuleMapEntry> onLoaded, RequestDestination? destination = null, bool isDynamicImport = false)
     {
         var map = (_moduleMaps ??= []).GetOrCreateValue(window);
         var key = (url, type);
@@ -424,6 +424,22 @@ internal sealed class JavaScriptModuleLoader(JavaScriptScriptEngine owner) : JsM
 
         entry.Waiters.Add(onLoaded);
         ModuleFetching.Fetch(window, url, type, fetchOptions, initiator, destinationOverride: destination, referrer: referrer, isPreload: destination is not null, onComplete: fetched =>
+        {
+            // The module fetched by a dynamic import() is processed by a later task. As in the browsers, where its fetch takes
+            // a round trip to the network, the load event of a document whose module script imports a module dynamically is
+            // fired before the imported module is evaluated (WPT document-write/module-dynamic-import.html): the dynamic
+            // imports do not delay the load event.
+            if (isDynamicImport)
+            {
+                window.EventLoop.QueueTask(() => ProcessFetchedModule(fetched));
+            }
+            else
+            {
+                ProcessFetchedModule(fetched);
+            }
+        });
+
+        void ProcessFetchedModule(FetchedModule? fetched)
         {
             var realm = owner.Agent.GetRealm(window);
             using var scope = owner.EnterJavaScript();
@@ -466,7 +482,7 @@ internal sealed class JavaScriptModuleLoader(JavaScriptScriptEngine owner) : JsM
 
                 return 0;
             });
-        });
+        }
     }
 
     /// <summary>The TypeError of a module that cannot be fetched, recognized by <see cref="IsFetchFailure"/>.</summary>

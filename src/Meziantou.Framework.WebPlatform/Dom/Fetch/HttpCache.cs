@@ -112,6 +112,35 @@ internal sealed class HttpCache
         }
     }
 
+    /// <summary>The partition of a key (<see cref="GetKey"/>): the top-level site and the cross-site bit.</summary>
+    public static string GetPartition(string key) => key[..key.IndexOf('\n', StringComparison.Ordinal)];
+
+    /// <summary>
+    /// Removes the stored responses of the URLs of an origin in a partition (<see cref="GetPartition"/>,
+    /// https://w3c.github.io/webappsec-clear-site-data/#clear-cache). Returns the number of URLs whose responses were removed.
+    /// </summary>
+    public int ClearOrigin(string origin, string partition)
+    {
+        lock (_lock)
+        {
+            var removed = 0;
+            foreach (var key in _entries.Keys.ToArray())
+            {
+                var separator = key.IndexOf('\n', StringComparison.Ordinal);
+                if (separator < 0 || !key.AsSpan(0, separator).SequenceEqual(partition))
+                    continue;
+
+                if (UrlParser.Parse(key[(separator + 1)..], baseUrl: null) is not { } url || url.SerializeOrigin() != origin)
+                    continue;
+
+                _entries.Remove(key);
+                removed++;
+            }
+
+            return removed;
+        }
+    }
+
     /// <summary>
     /// Updates a stored response with the headers of a <c>304</c> response that validates it
     /// (https://httpwg.org/specs/rfc9111.html#freshening.responses): the headers of the stored response are replaced by the

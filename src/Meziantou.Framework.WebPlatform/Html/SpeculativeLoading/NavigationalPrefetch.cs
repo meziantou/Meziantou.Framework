@@ -335,8 +335,8 @@ internal static class NavigationalPrefetch
     /// The <c>Clear-Site-Data</c> header of a response of a navigation (https://w3c.github.io/webappsec-clear-site-data/), for
     /// the speculative loads: the <c>"prefetchCache"</c> and <c>"prerenderCache"</c> types (and <c>"cache"</c> and <c>"*"</c>,
     /// which include them) discard the prefetch records and the prerender records of the documents of the origin of the
-    /// response (https://wicg.github.io/nav-speculation/prefetch.html#clear-site-data-patches). The other types are not
-    /// implemented.
+    /// response (https://wicg.github.io/nav-speculation/prefetch.html#clear-site-data-patches). The other types are
+    /// processed by <see cref="Dom.ClearSiteData"/>.
     /// </summary>
     public static void ProcessClearSiteData(BrowsingContext navigable, UrlRecord url, IReadOnlyList<KeyValuePair<string, string>> headers)
     {

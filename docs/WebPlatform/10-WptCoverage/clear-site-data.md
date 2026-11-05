@@ -9,38 +9,39 @@ description: "The results of the web-platform-tests of clear-site-data, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 13 | 13 | – |
-| [Tentative](#tentative-tests) | 0 | 2 | 2 | – |
+| [Stable](#stable-tests) | 10 | 13 | 0 | 77% |
+| [Tentative](#tentative-tests) | 2 | 2 | 0 | 100% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **0** | **15** | **15** | **–** |
+| **All** | **12** | **15** | **0** | **80%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 15
+- **TEST BUG**: 1
+- **NOT IMPLEMENTED**: 2
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`clear-cache-bfcache.https.html`](https://wpt.fyi/results/clear-site-data/clear-cache-bfcache.https.html) | Disabled | – | NOT IMPLEMENTED | Clear-Site-Data header |
-| [`clear-cache.https.html`](https://wpt.fyi/results/clear-site-data/clear-cache.https.html) | Disabled | – | NOT IMPLEMENTED | Clear-Site-Data header |
-| [`executionContexts.sub.html`](https://wpt.fyi/results/clear-site-data/executionContexts.sub.html) | Disabled | – | NOT IMPLEMENTED | Clear-Site-Data header |
-| [`navigation-insecure.html`](https://wpt.fyi/results/clear-site-data/navigation-insecure.html) | Disabled | – | NOT IMPLEMENTED | Clear-Site-Data header |
-| [`navigation.https.html`](https://wpt.fyi/results/clear-site-data/navigation.https.html) | Disabled | – | NOT IMPLEMENTED | Clear-Site-Data header |
-| [`no-cors-fetch-iframe.https.sub.html`](https://wpt.fyi/results/clear-site-data/no-cors-fetch-iframe.https.sub.html) | Disabled | – | NOT IMPLEMENTED | Clear-Site-Data header |
-| [`no-cors-fetch-window.https.sub.html`](https://wpt.fyi/results/clear-site-data/no-cors-fetch-window.https.sub.html) | Disabled | – | NOT IMPLEMENTED | Clear-Site-Data header |
-| [`resource.html`](https://wpt.fyi/results/clear-site-data/resource.html) | Disabled | – | NOT IMPLEMENTED | Clear-Site-Data header |
-| [`set-cookie-after-clear-all.https.html`](https://wpt.fyi/results/clear-site-data/set-cookie-after-clear-all.https.html) | Disabled | – | NOT IMPLEMENTED | Clear-Site-Data header |
-| [`set-cookie-after-clear-cookies.https.html`](https://wpt.fyi/results/clear-site-data/set-cookie-after-clear-cookies.https.html) | Disabled | – | NOT IMPLEMENTED | Clear-Site-Data header |
-| [`set-cookie-before-clear-all.https.html`](https://wpt.fyi/results/clear-site-data/set-cookie-before-clear-all.https.html) | Disabled | – | NOT IMPLEMENTED | Clear-Site-Data header |
-| [`set-cookie-before-clear-cookies.https.html`](https://wpt.fyi/results/clear-site-data/set-cookie-before-clear-cookies.https.html) | Disabled | – | NOT IMPLEMENTED | Clear-Site-Data header |
-| [`storage.https.html`](https://wpt.fyi/results/clear-site-data/storage.https.html) | Disabled | – | NOT IMPLEMENTED | Clear-Site-Data header |
+| [`clear-cache-bfcache.https.html`](https://wpt.fyi/results/clear-site-data/clear-cache-bfcache.https.html) | Pass | 4 / 4 |  |  |
+| [`clear-cache.https.html`](https://wpt.fyi/results/clear-site-data/clear-cache.https.html) | Pass | 13 / 13 |  |  |
+| [`executionContexts.sub.html`](https://wpt.fyi/results/clear-site-data/executionContexts.sub.html) | Pass | 2 / 2 |  |  |
+| [`navigation-insecure.html`](https://wpt.fyi/results/clear-site-data/navigation-insecure.html) | Pass | 4 / 4 |  |  |
+| [`navigation.https.html`](https://wpt.fyi/results/clear-site-data/navigation.https.html) | Pass | 4 / 4 |  |  |
+| [`no-cors-fetch-iframe.https.sub.html`](https://wpt.fyi/results/clear-site-data/no-cors-fetch-iframe.https.sub.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the storage partitioning by top-level site: the local storage of the cross-site iframe is the unpartitioned storage of its origin, which a response loaded in a third-party context does not clear (as `no-cors-fetch-window.https.sub.html` expects); the browsers clear the partitioned storage of the iframe |
+| [`no-cors-fetch-window.https.sub.html`](https://wpt.fyi/results/clear-site-data/no-cors-fetch-window.https.sub.html) | Pass | 1 / 1 |  |  |
+| [`resource.html`](https://wpt.fyi/results/clear-site-data/resource.html) | Timeout | 2 / 4 | TEST BUG | the `http resource on a https page` subtest: the https iframe navigates itself to the `http:` URL of `send_report.html`, which is blocked as mixed content (the navigation of a child navigable from a document whose origin is potentially trustworthy, https://w3c.github.io/webappsec-mixed-content/#should-block-fetch), so the report is never posted and the test times out |
+| [`set-cookie-after-clear-all.https.html`](https://wpt.fyi/results/clear-site-data/set-cookie-after-clear-all.https.html) | Pass | 1 / 1 |  |  |
+| [`set-cookie-after-clear-cookies.https.html`](https://wpt.fyi/results/clear-site-data/set-cookie-after-clear-cookies.https.html) | Pass | 1 / 1 |  |  |
+| [`set-cookie-before-clear-all.https.html`](https://wpt.fyi/results/clear-site-data/set-cookie-before-clear-all.https.html) | Pass | 1 / 1 |  |  |
+| [`set-cookie-before-clear-cookies.https.html`](https://wpt.fyi/results/clear-site-data/set-cookie-before-clear-cookies.https.html) | Pass | 1 / 1 |  |  |
+| [`storage.https.html`](https://wpt.fyi/results/clear-site-data/storage.https.html) | Timeout | 6 / 8 | NOT IMPLEMENTED | the service worker registrations of the origin are unregistered (https://w3c.github.io/webappsec-clear-site-data/#clear-dom-accessible-storage), so the clients that a service worker controls keep it until they are unloaded (https://w3c.github.io/ServiceWorker/#unregister-algorithm); the test expects the behavior of Chromium, which deletes the registrations and removes the controller of the clients at once (`controllerchange`) |
 
 ## Tentative tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`clear-cache-bfcache-partitioning.tentative.https.html`](https://wpt.fyi/results/clear-site-data/clear-cache-bfcache-partitioning.tentative.https.html) | Disabled | – | NOT IMPLEMENTED | Clear-Site-Data header |
-| [`clear-cache-partitioning.tentative.https.html`](https://wpt.fyi/results/clear-site-data/clear-cache-partitioning.tentative.https.html) | Disabled | – | NOT IMPLEMENTED | Clear-Site-Data header |
+| [`clear-cache-bfcache-partitioning.tentative.https.html`](https://wpt.fyi/results/clear-site-data/clear-cache-bfcache-partitioning.tentative.https.html) | Pass | 2 / 2 |  |  |
+| [`clear-cache-partitioning.tentative.https.html`](https://wpt.fyi/results/clear-site-data/clear-cache-partitioning.tentative.https.html) | Pass | 10 / 10 |  |  |

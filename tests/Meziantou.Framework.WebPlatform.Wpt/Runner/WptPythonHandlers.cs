@@ -91,7 +91,7 @@ internal static partial class WptPythonHandlers
     // The static field initializers of the partial declarations run before the static constructor
     static WptPythonHandlers()
     {
-        foreach (var handlers in new[] { CommonHandlers, SpeculationRulesHandlers, BeaconHandlers, ClientHintsHandlers, CorsHandlers, ContentSecurityPolicyHandlers, CookieHandlers, CrossOriginIsolationHandlers, CssHandlers, FetchHandlers, FetchMetadataHandlers, HtmlHandlers, MediaHandlers, PaintTimingHandlers, SecurityFeaturesHandlers, ServiceWorkersHandlers, TimingHandlers, WebSocketsHandlers, EventSourceHandlers, PreloadHandlers, WorkletsHandlers, PageApisHandlers })
+        foreach (var handlers in new[] { CommonHandlers, SpeculationRulesHandlers, BeaconHandlers, ClearSiteDataHandlers, ClientHintsHandlers, CorsHandlers, ContentSecurityPolicyHandlers, CookieHandlers, CrossOriginIsolationHandlers, CssHandlers, FetchHandlers, FetchMetadataHandlers, HtmlHandlers, MediaHandlers, PaintTimingHandlers, SecurityFeaturesHandlers, ServiceWorkersHandlers, TimingHandlers, WebSocketsHandlers, EventSourceHandlers, PreloadHandlers, WorkletsHandlers, PageApisHandlers })
         {
             foreach (var (path, handler) in handlers)
             {

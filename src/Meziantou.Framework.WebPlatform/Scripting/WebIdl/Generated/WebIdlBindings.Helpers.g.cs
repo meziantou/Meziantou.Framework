@@ -3363,6 +3363,20 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         _ => value.ToString(),
     };
 
+    internal static string FromEnum_Dom_ConnectionType(global::Meziantou.Framework.WebPlatform.Dom.ConnectionType value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.ConnectionType.Unknown => "unknown",
+        global::Meziantou.Framework.WebPlatform.Dom.ConnectionType.Bluetooth => "bluetooth",
+        global::Meziantou.Framework.WebPlatform.Dom.ConnectionType.Cellular => "cellular",
+        global::Meziantou.Framework.WebPlatform.Dom.ConnectionType.Ethernet => "ethernet",
+        global::Meziantou.Framework.WebPlatform.Dom.ConnectionType.Mixed => "mixed",
+        global::Meziantou.Framework.WebPlatform.Dom.ConnectionType.None => "none",
+        global::Meziantou.Framework.WebPlatform.Dom.ConnectionType.Other => "other",
+        global::Meziantou.Framework.WebPlatform.Dom.ConnectionType.Wifi => "wifi",
+        global::Meziantou.Framework.WebPlatform.Dom.ConnectionType.Wimax => "wimax",
+        _ => value.ToString(),
+    };
+
     internal static string FromEnum_Dom_CookieSameSite(global::Meziantou.Framework.WebPlatform.Dom.CookieSameSite value) => value switch
     {
         global::Meziantou.Framework.WebPlatform.Dom.CookieSameSite.Strict => "strict",
@@ -3410,6 +3424,15 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         global::Meziantou.Framework.WebPlatform.Dom.DomParserSupportedType.ApplicationXml => "application/xml",
         global::Meziantou.Framework.WebPlatform.Dom.DomParserSupportedType.ApplicationXhtmlXml => "application/xhtml+xml",
         global::Meziantou.Framework.WebPlatform.Dom.DomParserSupportedType.ImageSvgXml => "image/svg+xml",
+        _ => value.ToString(),
+    };
+
+    internal static string FromEnum_Dom_EffectiveConnectionType(global::Meziantou.Framework.WebPlatform.Dom.EffectiveConnectionType value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.EffectiveConnectionType.Cellular4G => "4g",
+        global::Meziantou.Framework.WebPlatform.Dom.EffectiveConnectionType.Cellular3G => "3g",
+        global::Meziantou.Framework.WebPlatform.Dom.EffectiveConnectionType.Cellular2G => "2g",
+        global::Meziantou.Framework.WebPlatform.Dom.EffectiveConnectionType.Slow2G => "slow-2g",
         _ => value.ToString(),
     };
 

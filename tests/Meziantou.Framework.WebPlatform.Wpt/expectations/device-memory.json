@@ -1,0 +1,20 @@
+{
+  "device-memory/device-memory.https.any.js": {
+    "total": 1
+  },
+  "device-memory/device-memory.https.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "device-memory/idlharness.https.any.js": {
+    "total": 1,
+    "failures": {
+      "idl_test setup": "FAIL"
+    }
+  },
+  "device-memory/idlharness.https.any.js#dedicatedworker": {
+    "total": 1,
+    "failures": {
+      "idl_test setup": "FAIL"
+    }
+  }
+}

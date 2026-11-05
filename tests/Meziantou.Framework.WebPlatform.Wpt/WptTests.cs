@@ -250,6 +250,16 @@ public sealed class WptTests
 
     public static TheoryData<string> OrientationEventTests => GetTests("orientation-event");
 
+    public static TheoryData<string> NetInfoTests => GetTests("netinfo");
+
+    public static TheoryData<string> DeviceMemoryTests => GetTests("device-memory");
+
+    public static TheoryData<string> SaveDataTests => GetTests("savedata");
+
+    public static TheoryData<string> GpcTests => GetTests("gpc");
+
+    public static TheoryData<string> ClearSiteDataTests => GetTests("clear-site-data");
+
     public static TheoryData<string> KeyboardMapTests => GetTests("keyboard-map");
 
     public static TheoryData<string> MediaSessionTests => GetTests("mediasession");
@@ -1202,6 +1212,26 @@ public sealed class WptTests
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(OrientationEventTests))]
     public void OrientationEvent(string test) => Run("orientation-event", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(NetInfoTests))]
+    public void NetInfo(string test) => Run("netinfo", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(DeviceMemoryTests))]
+    public void DeviceMemory(string test) => Run("device-memory", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(SaveDataTests))]
+    public void SaveData(string test) => Run("savedata", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(GpcTests))]
+    public void Gpc(string test) => Run("gpc", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(ClearSiteDataTests))]
+    public void ClearSiteData(string test) => Run("clear-site-data", test);
 
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(KeyboardMapTests))]

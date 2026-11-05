@@ -16,9 +16,10 @@ namespace Meziantou.Framework.WebPlatform.Tests.JavaScript;
 /// segments (https://drafts.csswg.org/css-viewport/#viewport-segments), Keyboard Map (https://wicg.github.io/keyboard-map/),
 /// Media Session (https://w3c.github.io/mediasession/), Page Lifecycle (https://wicg.github.io/page-lifecycle/), Compute
 /// Pressure (https://w3c.github.io/compute-pressure/), Idle Detection (https://wicg.github.io/idle-detection/), Device
-/// Posture (https://w3c.github.io/device-posture/), the early detection of input events
-/// (https://wicg.github.io/is-input-pending/), the sensors (https://w3c.github.io/sensors/) and the device orientation and
-/// motion events (https://w3c.github.io/deviceorientation/).
+/// Posture (https://w3c.github.io/device-posture/), Network Information (https://wicg.github.io/netinfo/), Device Memory
+/// (https://www.w3.org/TR/device-memory/), Global Privacy Control (https://w3c.github.io/gpc/), the early detection of
+/// input events (https://wicg.github.io/is-input-pending/), the sensors (https://w3c.github.io/sensors/) and the device
+/// orientation and motion events (https://w3c.github.io/deviceorientation/).
 /// </summary>
 public sealed class HostDeviceApisTests : IDisposable
 {
@@ -50,6 +51,9 @@ public sealed class HostDeviceApisTests : IDisposable
             BatteryStatus = options.BatteryStatus,
             WakeLock = options.WakeLock,
             KeyboardLock = options.KeyboardLock,
+            NetworkInformation = options.NetworkInformation,
+            GlobalPrivacyControl = options.GlobalPrivacyControl,
+            ClientHints = options.ClientHints,
             ComputePressure = options.ComputePressure,
             IdleDetection = options.IdleDetection,
             DevicePosture = options.DevicePosture,
@@ -998,6 +1002,131 @@ public sealed class HostDeviceApisTests : IDisposable
         var document = Load("""<iframe srcdoc="<p>"></iframe><script>""" + KeyboardScript + "</script>");
 
         Assert.Equal("InvalidStateError", Run(document, "go(document.querySelector('iframe').contentWindow.navigator.keyboard.lock())"));
+    }
+
+    private const string ConnectionScript = """
+        const connection = navigator.connection;
+        const describe = c => [c.type, c.effectiveType, c.downlink, c.downlinkMax, c.rtt, c.saveData].join();
+        const events = [];
+        connection.onchange = () => events.push(describe(connection));
+        function done() { document.title = describe(connection) + '|' + events.join('|'); }
+        """;
+
+    [Fact]
+    public void Connection_WithoutProvider_ReportsAnUnknownConnection()
+    {
+        var document = Load("<script>" + ConnectionScript + "</script>");
+
+        Assert.Equal("unknown,4g,10,Infinity,50,false|", Run(document, "done()"));
+        Assert.Equal("true", Run(document, "document.title = navigator.connection === navigator.connection"));
+    }
+
+    [Fact]
+    public void Connection_WithoutProvider_ReadsTheClientHints()
+    {
+        var document = Load("<script>" + ConnectionScript + "</script>", new BrowsingContextOptions
+        {
+            ClientHints = new ClientHintsOptions { RoundTripTime = TimeSpan.FromMilliseconds(130), Downlink = 1.23, EffectiveConnectionType = "3g", SaveData = true },
+        });
+
+        Assert.Equal("unknown,3g,1.25,Infinity,150,true|", Run(document, "done()"));
+    }
+
+    [Fact]
+    public void Connection_ReadsTheProvider()
+    {
+        #region WebPlatform_NetworkInformation
+        var network = new NetworkInformationProvider
+        {
+            // The connection of the device: setting the status updates the NetworkInformation objects, which fire their change event
+            Status = new NetworkConnectionStatus
+            {
+                Type = ConnectionType.Wifi,
+                EffectiveType = EffectiveConnectionType.Cellular3G,
+                Downlink = 1.5,
+                DownlinkMax = 54,
+                RoundTripTime = TimeSpan.FromMilliseconds(320),
+            },
+        };
+
+        var options = new BrowsingContextOptions
+        {
+            NetworkInformation = new NetworkInformationOptions { Provider = network },
+        };
+        #endregion
+
+        var document = Load("<script>" + ConnectionScript + "</script>", options);
+        Run(document);
+
+        // The values are rounded (multiples of 50 ms and 50 kbit/s, at most 3 s and 10 Mbit/s); an unchanged status fires no event
+        network.Status = network.Status with { };
+        network.Status = new NetworkConnectionStatus { Type = ConnectionType.Cellular, EffectiveType = EffectiveConnectionType.Slow2G, Downlink = 0.033, RoundTripTime = TimeSpan.FromSeconds(5) };
+        Run(document);
+
+        Assert.Equal("cellular,slow-2g,0.05,Infinity,3000,false|cellular,slow-2g,0.05,Infinity,3000,false", Run(document, "done()"));
+    }
+
+    [Fact]
+    public async Task Connection_InAWorker_ReadsTheProvider()
+    {
+        var network = new NetworkInformationProvider { Status = new NetworkConnectionStatus { Type = ConnectionType.Ethernet } };
+        var document = Load("""
+            <script>
+            const worker = new Worker(URL.createObjectURL(new Blob(["postMessage([navigator.connection.type, navigator.connection.effectiveType, typeof navigator.deviceMemory, navigator.globalPrivacyControl].join())"])));
+            worker.onmessage = e => document.title = e.data;
+            </script>
+            """, new BrowsingContextOptions { NetworkInformation = new NetworkInformationOptions { Provider = network }, GlobalPrivacyControl = new GlobalPrivacyControlOptions { Enabled = true } });
+
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        while (document.Title.Length == 0 && stopwatch.Elapsed < TimeSpan.FromSeconds(30))
+        {
+            await RunAsync(document);
+            await Task.Delay(1, TestContext.Current.CancellationToken);
+        }
+
+        Assert.Equal("ethernet,4g,number,true", document.Title);
+    }
+
+    [Fact]
+    public void DeviceMemory_IsRoundedToAPowerOfTwo()
+    {
+        Assert.Equal("8", Run(Load("<script>document.title = navigator.deviceMemory</script>")));
+        Assert.Equal("2", Run(Load("<script>document.title = navigator.deviceMemory</script>", new BrowsingContextOptions { ClientHints = new ClientHintsOptions { DeviceMemory = 3.5 } })));
+        Assert.Equal("0.25", Run(Load("<script>document.title = navigator.deviceMemory</script>", new BrowsingContextOptions { ClientHints = new ClientHintsOptions { DeviceMemory = 0.1 } })));
+        Assert.Equal("8", Run(Load("<script>document.title = navigator.deviceMemory</script>", new BrowsingContextOptions { ClientHints = new ClientHintsOptions { DeviceMemory = 64 } })));
+
+        // [SecureContext]
+        Assert.Equal("false", Run(Load("<script>document.title = 'deviceMemory' in navigator</script>", url: "http://example.com/")));
+    }
+
+    [Fact]
+    public void GlobalPrivacyControl_ReadsTheHostPreference()
+    {
+        #region WebPlatform_GlobalPrivacyControl
+        var enabled = true;
+        var options = new BrowsingContextOptions
+        {
+            // The preference of the user, read at each request (the Sec-GPC header) and each read of navigator.globalPrivacyControl
+            GlobalPrivacyControl = new GlobalPrivacyControlOptions { IsEnabled = _ => enabled },
+        };
+        #endregion
+
+        var document = Load("<script>document.title = navigator.globalPrivacyControl</script>", options);
+        Assert.Equal("true", Run(document));
+
+        enabled = false;
+        Assert.Equal("false", Run(document, "document.title = navigator.globalPrivacyControl"));
+        Assert.Equal("false", Run(Load("<script>document.title = navigator.globalPrivacyControl</script>")));
+    }
+
+    [Fact]
+    public void DisabledFeatures_HideTheNavigatorValues()
+    {
+        var document = Load(
+            "<script>document.title = ['connection' in navigator, typeof NetworkInformation, 'deviceMemory' in navigator, 'globalPrivacyControl' in navigator].join();</script>",
+            new BrowsingContextOptions { Features = new WebPlatformFeatures { NetworkInformationEnabled = false, DeviceMemoryEnabled = false, GlobalPrivacyControlEnabled = false } });
+
+        Assert.Equal("false,undefined,false,false", Run(document));
     }
 
     // Compute Pressure

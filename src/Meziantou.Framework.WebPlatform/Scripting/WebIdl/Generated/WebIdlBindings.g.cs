@@ -402,6 +402,7 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["NavigationTransition"] = Binding_NavigationTransition<TAdapter, TValue>.Binding,
             ["Navigator"] = Binding_Navigator<TAdapter, TValue>.Binding,
             ["NavigatorUAData"] = Binding_NavigatorUAData<TAdapter, TValue>.Binding,
+            ["NetworkInformation"] = Binding_NetworkInformation<TAdapter, TValue>.Binding,
             ["Node"] = Binding_Node<TAdapter, TValue>.Binding,
             ["NodeIterator"] = Binding_NodeIterator<TAdapter, TValue>.Binding,
             ["NodeList"] = Binding_NodeList<TAdapter, TValue>.Binding,
@@ -1523,6 +1524,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.ColorSpaceConversion enumDom_ColorSpaceConversion:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_ColorSpaceConversion(enumDom_ColorSpaceConversion));
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.ConnectionType enumDom_ConnectionType:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_ConnectionType(enumDom_ConnectionType));
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.CookieSameSite enumDom_CookieSameSite:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_CookieSameSite(enumDom_CookieSameSite));
                 return true;
@@ -1540,6 +1544,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.DomParserSupportedType enumDom_DomParserSupportedType:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_DomParserSupportedType(enumDom_DomParserSupportedType));
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.EffectiveConnectionType enumDom_EffectiveConnectionType:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_EffectiveConnectionType(enumDom_EffectiveConnectionType));
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.EndOfStreamError enumDom_EndOfStreamError:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_EndOfStreamError(enumDom_EndOfStreamError));

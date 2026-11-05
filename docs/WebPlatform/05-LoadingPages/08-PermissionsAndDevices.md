@@ -1,6 +1,6 @@
 ---
 title: Permissions and devices
-description: Answer the permission prompts, and decide what the clipboard, sharing, vibration, geolocation, notifications, badging, battery, wake lock, keyboard lock, keyboard layout, media session, screen orientation, virtual keyboard, viewport segments, compute pressure, idle detection, device posture and sensor APIs do in your pages.
+description: Answer the permission prompts, and decide what the clipboard, sharing, vibration, geolocation, notifications, badging, battery, wake lock, keyboard lock, keyboard layout, media session, screen orientation, virtual keyboard, viewport segments, compute pressure, idle detection, device posture, network information, device memory, Global Privacy Control and sensor APIs do in your pages.
 ---
 
 Some web APIs depend on the device or on the user: a browser asks the user for a permission, shows a share sheet, reads
@@ -21,6 +21,9 @@ the device in a test, or to connect the API to your application.
 | [BatteryStatus](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.BatteryStatus) | `navigator.getBattery()` | A fully charged battery that is plugged in |
 | [WakeLock](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.WakeLock) | `navigator.wakeLock.request()` | Nothing is kept on, but the page gets its locks once the permission is granted |
 | [KeyboardLock](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.KeyboardLock) | `navigator.keyboard.lock()`, `navigator.keyboard.unlock()` | No key is captured |
+| [NetworkInformation](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.NetworkInformation) | `navigator.connection` | An unknown connection as fast as a 4G network |
+| [ClientHints](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.ClientHints) | `navigator.deviceMemory`, `navigator.connection.saveData` and the `Save-Data` header | 8 GiB of memory, and no data saving |
+| [GlobalPrivacyControl](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.GlobalPrivacyControl) | `navigator.globalPrivacyControl` and the `Sec-GPC` header | The user expresses no preference |
 | [ScreenOrientation](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.ScreenOrientation) | `screen.orientation` | A desktop screen, which cannot be locked |
 | [VirtualKeyboard](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.VirtualKeyboard) | `navigator.virtualKeyboard`, the `keyboard-inset-*` environment variables | There is no on-screen keyboard |
 | [ViewportSegments](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.ViewportSegments) | `window.viewport.segments`, the `*-viewport-segments` media features | The viewport has a single segment |
@@ -271,6 +274,77 @@ var options = new BrowsingContextOptions
 
 Only the page of a tab can lock the keyboard, not its frames. As in Chromium, a page whose keyboard is locked is not
 kept in the back/forward cache.
+
+## Network information
+
+`navigator.connection` describes the network of the device: its type (`wifi`, `cellular`...), its effective type
+(`4g`, `3g`, `2g` or `slow-2g`), its bandwidth (`downlink`, in Mbit/s) and its round-trip time (`rtt`, in ms). Its
+values come from a [NetworkInformationProvider](cref:Meziantou.Framework.WebPlatform.Dom.NetworkInformationProvider).
+Set its [Status](cref:Meziantou.Framework.WebPlatform.Dom.NetworkInformationProvider.Status) to simulate a network:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_NetworkInformation;format=md-fenced-code-block;dedent=true -->
+```csharp
+var network = new NetworkInformationProvider
+{
+    // The connection of the device: setting the status updates the NetworkInformation objects, which fire their change event
+    Status = new NetworkConnectionStatus
+    {
+        Type = ConnectionType.Wifi,
+        EffectiveType = EffectiveConnectionType.Cellular3G,
+        Downlink = 1.5,
+        DownlinkMax = 54,
+        RoundTripTime = TimeSpan.FromMilliseconds(320),
+    },
+};
+
+var options = new BrowsingContextOptions
+{
+    NetworkInformation = new NetworkInformationOptions { Provider = network },
+};
+```
+<!-- endref -->
+
+Setting the status fires the `change` event in the pages and the workers that see a different value. As in Chromium,
+the pages see rounded values: the bandwidth is a multiple of 50 kbit/s and at most 10 Mbit/s, and the round-trip time
+is a multiple of 50 ms and at most 3 seconds. To read the network of the machine, derive from the provider, override
+[GetStatus](cref:Meziantou.Framework.WebPlatform.Dom.NetworkInformationProvider.GetStatus), and call
+[OnStatusChanged](cref:Meziantou.Framework.WebPlatform.Dom.NetworkInformationProvider.OnStatusChanged) when the network
+changes.
+
+The provider also gives the values of the `RTT`, `Downlink` and `ECT` client hints that
+[ClientHintsOptions](cref:Meziantou.Framework.WebPlatform.Dom.ClientHintsOptions) does not set. Without provider, the
+connection has an unknown type, the performance of a 4G network (10 Mbit/s, 50 ms), and the network values of
+`ClientHintsOptions` when you set them.
+
+`navigator.connection.saveData` is true when the user wants to reduce the data usage:
+[SaveData](cref:Meziantou.Framework.WebPlatform.Dom.ClientHintsOptions.SaveData) also sends the `Save-Data: on` header
+with the requests to the secure origins.
+
+## Device memory
+
+`navigator.deviceMemory` is the memory of the device in GiB, in the secure pages and workers. It reports
+[DeviceMemory](cref:Meziantou.Framework.WebPlatform.Dom.ClientHintsOptions.DeviceMemory), rounded down to a power of two
+between 0.25 and 8 to make the users harder to fingerprint. The library does not read the memory of the machine: without
+value, the pages see 8, but the `Sec-CH-Device-Memory` client hint is not sent.
+
+## Global Privacy Control
+
+`navigator.globalPrivacyControl` tells the pages that the user does not want their data sold or shared, and the
+requests then have the `Sec-GPC: 1` header. Set
+[Enabled](cref:Meziantou.Framework.WebPlatform.Dom.GlobalPrivacyControlOptions.Enabled) for a fixed preference, or
+[IsEnabled](cref:Meziantou.Framework.WebPlatform.Dom.GlobalPrivacyControlOptions.IsEnabled) for a setting the user can
+change, which is read at each request:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_GlobalPrivacyControl;format=md-fenced-code-block;dedent=true -->
+```csharp
+var enabled = true;
+var options = new BrowsingContextOptions
+{
+    // The preference of the user, read at each request (the Sec-GPC header) and each read of navigator.globalPrivacyControl
+    GlobalPrivacyControl = new GlobalPrivacyControlOptions { IsEnabled = _ => enabled },
+};
+```
+<!-- endref -->
 
 ## Screen orientation
 

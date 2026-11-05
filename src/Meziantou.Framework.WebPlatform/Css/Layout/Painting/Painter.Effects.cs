@@ -76,8 +76,19 @@ internal sealed partial class Painter
 
         var borderBox = fragment.BorderBoxRect.Translate(offset);
         var space = SvgResourceSpace.ForBox(borderBox, style.Layout.EffectiveZoom);
-        // The reference box of the SVG filters of a box is the bounding box of the box and its descendants (as in the browsers)
-        var filterSpace = SvgResourceSpace.ForBox(borderBox, fragment.InkOverflow.Translate(offset), style.Layout.EffectiveZoom);
+        // The reference box of the SVG filters of a box is the bounding box of the box and its descendants (as in the browsers),
+        // and of all the fragments of an inline box whose fragments are filtered as one group
+        var filterBounds = fragment.InkOverflow.Translate(offset);
+        if (hasFilter && PaintOrder.IsCompositedAsOneGroup(fragment.Box))
+        {
+            var origin = fragment.GetOffsetInRoot();
+            for (var next = fragment.NextFragmentOfBox; next is BoxFragment nextFragment; next = next.NextFragmentOfBox)
+            {
+                filterBounds = BoxFragment.UnionWithEmpty(filterBounds, nextFragment.InkOverflow.Translate(offset + (nextFragment.GetOffsetInRoot() - origin)));
+            }
+        }
+
+        var filterSpace = SvgResourceSpace.ForBox(borderBox, filterBounds, style.Layout.EffectiveZoom);
 
         // The user space of a foreignObject element is the one of its SVG parent: its box is at its x and y
         if (SvgForeignObjectLayout.GetViewportRect(fragment) is { } svgViewport)

@@ -9,7 +9,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <b>Contract.</b> A filtered layer holds the pixels the clip can show and, around them, as far as the filter moves
 /// what it filters (<see cref="Filter.GetReach"/>). When that margin goes beyond the canvas, the layer is an image of
 /// its own (<see cref="PushBoundedLevel"/>) of the bounds of the clip and the margin (at most the largest side of the
-/// canvas, four times the pixels of the bounds and 65,536, and the limits of the image: <see cref="TryGetFilterExtent"/>),
+/// canvas, four times the pixels of the bounds and 1,048,576, and the limits of the image: <see cref="TryGetFilterExtent"/>),
 /// whose session fills only the canvas when it fills the whole canvas: what is drawn beyond the canvas is filtered
 /// into it. When it ends, those pixels are read into a surface (<see cref="FilterProcessor"/>), filtered with the
 /// edges of the canvas (the transparent edge mode reads what the layer holds beyond them,
@@ -31,6 +31,12 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </remarks>
 internal sealed partial class DrawingSession
 {
+    /// <summary>
+    /// The pixels a filtered layer may always hold, whatever the bounds of the clip: a small clip keeps the margin a
+    /// filter that moves its pixels far needs (a displacement map whose scale is larger than the clip).
+    /// </summary>
+    private const long MinFilterLayerPixels = 1 << 20;
+
     private FilterProcessor? _filterProcessor;
     private PooledBuffer? _filterRow;
 
@@ -94,7 +100,7 @@ internal sealed partial class DrawingSession
     /// <summary>
     /// Gets the pixels a filtered layer holds when they go beyond the canvas: the bounds of the clip with a margin
     /// around them, of at most the largest side of the canvas, and as long as the layer has at most four times the
-    /// pixels of the bounds of the clip (and at least 65,536) and fits in the limits of the image.
+    /// pixels of the bounds of the clip (and at least <see cref="MinFilterLayerPixels"/>) and fits in the limits of the image.
     /// </summary>
     /// <returns><see langword="false"/> when the layer of the canvas holds them all: the margin stays on the canvas, or the clip shows nothing.</returns>
     private bool TryGetFilterExtent(double margin, out Rectangle extent)
@@ -114,14 +120,14 @@ internal sealed partial class DrawingSession
 
     /// <summary>
     /// Gets the largest margin, up to <paramref name="wanted"/>, around a rectangle of pixels of the canvas such that the
-    /// rectangle and its margin have at most four times its pixels (and 65,536) and fit in the limits of the image.
+    /// rectangle and its margin have at most four times its pixels (and <see cref="MinFilterLayerPixels"/>) and fit in the limits of the image.
     /// </summary>
     /// <returns>The margin; negative when the rectangle alone does not fit in the limits.</returns>
     private long GetFilterExtension(long width, long height, double wanted)
     {
         // The largest margin e with (w + 2e) (h + 2e) <= the most pixels: 4e^2 + 2(w + h)e + wh - pixels <= 0
         var limits = _image.Configuration.Limits;
-        var pixels = Math.Min(limits.MaxFramePixels, (4 * width * height) + 65536);
+        var pixels = Math.Min(limits.MaxFramePixels, (4 * width * height) + MinFilterLayerPixels);
         var extension = (long)Math.Min(wanted, Math.Min((limits.MaxWidth - width) / 2, (limits.MaxHeight - height) / 2));
         if (extension > 0 && (width + (2 * extension)) * (height + (2 * extension)) > pixels)
         {

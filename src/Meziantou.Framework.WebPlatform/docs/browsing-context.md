@@ -404,7 +404,9 @@ disabled, the `lazy` elements are loaded at once, as `eager` ones. The `audio` a
 too (see [Media elements](#media-elements)).
 
 The SVG `image` elements fetch the image of their `href` (or `xlink:href`) attribute the same way: the `load` event is
-fired when the response is an image, the `error` event otherwise, and they delay the load event of the document. The
+fired when the response is an image, the `error` event otherwise, and they delay the load event of the document. As in
+Chrome, an image of the list of available images (e.g. loaded by an `img` element) is available at once, and its `load`
+event is fired by a task. The
 `poster` of a `video` element is fetched the same way (`RequestDestination.Image`), and painted while the element
 represents its poster frame (see [Media elements](#media-elements)).
 

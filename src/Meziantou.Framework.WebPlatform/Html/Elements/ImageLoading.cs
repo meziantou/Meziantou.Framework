@@ -429,7 +429,7 @@ public partial class HtmlImageElement
     }
 
     /// <summary>The state of a CORS settings attribute (https://html.spec.whatwg.org/multipage/urls-and-fetching.html#cors-settings-attribute): 0 no CORS, 1 anonymous, 2 use credentials.</summary>
-    private static int GetCorsSettingsState(string? value) => value is null ? 0 : InfraAscii.EqualsIgnoreAsciiCase(value, "use-credentials") ? 2 : 1;
+    internal static int GetCorsSettingsState(string? value) => value is null ? 0 : InfraAscii.EqualsIgnoreAsciiCase(value, "use-credentials") ? 2 : 1;
 
     /// <summary>The state of a referrer policy attribute (https://html.spec.whatwg.org/multipage/urls-and-fetching.html#referrer-policy-attribute): a valid keyword, else the empty string.</summary>
     private static string GetReferrerPolicyState(string? value)

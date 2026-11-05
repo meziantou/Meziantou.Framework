@@ -560,8 +560,9 @@ its filters (the CSS filter functions and the SVG filters of `url()`), its clip 
 opacity and its blend mode (`mix-blend-mode`, `isolation`; the stacking contexts that contain a blending stacking context are
 isolated groups); the overflow clips follow the containing block chain of each box. The fragments of an inline box split
 over several lines are one group when its only effects are the ones that composite it (`opacity`, `mix-blend-mode`,
-`isolation`: the parts of two fragments that overlap are not composited twice; its filters, clip paths and masks are
-applied per fragment), and the floats of an inline box that establishes a stacking context are painted in it. An SVG
+`isolation`: the parts of two fragments that overlap are not composited twice) and its filters (applied to the group as a
+whole, the bounding box of the SVG filters is the one of all the fragments); its backdrop filters, clip paths and masks
+are applied per fragment, and the floats of an inline box that establishes a stacking context are painted in it. An SVG
 image that contains blended groups is an isolated group. The 3D rendering contexts
 (`transform-style: preserve-3d`) are painted as planes with their accumulated 3D transforms, sorted from the farthest (the
 planes that intersect are split, as the compositors of the browsers do), without the planes that show their back face with

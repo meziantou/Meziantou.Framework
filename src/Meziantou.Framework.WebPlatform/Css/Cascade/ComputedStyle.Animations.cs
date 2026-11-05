@@ -89,7 +89,9 @@ internal sealed partial class ComputedStyle
             result = ComputeCustomPropertyEffectValue(transition, name, result, registration, context);
         }
 
-        value = result;
+        // A registered custom property whose animated value is invalid at computed-value time (e.g. var(--invalid, invalid)) is
+        // unset; it is not the underlying value of the next effects: as in the browsers, they replace it
+        value = result ?? GetInvalidValue(name, registration);
         return true;
     }
 
@@ -104,7 +106,7 @@ internal sealed partial class ComputedStyle
                 Rare.CustomPropertyTainted = true;
             }
 
-            return ComputeCustomProperty(name, new CascadedValue(declared, 0, keyframe.Source), registration, rollbacks: 0);
+            return ComputeCustomProperty(name, new CascadedValue(declared, 0, keyframe.Source), registration, rollbacks: 0, nullWhenInvalid: true);
         });
 
     /// <summary>Returns the after-change style of the element: the same cascade, without the transitions (https://drafts.csswg.org/css-transitions-1/#after-change-style).</summary>

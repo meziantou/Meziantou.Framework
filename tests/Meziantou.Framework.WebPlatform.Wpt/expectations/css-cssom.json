@@ -311,10 +311,7 @@
     "total": 2
   },
   "css/cssom/css-style-attr-decl-block.html": {
-    "total": 7,
-    "failures": {
-      "Changes to CSS declaration block after a base URL change": "FAIL"
-    }
+    "total": 7
   },
   "css/cssom/css-style-attribute-modifications.html": {
     "total": 1

@@ -3622,10 +3622,7 @@
     "total": 5
   },
   "svg/text/parsing/shape-inside-invalid.svg": {
-    "total": 4,
-    "failures": {
-      "e.style['shape-inside'] = \"inset(25%)\" should not set the property value": "FAIL"
-    }
+    "total": 4
   },
   "svg/text/parsing/shape-inside-valid.svg": {
     "total": 6

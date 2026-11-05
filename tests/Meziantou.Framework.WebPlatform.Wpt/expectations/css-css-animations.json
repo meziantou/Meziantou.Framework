@@ -220,10 +220,7 @@
     "reftest": "PASS"
   },
   "css/css-animations/cancel-events-on-remove.html": {
-    "total": 5,
-    "failures": {
-      "Re-parenting: animationcancel is fired asynchronously": "FAIL"
-    }
+    "total": 5
   },
   "css/css-animations/computed-style-animation-parsing.html": {
     "total": 7

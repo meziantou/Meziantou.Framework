@@ -21,6 +21,8 @@ internal sealed class DocumentAnimations
     private bool _frameRequested;
     private List<WeakReference<ScrollTimeline>>? _scrollDrivenTimelines;
 
+    private static bool IsCancelEvent(Event e) => e.Type is "animationcancel" or "transitioncancel";
+
     private readonly record struct PendingAnimationEvent(Event Event, EventTarget Target, Animation Animation, double? ScheduledTime, long Sequence);
 
     private long _eventSequence;
@@ -425,6 +427,13 @@ internal sealed class DocumentAnimations
                 if (result == 0)
                 {
                     result = (b.Event is AnimationPlaybackEvent).CompareTo(a.Event is AnimationPlaybackEvent);
+                }
+
+                // The cancel events of the CSS animations and transitions are dispatched before the other events scheduled at the
+                // same time (e.g. the animationstart event of the animation that replaced a canceled one)
+                if (result == 0)
+                {
+                    result = IsCancelEvent(b.Event).CompareTo(IsCancelEvent(a.Event));
                 }
 
                 if (result == 0 && !ReferenceEquals(a.Animation, b.Animation))

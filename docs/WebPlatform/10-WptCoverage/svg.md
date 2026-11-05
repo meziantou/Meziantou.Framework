@@ -9,16 +9,16 @@ description: "The results of the web-platform-tests of svg, and why the tests th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 712 | 742 | 2 | 96% |
+| [Stable](#stable-tests) | 713 | 742 | 2 | 96% |
 | [Tentative](#tentative-tests) | 46 | 47 | 0 | 98% |
 | [Reftests](#reftests) | 557 | 629 | 2 | 89% |
-| **All** | **1,315** | **1,418** | **4** | **93%** |
+| **All** | **1,316** | **1,418** | **4** | **93%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 9
+- **BUG**: 8
 - **TEST BUG**: 11
 - **NOT IMPLEMENTED**: 74
 - **TEST RUNNER**: 7
@@ -634,7 +634,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`text/inheritance.svg`](https://wpt.fyi/results/svg/text/inheritance.svg) | Fail | 8 / 10 | NOT IMPLEMENTED | the `shape-subtract` property |
 | [`text/parsing/inline-size-invalid.svg`](https://wpt.fyi/results/svg/text/parsing/inline-size-invalid.svg) | Pass | 5 / 5 |  |  |
 | [`text/parsing/inline-size-valid.svg`](https://wpt.fyi/results/svg/text/parsing/inline-size-valid.svg) | Pass | 5 / 5 |  |  |
-| [`text/parsing/shape-inside-invalid.svg`](https://wpt.fyi/results/svg/text/parsing/shape-inside-invalid.svg) | Fail | 3 / 4 | BUG | `shape-inside` accepts `inset(25%)`: CSS Shapes 2 allows every `<basic-shape>`, SVG 2 (https://svgwg.org/svg2-draft/text.html#ShapeInsideProperty) says that `inset()` is invalid for SVG; the library parses the union of the two grammars |
+| [`text/parsing/shape-inside-invalid.svg`](https://wpt.fyi/results/svg/text/parsing/shape-inside-invalid.svg) | Pass | 4 / 4 |  |  |
 | [`text/parsing/shape-inside-valid.svg`](https://wpt.fyi/results/svg/text/parsing/shape-inside-valid.svg) | Pass | 6 / 6 |  |  |
 | [`text/parsing/shape-margin-invalid.svg`](https://wpt.fyi/results/svg/text/parsing/shape-margin-invalid.svg) | Pass | 5 / 5 |  |  |
 | [`text/parsing/shape-margin-valid.svg`](https://wpt.fyi/results/svg/text/parsing/shape-margin-valid.svg) | Pass | 4 / 4 |  |  |

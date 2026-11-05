@@ -115,6 +115,33 @@ public sealed class ScrollTimelineTests : IDisposable
     }
 
     [Fact]
+    public void Animation_ActiveAfterBoundaryIsInclusiveWhenAlignedWithTheMaximumScrollOffset()
+    {
+        var document = Parse(Scroller + "<div id=target></div>");
+        var scroller = document.GetElementById("scroller")!;
+        var timeline = new ScrollTimeline(new ScrollTimelineOptions { Source = scroller });
+        var target = document.GetElementById("target")!;
+        Keyframe[] keyframes = [new Keyframe { Properties = { ["opacity"] = "0" } }, new Keyframe { Properties = { ["opacity"] = "0.5" } }];
+        var whole = target.Animate(keyframes, new KeyframeAnimationOptions { Timeline = timeline });
+        var half = target.Animate(keyframes, new KeyframeAnimationOptions { Timeline = timeline, RangeEnd = "50%" });
+
+        // The end of the range is not the end of the scroll range: the active-after boundary is exclusive
+        scroller.ScrollTop = 200;
+        RunFrames();
+        Assert.Null(half.Effect!.GetComputedTiming().Progress);
+
+        // The end of the range is the maximum scroll offset: the effect applies there
+        scroller.ScrollTop = 400;
+        RunFrames();
+        Assert.Equal(1, whole.Effect!.GetComputedTiming().Progress);
+
+        // The alignment is only known with a playback rate of 1 or -1
+        whole.PlaybackRate = 2;
+        Assert.Equal(100, Percent(whole.CurrentTime));
+        Assert.Null(whole.Effect!.GetComputedTiming().Progress);
+    }
+
+    [Fact]
     public void ViewTimeline_ProgressIsTheVisibilityOfTheSubjectInTheScrollport()
     {
         // The subject is at 300px in a 100px high scrollport: the cover range is [200px, 400px]

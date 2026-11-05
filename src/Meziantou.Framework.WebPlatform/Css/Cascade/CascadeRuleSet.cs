@@ -270,6 +270,12 @@ internal sealed class CascadeRuleSet
     /// </summary>
     public bool DeclaresPositionTryFallbacks { get; private set; }
 
+    /// <summary>
+    /// Whether a rule declares <c>scroll-snap-type</c> (the document is then laid out by the rendering steps, which snap its scroll
+    /// snap containers, see <see cref="StyleEngine.MayHaveScrollSnapContainers"/>).
+    /// </summary>
+    public bool DeclaresScrollSnapType { get; private set; }
+
     /// <summary>Whether a rule is in a @container rule with a container scroll-state query (the document is then laid out by the rendering steps, see <see cref="StyleEngine.MayHaveScrollStateQueries"/>).</summary>
     public bool HasScrollStateQueries { get; private set; }
 
@@ -315,6 +321,11 @@ internal sealed class CascadeRuleSet
         if (!DeclaresPositionTryFallbacks && rule.Declarations.Exists(static declaration => declaration.Name == "position-try-fallbacks"))
         {
             DeclaresPositionTryFallbacks = true;
+        }
+
+        if (!DeclaresScrollSnapType && rule.Declarations.Exists(static declaration => declaration.Name == "scroll-snap-type"))
+        {
+            DeclaresScrollSnapType = true;
         }
 
         if (rule.StartingStyle)

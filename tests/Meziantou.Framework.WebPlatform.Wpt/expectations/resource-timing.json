@@ -280,10 +280,7 @@
     "total": 1
   },
   "resource-timing/no-entries-for-cross-origin-css-fetched.sub.html": {
-    "total": 1,
-    "failures": {
-      "Make sure that resources fetched by cross origin CSS are not in the timeline.": "FAIL"
-    }
+    "total": 1
   },
   "resource-timing/object-not-found-adds-entry.html": {
     "total": 3

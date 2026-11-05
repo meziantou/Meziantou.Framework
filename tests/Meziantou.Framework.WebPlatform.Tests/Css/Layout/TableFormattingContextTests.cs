@@ -42,6 +42,14 @@ public sealed class TableFormattingContextTests : IDisposable
     }
 
     [Fact]
+    public void TableWithoutRows_IgnoresItsColumns()
+    {
+        // https://drafts.csswg.org/css-tables-3/#table-layout-algorithm: a table without slot is empty
+        var document = Parse("<table id=t style='min-width: 50px; border-spacing: 2px'><col style='width: 100px'><col style='width: 100px'></table>");
+        Assert.Equal(50, OffsetWidth(document, "t"));
+    }
+
+    [Fact]
     public void AutoLayout_NarrowTable_ColumnsShrinkToTheirMinContentWidth()
     {
         // https://drafts.csswg.org/css-tables-3/#distribution-algorithm: between the min-content and the max-content guesses, the

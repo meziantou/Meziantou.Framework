@@ -556,11 +556,7 @@
     "total": 16
   },
   "web-animations/timing-model/animations/start-time-compat.html": {
-    "harness": "ERROR",
-    "total": 1,
-    "failures": {
-      "Checking the start time of animations started at various times between two page rendering updates": "TIMEOUT"
-    }
+    "total": 1
   },
   "web-animations/timing-model/animations/sync-start-times.html": {
     "reftest": "PASS"

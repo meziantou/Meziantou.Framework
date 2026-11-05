@@ -221,7 +221,8 @@ internal static partial class CssValueComputer
                 // https://drafts.csswg.org/css-overflow-5/#scroll-marker-group-property: the omitted mode is links
                 return value + " links";
             case "overflow-clip-margin-top" or "overflow-clip-margin-right" or "overflow-clip-margin-bottom" or "overflow-clip-margin-left":
-                return CssPropertyRules.CanonicalizeOverflowClipMargin(ComputeGeneric(style, property, value, baseUrl));
+                // An explicit padding-box is kept: the box defaults to content-box on the replaced elements (the resolved value omits it)
+                return CssPropertyRules.CanonicalizeOverflowClipMargin(ComputeGeneric(style, property, value, baseUrl), keepPaddingBox: true);
             case "touch-action" when value == "pan-x pan-y pinch-zoom":
                 // https://w3c.github.io/pointerevents/#the-touch-action-css-property: manipulation is the panning in both axes
                 // and the zooming, so the shortest serialization of the same value is manipulation (https://drafts.csswg.org/cssom/#serializing-css-values)

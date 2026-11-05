@@ -9,16 +9,15 @@ description: "The results of the web-platform-tests of resource-timing, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 106 | 118 | 0 | 90% |
+| [Stable](#stable-tests) | 107 | 118 | 0 | 91% |
 | [Tentative](#tentative-tests) | 1 | 33 | 0 | 3% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **107** | **151** | **0** | **71%** |
+| **All** | **108** | **151** | **0** | **72%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
 - **TEST BUG**: 2
 - **NOT IMPLEMENTED**: 41
 
@@ -102,7 +101,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`nextHopProtocol-is-tao-protected.https.html`](https://wpt.fyi/results/resource-timing/nextHopProtocol-is-tao-protected.https.html) | Pass | 16 / 16 |  |  |
 | [`no-entries-for-cached-import-of-cross-origin-css.html`](https://wpt.fyi/results/resource-timing/no-entries-for-cached-import-of-cross-origin-css.html) | Pass | 3 / 3 |  |  |
 | [`no-entries-for-cross-origin-css-fetched-memory-cache.sub.html`](https://wpt.fyi/results/resource-timing/no-entries-for-cross-origin-css-fetched-memory-cache.sub.html) | Pass | 1 / 1 |  |  |
-| [`no-entries-for-cross-origin-css-fetched.sub.html`](https://wpt.fyi/results/resource-timing/no-entries-for-cross-origin-css-fetched.sub.html) | Fail | 0 / 1 | BUG | the images of a style sheet that is not origin-clean are reported: the images are fetched from the computed values, which do not keep their style sheet (its imports and its fonts are not reported) |
+| [`no-entries-for-cross-origin-css-fetched.sub.html`](https://wpt.fyi/results/resource-timing/no-entries-for-cross-origin-css-fetched.sub.html) | Pass | 1 / 1 |  |  |
 | [`object-not-found-adds-entry.html`](https://wpt.fyi/results/resource-timing/object-not-found-adds-entry.html) | Pass | 3 / 3 |  |  |
 | [`object-not-found-after-TAO-cross-origin-redirect.html`](https://wpt.fyi/results/resource-timing/object-not-found-after-TAO-cross-origin-redirect.html) | Pass | 7 / 7 |  |  |
 | [`object-not-found-after-cross-origin-redirect.html`](https://wpt.fyi/results/resource-timing/object-not-found-after-cross-origin-redirect.html) | Pass | 1 / 1 |  |  |

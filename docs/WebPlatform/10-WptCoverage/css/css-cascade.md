@@ -9,16 +9,10 @@ description: "The results of the web-platform-tests of css/css-cascade, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 91 | 92 | 0 | 99% |
+| [Stable](#stable-tests) | 92 | 92 | 0 | 100% |
 | [Tentative](#tentative-tests) | 1 | 1 | 0 | 100% |
 | [Reftests](#reftests) | 50 | 50 | 0 | 100% |
-| **All** | **142** | **143** | **0** | **99%** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **BUG**: 1
+| **All** | **143** | **143** | **0** | **100%** |
 
 ## Stable tests
 
@@ -30,7 +24,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`all-prop-revert-noop.html`](https://wpt.fyi/results/css/css-cascade/all-prop-revert-noop.html) | Pass | 114 / 114 |  |  |
 | [`at-scope-parsing.html`](https://wpt.fyi/results/css/css-cascade/at-scope-parsing.html) | Pass | 43 / 43 |  |  |
 | [`at-scope-relative-syntax.html`](https://wpt.fyi/results/css/css-cascade/at-scope-relative-syntax.html) | Pass | 8 / 8 |  |  |
-| [`declaration-context.html`](https://wpt.fyi/results/css/css-cascade/declaration-context.html) | Fail | 27 / 28 | BUG | the `@page` rules accept all the properties (e.g. `display`), as Blink does for the margin properties of css/css-page/cssom/margin-001.html; the test expects the properties that do not apply to pages to be rejected |
+| [`declaration-context.html`](https://wpt.fyi/results/css/css-cascade/declaration-context.html) | Pass | 28 / 28 |  |  |
 | [`duplicate-stylesheets.html`](https://wpt.fyi/results/css/css-cascade/duplicate-stylesheets.html) | Pass | 17 / 17 |  |  |
 | [`idlharness.html`](https://wpt.fyi/results/css/css-cascade/idlharness.html) | Pass | 34 / 34 |  |  |
 | [`import-conditions.html`](https://wpt.fyi/results/css/css-cascade/import-conditions.html) | Pass | 29 / 29 |  |  |

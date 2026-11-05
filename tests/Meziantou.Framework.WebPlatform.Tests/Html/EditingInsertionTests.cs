@@ -245,6 +245,9 @@ public sealed class EditingInsertionTests : IDisposable
     [InlineData("<b>a[]c</b>", "b", "<b>abc</b>")]
     // The white space around the caret is left as it is
     [InlineData("a[]&nbsp;&nbsp;&nbsp;b", "<i>x</i>", "a<i>x</i>&nbsp;&nbsp;&nbsp;b")]
+    // The items of a list replace the empty list item of the caret
+    [InlineData("<ul><li>[]<br></li></ul>", "<ol><li>abc</li><li>def</li></ol>", "<ul><li>abc</li><li>def</li></ul>")]
+    [InlineData("<ul><li>abc</li><li>[]<br></li></ul>", "<ol><li>def</li></ol>", "<ul><li>abc</li><li>def</li></ul>")]
     public void InsertHtml(string html, string value, string expected)
     {
         Assert.Equal(expected, Run(html, "insertHTML=" + value));

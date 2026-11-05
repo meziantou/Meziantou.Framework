@@ -364,7 +364,6 @@
   "css/css-tables/html5-table-formatting-1.html": {
     "total": 6,
     "failures": {
-      "Empty tables do not take table-columns into account": "FAIL",
       "Empty tables do not take table-rows into account": "FAIL"
     }
   },

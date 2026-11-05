@@ -485,8 +485,8 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
     /// <summary>
     /// Returns whether the property applies to the page context (https://drafts.csswg.org/css-page-3/#page-properties): the
     /// margins, borders, paddings, backgrounds, outlines and size of the page box, the counters, the properties inherited by the
-    /// page-margin boxes. The other declarations of @page are kept (as in the browsers, the CSSOM shows them) but ignored by
-    /// the cascade of the page context (see <see cref="Cascade.StyleEngine.GetPageStyle"/>).
+    /// page-margin boxes. The other CSS 2.1 properties are invalid in @page; the declarations of the other properties are kept
+    /// (as in Blink, the CSSOM shows them) but ignored by the cascade of the page context (see <see cref="Cascade.StyleEngine.GetPageStyle"/>).
     /// </summary>
     internal static bool AppliesToPageContext(string property)
     {
@@ -512,13 +512,40 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
     }
 
     /// <summary>
-    /// Returns whether the context accepts the property (e.g. the margin properties in @page). The declarations of @page and of
-    /// the margin rules accept all the properties, as in Blink (WPT css/css-page/cssom/margin-001.html): the properties that
-    /// do not apply there are ignored by their cascade.
+    /// Returns whether the property is defined by CSS 2.1 (https://www.w3.org/TR/CSS21/propidx.html), aural properties excluded
+    /// as they are not supported.
+    /// </summary>
+    private static bool IsCss21Property(string property)
+    {
+        var name = CssPropertyRegistry.Get(property)?.Name ?? property;
+        return name is "background" or "background-attachment" or "background-color" or "background-image" or "background-position" or "background-repeat"
+            or "border" or "border-collapse" or "border-color" or "border-spacing" or "border-style" or "border-width"
+            or "border-top" or "border-right" or "border-bottom" or "border-left"
+            or "border-top-color" or "border-right-color" or "border-bottom-color" or "border-left-color"
+            or "border-top-style" or "border-right-style" or "border-bottom-style" or "border-left-style"
+            or "border-top-width" or "border-right-width" or "border-bottom-width" or "border-left-width"
+            or "top" or "right" or "bottom" or "left" or "caption-side" or "clear" or "clip" or "color" or "content" or "counter-increment" or "counter-reset"
+            or "cursor" or "direction" or "display" or "empty-cells" or "float" or "font" or "font-family" or "font-size" or "font-style" or "font-variant" or "font-weight"
+            or "height" or "letter-spacing" or "line-height" or "list-style" or "list-style-image" or "list-style-position" or "list-style-type"
+            or "margin" or "margin-top" or "margin-right" or "margin-bottom" or "margin-left" or "max-height" or "max-width" or "min-height" or "min-width"
+            or "orphans" or "outline" or "outline-color" or "outline-style" or "outline-width" or "overflow"
+            or "padding" or "padding-top" or "padding-right" or "padding-bottom" or "padding-left" or "page-break-after" or "page-break-before" or "page-break-inside"
+            or "position" or "quotes" or "table-layout" or "text-align" or "text-decoration" or "text-indent" or "text-transform"
+            or "unicode-bidi" or "vertical-align" or "visibility" or "white-space" or "widows" or "width" or "word-spacing" or "z-index";
+    }
+
+    /// <summary>
+    /// Returns whether the context accepts the property (e.g. the margin properties in @page). The @page rule can only contain
+    /// page properties (https://drafts.csswg.org/css-page-3/#at-page-rule): the CSS 2.1 properties that do not apply to the page
+    /// context are invalid there (https://drafts.csswg.org/css-page-3/#page-properties, WPT css/css-cascade/declaration-context.html).
+    /// The behavior of the other properties is undefined: they are accepted, as in Blink (WPT css/css-page/cssom/margin-001.html),
+    /// and ignored by the cascade of the page context. The margin rules accept all the properties, as in Blink (WPT
+    /// css/css-page/cssom/margin-002.html sets widows).
     /// </summary>
     private static bool AcceptsProperty(string? atRule, string name) => atRule switch
     {
-        null or "@page" => true,
+        null => true,
+        "@page" => !IsCss21Property(name) || AppliesToPageContext(name),
         KeyframeContext => IsAllowedInKeyframe(name),
         FunctionContext => CssPropertyRegistry.IsCustomProperty(name),
         PositionTryContext => IsAcceptedPositionTryProperty(name),

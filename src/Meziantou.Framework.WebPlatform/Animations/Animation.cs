@@ -284,6 +284,21 @@ public partial class Animation : EventTarget, IRealmBoundPlatformObject
         }
     }
 
+    /// <summary>
+    /// The time of the frame whose animation frame callbacks played the animation, and its timeline: the ready time of its pending
+    /// play task (see <see cref="DocumentAnimations.RecordFrameReadyTimes"/>). A new play task forgets it.
+    /// </summary>
+    private (AnimationTimeline Timeline, double Time)? _frameReadyTime;
+
+    /// <summary>Records the current time of a monotonically increasing timeline as the ready time of a pending play task, at the end of the animation frame callbacks.</summary>
+    internal void RecordFrameReadyTime()
+    {
+        if (_pendingTask == PendingTask.Play && _frameReadyTime is null && _timeline is { IsMonotonicallyIncreasing: true, CurrentTimeValue: { } time } timeline)
+        {
+            _frameReadyTime = (timeline, time);
+        }
+    }
+
     internal bool HasPendingTask => _pendingTask != PendingTask.None;
 
     /// <summary>Gets the overall progress of the animation, from 0 to 1 (https://drafts.csswg.org/web-animations-2/#dom-animation-overallprogress).</summary>
@@ -377,20 +392,24 @@ public partial class Animation : EventTarget, IRealmBoundPlatformObject
     }
 
     /// <summary>
-    /// Whether the current time of the animation follows a progress-based timeline that is at its minimum or maximum time
-    /// (https://drafts.csswg.org/web-animations-2/#at-timeline-boundary): the boundaries of the active interval are then
-    /// inclusive. A current time clamped by a hold time (e.g. a finished animation whose timeline went past its end) is not at
-    /// the boundary.
+    /// Returns whether the before-active and the active-after boundaries of the active interval are inclusive because they are
+    /// aligned with the minimum and the maximum times a progress-based timeline can reach, the minimum and maximum scroll
+    /// offsets (https://drafts.csswg.org/web-animations-2/#at-timeline-boundary): the effect then applies when the scroll
+    /// position is at the limit of the scroll range. The before-active boundary only matters when playing backwards, the
+    /// active-after boundary when playing forwards. As in Chrome, the alignment is only known when the start time is
+    /// auto-aligned with the attachment range and the effective playback rate is 1 or -1 (the current time then matches the
+    /// position of the timeline in the range). A current time clamped by a hold time (e.g. a finished animation whose timeline
+    /// went past the end of its range) does not follow the timeline, so it is not at the boundary.
     /// </summary>
-    internal bool IsAtTimelineBoundary
+    internal (bool Start, bool End) GetBoundaryAlignment()
     {
-        get
-        {
-            if (_timeline is not { IsAtTimelineBoundary: true } || CurrentTimeValue is not { } currentTime)
-                return false;
+        if (!_autoAlignStartTime || _timeline is null || Math.Abs(EffectivePlaybackRate) != 1)
+            return default;
 
-            return _holdTime is null || (GetCurrentTime(ignoreHoldTime: true) is { } unconstrained && Math.Abs(unconstrained - currentTime) < 1e-9);
-        }
+        if (_holdTime is { } holdTime && (GetCurrentTime(ignoreHoldTime: true) is not { } unconstrained || Math.Abs(unconstrained - holdTime) >= 1e-9))
+            return default;
+
+        return _timeline.GetBoundaryAlignment(_rangeStart, _rangeEnd);
     }
 
     /// <summary>Returns a time value of the animation as a <c>CSSNumberish</c>: a percentage for a progress-based timeline, milliseconds otherwise.</summary>
@@ -805,6 +824,7 @@ public partial class Animation : EventTarget, IRealmBoundPlatformObject
                 }
 
                 _pendingTask = PendingTask.Play;
+                _frameReadyTime = null;
             }
 
             if (previousPlayState == AnimationPlayState.Paused && previousProgress is { } pausedProgress)
@@ -1058,6 +1078,7 @@ public partial class Animation : EventTarget, IRealmBoundPlatformObject
         }
 
         _pendingTask = PendingTask.Play;
+        _frameReadyTime = null;
         UpdateFinishedState(didSeek: false, synchronouslyNotify: false);
         OnPlaybackChanged();
     }
@@ -1117,6 +1138,13 @@ public partial class Animation : EventTarget, IRealmBoundPlatformObject
         if (_pendingTask == PendingTask.None || _timeline?.CurrentTimeValue is not { } readyTime || (_startTime is null && _holdTime is null))
             return false;
 
+        // (the animations played by the animation frame callbacks of the previous frame start at its time, see RecordFrameReadyTime)
+        if (_frameReadyTime is { } frameReadyTime && _pendingTask == PendingTask.Play && ReferenceEquals(frameReadyTime.Timeline, _timeline))
+        {
+            readyTime = frameReadyTime.Time;
+        }
+
+        _frameReadyTime = null;
         if (_pendingTask == PendingTask.Play)
         {
             // https://drafts.csswg.org/web-animations-1/#playing-an-animation-section (the pending play task)

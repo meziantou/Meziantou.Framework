@@ -18,7 +18,7 @@ description: "The results of the web-platform-tests of fetch, and why the tests 
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 2
+- **BUG**: 1
 - **TEST BUG**: 24
 - **NOT IMPLEMENTED**: 91
 - **REQUIRES**: 3
@@ -376,7 +376,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`metadata/generated/script-text-module-import-static.https.sub.html`](https://wpt.fyi/results/fetch/metadata/generated/script-text-module-import-static.https.sub.html) | Pass | 17 / 17 |  |  |
 | [`metadata/generated/script-text-module-import-static.sub.html`](https://wpt.fyi/results/fetch/metadata/generated/script-text-module-import-static.sub.html) | Pass | 18 / 18 |  |  |
 | [`metadata/generated/serviceworker.https.sub.html`](https://wpt.fyi/results/fetch/metadata/generated/serviceworker.https.sub.html) | Pass | 10 / 10 |  |  |
-| [`metadata/generated/svg-image.https.sub.html`](https://wpt.fyi/results/fetch/metadata/generated/svg-image.https.sub.html) | Fail | 20 / 23 | BUG, TEST BUG, NOT IMPLEMENTED | the SVG `<image>` request has `Sec-Fetch-Dest: image` where the test expects `empty`; the HTTPS downgrade-upgrade subtests redirect the request through an `http:` URL, which is mixed content in an `https:` document: they fail in every browser; the `Sec-Fetch-Storage-Access` request header (Storage Access API) |
+| [`metadata/generated/svg-image.https.sub.html`](https://wpt.fyi/results/fetch/metadata/generated/svg-image.https.sub.html) | Fail | 20 / 23 | TEST BUG, NOT IMPLEMENTED | the HTTPS downgrade-upgrade subtests redirect the request through an `http:` URL, which is mixed content in an `https:` document: they fail in every browser; the test expects `Sec-Fetch-Dest: empty` for the SVG `<image>` request only because SVG 2 does not set the destination of its fetch (https://svgwg.org/svg2-draft/linking.html#processingURL-fetch, w3c/svgwg#782); the generator config of the test (fetch/metadata/tools/fetch-metadata.conf.yml) notes that Chromium and Firefox use `image`, which the content security policies (img-src) and the `Accept` header of an image request need; the `Sec-Fetch-Storage-Access` request header (Storage Access API) |
 | [`metadata/generated/svg-image.sub.html`](https://wpt.fyi/results/fetch/metadata/generated/svg-image.sub.html) | Pass | 18 / 18 |  |  |
 | [`metadata/generated/window-history.https.sub.html`](https://wpt.fyi/results/fetch/metadata/generated/window-history.https.sub.html) | Pass | 16 / 16 |  |  |
 | [`metadata/generated/window-history.sub.html`](https://wpt.fyi/results/fetch/metadata/generated/window-history.sub.html) | Pass | 30 / 30 |  |  |

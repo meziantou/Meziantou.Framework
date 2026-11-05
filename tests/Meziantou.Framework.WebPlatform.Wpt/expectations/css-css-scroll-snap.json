@@ -545,10 +545,7 @@
     "total": 2
   },
   "css/css-scroll-snap/snap-events/scrollsnapchange/scrollsnapchange-scroll-snap-type-change.html": {
-    "total": 1,
-    "failures": {
-      "Trigger scrollsnapchange event on scroll-snap-type change": "FAIL"
-    }
+    "total": 1
   },
   "css/css-scroll-snap/snap-events/scrollsnapchange/scrollsnapchange-scrolling-non-snapping-axis.tentative.html": {
     "total": 2

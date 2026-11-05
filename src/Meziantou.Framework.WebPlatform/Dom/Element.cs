@@ -709,6 +709,12 @@ public partial class Element : Node
             NodeDocument.InlineStylesDeclarePositionTryFallbacks = true;
         }
 
+        if (localName == "style" && value is not null && !NodeDocument.InlineStylesDeclareScrollSnapType && value.Contains("scroll-snap-type", StringComparison.OrdinalIgnoreCase))
+        {
+            // The document is laid out by the rendering steps (see StyleEngine.MayHaveScrollSnapContainers)
+            NodeDocument.InlineStylesDeclareScrollSnapType = true;
+        }
+
         if (localName == "style" && this is HtmlElement or SvgElement or MathMLElement && (value is not null || RareDataOrNull is ElementRareData { BlockedStyleAttribute: not null }))
         {
             CheckStyleAttribute(value);

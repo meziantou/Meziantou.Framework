@@ -847,6 +847,10 @@ internal sealed partial class EditingAlgorithms
             return (startNode, startOffset, endNode, endOffset);
         }
 
+        // The deletion removes the blocks of the only empty line of the editing host (see EmptyEditingHostWithoutVisibleContent)
+        if (deletion && GetEditingHostOf(caretNode) is { } host && GetOnlyEmptyLineBlock(host) is { } line)
+            return (host, 0, line, NodeLength(line));
+
         if (backward && character && caretNode is Text caretText && caretOffset > 0 && caretOffset <= NodeLength(caretText) && caretText.Data[caretOffset - 1] is not (' ' or '\t' or '\n' or '\r'))
         {
             var start = caretOffset - 1;
@@ -1339,6 +1343,90 @@ internal sealed partial class EditingAlgorithms
             or TagId.Input or TagId.Textarea or TagId.Select or TagId.Button;
     }
 
+    /// <summary>
+    /// As in the browsers, a deletion in an editing host whose only content is a single empty line in blocks (e.g.
+    /// <c>&lt;div&gt;&lt;div&gt;{}&lt;br&gt;&lt;/div&gt;&lt;/div&gt;</c>), where the caret has no other position, removes
+    /// the blocks: the editing host gets a line break when it is a block. Returns false when the editing host has another
+    /// content (see <see cref="GetOnlyEmptyLineBlock"/>).
+    /// </summary>
+    private bool EmptyEditingHostWithoutVisibleContent(Element host)
+    {
+        if (GetOnlyEmptyLineBlock(host) is null)
+            return false;
+
+        while (host.FirstChild is { } child)
+        {
+            host.RemoveChild(child);
+        }
+
+        if (!IsDisplayInline(host))
+        {
+            host.AppendChild(CreateElement("br"));
+        }
+
+        CollapseTo(host, 0);
+        return true;
+    }
+
+    /// <summary>
+    /// The block of the single empty line that is the only content of an editing host (see
+    /// <see cref="EmptyEditingHostWithoutVisibleContent"/>), or null when the editing host has visible content, several
+    /// lines, a list (whose items the deletion commands outdent or join), no block, or when it is the document element.
+    /// </summary>
+    private Element? GetOnlyEmptyLineBlock(Element host)
+    {
+        if (ReferenceEquals(host, _document.DocumentElement))
+            return null;
+
+        Element? line = null;
+        foreach (var descendant in GetDescendants(host))
+        {
+            switch (descendant)
+            {
+                case Text when IsVisible(descendant):
+                    return null;
+
+                case Element element when !IsEditable(element) || IsAtomicElement(element) || IsHtmlElement(element, "hr") || IsHtmlElement(element, "table") || IsHtmlElement(element, ListNames) || IsHtmlElement(element, ListItemNames):
+                    return null;
+
+                case Element element when IsHtmlElement(element, "br"):
+                    if (!IsCollapsedBlockProp(element) && !IsExtraneousLineBreak(element))
+                        return null;
+
+                    break;
+
+                case Element element when IsBlockNode(element) && !HasBlockChild(element):
+                    if (line is not null)
+                        return null;
+
+                    line = element;
+                    break;
+
+                case Text or Element:
+                    break;
+
+                default:
+                    if (!IsInvisible(descendant))
+                        return null;
+
+                    break;
+            }
+        }
+
+        return line;
+
+        bool HasBlockChild(Element element)
+        {
+            for (var child = element.FirstChild; child is not null; child = child.NextSibling)
+            {
+                if (child is Element && IsBlockNode(child))
+                    return true;
+            }
+
+            return false;
+        }
+    }
+
     /// <summary>Deletes the contents of the active range (e.g. the cut action).</summary>
     public void DeleteActiveRange() => DeleteSelection();
 
@@ -1725,7 +1813,10 @@ internal sealed partial class EditingAlgorithms
 
         // There is nothing to delete before the start of the editing host
         if (startOffset == 0 && IsEditingHost(startNode))
+        {
+            EmptyEditingHostWithoutVisibleContent((Element)startNode);
             return true;
+        }
 
         if (IsHtmlElement(ChildAt(startNode, startOffset), "table"))
             return true;
@@ -2011,6 +2102,10 @@ internal sealed partial class EditingAlgorithms
         }
 
         if (IsInlineNode(node))
+            return true;
+
+        // There is nothing to delete after the caret when the editing host has no visible content
+        if (GetEditingHostOf(node) is Element host && EmptyEditingHostWithoutVisibleContent(host))
             return true;
 
         var nextChild = ChildAt(node, offset);

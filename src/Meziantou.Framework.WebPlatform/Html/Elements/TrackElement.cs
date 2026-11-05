@@ -267,7 +267,7 @@ public partial class HtmlTrackElement
 
         var cancellation = new CancellationTokenSource();
         _fetchCancellation = cancellation;
-        var started = SubresourceFetching.Fetch(client, request, resource => OnResponse(generation, cancellation, resource), initiatorType: "track", cancellation.Token);
+        var started = SubresourceFetching.Fetch(client, request, resource => OnResponse(generation, cancellation, resource), initiatorType: "track", cancellationToken: cancellation.Token);
         if (!started)
         {
             _fetchCancellation = null;

@@ -53,7 +53,6 @@
       "Scroll-linked animation playback rate affects the rate of progress of the current time.": "FAIL",
       "The current time is not affected by playbackRate set while the scroll-linked animation is in play state.": "FAIL",
       "The playback rate set before scroll-linked animation started playing affects the rate of progress of the current time": "FAIL",
-      "The playback rate set before the animation started playing affects the rate of progress of the current time": "FAIL",
       "When playback rate is updated, the underlying effect is properly updated with the current time of its scroll-linked WorkletAnimation and produces correct visual result.": "TIMEOUT"
     }
   },

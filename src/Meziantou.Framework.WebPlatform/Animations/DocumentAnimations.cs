@@ -64,6 +64,22 @@ internal sealed class DocumentAnimations
         return _timelineTime.Value;
     }
 
+    /// <summary>
+    /// Records the time of the current frame as the ready time of the play-pending animations of a monotonically increasing
+    /// timeline that were played by the animation frame callbacks of the current rendering update (after its "update animations
+    /// and send events" step): as in the browsers, their start time is the time of this frame (WPT
+    /// web-animations/timing-model/animations/start-time-compat.html), but they are ready at the next rendering update
+    /// (https://drafts.csswg.org/web-animations-1/#ready), whose "update animations and send events" step resolves their ready
+    /// promise (WPT web-animations/timing-model/timelines/update-and-send-events.html).
+    /// </summary>
+    public void RecordFrameReadyTimes()
+    {
+        foreach (var animation in _trackedAnimations)
+        {
+            animation.RecordFrameReadyTime();
+        }
+    }
+
     /// <summary>Called when the playback state, the timeline or the effect of an animation changes.</summary>
     public void OnAnimationChanged(Animation animation)
     {

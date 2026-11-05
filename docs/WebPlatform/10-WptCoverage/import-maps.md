@@ -58,7 +58,7 @@ description: "The results of the web-platform-tests of import-maps, and why the 
 | [`not-overridden/external-script-bare-descendent.html`](https://wpt.fyi/results/import-maps/not-overridden/external-script-bare-descendent.html) | Pass | 3 / 3 |  |  |
 | [`not-overridden/external-script-descendent-with-scope.html`](https://wpt.fyi/results/import-maps/not-overridden/external-script-descendent-with-scope.html) | Pass | 1 / 1 |  |  |
 | [`not-overridden/external-script-descendent.html`](https://wpt.fyi/results/import-maps/not-overridden/external-script-descendent.html) | Pass | 1 / 1 |  |  |
-| [`not-overridden/failed-resolution.html`](https://wpt.fyi/results/import-maps/not-overridden/failed-resolution.html) | Pass | 4 / 4 |  |  |
+| [`not-overridden/failed-resolution.html`](https://wpt.fyi/results/import-maps/not-overridden/failed-resolution.html) | Pass | 1 / 1 |  |  |
 | [`not-overridden/integrity.html`](https://wpt.fyi/results/import-maps/not-overridden/integrity.html) | Pass | 1 / 1 |  |  |
 | [`not-overridden/prefix.html`](https://wpt.fyi/results/import-maps/not-overridden/prefix.html) | Pass | 2 / 2 |  |  |
 | [`not-overridden/script-descendent.html`](https://wpt.fyi/results/import-maps/not-overridden/script-descendent.html) | Pass | 1 / 1 |  |  |

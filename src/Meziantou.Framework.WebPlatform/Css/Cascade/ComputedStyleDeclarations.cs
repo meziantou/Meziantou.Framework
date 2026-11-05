@@ -56,7 +56,12 @@ internal sealed class ComputedStyleDeclarations
     }
 
     /// <summary>Parses a &lt;pseudo-element-selector&gt;; returns its name (with its argument, e.g. "highlight(name)") or null when it is not a supported pseudo-element.</summary>
-    internal static string? ParsePseudoElement(string text)
+    /// <param name="text">The text of the selector.</param>
+    /// <param name="includeShadowPseudoElements">
+    /// Whether <c>::part()</c> and <c>::slotted()</c> are returned: they are valid pseudo-element selectors, but they designate
+    /// elements (of the shadow tree of the element, or assigned to its slots), not pseudo-elements.
+    /// </param>
+    internal static string? ParsePseudoElement(string text, bool includeShadowPseudoElements = false)
     {
         // The whole value must be the pseudo-element (whitespace or any other token around it is invalid)
         var values = CssParser.ParseListOfComponentValues(text);
@@ -79,7 +84,7 @@ internal sealed class ComputedStyleDeclarations
         if (!trimmed.StartsWith("::", StringComparison.Ordinal) && pseudo.Name is not ("before" or "after" or "first-line" or "first-letter"))
             return null;
 
-        if (pseudo.Name is "slotted" or "part")
+        if (pseudo.Name is "slotted" or "part" && !includeShadowPseudoElements)
             return null;
 
         // The -webkit- prefixed aliases (e.g. ::-webkit-file-upload-button) are only supported in the selectors, as in browsers

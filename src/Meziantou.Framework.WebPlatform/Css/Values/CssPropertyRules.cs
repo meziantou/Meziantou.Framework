@@ -476,7 +476,12 @@ internal static partial class CssPropertyRules
     /// with the box first, without the default padding-box nor a zero length (e.g. 10px content-box is content-box 10px,
     /// padding-box is 0px). The value is a serialized specified or computed value.
     /// </summary>
-    public static string CanonicalizeOverflowClipMargin(string value)
+    /// <param name="value">The value.</param>
+    /// <param name="keepPaddingBox">
+    /// Whether an explicit padding-box is kept: the box defaults to content-box on the replaced elements, so the computed value
+    /// keeps it (see <see cref="GetOverflowClipMarginComputationValue"/>); the serialization omits it.
+    /// </param>
+    public static string CanonicalizeOverflowClipMargin(string value, bool keepPaddingBox = false)
     {
         string? box = null;
         string? length = null;
@@ -493,7 +498,7 @@ internal static partial class CssPropertyRules
         }
 
         var parts = new List<string>(2);
-        if (box is not null and not "padding-box")
+        if (box is not null && (keepPaddingBox || box is not "padding-box"))
         {
             parts.Add(box);
         }
@@ -504,6 +509,20 @@ internal static partial class CssPropertyRules
         }
 
         return parts.Count == 0 ? "0px" : string.Join(' ', parts);
+    }
+
+    /// <summary>
+    /// Returns the value the computed value of an overflow-clip-margin longhand is computed from when the specified value has
+    /// an explicit padding-box, or null: its serialization omits padding-box, but the box defaults to content-box on the
+    /// replaced elements (https://drafts.csswg.org/css-overflow-4/#overflow-clip-margin), so an explicit padding-box is not
+    /// the omitted box there.
+    /// </summary>
+    public static string? GetOverflowClipMarginComputationValue(string longhand, List<CssComponentValue> significant)
+    {
+        if (!OverflowClipMarginLonghands.Contains(longhand, StringComparer.Ordinal) || !significant.Exists(value => IsIdent(value, "padding-box")))
+            return null;
+
+        return CanonicalizeOverflowClipMargin(InfraAscii.ToAsciiLowercase(Serialize(significant, separator: " ")), keepPaddingBox: true);
     }
 
     /// <summary>

@@ -11,14 +11,13 @@ description: "The results of the web-platform-tests of css/css-ui, and why the t
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 94 | 101 | 0 | 93% |
 | [Tentative](#tentative-tests) | 12 | 16 | 0 | 75% |
-| [Reftests](#reftests) | 959 | 964 | 0 | 99% |
-| **All** | **1,065** | **1,081** | **0** | **99%** |
+| [Reftests](#reftests) | 960 | 964 | 0 | 99.5% |
+| **All** | **1,066** | **1,081** | **0** | **99%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
 - **TEST BUG**: 4
 - **NOT IMPLEMENTED**: 4
 - **REQUIRES**: 7
@@ -1093,7 +1092,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`outline-svg-g-001.html`](https://wpt.fyi/results/css/css-ui/outline-svg-g-001.html) | Pass | 1 / 1 |  |  |
 | [`outline-svg-g-auto-001.html`](https://wpt.fyi/results/css/css-ui/outline-svg-g-auto-001.html) | Pass | 1 / 1 |  |  |
 | [`outline-svg-nested-svg-001.html`](https://wpt.fyi/results/css/css-ui/outline-svg-nested-svg-001.html) | Pass | 1 / 1 |  |  |
-| [`outline-with-padding-001.html`](https://wpt.fyi/results/css/css-ui/outline-with-padding-001.html) | Fail | 0 / 1 | BUG | the focus ring of the block container encloses its overflowing line as in the reference, but the block is 3px lower than the inline-block of the reference: the corners of the two rings that touch differ (20 pixels) |
+| [`outline-with-padding-001.html`](https://wpt.fyi/results/css/css-ui/outline-with-padding-001.html) | Pass | 1 / 1 |  |  |
 | [`pointer-events-no-scrollbars-001.html`](https://wpt.fyi/results/css/css-ui/pointer-events-no-scrollbars-001.html) | Pass | 1 / 1 |  |  |
 | [`pointer-events-no-scrollbars-002.html`](https://wpt.fyi/results/css/css-ui/pointer-events-no-scrollbars-002.html) | Pass | 1 / 1 |  |  |
 | [`resize-change-margin.html`](https://wpt.fyi/results/css/css-ui/resize-change-margin.html) | Pass | 1 / 1 |  |  |

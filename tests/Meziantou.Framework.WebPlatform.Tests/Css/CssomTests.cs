@@ -287,6 +287,20 @@ public sealed class CssomTests
         Assert.Equal("\"a\"", ((CssMarginRule)rule.CssRules[0]).Style.GetPropertyValue("content"));
     }
 
+    [Fact]
+    public void PageRule_RejectsCss21PropertiesThatDoNotApplyToPages()
+    {
+        var sheet = new CssStyleSheet();
+        sheet.ReplaceSync("@page { display: grid; float: left; column-count: 7; color: red; margin-left: 7px; @top-center { widows: 2; } }");
+        var rule = (CssPageRule)sheet.CssRules[0];
+        Assert.Equal("", rule.Style.GetPropertyValue("display"));
+        Assert.Equal("", rule.Style.GetPropertyValue("float"));
+        Assert.Equal("7", rule.Style.GetPropertyValue("column-count"));
+        Assert.Equal("red", rule.Style.GetPropertyValue("color"));
+        Assert.Equal("7px", rule.Style.GetPropertyValue("margin-left"));
+        Assert.Equal("2", ((CssMarginRule)rule.CssRules[0]).Style.GetPropertyValue("widows"));
+    }
+
     [Theory]
     [InlineData("@scope (div::before) {}")]
     [InlineData("@scope (.a) to (div::after) {}")]

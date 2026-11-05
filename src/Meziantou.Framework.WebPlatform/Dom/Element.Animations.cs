@@ -105,6 +105,14 @@ public partial class Element
     [IdlMember("getAnimations", "https://drafts.csswg.org/web-animations-1/#dom-animatable-getanimations")]
     public IReadOnlyList<Animation> GetAnimations(GetAnimationsOptions? options = null)
     {
+        // ::part() and ::slotted() are valid pseudo-element selectors (https://drafts.csswg.org/web-animations-1/#pseudo-element-parsing),
+        // but they designate elements, not pseudo-elements of this element: no animation targets them
+        if (options?.PseudoElement is [':', ..] text && Css.Cascade.ComputedStyleDeclarations.ParsePseudoElement(text, includeShadowPseudoElements: true) is { } name
+            && (name.StartsWith("part(", StringComparison.Ordinal) || name.StartsWith("slotted(", StringComparison.Ordinal)))
+        {
+            return [];
+        }
+
         var pseudoElement = KeyframeEffect.ParsePseudoElement(options?.PseudoElement);
         var document = NodeDocument;
         document.FlushAnimationStyles();

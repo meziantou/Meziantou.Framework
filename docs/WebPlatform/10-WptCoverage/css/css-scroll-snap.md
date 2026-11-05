@@ -9,16 +9,15 @@ description: "The results of the web-platform-tests of css/css-scroll-snap, and 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 153 | 157 | 0 | 97% |
+| [Stable](#stable-tests) | 154 | 157 | 0 | 98% |
 | [Tentative](#tentative-tests) | 30 | 31 | 0 | 97% |
 | [Reftests](#reftests) | 24 | 26 | 0 | 92% |
-| **All** | **207** | **214** | **0** | **97%** |
+| **All** | **208** | **214** | **0** | **97%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
 - **TEST BUG**: 2
 - **NOT IMPLEMENTED**: 4
 
@@ -155,7 +154,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`snap-area-capturing-remove-scroll-container.html`](https://wpt.fyi/results/css/css-scroll-snap/snap-area-capturing-remove-scroll-container.html) | Pass | 1 / 1 |  |  |
 | [`snap-at-user-scroll-end.html`](https://wpt.fyi/results/css/css-scroll-snap/snap-at-user-scroll-end.html) | Pass | 1 / 1 |  |  |
 | [`snap-events/scrollsnapchange/scrollsnapchange-same-targets-after-layout-changed.html`](https://wpt.fyi/results/css/css-scroll-snap/snap-events/scrollsnapchange/scrollsnapchange-same-targets-after-layout-changed.html) | Pass | 2 / 2 |  |  |
-| [`snap-events/scrollsnapchange/scrollsnapchange-scroll-snap-type-change.html`](https://wpt.fyi/results/css/css-scroll-snap/snap-events/scrollsnapchange/scrollsnapchange-scroll-snap-type-change.html) | Fail | 0 / 1 | BUG | the layout is computed lazily: the document is first laid out when the `scrollsnapchange` listener is added, two frames after the load, after the changes of `scroll-snap-type` (no style change lays the document out), so the snap after the last change is the first snap of the scroll container, whose `scrollsnapchange` event is only fired for the listeners added before the first rendering update (as the browsers fire it for the first snap after the load) |
+| [`snap-events/scrollsnapchange/scrollsnapchange-scroll-snap-type-change.html`](https://wpt.fyi/results/css/css-scroll-snap/snap-events/scrollsnapchange/scrollsnapchange-scroll-snap-type-change.html) | Pass | 1 / 1 |  |  |
 | [`snap-events/snap-events-with-shadow-dom.html`](https://wpt.fyi/results/css/css-scroll-snap/snap-events/snap-events-with-shadow-dom.html) | Pass | 2 / 2 |  |  |
 | [`snap-events/snapevents-at-document-bubble-to-window.html`](https://wpt.fyi/results/css/css-scroll-snap/snap-events/snapevents-at-document-bubble-to-window.html) | Pass | 2 / 2 |  |  |
 | [`snap-fling-in-large-area.html`](https://wpt.fyi/results/css/css-scroll-snap/snap-fling-in-large-area.html) | Pass | 1 / 1 |  |  |

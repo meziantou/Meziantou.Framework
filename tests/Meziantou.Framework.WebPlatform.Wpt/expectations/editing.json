@@ -2598,8 +2598,6 @@
       "[[\"delete\",\"\"]] \"<div style=display:inline-flex><span>abc</span><span>def</span></div>[]ghi\" compare innerHTML": "FAIL",
       "[[\"delete\",\"\"]] \"<div style=display:inline-grid><span>abc</span><span>def</span></div>[]ghi\" compare innerHTML": "FAIL",
       "[[\"delete\",\"\"]] \"<div style=white-space:pre-line>foo\\n []bar</div>\" compare innerHTML": "FAIL",
-      "[[\"delete\",\"\"]] \"<div><div contenteditable=false><div contenteditable><div>{}<br></div></div></div></div>\" compare innerHTML": "FAIL",
-      "[[\"delete\",\"\"]] \"<div><div>{}<br></div></div>\" compare innerHTML": "FAIL",
       "[[\"delete\",\"\"]] \"<div><font><table><td>a</table><br>{}<br><table><td>b</table></font></div>\" compare innerHTML": "FAIL",
       "[[\"delete\",\"\"]] \"<object>abc</object>[]def\" compare innerHTML": "FAIL",
       "[[\"delete\",\"\"]] \"<p>abc</p><ul contenteditable=\\\"false\\\"><li>def</li></ul><p>[]ghi</p>\" compare innerHTML": "FAIL",
@@ -2663,7 +2661,6 @@
     "failures": {
       "[[\"stylewithcss\",\"false\"],[\"forecolor\",\"#0000FF\"]] \"<span style=\\\"color: blue\\\">foo<span style=\\\"color: brown\\\">[bar]</span>baz</span>\" compare innerHTML": "FAIL",
       "[[\"stylewithcss\",\"false\"],[\"forecolor\",\"#0000FF\"]] \"<table data-start=0 data-end=1><tbody><tr><td>foo<td>bar<td>baz</table>\" queryCommandValue(\"forecolor\") after": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"forecolor\",\"#0000FF\"]] \"<font color=blue>foo<font color=brown>[bar]</font>baz</font>\" compare innerHTML": "FAIL",
       "[[\"stylewithcss\",\"true\"],[\"forecolor\",\"#0000FF\"]] \"{<table><tr><td>foo<td>bar<td>baz</table>}\" queryCommandState(\"stylewithcss\") before": "FAIL"
     }
   },
@@ -2788,8 +2785,6 @@
       "[[\"defaultparagraphseparator\",\"div\"],[\"forwarddelete\",\"\"]] \"<ol><li>foo[</ol><p>bar]<ol><li>baz</ol>\" queryCommandValue(\"defaultparagraphseparator\") before": "FAIL",
       "[[\"forwarddelete\",\"\"]] \"<div style=white-space:nowrap>[]f\\nbar</div>\" compare innerHTML": "FAIL",
       "[[\"forwarddelete\",\"\"]] \"<div style=white-space:pre-line>foo[] \\nbar</div>\" compare innerHTML": "FAIL",
-      "[[\"forwarddelete\",\"\"]] \"<div><div contenteditable=false><div contenteditable><div>{}<br></div></div></div></div>\" compare innerHTML": "FAIL",
-      "[[\"forwarddelete\",\"\"]] \"<div><div>{}<br></div></div>\" compare innerHTML": "FAIL",
       "[[\"forwarddelete\",\"\"]] \"<ol><li><p>foo</ol><p>{}<br></p><ol><li>bar</ol>\" compare innerHTML": "FAIL",
       "[[\"forwarddelete\",\"\"]] \"<ol><li>foo</ol><p>[bar<ol><li>]baz</ol>\" compare innerHTML": "FAIL",
       "[[\"forwarddelete\",\"\"]] \"<ol><li>foo</ol><p>{}<br></p><ol><li>bar</ol>\" compare innerHTML": "FAIL",
@@ -2885,13 +2880,9 @@
     "total": 1565,
     "failures": {
       "[[\"inserthtml\",\"<!--abc-->\"]] \"<p><!--foo--><span><br></span>{}<!--bar--></p>\" compare innerHTML": "FAIL",
-      "[[\"inserthtml\",\"<ol id=\\\"new\\\"><li id=\\\"li1\\\">abc</li><li id=\\\"li2\\\">def</li></ol>\"]] \"<ol id=\\\"old\\\"><li id=\\\"li0\\\">{}<br></ol>\" compare innerHTML": "FAIL",
-      "[[\"inserthtml\",\"<ol id=\\\"new\\\"><li id=\\\"li1\\\">abc</li><li id=\\\"li2\\\">def</li></ol>\"]] \"<ul id=\\\"old\\\"><li id=\\\"li0\\\">{}<br></ul>\" compare innerHTML": "FAIL",
       "[[\"inserthtml\",\"<pre>abc</pre>\"]] \"<pre contenteditable=\\\"false\\\"><span contenteditable>[1234]</span></pre>\" compare innerHTML": "FAIL",
       "[[\"inserthtml\",\"<pre>abc</pre>\"]] \"<pre>12[]34</pre>\" compare innerHTML": "FAIL",
       "[[\"inserthtml\",\"<pre>abc</pre>\"]] \"<pre>1[23]4</pre>\" compare innerHTML": "FAIL",
-      "[[\"inserthtml\",\"<ul id=\\\"new\\\"><li id=\\\"li1\\\">abc</li><li id=\\\"li2\\\">def</li></ul>\"]] \"<ol id=\\\"old\\\"><li id=\\\"li0\\\">{}<br></ol>\" compare innerHTML": "FAIL",
-      "[[\"inserthtml\",\"<ul id=\\\"new\\\"><li id=\\\"li1\\\">abc</li><li id=\\\"li2\\\">def</li></ul>\"]] \"<ul id=\\\"old\\\"><li id=\\\"li0\\\">{}<br></ul>\" compare innerHTML": "FAIL",
       "[[\"inserthtml\",\"X\"],[\"inserthtml\",\"Y\"]] \"<div style=white-space:pre-line>abc []\\n</div>\" compare innerHTML": "FAIL",
       "[[\"inserthtml\",\"X\"]] \"<div style=white-space:pre-line>[]\\n</div>\" compare innerHTML": "FAIL",
       "[[\"inserthtml\",\"X\"]] \"<div style=white-space:pre-line>abc []\\n</div>\" compare innerHTML": "FAIL",

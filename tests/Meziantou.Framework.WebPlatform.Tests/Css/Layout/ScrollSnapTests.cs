@@ -217,6 +217,22 @@ public sealed class ScrollSnapTests : IDisposable
     }
 
     [Fact]
+    public void SnapEvents_TheRenderingStepsSnapTheSnapContainers()
+    {
+        // The geometry of the document is never read: the rendering steps lay it out to snap its snap containers
+        var document = Parse("<style>html { scroll-snap-type: y mandatory; overflow-y: scroll } body { margin: 8px } #snapped { scroll-snap-align: start }</style><div id=snapped></div><div style='height: 10000px'></div>");
+        var html = document.DocumentElement!;
+        RunFrames();
+        html.SetAttribute("style", "scroll-snap-type: initial");
+        RunFrames();
+        html.SetAttribute("style", "");
+        var events = new List<string>();
+        document.DefaultView!.AddEventListener("scrollsnapchange", e => events.Add(((Element?)((SnapEvent)e).SnapTargetBlock)?.Id ?? ""));
+        RunFrames(2);
+        Assert.Equal(["", "snapped"], events);
+    }
+
+    [Fact]
     public void SnapEvent_OfTheViewportBubblesFromTheDocument()
     {
         var items = string.Concat(Enumerable.Range(0, 10).Select(i => $"<div id=item{i} style='height: 600px; scroll-snap-align: start'></div>"));

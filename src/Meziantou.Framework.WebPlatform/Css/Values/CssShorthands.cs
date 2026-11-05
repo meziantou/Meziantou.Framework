@@ -162,6 +162,8 @@ internal static class CssShorthands
                 }
             }
 
+            computationValue ??= CssPropertyRules.GetOverflowClipMarginComputationValue(property.Name, significant);
+
             var serialized = grid ?? CssPropertyRules.CanonicalizeLonghand(property, significant) ?? CssBackgrounds.CanonicalizeLonghand(property.Name, significant) ?? SerializeLonghand(property, grammar, values, significant);
 
             // The Typed OM reifies the value as specified: the serialization does not always keep its structure
@@ -173,6 +175,17 @@ internal static class CssShorthands
             return null;
 
         var longhands = Expand(property, values, significant);
+        if (longhands is not null && property.Name.StartsWith("overflow-clip-margin", StringComparison.Ordinal))
+        {
+            for (var i = 0; i < longhands.Count; i++)
+            {
+                if (CssPropertyRules.GetOverflowClipMarginComputationValue(longhands[i].Name, significant) is { } computationValue)
+                {
+                    longhands[i] = longhands[i] with { ComputationValue = computationValue };
+                }
+            }
+        }
+
         if (longhands is not null && property.Name is "animation" or "transition" && CssSerializer.ContainsRoundedNumber(significant))
         {
             // The easing functions keep the full precision of their numbers (see above)

@@ -35,11 +35,9 @@
     }
   },
   "input-events/input-events-get-target-ranges-backspace.tentative.html": {
-    "total": 167,
+    "total": 169,
     "failures": {
       "Alt + Backspace at \"<p>   abc[] def</p>\"": "FAIL",
-      "Backspace at \"<div contenteditable=\"false\">\n  <div contenteditable=\"\"><p>{}<br></p></div></div>": "FAIL",
-      "Backspace at \"<div contenteditable=\"false\"><div contenteditable=\"\"><p>{}<br></p></div></div>": "FAIL",
       "Backspace at \"<div>abc  <ul><li> []def </li></ul>  ghi</div>\" - comparing innerHTML": "FAIL",
       "Backspace at \"<div>abc  <ul><li>[] def </li></ul>  ghi</div>\"": "FAIL",
       "Backspace at \"<div>abc  <ul><li>[] def </li></ul>  ghi</div>\" - comparing innerHTML": "FAIL",

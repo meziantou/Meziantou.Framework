@@ -367,12 +367,14 @@ public abstract class AnimationEffect : IRealmBoundPlatformObject
         var activeAfterBoundary = Math.Max(Math.Min(delay + ActiveDuration, endTime), 0);
         var backwards = IsBackwards;
 
-        // https://drafts.csswg.org/web-animations-2/#at-timeline-boundary: the boundaries are inclusive at the boundaries of a progress-based timeline
-        var endpointInclusive = s_endpointInclusive || Animation is { IsAtTimelineBoundary: true };
-        if (time < beforeActiveBoundary || (backwards && !endpointInclusive && time == beforeActiveBoundary))
+        // https://drafts.csswg.org/web-animations-2/#at-timeline-boundary: a boundary is inclusive when it is aligned with the limit of a progress-based timeline
+        var (startAligned, endAligned) = Animation?.GetBoundaryAlignment() ?? default;
+        var beforeActiveInclusive = s_endpointInclusive || (startAligned && delay <= 0);
+        var activeAfterInclusive = s_endpointInclusive || (endAligned && NormalizedEndDelay <= 0);
+        if (time < beforeActiveBoundary || (backwards && !beforeActiveInclusive && time == beforeActiveBoundary))
             return AnimationEffectPhase.Before;
 
-        if (time > activeAfterBoundary || (!backwards && !endpointInclusive && time == activeAfterBoundary))
+        if (time > activeAfterBoundary || (!backwards && !activeAfterInclusive && time == activeAfterBoundary))
             return AnimationEffectPhase.After;
 
         return AnimationEffectPhase.Active;

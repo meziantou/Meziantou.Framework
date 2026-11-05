@@ -1139,6 +1139,9 @@ internal sealed partial class EditingAlgorithms
             SplitInlineAncestorsAtCaret();
         }
 
+        if (TryReplaceEmptyListItemWithListItems(fragment))
+            return true;
+
         var descendants = GetDescendants(fragment);
         if (IsBlockNode(range.StartContainer))
         {
@@ -1170,6 +1173,56 @@ internal sealed partial class EditingAlgorithms
             FixDisallowedAncestors(descendant);
         }
 
+        return true;
+    }
+
+    /// <summary>
+    /// The specification inserts a list in an empty list item, which nests it. As in the browsers, when the caret is in an
+    /// empty list item and the fragment is a single list (<c>ul</c> or <c>ol</c>), the items of the fragment replace the
+    /// empty item in its list.
+    /// </summary>
+    private bool TryReplaceEmptyListItemWithListItems(DocumentFragment fragment)
+    {
+        var range = ActiveRange;
+        if (range.StartContainer is not Element listItem || !IsHtmlElement(listItem, "li") || !IsEditable(listItem) || !IsEditable(listItem.ParentNode) || !IsHtmlElement(listItem.ParentNode, ListNames) || !GetChildren(listItem).TrueForAll(child => IsInvisible(child) || IsCollapsedBlockProp(child)))
+            return false;
+
+        Element? list = null;
+        foreach (var child in GetChildren(fragment))
+        {
+            if (child is Text text && !text.Data.AsSpan().ContainsAnyExcept(" \t\n\f\r"))
+                continue;
+
+            if (list is not null || !IsHtmlElement(child, ListNames))
+                return false;
+
+            list = (Element)child;
+        }
+
+        if (list?.FirstElementChild is null)
+            return false;
+
+        var items = new List<Node>();
+        foreach (var child in GetChildren(list))
+        {
+            if (child is Text text && !text.Data.AsSpan().ContainsAnyExcept(" \t\n\f\r"))
+                continue;
+
+            if (!IsHtmlElement(child, "li"))
+                return false;
+
+            items.Add(child);
+        }
+
+        var parent = listItem.ParentNode;
+        foreach (var item in items)
+        {
+            parent.InsertBefore(item, listItem);
+        }
+
+        RemoveNode(listItem);
+        var lastItem = items[^1];
+        CollapseTo(lastItem, lastItem.ChildCount);
         return true;
     }
 

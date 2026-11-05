@@ -18,8 +18,7 @@ description: "The results of the web-platform-tests of xhr, and why the tests th
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
-- **TEST BUG**: 2
+- **TEST BUG**: 3
 - **NOT IMPLEMENTED**: 2
 - **TEST RUNNER**: 5
 
@@ -191,7 +190,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`open-url-multi-window-3.htm`](https://wpt.fyi/results/xhr/open-url-multi-window-3.htm) | Pass | 1 / 1 |  |  |
 | [`open-url-multi-window-4.htm`](https://wpt.fyi/results/xhr/open-url-multi-window-4.htm) | Timeout | 0 / 1 | TEST BUG | the test (whose comment says the pass condition is unclear and follows a proposal, whatwg/xhr#3, that was not merged) expects `error` and `loadend` events for an XHR of an iframe removed during the request: the document is destroyed, its fetch group is terminated, and the tasks of the terminated fetch do not run (the document is not fully active), so no event is fired, as in Firefox |
 | [`open-url-multi-window-5.htm`](https://wpt.fyi/results/xhr/open-url-multi-window-5.htm) | Pass | 1 / 1 |  |  |
-| [`open-url-multi-window-6.htm`](https://wpt.fyi/results/xhr/open-url-multi-window-6.htm) | Fail | 0 / 1 | BUG | the `InvalidStateError` thrown by `open()` in a document that is not fully active is created in the realm of the `open()` function (the realm of the XHR, the current realm that Web IDL specifies); the test expects an exception of the realm of the caller |
+| [`open-url-multi-window-6.htm`](https://wpt.fyi/results/xhr/open-url-multi-window-6.htm) | Fail | 0 / 1 | TEST BUG | Web IDL creates the exception thrown by an operation in the current realm (the realm of the `open()` function, the realm of the iframe: https://webidl.spec.whatwg.org/#dfn-throw); the test expects an exception of the realm of the caller. Firefox and Safari fail the same way ("threw an exception from the wrong global"), Chrome does not throw |
 | [`open-url-multi-window.htm`](https://wpt.fyi/results/xhr/open-url-multi-window.htm) | Pass | 1 / 1 |  |  |
 | [`open-url-redirected-sharedworker-origin.htm`](https://wpt.fyi/results/xhr/open-url-redirected-sharedworker-origin.htm) | Pass | 3 / 3 |  |  |
 | [`open-url-redirected-worker-origin.htm`](https://wpt.fyi/results/xhr/open-url-redirected-worker-origin.htm) | Pass | 3 / 3 |  |  |

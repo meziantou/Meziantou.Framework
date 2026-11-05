@@ -17,11 +17,29 @@ internal static class Mp3AudioLocator
     /// <returns><see langword="false"/> when the tags are corrupt, and <paramref name="errorMessage"/> tells why.</returns>
     public static bool TryLocate(Stream stream, out long audioStart, out long audioEnd, [NotNullWhen(false)] out string? errorMessage)
     {
+        if (TryLocate(stream, endsWithId3v1Tag: true, out audioStart, out audioEnd, out errorMessage, out var tagsOverlap))
+            return true;
+
+        // "TAG" in the last 128 bytes of the file, inside the ID3v2 tag, is content of that tag, such as a text frame,
+        // not an ID3v1 tag. Otherwise a file whose ID3v2 tag is followed by less than 128 bytes of audio is refused.
+        if (tagsOverlap)
+            return TryLocate(stream, endsWithId3v1Tag: false, out audioStart, out audioEnd, out errorMessage, out _);
+
+        return false;
+    }
+
+    /// <summary>Gets whether the file ends with an ID3v1 tag, which is not part of the ID3v2 tags at its start.</summary>
+    public static bool HasId3v1Tag(Stream stream)
+        => !TryLocate(stream, out _, out var audioEnd, out _) || audioEnd < stream.Length;
+
+    private static bool TryLocate(Stream stream, bool endsWithId3v1Tag, out long audioStart, out long audioEnd, [NotNullWhen(false)] out string? errorMessage, out bool tagsOverlap)
+    {
         audioStart = 0;
         errorMessage = null;
+        tagsOverlap = false;
 
         audioEnd = stream.Length;
-        if (HasId3v1TagAt(stream, audioEnd - Id3v1TagSize))
+        if (endsWithId3v1Tag && HasId3v1TagAt(stream, audioEnd - Id3v1TagSize))
         {
             audioEnd -= Id3v1TagSize;
         }
@@ -47,6 +65,7 @@ internal static class Mp3AudioLocator
         if (audioStart > audioEnd)
         {
             errorMessage = "The ID3v2 and ID3v1 tags overlap; the file contains no audio data.";
+            tagsOverlap = true;
             return false;
         }
 

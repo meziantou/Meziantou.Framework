@@ -681,8 +681,9 @@ internal static class Id3v2Reader
 
     private static void ParseDuration(string value, MediaTagInfo tags)
     {
-        // TimeSpan cannot represent every value a long can hold, and one bad frame must not fail the whole read.
-        if (long.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var milliseconds) && milliseconds >= 0 && milliseconds <= TimeSpan.MaxValue.Ticks / TimeSpan.TicksPerMillisecond)
+        // TimeSpan cannot represent every value a long can hold, and one bad frame must not fail the whole read. A
+        // length of 0 is unknown: the writer does not write it, so reading it as a duration would not round-trip.
+        if (long.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var milliseconds) && milliseconds > 0 && milliseconds <= TimeSpan.MaxValue.Ticks / TimeSpan.TicksPerMillisecond)
             tags.Duration = TimeSpan.FromMilliseconds(milliseconds);
     }
 

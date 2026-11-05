@@ -3645,8 +3645,10 @@ ignored.
   connection, its caches of the Cache API, and its service worker registrations (unregistered: the controlled clients
   keep their controller until they are unloaded). The origin private file system is not cleared.
 - `"executionContexts"`: the navigables of the tree of the top-level traversable of the request whose active document
-  has the origin are reloaded, except the navigable that the response navigates. The browsing contexts are not
-  sandboxed while they reload.
+  has the origin are reloaded, except the browsing context of the request (the navigable that the response navigates,
+  or the one of the document or worker that fetched it) and its ancestors: reloading them would fetch the response
+  again (a page that fetches a `Clear-Site-Data: "*"` response when it loads would reload forever). The browsing
+  contexts are not sandboxed while they reload.
 - `"clientHints"` (also `"cache"` and `"cookies"`): the client hints of the origin (see [Client hints](#client-hints)).
 - `"*"`: all of the above.
 

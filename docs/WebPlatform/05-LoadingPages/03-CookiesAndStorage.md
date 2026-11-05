@@ -97,4 +97,5 @@ caches. Its local storage, IndexedDB databases and other stores are kept. Some d
 - The origin private file system.
 - The pages that a service worker controls keep it until they are unloaded: unregistering does not remove the
   controller.
-- `"executionContexts"` only reloads the pages in the tab of the request, not the frame that the response loads.
+- `"executionContexts"` only reloads the pages in the tab of the request, and never the page or frame that loaded the
+  response, nor the pages that contain it: reloading them would load the response again, forever.

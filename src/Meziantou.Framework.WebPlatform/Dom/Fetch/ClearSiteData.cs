@@ -114,7 +114,7 @@ internal static class ClearSiteData
         // The reloaded documents are the ones of the tree of the request, which is its partition
         if (types.HasFlag(DataTypes.ExecutionContexts))
         {
-            ReloadBrowsingContexts(browsingContext, request.Mode == RequestMode.Navigate ? request.Navigable : null, origin);
+            ReloadBrowsingContexts(browsingContext, origin);
         }
 
         return types.HasFlag(DataTypes.Cache);
@@ -216,13 +216,21 @@ internal static class ClearSiteData
 
     /// <summary>
     /// https://w3c.github.io/webappsec-clear-site-data/#reload: the navigables of the tree of the browsing context of the
-    /// request whose active document has the origin are reloaded (except the navigable that the response navigates).
+    /// request whose active document has the origin are reloaded, except the browsing context of the request (the navigable
+    /// of a navigation, or the one of the client) and its ancestors: reloading them would load the response again (e.g. a
+    /// page that fetches a <c>Clear-Site-Data: "*"</c> response when it loads would reload forever).
     /// </summary>
-    private static void ReloadBrowsingContexts(BrowsingContext browsingContext, BrowsingContext? navigated, OriginRecord origin)
+    private static void ReloadBrowsingContexts(BrowsingContext browsingContext, OriginRecord origin)
     {
+        var excluded = new HashSet<BrowsingContext>();
+        for (var ancestor = browsingContext; ancestor is not null; ancestor = ancestor.Parent)
+        {
+            excluded.Add(ancestor);
+        }
+
         foreach (var navigable in browsingContext.Top.GetInclusiveDescendantNavigables().ToArray())
         {
-            if (ReferenceEquals(navigable, navigated) || navigable.IsDestroyed || !OriginRecord.IsSameOrigin(navigable.Document.Origin, origin))
+            if (excluded.Contains(navigable) || navigable.IsDestroyed || !OriginRecord.IsSameOrigin(navigable.Document.Origin, origin))
                 continue;
 
             navigable.EventLoop.QueueTask(() =>

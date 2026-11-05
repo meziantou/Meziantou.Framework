@@ -508,6 +508,19 @@ public sealed class ClientHintsTests : IDisposable
     }
 
     [Fact]
+    public void ClearSiteData_ExecutionContexts_DoesNotReloadTheDocumentOfTheRequest()
+    {
+        // The page and its same-origin iframe would load the response again, forever
+        AddPage(PageUrl, "<iframe src='frame.html'></iframe>");
+        AddPage("https://example.com/frame.html", "<img src='clear.png'>");
+        _resources["https://example.com/clear.png"] = new DocumentResource("") { Headers = [new("Clear-Site-Data", "\"*\"")] };
+        Load(CreateContext(new BrowsingContextOptions()));
+
+        Assert.Single(_requests, request => request.Url == PageUrl);
+        Assert.Single(_requests, request => request.Url == "https://example.com/frame.html");
+    }
+
+    [Fact]
     public void DelegateCH_AddsHintsAndDelegatesThem()
     {
         var cache = new AcceptCHCache();

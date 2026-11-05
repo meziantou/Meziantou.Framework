@@ -9,16 +9,16 @@ description: "The results of the web-platform-tests of css/css-conditional, and 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 218 | 226 | 0 | 96% |
+| [Stable](#stable-tests) | 223 | 226 | 0 | 99% |
 | [Tentative](#tentative-tests) | 6 | 6 | 0 | 100% |
-| [Reftests](#reftests) | 172 | 173 | 0 | 99% |
-| **All** | **396** | **405** | **0** | **98%** |
+| [Reftests](#reftests) | 171 | 173 | 0 | 99% |
+| **All** | **400** | **405** | **0** | **99%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 5
+- **BUG**: 1
 - **TEST BUG**: 1
 - **NOT IMPLEMENTED**: 3
 
@@ -170,19 +170,19 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`container-queries/scroll-state/scroll-state-scrollable-pseudo.html`](https://wpt.fyi/results/css/css-conditional/container-queries/scroll-state/scroll-state-scrollable-pseudo.html) | Pass | 2 / 2 |  |  |
 | [`container-queries/scroll-state/scroll-state-scrollable-root.html`](https://wpt.fyi/results/css/css-conditional/container-queries/scroll-state/scroll-state-scrollable-root.html) | Pass | 3 / 3 |  |  |
 | [`container-queries/scroll-state/scroll-state-scrollable-wm.html`](https://wpt.fyi/results/css/css-conditional/container-queries/scroll-state/scroll-state-scrollable-wm.html) | Pass | 12 / 12 |  |  |
-| [`container-queries/scroll-state/scroll-state-scrolled-arrow-key-scroll.html`](https://wpt.fyi/results/css/css-conditional/container-queries/scroll-state/scroll-state-scrolled-arrow-key-scroll.html) | Fail | 0 / 1 | BUG | after the scroll of an arrow key, the `scroll-state(scrolled)` query of the container does not match the direction of the scroll (`--scrolled` is `no`) |
+| [`container-queries/scroll-state/scroll-state-scrolled-arrow-key-scroll.html`](https://wpt.fyi/results/css/css-conditional/container-queries/scroll-state/scroll-state-scrolled-arrow-key-scroll.html) | Pass | 1 / 1 |  |  |
 | [`container-queries/scroll-state/scroll-state-scrolled-home-end-scroll.html`](https://wpt.fyi/results/css/css-conditional/container-queries/scroll-state/scroll-state-scrolled-home-end-scroll.html) | Pass | 2 / 2 |  |  |
 | [`container-queries/scroll-state/scroll-state-scrolled-hv.html`](https://wpt.fyi/results/css/css-conditional/container-queries/scroll-state/scroll-state-scrolled-hv.html) | Pass | 3 / 3 |  |  |
 | [`container-queries/scroll-state/scroll-state-scrolled-keyboard-scroll-on-body.html`](https://wpt.fyi/results/css/css-conditional/container-queries/scroll-state/scroll-state-scrolled-keyboard-scroll-on-body.html) | Pass | 1 / 1 |  |  |
 | [`container-queries/scroll-state/scroll-state-scrolled-keyboard-scroll-on-root.html`](https://wpt.fyi/results/css/css-conditional/container-queries/scroll-state/scroll-state-scrolled-keyboard-scroll-on-root.html) | Pass | 1 / 1 |  |  |
 | [`container-queries/scroll-state/scroll-state-scrolled-mouse-drag-scroll.html`](https://wpt.fyi/results/css/css-conditional/container-queries/scroll-state/scroll-state-scrolled-mouse-drag-scroll.html) | Pass | 2 / 2 |  |  |
-| [`container-queries/scroll-state/scroll-state-scrolled-multiple-scrollers.html`](https://wpt.fyi/results/css/css-conditional/container-queries/scroll-state/scroll-state-scrolled-multiple-scrollers.html) | Fail | 0 / 1 | BUG | the relative scroll (`scrollBy()`) made by the `scroll` listener of a user scroll ends at 158.56 instead of 150: the user scroll of the other container is still applied |
+| [`container-queries/scroll-state/scroll-state-scrolled-multiple-scrollers.html`](https://wpt.fyi/results/css/css-conditional/container-queries/scroll-state/scroll-state-scrolled-multiple-scrollers.html) | Pass | 1 / 1 |  |  |
 | [`container-queries/scroll-state/scroll-state-scrolled-programmatic-absolute-scrolls.html`](https://wpt.fyi/results/css/css-conditional/container-queries/scroll-state/scroll-state-scrolled-programmatic-absolute-scrolls.html) | Pass | 3 / 3 |  |  |
 | [`container-queries/scroll-state/scroll-state-scrolled-programmatic-relative-scrolls.html`](https://wpt.fyi/results/css/css-conditional/container-queries/scroll-state/scroll-state-scrolled-programmatic-relative-scrolls.html) | Pass | 7 / 7 |  |  |
-| [`container-queries/scroll-state/scroll-state-scrolled-pu-pd-scroll.html`](https://wpt.fyi/results/css/css-conditional/container-queries/scroll-state/scroll-state-scrolled-pu-pd-scroll.html) | Fail | 1 / 2 | BUG | after the scroll of `PageUp`, the `scroll-state(scrolled)` query of the container does not match the direction of the scroll (`PageDown` does) |
+| [`container-queries/scroll-state/scroll-state-scrolled-pu-pd-scroll.html`](https://wpt.fyi/results/css/css-conditional/container-queries/scroll-state/scroll-state-scrolled-pu-pd-scroll.html) | Pass | 2 / 2 |  |  |
 | [`container-queries/scroll-state/scroll-state-scrolled-scrollbar-button-clicks.html`](https://wpt.fyi/results/css/css-conditional/container-queries/scroll-state/scroll-state-scrolled-scrollbar-button-clicks.html) | Pass | 1 / 1 |  |  |
 | [`container-queries/scroll-state/scroll-state-scrolled-scrollbar-track-clicks.html`](https://wpt.fyi/results/css/css-conditional/container-queries/scroll-state/scroll-state-scrolled-scrollbar-track-clicks.html) | Pass | 1 / 1 |  |  |
-| [`container-queries/scroll-state/scroll-state-scrolled-spacebar-scroll.html`](https://wpt.fyi/results/css/css-conditional/container-queries/scroll-state/scroll-state-scrolled-spacebar-scroll.html) | Fail | 0 / 1 | BUG | the scroll of the space key changes the `scroll-state(scrolled)` state of the container where the test expects it unchanged |
+| [`container-queries/scroll-state/scroll-state-scrolled-spacebar-scroll.html`](https://wpt.fyi/results/css/css-conditional/container-queries/scroll-state/scroll-state-scrolled-spacebar-scroll.html) | Pass | 1 / 1 |  |  |
 | [`container-queries/scroll-state/scroll-state-scrolled-user-touch-scroll.html`](https://wpt.fyi/results/css/css-conditional/container-queries/scroll-state/scroll-state-scrolled-user-touch-scroll.html) | Pass | 2 / 2 |  |  |
 | [`container-queries/scroll-state/scroll-state-scrolled-wheel-scroll.html`](https://wpt.fyi/results/css/css-conditional/container-queries/scroll-state/scroll-state-scrolled-wheel-scroll.html) | Pass | 1 / 1 |  |  |
 | [`container-queries/scroll-state/scroll-state-scrolled-wm.html`](https://wpt.fyi/results/css/css-conditional/container-queries/scroll-state/scroll-state-scrolled-wm.html) | Pass | 12 / 12 |  |  |
@@ -192,7 +192,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`container-queries/scroll-state/scroll-state-snapped-layout-change.html`](https://wpt.fyi/results/css/css-conditional/container-queries/scroll-state/scroll-state-snapped-layout-change.html) | Pass | 2 / 2 |  |  |
 | [`container-queries/scroll-state/scroll-state-snapped-none.html`](https://wpt.fyi/results/css/css-conditional/container-queries/scroll-state/scroll-state-snapped-none.html) | Pass | 1 / 1 |  |  |
 | [`container-queries/scroll-state/scroll-state-snapped-pseudo.html`](https://wpt.fyi/results/css/css-conditional/container-queries/scroll-state/scroll-state-snapped-pseudo.html) | Pass | 2 / 2 |  |  |
-| [`container-queries/scroll-state/scroll-state-snapped-snap-changing.html`](https://wpt.fyi/results/css/css-conditional/container-queries/scroll-state/scroll-state-snapped-snap-changing.html) | Fail | 0 / 2 | BUG | the first snap of a scroll container fires no `scrollsnapchange` event (the layout is computed lazily) |
+| [`container-queries/scroll-state/scroll-state-snapped-snap-changing.html`](https://wpt.fyi/results/css/css-conditional/container-queries/scroll-state/scroll-state-snapped-snap-changing.html) | Pass | 2 / 2 |  |  |
 | [`container-queries/scroll-state/scroll-state-snapped-wm.html`](https://wpt.fyi/results/css/css-conditional/container-queries/scroll-state/scroll-state-snapped-wm.html) | Pass | 2 / 2 |  |  |
 | [`container-queries/scroll-state/scroll-state-stuck-container-type-change.html`](https://wpt.fyi/results/css/css-conditional/container-queries/scroll-state/scroll-state-stuck-container-type-change.html) | Pass | 1 / 1 |  |  |
 | [`container-queries/scroll-state/scroll-state-stuck-layout-change.html`](https://wpt.fyi/results/css/css-conditional/container-queries/scroll-state/scroll-state-stuck-layout-change.html) | Pass | 2 / 2 |  |  |
@@ -334,7 +334,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`at-supports-content-004.html`](https://wpt.fyi/results/css/css-conditional/at-supports-content-004.html) | Pass | 1 / 1 |  |  |
 | [`at-supports-font-format-001.html`](https://wpt.fyi/results/css/css-conditional/at-supports-font-format-001.html) | Pass | 1 / 1 |  |  |
 | [`at-supports-font-tech-001.html`](https://wpt.fyi/results/css/css-conditional/at-supports-font-tech-001.html) | Pass | 1 / 1 |  |  |
-| [`at-supports-namespace-001.html`](https://wpt.fyi/results/css/css-conditional/at-supports-namespace-001.html) | Pass | 1 / 1 |  |  |
+| [`at-supports-namespace-001.html`](https://wpt.fyi/results/css/css-conditional/at-supports-namespace-001.html) | Fail | 0 / 1 | BUG | the namespace prefix of `attr()` is not checked against the `@namespace` rules in `@supports` (`(content: attr(y\|href))` is supported although `y` is not declared); fails in every browser |
 | [`at-supports-namespace-002.html`](https://wpt.fyi/results/css/css-conditional/at-supports-namespace-002.html) | Pass | 1 / 1 |  |  |
 | [`at-supports-selector-001.html`](https://wpt.fyi/results/css/css-conditional/at-supports-selector-001.html) | Pass | 1 / 1 |  |  |
 | [`at-supports-selector-002.html`](https://wpt.fyi/results/css/css-conditional/at-supports-selector-002.html) | Pass | 1 / 1 |  |  |

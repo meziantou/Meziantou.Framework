@@ -198,7 +198,7 @@ public partial class EventTarget
         listener.Signal?.AddAbortAlgorithm(() => RemoveEventListener(listener));
         if (listener.Type is "scroll" or "scrollend" or "scrollsnapchange" or "scrollsnapchanging")
         {
-            Css.Layout.LayoutEngine.OnScrollEventListenerAdded(this);
+            Css.Layout.LayoutEngine.OnScrollEventListenerAdded(this, listener.Type);
         }
 
         OnEventListenerAdded(listener);

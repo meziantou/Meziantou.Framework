@@ -9,17 +9,17 @@ description: "The results of the web-platform-tests of css/css-scroll-snap, and 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 146 | 157 | 0 | 93% |
+| [Stable](#stable-tests) | 151 | 157 | 0 | 96% |
 | [Tentative](#tentative-tests) | 30 | 31 | 0 | 97% |
 | [Reftests](#reftests) | 24 | 26 | 0 | 92% |
-| **All** | **200** | **214** | **0** | **93%** |
+| **All** | **205** | **214** | **0** | **96%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 5
-- **TEST BUG**: 6
+- **BUG**: 1
+- **TEST BUG**: 5
 - **NOT IMPLEMENTED**: 4
 
 ## Stable tests
@@ -32,8 +32,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`input/keyboard-snap-interruption.html`](https://wpt.fyi/results/css/css-scroll-snap/input/keyboard-snap-interruption.html) | Pass | 1 / 1 |  |  |
 | [`input/keyboard.html`](https://wpt.fyi/results/css/css-scroll-snap/input/keyboard.html) | Pass | 8 / 8 |  |  |
 | [`input/mouse-wheel.html`](https://wpt.fyi/results/css/css-scroll-snap/input/mouse-wheel.html) | Pass | 1 / 1 |  |  |
-| [`input/paged.html`](https://wpt.fyi/results/css/css-scroll-snap/input/paged.html) | Fail | 4 / 5 | BUG | the page scrolls (`PageDown`, the space key) are 87.5% of the scrollport and snap to the snap position ahead closest to that position: from the first page, they skip the short snap area that follows it (`paged.html`, Chrome stops at it), and they do not subtract `scroll-padding` from the page (`scroll-padding-paged.html` expects the page to be 200px shorter with a `scroll-padding-top` of 200px, as Firefox, whose page is the scrollport minus the padding and a constant overlap; Chrome scrolls 175px less) |
-| [`input/scroll-padding-paged.html`](https://wpt.fyi/results/css/css-scroll-snap/input/scroll-padding-paged.html) | Fail | 0 / 1 | BUG | the page scrolls (`PageDown`, the space key) are 87.5% of the scrollport and snap to the snap position ahead closest to that position: from the first page, they skip the short snap area that follows it (`paged.html`, Chrome stops at it), and they do not subtract `scroll-padding` from the page (`scroll-padding-paged.html` expects the page to be 200px shorter with a `scroll-padding-top` of 200px, as Firefox, whose page is the scrollport minus the padding and a constant overlap; Chrome scrolls 175px less) |
+| [`input/paged.html`](https://wpt.fyi/results/css/css-scroll-snap/input/paged.html) | Pass | 5 / 5 |  |  |
+| [`input/scroll-padding-paged.html`](https://wpt.fyi/results/css/css-scroll-snap/input/scroll-padding-paged.html) | Pass | 1 / 1 |  |  |
 | [`input/snap-area-overflow-boundary-viewport-covering.html`](https://wpt.fyi/results/css/css-scroll-snap/input/snap-area-overflow-boundary-viewport-covering.html) | Pass | 2 / 2 |  |  |
 | [`multicol-001.html`](https://wpt.fyi/results/css/css-scroll-snap/multicol-001.html) | Pass | 3 / 3 |  |  |
 | [`multicol-002.html`](https://wpt.fyi/results/css/css-scroll-snap/multicol-002.html) | Pass | 3 / 3 |  |  |
@@ -77,7 +77,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`scroll-initial-target/parsing/scroll-initial-target-valid.html`](https://wpt.fyi/results/css/css-scroll-snap/scroll-initial-target/parsing/scroll-initial-target-valid.html) | Pass | 2 / 2 |  |  |
 | [`scroll-margin-editable.html`](https://wpt.fyi/results/css/css-scroll-snap/scroll-margin-editable.html) | Pass | 1 / 1 |  |  |
 | [`scroll-margin-focus.html`](https://wpt.fyi/results/css/css-scroll-snap/scroll-margin-focus.html) | Pass | 1 / 1 |  |  |
-| [`scroll-margin-overflow-ancestor.html`](https://wpt.fyi/results/css/css-scroll-snap/scroll-margin-overflow-ancestor.html) | Fail | 2 / 4 | BUG | `scrollIntoView()` does not clip the target to the scrollport of an inner scroll container before scrolling the outer one: a target above the scrollport of the inner scroll container gets the scroll-margin and scroll-padding of the outer one from its own edge, not from the edge of the inner scrollport |
+| [`scroll-margin-overflow-ancestor.html`](https://wpt.fyi/results/css/css-scroll-snap/scroll-margin-overflow-ancestor.html) | Pass | 4 / 4 |  |  |
 | [`scroll-margin-visibility-check.html`](https://wpt.fyi/results/css/css-scroll-snap/scroll-margin-visibility-check.html) | Pass | 1 / 1 |  |  |
 | [`scroll-margin.html`](https://wpt.fyi/results/css/css-scroll-snap/scroll-margin.html) | Pass | 2 / 2 |  |  |
 | [`scroll-on-large-element-not-covering-snapport.html`](https://wpt.fyi/results/css/css-scroll-snap/scroll-on-large-element-not-covering-snapport.html) | Pass | 1 / 1 |  |  |
@@ -96,7 +96,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`scroll-snap-type-pair-002.html`](https://wpt.fyi/results/css/css-scroll-snap/scroll-snap-type-pair-002.html) | Pass | 1 / 1 |  |  |
 | [`scroll-snap-type-pair-003.html`](https://wpt.fyi/results/css/css-scroll-snap/scroll-snap-type-pair-003.html) | Pass | 1 / 1 |  |  |
 | [`scroll-snap-type-pair-004.html`](https://wpt.fyi/results/css/css-scroll-snap/scroll-snap-type-pair-004.html) | Pass | 1 / 1 |  |  |
-| [`scroll-snap-type-pair-005.html`](https://wpt.fyi/results/css/css-scroll-snap/scroll-snap-type-pair-005.html) | Timeout | 0 / 1 | TEST BUG | waits for a `scrollsnapchange` event for the first snap after the load of the document, which happened before the listener is added; times out in every browser |
+| [`scroll-snap-type-pair-005.html`](https://wpt.fyi/results/css/css-scroll-snap/scroll-snap-type-pair-005.html) | Pass | 1 / 1 |  |  |
 | [`scroll-snap-type-pair-006.html`](https://wpt.fyi/results/css/css-scroll-snap/scroll-snap-type-pair-006.html) | Pass | 1 / 1 |  |  |
 | [`scroll-snap-type-pair-007.html`](https://wpt.fyi/results/css/css-scroll-snap/scroll-snap-type-pair-007.html) | Pass | 1 / 1 |  |  |
 | [`scroll-snap-type.html`](https://wpt.fyi/results/css/css-scroll-snap/scroll-snap-type.html) | Pass | 4 / 4 |  |  |
@@ -155,7 +155,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`snap-area-capturing-remove-scroll-container.html`](https://wpt.fyi/results/css/css-scroll-snap/snap-area-capturing-remove-scroll-container.html) | Pass | 1 / 1 |  |  |
 | [`snap-at-user-scroll-end.html`](https://wpt.fyi/results/css/css-scroll-snap/snap-at-user-scroll-end.html) | Pass | 1 / 1 |  |  |
 | [`snap-events/scrollsnapchange/scrollsnapchange-same-targets-after-layout-changed.html`](https://wpt.fyi/results/css/css-scroll-snap/snap-events/scrollsnapchange/scrollsnapchange-same-targets-after-layout-changed.html) | Pass | 2 / 2 |  |  |
-| [`snap-events/scrollsnapchange/scrollsnapchange-scroll-snap-type-change.html`](https://wpt.fyi/results/css/css-scroll-snap/snap-events/scrollsnapchange/scrollsnapchange-scroll-snap-type-change.html) | Fail | 0 / 1 | BUG | the layout is computed lazily: the document is first laid out when the `scrollsnapchange` listener is added, after the changes of `scroll-snap-type`, and the first snap of a scroll container fires no snap event |
+| [`snap-events/scrollsnapchange/scrollsnapchange-scroll-snap-type-change.html`](https://wpt.fyi/results/css/css-scroll-snap/snap-events/scrollsnapchange/scrollsnapchange-scroll-snap-type-change.html) | Fail | 0 / 1 | BUG | the layout is computed lazily: the document is first laid out when the `scrollsnapchange` listener is added, two frames after the load, after the changes of `scroll-snap-type` (no style change lays the document out), so the snap after the last change is the first snap of the scroll container, whose `scrollsnapchange` event is only fired for the listeners added before the first rendering update (as the browsers fire it for the first snap after the load) |
 | [`snap-events/snap-events-with-shadow-dom.html`](https://wpt.fyi/results/css/css-scroll-snap/snap-events/snap-events-with-shadow-dom.html) | Pass | 2 / 2 |  |  |
 | [`snap-events/snapevents-at-document-bubble-to-window.html`](https://wpt.fyi/results/css/css-scroll-snap/snap-events/snapevents-at-document-bubble-to-window.html) | Pass | 2 / 2 |  |  |
 | [`snap-fling-in-large-area.html`](https://wpt.fyi/results/css/css-scroll-snap/snap-fling-in-large-area.html) | Pass | 1 / 1 |  |  |
@@ -166,7 +166,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`snap-on-focus.html`](https://wpt.fyi/results/css/css-scroll-snap/snap-on-focus.html) | Pass | 1 / 1 |  |  |
 | [`snap-to-column-scroll-origin.html`](https://wpt.fyi/results/css/css-scroll-snap/snap-to-column-scroll-origin.html) | Pass | 4 / 4 |  |  |
 | [`snap-to-combination-of-two-elements-1.html`](https://wpt.fyi/results/css/css-scroll-snap/snap-to-combination-of-two-elements-1.html) | Pass | 1 / 1 |  |  |
-| [`snap-to-combination-of-two-elements-2.html`](https://wpt.fyi/results/css/css-scroll-snap/snap-to-combination-of-two-elements-2.html) | Fail | 0 / 1 | BUG | the snap position is selected in each axis, then the snap areas are made mutually visible (as Blink does): the closest valid combination of the snap positions of two elements is not found (fails in Chrome and Safari) |
+| [`snap-to-combination-of-two-elements-2.html`](https://wpt.fyi/results/css/css-scroll-snap/snap-to-combination-of-two-elements-2.html) | Pass | 1 / 1 |  |  |
 | [`snap-to-empty-sized-element.html`](https://wpt.fyi/results/css/css-scroll-snap/snap-to-empty-sized-element.html) | Pass | 1 / 1 |  |  |
 | [`snap-to-transformed-target.html`](https://wpt.fyi/results/css/css-scroll-snap/snap-to-transformed-target.html) | Pass | 3 / 3 |  |  |
 | [`snap-to-visible-areas-both-pseudo.html`](https://wpt.fyi/results/css/css-scroll-snap/snap-to-visible-areas-both-pseudo.html) | Pass | 1 / 1 |  |  |

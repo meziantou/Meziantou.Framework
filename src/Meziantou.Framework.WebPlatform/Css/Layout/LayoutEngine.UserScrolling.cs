@@ -49,7 +49,15 @@ internal sealed partial class LayoutEngine
     /// Scrolls a scrolling box by a delta of a scroll of the user (in the coordinates of the fragment tree, clamped to its
     /// scrolling area): see <see cref="UserScrollKind"/>.
     /// </summary>
-    public void ScrollByUser(ScrollState state, PhysicalOffset delta, UserScrollKind kind)
+    /// <param name="state">The scrolling box.</param>
+    /// <param name="delta">The delta of the scroll.</param>
+    /// <param name="kind">The kind of the scroll.</param>
+    /// <param name="isAbsolute">
+    /// Whether the directional scroll is an absolute scroll (<c>Home</c> and <c>End</c>, to the start or the end of the scrolling
+    /// box, https://drafts.csswg.org/css-scroll-snap-1/#absolute-scroll): it snaps to the closest snap position and it is not a
+    /// relative scroll for the <c>scrolled</c> feature of the scroll-state queries.
+    /// </param>
+    public void ScrollByUser(ScrollState state, PhysicalOffset delta, UserScrollKind kind, bool isAbsolute = false)
     {
         // https://drafts.csswg.org/css-overflow-5/#current-scroll-target: the scroll of the user has no target
         SetCurrentScrollTarget(state, target: null);
@@ -59,8 +67,17 @@ internal sealed partial class LayoutEngine
             {
                 // From the destination of the smooth scroll in progress: the keys pressed during an animation add up
                 var from = GetTargetScrollPosition(state);
-                var position = GetSnapPosition(state, SnapSelectionStrategy.ForDisplacement(from, delta));
-                RecordRelativeScroll(state, position - state.Offset);
+                PhysicalOffset position;
+                if (isAbsolute)
+                {
+                    position = GetSnapPosition(state, SnapSelectionStrategy.ForEndPosition(state.Clamp(from + delta), delta.X != 0, delta.Y != 0));
+                }
+                else
+                {
+                    position = GetSnapPosition(state, SnapSelectionStrategy.ForKeyDisplacement(from, delta));
+                    RecordRelativeScroll(state, position - state.Offset);
+                }
+
                 if (position == state.Offset && state.SmoothScroll is null)
                 {
                     UpdateScrollSnapChangeTargets(state);

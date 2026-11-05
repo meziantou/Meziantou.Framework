@@ -47,6 +47,7 @@ internal static class ScrollIntoView
         // A sticky positioned target is scrolled into view at its unshifted position, as in the browsers (WPT
         // position-sticky-scrollIntoView.html)
         PhysicalRect rect;
+        Sides<double> margin = default;
         var includeSelf = targetRect is not null;
         if (targetRect is { } givenRect)
         {
@@ -62,7 +63,11 @@ internal static class ScrollIntoView
         else
         {
             rect = GetTargetRect(fragments);
+            margin = fragments[0].Box.Style.Layout.Overflow.ScrollMargin;
         }
+
+        // The target bounding border box, without the scroll-margin
+        var borderRect = rect.Expand(new Sides<double>(-margin.Top, -margin.Right, -margin.Bottom, -margin.Left));
 
         List<Task>? promises = null;
         Fragment child = fragments[0];
@@ -109,6 +114,7 @@ internal static class ScrollIntoView
                 {
                     // The position of the fixed positioned box in the document, with the current scroll position of the viewport
                     rect = rect.Translate(state.Offset);
+                    borderRect = borderRect.Translate(state.Offset);
                 }
 
                 // The scrollport, in the coordinates of the document
@@ -142,8 +148,24 @@ internal static class ScrollIntoView
                     engine.UpdateScrollSnapChangeTargets(state);
                 }
 
-                // The target moves with the contents of the scrolling box
+                // The target moves with the contents of the scrolling box. For the scrolling boxes of the ancestors, the target is
+                // the part of its bounding border box in the scrollport (the edge of the scrollport when it is outside of it), extended
+                // by its scroll-margin (WPT scroll-margin-overflow-ancestor.html: a target above the scrollport of an inner scroll
+                // container that cannot scroll further gets its scroll-margin from the edge of the scrollport)
                 rect = rect.Translate(current - position);
+                borderRect = borderRect.Translate(current - position);
+                if (!state.IsViewport)
+                {
+                    var visible = state.Scrollport.Translate(scrollContainer.GetOffsetInRoot());
+                    var left = Math.Clamp(borderRect.Left, visible.Left, visible.Right);
+                    var top = Math.Clamp(borderRect.Top, visible.Top, visible.Bottom);
+                    var clipped = new PhysicalRect(left, top, Math.Clamp(borderRect.Right, visible.Left, visible.Right) - left, Math.Clamp(borderRect.Bottom, visible.Top, visible.Bottom) - top);
+                    if (clipped != borderRect)
+                    {
+                        borderRect = clipped;
+                        rect = clipped.Expand(margin);
+                    }
+                }
                 if (container is not null || ReferenceEquals(state, lastScrollingBox))
                     return WhenAll(promises);
             }
@@ -162,6 +184,7 @@ internal static class ScrollIntoView
             // viewport before them gives its position in the viewport)
             var contentBox = LayoutEngine.GetNestedViewportRect(frameFragments[0]).Translate(frameFragments[0].GetOffsetInRoot());
             rect = rect.Translate(contentBox.Offset - viewportOffset);
+            borderRect = borderRect.Translate(contentBox.Offset - viewportOffset);
             engine = parentEngine;
             document = frame.NodeDocument;
             child = frameFragments[0];

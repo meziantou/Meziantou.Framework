@@ -3437,6 +3437,54 @@ public sealed class TdsQueryEngineTests
     }
 
     [Fact]
+    public async Task SqlClient_QueryEngine_XmlMethod_Query_Union_RemovesDuplicateFragments()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Payload.query('/root/item[1]') AS Fragment
+                    FROM xml_docs
+                    WHERE Id = 1
+                    UNION
+                    SELECT Payload.query('/root/item[1]') AS Fragment
+                    FROM xml_docs
+                    """;
+            },
+            """
+            Fragment
+            <item id="1">Alpha</item>
+            <item id="3">Gamma</item>
+            """,
+            expectedMaterializedQueries: null);
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_Distinct_OnAColumnOfANonPublicValueType()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        queryEngineOptions.AddQueryRoot("tickets", context => new[]
+        {
+            new Ticket(1, TicketStatus.Open),
+            new Ticket(2, TicketStatus.Closed),
+            new Ticket(3, TicketStatus.Open),
+        }.AsQueryable());
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command => command.CommandText = "SELECT DISTINCT Status FROM tickets",
+            """
+            Status
+            0
+            1
+            """,
+            expectedMaterializedQueries: null);
+    }
+
+    [Fact]
     public async Task SqlClient_QueryEngine_XmlMethod_Value_ReturnsScalarValue()
     {
         var queryEngineOptions = CreateQueryEngineOptions();
@@ -3842,6 +3890,7 @@ public sealed class TdsQueryEngineTests
     [InlineData("SELECT c.Id FROM customers c INNER JOIN orders c ON c.Id = c.Id", 50004, "Duplicate alias 'c'")]
     [InlineData("SELECT Id FROM customers c1 INNER JOIN customers c2 ON c1.Id = c2.Id", 50004, "Ambiguous or unknown column 'Id'")]
     [InlineData("SELECT Id '' FROM customers", 50004, "An object or column name is missing or empty")]
+    [InlineData("SELECT Id AS [a\0b] FROM customers", 50004, "An object or column name contains a null character")]
     [InlineData("SELECT Id.value() AS Value FROM customers", 50004, "xml.value requires an XQuery argument and a SQL type argument")]
     [InlineData("SELECT Region, Amount, COUNT(*) AS Count FROM orders GROUP BY Region, Amount, Amount", 50004, "Duplicate GROUP BY column 'Amount'")]
     [InlineData("SELECT ISJSON( FETCH NEXT x FROM json_docs", 50004, "Invalid SQL query")]
@@ -4454,4 +4503,12 @@ public sealed class TdsQueryEngineTests
     private sealed record JsonDocumentRow(int Id, string? Payload);
 
     private sealed record XmlDocumentRow(int Id, string Payload);
+
+    private sealed record Ticket(int Id, TicketStatus Status);
+
+    private enum TicketStatus
+    {
+        Open,
+        Closed,
+    }
 }

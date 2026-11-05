@@ -9,22 +9,15 @@ description: "The results of the web-platform-tests of viewport-segments, and wh
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 3 | 3 | – |
+| [Stable](#stable-tests) | 3 | 3 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **0** | **3** | **3** | **–** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **REQUIRES**: 3
-  - `hardware`: 3
+| **All** | **3** | **3** | **0** | **100%** |
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`viewport-segments-change-event.https.html`](https://wpt.fyi/results/viewport-segments/viewport-segments-change-event.https.html) | Disabled | – | REQUIRES(hardware) | Viewport Segments, foldable screens |
-| [`viewport-segments-env-variables.https.html`](https://wpt.fyi/results/viewport-segments/viewport-segments-env-variables.https.html) | Disabled | – | REQUIRES(hardware) | Viewport Segments, foldable screens |
-| [`viewport-segments-segments-property.https.html`](https://wpt.fyi/results/viewport-segments/viewport-segments-segments-property.https.html) | Disabled | – | REQUIRES(hardware) | Viewport Segments, foldable screens |
+| [`viewport-segments-change-event.https.html`](https://wpt.fyi/results/viewport-segments/viewport-segments-change-event.https.html) | Pass | 1 / 1 |  |  |
+| [`viewport-segments-env-variables.https.html`](https://wpt.fyi/results/viewport-segments/viewport-segments-env-variables.https.html) | Pass | 1 / 1 |  |  |
+| [`viewport-segments-segments-property.https.html`](https://wpt.fyi/results/viewport-segments/viewport-segments-segments-property.https.html) | Pass | 1 / 1 |  |  |

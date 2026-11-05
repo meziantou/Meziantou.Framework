@@ -271,6 +271,8 @@ internal static class Binding_HTMLElement<TAdapter, TValue> where TAdapter : str
     private static TValue Get_isContentEditable(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlElement>(t, Binding); return r.FromBoolean(o.IsContentEditable); }
     private static TValue Get_inputMode(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlElement>(t, Binding); return r.FromString(o.InputMode); }
     private static void Set_inputMode(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlElement>(t, Binding); var x = r.ToDomString(v); o.InputMode = x; }
+    private static TValue Get_virtualKeyboardPolicy(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlElement>(t, Binding); return r.FromString(o.VirtualKeyboardPolicy); }
+    private static void Set_virtualKeyboardPolicy(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlElement>(t, Binding); var x = r.ToDomString(v); o.VirtualKeyboardPolicy = x; }
     private static TValue Get_dataset(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlElement>(t, Binding); return r.Wrap(o.Dataset); }
     private static TValue Get_nonce(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlElement>(t, Binding); return r.FromString(o.Nonce); }
     private static void Set_nonce(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlElement>(t, Binding); var x = r.ToDomString(v); o.Nonce = x; }
@@ -453,6 +455,7 @@ internal static class Binding_HTMLElement<TAdapter, TValue> where TAdapter : str
         r.DefineAttribute(instanceTarget, "enterKeyHint", Get_enterKeyHint, Set_enterKeyHint);
         r.DefineAttribute(instanceTarget, "isContentEditable", Get_isContentEditable, null);
         r.DefineAttribute(instanceTarget, "inputMode", Get_inputMode, Set_inputMode);
+        r.DefineAttribute(instanceTarget, "virtualKeyboardPolicy", Get_virtualKeyboardPolicy, Set_virtualKeyboardPolicy);
         r.DefineAttribute(instanceTarget, "dataset", Get_dataset, null);
         r.DefineAttribute(instanceTarget, "nonce", Get_nonce, Set_nonce);
         r.DefineAttribute(instanceTarget, "autofocus", Get_autofocus, Set_autofocus);

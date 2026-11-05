@@ -33,7 +33,12 @@ internal static class TdsProjectionTypeFactory
     /// <summary>Keeps the most recently emitted types alive so that repeated queries do not re-emit them.</summary>
     private static readonly Queue<Type> RetainedTypes = new();
 
+    /// <summary>The assemblies whose access checks the current emitted assembly ignores.</summary>
+    private static readonly HashSet<string> IgnoredAccessCheckAssemblies = new(StringComparer.Ordinal);
+
+    private static AssemblyBuilder? s_assemblyBuilder;
     private static ModuleBuilder? s_moduleBuilder;
+    private static ConstructorInfo? s_ignoresAccessChecksToConstructor;
     private static int s_moduleTypeCount;
     private static int s_nextAssemblyId;
     private static int s_nextTypeId;
@@ -58,12 +63,19 @@ internal static class TdsProjectionTypeFactory
     private static void ValidateMemberNames(IReadOnlyList<TdsProjectionMember> members)
     {
         // The names are column and table aliases from client SQL, such as SELECT Id '' or SELECT Id AS [], and
-        // TypeBuilder.DefineProperty rejects an empty name or one that starts with a null character
+        // TypeBuilder.DefineProperty rejects an empty name or one that starts with a null character. Metadata
+        // names are null-terminated, so a name with a null character further in would be truncated and the
+        // property could no longer be found by its name.
         foreach (var member in members)
         {
             if (member.Name is "" || member.Name[0] is '\0')
             {
                 throw new TdsQueryEngineException("An object or column name is missing or empty.");
+            }
+
+            if (member.Name.Contains('\0', StringComparison.Ordinal))
+            {
+                throw new TdsQueryEngineException("An object or column name contains a null character.");
             }
         }
     }
@@ -133,7 +145,13 @@ internal static class TdsProjectionTypeFactory
         var typeName = prefix + s_nextTypeId.ToString(CultureInfo.InvariantCulture);
         s_nextTypeId++;
 
-        var typeBuilder = GetModuleBuilder().DefineType(
+        var moduleBuilder = GetModuleBuilder();
+        foreach (var member in members)
+        {
+            EnsureTypeIsAccessible(member.Type);
+        }
+
+        var typeBuilder = moduleBuilder.DefineType(
             typeName,
             TypeAttributes.Public | TypeAttributes.Class | TypeAttributes.Sealed);
 
@@ -159,15 +177,80 @@ internal static class TdsProjectionTypeFactory
             // and loading the type would fail with a TypeLoadException.
             var assemblyName = "Meziantou.Framework.Tds.QueryEngine.Projections" + s_nextAssemblyId.ToString(CultureInfo.InvariantCulture);
             s_nextAssemblyId++;
-            var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
+            s_assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
                 new AssemblyName(assemblyName),
                 AssemblyBuilderAccess.RunAndCollect);
-            s_moduleBuilder = assemblyBuilder.DefineDynamicModule("Projections");
+            s_moduleBuilder = s_assemblyBuilder.DefineDynamicModule("Projections");
             s_moduleTypeCount = 0;
+            s_ignoresAccessChecksToConstructor = null;
+            IgnoredAccessCheckAssemblies.Clear();
         }
 
         s_moduleTypeCount++;
         return s_moduleBuilder;
+    }
+
+    /// <summary>
+    /// Columns can have non-public types, such as the result of xml.query or a property of an internal enum type
+    /// on a row type of the application. The emitted Equals and GetHashCode methods instantiate
+    /// <see cref="EqualityComparer{T}"/> over the column types, which fails the access checks for such types unless
+    /// the emitted assembly declares that it ignores the access checks to the assembly that defines them.
+    /// </summary>
+    private static void EnsureTypeIsAccessible(Type type)
+    {
+        if (type.IsVisible)
+        {
+            return;
+        }
+
+        if (type.HasElementType)
+        {
+            EnsureTypeIsAccessible(type.GetElementType()!);
+        }
+
+        if (type.IsGenericType)
+        {
+            foreach (var argument in type.GetGenericArguments())
+            {
+                EnsureTypeIsAccessible(argument);
+            }
+        }
+
+        var assemblyName = type.Assembly.GetName().Name;
+        if (assemblyName is null || !IgnoredAccessCheckAssemblies.Add(assemblyName))
+        {
+            return;
+        }
+
+        s_ignoresAccessChecksToConstructor ??= DefineIgnoresAccessChecksToAttribute(s_moduleBuilder!);
+        s_assemblyBuilder!.SetCustomAttribute(new CustomAttributeBuilder(s_ignoresAccessChecksToConstructor, [assemblyName]));
+    }
+
+    /// <summary>
+    /// The runtime recognizes the attribute by its name, and it is not part of the public API surface, so each
+    /// emitted assembly declares its own copy.
+    /// </summary>
+    private static ConstructorInfo DefineIgnoresAccessChecksToAttribute(ModuleBuilder moduleBuilder)
+    {
+        var attributeBuilder = moduleBuilder.DefineType(
+            "System.Runtime.CompilerServices.IgnoresAccessChecksToAttribute",
+            TypeAttributes.Public | TypeAttributes.Class | TypeAttributes.Sealed,
+            typeof(Attribute));
+
+        var attributeUsageConstructor = typeof(AttributeUsageAttribute).GetConstructor([typeof(AttributeTargets)])!;
+        var allowMultipleProperty = typeof(AttributeUsageAttribute).GetProperty(nameof(AttributeUsageAttribute.AllowMultiple))!;
+        attributeBuilder.SetCustomAttribute(new CustomAttributeBuilder(attributeUsageConstructor, [AttributeTargets.Assembly], [allowMultipleProperty], [true]));
+
+        var constructorBuilder = attributeBuilder.DefineConstructor(
+            MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName,
+            CallingConventions.HasThis,
+            [typeof(string)]);
+        var il = constructorBuilder.GetILGenerator();
+        il.Emit(OpCodes.Ldarg_0);
+        il.Emit(OpCodes.Call, typeof(Attribute).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, Type.EmptyTypes)!);
+        il.Emit(OpCodes.Ret);
+
+        return attributeBuilder.CreateType().GetConstructor([typeof(string)])!;
     }
 
     private static FieldBuilder DefineProperty(TypeBuilder typeBuilder, string name, Type type)

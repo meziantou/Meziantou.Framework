@@ -195,7 +195,7 @@ internal sealed class ResourceTiming
         if (!isOpaque)
         {
             var decodedBodySize = (ulong)(_bodyLength ?? internalResponse.BodyLength);
-            bodyInfo = new ResponseBodyInfo(GetEncodedBodySize(internalResponse.HeaderList, decodedBodySize), decodedBodySize, MinimizeSupportedMimeType(HeaderList.ExtractMimeType(internalResponse.HeaderList)));
+            bodyInfo = new ResponseBodyInfo(GetEncodedBodySize(internalResponse.HeaderList, decodedBodySize, _request.IsAnsweredByServiceWorker), decodedBodySize, MinimizeSupportedMimeType(HeaderList.ExtractMimeType(internalResponse.HeaderList)));
             contentEncoding = GetContentEncoding(internalResponse.HeaderList);
         }
 
@@ -264,9 +264,11 @@ internal sealed class ResourceTiming
     /// The encoded size of the body of a response: the loader gives the decoded body, so the encoded size of a response with
     /// a content coding is the value of its <c>Content-Length</c> header (the decoded size when there is none).
     /// </summary>
-    internal static ulong GetEncodedBodySize(IReadOnlyList<KeyValuePair<string, string>> headers, ulong decodedBodySize)
+    internal static ulong GetEncodedBodySize(IReadOnlyList<KeyValuePair<string, string>> headers, ulong decodedBodySize, bool isAnsweredByServiceWorker = false)
     {
-        if (HeaderList.Get(headers, "Content-Encoding") is { Length: > 0 } && HeaderList.Get(headers, "Content-Length") is { } contentLength
+        // The body of a response given by a service worker is the decoded body of the response the worker got (as in the
+        // browsers, its Content-Length header is not the size of the body that the client receives)
+        if (!isAnsweredByServiceWorker && HeaderList.Get(headers, "Content-Encoding") is { Length: > 0 } && HeaderList.Get(headers, "Content-Length") is { } contentLength
             && ulong.TryParse(contentLength, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var encodedBodySize))
         {
             return encodedBodySize;

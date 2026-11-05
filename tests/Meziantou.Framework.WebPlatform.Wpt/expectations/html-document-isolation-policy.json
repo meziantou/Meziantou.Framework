@@ -338,10 +338,7 @@
     "total": 1
   },
   "html/document-isolation-policy/service-worker-coep-none-proxy.https.tentative.window.js": {
-    "total": 1,
-    "failures": {
-      "COEP:unsafe-none ServiceWorker": "FAIL"
-    }
+    "total": 1
   },
   "html/document-isolation-policy/shared-array-buffer.tentative.https.html": {
     "total": 3,

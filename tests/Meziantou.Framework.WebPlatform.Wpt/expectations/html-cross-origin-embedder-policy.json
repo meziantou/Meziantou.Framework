@@ -47,10 +47,7 @@
     "total": 1
   },
   "html/cross-origin-embedder-policy/coep-on-response-from-service-worker.https.html": {
-    "total": 13,
-    "failures": {
-      "making a cross-origin request for no CORP": "FAIL"
-    }
+    "total": 13
   },
   "html/cross-origin-embedder-policy/credentialless/cache-storage.https.window.js?dedicated_worker": {
     "total": 14
@@ -145,10 +142,7 @@
     "total": 1
   },
   "html/cross-origin-embedder-policy/credentialless/service-worker-coep-none-proxy.https.window.js": {
-    "total": 1,
-    "failures": {
-      "COEP:unsafe-none ServiceWorker": "FAIL"
-    }
+    "total": 1
   },
   "html/cross-origin-embedder-policy/credentialless/service-worker.https.window.js": {
     "total": 5
@@ -239,10 +233,7 @@
     "total": 13
   },
   "html/cross-origin-embedder-policy/none-sw-from-require-corp.https.html": {
-    "total": 13,
-    "failures": {
-      "making a cross-origin request for no CORP": "FAIL"
-    }
+    "total": 13
   },
   "html/cross-origin-embedder-policy/none.https.html": {
     "total": 4

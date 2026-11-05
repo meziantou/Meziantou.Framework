@@ -51,11 +51,7 @@
     "total": 9
   },
   "service-workers/cache-storage/cache-keys-attributes-for-service-worker.https.html": {
-    "total": 2,
-    "failures": {
-      "Request.IsHistoryNavigation should persist.": "FAIL",
-      "Request.IsReloadNavigation should persist.": "FAIL"
-    }
+    "total": 2
   },
   "service-workers/cache-storage/cache-keys.https.any.js": {
     "total": 17
@@ -451,10 +447,7 @@
     "total": 41
   },
   "service-workers/service-worker/fetch-csp.https.html": {
-    "total": 1,
-    "failures": {
-      "Verify CSP control of fetch() in a Service Worker": "FAIL"
-    }
+    "total": 1
   },
   "service-workers/service-worker/fetch-error.https.html": {
     "total": 3
@@ -523,8 +516,6 @@
   "service-workers/service-worker/fetch-event.https.html": {
     "total": 43,
     "failures": {
-      "FetchEvent#request.isHistoryNavigation is true (POST + history.go(-1))": "FAIL",
-      "FetchEvent#request.isReloadNavigation is true (POST + location.reload())": "FAIL",
       "Service Worker responds to fetch event with an existing client id": "FAIL"
     }
   },
@@ -746,10 +737,7 @@
     "total": 1
   },
   "service-workers/service-worker/navigation-timing-sizes.https.html": {
-    "total": 3,
-    "failures": {
-      "Body sizes in a regular pass-through with gzip": "FAIL"
-    }
+    "total": 3
   },
   "service-workers/service-worker/navigation-timing.https.html": {
     "total": 3

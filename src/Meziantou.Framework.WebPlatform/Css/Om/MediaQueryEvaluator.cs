@@ -106,6 +106,15 @@ internal sealed record MediaEnvironment
 
     /// <summary>The custom media queries (https://drafts.csswg.org/mediaqueries-5/#custom-mq) by name, or null when there is none.</summary>
     public IReadOnlyDictionary<string, CssCustomMediaRule>? CustomMedia { get; init; }
+
+    /// <summary>
+    /// The segments of the viewport split by the display features (https://drafts.csswg.org/mediaqueries-5/#mf-horizontal-viewport-segments,
+    /// https://drafts.csswg.org/css-env-1/#viewport-segments), or null when the viewport has a single segment.
+    /// </summary>
+    public Dom.ViewportSegmentGrid? ViewportSegments { get; init; }
+
+    /// <summary>The rectangle of the virtual keyboard that overlays the content (https://w3c.github.io/virtual-keyboard/#keyboard-inset-variables), or null.</summary>
+    public Dom.VirtualKeyboardRect? KeyboardInsets { get; init; }
 }
 
 /// <summary>
@@ -739,8 +748,8 @@ internal static class MediaQueryEvaluator
             ["shape"] = Keywords(["rect", "round"], _ => "rect"),
 
             // https://drafts.csswg.org/mediaqueries-5/#mf-horizontal-viewport-segments
-            ["horizontal-viewport-segments"] = Range(MediaFeatureType.Integer, _ => 1),
-            ["vertical-viewport-segments"] = Range(MediaFeatureType.Integer, _ => 1),
+            ["horizontal-viewport-segments"] = Range(MediaFeatureType.Integer, environment => environment.ViewportSegments?.Columns.Length ?? 1),
+            ["vertical-viewport-segments"] = Range(MediaFeatureType.Integer, environment => environment.ViewportSegments?.Rows.Length ?? 1),
 
             // https://w3c.github.io/device-posture/#the-device-posture-media-feature
             ["device-posture"] = Keywords(["continuous", "folded"], environment => environment.DevicePosture),
@@ -1232,16 +1241,37 @@ internal static class MediaQueryEvaluator
     /// <summary>
     /// Returns the component values of an env() function (https://drafts.csswg.org/css-env-1/#env-function): the value of the
     /// variable, or the fallback (whose env() functions are resolved), or null when the variable is unknown and has no
-    /// fallback. The indices of the two-dimensional variables (viewport-segment-*) are not supported.
+    /// fallback.
     /// </summary>
     internal static List<CssComponentValue>? ResolveEnvironmentVariable(CssFunction function, MediaEnvironment environment)
     {
         var comma = function.Value.FindIndex(v => v is CssPreservedToken { Type: CssTokenType.Comma });
         var name = ValueMatcher.RemoveWhitespace(comma < 0 ? function.Value : function.Value[..comma]);
-        if (name is [CssPreservedToken { Type: CssTokenType.Ident } nameToken] && Cascade.CssSubstitution.GetEnvironmentVariable(nameToken.Token.Value, environment) is { } text)
+        if (name is [CssPreservedToken { Type: CssTokenType.Ident } nameToken, .. var indexTokens] && GetIndices(indexTokens) is { } indices
+            && Cascade.CssSubstitution.GetEnvironmentVariable(nameToken.Token.Value, indices, environment) is { } text)
+        {
             return CssParser.ParseListOfComponentValues(text);
+        }
 
         return comma < 0 ? null : ResolveEnvironmentVariables(function.Value[(comma + 1)..], environment);
+    }
+
+    /// <summary>The indices of an env() function (non-negative integers), or null when one of them is invalid.</summary>
+    private static int[]? GetIndices(List<CssComponentValue> tokens)
+    {
+        if (tokens.Count == 0)
+            return [];
+
+        var indices = new int[tokens.Count];
+        for (var i = 0; i < tokens.Count; i++)
+        {
+            if (tokens[i] is not CssPreservedToken { Type: CssTokenType.Number, Token: { IsInteger: true, NumericValue: >= 0 and <= int.MaxValue } } token)
+                return null;
+
+            indices[i] = (int)token.Token.NumericValue;
+        }
+
+        return indices;
     }
 
     /// <summary>Replaces the env() functions of component values (see <see cref="ResolveEnvironmentVariable"/>); null when one of them has no value.</summary>

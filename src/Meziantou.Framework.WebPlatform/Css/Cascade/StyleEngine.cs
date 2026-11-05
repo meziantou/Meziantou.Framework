@@ -2454,6 +2454,21 @@ internal sealed partial class StyleEngine
 
         // https://w3c.github.io/device-posture/#the-device-posture-media-feature: the navigables reflect the posture of their top-level traversable
         var devicePosture = DevicePosture.GetPosture(browsingContext) == DevicePostureType.Folded ? "folded" : "continuous";
+
+        // The display features split the viewport of a top-level document (the nested documents have a single segment), and
+        // the virtual keyboard overlays it
+        Dom.ViewportSegmentGrid? segments = null;
+        Dom.VirtualKeyboardRect? keyboardInsets = null;
+        if (browsingContext.Container is null)
+        {
+            if (browsingContext.Options.ViewportSegments?.Provider?.GetDisplayFeatures() is { Count: > 0 } displayFeatures)
+            {
+                segments = Dom.ViewportSegmentGrid.Create(displayFeatures, width, height);
+            }
+
+            keyboardInsets = Dom.VirtualKeyboard.GetKeyboardInsets(document);
+        }
+
         if (document.LastMediaEnvironment is { } last
             && last.Width == width
             && last.Height == height
@@ -2471,7 +2486,9 @@ internal sealed partial class StyleEngine
             && last.ForcedColors == viewport.ForcedColors
             && ReferenceEquals(last.ForcedColorsPalette, forcedColors)
             && last.ScriptingEnabled == scriptingEnabled
-            && last.DevicePosture == devicePosture)
+            && last.DevicePosture == devicePosture
+            && Equals(last.ViewportSegments, segments)
+            && last.KeyboardInsets == keyboardInsets)
         {
             return last;
         }
@@ -2495,6 +2512,8 @@ internal sealed partial class StyleEngine
             ForcedColorsPalette = forcedColors,
             ScriptingEnabled = scriptingEnabled,
             DevicePosture = devicePosture,
+            ViewportSegments = segments,
+            KeyboardInsets = keyboardInsets,
         };
         document.LastMediaEnvironment = environment;
         return environment;

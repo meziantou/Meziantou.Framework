@@ -238,6 +238,12 @@ public sealed class WptTests
 
     public static TheoryData<string> DevicePostureTests => GetTests("device-posture");
 
+    public static TheoryData<string> ScreenOrientationTests => GetTests("screen-orientation");
+
+    public static TheoryData<string> VirtualKeyboardTests => GetTests("virtual-keyboard");
+
+    public static TheoryData<string> ViewportSegmentsTests => GetTests("viewport-segments");
+
     public static TheoryData<string> ClientHintsTests => GetTests("client-hints");
 
     public static TheoryData<string> UAClientHintsTests => GetTests("ua-client-hints");
@@ -1138,6 +1144,18 @@ public sealed class WptTests
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(DevicePostureTests))]
     public void DevicePosture(string test) => Run("device-posture", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(ScreenOrientationTests))]
+    public void ScreenOrientation(string test) => Run("screen-orientation", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(VirtualKeyboardTests))]
+    public void VirtualKeyboard(string test) => Run("virtual-keyboard", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(ViewportSegmentsTests))]
+    public void ViewportSegments(string test) => Run("viewport-segments", test);
 
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(ClientHintsTests))]

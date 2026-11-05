@@ -48,27 +48,27 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 25,946 | 29,691 | 2,310 | 95% |
+| [Stable](#stable-tests) | 25,966 | 29,691 | 2,289 | 95% |
 | [Tentative](#tentative-tests) | 1,340 | 3,074 | 707 | 57% |
 | [Reftests](#reftests) | 27,901 | 29,220 | 173 | 96% |
-| **All** | **55,187** | **61,985** | **3,190** | **94%** |
+| **All** | **55,207** | **61,985** | **3,169** | **94%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **BUG**: 308
-- **TEST BUG**: 1,012
-- **NOT IMPLEMENTED**: 4,413
-- **REQUIRES**: 885
-  - `hardware`: 688
+- **TEST BUG**: 1,014
+- **NOT IMPLEMENTED**: 4,411
+- **REQUIRES**: 864
+  - `hardware`: 667
   - `layout`: 30
   - `media`: 18
   - `service-workers`: 1
   - `user-input`: 155
   - `workers`: 3
-- **TEST RUNNER**: 309
-- **OUT OF SCOPE**: 203
+- **TEST RUNNER**: 307
+- **OUT OF SCOPE**: 204
 - **FLAKY**: 15
 - **PERFORMANCE**: 7
 
@@ -343,7 +343,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`scheduler`](scheduler.md) | 24 | 24 | 0 | 100% |
 | [`screen-capture`](screen-capture.md) | 0 | 13 | 13 | – |
 | [`screen-details`](screen-details.md) | 0 | 1 | 1 | – |
-| [`screen-orientation`](screen-orientation.md) | 0 | 15 | 15 | – |
+| [`screen-orientation`](screen-orientation.md) | 13 | 15 | 0 | 87% |
 | [`screen-wake-lock`](screen-wake-lock.md) | 16 | 17 | 0 | 94% |
 | [`scroll-animations`](scroll-animations.md) | 141 | 148 | 0 | 95% |
 | [`scroll-to-text-fragment`](scroll-to-text-fragment.md) | 25 | 26 | 0 | 96% |
@@ -356,7 +356,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`shadow-dom`](shadow-dom.md) | 217 | 254 | 0 | 85% |
 | [`shape-detection`](shape-detection.md) | 0 | 25 | 0 | 0% |
 | [`soft-navigation-heuristics`](soft-navigation-heuristics.md) | 1 | 1 | 0 | 100% |
-| [`speculation-rules`](speculation-rules.md) | 126 | 185 | 1 | 68% |
+| [`speculation-rules`](speculation-rules.md) | 127 | 185 | 1 | 69% |
 | [`speech-api`](speech-api.md) | 0 | 16 | 16 | – |
 | [`storage`](storage.md) | 11 | 14 | 0 | 79% |
 | [`storage-access-api`](storage-access-api.md) | 0 | 37 | 37 | – |
@@ -376,8 +376,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`vibration`](vibration.md) | 4 | 4 | 0 | 100% |
 | [`video-rvfc`](video-rvfc.md) | 0 | 8 | 8 | – |
 | [`viewport`](viewport.md) | 1 | 1 | 0 | 100% |
-| [`viewport-segments`](viewport-segments.md) | 0 | 3 | 3 | – |
-| [`virtual-keyboard`](virtual-keyboard.md) | 0 | 3 | 3 | – |
+| [`viewport-segments`](viewport-segments.md) | 3 | 3 | 0 | 100% |
+| [`virtual-keyboard`](virtual-keyboard.md) | 3 | 3 | 0 | 100% |
 | [`visual-viewport`](visual-viewport.md) | 16 | 19 | 0 | 84% |
 | [`wai-aria`](wai-aria.md) | 20 | 21 | 0 | 95% |
 | [`wasm`](wasm.md) | 325 | 342 | 0 | 95% |
@@ -419,7 +419,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 318 | 330 | 0 | 96% |
 | [`xml`](xml.md) | 0 | 12 | 12 | – |
-| **Total (343 sections)** | **25,946** | **29,691** | **2,310** | **95%** |
+| **Total (343 sections)** | **25,966** | **29,691** | **2,289** | **95%** |
 
 ## Tentative tests
 

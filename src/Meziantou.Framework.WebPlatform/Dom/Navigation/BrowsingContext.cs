@@ -143,6 +143,12 @@ public sealed partial class BrowsingContext : IDisposable
             options.LocalStorage?.AddBrowsingContext(this);
         }
 
+        // The display features split the viewport of the top-level browsing contexts
+        if (parent is null)
+        {
+            options.ViewportSegments?.Provider?.Register(this);
+        }
+
         // Create a new browsing context and document: the initial about:blank document has the origin and base URL of its creator
         creator ??= container?.NodeDocument;
         var document = Document.CreateHtmlDocument();
@@ -429,6 +435,10 @@ public sealed partial class BrowsingContext : IDisposable
         if (!IsDestroyed)
         {
             Options.ExitFullscreen?.Invoke(CallbackContext.For(this));
+
+            // https://w3c.github.io/screen-orientation/#interaction-with-fullscreen-api: "when a document exits fullscreen, it
+            // also runs the fully unlock the screen orientation steps"
+            ScreenOrientationModel.FullyUnlock(Document);
         }
 
         SetFullscreenViewportSize(null);
@@ -3311,6 +3321,9 @@ public sealed partial class BrowsingContext : IDisposable
     /// </summary>
     private static void ReleaseDeviceLocks(Document document)
     {
+        // https://w3c.github.io/screen-orientation/#handling-unloading-documents: the lock request is aborted, and the screen
+        // of a top-level document is unlocked
+        ScreenOrientationModel.OnDocumentUnloaded(document);
         if (document.RelevantWindow is { } window && ReferenceEquals(window.Document, document))
         {
             if (window.NavigatorOrNull is { } navigator)

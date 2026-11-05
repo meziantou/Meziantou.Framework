@@ -1,6 +1,6 @@
 ---
 title: Permissions and devices
-description: Answer the permission prompts, and decide what the clipboard, sharing, vibration, geolocation, notifications, badging, battery, wake lock, keyboard lock, compute pressure, idle detection and device posture APIs do in your pages.
+description: Answer the permission prompts, and decide what the clipboard, sharing, vibration, geolocation, notifications, badging, battery, wake lock, keyboard lock, screen orientation, virtual keyboard, viewport segments, compute pressure, idle detection and device posture APIs do in your pages.
 ---
 
 Some web APIs depend on the device or on the user: a browser asks the user for a permission, shows a share sheet, reads
@@ -21,6 +21,9 @@ the device in a test, or to connect the API to your application.
 | [BatteryStatus](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.BatteryStatus) | `navigator.getBattery()` | A fully charged battery that is plugged in |
 | [WakeLock](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.WakeLock) | `navigator.wakeLock.request()` | Nothing is kept on, but the page gets its locks once the permission is granted |
 | [KeyboardLock](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.KeyboardLock) | `navigator.keyboard.lock()`, `navigator.keyboard.unlock()` | No key is captured |
+| [ScreenOrientation](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.ScreenOrientation) | `screen.orientation` | A desktop screen, which cannot be locked |
+| [VirtualKeyboard](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.VirtualKeyboard) | `navigator.virtualKeyboard`, the `keyboard-inset-*` environment variables | There is no on-screen keyboard |
+| [ViewportSegments](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.ViewportSegments) | `window.viewport.segments`, the `*-viewport-segments` media features | The viewport has a single segment |
 | [ComputePressure](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.ComputePressure) | `PressureObserver` | The `cpu` source is supported, but reports no state |
 | [IdleDetection](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.IdleDetection) | `IdleDetector` | The user is active and the screen is unlocked |
 | [DevicePosture](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.DevicePosture) | `navigator.devicePosture`, the `device-posture` media feature | The posture is `continuous` |
@@ -265,6 +268,87 @@ var options = new BrowsingContextOptions
 
 Only the page of a tab can lock the keyboard, not its frames. As in Chromium, a page whose keyboard is locked is not
 kept in the back/forward cache.
+
+## Screen orientation
+
+`screen.orientation` reads the screen of a
+[ScreenOrientationProvider](cref:Meziantou.Framework.WebPlatform.Dom.ScreenOrientationProvider). By default, it
+simulates a screen that rotates to the orientation of each lock:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_ScreenOrientation;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The screen of a phone, held in portrait: lock() rotates it to the orientation of the lock
+var screen = new ScreenOrientationProvider(OrientationType.PortraitPrimary);
+var options = new BrowsingContextOptions
+{
+    ScreenOrientation = new ScreenOrientationOptions { Provider = screen },
+};
+```
+<!-- endref -->
+
+As in the browsers, a page can lock the orientation only while it is fullscreen (`NotAllowedError` otherwise), and not
+from a frame sandboxed without `allow-orientation-lock` or from a hidden page (`SecurityError`). The lock completes after
+the screen has rotated, after the `change` event of the documents, from the page down to its frames. A lock request
+aborts the pending request of the other documents of the tab (`AbortError`), and the screen is unlocked when the page
+exits fullscreen or is unloaded. Set
+[DeviceOrientation](cref:Meziantou.Framework.WebPlatform.Dom.ScreenOrientationProvider.DeviceOrientation) to simulate
+the user rotating the device. To lock the screen of the operating system, derive from `ScreenOrientationProvider`,
+override [TryLock](cref:Meziantou.Framework.WebPlatform.Dom.ScreenOrientationProvider.TryLock), and call
+[OnOrientationChanged](cref:Meziantou.Framework.WebPlatform.Dom.ScreenOrientationProvider.OnOrientationChanged) when
+the orientation changes. The size of the viewport does not change with the orientation.
+
+## Virtual keyboard
+
+`navigator.virtualKeyboard.show()` and `hide()` call
+[Show](cref:Meziantou.Framework.WebPlatform.Dom.VirtualKeyboardOptions.Show) and
+[Hide](cref:Meziantou.Framework.WebPlatform.Dom.VirtualKeyboardOptions.Hide), when the page has a user activation and
+its focused element has `virtualkeyboardpolicy="manual"`. The host reports the rectangle of its keyboard with the
+[BoundingRect](cref:Meziantou.Framework.WebPlatform.Dom.VirtualKeyboardProvider.BoundingRect) of a
+[VirtualKeyboardProvider](cref:Meziantou.Framework.WebPlatform.Dom.VirtualKeyboardProvider):
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_VirtualKeyboard;format=md-fenced-code-block;dedent=true -->
+```csharp
+var keyboard = new VirtualKeyboardProvider();
+var options = new BrowsingContextOptions
+{
+    VirtualKeyboard = new VirtualKeyboardOptions
+    {
+        // The system shows its keyboard, then reports its rectangle (relative to the viewport)
+        Show = callbackContext => keyboard.BoundingRect = new VirtualKeyboardRect(0, 400, 800, 200),
+        Hide = callbackContext => keyboard.BoundingRect = default,
+        Provider = keyboard,
+    },
+};
+```
+<!-- endref -->
+
+Setting `BoundingRect` updates `navigator.virtualKeyboard.boundingRect` of the page, which fires its `geometrychange`
+event. While the page sets `overlaysContent` to true, the `keyboard-inset-*` environment variables give the rectangle of
+the keyboard. Only the page of a tab gets the geometry of the keyboard, not its frames. The library does not resize the
+viewport when the keyboard is shown.
+
+## Viewport segments
+
+The display features of a foldable device, such as its fold or the hinge between two screens, split the viewport in
+segments. Set the [DisplayFeatures](cref:Meziantou.Framework.WebPlatform.Dom.DisplayFeaturesProvider.DisplayFeatures) of
+a [DisplayFeaturesProvider](cref:Meziantou.Framework.WebPlatform.Dom.DisplayFeaturesProvider) to simulate them:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_ViewportSegments;format=md-fenced-code-block;dedent=true -->
+```csharp
+// A foldable device: a vertical hinge of 20 pixels splits the viewport in two segments, side by side
+var displayFeatures = new DisplayFeaturesProvider();
+var options = new BrowsingContextOptions
+{
+    ViewportSegments = new ViewportSegmentsOptions { Provider = displayFeatures },
+};
+displayFeatures.DisplayFeatures = [new DisplayFeature(DisplayFeatureOrientation.Vertical, Offset: 390, MaskLength: 20)];
+```
+<!-- endref -->
+
+The page then sees two segments in `window.viewport.segments`, the `horizontal-viewport-segments` and
+`vertical-viewport-segments` media features match the number of columns and rows of segments, and the
+`viewport-segment-*` environment variables give their edges (`env(viewport-segment-width 1 0)` is the width of the
+second column). As in Chromium, the frames have a single segment, and their `viewport.segments` is null.
 
 ## Compute pressure
 

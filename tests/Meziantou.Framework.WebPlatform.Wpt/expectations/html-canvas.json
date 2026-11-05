@@ -4535,10 +4535,7 @@
     "total": 1
   },
   "html/canvas/element/path-objects/2d.path.isPointInPath.basic.html": {
-    "total": 1,
-    "failures": {
-      "Verify the winding rule in isPointInPath works for for rect path.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/element/path-objects/2d.path.isPointInPath.bezier.html": {
     "total": 1
@@ -10726,16 +10723,10 @@
     "total": 1
   },
   "html/canvas/offscreen/path-objects/2d.path.isPointInPath.basic.html": {
-    "total": 1,
-    "failures": {
-      "Verify the winding rule in isPointInPath works for for rect path.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/path-objects/2d.path.isPointInPath.basic.worker.js": {
-    "total": 1,
-    "failures": {
-      "Verify the winding rule in isPointInPath works for for rect path.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/path-objects/2d.path.isPointInPath.bezier.html": {
     "total": 1

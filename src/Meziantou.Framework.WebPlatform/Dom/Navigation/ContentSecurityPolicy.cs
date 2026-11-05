@@ -105,7 +105,7 @@ internal sealed partial class ContentSecurityPolicy
         if ((request.PolicyClient ?? request.Client) is not { ContentSecurityPoliciesOrNull: { } policies } client)
             return;
 
-        ShouldBlockRequest(policies, client.ContentSecurityPolicySelfOrigin, request.CurrentUrl, request.Destination, request.Initiator, request.ParserInserted, request.RedirectCount, request.Nonce, client, request.Url, SecurityPolicyViolationEventDisposition.Report, request.IsPrefetch);
+        ShouldBlockRequest(policies, client.ContentSecurityPolicySelfOrigin, request.CurrentUrl, request.Destination, request.Initiator, request.ParserInserted, request.RedirectCount, request.Nonce, client, request.Url, SecurityPolicyViolationEventDisposition.Report, request.IsPrefetch, request.ScriptLocation);
     }
 
     /// <summary>
@@ -120,7 +120,7 @@ internal sealed partial class ContentSecurityPolicy
         if ((request.PolicyClient ?? request.Client) is not { ContentSecurityPoliciesOrNull: { } policies } client)
             return false;
 
-        return ShouldBlockRequest(policies, client.ContentSecurityPolicySelfOrigin, request.CurrentUrl, request.Destination, request.Initiator, request.ParserInserted, request.RedirectCount, request.Nonce, client, request.Url, SecurityPolicyViolationEventDisposition.Enforce, request.IsPrefetch);
+        return ShouldBlockRequest(policies, client.ContentSecurityPolicySelfOrigin, request.CurrentUrl, request.Destination, request.Initiator, request.ParserInserted, request.RedirectCount, request.Nonce, client, request.Url, SecurityPolicyViolationEventDisposition.Enforce, request.IsPrefetch, request.ScriptLocation);
     }
 
     /// <summary>
@@ -151,9 +151,10 @@ internal sealed partial class ContentSecurityPolicy
     /// <paramref name="resource"/> as its resource, and blocks the request when the policy is enforced. Only the policies of
     /// <paramref name="disposition"/> are checked when it is not null. The request of a resource hint (a prefetch) violates
     /// a policy that has a <c>default-src</c> directive when no fetch directive of the policy allows its URL
-    /// (https://w3c.github.io/webappsec-csp/#does-resource-hint-violate-policy).
+    /// (https://w3c.github.io/webappsec-csp/#does-resource-hint-violate-policy). <paramref name="scriptLocation"/> is the
+    /// location of the script that started the request, used when no script is running (see <see cref="FetchRequest.ScriptLocation"/>).
     /// </summary>
-    private static bool ShouldBlockRequest(IReadOnlyList<ContentSecurityPolicy>? policies, OriginRecord selfOrigin, UrlRecord url, RequestDestination destination, Element? initiator, bool parserInserted, int redirectCount, string? nonce, Document? reportingClient, UrlRecord resource, SecurityPolicyViolationEventDisposition? disposition = null, bool resourceHint = false)
+    private static bool ShouldBlockRequest(IReadOnlyList<ContentSecurityPolicy>? policies, OriginRecord selfOrigin, UrlRecord url, RequestDestination destination, Element? initiator, bool parserInserted, int redirectCount, string? nonce, Document? reportingClient, UrlRecord resource, SecurityPolicyViolationEventDisposition? disposition = null, bool resourceHint = false, Scripting.ScriptLocation? scriptLocation = null)
     {
         if (policies is not { Count: > 0 } || GetEffectiveDirective(destination) is not { } effectiveDirective)
             return false;
@@ -197,6 +198,11 @@ internal sealed partial class ContentSecurityPolicy
                     if (reportingClient is not null)
                     {
                         var violation = ContentSecurityPolicyViolation.Create(reportingClient, policy, effectiveDirective);
+                        if (violation.SourceFile is null && scriptLocation is { } location)
+                        {
+                            violation.SetSourceLocation(location);
+                        }
+
                         if (effectiveDirective == "frame-src" && resource.Scheme is "http" or "https" && !OriginRecord.IsSameOrigin(OriginRecord.FromUrl(resource), reportingClient.Origin))
                         {
                             // As in the browsers, the blocked URI of the navigation of a child navigable to another origin is the
@@ -229,14 +235,16 @@ internal sealed partial class ContentSecurityPolicy
     /// post-request checks of the fetch directives match the URL of the response
     /// (https://w3c.github.io/webappsec-csp/#match-response-to-source-list). The URL of a response is the
     /// current URL of its request, already checked by the pre-request checks, unless a service worker provided a response
-    /// of another URL: only that response is checked again.
+    /// of another URL: only that response is checked again. As in the browsers, the path of its URL is ignored, as for a
+    /// redirect (https://w3c.github.io/webappsec-csp/#source-list-paths-and-redirects): the URL of the response is not the
+    /// one the request was made for.
     /// </summary>
     public static bool ShouldBlockResponse(FetchRequest request, FetchResponse response)
     {
         if ((request.PolicyClient ?? request.Client) is not { ContentSecurityPoliciesOrNull: { } policies } client || response.IsNetworkError || response.Internal.UrlList is not [.., var responseUrl] || ReferenceEquals(responseUrl, request.CurrentUrl) || responseUrl.Serialize() == request.CurrentUrl.Serialize())
             return false;
 
-        return ShouldBlockRequest(policies, client.ContentSecurityPolicySelfOrigin, responseUrl, request.Destination, request.Initiator, request.ParserInserted, request.RedirectCount, request.Nonce, client, request.Url);
+        return ShouldBlockRequest(policies, client.ContentSecurityPolicySelfOrigin, responseUrl, request.Destination, request.Initiator, request.ParserInserted, Math.Max(request.RedirectCount, 1), request.Nonce, client, request.Url);
     }
 
     /// <summary>

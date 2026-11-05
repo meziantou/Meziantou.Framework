@@ -386,10 +386,15 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             TaskScheduler.Default);
 
         // https://fetch.spec.whatwg.org/#fetch-controller-abort: the fetch, or the reading of its body, is aborted
-        return adapter.CreateFunction("abort", 0, (_, _) =>
+        return adapter.CreateFunction("abort", 1, (_, args) =>
         {
             if (!finished)
             {
+                if (args.Length > 0 && !adapter.IsUndefined(args[0]))
+                {
+                    request.SerializedAbortReason = SerializeAbortReason(ToAny(args[0]));
+                }
+
                 controller.Cancel();
                 bodyReader?.Cancel();
                 if (done)
@@ -400,6 +405,22 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
 
             return adapter.Undefined;
         });
+    }
+
+    /// <summary>
+    /// The serialized abort reason of a fetch controller (https://fetch.spec.whatwg.org/#fetch-controller-abort): an
+    /// "AbortError" <see cref="DomException"/> when the reason cannot be serialized.
+    /// </summary>
+    private PortMessage SerializeAbortReason(object? reason)
+    {
+        try
+        {
+            return PortMessage.Serialize(GlobalScope, reason, []);
+        }
+        catch (DomException)
+        {
+            return PortMessage.Serialize(GlobalScope, new DomException("The operation was aborted.", "AbortError"), []);
+        }
     }
 
     /// <summary>

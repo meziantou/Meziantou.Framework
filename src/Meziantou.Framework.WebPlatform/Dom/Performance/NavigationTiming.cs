@@ -49,6 +49,9 @@ internal sealed class DocumentLoadTimingInfo
     /// <summary>The time the request of the document was given to a service worker (before the worker is started and activated), or 0.</summary>
     public long WorkerStart { get; set; }
 
+    /// <summary>Whether a service worker gave the response of the document: its body is the decoded body (see <see cref="ResourceTiming.GetEncodedBodySize"/>).</summary>
+    public bool IsAnsweredByServiceWorker { get; set; }
+
     /// <summary>The time the service worker started to evaluate its router rules, or 0 (see <see cref="FetchTimestamps.ServiceWorkerRouterEvaluationStart"/>).</summary>
     public long WorkerRouterEvaluationStart { get; set; }
 

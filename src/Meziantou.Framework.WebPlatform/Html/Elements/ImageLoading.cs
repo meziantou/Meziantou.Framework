@@ -146,6 +146,10 @@ public partial class HtmlImageElement
     private ImageRequest _currentRequest = new("", 1);
     private ImageRequest? _pendingRequest;
     private int _updateGeneration;
+
+    // The location of the script that started the last update of the image data (see FetchRequest.ScriptLocation)
+    private Scripting.ScriptLocation? _updateScriptLocation;
+
     private bool _updatePending;
 
     /// <summary>https://html.spec.whatwg.org/multipage/images.html#last-auto-sizes-width: a length in CSS pixels, or null.</summary>
@@ -502,6 +506,7 @@ public partial class HtmlImageElement
         // The rest of the previous update (a lazy fetch) is replaced by the new one
         LazyLoading.ClearResumptionSteps(this);
         var generation = ++_updateGeneration;
+        _updateScriptLocation = document.RelevantWindow?.ScriptEngine?.GetCurrentScriptLocation();
         if (UpdateImageDataSynchronously(document, generation))
         {
             _updatePending = false;
@@ -787,6 +792,7 @@ public partial class HtmlImageElement
         // (the "imageset" initiator); the current URL (currentSrc) is unchanged. The fetch algorithm blocks the mixed content
         // and the requests blocked by the content security policies, and performs the CORS check.
         var fetchRequest = SubresourceFetching.CreateRequest(document, url, RequestDestination.Image, cors: HasAttribute("crossorigin"), ReferrerPolicy, this, imageSet: UsesSrcsetOrPicture(), useCredentials: SubresourceFetching.UsesCredentials(this));
+        fetchRequest.ScriptLocation = _updateScriptLocation;
         var timing = ResourceTiming.Start(document, fetchRequest, LocalName);
         Fetching.Fetch(fetchRequest, ProcessFetchResponse, task => QueueImageTask(document, task));
 
@@ -879,6 +885,13 @@ public partial class HtmlImageElement
             return false;
 
         naturalSize = naturalSize.WithContentDpr(resource);
+
+        // The document of an SVG image has the URL of the response: the fragment of the Location header of a redirect selects
+        // its view and its :target element (https://fetch.spec.whatwg.org/#concept-response-location-url)
+        if (mimeType == "image/svg+xml" && resource.Url is { Length: > 0 } responseUrl)
+        {
+            url = responseUrl;
+        }
 
         image = document.CreatePaintImage(url, naturalSize, bytes, mimeType, corsSameOrigin);
 

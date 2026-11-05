@@ -131,6 +131,12 @@ internal sealed class DocumentState(Document? document)
     /// <summary>The srcdoc resource of the document state, used to load an iframe srcdoc document again.</summary>
     public string? SrcdocResource { get; init; }
 
+    /// <summary>
+    /// The POST resource of the document state (https://html.spec.whatwg.org/multipage/browsing-the-web.html#document-state-resource):
+    /// the body of the form submission that created the document, sent again when the entry is reloaded or traversed to.
+    /// </summary>
+    public PostResource? PostResource { get; init; }
+
     /// <summary>https://html.spec.whatwg.org/multipage/browsing-the-web.html#document-state-nested-histories</summary>
     public List<NestedHistory> NestedHistories { get; } = [];
 
@@ -897,7 +903,7 @@ public sealed partial class BrowsingContext
                         navigable._beforeUnloadFiredForEntry = targetEntry;
                         try
                         {
-                            navigable.Navigate(targetEntry.Url, navigable.Document, NavigationHistoryBehavior.Replace, targetEntry.DocumentState.SrcdocResource, traversalEntry: targetEntry);
+                            navigable.Navigate(targetEntry.Url, navigable.Document, NavigationHistoryBehavior.Replace, targetEntry.DocumentState.SrcdocResource, postResource: targetEntry.DocumentState.PostResource, traversalEntry: targetEntry);
                         }
                         finally
                         {

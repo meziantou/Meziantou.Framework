@@ -1812,6 +1812,7 @@ public sealed partial class BrowsingContext : IDisposable
             InitiatorTopLevelOrigin = sourceDocument?.TopLevelOrigin,
             TextDirectiveUserActivation = textDirectiveUserActivation,
             IsPostNavigation = postResource is not null,
+            PostResource = postResource,
             Timing = new DocumentLoadTimingInfo
             {
                 NavigationStart = navigationStart,
@@ -2143,6 +2144,7 @@ public sealed partial class BrowsingContext : IDisposable
             timing.WorkerCacheLookupStart = request.Timing.ServiceWorkerCacheLookupStart;
             timing.WorkerMatchedRouterSource = request.Timing.ServiceWorkerMatchedRouterSource;
             timing.WorkerFinalRouterSource = request.Timing.ServiceWorkerFinalRouterSource;
+            timing.IsAnsweredByServiceWorker = request.IsAnsweredByServiceWorker;
 
             timing.ResponseStart = timing.PrefetchResponseStart != 0 ? timing.PrefetchResponseStart : EventLoop.TimeProvider.GetTimestamp();
             timing.HasCrossOriginRedirects = Fetching.HasRedirectTaintedOrigin(request);
@@ -2861,7 +2863,7 @@ public sealed partial class BrowsingContext : IDisposable
             TimingAllowPassed = true,
         };
 
-        var bodyInfo = new ResponseBodyInfo(ResourceTiming.GetEncodedBodySize(headers, bodySize ?? 0), bodySize ?? 0, ResourceTiming.MinimizeSupportedMimeType(HeaderList.ExtractMimeType(headers)));
+        var bodyInfo = new ResponseBodyInfo(ResourceTiming.GetEncodedBodySize(headers, bodySize ?? 0, timing.IsAnsweredByServiceWorker), bodySize ?? 0, ResourceTiming.MinimizeSupportedMimeType(HeaderList.ExtractMimeType(headers)));
         var entry = new PerformanceNavigationTiming(window, document.Url, timing, timingInfo, bodyInfo, status, ResourceTiming.GetContentEncoding(headers), isSecure ? PerformanceServerTiming.Parse(headers) : []);
         document.NavigationTimingEntry = entry;
         window.Performance.SetNavigationTimingEntry(entry);
@@ -2951,7 +2953,7 @@ public sealed partial class BrowsingContext : IDisposable
         SessionHistoryEntry entry;
         if (ActiveEntry is null)
         {
-            entry = new SessionHistoryEntry(document.UrlRecord, new DocumentState(document) { SrcdocResource = srcdoc });
+            entry = new SessionHistoryEntry(document.UrlRecord, new DocumentState(document) { SrcdocResource = srcdoc, PostResource = parameters?.PostResource });
             SetInitialSessionHistoryEntry(entry);
         }
         else if (traversalEntry is not null && GetSessionHistoryEntries()?.Contains(traversalEntry) == true)
@@ -2971,7 +2973,7 @@ public sealed partial class BrowsingContext : IDisposable
         }
         else
         {
-            entry = new SessionHistoryEntry(document.UrlRecord, new DocumentState(document) { SrcdocResource = srcdoc });
+            entry = new SessionHistoryEntry(document.UrlRecord, new DocumentState(document) { SrcdocResource = srcdoc, PostResource = parameters?.PostResource });
             AddSessionHistoryEntry(entry, historyHandling);
         }
 
@@ -3658,7 +3660,7 @@ public sealed partial class BrowsingContext : IDisposable
         }
 
         // The active entry is populated again (its document state is reload pending)
-        Navigate(entry.Url, Document, NavigationHistoryBehavior.Replace, entry.DocumentState.SrcdocResource, traversalEntry: entry);
+        Navigate(entry.Url, Document, NavigationHistoryBehavior.Replace, entry.DocumentState.SrcdocResource, postResource: entry.DocumentState.PostResource, traversalEntry: entry);
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/browsing-the-web.html#navigate-to-a-fragment</summary>
@@ -3914,6 +3916,9 @@ public sealed partial class BrowsingContext : IDisposable
 
         /// <summary>Whether the request of the navigation is a <c>POST</c> request (a form submission).</summary>
         public bool IsPostNavigation { get; init; }
+
+        /// <summary>The POST resource of the navigation, kept by the document state of its entry (reloaded and traversed with it).</summary>
+        public PostResource? PostResource { get; init; }
 
         /// <summary>The content type of a document that the HTML parser creates for another type (a text document or a media document), or null.</summary>
         public string? ContentType { get; set; }

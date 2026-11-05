@@ -678,10 +678,7 @@
     "total": 1
   },
   "xhr/open-url-multi-window-3.htm": {
-    "total": 1,
-    "failures": {
-      "XMLHttpRequest: open() resolving URLs (multi-Window; 3; evil)": "FAIL"
-    }
+    "total": 1
   },
   "xhr/open-url-multi-window-4.htm": {
     "harness": "TIMEOUT",

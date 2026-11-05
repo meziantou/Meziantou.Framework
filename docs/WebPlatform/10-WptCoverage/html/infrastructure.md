@@ -9,16 +9,15 @@ description: "The results of the web-platform-tests of html/infrastructure, and 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 63 | 69 | 0 | 91% |
+| [Stable](#stable-tests) | 64 | 69 | 0 | 93% |
 | Tentative | 0 | 0 | 0 | – |
 | [Reftests](#reftests) | 0 | 1 | 1 | – |
-| **All** | **63** | **70** | **1** | **91%** |
+| **All** | **64** | **70** | **1** | **93%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
 - **TEST BUG**: 1
 - **NOT IMPLEMENTED**: 4
 - **TEST RUNNER**: 1
@@ -74,7 +73,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`urls/base-url/base-url-javascript-nav.https.window.js`](https://wpt.fyi/results/html/infrastructure/urls/base-url/base-url-javascript-nav.https.window.js) | Pass | 1 / 1 |  |  |
 | [`urls/base-url/document-base-uri-synthetic-document.html`](https://wpt.fyi/results/html/infrastructure/urls/base-url/document-base-uri-synthetic-document.html) | Pass | 2 / 2 |  |  |
 | [`urls/base-url/document-base-url-changes-about-srcdoc-2.https.html`](https://wpt.fyi/results/html/infrastructure/urls/base-url/document-base-url-changes-about-srcdoc-2.https.html) | Pass | 2 / 2 |  |  |
-| [`urls/base-url/document-base-url-changes-after-nav-about-srcdoc.https.window.js`](https://wpt.fyi/results/html/infrastructure/urls/base-url/document-base-url-changes-after-nav-about-srcdoc.https.window.js) | Fail | 0 / 2 | BUG | after `history.back()` to the `about:srcdoc` entry, the frame reports the base URL of the page it had navigated to instead of the parent's base URL captured at creation |
+| [`urls/base-url/document-base-url-changes-after-nav-about-srcdoc.https.window.js`](https://wpt.fyi/results/html/infrastructure/urls/base-url/document-base-url-changes-after-nav-about-srcdoc.https.window.js) | Pass | 2 / 2 |  |  |
 | [`urls/base-url/document-base-url-initiated-grand-parent.https.window.js`](https://wpt.fyi/results/html/infrastructure/urls/base-url/document-base-url-initiated-grand-parent.https.window.js) | Pass | 3 / 3 |  |  |
 | [`urls/base-url/document-base-url-window-initiator-is-not-opener.https.window.js`](https://wpt.fyi/results/html/infrastructure/urls/base-url/document-base-url-window-initiator-is-not-opener.https.window.js) | Pass | 1 / 1 |  |  |
 | [`urls/base-url/document-base-url-window-open-about-blank.https.window.js`](https://wpt.fyi/results/html/infrastructure/urls/base-url/document-base-url-window-open-about-blank.https.window.js) | Pass | 1 / 1 |  |  |

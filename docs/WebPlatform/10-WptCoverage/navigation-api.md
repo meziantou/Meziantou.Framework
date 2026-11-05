@@ -9,17 +9,17 @@ description: "The results of the web-platform-tests of navigation-api, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 445 | 458 | 0 | 97% |
+| [Stable](#stable-tests) | 452 | 458 | 0 | 99% |
 | [Tentative](#tentative-tests) | 3 | 12 | 0 | 25% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **448** | **470** | **0** | **95%** |
+| **All** | **455** | **470** | **0** | **97%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 4
-- **TEST BUG**: 8
+- **BUG**: 1
+- **TEST BUG**: 4
 - **NOT IMPLEMENTED**: 10
 
 ## Stable tests
@@ -439,12 +439,12 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`scroll-behavior/after-transition-intercept-handler-modifies.html`](https://wpt.fyi/results/navigation-api/scroll-behavior/after-transition-intercept-handler-modifies.html) | Pass | 1 / 1 |  |  |
 | [`scroll-behavior/after-transition-push.html`](https://wpt.fyi/results/navigation-api/scroll-behavior/after-transition-push.html) | Pass | 1 / 1 |  |  |
 | [`scroll-behavior/after-transition-reject.html`](https://wpt.fyi/results/navigation-api/scroll-behavior/after-transition-reject.html) | Pass | 1 / 1 |  |  |
-| [`scroll-behavior/after-transition-reload-after-traverse.html`](https://wpt.fyi/results/navigation-api/scroll-behavior/after-transition-reload-after-traverse.html) | Fail | 0 / 1 | BUG | `scroll: "after-transition"` on a reload restores the saved scroll position instead of scrolling to the fragment, or to the beginning of the document |
-| [`scroll-behavior/after-transition-reload-no-fragment.html`](https://wpt.fyi/results/navigation-api/scroll-behavior/after-transition-reload-no-fragment.html) | Fail | 0 / 1 | BUG | `scroll: "after-transition"` on a reload restores the saved scroll position instead of scrolling to the fragment, or to the beginning of the document |
-| [`scroll-behavior/after-transition-reload-no-scroll-anchoring.html`](https://wpt.fyi/results/navigation-api/scroll-behavior/after-transition-reload-no-scroll-anchoring.html) | Fail | 0 / 1 | TEST BUG | expects `scroll()` (or the end of the handlers) of an intercepted reload to scroll to the fragment of the URL, as Chromium and WebKit do; "process scroll behavior" (https://html.spec.whatwg.org/multipage/nav-history-apis.html#process-scroll-behavior) restores the scroll position data of the active entry for a reload (there is none here, the scroll position stays 1018) and only scrolls to the fragment for a push or a replace; Firefox fails the same assertion (`expected 8 but got 0`) |
-| [`scroll-behavior/after-transition-reload.html`](https://wpt.fyi/results/navigation-api/scroll-behavior/after-transition-reload.html) | Fail | 0 / 1 | TEST BUG | expects `scroll()` (or the end of the handlers) of an intercepted reload to scroll to the fragment of the URL, as Chromium does; "process scroll behavior" (https://html.spec.whatwg.org/multipage/nav-history-apis.html#process-scroll-behavior) restores the scroll position data of the active entry for a reload (there is none here, the scroll position is unchanged) and only scrolls to the fragment for a push or a replace; Firefox fails with the same value (`expected 8 but got 18`), Safari fails earlier |
+| [`scroll-behavior/after-transition-reload-after-traverse.html`](https://wpt.fyi/results/navigation-api/scroll-behavior/after-transition-reload-after-traverse.html) | Pass | 1 / 1 |  |  |
+| [`scroll-behavior/after-transition-reload-no-fragment.html`](https://wpt.fyi/results/navigation-api/scroll-behavior/after-transition-reload-no-fragment.html) | Pass | 1 / 1 |  |  |
+| [`scroll-behavior/after-transition-reload-no-scroll-anchoring.html`](https://wpt.fyi/results/navigation-api/scroll-behavior/after-transition-reload-no-scroll-anchoring.html) | Pass | 1 / 1 |  |  |
+| [`scroll-behavior/after-transition-reload.html`](https://wpt.fyi/results/navigation-api/scroll-behavior/after-transition-reload.html) | Pass | 1 / 1 |  |  |
 | [`scroll-behavior/after-transition-replace.html`](https://wpt.fyi/results/navigation-api/scroll-behavior/after-transition-replace.html) | Pass | 1 / 1 |  |  |
-| [`scroll-behavior/after-transition-skips-restore-when-scrolled.html`](https://wpt.fyi/results/navigation-api/scroll-behavior/after-transition-skips-restore-when-scrolled.html) | Fail | 0 / 1 | BUG | "restore scroll position data" does not skip the restoration when the document was scrolled during the navigation ("has been scrolled by the user"; here `window.scrollTo()` in the handler of an intercepted traversal, which Chromium and Firefox also take into account): the scroll position of the entry (0) is restored when the handler is fulfilled instead of keeping 50 |
+| [`scroll-behavior/after-transition-skips-restore-when-scrolled.html`](https://wpt.fyi/results/navigation-api/scroll-behavior/after-transition-skips-restore-when-scrolled.html) | Pass | 1 / 1 |  |  |
 | [`scroll-behavior/after-transition-timing.html`](https://wpt.fyi/results/navigation-api/scroll-behavior/after-transition-timing.html) | Pass | 1 / 1 |  |  |
 | [`scroll-behavior/after-transition-traverse-no-fragment.html`](https://wpt.fyi/results/navigation-api/scroll-behavior/after-transition-traverse-no-fragment.html) | Pass | 1 / 1 |  |  |
 | [`scroll-behavior/after-transition-traverse-to-fragment.html`](https://wpt.fyi/results/navigation-api/scroll-behavior/after-transition-traverse-to-fragment.html) | Pass | 1 / 1 |  |  |
@@ -457,8 +457,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`scroll-behavior/manual-scroll-fragment-does-not-exist.html`](https://wpt.fyi/results/navigation-api/scroll-behavior/manual-scroll-fragment-does-not-exist.html) | Pass | 1 / 1 |  |  |
 | [`scroll-behavior/manual-scroll-in-precommit-handler.html`](https://wpt.fyi/results/navigation-api/scroll-behavior/manual-scroll-in-precommit-handler.html) | Pass | 1 / 1 |  |  |
 | [`scroll-behavior/manual-scroll-push.html`](https://wpt.fyi/results/navigation-api/scroll-behavior/manual-scroll-push.html) | Pass | 1 / 1 |  |  |
-| [`scroll-behavior/manual-scroll-reload-no-scroll-anchoring.html`](https://wpt.fyi/results/navigation-api/scroll-behavior/manual-scroll-reload-no-scroll-anchoring.html) | Fail | 0 / 1 | TEST BUG | expects `scroll()` (or the end of the handlers) of an intercepted reload to scroll to the fragment of the URL, as Chromium and WebKit do; "process scroll behavior" (https://html.spec.whatwg.org/multipage/nav-history-apis.html#process-scroll-behavior) restores the scroll position data of the active entry for a reload (there is none here, the scroll position stays 1018) and only scrolls to the fragment for a push or a replace; Firefox fails the same assertion (`expected 8 but got 0`) |
-| [`scroll-behavior/manual-scroll-reload.html`](https://wpt.fyi/results/navigation-api/scroll-behavior/manual-scroll-reload.html) | Fail | 0 / 1 | TEST BUG | expects `scroll()` (or the end of the handlers) of an intercepted reload to scroll to the fragment of the URL, as Chromium does; "process scroll behavior" (https://html.spec.whatwg.org/multipage/nav-history-apis.html#process-scroll-behavior) restores the scroll position data of the active entry for a reload (there is none here, the scroll position is unchanged) and only scrolls to the fragment for a push or a replace; Firefox fails with the same value (`expected 8 but got 18`), Safari fails earlier |
+| [`scroll-behavior/manual-scroll-reload-no-scroll-anchoring.html`](https://wpt.fyi/results/navigation-api/scroll-behavior/manual-scroll-reload-no-scroll-anchoring.html) | Pass | 1 / 1 |  |  |
+| [`scroll-behavior/manual-scroll-reload.html`](https://wpt.fyi/results/navigation-api/scroll-behavior/manual-scroll-reload.html) | Pass | 1 / 1 |  |  |
 | [`scroll-behavior/manual-scroll-repeated.html`](https://wpt.fyi/results/navigation-api/scroll-behavior/manual-scroll-repeated.html) | Pass | 1 / 1 |  |  |
 | [`scroll-behavior/manual-scroll-replace.html`](https://wpt.fyi/results/navigation-api/scroll-behavior/manual-scroll-replace.html) | Pass | 1 / 1 |  |  |
 | [`scroll-behavior/manual-scroll-resets-when-no-fragment.html`](https://wpt.fyi/results/navigation-api/scroll-behavior/manual-scroll-resets-when-no-fragment.html) | Pass | 1 / 1 |  |  |

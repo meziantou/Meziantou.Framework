@@ -9,16 +9,16 @@ description: "The results of the web-platform-tests of svg, and why the tests th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 712 | 742 | 2 | 96% |
+| [Stable](#stable-tests) | 715 | 742 | 2 | 97% |
 | [Tentative](#tentative-tests) | 46 | 47 | 0 | 98% |
 | [Reftests](#reftests) | 557 | 629 | 2 | 89% |
-| **All** | **1,315** | **1,418** | **4** | **93%** |
+| **All** | **1,318** | **1,418** | **4** | **93%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 9
+- **BUG**: 6
 - **TEST BUG**: 11
 - **NOT IMPLEMENTED**: 74
 - **TEST RUNNER**: 7
@@ -765,10 +765,10 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`types/scripted/SVGMatrix.html`](https://wpt.fyi/results/svg/types/scripted/SVGMatrix.html) | Pass | 9 / 9 |  |  |
 | [`types/scripted/SVGNumber.html`](https://wpt.fyi/results/svg/types/scripted/SVGNumber.html) | Pass | 2 / 2 |  |  |
 | [`types/scripted/SVGPathElement.getTotalLength-01.html`](https://wpt.fyi/results/svg/types/scripted/SVGPathElement.getTotalLength-01.html) | Pass | 3 / 3 |  |  |
-| [`types/scripted/SVGPoint.html`](https://wpt.fyi/results/svg/types/scripted/SVGPoint.html) | Fail | 0 / 1 | BUG | assigning a non-finite value to `SVGPoint.x`/`y` does not throw a `TypeError` (they are `float`, not `unrestricted float`) |
+| [`types/scripted/SVGPoint.html`](https://wpt.fyi/results/svg/types/scripted/SVGPoint.html) | Pass | 1 / 1 |  |  |
 | [`types/scripted/SVGPointList-error-handling.html`](https://wpt.fyi/results/svg/types/scripted/SVGPointList-error-handling.html) | Pass | 16 / 16 |  |  |
-| [`types/scripted/SVGRect-negative-dimensions.html`](https://wpt.fyi/results/svg/types/scripted/SVGRect-negative-dimensions.html) | Fail | 0 / 4 | BUG | assigning a non-finite value to `SVGRect.x`/`y`/`width`/`height` does not throw a `TypeError` (they are `float`, not `unrestricted float`) |
-| [`types/scripted/SVGRect.html`](https://wpt.fyi/results/svg/types/scripted/SVGRect.html) | Fail | 2 / 3 | BUG | assigning a non-finite value to `SVGRect.x`/`y`/`width`/`height` does not throw a `TypeError` (they are `float`, not `unrestricted float`) |
+| [`types/scripted/SVGRect-negative-dimensions.html`](https://wpt.fyi/results/svg/types/scripted/SVGRect-negative-dimensions.html) | Pass | 4 / 4 |  |  |
+| [`types/scripted/SVGRect.html`](https://wpt.fyi/results/svg/types/scripted/SVGRect.html) | Pass | 3 / 3 |  |  |
 | [`types/scripted/event-handler-all-document-element-events.svg`](https://wpt.fyi/results/svg/types/scripted/event-handler-all-document-element-events.svg) | Pass | 16 / 16 |  |  |
 
 ## Tentative tests

@@ -10,15 +10,15 @@ description: "The results of the web-platform-tests of workers, and why the test
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 285 | 288 | 0 | 99% |
-| [Tentative](#tentative-tests) | 0 | 8 | 0 | 0% |
+| [Tentative](#tentative-tests) | 1 | 8 | 0 | 13% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **285** | **296** | **0** | **96%** |
+| **All** | **286** | **296** | **0** | **97%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 11
+- **NOT IMPLEMENTED**: 10
 - **TEST RUNNER**: 7
 
 ## Stable tests
@@ -325,4 +325,4 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`same-site-cookies/third-party.default.tentative.sub.https.window.js`](https://wpt.fyi/results/workers/same-site-cookies/third-party.default.tentative.sub.https.window.js) | Timeout | 0 / 1 | NOT IMPLEMENTED, TEST RUNNER | the `sameSiteCookies` option of `SharedWorker`; the `workers/same-site-cookies/resources/set_cookies.py` handler of the WPT server is not emulated |
 | [`same-site-cookies/third-party.none.tentative.sub.https.window.js`](https://wpt.fyi/results/workers/same-site-cookies/third-party.none.tentative.sub.https.window.js) | Timeout | 0 / 1 | NOT IMPLEMENTED, TEST RUNNER | the `sameSiteCookies` option of `SharedWorker`; the `workers/same-site-cookies/resources/set_cookies.py` handler of the WPT server is not emulated |
 | [`shared-worker-partitioned-cookies.tentative.https.html`](https://wpt.fyi/results/workers/shared-worker-partitioned-cookies.tentative.https.html) | Fail | 2 / 3 | NOT IMPLEMENTED, TEST RUNNER | the partitioned cookies (CHIPS); the `cookies/resources/list.py` handler of the WPT server is not emulated |
-| [`shared-worker-partitioned.tentative.html`](https://wpt.fyi/results/workers/shared-worker-partitioned.tentative.html) | Fail | 0 / 1 | NOT IMPLEMENTED | partitioning the shared workers by top-level site (a cross-site iframe connects to the same shared worker) |
+| [`shared-worker-partitioned.tentative.html`](https://wpt.fyi/results/workers/shared-worker-partitioned.tentative.html) | Pass | 1 / 1 |  |  |

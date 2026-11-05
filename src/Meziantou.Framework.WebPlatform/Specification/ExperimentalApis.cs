@@ -56,4 +56,7 @@ internal static class ExperimentalApis
 
     /// <summary>The tentative <c>URLPattern.compareComponent()</c> and <c>URLPattern.prototype.generate()</c> methods.</summary>
     public const string UrlPatternTentativeMethods = "WEBPLATEXP0015";
+
+    /// <summary>The <c>policy</c> attribute of the <c>iframe</c> elements (https://wicg.github.io/document-policy/#iframe-policy-attribute), which no IDL of webref defines.</summary>
+    public const string DocumentPolicyIframeAttribute = "WEBPLATEXP0016";
 }

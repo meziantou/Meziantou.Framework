@@ -1,0 +1,34 @@
+{
+  "mediasession/artwork-url-encoding-euc-kr.html": {
+    "total": 1
+  },
+  "mediasession/idlharness.window.js": {
+    "total": 70
+  },
+  "mediasession/media-session-artwork-fetch.https.html": {
+    "harness": "TIMEOUT",
+    "total": 4,
+    "failures": {
+      "Set cross origin media metadata": "NOTRUN",
+      "Set same origin media metadata": "TIMEOUT"
+    }
+  },
+  "mediasession/mediametadata.html": {
+    "total": 20
+  },
+  "mediasession/playbackstate.html": {
+    "total": 3
+  },
+  "mediasession/positionstate.html": {
+    "total": 12
+  },
+  "mediasession/setactionhandler.html": {
+    "total": 18
+  },
+  "mediasession/setcameraactive.html": {
+    "total": 1
+  },
+  "mediasession/setmicrophoneactive.html": {
+    "total": 1
+  }
+}

@@ -256,6 +256,14 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
         if (_synchronous && RelevantWindow is { } window && !PermissionsPolicyAlgorithms.IsFeatureEnabled(PolicyControlledFeature.SyncXhr, window.Document, window.Document.Origin))
             throw new DomException("The permissions policy of the document disables the synchronous requests", "NetworkError");
 
+        // As in Chromium, a frozen document (https://wicg.github.io/page-lifecycle/) cannot send a synchronous request
+        if (_synchronous && RelevantWindow is { Document.IsFrozen: true })
+            throw new DomException("The document is frozen", "NetworkError");
+
+        // The "sync-xhr" configuration point of Document Policy (as in Chromium)
+        if (_synchronous && RelevantWindow is { } policyWindow && !DocumentPolicyAlgorithms.IsFeatureEnabled(policyWindow.Document, DocumentPolicyFeature.SyncXhr, "Synchronous requests are disabled by the document policy"))
+            throw new DomException("The document policy of the document disables the synchronous requests", "NetworkError");
+
         if (_requestMethod is "GET" or "HEAD")
         {
             body = null;

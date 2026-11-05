@@ -94,6 +94,22 @@ public partial class HtmlIFrameElement
     }
 
     /// <summary>
+    /// Gets or sets the value of the <c>policy</c> content attribute (https://wicg.github.io/document-policy/#iframe-policy-attribute):
+    /// the document policy that the documents loaded into the iframe must declare (Document Policy). It is combined with the
+    /// required policy of the document of the iframe, and sent in the <c>Sec-Required-Document-Policy</c> header of the
+    /// requests of the navigations of the iframe; a response whose <c>Document-Policy</c> header is not compatible with it
+    /// is blocked.
+    /// </summary>
+    /// <seealso href="https://wicg.github.io/document-policy/#iframe-policy-attribute"/>
+    [IdlMember("policy", "https://wicg.github.io/document-policy/#iframe-policy-attribute")]
+    [Experimental(ExperimentalApis.DocumentPolicyIframeAttribute, UrlFormat = ExperimentalApis.UrlFormat)]
+    public string Policy
+    {
+        get => Reflection.GetString(this, "policy");
+        set => Reflection.SetString(this, "policy", value);
+    }
+
+    /// <summary>
     /// Gets the policy object of the iframe (https://w3c.github.io/webappsec-permissions-policy/#dom-htmliframeelement-permissionspolicy):
     /// the features that a document loaded into the iframe would be allowed to use, according to the permissions policy of
     /// the document of the iframe and to its <c>allow</c>, <c>allowfullscreen</c>, <c>src</c>, <c>srcdoc</c> and

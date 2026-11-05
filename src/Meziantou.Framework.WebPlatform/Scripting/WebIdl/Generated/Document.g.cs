@@ -85,6 +85,11 @@ internal static class Binding_Document<TAdapter, TValue> where TAdapter : struct
     private static TValue Get_anchors(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Document>(t, Binding); return r.Wrap(o.Anchors); }
     private static TValue Get_applets(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Document>(t, Binding); return r.Wrap(o.Applets); }
     private static TValue Get_all(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Document>(t, Binding); return r.Wrap(o.All); }
+    private static TValue Get_onfreeze(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) => r.GetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "freeze");
+    private static void Set_onfreeze(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) => r.SetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "freeze", v, isOnBeforeUnloadEventHandler: false);
+    private static TValue Get_onresume(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) => r.GetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "resume");
+    private static void Set_onresume(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) => r.SetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "resume", v, isOnBeforeUnloadEventHandler: false);
+    private static TValue Get_wasDiscarded(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Document>(t, Binding); return r.FromBoolean(o.WasDiscarded); }
     private static TValue Get_permissionsPolicy(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Document>(t, Binding); return r.Wrap(o.PermissionsPolicy); }
     private static TValue Get_onpointerlockchange(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) => r.GetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "pointerlockchange");
     private static void Set_onpointerlockchange(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) => r.SetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "pointerlockchange", v, isOnBeforeUnloadEventHandler: false);
@@ -780,6 +785,9 @@ internal static class Binding_Document<TAdapter, TValue> where TAdapter : struct
         r.DefineAttribute(instanceTarget, "anchors", Get_anchors, null);
         r.DefineAttribute(instanceTarget, "applets", Get_applets, null);
         r.DefineAttribute(instanceTarget, "all", Get_all, null);
+        r.DefineAttribute(instanceTarget, "onfreeze", Get_onfreeze, Set_onfreeze);
+        r.DefineAttribute(instanceTarget, "onresume", Get_onresume, Set_onresume);
+        r.DefineAttribute(instanceTarget, "wasDiscarded", Get_wasDiscarded, null);
         r.DefineAttribute(instanceTarget, "permissionsPolicy", Get_permissionsPolicy, null);
         r.DefineAttribute(instanceTarget, "onpointerlockchange", Get_onpointerlockchange, Set_onpointerlockchange);
         r.DefineAttribute(instanceTarget, "onpointerlockerror", Get_onpointerlockerror, Set_onpointerlockerror);

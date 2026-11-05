@@ -23,7 +23,9 @@ internal static class Binding_UIEvent<TAdapter, TValue> where TAdapter : struct,
     private static TValue Get_view(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.UIEvent>(t, Binding); return r.Wrap(o.View); }
     private static TValue Get_detail(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.UIEvent>(t, Binding); return r.FromNumber((double)o.Detail); }
     private static TValue Get_which(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.UIEvent>(t, Binding); return r.FromNumber((double)o.Which); }
+    #pragma warning disable WEBPLATEXP0008 // The binding exposes the experimental Web IDL member
     private static TValue Get_pseudoTarget(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.UIEvent>(t, Binding); return r.Wrap(o.PseudoTarget); }
+    #pragma warning restore WEBPLATEXP0008
     private static TValue Op_initUIEvent(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.UIEvent>(t, Binding);

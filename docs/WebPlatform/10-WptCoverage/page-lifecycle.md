@@ -9,34 +9,34 @@ description: "The results of the web-platform-tests of page-lifecycle, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 2 | 2 | – |
-| [Tentative](#tentative-tests) | 0 | 3 | 3 | – |
-| [Reftests](#reftests) | 0 | 1 | 1 | – |
-| **All** | **0** | **6** | **6** | **–** |
+| [Stable](#stable-tests) | 2 | 2 | 0 | 100% |
+| [Tentative](#tentative-tests) | 2 | 3 | 1 | 100% |
+| [Reftests](#reftests) | 1 | 1 | 0 | 100% |
+| **All** | **5** | **6** | **1** | **100%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 6
+- **FLAKY**: 1
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`freeze.html`](https://wpt.fyi/results/page-lifecycle/freeze.html) | Disabled | – | NOT IMPLEMENTED | Page Lifecycle (freeze and resume events) |
-| [`idlharness.html`](https://wpt.fyi/results/page-lifecycle/idlharness.html) | Disabled | – | NOT IMPLEMENTED | Page Lifecycle (freeze and resume events) |
+| [`freeze.html`](https://wpt.fyi/results/page-lifecycle/freeze.html) | Pass | 1 / 1 |  |  |
+| [`idlharness.html`](https://wpt.fyi/results/page-lifecycle/idlharness.html) | Pass | 19 / 19 |  |  |
 
 ## Tentative tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`child-display-none.tentative.html`](https://wpt.fyi/results/page-lifecycle/child-display-none.tentative.html) | Disabled | – | NOT IMPLEMENTED | Page Lifecycle (freeze and resume events) |
-| [`child-out-of-viewport.tentative.html`](https://wpt.fyi/results/page-lifecycle/child-out-of-viewport.tentative.html) | Disabled | – | NOT IMPLEMENTED | Page Lifecycle (freeze and resume events) |
-| [`worker-dispay-none.tentative.html`](https://wpt.fyi/results/page-lifecycle/worker-dispay-none.tentative.html) | Disabled | – | NOT IMPLEMENTED | Page Lifecycle (freeze and resume events) |
+| [`child-display-none.tentative.html`](https://wpt.fyi/results/page-lifecycle/child-display-none.tentative.html) | Pass | 1 / 1 |  |  |
+| [`child-out-of-viewport.tentative.html`](https://wpt.fyi/results/page-lifecycle/child-out-of-viewport.tentative.html) | Pass | 1 / 1 |  |  |
+| [`worker-dispay-none.tentative.html`](https://wpt.fyi/results/page-lifecycle/worker-dispay-none.tentative.html) | Disabled | – | FLAKY | the dedicated workers of a frozen document are not blocked (https://wicg.github.io/page-lifecycle/#worker-changes): the workers of the frozen iframe keep posting their messages, so the test passes or fails depending on whether more than one message arrives before the iframe is resumed |
 
 ## Reftests
 
 | Test | Result | Variants | Kind | Description |
 |---|---|--:|---|---|
-| [`set-composited-layer-position.html`](https://wpt.fyi/results/page-lifecycle/set-composited-layer-position.html) | Disabled | – | NOT IMPLEMENTED | Page Lifecycle (freeze and resume events) |
+| [`set-composited-layer-position.html`](https://wpt.fyi/results/page-lifecycle/set-composited-layer-position.html) | Pass | 1 / 1 |  |  |

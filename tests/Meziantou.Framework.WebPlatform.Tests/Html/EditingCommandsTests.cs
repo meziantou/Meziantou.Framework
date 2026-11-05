@@ -99,6 +99,7 @@ public sealed class EditingCommandsTests : IDisposable
     [InlineData("<s>foo[bar]baz</s>", "strikethrough", "", "<s>foo</s>bar<s>baz</s>")]
     [InlineData("abc<span style=\"text-decoration:line-through blue dotted\">[def]</span>ghi", "underline", "", "abc<span style=\"text-decoration: underline line-through;\">def</span>ghi")]
     [InlineData("abc<span style=\"text-decoration:underline line-through blue dotted\">[def]</span>ghi", "underline", "", "abc<span style=\"text-decoration: line-through;\">def</span>ghi")]
+    [InlineData("<font color=blue>foo<font color=brown>[bar]</font>baz</font>", "foreColor", "#0000FF", "<font color=\"blue\">foo</font><span style=\"color: rgb(0, 0, 255);\">bar</span><font color=\"blue\">baz</font>")]
     public void InlineFormatting_StyleWithCss(string html, string command, string value, string expected)
         => Assert.Equal(expected, Run(html, command, value, styleWithCss: true));
 

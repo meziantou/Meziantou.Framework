@@ -1270,7 +1270,8 @@ internal sealed partial class EditingAlgorithms
     /// browsers (and as the tests expect), a strong or em element is not reused for the bold or italic command (a b or i
     /// element is created next to it), and when the CSS styling flag is set, a b element is reused for the bold command only
     /// when the reordering of the modifiable descendants of a sibling moved it (a span element is created otherwise). The
-    /// strike element created by the strikethrough command is not merged in an s element, and conversely.
+    /// strike element created by the strikethrough command is not merged in an s element, and conversely. A font element
+    /// that the CSS styling flag replaces is not reused for foreColor (see <see cref="IsReplacedFontColor"/>).
     /// </summary>
     private bool IsBrowserCompatibleWrapSibling(Element sibling, string command, bool reordered)
     {
@@ -1278,6 +1279,7 @@ internal sealed partial class EditingAlgorithms
         {
             "bold" when IsHtmlElement(sibling, "strong") => false,
             "italic" when IsHtmlElement(sibling, "em") => false,
+            "forecolor" when IsReplacedFontColor(sibling, command) => false,
             "bold" when _state.CssStyling && !reordered => !IsHtmlElement(sibling, "b"),
             "strikethrough" when !_state.CssStyling && _keptElementName is null && (IsHtmlElement(sibling, "s") || IsHtmlElement(sibling, "strike")) => IsHtmlElement(sibling, _lineThroughElementName),
             _ => true,
@@ -1398,6 +1400,10 @@ internal sealed partial class EditingAlgorithms
     /// commands are preserved. For subscript and superscript, the node is moved out of the inline ancestors that have a
     /// vertical-align style, which would conflict with the new sub or sup element.
     /// </summary>
+    /// <remarks>
+    /// When the CSS styling flag is set, a font element whose color attribute gives the color of foreColor is split too (see
+    /// <see cref="IsReplacedFontColor"/>).
+    /// </remarks>
     private void SplitAncestorsWithAnotherValue(Node node, string command, string newValue)
     {
         if (command is not ("fontname" or "fontsize" or "forecolor" or "subscript" or "superscript") || !IsAllowedChild(node, "span"))
@@ -1410,7 +1416,7 @@ internal sealed partial class EditingAlgorithms
             {
                 if (command is "subscript" or "superscript"
                     ? GetInlineStyleValue(element, "vertical-align").Length > 0
-                    : IsModifiableElement(element) && GetSpecifiedCommandValue(element, command) is { } value && !AreEquivalentValues(command, value, newValue))
+                    : IsModifiableElement(element) && GetSpecifiedCommandValue(element, command) is { } value && (!AreEquivalentValues(command, value, newValue) || IsReplacedFontColor(element, command)))
                 {
                     ancestorWithValue = element;
                 }
@@ -1436,6 +1442,15 @@ internal sealed partial class EditingAlgorithms
             RestoreValues(values);
         }
     }
+
+    /// <summary>
+    /// Whether the element is a font element whose color attribute gives the color of the foreColor command when the CSS
+    /// styling flag is set. As in the browsers, which replace these font elements with span elements that have a color
+    /// style (<c>&lt;font color=blue&gt;[bar]&lt;/font&gt;</c> gives <c>&lt;span style="color:rgb(0, 0, 255)"&gt;</c>),
+    /// the text that gets the color is moved out of them, even when their color is the new one.
+    /// </summary>
+    private bool IsReplacedFontColor(Element element, string command)
+        => command == "forecolor" && _state.CssStyling && IsHtmlElement(element, "font") && element.HasAttributeWithLocalName("color") && GetInlineStyleValue(element, "color").Length == 0;
 
     /// <summary>
     /// Splits the Text nodes of the boundary points of the active range that are in the middle of an editable Text node, so

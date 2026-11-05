@@ -143,6 +143,15 @@ public sealed class EditingDeletionTests : IDisposable
     public void EmptiedLineKeepsALineBreak(string html, string command, string expected)
         => Assert.Equal(expected, Run(html, command));
 
+    // The blocks of the only empty line of the editing host are removed; the other lines are kept
+    [Theory]
+    [InlineData("<div><div>[]<br></div></div>", "delete", "<br>")]
+    [InlineData("<div><div>[]<br></div></div>", "forwardDelete", "<br>")]
+    [InlineData("<p>[]<br></p><p><br></p>", "forwardDelete", "<p><br></p>")]
+    [InlineData("<ul><li>[]<br></li></ul>", "forwardDelete", "<ul><li><br></li></ul>")]
+    public void OnlyEmptyLineOfTheEditingHostIsRemoved(string html, string command, string expected)
+        => Assert.Equal(expected, Run(html, command));
+
     // The white-space of a pre element is kept in a span when its line is moved to another block only when an author
     // style declares it (the user agent style sheet does not count)
     [Theory]
@@ -241,6 +250,7 @@ public sealed class EditingDeletionTests : IDisposable
     [InlineData("<p>ab\U0001F600[]c</p>", "deleteContentBackward", "\"ab\U0001F600c\":2-\"ab\U0001F600c\":4", "<p>abc</p>")]
     [InlineData("<p>e\U00000301[]</p>", "deleteContentBackward", "\"e\U00000301\":1-\"e\U00000301\":2", "<p>e</p>")]
     [InlineData("<p>[abc]</p>", "deleteContentBackward", "\"abc\":0-\"abc\":3", "<p><br></p>")]
+    [InlineData("<p>[]<br></p>", "deleteContentBackward", "DIV:0-P:1", "<br>")]
     public void TargetRangesOfADeletion(string html, string inputType, string expectedRanges, string expectedHtml)
     {
         var (_, host) = Load(html);

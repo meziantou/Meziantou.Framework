@@ -50,15 +50,15 @@ The features of `REQUIRES`:
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 26,207 | 29,691 | 2,106 | 95% |
 | [Tentative](#tentative-tests) | 1,360 | 3,074 | 698 | 57% |
-| [Reftests](#reftests) | 27,920 | 29,220 | 172 | 96% |
-| **All** | **55,487** | **61,985** | **2,976** | **94%** |
+| [Reftests](#reftests) | 27,919 | 29,220 | 172 | 96% |
+| **All** | **55,486** | **61,985** | **2,976** | **94%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 205
-- **TEST BUG**: 1,027
+- **BUG**: 206
+- **TEST BUG**: 1,028
 - **NOT IMPLEMENTED**: 4,297
 - **REQUIRES**: 770
   - `hardware`: 574
@@ -661,7 +661,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`css/css-transforms`](css/css-transforms.md#reftests) | 794 | 797 | 0 | 99.6% |
 | [`css/css-transitions`](css/css-transitions.md#reftests) | 6 | 6 | 0 | 100% |
 | [`css/css-typed-om`](css/css-typed-om.md#reftests) | 5 | 5 | 0 | 100% |
-| [`css/css-ui`](css/css-ui.md#reftests) | 960 | 964 | 0 | 99.5% |
+| [`css/css-ui`](css/css-ui.md#reftests) | 959 | 964 | 0 | 99% |
 | [`css/css-values`](css/css-values.md#reftests) | 211 | 214 | 0 | 99% |
 | [`css/css-variables`](css/css-variables.md#reftests) | 183 | 183 | 0 | 100% |
 | [`css/css-view-transitions`](css/css-view-transitions.md#reftests) | 308 | 318 | 0 | 97% |
@@ -725,4 +725,4 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`webgl`](webgl.md#reftests) | 0 | 2 | 0 | 0% |
 | [`webvtt`](webvtt.md#reftests) | 182 | 251 | 0 | 73% |
 | [`xml`](xml.md#reftests) | 0 | 3 | 3 | – |
-| **Total (130 sections)** | **27,920** | **29,220** | **172** | **96%** |
+| **Total (130 sections)** | **27,919** | **29,220** | **172** | **96%** |

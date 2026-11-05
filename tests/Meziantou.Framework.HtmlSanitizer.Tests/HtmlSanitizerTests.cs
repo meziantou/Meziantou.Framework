@@ -748,6 +748,11 @@ public class HtmlSanitizerTests
     [InlineData("<table><template><tr><td>a</td></tr></template></table>", "a")]
     [InlineData("<table><tbody><tr><td>a</td><template><b>b</b></template></tr></tbody></table>", "a<b>b</b>")]
     [InlineData("<table><tbody><tr><td>a</td><template> </template></tr></tbody></table>", "<table><tbody><tr><td>a</td> </tr></tbody></table>")]
+
+    // An input or a form element of the SVG namespace is not void, so its text would be foster parented
+    [InlineData("<table><template><svg><input>a</svg></template></table>", "a")]
+    [InlineData("<table><tbody><template><tr></tr><svg><input>a</svg></template></tbody></table>", "a")]
+    [InlineData("<table><template><svg><form>a</svg></template></table>", "a")]
     public void Sanitize_UnwrappingDoesNotMisnestElements(string html, string expectedResult)
     {
         var sanitizer = new HtmlSanitizer();

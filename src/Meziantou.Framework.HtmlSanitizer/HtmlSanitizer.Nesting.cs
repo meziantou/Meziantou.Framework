@@ -157,11 +157,13 @@ public sealed partial class HtmlSanitizer
 
                         break;
 
-                    // An empty form element, and a hidden input element, are kept in a table (except in a column group)
-                    case Element { LocalName: "form", FirstChild: null } when containerName is not "colgroup":
+                    // An empty form element, and a hidden input element, are kept in a table (except in a column group).
+                    // An element of another namespace with the same name (an input in an svg element) is not void,
+                    // so it is unwrapped like any element that is not allowed.
+                    case Element { LocalName: "form", NamespaceUri: HtmlNamespace, FirstChild: null } when containerName is not "colgroup":
                         break;
 
-                    case Element { LocalName: "input" } element when containerName is not "colgroup" && (!IsValidElement(element) || (IsValidAttribute("type") && string.Equals(element.GetAttribute("type"), "hidden", StringComparison.OrdinalIgnoreCase))):
+                    case Element { LocalName: "input", NamespaceUri: HtmlNamespace } element when containerName is not "colgroup" && (!IsValidElement(element) || (IsValidAttribute("type") && string.Equals(element.GetAttribute("type"), "hidden", StringComparison.OrdinalIgnoreCase))):
                         break;
 
                     // An element that is unwrapped puts its content in the container

@@ -9,23 +9,23 @@ description: "The results of the web-platform-tests of badging, and why the test
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 5 | 5 | – |
+| [Stable](#stable-tests) | 3 | 5 | 0 | 60% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **0** | **5** | **5** | **–** |
+| **All** | **3** | **5** | **0** | **60%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 5
+- **TEST BUG**: 2
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`badge-error.https.any.js`](https://wpt.fyi/results/badging/badge-error.https.any.js) | Disabled | – | NOT IMPLEMENTED | Badging API |
-| [`badge-success.https.any.js`](https://wpt.fyi/results/badging/badge-success.https.any.js) | Disabled | – | NOT IMPLEMENTED | Badging API |
-| [`idlharness.https.any.js`](https://wpt.fyi/results/badging/idlharness.https.any.js) | Disabled | – | NOT IMPLEMENTED | Badging API |
-| [`non-fully-active.https.html`](https://wpt.fyi/results/badging/non-fully-active.https.html) | Disabled | – | NOT IMPLEMENTED | Badging API |
-| [`setAppBadge_cross_origin.sub.https.html`](https://wpt.fyi/results/badging/setAppBadge_cross_origin.sub.https.html) | Disabled | – | NOT IMPLEMENTED | Badging API |
+| [`badge-error.https.any.js`](https://wpt.fyi/results/badging/badge-error.https.any.js) | Fail | 2 / 4 | TEST BUG | expects `setAppBadge([])` to reject with a `TypeError`, but an empty array converts to the number 0 (`ToNumber('')`, https://webidl.spec.whatwg.org/#es-unsigned-long-long), which clears the badge |
+| [`badge-success.https.any.js`](https://wpt.fyi/results/badging/badge-success.https.any.js) | Pass | 12 / 12 |  |  |
+| [`idlharness.https.any.js`](https://wpt.fyi/results/badging/idlharness.https.any.js) | Pass | 44 / 44 |  |  |
+| [`non-fully-active.https.html`](https://wpt.fyi/results/badging/non-fully-active.https.html) | Pass | 1 / 1 |  |  |
+| [`setAppBadge_cross_origin.sub.https.html`](https://wpt.fyi/results/badging/setAppBadge_cross_origin.sub.https.html) | Fail | 0 / 6 | TEST BUG | calls `postMessage()` on the `iframe` element instead of its `contentWindow`: every subtest throws a `TypeError` |

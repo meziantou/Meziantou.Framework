@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of html/browsers, and why th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 693 | 746 | 0 | 93% |
+| [Stable](#stable-tests) | 696 | 746 | 0 | 93% |
 | [Tentative](#tentative-tests) | 11 | 15 | 0 | 73% |
 | [Reftests](#reftests) | 4 | 4 | 0 | 100% |
-| **All** | **708** | **765** | **0** | **93%** |
+| **All** | **711** | **765** | **0** | **93%** |
 
 ## Failure reasons
 
@@ -20,7 +20,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 4
 - **TEST BUG**: 31
-- **NOT IMPLEMENTED**: 10
+- **NOT IMPLEMENTED**: 7
 - **REQUIRES**: 2
   - `layout`: 2
 - **TEST RUNNER**: 9
@@ -42,7 +42,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`browsing-the-web/back-forward-cache/events.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/back-forward-cache/events.html) | Fail | 4 / 5 | OUT OF SCOPE | the `unload` subtest: as in Chromium (desktop) and Firefox, a document with an `unload` event listener is not kept in the back/forward cache (the specification lets the user agent decide, and lists `unload-listener` as a user-agent specific blocking reason), so the BFCache executor reports a failed precondition |
 | [`browsing-the-web/back-forward-cache/focus.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/back-forward-cache/focus.html) | Pass | 1 / 1 |  |  |
 | [`browsing-the-web/back-forward-cache/pagehide-event-handler-microtasks.window.js`](https://wpt.fyi/results/html/browsers/browsing-the-web/back-forward-cache/pagehide-event-handler-microtasks.window.js) | Pass | 1 / 1 |  |  |
-| [`browsing-the-web/back-forward-cache/pushstate.https.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/back-forward-cache/pushstate.https.html) | Fail | 1 / 2 | NOT IMPLEMENTED | the Keyboard Lock API (`navigator.keyboard.lock()`), which `disable_bfcache.js` calls to disable the back/forward cache: the `not in BFCache` subtest throws before it navigates; the `in BFCache` subtest passes |
+| [`browsing-the-web/back-forward-cache/pushstate.https.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/back-forward-cache/pushstate.https.html) | Pass | 2 / 2 |  |  |
 | [`browsing-the-web/back-forward-cache/service-worker-client-postmessage.https.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/back-forward-cache/service-worker-client-postmessage.https.html) | Pass | 1 / 1 |  |  |
 | [`browsing-the-web/back-forward-cache/service-worker-clients-claim.https.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/back-forward-cache/service-worker-clients-claim.https.html) | Pass | 1 / 1 |  |  |
 | [`browsing-the-web/back-forward-cache/service-worker-clients-matchall.https.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/back-forward-cache/service-worker-clients-matchall.https.html) | Pass | 1 / 1 |  |  |
@@ -94,8 +94,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`browsing-the-web/history-traversal/pageswap/pageswap-reload-navigation.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/history-traversal/pageswap/pageswap-reload-navigation.html) | Pass | 1 / 1 |  |  |
 | [`browsing-the-web/history-traversal/pageswap/pageswap-replace-navigation.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/history-traversal/pageswap/pageswap-replace-navigation.html) | Pass | 1 / 1 |  |  |
 | [`browsing-the-web/history-traversal/pageswap/pageswap-replace-with-cross-origin-redirect.sub.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/history-traversal/pageswap/pageswap-replace-with-cross-origin-redirect.sub.html) | Pass | 1 / 1 |  |  |
-| [`browsing-the-web/history-traversal/pageswap/pageswap-traverse-navigation-cross-origin-redirect-no-bfcache.https.sub.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/history-traversal/pageswap/pageswap-traverse-navigation-cross-origin-redirect-no-bfcache.https.sub.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | the Keyboard Lock API (`navigator.keyboard.lock()`), which `disable_bfcache.js` calls to disable the back/forward cache: the popup throws before it navigates (the test also loads `/resources/common.js`, which does not exist); it only passes in Chrome |
-| [`browsing-the-web/history-traversal/pageswap/pageswap-traverse-navigation-no-bfcache.https.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/history-traversal/pageswap/pageswap-traverse-navigation-no-bfcache.https.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | the Keyboard Lock API (`navigator.keyboard.lock()`), which `disable_bfcache.js` calls to disable the back/forward cache: the popup throws before it navigates (the test also loads `/resources/common.js`, which does not exist); it only passes in Chrome |
+| [`browsing-the-web/history-traversal/pageswap/pageswap-traverse-navigation-cross-origin-redirect-no-bfcache.https.sub.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/history-traversal/pageswap/pageswap-traverse-navigation-cross-origin-redirect-no-bfcache.https.sub.html) | Pass | 1 / 1 |  |  |
+| [`browsing-the-web/history-traversal/pageswap/pageswap-traverse-navigation-no-bfcache.https.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/history-traversal/pageswap/pageswap-traverse-navigation-no-bfcache.https.html) | Pass | 1 / 1 |  |  |
 | [`browsing-the-web/history-traversal/persisted-user-state-restoration/resume-timer-on-history-back.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/history-traversal/persisted-user-state-restoration/resume-timer-on-history-back.html) | Pass | 2 / 2 |  |  |
 | [`browsing-the-web/history-traversal/persisted-user-state-restoration/scroll-restoration-basic.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/history-traversal/persisted-user-state-restoration/scroll-restoration-basic.html) | Pass | 3 / 3 |  |  |
 | [`browsing-the-web/history-traversal/persisted-user-state-restoration/scroll-restoration-fragment-scrolling-cross-origin.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/history-traversal/persisted-user-state-restoration/scroll-restoration-fragment-scrolling-cross-origin.html) | Fail | 0 / 1 | REQUIRES(layout) | scroll restoration (scripted scrolling and scrolling to a fragment have no effect, scroll positions are 0) |

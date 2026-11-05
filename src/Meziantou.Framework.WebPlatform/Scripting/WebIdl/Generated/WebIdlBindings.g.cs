@@ -48,6 +48,7 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["AudioWorkletProcessor"] = Binding_AudioWorkletProcessor<TAdapter, TValue>.Binding,
             ["BarProp"] = Binding_BarProp<TAdapter, TValue>.Binding,
             ["BaseAudioContext"] = Binding_BaseAudioContext<TAdapter, TValue>.Binding,
+            ["BatteryManager"] = Binding_BatteryManager<TAdapter, TValue>.Binding,
             ["BeforeUnloadEvent"] = Binding_BeforeUnloadEvent<TAdapter, TValue>.Binding,
             ["BiquadFilterNode"] = Binding_BiquadFilterNode<TAdapter, TValue>.Binding,
             ["Blob"] = Binding_Blob<TAdapter, TValue>.Binding,
@@ -340,6 +341,7 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["IntersectionObserver"] = Binding_IntersectionObserver<TAdapter, TValue>.Binding,
             ["IntersectionObserverEntry"] = Binding_IntersectionObserverEntry<TAdapter, TValue>.Binding,
             ["IntrinsicSizes"] = Binding_IntrinsicSizes<TAdapter, TValue>.Binding,
+            ["Keyboard"] = Binding_Keyboard<TAdapter, TValue>.Binding,
             ["KeyboardEvent"] = Binding_KeyboardEvent<TAdapter, TValue>.Binding,
             ["KeyframeEffect"] = Binding_KeyframeEffect<TAdapter, TValue>.Binding,
             ["LargestContentfulPaint"] = Binding_LargestContentfulPaint<TAdapter, TValue>.Binding,
@@ -600,6 +602,8 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["Viewport"] = Binding_Viewport<TAdapter, TValue>.Binding,
             ["VisibilityStateEntry"] = Binding_VisibilityStateEntry<TAdapter, TValue>.Binding,
             ["VisualViewport"] = Binding_VisualViewport<TAdapter, TValue>.Binding,
+            ["WakeLock"] = Binding_WakeLock<TAdapter, TValue>.Binding,
+            ["WakeLockSentinel"] = Binding_WakeLockSentinel<TAdapter, TValue>.Binding,
             ["WaveShaperNode"] = Binding_WaveShaperNode<TAdapter, TValue>.Binding,
             ["WebSocket"] = Binding_WebSocket<TAdapter, TValue>.Binding,
             ["WheelEvent"] = Binding_WheelEvent<TAdapter, TValue>.Binding,
@@ -1588,6 +1592,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.TouchType enumDom_TouchType:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_TouchType(enumDom_TouchType));
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.WakeLockType enumDom_WakeLockType:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_WakeLockType(enumDom_WakeLockType));
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.WorkerType enumDom_WorkerType:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_WorkerType(enumDom_WorkerType));
                 return true;
@@ -1644,6 +1651,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Css.ParserApi.CssParserRule> taskSystem_Threading_Tasks_Task_Css_ParserApi_CssParserRule_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Css_ParserApi_CssParserRule_, static (r, v) => r.Wrap(v));
+                return true;
+            case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.BatteryManager> taskSystem_Threading_Tasks_Task_Dom_BatteryManager_:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_BatteryManager_, static (r, v) => r.Wrap(v));
                 return true;
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.Client> taskSystem_Threading_Tasks_Task_Dom_Client_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_Client_, static (r, v) => r.Wrap(v));
@@ -1704,6 +1714,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.UADataValues> taskSystem_Threading_Tasks_Task_Dom_UADataValues_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_UADataValues_, static (r, v) => (v is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_UADataValues(r, dictionaryValue) : r.Adapter.Null));
+                return true;
+            case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.WakeLockSentinel> taskSystem_Threading_Tasks_Task_Dom_WakeLockSentinel_:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_WakeLockSentinel_, static (r, v) => r.Wrap(v));
                 return true;
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.WindowClient> taskSystem_Threading_Tasks_Task_Dom_WindowClient_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_WindowClient_, static (r, v) => r.Wrap(v));

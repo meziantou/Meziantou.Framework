@@ -33,6 +33,17 @@ internal static class Binding_WorkerNavigator<TAdapter, TValue> where TAdapter :
     private static TValue Get_storage(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.WorkerNavigator>(t, Binding); return r.Wrap(o.Storage); }
     private static TValue Get_userAgentData(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.WorkerNavigator>(t, Binding); return r.Wrap(o.UserAgentData); }
     private static TValue Get_locks(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.WorkerNavigator>(t, Binding); return r.Wrap(o.Locks); }
+    private static TValue Op_setAppBadge(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.WorkerNavigator>(t, Binding);
+        var has0 = !r.IsMissing(a, 0); var a0 = has0 ? (ulong?)r.ToUnsignedLongLong(a[0], global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.EnforceRange) : default;
+        var result = o.SetAppBadge((has0 ? a0 : default(ulong?))); return r.ToPromise(result);
+    }
+    private static TValue Op_clearAppBadge(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.WorkerNavigator>(t, Binding);
+        var result = o.ClearAppBadge(); return r.ToPromise(result);
+    }
     private static void DefineMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue interfaceObject, TValue prototype, TValue instanceTarget)
     {
         r.DefineAttribute(instanceTarget, "permissions", Get_permissions, null);
@@ -50,5 +61,7 @@ internal static class Binding_WorkerNavigator<TAdapter, TValue> where TAdapter :
         if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "storage", Get_storage, null);
         if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "userAgentData", Get_userAgentData, null);
         if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "locks", Get_locks, null);
+        if (r.IsSecureContext) r.DefineOperation(instanceTarget, "setAppBadge", 0, Op_setAppBadge, returnsPromise: true);
+        if (r.IsSecureContext) r.DefineOperation(instanceTarget, "clearAppBadge", 0, Op_clearAppBadge, returnsPromise: true);
     }
 }

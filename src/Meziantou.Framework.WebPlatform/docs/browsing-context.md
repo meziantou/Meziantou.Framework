@@ -3282,8 +3282,9 @@ text).
 ## Device APIs
 
 The APIs whose behavior depends on the device or on the user are answered by the host, with callbacks of
-`BrowsingContextOptions`. Each one has a default that works without a host, and a flag of `WebPlatformFeatures` that
-hides it (see [Disabling features](#disabling-features)).
+`BrowsingContextOptions` (grouped in a nested options object for the newer APIs: `Badging`, `BatteryStatus`, `WakeLock`
+and `KeyboardLock`). Each one has a default that works without a host, and a flag of `WebPlatformFeatures` that hides
+it (see [Disabling features](#disabling-features)).
 
 - **Web Share** ([Web Share API](https://w3c.github.io/web-share/)): `navigator.share()` and `navigator.canShare()`, in
   secure contexts. The library checks the document (fully active, allowed by the `web-share` permissions policy, with a
@@ -3317,6 +3318,32 @@ hides it (see [Disabling features](#disabling-features)).
   same origin with all their ancestors cannot show notifications, and a prerendering document shows them once
   activated. Not done: the persistent notifications of the service workers (`ServiceWorkerRegistration.showNotification()`,
   `getNotifications()`, `NotificationEvent`) and the actions.
+- **Badging** ([Badging API](https://w3c.github.io/badging/)): `navigator.setAppBadge()` and `navigator.clearAppBadge()`,
+  in the secure windows and workers. The library rejects the calls of a document that is not fully active
+  (`InvalidStateError`) or not same origin with the top-level document (`SecurityError`), then calls
+  `Badging.SetBadge` with an `AppBadge` (a count, a flag, or nothing) from a task. `Badging.RequiresNotificationsPermission`
+  makes the calls fail with a `NotAllowedError` unless the `notifications` permission is granted (as Safari). Without
+  callback, the badge is shown nowhere and the promises are resolved.
+- **Battery Status** ([Battery Status API](https://w3c.github.io/battery/)): `navigator.getBattery()` (the same promise
+  at each call) and `BatteryManager`, read from the `BatteryStatusProvider` of `BatteryStatus.Provider`. Set its
+  `Status` (a `BatteryStatus`: `Charging`, `Level`, `ChargingTime` and `DischargingTime`, null for an unknown time,
+  reported as `Infinity`) to simulate a battery; setting it updates the managers, which fire `chargingchange`,
+  `chargingtimechange`, `dischargingtimechange` and `levelchange` from a task. The events of a hidden document are
+  fired when it becomes visible; the level is rounded to two decimals. The `battery` permissions policy feature (default
+  allowlist `'self'`) rejects the promise with a `NotAllowedError`. Without provider, the battery is full and plugged in.
+- **Screen Wake Lock** ([Screen Wake Lock API](https://w3c.github.io/screen-wake-lock/)): `navigator.wakeLock.request()`,
+  `WakeLockSentinel` and its `release` event. The request is rejected with a `NotAllowedError` when the document is not
+  fully active, is hidden, is not allowed by the `screen-wake-lock` permissions policy, or when the `screen-wake-lock`
+  permission is denied (asked with `RequestPermission`). `WakeLock.Acquire` is called when a document gets its first
+  lock and `WakeLock.Release` when its last lock is released; the locks are released when the document becomes hidden
+  or is no longer fully active. Without callbacks, nothing is kept on but the documents get their locks.
+- **Keyboard Lock** ([Keyboard Lock](https://wicg.github.io/keyboard-lock/)): `navigator.keyboard.lock()` and
+  `unlock()`, in the active document of a top-level browsing context (`InvalidStateError` in the iframes). The key codes
+  are validated (`InvalidAccessError`), a pending request is aborted by the next one (`AbortError`), then
+  `KeyboardLock.Lock` gets the reserved key codes (empty for all the keys); `KeyboardLock.Unlock` is called by
+  `unlock()` and when the document is unloaded. A document whose keyboard is locked is not kept in the back/forward
+  cache (`keyboardlock`), as in Chromium. The `layoutchange` event and `getLayoutMap()` (Keyboard Map) are not
+  implemented.
 
 ## Cross-document messaging
 
@@ -3896,6 +3923,10 @@ using var context = new BrowsingContext(new BrowsingContextOptions
 | `VibrationEnabled` | The [Vibration API](#device-apis): `navigator.vibrate()` |
 | `GeolocationEnabled` | The [Geolocation API](#device-apis): `navigator.geolocation`, `Geolocation`, `GeolocationPosition`, `GeolocationCoordinates`, `GeolocationPositionError` |
 | `NotificationsEnabled` | The [Notifications API](#device-apis): `Notification` |
+| `BadgingEnabled` | The [Badging API](#device-apis): `navigator.setAppBadge()` and `navigator.clearAppBadge()` |
+| `BatteryStatusEnabled` | The [Battery Status API](#device-apis): `navigator.getBattery()`, `BatteryManager` |
+| `WakeLockEnabled` | The [Screen Wake Lock API](#device-apis): `navigator.wakeLock`, `WakeLock`, `WakeLockSentinel` |
+| `KeyboardLockEnabled` | The [Keyboard Lock API](#device-apis): `navigator.keyboard`, `Keyboard` |
 | `WebStorageEnabled` | `localStorage`, `sessionStorage`, `Storage`, `StorageEvent` |
 | `IndexedDBEnabled` | `indexedDB` and the `IDB*` interfaces |
 | `CacheStorageEnabled` | `caches`, `Cache`, `CacheStorage` (also hidden when `FetchEnabled` is false) |

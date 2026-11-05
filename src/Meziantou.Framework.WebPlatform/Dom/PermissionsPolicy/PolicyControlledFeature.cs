@@ -28,6 +28,9 @@ internal sealed partial class PolicyControlledFeature
     // and the specifications of the features)
     public static PolicyControlledFeature Autoplay { get; } = new("autoplay", isAllowedForAllByDefault: false);
 
+    /// <summary>https://w3c.github.io/battery/#permissions-policy-integration: its default allowlist is 'self'.</summary>
+    public static PolicyControlledFeature Battery { get; } = new("battery", isAllowedForAllByDefault: false);
+
     public static PolicyControlledFeature ClipboardRead { get; } = new("clipboard-read", isAllowedForAllByDefault: false);
 
     public static PolicyControlledFeature ClipboardWrite { get; } = new("clipboard-write", isAllowedForAllByDefault: false);
@@ -47,6 +50,8 @@ internal sealed partial class PolicyControlledFeature
     public static PolicyControlledFeature DeferredFetchMinimal { get; } = new("deferred-fetch-minimal", isAllowedForAllByDefault: true);
 
     public static PolicyControlledFeature MediaPlaybackWhileNotVisible { get; } = new("media-playback-while-not-visible", isAllowedForAllByDefault: true);
+
+    public static PolicyControlledFeature ScreenWakeLock { get; } = new("screen-wake-lock", isAllowedForAllByDefault: false);
 
     public static PolicyControlledFeature SpeakerSelection { get; } = new("speaker-selection", isAllowedForAllByDefault: false);
 
@@ -68,6 +73,7 @@ internal sealed partial class PolicyControlledFeature
         new("accelerometer", isAllowedForAllByDefault: false),
         new("ambient-light-sensor", isAllowedForAllByDefault: false),
         Autoplay,
+        Battery,
         new("bluetooth", isAllowedForAllByDefault: false),
         new("camera", isAllowedForAllByDefault: false),
         .. ClientHintFeatures.All,
@@ -90,7 +96,7 @@ internal sealed partial class PolicyControlledFeature
         new("picture-in-picture", isAllowedForAllByDefault: true),
         new("private-state-token-issuance", isAllowedForAllByDefault: false),
         new("private-state-token-redemption", isAllowedForAllByDefault: false),
-        new("screen-wake-lock", isAllowedForAllByDefault: false),
+        ScreenWakeLock,
         new("serial", isAllowedForAllByDefault: false),
         SpeakerSelection,
         SyncXhr,

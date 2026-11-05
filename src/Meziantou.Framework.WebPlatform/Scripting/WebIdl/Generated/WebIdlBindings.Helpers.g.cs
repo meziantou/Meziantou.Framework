@@ -357,6 +357,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
 
     internal static readonly string[] Enum_URLPatternComponent_Values = new[] { "protocol", "username", "password", "hostname", "port", "pathname", "search", "hash" };
 
+    internal static readonly string[] Enum_WakeLockType_Values = new[] { "screen" };
+
     internal static readonly string[] Enum_WorkerType_Values = new[] { "classic", "module" };
 
     internal static readonly string[] Enum_XMLHttpRequestResponseType_Values = new[] { "", "arraybuffer", "blob", "document", "json", "text" };
@@ -3565,6 +3567,12 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     {
         global::Meziantou.Framework.WebPlatform.Dom.TouchType.Direct => "direct",
         global::Meziantou.Framework.WebPlatform.Dom.TouchType.Stylus => "stylus",
+        _ => value.ToString(),
+    };
+
+    internal static string FromEnum_Dom_WakeLockType(global::Meziantou.Framework.WebPlatform.Dom.WakeLockType value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.WakeLockType.Screen => "screen",
         _ => value.ToString(),
     };
 
@@ -9116,6 +9124,12 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     {
         "direct" => global::Meziantou.Framework.WebPlatform.Dom.TouchType.Direct,
         "stylus" => global::Meziantou.Framework.WebPlatform.Dom.TouchType.Stylus,
+        _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
+    };
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.WakeLockType ToEnum_Dom_WakeLockType(string value) => value switch
+    {
+        "screen" => global::Meziantou.Framework.WebPlatform.Dom.WakeLockType.Screen,
         _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
     };
 

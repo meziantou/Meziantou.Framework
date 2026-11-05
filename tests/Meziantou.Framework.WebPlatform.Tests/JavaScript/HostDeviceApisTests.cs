@@ -1,3 +1,4 @@
+using System.Globalization;
 using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Framework.WebPlatform.Scripting;
 using Meziantou.Framework.WebPlatform.Tests.Scripting;
@@ -7,7 +8,9 @@ namespace Meziantou.Framework.WebPlatform.Tests.JavaScript;
 /// <summary>
 /// The APIs whose behavior depends on the device, implemented by the callbacks of <see cref="BrowsingContextOptions"/>:
 /// Web Share (https://w3c.github.io/web-share/), Vibration (https://w3c.github.io/vibration/), Geolocation
-/// (https://w3c.github.io/geolocation/) and Notifications (https://notifications.spec.whatwg.org/).
+/// (https://w3c.github.io/geolocation/), Notifications (https://notifications.spec.whatwg.org/), Badging
+/// (https://w3c.github.io/badging/), Battery Status (https://w3c.github.io/battery/), Screen Wake Lock
+/// (https://w3c.github.io/screen-wake-lock/) and Keyboard Lock (https://wicg.github.io/keyboard-lock/).
 /// </summary>
 public sealed class HostDeviceApisTests : IDisposable
 {
@@ -35,6 +38,10 @@ public sealed class HostDeviceApisTests : IDisposable
             Geolocation = options.Geolocation,
             ShowNotification = options.ShowNotification,
             CloseNotification = options.CloseNotification,
+            Badging = options.Badging,
+            BatteryStatus = options.BatteryStatus,
+            WakeLock = options.WakeLock,
+            KeyboardLock = options.KeyboardLock,
             Features = options.Features,
         });
 
@@ -430,7 +437,9 @@ public sealed class HostDeviceApisTests : IDisposable
         await RunAsync(document, "navigator.geolocation.getCurrentPosition(onPosition, onError, { timeout: 50 })");
 
         Assert.Equal("error 3 TIMEOUT", Run(document, "done()"));
-        Assert.True(provider.WasCanceled);
+
+        // The provider observes the cancellation on another thread, possibly after the error callback
+        await provider.Canceled.WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -479,7 +488,9 @@ public sealed class HostDeviceApisTests : IDisposable
 
     private sealed class SlowGeolocationProvider : GeolocationProvider
     {
-        public bool WasCanceled { get; private set; }
+        private readonly TaskCompletionSource _canceled = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public Task Canceled => _canceled.Task;
 
         public override async ValueTask<GeolocationReading?> GetPositionAsync(GeolocationRequest request, CancellationToken cancellationToken)
         {
@@ -489,7 +500,7 @@ public sealed class HostDeviceApisTests : IDisposable
             }
             catch (OperationCanceledException)
             {
-                WasCanceled = true;
+                _canceled.TrySetResult();
                 throw;
             }
 
@@ -675,13 +686,307 @@ public sealed class HostDeviceApisTests : IDisposable
         Assert.Equal("TypeError,TypeError", Run(document));
     }
 
+    // Badging
+
+    private const string BadgeScript = "window.go = p => p.then(() => document.title = 'ok', e => document.title = e.name);";
+
+    [Fact]
+    public void SetAppBadge_CallsTheHost()
+    {
+        #region WebPlatform_Badging
+        var badges = new List<string>();
+        var options = new BrowsingContextOptions
+        {
+            Badging = new BadgingOptions
+            {
+                // Shows the badge on the icon of the application: a number, a flag (setAppBadge() without argument), or nothing
+                SetBadge = (callbackContext, badge) => badges.Add(badge.Kind switch
+                {
+                    AppBadgeKind.Count => badge.Count.ToString(CultureInfo.InvariantCulture),
+                    AppBadgeKind.Flag => "flag",
+                    _ => "nothing",
+                }),
+            },
+        };
+        #endregion
+
+        var document = Load("<script>" + BadgeScript + "</script>", options);
+
+        Assert.Equal("ok", Run(document, "go(navigator.setAppBadge(3).then(() => navigator.setAppBadge()).then(() => navigator.setAppBadge(0)).then(() => navigator.clearAppBadge()))"));
+        Assert.Equal(["3", "flag", "nothing", "nothing"], badges);
+    }
+
+    [Fact]
+    public void SetAppBadge_WithoutHandler_Resolves()
+    {
+        var document = Load("<script>" + BadgeScript + "</script>");
+
+        Assert.Equal("ok", Run(document, "go(navigator.setAppBadge(1))"));
+    }
+
+    [Fact]
+    public void SetAppBadge_InvalidValue_IsRejectedWithTypeError()
+    {
+        var document = Load("<script>" + BadgeScript + "</script>");
+
+        Assert.Equal("TypeError", Run(document, "go(navigator.setAppBadge(-1))"));
+    }
+
+    [Fact]
+    public void SetAppBadge_RequiresNotificationsPermission()
+    {
+        var badges = new List<AppBadge>();
+        var document = Load("<script>" + BadgeScript + "</script>", new BrowsingContextOptions
+        {
+            Badging = new BadgingOptions { SetBadge = (_, badge) => badges.Add(badge), RequiresNotificationsPermission = true },
+        });
+
+        Assert.Equal("NotAllowedError", Run(document, "go(navigator.setAppBadge(1))"));
+        Assert.Empty(badges);
+    }
+
+    [Fact]
+    public void SetAppBadge_NotFullyActive_IsRejectedWithInvalidStateError()
+    {
+        var document = Load("""
+            <iframe srcdoc="<p>"></iframe>
+            <script>
+              window.onload = () => {
+                const frame = document.querySelector('iframe');
+                const navigator = frame.contentWindow.navigator;
+                frame.remove();
+                navigator.setAppBadge(1).catch(e => document.title = e.name);
+              };
+            </script>
+            """);
+
+        Assert.Equal("InvalidStateError", Run(document));
+    }
+
+    // Battery Status
+
+    private const string BatteryScript = """
+        window.log = [];
+        window.describe = b => [b.charging, b.chargingTime, b.dischargingTime, b.level].join(',');
+        navigator.getBattery().then(b => {
+          window.battery = b;
+          log.push(describe(b));
+          for (const type of ['chargingchange', 'chargingtimechange', 'dischargingtimechange', 'levelchange'])
+            b.addEventListener(type, () => log.push(type));
+        });
+        window.done = () => document.title = log.join('|');
+        """;
+
+    [Fact]
+    public void GetBattery_WithoutProvider_ReportsAFullBatteryThatIsPluggedIn()
+    {
+        var document = Load("<script>" + BatteryScript + "</script>");
+
+        Assert.Equal("true,0,Infinity,1", Run(document, "done()"));
+    }
+
+    [Fact]
+    public void GetBattery_ReadsTheProvider()
+    {
+        #region WebPlatform_BatteryStatus
+        var battery = new BatteryStatusProvider
+        {
+            // The battery of the device: setting the status updates the BatteryManager objects, which fire their change events
+            Status = new BatteryStatus { Charging = false, Level = 0.5, ChargingTime = null, DischargingTime = TimeSpan.FromHours(2) },
+        };
+
+        var options = new BrowsingContextOptions
+        {
+            BatteryStatus = new BatteryStatusOptions { Provider = battery },
+        };
+        #endregion
+
+        var document = Load("<script>" + BatteryScript + "</script>", options);
+        Run(document);
+
+        battery.Status = new BatteryStatus { Charging = true, Level = 0.556789, ChargingTime = TimeSpan.FromMinutes(30), DischargingTime = null };
+        Run(document);
+
+        Assert.Equal("false,Infinity,7200,0.5|chargingchange|chargingtimechange|dischargingtimechange|levelchange", Run(document, "done()"));
+        Assert.Equal("true,1800,Infinity,0.56", Run(document, "document.title = describe(battery)"));
+    }
+
+    [Fact]
+    public void GetBattery_ReturnsTheSamePromise()
+    {
+        var document = Load("<script>document.title = navigator.getBattery() === navigator.getBattery();</script>");
+
+        Assert.Equal("true", Run(document));
+    }
+
+    [Fact]
+    public void GetBattery_HiddenDocument_FiresTheEventsWhenItBecomesVisible()
+    {
+        var battery = new BatteryStatusProvider();
+        var document = Load("<script>" + BatteryScript + "</script>", new BrowsingContextOptions { BatteryStatus = new BatteryStatusOptions { Provider = battery } });
+        Run(document);
+
+        document.BrowsingContext!.IsVisible = false;
+        Run(document);
+        battery.Status = new BatteryStatus { Level = 0.8 };
+        Run(document);
+        Assert.Equal("true,0,Infinity,1", Run(document, "done()"));
+
+        document.BrowsingContext.IsVisible = true;
+        Run(document);
+        Assert.Equal("true,0,Infinity,1|levelchange", Run(document, "done()"));
+    }
+
+    // Screen Wake Lock
+
+    private const string WakeLockScript = """
+        window.log = [];
+        window.request = () => navigator.wakeLock.request('screen').then(lock => {
+          lock.onrelease = () => log.push('release ' + lock.released);
+          log.push('locked ' + lock.type);
+          return lock;
+        }, e => log.push(e.name));
+        window.done = () => document.title = log.join('|');
+        """;
+
+    [Fact]
+    public void WakeLock_WithoutPermission_IsRejectedWithNotAllowedError()
+    {
+        var document = Load("<script>" + WakeLockScript + "request();</script>");
+
+        Assert.Equal("NotAllowedError", Run(document, "done()"));
+    }
+
+    [Fact]
+    public void WakeLock_AcquiresAndReleasesTheScreenLock()
+    {
+        #region WebPlatform_WakeLock
+        var screenOn = false;
+        var permissions = new PermissionStore();
+        permissions.SetState("screen-wake-lock", PermissionState.Granted);
+
+        var options = new BrowsingContextOptions
+        {
+            Permissions = permissions,
+            WakeLock = new WakeLockOptions
+            {
+                // Called when a document gets its first lock, and when its last lock is released
+                Acquire = (callbackContext, type) => screenOn = true,
+                Release = (callbackContext, type) => screenOn = false,
+            },
+        };
+        #endregion
+
+        var document = Load("<script>" + WakeLockScript + "</script>", options);
+        Run(document, "Promise.all([request(), request()]).then(locks => window.locks = locks)");
+        Assert.True(screenOn);
+
+        Run(document, "locks[0].release()");
+        Assert.True(screenOn);
+
+        Run(document, "locks[1].release(); locks[1].release()");
+        Assert.False(screenOn);
+        Assert.Equal("locked screen|locked screen|release true|release true", Run(document, "done()"));
+    }
+
+    [Fact]
+    public void WakeLock_HiddenDocument_ReleasesTheLocks()
+    {
+        var acquired = 0;
+        var document = Load("<script>" + WakeLockScript + "</script>", new BrowsingContextOptions
+        {
+            Permissions = GrantedPermissions("screen-wake-lock"),
+            WakeLock = new WakeLockOptions { Acquire = (_, _) => acquired++, Release = (_, _) => acquired-- },
+        });
+        Run(document, "request()");
+        Assert.Equal(1, acquired);
+
+        document.BrowsingContext!.IsVisible = false;
+        Run(document, "request()");
+
+        Assert.Equal(0, acquired);
+        Assert.Equal("locked screen|release true|NotAllowedError", Run(document, "done()"));
+    }
+
+    [Fact]
+    public void WakeLock_RemovedIframe_ReleasesTheLocks()
+    {
+        var acquired = 0;
+        var document = Load("""<iframe srcdoc="<p>"></iframe>""", new BrowsingContextOptions
+        {
+            Permissions = GrantedPermissions("screen-wake-lock"),
+            WakeLock = new WakeLockOptions { Acquire = (_, _) => acquired++, Release = (_, _) => acquired-- },
+        });
+        Run(document, "document.querySelector('iframe').contentWindow.navigator.wakeLock.request().then(lock => lock.onrelease = () => document.title = 'released')");
+        Assert.Equal(1, acquired);
+
+        Assert.Equal("released", Run(document, "document.querySelector('iframe').remove()"));
+        Assert.Equal(0, acquired);
+    }
+
+    // Keyboard Lock
+
+    private const string KeyboardScript = "window.go = p => p.then(() => document.title = 'locked', e => document.title = e.name);";
+
+    [Fact]
+    public void KeyboardLock_CallsTheHost()
+    {
+        #region WebPlatform_KeyboardLock
+        IReadOnlyList<string>? reservedKeys = null;
+        var options = new BrowsingContextOptions
+        {
+            KeyboardLock = new KeyboardLockOptions
+            {
+                // The keys to capture while the document is fullscreen (empty: all the keys)
+                Lock = (callbackContext, keyCodes) => reservedKeys = keyCodes,
+                Unlock = callbackContext => reservedKeys = null,
+            },
+        };
+        #endregion
+
+        var document = Load("<script>" + KeyboardScript + "</script>", options);
+
+        Assert.Equal("locked", Run(document, "go(navigator.keyboard.lock(['KeyW', 'KeyA', 'KeyS', 'KeyD']))"));
+        Assert.Equal(["KeyW", "KeyA", "KeyS", "KeyD"], reservedKeys);
+
+        Run(document, "navigator.keyboard.unlock()");
+        Assert.Null(reservedKeys);
+    }
+
+    [Fact]
+    public void KeyboardLock_InvalidKeyCode_IsRejectedWithInvalidAccessError()
+    {
+        var document = Load("<script>" + KeyboardScript + "</script>");
+
+        Assert.Equal("InvalidAccessError", Run(document, "go(navigator.keyboard.lock(['KeyA', 'NotAKey']))"));
+    }
+
+    [Fact]
+    public void KeyboardLock_TwoParallelRequests_AbortsTheFirstOne()
+    {
+        var document = Load("<script>" + KeyboardScript + "</script>");
+
+        Assert.Equal("AbortError|locked", Run(document, """
+            Promise.allSettled([navigator.keyboard.lock(['KeyA']), navigator.keyboard.lock(['KeyB'])])
+              .then(results => document.title = results.map(r => r.status === 'fulfilled' ? 'locked' : r.reason.name).join('|'))
+            """));
+    }
+
+    [Fact]
+    public void KeyboardLock_FromAnIframe_IsRejectedWithInvalidStateError()
+    {
+        var document = Load("""<iframe srcdoc="<p>"></iframe><script>""" + KeyboardScript + "</script>");
+
+        Assert.Equal("InvalidStateError", Run(document, "go(document.querySelector('iframe').contentWindow.navigator.keyboard.lock())"));
+    }
+
     [Fact]
     public void DisabledFeatures_HideTheApis()
     {
         var document = Load(
-            "<script>document.title = ['share' in navigator, 'vibrate' in navigator, 'geolocation' in navigator, typeof Notification].join();</script>",
-            new BrowsingContextOptions { Features = new WebPlatformFeatures { WebShareEnabled = false, VibrationEnabled = false, GeolocationEnabled = false, NotificationsEnabled = false } });
+            "<script>document.title = ['share' in navigator, 'vibrate' in navigator, 'geolocation' in navigator, typeof Notification, 'setAppBadge' in navigator, 'getBattery' in navigator, typeof BatteryManager, 'wakeLock' in navigator, typeof WakeLockSentinel, 'keyboard' in navigator, typeof Keyboard].join();</script>",
+            new BrowsingContextOptions { Features = new WebPlatformFeatures { WebShareEnabled = false, VibrationEnabled = false, GeolocationEnabled = false, NotificationsEnabled = false, BadgingEnabled = false, BatteryStatusEnabled = false, WakeLockEnabled = false, KeyboardLockEnabled = false } });
 
-        Assert.Equal("false,false,false,undefined", Run(document));
+        Assert.Equal("false,false,false,undefined,false,false,undefined,false,undefined,false,undefined", Run(document));
     }
 }

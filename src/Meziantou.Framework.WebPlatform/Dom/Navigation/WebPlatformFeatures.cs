@@ -194,6 +194,32 @@ public sealed record WebPlatformFeatures
     public bool NotificationsEnabled { get; init; } = true;
 
     /// <summary>
+    /// Gets or sets whether the Badging API is exposed (https://w3c.github.io/badging/): <c>navigator.setAppBadge()</c> and
+    /// <c>navigator.clearAppBadge()</c>, in the windows and the workers (see <see cref="BrowsingContextOptions.Badging"/>).
+    /// The default is true.
+    /// </summary>
+    public bool BadgingEnabled { get; init; } = true;
+
+    /// <summary>
+    /// Gets or sets whether the Battery Status API is exposed (https://w3c.github.io/battery/): <c>navigator.getBattery()</c>
+    /// and the <c>BatteryManager</c> interface (see <see cref="BrowsingContextOptions.BatteryStatus"/>). The default is true.
+    /// </summary>
+    public bool BatteryStatusEnabled { get; init; } = true;
+
+    /// <summary>
+    /// Gets or sets whether the Screen Wake Lock API is exposed (https://w3c.github.io/screen-wake-lock/):
+    /// <c>navigator.wakeLock</c> and the <c>WakeLock</c> and <c>WakeLockSentinel</c> interfaces (see
+    /// <see cref="BrowsingContextOptions.WakeLock"/>). The default is true.
+    /// </summary>
+    public bool WakeLockEnabled { get; init; } = true;
+
+    /// <summary>
+    /// Gets or sets whether the Keyboard Lock API is exposed (https://wicg.github.io/keyboard-lock/): <c>navigator.keyboard</c>
+    /// and the <c>Keyboard</c> interface (see <see cref="BrowsingContextOptions.KeyboardLock"/>). The default is true.
+    /// </summary>
+    public bool KeyboardLockEnabled { get; init; } = true;
+
+    /// <summary>
     /// Gets or sets whether the Web Storage API is exposed (https://html.spec.whatwg.org/multipage/webstorage.html):
     /// <c>localStorage</c>, <c>sessionStorage</c>, <c>Storage</c> and <c>StorageEvent</c>. The default is true.
     /// </summary>

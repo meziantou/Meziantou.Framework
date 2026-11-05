@@ -2,6 +2,7 @@
 #:sdk Meziantou.NET.Sdk
 #:project ../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj
 using System.Diagnostics;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Linq;
@@ -61,11 +62,13 @@ var projectEvaluations = Directory.EnumerateFiles(srcPath, "*.csproj", SearchOpt
     .AsParallel()
     .AsOrdered()
     .WithDegreeOfParallelism(Environment.ProcessorCount)
-    .Select(file => (File: file, IsPackable: IsPackableProject(file)))
+    .Select(EvaluateProject)
     .ToArray();
 
-foreach (var (file, isPackable) in projectEvaluations)
+var projectReferences = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+foreach (var (file, isPackable, references) in projectEvaluations)
 {
+    projectReferences[file] = references;
     if (!isPackable)
         continue;
 
@@ -82,7 +85,7 @@ var reverseDependencyGraph = new Dictionary<string, List<string>>(StringComparer
 
 foreach (var csproj in allCsprojFiles)
 {
-    dependencyGraph[csproj] = GetProjectReferences(csproj);
+    dependencyGraph[csproj] = projectReferences[csproj];
     reverseDependencyGraph[csproj] = [];
 }
 
@@ -468,33 +471,6 @@ List<string> GetVersionedProjects(string csproj, HashSet<string>? visited = null
     return result.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
 }
 
-List<string> GetProjectReferences(string csprojPath)
-{
-    try
-    {
-        var doc = XDocument.Load(csprojPath);
-        var result = new List<string>();
-        foreach (var projRef in doc.Descendants("ProjectReference"))
-        {
-            var include = projRef.Attribute("Include")?.Value;
-            if (string.IsNullOrEmpty(include))
-                continue;
-
-            string referencedProject = FullPath.FromPath(csprojPath).Parent / include;
-            if (File.Exists(referencedProject) && referencedProject.StartsWith(srcPath, StringComparison.OrdinalIgnoreCase))
-            {
-                result.Add(referencedProject);
-            }
-        }
-
-        return result;
-    }
-    catch
-    {
-        return [];
-    }
-}
-
 List<string> GetTransitiveDependents(string csproj, HashSet<string>? visited = null)
 {
     visited ??= new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -534,15 +510,39 @@ static string RunAndCapture(string fileName, string[] arguments)
     return output;
 }
 
-static bool IsPackableProject(string csprojPath)
+// Uses the evaluation of MSBuild rather than the XML of the project file: it resolves the paths of the references
+// (written with backslashes in some project files, which are not directory separators on the Linux agent that runs the
+// script) and includes the references added by imported files.
+ProjectEvaluation EvaluateProject(string csprojPath)
 {
-    var output = RunAndCapture("dotnet", ["msbuild", csprojPath, "-nologo", "-v:q", "-getProperty:IsPackable"]).Trim();
-    if (!bool.TryParse(output, out var result))
+    var output = RunAndCapture("dotnet", ["msbuild", csprojPath, "-nologo", "-v:q", "-getProperty:IsPackable", "-getItem:ProjectReference"]);
+    var jsonStart = output.IndexOf('{', StringComparison.Ordinal);
+    if (jsonStart < 0)
+        throw new InvalidOperationException($"Failed to evaluate '{csprojPath}'. Output: '{output}'");
+
+    using var document = JsonDocument.Parse(output[jsonStart..]);
+    var root = document.RootElement;
+
+    var isPackableValue = root.GetProperty("Properties").GetProperty("IsPackable").GetString();
+    if (!bool.TryParse(isPackableValue, out var isPackable))
+        throw new InvalidOperationException($"Failed to evaluate IsPackable for '{csprojPath}'. Value: '{isPackableValue}'");
+
+    var references = new List<string>();
+    if (root.TryGetProperty("Items", out var items) && items.TryGetProperty("ProjectReference", out var projectReferenceItems))
     {
-        throw new InvalidOperationException($"Failed to evaluate IsPackable for '{csprojPath}'. Value: '{output}'");
+        foreach (var item in projectReferenceItems.EnumerateArray())
+        {
+            if (item.GetProperty("FullPath").GetString() is not { } referencedProject)
+                continue;
+
+            if (File.Exists(referencedProject) && FullPath.FromPath(referencedProject).IsChildOf(srcPath))
+            {
+                references.Add(FullPath.FromPath(referencedProject));
+            }
+        }
     }
 
-    return result;
+    return new ProjectEvaluation(csprojPath, isPackable, references);
 }
 
 static void RunProcess(string fileName, string[] arguments)
@@ -595,3 +595,5 @@ internal sealed class ProjectUpdateInfo
     public bool UpdatedDueToDependency { get; init; }
     public string? DependencySource { get; init; }
 }
+
+internal sealed record ProjectEvaluation(string File, bool IsPackable, List<string> References);

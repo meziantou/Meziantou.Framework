@@ -66,8 +66,7 @@ public sealed partial class DomEventLoop
         CurrentContinuationState = null;
         try
         {
-            task();
-            PerformMicrotaskCheckpoint();
+            RunTaskAndMicrotasks(task);
         }
         finally
         {

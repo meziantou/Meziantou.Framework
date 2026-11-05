@@ -1278,8 +1278,7 @@ public sealed partial class DomEventLoop
             EndIdlePeriod();
             try
             {
-                task();
-                PerformMicrotaskCheckpoint();
+                RunTaskAndMicrotasks(task);
             }
             finally
             {

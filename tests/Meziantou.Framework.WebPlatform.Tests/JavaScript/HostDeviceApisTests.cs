@@ -14,8 +14,8 @@ namespace Meziantou.Framework.WebPlatform.Tests.JavaScript;
 /// (https://w3c.github.io/screen-wake-lock/), Keyboard Lock (https://wicg.github.io/keyboard-lock/), Screen Orientation
 /// (https://w3c.github.io/screen-orientation/), VirtualKeyboard (https://w3c.github.io/virtual-keyboard/), the viewport
 /// segments (https://drafts.csswg.org/css-viewport/#viewport-segments), Compute Pressure
-/// (https://w3c.github.io/compute-pressure/), Idle Detection (https://wicg.github.io/idle-detection/) and Device Posture
-/// (https://w3c.github.io/device-posture/).
+/// (https://w3c.github.io/compute-pressure/), Idle Detection (https://wicg.github.io/idle-detection/), Device Posture
+/// (https://w3c.github.io/device-posture/) and the early detection of input events (https://wicg.github.io/is-input-pending/).
 /// </summary>
 public sealed class HostDeviceApisTests : IDisposable
 {
@@ -53,6 +53,7 @@ public sealed class HostDeviceApisTests : IDisposable
             ScreenOrientation = options.ScreenOrientation,
             VirtualKeyboard = options.VirtualKeyboard,
             ViewportSegments = options.ViewportSegments,
+            PendingInput = options.PendingInput,
             TimeProvider = options.TimeProvider,
             Features = options.Features,
         });
@@ -1479,12 +1480,60 @@ public sealed class HostDeviceApisTests : IDisposable
     }
 
     [Fact]
+    public void IsInputPending_WithoutHandler_ReturnsFalse()
+    {
+        var document = Load("<p>");
+
+        Assert.Equal("false,false,true", Run(document, "document.title = [navigator.scheduling.isInputPending(), navigator.scheduling.isInputPending({ includeContinuous: true }), navigator.scheduling === navigator.scheduling].join()"));
+    }
+
+    [Fact]
+    public void IsInputPending_CallsTheHost()
+    {
+        #region WebPlatform_PendingInput
+        var pendingInput = new Queue<string>(["pointermove", "click"]);
+        var options = new BrowsingContextOptions
+        {
+            PendingInput = new PendingInputOptions
+            {
+                // The input events that the host has not dispatched yet; the continuous events (e.g. pointermove) are
+                // only considered when includeContinuous is true
+                IsInputPending = (callbackContext, includeContinuous) => pendingInput.Any(type => includeContinuous || type is not ("pointermove" or "mousemove" or "wheel" or "touchmove")),
+            },
+        };
+        #endregion
+
+        var document = Load("<p>", options);
+
+        Assert.Equal("true,true", Run(document, "document.title = [navigator.scheduling.isInputPending(), navigator.scheduling.isInputPending({ includeContinuous: true })].join()"));
+
+        pendingInput.Dequeue();
+        pendingInput.Dequeue();
+        pendingInput.Enqueue("pointermove");
+        Assert.Equal("false,true", Run(document, "document.title = [navigator.scheduling.isInputPending(), navigator.scheduling.isInputPending({ includeContinuous: true })].join()"));
+    }
+
+    [Fact]
+    public void IsInputPending_NotFullyActive_ReturnsFalse()
+    {
+        var document = Load("<iframe srcdoc='<p>'></iframe>", new BrowsingContextOptions { PendingInput = new PendingInputOptions { IsInputPending = (_, _) => true } });
+
+        Assert.Equal("true,false", Run(document, """
+            const iframe = document.querySelector('iframe');
+            const scheduling = iframe.contentWindow.navigator.scheduling;
+            const before = scheduling.isInputPending();
+            iframe.remove();
+            document.title = [before, scheduling.isInputPending()].join();
+            """));
+    }
+
+    [Fact]
     public void DisabledFeatures_HideTheApis()
     {
         var document = Load(
-            "<script>document.title = ['share' in navigator, 'vibrate' in navigator, 'geolocation' in navigator, typeof Notification, 'setAppBadge' in navigator, 'getBattery' in navigator, typeof BatteryManager, 'wakeLock' in navigator, typeof WakeLockSentinel, 'keyboard' in navigator, typeof Keyboard, 'orientation' in screen, typeof ScreenOrientation, 'virtualKeyboard' in navigator, typeof VirtualKeyboard].join();</script>",
-            new BrowsingContextOptions { Features = new WebPlatformFeatures { WebShareEnabled = false, VibrationEnabled = false, GeolocationEnabled = false, NotificationsEnabled = false, BadgingEnabled = false, BatteryStatusEnabled = false, WakeLockEnabled = false, KeyboardLockEnabled = false, ScreenOrientationEnabled = false, VirtualKeyboardEnabled = false } });
+            "<script>document.title = ['share' in navigator, 'vibrate' in navigator, 'geolocation' in navigator, typeof Notification, 'setAppBadge' in navigator, 'getBattery' in navigator, typeof BatteryManager, 'wakeLock' in navigator, typeof WakeLockSentinel, 'keyboard' in navigator, typeof Keyboard, 'orientation' in screen, typeof ScreenOrientation, 'virtualKeyboard' in navigator, typeof VirtualKeyboard, 'scheduling' in navigator, typeof Scheduling].join();</script>",
+            new BrowsingContextOptions { Features = new WebPlatformFeatures { WebShareEnabled = false, VibrationEnabled = false, GeolocationEnabled = false, NotificationsEnabled = false, BadgingEnabled = false, BatteryStatusEnabled = false, WakeLockEnabled = false, KeyboardLockEnabled = false, ScreenOrientationEnabled = false, VirtualKeyboardEnabled = false, InputPendingEnabled = false } });
 
-        Assert.Equal("false,false,false,undefined,false,false,undefined,false,undefined,false,undefined,false,undefined,false,undefined", Run(document));
+        Assert.Equal("false,false,false,undefined,false,false,undefined,false,undefined,false,undefined,false,undefined,false,undefined,false,undefined", Run(document));
     }
 }

@@ -73,11 +73,7 @@
     "total": 1
   },
   "performance-timeline/navigation-id-long-task-task-attribution.tentative.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "Long Task/Task Attribution navigation id test": "TIMEOUT"
-    }
+    "total": 1
   },
   "performance-timeline/navigation-id-mark-measure.tentative.html": {
     "total": 1

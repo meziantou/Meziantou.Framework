@@ -23,6 +23,7 @@ internal static class ScriptExecution
             return null;
 
         object? result;
+        eventLoop.RecordScriptEvaluation(window);
         var previousDocument = Document.CurrentGlobalDocumentOrNull;
         Document.CurrentGlobalDocument = window.EnvironmentDocument;
 
@@ -70,6 +71,7 @@ internal static class ScriptExecution
         if (!window.CanRunScript)
             return;
 
+        window.EventLoop.RecordScriptEvaluation(window);
         var previousDocument = Document.CurrentGlobalDocumentOrNull;
         Document.CurrentGlobalDocument = window.EnvironmentDocument;
         try

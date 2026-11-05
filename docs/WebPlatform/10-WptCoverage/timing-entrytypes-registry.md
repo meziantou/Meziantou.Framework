@@ -9,20 +9,14 @@ description: "The results of the web-platform-tests of timing-entrytypes-registr
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 2 | 2 | – |
+| [Stable](#stable-tests) | 2 | 2 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **0** | **2** | **2** | **–** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **NOT IMPLEMENTED**: 2
+| **All** | **2** | **2** | **0** | **100%** |
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`registry.any.js`](https://wpt.fyi/results/timing-entrytypes-registry/registry.any.js) | Disabled | – | NOT IMPLEMENTED | Performance Timeline (supportedEntryTypes) |
-| [`registry.window.js`](https://wpt.fyi/results/timing-entrytypes-registry/registry.window.js) | Disabled | – | NOT IMPLEMENTED | Performance Timeline (supportedEntryTypes) |
+| [`registry.any.js`](https://wpt.fyi/results/timing-entrytypes-registry/registry.any.js) | Pass | 8 / 8 |  |  |
+| [`registry.window.js`](https://wpt.fyi/results/timing-entrytypes-registry/registry.window.js) | Pass | 4 / 4 |  |  |

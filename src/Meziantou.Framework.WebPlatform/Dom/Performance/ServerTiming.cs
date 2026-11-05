@@ -130,20 +130,29 @@ public sealed class PerformanceServerTiming
         return value[start..position];
     }
 
-    /// <summary>Reads a quoted string (https://httpwg.org/specs/rfc9110.html#quoted.strings): a string that is not closed ends at the end of the value.</summary>
+    /// <summary>
+    /// Reads a quoted string (https://httpwg.org/specs/rfc9110.html#quoted.strings). A string that is not closed (e.g.
+    /// <c>"abc</c>, or <c>"abc\"</c> whose last quote is escaped) ends at the end of the value, and is not a valid
+    /// quoted string: its value is the empty string.
+    /// </summary>
     private static string ReadQuotedString(string value, ref int position)
     {
         var result = new StringBuilder();
         position++;
         while (position < value.Length && value[position] != '"')
         {
-            if (value[position] == '\\' && position + 1 < value.Length)
+            if (value[position] == '\\')
             {
                 position++;
+                if (position >= value.Length)
+                    break;
             }
 
             result.Append(value[position++]);
         }
+
+        if (position >= value.Length)
+            return "";
 
         position++;
         return result.ToString();

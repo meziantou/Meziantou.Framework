@@ -79,7 +79,7 @@
     "total": 4
   },
   "focus/focus-large-element-in-overflow-hidden-container.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "focus/focus-restoration-in-different-site-iframes-window.html": {
     "total": 1,

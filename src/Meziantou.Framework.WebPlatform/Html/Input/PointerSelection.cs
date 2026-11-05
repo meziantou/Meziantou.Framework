@@ -67,8 +67,10 @@ namespace Meziantou.Framework.WebPlatform.Html
             if (IsUserSelectNone(element) || IsDraggableOrButton(element) || CaretPositions.FromPoint(document, mouseEvent.ClientX, mouseEvent.ClientY) is not var (node, offset, _))
                 return;
 
-            // The pressed element when the position is not in a text (e.g. a replaced element)
-            var pressedElement = node is Text ? null : element;
+            // The pressed element when the position is not in a text nor in the element (e.g. a replaced element: the position
+            // before or after it); the moves in the empty area of the element extend the selection (e.g. after the image that
+            // ends a line: WPT select-end-of-line-image.tentative.html)
+            var pressedElement = node is Text || ReferenceEquals(node, element) ? null : element;
             (node, offset) = Canonicalize(node, offset);
 
             var clickCount = primary ? mouseEvent.Detail : 1;

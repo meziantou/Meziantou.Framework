@@ -1301,9 +1301,11 @@ internal static class FocusModel
         Focus(element, options?.FocusVisible);
 
         // "If options["preventScroll"] is false, then scroll a target into view given this, "auto", "center", and "center""
+        // As in the browsers, a target that is visible is not centered (only when needed), except a text control: the browsers
+        // scroll its selection into view (WPT textarea-scroll-selection.html)
         if (options?.PreventScroll is not true && element.NodeDocument is { BrowsingContext: not null } document && ComputedStyleDeclarations.IsBeingRendered(element))
         {
-            document.GetLayoutEngine().ScrollIntoViewWhenLaidOut(element, ScrollLogicalPosition.Center, ScrollLogicalPosition.Center);
+            document.GetLayoutEngine().ScrollIntoViewWhenLaidOut(element, ScrollLogicalPosition.Center, ScrollLogicalPosition.Center, ifNeeded: element is not IEditableTextControl);
         }
     }
 

@@ -23,7 +23,12 @@ internal static class ScrollIntoView
     /// scroll container, when it is a scroll snap container, snaps to one of its snap positions
     /// (https://drafts.csswg.org/css-scroll-snap-1/#choosing); the other scrolls (the focus...) snap to the closest snap position.
     /// </param>
-    public static Task Run(LayoutEngine engine, Element target, ScrollBehavior behavior, ScrollLogicalPosition block, ScrollLogicalPosition inline, Element? container, ScrollState? lastScrollingBox = null, PhysicalRect? targetRect = null, bool snapsToTarget = false)
+    /// <param name="ifNeeded">
+    /// Whether the target is only aligned as requested with a scrolling box when its border box is not visible in its scrollport
+    /// (the focus: the alignment of <c>focus()</c> is <c>center</c>, but the browsers do not scroll to a target that is visible,
+    /// see <see cref="GetScrollDelta"/>).
+    /// </param>
+    public static Task Run(LayoutEngine engine, Element target, ScrollBehavior behavior, ScrollLogicalPosition block, ScrollLogicalPosition inline, Element? container, ScrollState? lastScrollingBox = null, PhysicalRect? targetRect = null, bool snapsToTarget = false, bool ifNeeded = false)
     {
         // https://drafts.csswg.org/css-contain-2/#cv-notes: an element that is not available to the user-agent features (in the
         // skipped contents of content-visibility: hidden) is not scrolled to, "as if it did not have a layout box"; the
@@ -120,7 +125,7 @@ internal static class ScrollIntoView
                 // The scrollport, in the coordinates of the document
                 var scrollport = GetScrollport(document, scrollContainer, state);
                 var associatedElement = state.GetAssociatedElement(document);
-                var delta = GetScrollDelta(rect, scrollport, state.WritingDirection, block, inline);
+                var delta = GetScrollDelta(rect, scrollport, state.WritingDirection, block, inline, ifNeeded ? borderRect : null);
                 if (isFixedInViewport)
                 {
                     delta = new PhysicalOffset(fixedFollowsViewport.Horizontal ? delta.X : 0, fixedFollowsViewport.Vertical ? delta.Y : 0);
@@ -253,10 +258,24 @@ internal static class ScrollIntoView
     /// Returns the change of the scroll position of a scrolling box that aligns the target with it
     /// (https://drafts.csswg.org/cssom-view/#determine-the-scroll-into-view-position).
     /// </summary>
-    public static PhysicalOffset GetScrollDelta(PhysicalRect target, PhysicalRect scrollport, WritingDirection writingDirection, ScrollLogicalPosition block, ScrollLogicalPosition inline)
+    /// <param name="target">The target rectangle, extended by its scroll-margin.</param>
+    /// <param name="scrollport">The scrollport, reduced by its scroll-padding.</param>
+    /// <param name="writingDirection">The writing direction of the scrolling box.</param>
+    /// <param name="block">The alignment in the block flow direction.</param>
+    /// <param name="inline">The alignment in the inline base direction.</param>
+    /// <param name="visibleTarget">
+    /// The target border box when the target is scrolled into view only when needed (the focus), or null. As in the browsers, a
+    /// target whose border box is visible in the scrollport is not aligned as requested: the scrolling box is not scrolled in the
+    /// axes where the target is entirely in the scrollport or is larger than it, and else the target is aligned with the nearest
+    /// edge (WPT scroll-margin-focus.html, scroll-margin-visibility-check.html, focus-large-element-in-overflow-hidden-container.html).
+    /// </param>
+    public static PhysicalOffset GetScrollDelta(PhysicalRect target, PhysicalRect scrollport, WritingDirection writingDirection, ScrollLogicalPosition block, ScrollLogicalPosition inline, PhysicalRect? visibleTarget = null)
     {
         var dx = 0d;
         var dy = 0d;
+        var isVisible = visibleTarget is { } visible
+            && Intersects(visible.Left, visible.Right, scrollport.Left, scrollport.Right)
+            && Intersects(visible.Top, visible.Bottom, scrollport.Top, scrollport.Bottom);
         Align(writingDirection.BlockStart, block);
         Align(writingDirection.InlineStart, inline);
         return new PhysicalOffset(dx, dy);
@@ -265,9 +284,16 @@ internal static class ScrollIntoView
         {
             var horizontal = startSide is PhysicalSide.Left or PhysicalSide.Right;
             var reversed = startSide is PhysicalSide.Right or PhysicalSide.Bottom;
-            var delta = horizontal
-                ? GetDelta(target.Left, target.Right, scrollport.Left, scrollport.Right, position, reversed)
-                : GetDelta(target.Top, target.Bottom, scrollport.Top, scrollport.Bottom, position, reversed);
+            var (low, high, boxLow, boxHigh) = horizontal ? (target.Left, target.Right, scrollport.Left, scrollport.Right) : (target.Top, target.Bottom, scrollport.Top, scrollport.Bottom);
+            if (isVisible)
+            {
+                if ((low >= boxLow && high <= boxHigh) || high - low >= boxHigh - boxLow)
+                    return;
+
+                position = ScrollLogicalPosition.Nearest;
+            }
+
+            var delta = GetDelta(low, high, boxLow, boxHigh, position, reversed);
             if (horizontal)
             {
                 dx = delta;
@@ -278,6 +304,9 @@ internal static class ScrollIntoView
             }
         }
     }
+
+    /// <summary>Whether a range of a target intersects the range of a scrollport in one axis (an empty target, when it is in the range).</summary>
+    private static bool Intersects(double low, double high, double boxLow, double boxHigh) => high > low ? high > boxLow && low < boxHigh : low >= boxLow && low <= boxHigh;
 
     /// <summary>Returns the scroll delta in one axis (the coordinates grow from the low edge to the high edge; <paramref name="reversed"/> when the beginning edge is the high one).</summary>
     private static double GetDelta(double elementLow, double elementHigh, double boxLow, double boxHigh, ScrollLogicalPosition position, bool reversed)

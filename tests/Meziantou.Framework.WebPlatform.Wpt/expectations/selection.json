@@ -303,10 +303,7 @@
     }
   },
   "selection/select-end-of-line-image.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Select image at the end of the line.": "FAIL"
-    }
+    "total": 1
   },
   "selection/selectAllChildren.html": {
     "total": 2242

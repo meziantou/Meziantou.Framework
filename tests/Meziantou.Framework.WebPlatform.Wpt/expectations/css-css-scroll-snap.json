@@ -228,11 +228,7 @@
     "total": 2
   },
   "css/css-scroll-snap/scroll-padding-percentage.html": {
-    "total": 2,
-    "failures": {
-      "No need to scroll to avoid percentage scroll padding left": "FAIL",
-      "No need to scroll to avoid percentage scroll padding right": "FAIL"
-    }
+    "total": 2
   },
   "css/css-scroll-snap/scroll-padding.html": {
     "total": 1
@@ -421,10 +417,7 @@
     "total": 3
   },
   "css/css-scroll-snap/snap-after-relayout/focus-element-no-snap.html": {
-    "total": 1,
-    "failures": {
-      "Resnap to focused element after relayout": "FAIL"
-    }
+    "total": 1
   },
   "css/css-scroll-snap/snap-after-relayout/instant-resnap-to-target.tentative.html": {
     "total": 1
@@ -434,7 +427,6 @@
     "failures": {
       "block axis area is preferred (vertical writing-mode).": "FAIL",
       "block axis area is preferred.": "FAIL",
-      "focused area prefered over targeted area.": "FAIL",
       "targeted area prefered over non-focused area.": "FAIL"
     }
   },

@@ -6,10 +6,7 @@
     "total": 8
   },
   "touch-events/hover-state-caused-by-compatibility-mouse-events.tentative.html": {
-    "total": 14,
-    "failures": {
-      "The compatibility mouse events should set :hover, but shouldn't be preserved after the target is replaced": "FAIL"
-    }
+    "total": 14
   },
   "touch-events/idlharness.window.js": {
     "total": 128,

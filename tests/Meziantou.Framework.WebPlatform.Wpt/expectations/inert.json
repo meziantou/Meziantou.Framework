@@ -43,11 +43,7 @@
     "total": 1
   },
   "inert/inert-inlines-around-selection-range-in-contenteditable.html": {
-    "total": 13,
-    "failures": {
-      "<span inert>d[ef</span><span>ab]c</span>": "FAIL",
-      "<span>a[bc</span><span inert>de]f</span>": "FAIL"
-    }
+    "total": 13
   },
   "inert/inert-inlines.html": {
     "total": 1

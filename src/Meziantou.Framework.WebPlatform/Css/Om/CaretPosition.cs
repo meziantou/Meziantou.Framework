@@ -106,17 +106,24 @@ internal static class CaretPositions
 
         var element = fragment.Box!.Element!;
         var rootPoint = engine.FromViewport(point);
-        if (FindClosestText(fragment, rootPoint) is var (closest, local))
-            return (closest.Run.Node!, (uint)closest.GetDomOffsetAt(GetInlineDistance(closest, local)), null);
+        switch (FindClosestText(fragment, rootPoint))
+        {
+            case (TextFragment closest, var local):
+                return (closest.Run.Node!, (uint)closest.GetDomOffsetAt(GetInlineDistance(closest, local)), null);
+
+            // An atomic inline replaced element of a line (e.g. an image at the end of the line, the point being in the empty
+            // area after it, as in the browsers: WPT select-end-of-line-image.tentative.html)
+            case (BoxFragment { Box.Element: { ParentNode: { } atomicParent } atomic } closestReplaced, var atomicPoint) when !ReferenceEquals(closestReplaced, fragment):
+                return (atomicParent, (uint)(atomic.GetIndex() + (IsAfterMiddle(closestReplaced, atomicPoint) ? 1 : 0)), null);
+        }
 
         // A replaced element (e.g. an image): the position before or after it
         if (fragment is BoxFragment { Box.Kind: ContainerBoxKind.Replaced } replaced && element.ParentNode is { } parent && LayoutEngine.TryMapFromRoot(replaced, rootPoint, out var replacedPoint))
-        {
-            var after = replaced.WritingDirection.IsHorizontal ? replacedPoint.X > replaced.Size.Width / 2 : replacedPoint.Y > replaced.Size.Height / 2;
-            return (parent, (uint)(element.GetIndex() + (after ? 1 : 0)), null);
-        }
+            return (parent, (uint)(element.GetIndex() + (IsAfterMiddle(replaced, replacedPoint) ? 1 : 0)), null);
 
         return (element, 0, null);
+
+        static bool IsAfterMiddle(BoxFragment fragment, PhysicalOffset point) => fragment.WritingDirection.IsHorizontal ? point.X > fragment.Size.Width / 2 : point.Y > fragment.Size.Height / 2;
     }
 
     /// <summary>
@@ -159,28 +166,29 @@ internal static class CaretPositions
     /// <summary>
     /// Returns the text fragment of a text node in the subtree of a fragment that is the closest to a point (relative to the
     /// root of the fragment tree): the one whose block axis range contains the point, or the closest along the block axis, then
-    /// the closest along the inline axis; and the point in its coordinates.
+    /// the closest along the inline axis; and the point in its coordinates. The atomic inline replaced boxes of the lines
+    /// (e.g. the images) are candidates too.
     /// </summary>
-    private static (TextFragment Fragment, PhysicalOffset Point)? FindClosestText(Fragment container, PhysicalOffset rootPoint)
+    private static (Fragment Fragment, PhysicalOffset Point)? FindClosestText(Fragment container, PhysicalOffset rootPoint)
     {
-        (TextFragment Fragment, PhysicalOffset Point)? best = null;
+        (Fragment Fragment, PhysicalOffset Point)? best = null;
         var bestBlock = double.PositiveInfinity;
         var bestInline = double.PositiveInfinity;
         var stack = new Stack<Fragment>();
         stack.Push(container);
         while (stack.TryPop(out var fragment))
         {
-            if (fragment is TextFragment { Run.Node: not null, IsHyphen: false } text)
+            if (fragment is TextFragment { Run.Node: not null, IsHyphen: false } || (fragment is BoxFragment { Box: { Kind: ContainerBoxKind.Replaced, PseudoElement: null, Element: not null, IsAtomicInline: true } } && !ReferenceEquals(fragment, container)))
             {
-                if (!LayoutEngine.TryMapFromRoot(text, rootPoint, out var local))
+                if (!LayoutEngine.TryMapFromRoot(fragment, rootPoint, out var local))
                     continue;
 
-                var horizontal = text.WritingDirection.IsHorizontal;
-                var block = horizontal ? Distance(local.Y, text.Size.Height) : Distance(local.X, text.Size.Width);
-                var inline = horizontal ? Distance(local.X, text.Size.Width) : Distance(local.Y, text.Size.Height);
+                var horizontal = fragment is TextFragment text ? text.WritingDirection.IsHorizontal : ((BoxFragment)fragment).WritingDirection.IsHorizontal;
+                var block = horizontal ? Distance(local.Y, fragment.Size.Height) : Distance(local.X, fragment.Size.Width);
+                var inline = horizontal ? Distance(local.X, fragment.Size.Width) : Distance(local.Y, fragment.Size.Height);
                 if (block < bestBlock || (block == bestBlock && inline < bestInline))
                 {
-                    best = (text, local);
+                    best = (fragment, local);
                     bestBlock = block;
                     bestInline = inline;
                 }

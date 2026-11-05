@@ -79,10 +79,7 @@
     }
   },
   "css/css-scroll-anchoring/contenteditable-near-cursor.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Ensure scroll is adjusted to keep element next to the cursor stable": "FAIL"
-    }
+    "total": 1
   },
   "css/css-scroll-anchoring/descend-into-container-with-float.html": {
     "total": 1

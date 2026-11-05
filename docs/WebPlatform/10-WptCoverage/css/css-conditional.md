@@ -11,14 +11,13 @@ description: "The results of the web-platform-tests of css/css-conditional, and 
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 223 | 226 | 0 | 99% |
 | [Tentative](#tentative-tests) | 6 | 6 | 0 | 100% |
-| [Reftests](#reftests) | 171 | 173 | 0 | 99% |
-| **All** | **400** | **405** | **0** | **99%** |
+| [Reftests](#reftests) | 172 | 173 | 0 | 99% |
+| **All** | **401** | **405** | **0** | **99%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
 - **TEST BUG**: 1
 - **NOT IMPLEMENTED**: 3
 
@@ -334,7 +333,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`at-supports-content-004.html`](https://wpt.fyi/results/css/css-conditional/at-supports-content-004.html) | Pass | 1 / 1 |  |  |
 | [`at-supports-font-format-001.html`](https://wpt.fyi/results/css/css-conditional/at-supports-font-format-001.html) | Pass | 1 / 1 |  |  |
 | [`at-supports-font-tech-001.html`](https://wpt.fyi/results/css/css-conditional/at-supports-font-tech-001.html) | Pass | 1 / 1 |  |  |
-| [`at-supports-namespace-001.html`](https://wpt.fyi/results/css/css-conditional/at-supports-namespace-001.html) | Fail | 0 / 1 | BUG | the namespace prefix of `attr()` is not checked against the `@namespace` rules in `@supports` (`(content: attr(y\|href))` is supported although `y` is not declared); fails in every browser |
+| [`at-supports-namespace-001.html`](https://wpt.fyi/results/css/css-conditional/at-supports-namespace-001.html) | Pass | 1 / 1 |  |  |
 | [`at-supports-namespace-002.html`](https://wpt.fyi/results/css/css-conditional/at-supports-namespace-002.html) | Pass | 1 / 1 |  |  |
 | [`at-supports-selector-001.html`](https://wpt.fyi/results/css/css-conditional/at-supports-selector-001.html) | Pass | 1 / 1 |  |  |
 | [`at-supports-selector-002.html`](https://wpt.fyi/results/css/css-conditional/at-supports-selector-002.html) | Pass | 1 / 1 |  |  |

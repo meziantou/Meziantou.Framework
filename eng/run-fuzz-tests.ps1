@@ -121,6 +121,7 @@ if ($env:GITHUB_STEP_SUMMARY) {
     "$(Get-Campaign), shard ``$Shard``, commit ``$env:GITHUB_SHA``" >> $env:GITHUB_STEP_SUMMARY
 }
 
+$hangDumpMinutes = 10
 $started = Get-Date
 try {
     dotnet build $projectPath --configuration Release
@@ -129,7 +130,15 @@ try {
     }
 
     $filterArguments = @(if ($Filter) { $Filter -split '\s+' | Where-Object { $_ } })
-    dotnet test --project $projectPath --configuration Release --no-build --results-directory $testResultsDirectory @filterArguments
+    # The SDK kills a test still running after 10 minutes (hang dump), and every test of a campaign runs for the whole
+    # budget, then minimizes its failures: the hang dump fires 10 minutes after the budget (fuzz/Directory.Build.targets)
+    $hangDumpArguments = @()
+    if ($Duration) {
+        $hangDumpMinutes = [Math]::Max(10, [Math]::Ceiling([int]$Duration / 60) + 10)
+        $hangDumpArguments = @("-p:FuzzHangDumpTimeout=${hangDumpMinutes}m")
+    }
+
+    dotnet test --project $projectPath --configuration Release --no-build --results-directory $testResultsDirectory @filterArguments @hangDumpArguments
     $exitCode = $LASTEXITCODE
 }
 catch {
@@ -240,7 +249,7 @@ foreach ($testName in $failures.Keys) {
 
 # A test host killed by the hang dump leaves no failed test (and maybe no report) behind
 $campaignFailed = $exitCode -ne 0 -and $failures.Count -eq 0
-$campaignFailure = "dotnet test exited with code $exitCode after $elapsed s without a failed test in its $($reports.Count) report(s): a test host killed by the hang dump (a test running longer than 10 minutes), or a crash. See the log of the run.`n`n- $(Get-Campaign), shard ``$Shard``"
+$campaignFailure = "dotnet test exited with code $exitCode after $elapsed s without a failed test in its $($reports.Count) report(s): a test host killed by the hang dump (a test running longer than $hangDumpMinutes minutes), or a crash. See the log of the run.`n`n- $(Get-Campaign), shard ``$Shard``"
 Write-Result -Target $campaignTarget -Failed $campaignFailed -Seconds $elapsed -Failure $campaignFailure
 if ($env:GITHUB_STEP_SUMMARY) {
     $status = if ($exitCode -eq 0) { 'passed' } else { "failed ($($failures.Count) failed test(s))" }

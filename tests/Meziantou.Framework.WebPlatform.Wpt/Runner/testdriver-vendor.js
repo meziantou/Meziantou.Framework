@@ -47,6 +47,16 @@
     return new Promise(resolve => __wpt_set_permission(name, state, resolve));
   };
 
+  // Global Privacy Control (https://w3c.github.io/gpc/#automation): the preference of the user of the runner
+  // (BrowsingContextOptions.GlobalPrivacyControl), set for the next requests and reads of navigator.globalPrivacyControl
+  internal.get_global_privacy_control = function () {
+    return new Promise(resolve => __wpt_global_privacy_control(undefined, resolve)).then(gpc => ({ gpc }));
+  };
+
+  internal.set_global_privacy_control = function (newValue) {
+    return new Promise(resolve => __wpt_global_privacy_control(!!newValue, resolve)).then(gpc => ({ gpc }));
+  };
+
   // The window of the top-level browsing context (https://w3c.github.io/webdriver/#resizing-and-positioning-windows): the
   // runner has no window, so Minimize Window hides the top-level browsing context (BrowsingContext.IsVisible of the library:
   // the documents become hidden), and Set Window Rect restores it; the position and the size of the viewport do not change.

@@ -508,8 +508,22 @@ internal static partial class WptPythonHandlers
                         break;
                     }
 
+                case "image":
+                    // An image of random dimensions: the dimensions of the decoded image tell whether it is a cached response
+                    response.Body = CreateBlackPng(System.Security.Cryptography.RandomNumberGenerator.GetInt32(1, 1025), System.Security.Cryptography.RandomNumberGenerator.GetInt32(1, 1025));
+                    break;
+
+                case "html_embed_image":
+                    {
+                        var imageUrl = path + "?response=image&cache&cache_helper=" + cacheHelper + "&img=";
+                        response.Content = "\n<!DOCTYPE html>\n<script>\naddEventListener(\"load\", () => {\nlet img1 = document.getElementById(\"randomess1\");\nlet img2 = document.getElementById(\"randomess2\");\n"
+                            + "let id = img1.naturalWidth + \"x\" + img1.naturalHeight;\nid += \"-\" + img2.naturalWidth + \"x\" + img2.naturalHeight\nwindow.opener.postMessage(id, \"*\");\nwindow.close();\n})\n</script>\n<body>\n"
+                            + url + "<br>\n<img id=\"randomess1\" src=\"" + imageUrl + "0\"></img><br>\n<img id=\"randomess2\" src=\"" + imageUrl + "1\"></img><br>\n</body>";
+                        break;
+                    }
+
                 default:
-                    throw new NotSupportedException("The image responses of clear-site-data-cache.py are not emulated");
+                    throw new NotSupportedException("The response type of clear-site-data-cache.py is unknown: " + responseType);
             }
         },
     };

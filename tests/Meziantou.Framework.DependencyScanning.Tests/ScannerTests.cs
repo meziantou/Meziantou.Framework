@@ -983,6 +983,26 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
     }
 
     [Fact]
+    public async Task GoModuleDependencies_VersionsStartWithVAndDigit()
+    {
+        AddFile("go.mod", """
+            module example.com/app
+
+            require example.com/a v.
+            require example.com/b vnext
+            require example.com/c v0.0.0-20240101000000-abcdef123456
+            replace example.com/d => example.com/e v.
+            replace example.com/f => example.com/g v2.0.0+incompatible
+            """);
+
+        var result = await GetDependencies<GoModuleDependencyScanner>();
+        AssertContainDependency(result,
+            (DependencyType.GoModule, "example.com/c", "v0.0.0-20240101000000-abcdef123456", 5, 23),
+            (DependencyType.GoModule, "example.com/g", "v2.0.0+incompatible", 7, 40));
+        Assert.HasCount(2, result);
+    }
+
+    [Fact]
     public async Task GoModuleSumDependencies()
     {
         AddFile("go.sum", """

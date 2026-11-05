@@ -75,6 +75,8 @@ updatable.
   under the `replaces` key. A replacement with a local folder (`=> ../fork`) is not reported.
 - The `go` and `toolchain` directives are reported as the `go` and `toolchain` modules, with versions such as `1.23.0`
   and `go1.23.0`.
+- A module version must start with `v` and a digit, as semantic versions and pseudo-versions do: a `require` or a
+  replacement with another version, such as `vnext`, is not reported.
 - The `exclude`, `retract`, `tool` and `godebug` directives, and quoted module paths, are not reported.
 
 **`go.sum`** ([GoSumDependencyScanner](cref:Meziantou.Framework.DependencyScanning.Scanners.GoSumDependencyScanner)): the checksum entries, with versions that are not updatable, as their hashes

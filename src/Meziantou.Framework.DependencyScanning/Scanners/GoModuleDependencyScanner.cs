@@ -122,10 +122,12 @@ public sealed partial class GoModuleDependencyScanner : DependencyScanner
         TextLocation CreateLocation(Group group) => new(context.FileSystem, context.FullPath, lineNumber, argumentsStart + group.Index + 1, group.Length);
     }
 
-    [GeneratedRegex("""^(?<name>[^\s"`]+)\s+(?<version>v\S+)\s*$""", RegexOptions.CultureInvariant | RegexOptions.NonBacktracking)]
+    // Module versions are semantic versions, including pseudo-versions such as v0.0.0-20240101000000-abcdef123456, so
+    // they start with "v" and a digit
+    [GeneratedRegex("""^(?<name>[^\s"`]+)\s+(?<version>v[0-9]\S*)\s*$""", RegexOptions.CultureInvariant | RegexOptions.NonBacktracking)]
     private static partial Regex RequireRegex();
 
-    [GeneratedRegex("""^(?<old>[^\s"`]+)(?:\s+v\S+)?\s+=>\s+(?<name>[^\s"`]+)(?:\s+(?<version>v\S+))?\s*$""", RegexOptions.CultureInvariant | RegexOptions.NonBacktracking)]
+    [GeneratedRegex("""^(?<old>[^\s"`]+)(?:\s+v\S+)?\s+=>\s+(?<name>[^\s"`]+)(?:\s+(?<version>v[0-9]\S*))?\s*$""", RegexOptions.CultureInvariant | RegexOptions.NonBacktracking)]
     private static partial Regex ReplaceRegex();
 
     [GeneratedRegex("""^(?<version>[0-9]\S*)\s*$""", RegexOptions.CultureInvariant | RegexOptions.NonBacktracking)]

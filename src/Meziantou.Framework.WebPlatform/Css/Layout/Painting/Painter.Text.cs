@@ -87,6 +87,17 @@ internal sealed partial class Painter
             highlights = AddBlockCaret(highlights, fragment, offset);
         }
 
+        // https://drafts.csswg.org/css-pseudo-4/#highlight-painting: the background of the selection is over the text that is not
+        // selected: the ink of its glyphs that overhangs the background (e.g. an italic glyph after the selection) is painted under
+        // the background, the rest of it over the shadows of the highlights (as Gecko and Blink). The text after a custom highlight
+        // is painted over its background (as the text after an inline box with a background, as in Blink)
+        var colorSegments = runs.Count == 0 ? null : GetHighlightColorSegments(highlights, line.Horizontal);
+        var backgroundClip = runs.Count == 0 ? null : GetHighlightBackgroundClip(highlights, line.Horizontal);
+        if (backgroundClip is not null)
+        {
+            PaintTextNotHighlighted(underBackgrounds: true);
+        }
+
         if (highlights is not null)
         {
             foreach (var highlight in highlights)
@@ -121,22 +132,13 @@ internal sealed partial class Painter
         // https://drafts.csswg.org/css-pseudo-4/#highlight-painting: the glyphs are painted once, in the color of the topmost
         // highlight that sets a color for the characters it covers and in the color of the text for the other ones (glyphs
         // painted twice would have darker antialiased edges)
-        var colorSegments = runs.Count == 0 ? null : GetHighlightColorSegments(highlights, line.Horizontal);
-        if (colorSegments is null)
+        if (colorSegments is null && backgroundClip is null)
         {
             PaintGlyphs(runs, fill, textStroke);
         }
         else
         {
-            // The characters that are not recolored: before, between and after the segments
-            var position = double.NegativeInfinity;
-            foreach (var segment in colorSegments)
-            {
-                PaintGlyphsBetween(position, segment.Start, fill, textStroke);
-                position = segment.End;
-            }
-
-            PaintGlyphsBetween(position, double.PositiveInfinity, fill, textStroke);
+            PaintTextNotHighlighted(underBackgrounds: false);
         }
 
         PaintEmphasisMarks(fragment, offset, line, source);
@@ -163,6 +165,62 @@ internal sealed partial class Painter
 
                 PaintOriginatingDecorations(highlight, TextDecorationLines.LineThrough);
                 PaintHighlightDecorations(highlight, TextDecorationLines.LineThrough);
+            }
+        }
+
+        // Paints the characters that are not recolored (before, between and after the segments of colorSegments). With a background
+        // of the selection, the glyphs outside of the selection are painted in two parts: the part over the background is painted
+        // under it, the rest at the place of the text in the painting order
+        void PaintTextNotHighlighted(bool underBackgrounds)
+        {
+            var position = double.NegativeInfinity;
+            if (colorSegments is not null)
+            {
+                foreach (var segment in colorSegments)
+                {
+                    PaintPart(position, segment.Start);
+                    position = segment.End;
+                }
+            }
+
+            PaintPart(position, double.PositiveInfinity);
+
+            void PaintPart(double start, double end)
+            {
+                if (backgroundClip is not { } clip)
+                {
+                    if (!underBackgrounds)
+                    {
+                        PaintGlyphsBetween(start, end, fill, textStroke);
+                    }
+
+                    return;
+                }
+
+                var current = start;
+                foreach (var (rangeStart, rangeEnd) in clip.Ranges)
+                {
+                    PaintOutsideBackgrounds(current, Math.Min(end, rangeStart));
+                    if (!underBackgrounds)
+                    {
+                        PaintGlyphsBetween(Math.Max(current, rangeStart), Math.Min(end, rangeEnd), fill, textStroke);
+                    }
+
+                    current = Math.Max(current, rangeEnd);
+                }
+
+                PaintOutsideBackgrounds(current, end);
+
+                void PaintOutsideBackgrounds(double from, double to)
+                {
+                    if (to <= from)
+                        return;
+
+                    _builder.Save();
+                    _builder.Add(new ClipPathItem(underBackgrounds ? clip.Inside : clip.Outside, AntiAlias: false));
+                    PaintGlyphsBetween(from, to, fill, textStroke);
+                    _builder.Restore();
+                }
             }
         }
 
@@ -333,6 +391,71 @@ internal sealed partial class Painter
         return result;
 
         (double Start, double End) GetRange(in TextHighlight highlight) => horizontal ? (highlight.Bounds.Left, highlight.Bounds.Right) : (highlight.Bounds.Top, highlight.Bounds.Bottom);
+    }
+
+    /// <summary>
+    /// Returns the parts of the inline axis of a text fragment covered by the selection with a background (disjoint ranges of
+    /// its characters in order, the overlapping backgrounds merged), and the clips inside and outside of its backgrounds; null
+    /// when the selection has no background.
+    /// </summary>
+    private static (List<(double Start, double End)> Ranges, DisplayPath Inside, DisplayPath Outside)? GetHighlightBackgroundClip(List<TextHighlight>? highlights, bool horizontal)
+    {
+        if (highlights is null)
+            return null;
+
+        var backgrounds = new List<(double Start, double End, PhysicalRect Rect)>();
+        foreach (var highlight in highlights)
+        {
+            if (!highlight.IsSelection || highlight.Background.IsTransparent || highlight.Rect.Width <= 0 || highlight.Rect.Height <= 0)
+                continue;
+
+            var bounds = highlight.Bounds;
+            backgrounds.Add(horizontal ? (bounds.Left, bounds.Right, highlight.Rect) : (bounds.Top, bounds.Bottom, highlight.Rect));
+        }
+
+        if (backgrounds.Count == 0)
+            return null;
+
+        // The backgrounds whose rectangles overlap in the inline axis are merged, so that the rectangles are disjoint
+        backgrounds.Sort((a, b) => GetStart(a.Rect).CompareTo(GetStart(b.Rect)));
+        var merged = new List<(double Start, double End, PhysicalRect Rect)> { backgrounds[0] };
+        for (var i = 1; i < backgrounds.Count; i++)
+        {
+            var last = merged[^1];
+            var background = backgrounds[i];
+            if (GetStart(background.Rect) < GetEnd(last.Rect))
+            {
+                merged[^1] = (Math.Min(last.Start, background.Start), Math.Max(last.End, background.End), last.Rect.Union(background.Rect));
+            }
+            else
+            {
+                merged.Add(background);
+            }
+        }
+
+        var ranges = new List<(double Start, double End)>(merged.Count);
+        var inside = new DisplayPath { FillRule = FillRule.EvenOdd };
+        var outside = new DisplayPath { FillRule = FillRule.EvenOdd };
+        outside.AddRect(new PhysicalRect(-UnclippedExtent, -UnclippedExtent, 2 * UnclippedExtent, 2 * UnclippedExtent));
+        foreach (var (start, end, rect) in merged)
+        {
+            if (ranges.Count > 0 && start < ranges[^1].End)
+            {
+                ranges[^1] = (ranges[^1].Start, Math.Max(ranges[^1].End, end));
+            }
+            else
+            {
+                ranges.Add((start, end));
+            }
+
+            inside.AddRect(rect);
+            outside.AddRect(rect);
+        }
+
+        return (ranges, inside, outside);
+
+        double GetStart(PhysicalRect rect) => horizontal ? rect.Left : rect.Top;
+        double GetEnd(PhysicalRect rect) => horizontal ? rect.Right : rect.Bottom;
     }
 
     /// <summary>How the advance of a glyph is covered by a part of the inline axis.</summary>

@@ -871,9 +871,6 @@
   "css/css-pseudo/selection-background-color-transparent.html": {
     "reftest": "PASS"
   },
-  "css/css-pseudo/selection-background-painting-order.html": {
-    "reftest": "FAIL"
-  },
   "css/css-pseudo/selection-contenteditable-011.html": {
     "reftest": "FAIL"
   },

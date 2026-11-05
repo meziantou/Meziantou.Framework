@@ -208,9 +208,10 @@ internal sealed class ResourceTiming
             bodyInfo = bodyInfo with { ContentType = "" };
         }
 
-        // https://fetch.spec.whatwg.org/#fetch-finale: the Server-Timing headers of a response fetched by a secure context,
-        // which an opaque timing info and an opaque filtered response do not have
-        var serverTiming = timingAllowPassed && !isOpaque && _global.IsSecureContext ? PerformanceServerTiming.Parse(internalResponse.HeaderList) : [];
+        // https://fetch.spec.whatwg.org/#fetch-finale: the Server-Timing headers of the internal response of a response fetched
+        // by a secure context (an opaque filtered response included: the Timing-Allow-Origin header guards them), which an
+        // opaque timing info does not have
+        var serverTiming = timingAllowPassed && _global.IsSecureContext ? PerformanceServerTiming.Parse(internalResponse.HeaderList) : [];
         Mark(timingInfo, bodyInfo, status, contentEncoding, serverTiming);
     }
 

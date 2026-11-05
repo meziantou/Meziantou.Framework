@@ -9,27 +9,21 @@ description: "The results of the web-platform-tests of server-timing, and why th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 9 | 9 | – |
+| [Stable](#stable-tests) | 9 | 9 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **0** | **9** | **9** | **–** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **NOT IMPLEMENTED**: 9
+| **All** | **9** | **9** | **0** | **100%** |
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`cross_origin.https.html`](https://wpt.fyi/results/server-timing/cross_origin.https.html) | Disabled | – | NOT IMPLEMENTED | Server Timing (PerformanceResourceTiming) |
-| [`idlharness.https.any.js`](https://wpt.fyi/results/server-timing/idlharness.https.any.js) | Disabled | – | NOT IMPLEMENTED | Server Timing (PerformanceResourceTiming) |
-| [`navigation-timing-trickle.https.html`](https://wpt.fyi/results/server-timing/navigation-timing-trickle.https.html) | Disabled | – | NOT IMPLEMENTED | Server Timing (PerformanceResourceTiming) |
-| [`navigation_timing_idl.https.html`](https://wpt.fyi/results/server-timing/navigation_timing_idl.https.html) | Disabled | – | NOT IMPLEMENTED | Server Timing (PerformanceResourceTiming) |
-| [`resource_timing_idl.https.html`](https://wpt.fyi/results/server-timing/resource_timing_idl.https.html) | Disabled | – | NOT IMPLEMENTED | Server Timing (PerformanceResourceTiming) |
-| [`server_timing_header-parsing.https.html`](https://wpt.fyi/results/server-timing/server_timing_header-parsing.https.html) | Disabled | – | NOT IMPLEMENTED | Server Timing (PerformanceResourceTiming) |
-| [`server_timing_headers_not_visible_in_fetch.https.html`](https://wpt.fyi/results/server-timing/server_timing_headers_not_visible_in_fetch.https.html) | Disabled | – | NOT IMPLEMENTED | Server Timing (PerformanceResourceTiming) |
-| [`service_worker_idl.https.html`](https://wpt.fyi/results/server-timing/service_worker_idl.https.html) | Disabled | – | NOT IMPLEMENTED | Server Timing (PerformanceResourceTiming) |
-| [`test_server_timing.https.html`](https://wpt.fyi/results/server-timing/test_server_timing.https.html) | Disabled | – | NOT IMPLEMENTED | Server Timing (PerformanceResourceTiming) |
+| [`cross_origin.https.html`](https://wpt.fyi/results/server-timing/cross_origin.https.html) | Pass | 3 / 3 |  |  |
+| [`idlharness.https.any.js`](https://wpt.fyi/results/server-timing/idlharness.https.any.js) | Pass | 194 / 194 |  |  |
+| [`navigation-timing-trickle.https.html`](https://wpt.fyi/results/server-timing/navigation-timing-trickle.https.html) | Pass | 1 / 1 |  |  |
+| [`navigation_timing_idl.https.html`](https://wpt.fyi/results/server-timing/navigation_timing_idl.https.html) | Pass | 1 / 1 |  |  |
+| [`resource_timing_idl.https.html`](https://wpt.fyi/results/server-timing/resource_timing_idl.https.html) | Pass | 1 / 1 |  |  |
+| [`server_timing_header-parsing.https.html`](https://wpt.fyi/results/server-timing/server_timing_header-parsing.https.html) | Pass | 331 / 331 |  |  |
+| [`server_timing_headers_not_visible_in_fetch.https.html`](https://wpt.fyi/results/server-timing/server_timing_headers_not_visible_in_fetch.https.html) | Pass | 1 / 1 |  |  |
+| [`service_worker_idl.https.html`](https://wpt.fyi/results/server-timing/service_worker_idl.https.html) | Pass | 1 / 1 |  |  |
+| [`test_server_timing.https.html`](https://wpt.fyi/results/server-timing/test_server_timing.https.html) | Pass | 7 / 7 |  |  |

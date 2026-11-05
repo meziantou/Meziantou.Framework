@@ -304,11 +304,27 @@ public sealed class PerformanceTimelineTests : IDisposable
     [InlineData("a ; DUR = 3 ; Desc = \"quoted \\\" text\"", "a", 3d, "quoted \" text")]
     [InlineData("a;dur=1;dur=2;other=x", "a", 1d, "")]
     [InlineData("a;dur=invalid", "a", 0d, "")]
+    [InlineData("a;desc=\"unterminated", "a", 0d, "")]
+    [InlineData("a;desc=\"\\\"", "a", 0d, "")]
+    [InlineData("a;desc=\"\\", "a", 0d, "")]
     public void ServerTiming_Metric_IsParsed(string header, string name, double duration, string description)
     {
         var metric = Assert.Single(PerformanceServerTiming.Parse([new("Server-Timing", header)]));
 
         Assert.Equal((name, duration, description), (metric.Name, metric.Duration, metric.Description));
+    }
+
+    [Fact]
+    public void ServerTiming_CrossOriginNoCorsResponse_IsExposedWhenTheTimingAllowCheckPasses()
+    {
+        _loader.Resources["https://other.example/allowed.png"] = new DocumentResource(Array.Empty<byte>()) { Headers = [new("Content-Type", "image/png"), new("Timing-Allow-Origin", "*"), new("Server-Timing", "metric;dur=2")] };
+        _loader.Resources["https://other.example/denied.png"] = new DocumentResource(Array.Empty<byte>()) { Headers = [new("Content-Type", "image/png"), new("Server-Timing", "metric;dur=2")] };
+
+        var performance = Load("<img src='https://other.example/allowed.png'><img src='https://other.example/denied.png'>").DefaultView!.Performance;
+
+        var serverTiming = performance.GetEntriesByType("resource").Cast<PerformanceResourceTiming>().ToDictionary(entry => entry.Name, entry => entry.ServerTiming.Count, StringComparer.Ordinal);
+        Assert.Equal(1, serverTiming["https://other.example/allowed.png"]);
+        Assert.Equal(0, serverTiming["https://other.example/denied.png"]);
     }
 
     [Fact]

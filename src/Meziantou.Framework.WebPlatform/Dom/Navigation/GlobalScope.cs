@@ -130,7 +130,7 @@ public abstract partial class GlobalScope : EventTarget
     public Performance Performance => _performance ??= new Performance(this);
 
     /// <summary>The current high resolution time of the global object, in milliseconds relative to its time origin (https://w3c.github.io/hr-time/#dfn-current-high-resolution-time).</summary>
-    internal double GetCurrentHighResolutionTime() => ToRelativeHighResolutionTime(EventLoop.TimeProvider.GetTimestamp());
+    internal double GetCurrentHighResolutionTime() => ToRelativeHighResolutionTime(EventLoop.GetTimestamp());
 
     /// <summary>Converts a timestamp to milliseconds relative to the time origin, coarsened to 100 microseconds (https://w3c.github.io/hr-time/#dfn-coarsen-time).</summary>
     internal double ToRelativeHighResolutionTime(long timestamp)

@@ -1,0 +1,17 @@
+{
+  "device-posture/device-posture-change-event.https.html": {
+    "total": 1
+  },
+  "device-posture/device-posture-clear.https.html": {
+    "total": 1
+  },
+  "device-posture/device-posture-event-listener.https.html": {
+    "total": 1
+  },
+  "device-posture/device-posture-media-queries.https.html": {
+    "total": 1
+  },
+  "device-posture/idlharness.https.window.js": {
+    "total": 27
+  }
+}

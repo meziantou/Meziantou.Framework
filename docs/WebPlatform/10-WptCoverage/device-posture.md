@@ -9,24 +9,17 @@ description: "The results of the web-platform-tests of device-posture, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 5 | 5 | – |
+| [Stable](#stable-tests) | 5 | 5 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **0** | **5** | **5** | **–** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **REQUIRES**: 5
-  - `hardware`: 5
+| **All** | **5** | **5** | **0** | **100%** |
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`device-posture-change-event.https.html`](https://wpt.fyi/results/device-posture/device-posture-change-event.https.html) | Disabled | – | REQUIRES(hardware) | Device Posture API |
-| [`device-posture-clear.https.html`](https://wpt.fyi/results/device-posture/device-posture-clear.https.html) | Disabled | – | REQUIRES(hardware) | Device Posture API |
-| [`device-posture-event-listener.https.html`](https://wpt.fyi/results/device-posture/device-posture-event-listener.https.html) | Disabled | – | REQUIRES(hardware) | Device Posture API |
-| [`device-posture-media-queries.https.html`](https://wpt.fyi/results/device-posture/device-posture-media-queries.https.html) | Disabled | – | REQUIRES(hardware) | Device Posture API |
-| [`idlharness.https.window.js`](https://wpt.fyi/results/device-posture/idlharness.https.window.js) | Disabled | – | REQUIRES(hardware) | Device Posture API |
+| [`device-posture-change-event.https.html`](https://wpt.fyi/results/device-posture/device-posture-change-event.https.html) | Pass | 1 / 1 |  |  |
+| [`device-posture-clear.https.html`](https://wpt.fyi/results/device-posture/device-posture-clear.https.html) | Pass | 1 / 1 |  |  |
+| [`device-posture-event-listener.https.html`](https://wpt.fyi/results/device-posture/device-posture-event-listener.https.html) | Pass | 1 / 1 |  |  |
+| [`device-posture-media-queries.https.html`](https://wpt.fyi/results/device-posture/device-posture-media-queries.https.html) | Pass | 1 / 1 |  |  |
+| [`idlharness.https.window.js`](https://wpt.fyi/results/device-posture/idlharness.https.window.js) | Pass | 27 / 27 |  |  |

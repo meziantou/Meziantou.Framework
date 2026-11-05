@@ -3240,10 +3240,12 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.SystemClipboard? Clipboard { get => throw null; init { } }
         public System.Func<Meziantou.Framework.WebPlatform.Dom.CallbackContext, Meziantou.Framework.WebPlatform.Dom.ClipboardAccess, bool>? ClipboardPermission { get => throw null; init { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.CallbackContext, Meziantou.Framework.WebPlatform.Dom.Notification>? CloseNotification { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ComputePressureOptions? ComputePressure { get => throw null; init { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.CallbackContext, Meziantou.Framework.WebPlatform.Scripting.ConsoleMessage>? ConsoleMessage { get => throw null; init { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.CallbackContext, Meziantou.Framework.WebPlatform.Dom.ContentSecurityPolicyViolationReport>? ContentSecurityPolicyViolation { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.CookieJar? CookieJar { get => throw null; init { } }
         public bool DeclarativeRefreshEnabled { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.DevicePostureOptions? DevicePosture { get => throw null; init { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.CallbackContext, Meziantou.Framework.WebPlatform.Dom.Document>? DocumentActivated { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.DocumentLoader? DocumentLoader { get => throw null; init { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.CallbackContext, Meziantou.Framework.WebPlatform.Dom.Download>? DownloadStarted { get => throw null; init { } }
@@ -3254,6 +3256,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.WebPlatformFeatures? Features { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.FileSystemBackend? FileSystem { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.GeolocationProvider? Geolocation { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.IdleDetectionOptions? IdleDetection { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.IndexedDBBackend? IndexedDB { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.KeyboardLockOptions? KeyboardLock { get => throw null; init { } }
         public System.Collections.Generic.IReadOnlyList<string>? Languages { get => throw null; init { } }
@@ -3822,6 +3825,11 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public string Data { get => throw null; init { } }
     }
 
+    public sealed class ComputePressureOptions
+    {
+        public Meziantou.Framework.WebPlatform.Dom.PressureSourceProvider? Provider { get => throw null; init { } }
+    }
+
     public sealed class ContentSecurityPolicyViolationReport
     {
         public string BlockedUrl { get => throw null; }
@@ -4103,6 +4111,31 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public override string ToString() => throw null;
         public static bool operator ==(Meziantou.Framework.WebPlatform.Dom.DeviceDescriptor? left, Meziantou.Framework.WebPlatform.Dom.DeviceDescriptor? right) => throw null;
         public static bool operator !=(Meziantou.Framework.WebPlatform.Dom.DeviceDescriptor? left, Meziantou.Framework.WebPlatform.Dom.DeviceDescriptor? right) => throw null;
+    }
+
+    public sealed class DevicePosture : Meziantou.Framework.WebPlatform.Dom.EventTarget
+    {
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnChange { get => throw null; set { } }
+        public Meziantou.Framework.WebPlatform.Dom.DevicePostureType Type { get => throw null; }
+    }
+
+    public sealed class DevicePostureOptions
+    {
+        public Meziantou.Framework.WebPlatform.Dom.DevicePostureProvider? Provider { get => throw null; init { } }
+    }
+
+    public class DevicePostureProvider
+    {
+        public Meziantou.Framework.WebPlatform.Dom.DevicePostureType Posture { get => throw null; set { } }
+        public event System.EventHandler? PostureChanged;
+        public virtual Meziantou.Framework.WebPlatform.Dom.DevicePostureType GetPosture() => throw null;
+        protected void OnPostureChanged() { }
+    }
+
+    public enum DevicePostureType
+    {
+        Continuous = 0,
+        Folded = 1,
     }
 
     public enum DirectionSetting
@@ -7264,11 +7297,53 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public double TimeRemaining() => throw null;
     }
 
+    public sealed class IdleDetectionOptions
+    {
+        public Meziantou.Framework.WebPlatform.Dom.IdleStateProvider? Provider { get => throw null; init { } }
+    }
+
+    public sealed class IdleDetector : Meziantou.Framework.WebPlatform.Dom.EventTarget
+    {
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnChange { get => throw null; set { } }
+        public Meziantou.Framework.WebPlatform.Dom.ScreenIdleState? ScreenState { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.UserIdleState? UserState { get => throw null; }
+        public IdleDetector(Meziantou.Framework.WebPlatform.Dom.GlobalScope global) { }
+        public static System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.PermissionState> RequestPermission() => throw null;
+        public System.Threading.Tasks.Task Start(Meziantou.Framework.WebPlatform.Dom.IdleOptions? options = null) => throw null;
+    }
+
+    public sealed class IdleOptions
+    {
+        public Meziantou.Framework.WebPlatform.Dom.AbortSignal? Signal { get => throw null; set { } }
+        public ulong? Threshold { get => throw null; set { } }
+    }
+
     public delegate void IdleRequestCallback(Meziantou.Framework.WebPlatform.Dom.IdleDeadline deadline);
 
     public sealed class IdleRequestOptions
     {
         public uint? Timeout { get => throw null; init { } }
+    }
+
+    public class IdleStateProvider
+    {
+        public Meziantou.Framework.WebPlatform.Dom.IdleStatus Status { get => throw null; set { } }
+        public event System.EventHandler? StatusChanged;
+        public virtual Meziantou.Framework.WebPlatform.Dom.IdleStatus GetStatus() => throw null;
+        protected void OnStatusChanged() { }
+    }
+
+    public sealed class IdleStatus : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.IdleStatus>
+    {
+        public static Meziantou.Framework.WebPlatform.Dom.IdleStatus Default { get => throw null; }
+        public bool IsScreenLocked { get => throw null; init { } }
+        public System.DateTimeOffset? LastInteractionTime { get => throw null; init { } }
+        public bool Equals(Meziantou.Framework.WebPlatform.Dom.IdleStatus? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.WebPlatform.Dom.IdleStatus? left, Meziantou.Framework.WebPlatform.Dom.IdleStatus? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WebPlatform.Dom.IdleStatus? left, Meziantou.Framework.WebPlatform.Dom.IdleStatus? right) => throw null;
     }
 
     public sealed class ImageBitmap
@@ -8484,6 +8559,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public string AppVersion { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.Clipboard Clipboard { get => throw null; }
         public bool CookieEnabled { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.DevicePosture DevicePosture { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.Geolocation Geolocation { get => throw null; }
         public ulong HardwareConcurrency { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.Ink Ink { get => throw null; }
@@ -9328,6 +9404,68 @@ namespace Meziantou.Framework.WebPlatform.Dom
         Attachment = 2,
     }
 
+    public sealed class PressureObserver
+    {
+        public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.PressureSource> KnownSources { get => throw null; }
+        public PressureObserver(Meziantou.Framework.WebPlatform.Dom.PressureUpdateCallback callback) { }
+        public PressureObserver(Meziantou.Framework.WebPlatform.Dom.GlobalScope global, Meziantou.Framework.WebPlatform.Dom.PressureUpdateCallback callback) { }
+        public void Disconnect() { }
+        public System.Threading.Tasks.Task Observe(Meziantou.Framework.WebPlatform.Dom.PressureSource source, Meziantou.Framework.WebPlatform.Dom.PressureObserverOptions? options = null) => throw null;
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.PressureRecord> TakeRecords() => throw null;
+        public void Unobserve(Meziantou.Framework.WebPlatform.Dom.PressureSource source) { }
+    }
+
+    public sealed class PressureObserverOptions
+    {
+        public uint SampleInterval { get => throw null; set { } }
+    }
+
+    public sealed class PressureRecord
+    {
+        public double? OwnContributionEstimate { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.PressureSource Source { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.PressureState State { get => throw null; }
+        public double Time { get => throw null; }
+    }
+
+    public sealed class PressureSample : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.PressureSample>
+    {
+        public double? OwnContributionEstimate { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.PressureState State { get => throw null; init { } }
+        public PressureSample(Meziantou.Framework.WebPlatform.Dom.PressureState State) { }
+        public void Deconstruct(out Meziantou.Framework.WebPlatform.Dom.PressureState State) => throw null;
+        public bool Equals(Meziantou.Framework.WebPlatform.Dom.PressureSample? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.WebPlatform.Dom.PressureSample? left, Meziantou.Framework.WebPlatform.Dom.PressureSample? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WebPlatform.Dom.PressureSample? left, Meziantou.Framework.WebPlatform.Dom.PressureSample? right) => throw null;
+    }
+
+    public enum PressureSource
+    {
+        Cpu = 0,
+    }
+
+    public class PressureSourceProvider
+    {
+        public virtual Meziantou.Framework.WebPlatform.Dom.PressureSample? GetSample(Meziantou.Framework.WebPlatform.Dom.PressureSource source) => throw null;
+        public virtual bool IsSupported(Meziantou.Framework.WebPlatform.Dom.PressureSource source) => throw null;
+        protected void OnSampleChanged(Meziantou.Framework.WebPlatform.Dom.PressureSource source) { }
+        public void SetSample(Meziantou.Framework.WebPlatform.Dom.PressureSource source, Meziantou.Framework.WebPlatform.Dom.PressureSample? sample) { }
+        public void SetSupported(Meziantou.Framework.WebPlatform.Dom.PressureSource source, bool supported) { }
+    }
+
+    public enum PressureState
+    {
+        Nominal = 0,
+        Fair = 1,
+        Serious = 2,
+        Critical = 3,
+    }
+
+    public delegate void PressureUpdateCallback(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.PressureRecord> changes, Meziantou.Framework.WebPlatform.Dom.PressureObserver observer);
+
     public sealed class PrintOptions : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.PrintOptions>
     {
         public static Meziantou.Framework.WebPlatform.Dom.PrintOptions Default { get => throw null; }
@@ -9833,6 +9971,12 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public int Height { get => throw null; }
         public uint PixelDepth { get => throw null; }
         public int Width { get => throw null; }
+    }
+
+    public enum ScreenIdleState
+    {
+        Locked = 0,
+        Unlocked = 1,
     }
 
     public enum ScrollBehavior
@@ -12165,6 +12309,12 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool IsActive { get => throw null; }
     }
 
+    public enum UserIdleState
+    {
+        Active = 0,
+        Idle = 1,
+    }
+
     public sealed class UserInput
     {
         public Meziantou.Framework.WebPlatform.Dom.KeyboardInput Keyboard { get => throw null; }
@@ -12442,6 +12592,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool ClientHintsEnabled { get => throw null; init { } }
         public bool CloseWatcherEnabled { get => throw null; init { } }
         public bool CompressionStreamsEnabled { get => throw null; init { } }
+        public bool ComputePressureEnabled { get => throw null; init { } }
         public bool ContainerTimingEnabled { get => throw null; init { } }
         public bool CookieStoreEnabled { get => throw null; init { } }
         public bool CssParserApiEnabled { get => throw null; init { } }
@@ -12449,6 +12600,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool DeclarativePartialUpdatesEnabled { get => throw null; init { } }
         public bool DedicatedWorkersEnabled { get => throw null; init { } }
         public static Meziantou.Framework.WebPlatform.Dom.WebPlatformFeatures Default { get => throw null; }
+        public bool DevicePostureEnabled { get => throw null; init { } }
         public bool ElementTimingEnabled { get => throw null; init { } }
         public bool EventSourceEnabled { get => throw null; init { } }
         public bool EventTimingEnabled { get => throw null; init { } }
@@ -12457,6 +12609,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool FileSystemEnabled { get => throw null; init { } }
         public bool FullscreenEnabled { get => throw null; init { } }
         public bool GeolocationEnabled { get => throw null; init { } }
+        public bool IdleDetectionEnabled { get => throw null; init { } }
         public bool IndexedDBEnabled { get => throw null; init { } }
         public bool IntersectionObserverEnabled { get => throw null; init { } }
         public bool KeyboardLockEnabled { get => throw null; init { } }

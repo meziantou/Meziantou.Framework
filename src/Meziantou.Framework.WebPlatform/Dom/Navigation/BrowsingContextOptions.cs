@@ -593,6 +593,28 @@ public sealed partial class BrowsingContextOptions
     /// </summary>
     public KeyboardLockOptions? KeyboardLock { get; init; }
 
+    /// <summary>
+    /// Gets or sets the host hooks of the Compute Pressure API (https://w3c.github.io/compute-pressure/, <c>PressureObserver</c>):
+    /// <see cref="ComputePressureOptions.Provider"/> is the source of the pressure states of the device. The default is
+    /// null: the <c>cpu</c> source is supported, but it reports no state (the observers are never called).
+    /// </summary>
+    public ComputePressureOptions? ComputePressure { get; init; }
+
+    /// <summary>
+    /// Gets or sets the host hooks of the Idle Detection API (https://wicg.github.io/idle-detection/, <c>IdleDetector</c>):
+    /// <see cref="IdleDetectionOptions.Provider"/> is the source of the idle state of the user and of the screen. The
+    /// <c>idle-detection</c> permission is checked with <see cref="Permissions"/> and <see cref="RequestPermission"/>. The
+    /// default is null: the user is active and the screen is unlocked.
+    /// </summary>
+    public IdleDetectionOptions? IdleDetection { get; init; }
+
+    /// <summary>
+    /// Gets or sets the host hooks of the Device Posture API (https://w3c.github.io/device-posture/, <c>navigator.devicePosture</c>
+    /// and the <c>device-posture</c> media feature): <see cref="DevicePostureOptions.Provider"/> is the source of the posture
+    /// of the device. The default is null: the posture is <see cref="DevicePostureType.Continuous"/>.
+    /// </summary>
+    public DevicePostureOptions? DevicePosture { get; init; }
+
     /// <summary>The list of notifications (https://notifications.spec.whatwg.org/#list-of-notifications) of the browsing contexts. Lock it to use it.</summary>
     internal List<Notification> ShownNotifications { get; } = [];
 }

@@ -9,36 +9,36 @@ description: "The results of the web-platform-tests of idle-detection, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 10 | 10 | – |
-| [Tentative](#tentative-tests) | 0 | 2 | 2 | – |
+| [Stable](#stable-tests) | 7 | 10 | 0 | 70% |
+| [Tentative](#tentative-tests) | 1 | 2 | 0 | 50% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **0** | **12** | **12** | **–** |
+| **All** | **8** | **12** | **0** | **67%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **REQUIRES**: 12
-  - `hardware`: 12
+- **TEST BUG**: 1
+- **TEST RUNNER**: 3
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`idle-detection-allowed-by-permissions-policy-attribute-redirect-on-load.https.sub.html`](https://wpt.fyi/results/idle-detection/idle-detection-allowed-by-permissions-policy-attribute-redirect-on-load.https.sub.html) | Disabled | – | REQUIRES(hardware) | Idle Detection API |
-| [`idle-detection-allowed-by-permissions-policy-attribute.https.sub.html`](https://wpt.fyi/results/idle-detection/idle-detection-allowed-by-permissions-policy-attribute.https.sub.html) | Disabled | – | REQUIRES(hardware) | Idle Detection API |
-| [`idle-detection-allowed-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/idle-detection/idle-detection-allowed-by-permissions-policy.https.sub.html) | Disabled | – | REQUIRES(hardware) | Idle Detection API |
-| [`idle-detection-default-permissions-policy.https.sub.html`](https://wpt.fyi/results/idle-detection/idle-detection-default-permissions-policy.https.sub.html) | Disabled | – | REQUIRES(hardware) | Idle Detection API |
-| [`idle-detection-detached-frame.https.html`](https://wpt.fyi/results/idle-detection/idle-detection-detached-frame.https.html) | Disabled | – | REQUIRES(hardware) | Idle Detection API |
-| [`idle-detection-disabled-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/idle-detection/idle-detection-disabled-by-permissions-policy.https.sub.html) | Disabled | – | REQUIRES(hardware) | Idle Detection API |
-| [`idlharness-worker.https.window.js`](https://wpt.fyi/results/idle-detection/idlharness-worker.https.window.js) | Disabled | – | REQUIRES(hardware) | Idle Detection API |
-| [`idlharness.https.window.js`](https://wpt.fyi/results/idle-detection/idlharness.https.window.js) | Disabled | – | REQUIRES(hardware) | Idle Detection API |
-| [`interceptor.https.html`](https://wpt.fyi/results/idle-detection/interceptor.https.html) | Disabled | – | REQUIRES(hardware) | Idle Detection API |
-| [`page-visibility.https.html`](https://wpt.fyi/results/idle-detection/page-visibility.https.html) | Disabled | – | REQUIRES(hardware) | Idle Detection API |
+| [`idle-detection-allowed-by-permissions-policy-attribute-redirect-on-load.https.sub.html`](https://wpt.fyi/results/idle-detection/idle-detection-allowed-by-permissions-policy-attribute-redirect-on-load.https.sub.html) | Pass | 4 / 4 |  |  |
+| [`idle-detection-allowed-by-permissions-policy-attribute.https.sub.html`](https://wpt.fyi/results/idle-detection/idle-detection-allowed-by-permissions-policy-attribute.https.sub.html) | Pass | 4 / 4 |  |  |
+| [`idle-detection-allowed-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/idle-detection/idle-detection-allowed-by-permissions-policy.https.sub.html) | Pass | 6 / 6 |  |  |
+| [`idle-detection-default-permissions-policy.https.sub.html`](https://wpt.fyi/results/idle-detection/idle-detection-default-permissions-policy.https.sub.html) | Pass | 3 / 3 |  |  |
+| [`idle-detection-detached-frame.https.html`](https://wpt.fyi/results/idle-detection/idle-detection-detached-frame.https.html) | Pass | 1 / 1 |  |  |
+| [`idle-detection-disabled-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/idle-detection/idle-detection-disabled-by-permissions-policy.https.sub.html) | Fail | 4 / 6 | TEST BUG | expects a `SecurityError` (Chromium); the specification rejects `start()` with a `NotAllowedError` when the document is not allowed to use the `idle-detection` feature |
+| [`idlharness-worker.https.window.js`](https://wpt.fyi/results/idle-detection/idlharness-worker.https.window.js) | Pass | 22 / 22 |  |  |
+| [`idlharness.https.window.js`](https://wpt.fyi/results/idle-detection/idlharness.https.window.js) | Pass | 21 / 21 |  |  |
+| [`interceptor.https.html`](https://wpt.fyi/results/idle-detection/interceptor.https.html) | Fail | 0 / 10 | TEST RUNNER | needs the Chromium MojoJS mock of the idle detection service (`/resources/chromium/mock-idle-detection.js`, `expect(addMonitor)`); the idle state of the library is set by the host with `IdleStateProvider`, which the unit tests cover |
+| [`page-visibility.https.html`](https://wpt.fyi/results/idle-detection/page-visibility.https.html) | Fail | 0 / 1 | TEST RUNNER | needs the Chromium MojoJS mock of the idle detection service (`/resources/chromium/mock-idle-detection.js`, `expect(addMonitor)`); the idle state of the library is set by the host with `IdleStateProvider`, which the unit tests cover |
 
 ## Tentative tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`basics.tentative.https.window.js`](https://wpt.fyi/results/idle-detection/basics.tentative.https.window.js) | Disabled | – | REQUIRES(hardware) | Idle Detection API |
-| [`idle-permission.tentative.https.window.js`](https://wpt.fyi/results/idle-detection/idle-permission.tentative.https.window.js) | Disabled | – | REQUIRES(hardware) | Idle Detection API |
+| [`basics.tentative.https.window.js`](https://wpt.fyi/results/idle-detection/basics.tentative.https.window.js) | Pass | 12 / 12 |  |  |
+| [`idle-permission.tentative.https.window.js`](https://wpt.fyi/results/idle-detection/idle-permission.tentative.https.window.js) | Fail | 2 / 3 | TEST RUNNER | the runner dismisses the permission prompts, and the library answers a dismissed prompt with `denied`, so `IdleDetector.requestPermission()` resolves with `denied` instead of `prompt` |

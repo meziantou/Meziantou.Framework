@@ -16,6 +16,9 @@ internal enum CallbackBehavior
 
     /// <summary>The callback is invoked even when its realm is not fully active (e.g. the custom element reactions).</summary>
     RunWhenInactive = 4,
+
+    /// <summary>A callback whose realm is not fully active is not invoked and throws an AbortError (the update callbacks of the view transitions, as in Blink).</summary>
+    AbortWhenInactive = 8,
 }
 
 // The callback functions and the callback interfaces (https://webidl.spec.whatwg.org/#es-callback-function)
@@ -52,6 +55,9 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         {
             if ((behavior & CallbackBehavior.IgnoreInactive) != CallbackBehavior.None)
                 return Adapter.Undefined;
+
+            if ((behavior & CallbackBehavior.AbortWhenInactive) != CallbackBehavior.None)
+                throw ToJsException(new DomException("The document of the callback is not fully active", "AbortError"));
 
             throw ToJsException(new DomException("The document of the callback is not fully active", "InvalidStateError"));
         }

@@ -858,10 +858,7 @@
     "total": 1
   },
   "scroll-animations/view-timelines/fieldset-source.html": {
-    "total": 1,
-    "failures": {
-      "Fieldset is a valid source for a view timeline": "FAIL"
-    }
+    "total": 1
   },
   "scroll-animations/view-timelines/get-keyframes-with-timeline-offset.html": {
     "total": 6

@@ -244,10 +244,7 @@
     "total": 1
   },
   "css/css-animations/display-none-dont-cancel.tentative.html": {
-    "total": 5,
-    "failures": {
-      "Animating a variable of \"none\" which gets set to display elsewhere should not cancel the animation.": "FAIL"
-    }
+    "total": 5
   },
   "css/css-animations/display-none-prevents-starting-in-subtree.html": {
     "total": 1

@@ -447,6 +447,10 @@ internal sealed partial class WebIdlBindingsGenerator
             // https://html.spec.whatwg.org/multipage/canvas.html#dom-canvas-toblob: the callback is invoked with "report"
             behavior.Add("ReportExceptions");
         }
+        else if (delegateType == typeof(ViewTransitionUpdateCallback))
+        {
+            behavior.Add("AbortWhenInactive");
+        }
 
         var behaviorExpression = behavior.Count == 0 ? "global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None" : string.Join(" | ", behavior.Select(b => "global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior." + b));
 

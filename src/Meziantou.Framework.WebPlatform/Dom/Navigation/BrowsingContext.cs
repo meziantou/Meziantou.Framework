@@ -3197,6 +3197,14 @@ public sealed partial class BrowsingContext : IDisposable
 
         if (transition is not null && !IsDestroyed)
         {
+            // https://drafts.csswg.org/css-view-transitions-2/#setup-cross-document-view-transition: the old state is captured by
+            // the next rendering update of the old document, which runs the animation frame callbacks first (e.g. the ones that
+            // the pageswap listeners requested)
+            if (transition.Phase == ViewTransitionPhase.PendingCapture)
+            {
+                oldWindow.RunAnimationFrameCallbacks(EventLoop.TimeProvider.GetTimestamp());
+            }
+
             newDocument.InboundViewTransitionParams = oldDocument.CaptureOutboundViewTransition(transition);
         }
     }

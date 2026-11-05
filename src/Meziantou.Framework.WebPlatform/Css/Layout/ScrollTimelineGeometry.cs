@@ -51,7 +51,8 @@ internal static class ScrollTimelineGeometry
             if (ancestor.Kind == ContainerBoxKind.Viewport)
                 break;
 
-            if (ancestor.IsAnonymous || ancestor.Element is not { } ancestorElement || ancestor.PseudoElement is not null)
+            // The scroll container of a fieldset is its anonymous fieldset content box
+            if ((ancestor.IsAnonymous && !ancestor.IsFieldsetContent) || ancestor.ScrollingElement is not { } ancestorElement || ancestor.PseudoElement is not null)
                 continue;
 
             if (ReferenceEquals(ancestorElement, document.DocumentElement))

@@ -195,6 +195,35 @@
       resolve));
   };
 
+  // The virtual sensors (https://w3c.github.io/sensors/#automation) of the DeviceSensorProvider of the runner: the readings
+  // are JSON objects, parsed by the reading parsing algorithm of the sensor type
+  internal.create_virtual_sensor = function (sensor_type, sensor_params, context) {
+    const params = sensor_params || {};
+    const frequency = value => (value === undefined ? NaN : Number(value));
+    return new Promise((resolve, reject) => __wpt_create_virtual_sensor(
+      String(sensor_type),
+      params.connected === undefined ? true : !!params.connected,
+      frequency(params.minSamplingFrequency),
+      frequency(params.maxSamplingFrequency),
+      resolve,
+      (message) => reject(new Error(message))));
+  };
+
+  internal.update_virtual_sensor = function (sensor_type, reading, context) {
+    return new Promise((resolve, reject) => __wpt_update_virtual_sensor(String(sensor_type), JSON.stringify(reading), resolve, (message) => reject(new Error(message))));
+  };
+
+  internal.remove_virtual_sensor = function (sensor_type, context) {
+    return new Promise(resolve => __wpt_remove_virtual_sensor(String(sensor_type), resolve));
+  };
+
+  internal.get_virtual_sensor_information = function (sensor_type, context) {
+    return new Promise((resolve, reject) => __wpt_get_virtual_sensor_information(
+      String(sensor_type),
+      (requestedSamplingFrequency) => resolve({ requestedSamplingFrequency }),
+      (message) => reject(new Error(message))));
+  };
+
   // The virtual pressure sources (https://w3c.github.io/compute-pressure/#automation): the samples of the
   // PressureSourceProvider of the runner, set by a task (see __wpt_create_virtual_pressure_source)
   const pressureCommand = (command, ...args) => new Promise((resolve, reject) => command(...args, resolve, (message) => reject(new Error(message))));

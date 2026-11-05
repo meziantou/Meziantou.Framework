@@ -67,6 +67,12 @@ internal static class Binding_Window<TAdapter, TValue> where TAdapter : struct, 
     private static TValue Get_devicePixelRatio(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Window>(t, Binding); return r.FromNumber((double)o.DevicePixelRatio); }
     private static TValue Get_event(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Window>(t, Binding); return o.Event is { } value ? r.Wrap(value) : r.Adapter.Undefined; }
     private static TValue Get_external(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Window>(t, Binding); return r.Wrap(o.External); }
+    private static TValue Get_ondeviceorientation(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) => r.GetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "deviceorientation");
+    private static void Set_ondeviceorientation(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) => r.SetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "deviceorientation", v, isOnBeforeUnloadEventHandler: false);
+    private static TValue Get_ondeviceorientationabsolute(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) => r.GetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "deviceorientationabsolute");
+    private static void Set_ondeviceorientationabsolute(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) => r.SetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "deviceorientationabsolute", v, isOnBeforeUnloadEventHandler: false);
+    private static TValue Get_ondevicemotion(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) => r.GetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "devicemotion");
+    private static void Set_ondevicemotion(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) => r.SetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "devicemotion", v, isOnBeforeUnloadEventHandler: false);
     private static TValue Get_onabort(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) => r.GetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "abort");
     private static void Set_onabort(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) => r.SetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "abort", v, isOnBeforeUnloadEventHandler: false);
     private static TValue Get_onauxclick(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) => r.GetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "auxclick");
@@ -706,6 +712,9 @@ internal static class Binding_Window<TAdapter, TValue> where TAdapter : struct, 
         r.DefineReplaceableAttribute(instanceTarget, "devicePixelRatio", Get_devicePixelRatio);
         r.DefineReplaceableAttribute(instanceTarget, "event", Get_event);
         r.DefineReplaceableAttribute(instanceTarget, "external", Get_external);
+        if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "ondeviceorientation", Get_ondeviceorientation, Set_ondeviceorientation);
+        if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "ondeviceorientationabsolute", Get_ondeviceorientationabsolute, Set_ondeviceorientationabsolute);
+        if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "ondevicemotion", Get_ondevicemotion, Set_ondevicemotion);
         r.DefineAttribute(instanceTarget, "onabort", Get_onabort, Set_onabort);
         r.DefineAttribute(instanceTarget, "onauxclick", Get_onauxclick, Set_onauxclick);
         r.DefineAttribute(instanceTarget, "onbeforeinput", Get_onbeforeinput, Set_onbeforeinput);

@@ -460,6 +460,12 @@ public partial class Document
             batteryManager.OnDocumentVisible();
         }
 
+        // The sensor readings received while the document was hidden are delivered (https://w3c.github.io/sensors/#can-expose-sensor-readings)
+        if (visible && RelevantWindow is { SensorsOrNull: { } sensors } sensorsWindow && ReferenceEquals(sensorsWindow.Document, this))
+        {
+            sensors.OnDocumentVisible();
+        }
+
         // The keyboard layout that changed while the document was hidden is reported
         if (visible && RelevantWindow is { NavigatorOrNull.KeyboardOrNull: { } keyboard } keyboardWindow && ReferenceEquals(keyboardWindow.Document, this))
         {

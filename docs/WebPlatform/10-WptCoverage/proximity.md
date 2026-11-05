@@ -9,23 +9,22 @@ description: "The results of the web-platform-tests of proximity, and why the te
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 4 | 4 | – |
+| [Stable](#stable-tests) | 2 | 4 | 0 | 50% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **0** | **4** | **4** | **–** |
+| **All** | **2** | **4** | **0** | **50%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **REQUIRES**: 4
-  - `hardware`: 4
+- **TEST BUG**: 2
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`ProximitySensor-iframe-access.https.html`](https://wpt.fyi/results/proximity/ProximitySensor-iframe-access.https.html) | Disabled | – | REQUIRES(hardware) | ProximitySensor |
-| [`ProximitySensor.https.html`](https://wpt.fyi/results/proximity/ProximitySensor.https.html) | Disabled | – | REQUIRES(hardware) | ProximitySensor |
-| [`ProximitySensor_insecure_context.html`](https://wpt.fyi/results/proximity/ProximitySensor_insecure_context.html) | Disabled | – | REQUIRES(hardware) | ProximitySensor |
-| [`idlharness.https.window.js`](https://wpt.fyi/results/proximity/idlharness.https.window.js) | Disabled | – | REQUIRES(hardware) | ProximitySensor |
+| [`ProximitySensor-iframe-access.https.html`](https://wpt.fyi/results/proximity/ProximitySensor-iframe-access.https.html) | Error | 0 / 0 | TEST BUG | calls `run_generic_sensor_iframe_tests()` with the name of the sensor instead of the sensor data object that the current helpers expect, so `validate_sensor_data()` throws a `TypeError` |
+| [`ProximitySensor.https.html`](https://wpt.fyi/results/proximity/ProximitySensor.https.html) | Error | 0 / 0 | TEST BUG | calls `runGenericSensorTests()` with the arguments of a former version of the helpers and an undefined `verifyProximitySensorReading` function: the page throws a `ReferenceError` |
+| [`ProximitySensor_insecure_context.html`](https://wpt.fyi/results/proximity/ProximitySensor_insecure_context.html) | Pass | 1 / 1 |  |  |
+| [`idlharness.https.window.js`](https://wpt.fyi/results/proximity/idlharness.https.window.js) | Pass | 16 / 16 |  |  |

@@ -35,6 +35,8 @@ public sealed class WebPlatformFeaturesTests : IDisposable
           MediaSessionEnabled: typeof navigator.mediaSession + typeof MediaSession + typeof MediaMetadata + ('mediaSession' in navigator),
           PageLifecycleEnabled: String('onfreeze' in document) + ('onresume' in document) + ('wasDiscarded' in document),
           DocumentPolicyEnabled: String('policy' in HTMLIFrameElement.prototype),
+          SensorsEnabled: typeof Sensor + typeof SensorErrorEvent + typeof Accelerometer + typeof LinearAccelerationSensor + typeof GravitySensor + typeof Gyroscope + typeof Magnetometer + typeof UncalibratedMagnetometer + typeof AmbientLightSensor + typeof ProximitySensor + typeof OrientationSensor + typeof AbsoluteOrientationSensor + typeof RelativeOrientationSensor,
+          DeviceOrientationEnabled: typeof DeviceOrientationEvent + typeof DeviceMotionEvent + typeof DeviceMotionEventAcceleration + typeof DeviceMotionEventRotationRate + ('ondeviceorientation' in window) + ('ondeviceorientationabsolute' in window) + ('ondevicemotion' in window),
           NetworkInformationEnabled: typeof navigator.connection + typeof NetworkInformation + ('connection' in navigator),
           DeviceMemoryEnabled: typeof navigator.deviceMemory + ('deviceMemory' in navigator),
           GlobalPrivacyControlEnabled: typeof navigator.globalPrivacyControl + ('globalPrivacyControl' in navigator),

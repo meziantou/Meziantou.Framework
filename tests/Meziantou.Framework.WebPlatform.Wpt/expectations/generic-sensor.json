@@ -1,0 +1,11 @@
+{
+  "generic-sensor/SensorErrorEvent-constructor.https.html": {
+    "total": 2
+  },
+  "generic-sensor/generic-sensor-permission.https.html": {
+    "total": 8
+  },
+  "generic-sensor/idlharness.https.window.js": {
+    "total": 36
+  }
+}

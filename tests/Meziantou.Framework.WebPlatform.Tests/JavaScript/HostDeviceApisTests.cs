@@ -437,7 +437,9 @@ public sealed class HostDeviceApisTests : IDisposable
         await RunAsync(document, "navigator.geolocation.getCurrentPosition(onPosition, onError, { timeout: 50 })");
 
         Assert.Equal("error 3 TIMEOUT", Run(document, "done()"));
-        Assert.True(provider.WasCanceled);
+
+        // The provider observes the cancellation on another thread, possibly after the error callback
+        await provider.Canceled.WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -486,7 +488,9 @@ public sealed class HostDeviceApisTests : IDisposable
 
     private sealed class SlowGeolocationProvider : GeolocationProvider
     {
-        public bool WasCanceled { get; private set; }
+        private readonly TaskCompletionSource _canceled = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public Task Canceled => _canceled.Task;
 
         public override async ValueTask<GeolocationReading?> GetPositionAsync(GeolocationRequest request, CancellationToken cancellationToken)
         {
@@ -496,7 +500,7 @@ public sealed class HostDeviceApisTests : IDisposable
             }
             catch (OperationCanceledException)
             {
-                WasCanceled = true;
+                _canceled.TrySetResult();
                 throw;
             }
 

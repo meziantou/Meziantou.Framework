@@ -68,7 +68,7 @@ public static partial class UriFuzzTargets
                 FuzzAssert.True(ReferenceEquals(expected, collection.FindPattern(url)), $"FindPattern(string) and FindPattern(string, null) disagree on {input}");
                 FuzzAssert.Equal(FormatResult(expected?.Match(url)), FormatResult(collection.Match(url)), $"Match(string) and Match(string, null) disagree on {input}");
 
-                if (System.Uri.TryCreate(url, UriKind.Absolute, out var uri))
+                if (TryCreateSystemUri(url, out var uri))
                 {
                     var expectedUri = CheckCollection(collection, input + " (Uri)", pattern => pattern.IsMatch(uri), pattern => pattern.Match(uri), collection.IsMatch(uri), () => collection.FindPattern(uri), collection.Match(uri));
 

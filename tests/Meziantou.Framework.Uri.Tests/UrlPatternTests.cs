@@ -1729,6 +1729,20 @@ public sealed class UrlPatternTests
     }
 
     [Fact]
+    public void Create_RepeatedGroupWhoseTextIsEmpty_SeparatesTheTextAroundIt()
+    {
+        // "{\r}*" is a group whose text canonicalizes to nothing, which is written "{}*", as in the spec. It ends the text
+        // before it, so "%2e%2e" is canonicalized alone and is not a ".." segment. "{}*" is read back as no part, so the
+        // two texts become one, and the pattern created from the pattern strings resolves the ".." segment.
+        var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = "/a/{\r}*%2e%2e" });
+        var fromPatternStrings = UrlPattern.Create(new UrlPatternInit { Pathname = pattern.Pathname });
+
+        Assert.Equal("/a/{}*%2e%2e", pattern.Pathname);
+        Assert.Equal("/a/%2e%2e", fromPatternStrings.Pathname);
+        Assert.Equal("/", UrlPattern.Create(new UrlPatternInit { Pathname = fromPatternStrings.Pathname }).Pathname);
+    }
+
+    [Fact]
     public void Create_PathnameLiteralAfterAGroup_DoesNotGainASeparator()
     {
         // The callback runs on each fixed-text part, so ".json" is canonicalized on its own. The spec

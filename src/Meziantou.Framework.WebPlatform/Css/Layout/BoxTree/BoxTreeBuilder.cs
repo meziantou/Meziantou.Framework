@@ -1822,14 +1822,16 @@ internal sealed partial class BoxTreeBuilder
         {
             var text = run.Text;
             var preservesBreaks = run.Style.Layout.WhiteSpaceCollapse is WhiteSpaceCollapse.Preserve or WhiteSpaceCollapse.PreserveBreaks or WhiteSpaceCollapse.BreakSpaces;
+            var preservesSpaces = run.Style.Layout.WhiteSpaceCollapse is WhiteSpaceCollapse.Preserve or WhiteSpaceCollapse.PreserveSpaces or WhiteSpaceCollapse.BreakSpaces;
             if (!HasContent && TextRun.IsWhiteSpace(text))
             {
-                // The white space that starts the line is not rendered; a preserved line feed ends the first line
+                // The white space that starts the line is not rendered (the preserved spaces of a text without letter are not
+                // part of the first-letter text of the next text); a preserved line feed ends the first line
                 return !preservesBreaks || !text.Contains('\n');
             }
 
             var letterFound = LetterFound;
-            var result = ScanFirstLetterText(text, isLineStart: !HasContent, preservesBreaks, IsDutch(run.Element), ref letterFound, out var start, out var end);
+            var result = ScanFirstLetterText(text, isLineStart: !HasContent, preservesBreaks, preservesSpaces, IsDutch(run.Element), ref letterFound, out var start, out var end);
             LetterFound = letterFound;
             HasContent = true;
             if (end > start)
@@ -1923,29 +1925,50 @@ internal sealed partial class BoxTreeBuilder
     internal static (int Start, int End)? GetFirstLetterRange(ReadOnlySpan<char> text, bool isDutch = false)
     {
         var letterFound = false;
-        ScanFirstLetterText(text, isLineStart: true, preservesBreaks: false, isDutch, ref letterFound, out var start, out var end);
+        ScanFirstLetterText(text, isLineStart: true, preservesBreaks: false, preservesSpaces: false, isDutch, ref letterFound, out var start, out var end);
         return letterFound ? (start, end) : null;
     }
 
     /// <summary>
     /// Scans a text for a part of the first-letter text (https://drafts.csswg.org/css-pseudo-4/#first-letter-pattern). Before
-    /// the letter (<paramref name="letterFound"/> is false): the white space that starts the line is skipped, then the
-    /// punctuation (any P* category) and the spaces (Zs, except U+3000) that precede the letter are included, then the
-    /// typographic letter unit: the grapheme cluster of a letter, a number or a symbol (with its combining marks, or an Indic
+    /// the letter (<paramref name="letterFound"/> is false): the white space that starts the line is skipped (the preserved
+    /// spaces and tabs are included), then the punctuation (any P* category) and the spaces (Zs, except U+3000) that precede
+    /// the letter are included, then the typographic letter unit: the grapheme cluster of a letter, a number or a symbol (with its combining marks, or an Indic
     /// conjunct; a control character is rendered as a symbol, https://drafts.csswg.org/css-text-4/#white-space-processing),
     /// or the Dutch digraph IJ. After the letter: the punctuation other than the opening punctuation and the dashes (Pc, Pe,
     /// Pi, Pf, Po), with the typographic spaces before it (Zs other than U+3000 and the word separators). The punctuation
     /// characters are grapheme clusters too. Returns whether the range reaches the end of the text, so that the first-letter
     /// text may continue in the next text.
     /// </summary>
-    private static bool ScanFirstLetterText(ReadOnlySpan<char> text, bool isLineStart, bool preservesBreaks, bool isDutch, ref bool letterFound, out int start, out int end)
+    private static bool ScanFirstLetterText(ReadOnlySpan<char> text, bool isLineStart, bool preservesBreaks, bool preservesSpaces, bool isDutch, ref bool letterFound, out int start, out int end)
     {
         var i = 0;
         start = 0;
         end = 0;
         if (!letterFound)
         {
-            if (isLineStart)
+            if (preservesSpaces)
+            {
+                // The preserved spaces and tabs that precede the letter are rendered: they are part of the first-letter text, as
+                // in Chrome (a preserved line feed ends the first line)
+                while (i < text.Length && text[i] is ' ' or '\t')
+                {
+                    i++;
+                }
+
+                if (i < text.Length && text[i] is '\n' or '\r' or '\f')
+                {
+                    end = 0;
+                    return false;
+                }
+
+                if (i >= text.Length)
+                {
+                    end = i;
+                    return true;
+                }
+            }
+            else if (isLineStart)
             {
                 while (i < text.Length && text[i] is ' ' or '\t' or '\n' or '\r' or '\f')
                 {
@@ -1957,7 +1980,11 @@ internal sealed partial class BoxTreeBuilder
                 }
             }
 
-            start = i;
+            if (!preservesSpaces)
+            {
+                start = i;
+            }
+
             end = i;
             while (i < text.Length && GetCategory(text, i) is var category && (IsPunctuation(category) || (category == UnicodeCategory.SpaceSeparator && text[i] != '\U00003000')))
             {

@@ -945,6 +945,8 @@ public sealed class InlineFormattingContextTests : IDisposable
     [InlineData("", "<span style='white-space: pre'>a\n\nb</span>", 30)] // A box that contains preserved white space is not subject to the quirk: the empty line of a preserved segment break
     [InlineData("", "<span style='white-space: pre; font-size: 5px'>a\n\nb</span>", 15)]
     [InlineData("<!DOCTYPE html>", "<span style='white-space: pre; font-size: 20px'>a\n\nb</span>", 60)] // The span has a fragment on its empty line
+    [InlineData("", "<span style='white-space: pre-line; line-height: 30px'>\n</span>", 30)] // A box that only contains a preserved segment break
+    [InlineData("", "<div style='white-space: pre-line'><span style='line-height: 30px'>\n</span></div>", 30)]
     public void Quirks_LineHeightCalculation_EmptyBoxes(string doctype, string html, double height)
     {
         var document = Load(doctype + "<style>body { margin: 0; font: 10px/1 Ahem }</style><div id=d>" + html + "</div>");

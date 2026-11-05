@@ -225,7 +225,9 @@ decides when, see [Incremental update](#incremental-update)).
   punctuation other than the opening punctuation and the dashes, with the typographic spaces before it (not the word
   separators). The letter unit is the extended grapheme cluster of a letter, a number or a symbol (as Chrome): its
   combining marks, and the Indic conjuncts (UAX #29 rule GB9c); a control character, which is rendered as a symbol; and
-  the digraph IJ when the content language is Dutch. When the punctuation and the letter are not in the same text run
+  the digraph IJ when the content language is Dutch. The preserved spaces and tabs that start the line (`white-space:
+  pre`, `pre-wrap`, `break-spaces`) are part of the first-letter text, as in Chrome; the tabs of an initial letter use
+  the tab stops of its block container. When the punctuation and the letter are not in the same text run
   (the quote of a `::before`, the text of an inline box), the box wraps the part of the first run only, as in the
   browsers (the specification leaves it to the user agent): the punctuation alone, when a letter follows it in another
   run. The `::first-letter` is

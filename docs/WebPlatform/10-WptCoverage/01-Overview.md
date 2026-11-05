@@ -50,15 +50,15 @@ The features of `REQUIRES`:
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 25,910 | 29,691 | 2,350 | 95% |
 | [Tentative](#tentative-tests) | 1,339 | 3,074 | 709 | 57% |
-| [Reftests](#reftests) | 27,901 | 29,220 | 173 | 96% |
-| **All** | **55,150** | **61,985** | **3,232** | **94%** |
+| [Reftests](#reftests) | 27,903 | 29,220 | 173 | 96% |
+| **All** | **55,152** | **61,985** | **3,232** | **94%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 308
-- **TEST BUG**: 1,010
+- **BUG**: 304
+- **TEST BUG**: 1,012
 - **NOT IMPLEMENTED**: 4,413
 - **REQUIRES**: 927
   - `hardware`: 730
@@ -629,7 +629,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`css/css-highlight-api`](css/css-highlight-api.md#reftests) | 112 | 118 | 0 | 95% |
 | [`css/css-image-animation`](css/css-image-animation.md#reftests) | 0 | 22 | 22 | – |
 | [`css/css-images`](css/css-images.md#reftests) | 466 | 476 | 0 | 98% |
-| [`css/css-inline`](css/css-inline.md#reftests) | 189 | 199 | 0 | 95% |
+| [`css/css-inline`](css/css-inline.md#reftests) | 191 | 199 | 0 | 96% |
 | [`css/css-layout-api`](css/css-layout-api.md#reftests) | 128 | 135 | 0 | 95% |
 | [`css/css-lists`](css/css-lists.md#reftests) | 163 | 182 | 0 | 90% |
 | [`css/css-logical`](css/css-logical.md#reftests) | 6 | 6 | 0 | 100% |
@@ -725,4 +725,4 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`webgl`](webgl.md#reftests) | 0 | 2 | 0 | 0% |
 | [`webvtt`](webvtt.md#reftests) | 182 | 251 | 0 | 73% |
 | [`xml`](xml.md#reftests) | 0 | 3 | 3 | – |
-| **Total (130 sections)** | **27,901** | **29,220** | **173** | **96%** |
+| **Total (130 sections)** | **27,903** | **29,220** | **173** | **96%** |

@@ -107,6 +107,22 @@ internal sealed partial class DisplayListRasterizer
                     region = new Meziantou.Framework.Imaging.Rectangle(left, top, right - left, bottom - top);
                 }
 
+                if (imageShader.ScalesTiles && region is null && (imageShader.SpreadX == SpreadMode.Repeat || imageShader.SpreadY == SpreadMode.Repeat)
+                    && (deviceScaleX != 1 || deviceScaleY != 1) && IsWholeNumber(image.Width * deviceScaleX) && IsWholeNumber(image.Height * deviceScaleY))
+                {
+                    // The tiles of a scaled image that cover whole pixels: the image scaled alone (its edges are interpolated with
+                    // the pixels of the image only, as the edges of the image of a replaced box), repeated pixel for pixel
+                    var tile = new RectangleD(0, 0, image.Width / pixelScaleX, image.Height / pixelScaleY);
+                    var tileBrush = new D.ImageBrush(frame)
+                    {
+                        Transform = toNatural,
+                        WrapMode = D.ImageWrapMode.Pad,
+                        Sampling = GetSampling(imageShader.Sampling, deviceScaleX, deviceScaleY),
+                    };
+
+                    return CreatePattern(tile, 0, 0, ToWrapMode(imageShader.SpreadX), ToWrapMode(imageShader.SpreadY), transform, canvas => canvas.FillRectangle(tileBrush, tile), opacity, composite, blend);
+                }
+
                 return new D.ImageBrush(frame)
                 {
                     Transform = toNatural.Then(transform),
@@ -174,6 +190,8 @@ internal sealed partial class DisplayListRasterizer
         }
 
         static bool IsTileSize(double value) => value > 0 && value <= PathConversions.MaxCoordinate;
+
+        static bool IsWholeNumber(double value) => value is >= 1 and <= PathConversions.MaxCoordinate && Math.Abs(value - Math.Round(value, MidpointRounding.AwayFromZero)) < 1e-6;
     }
 
     /// <summary>

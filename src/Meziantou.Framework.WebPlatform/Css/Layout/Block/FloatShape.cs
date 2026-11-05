@@ -89,12 +89,22 @@ internal sealed class PolygonShape : FloatShape
 {
     private readonly (double X, double Y)[][] _contours;
     private readonly double _margin;
+    private readonly bool _includesBandEdges;
 
     /// <summary>Creates the float area of closed polygons (a <c>polygon()</c>, or the flattened subpaths of a <c>path()</c> or a <c>shape()</c>).</summary>
-    public PolygonShape((double X, double Y)[][] contours, double margin)
+    /// <param name="contours">The closed polygons.</param>
+    /// <param name="margin">The <c>shape-margin</c>.</param>
+    /// <param name="includesBandEdges">
+    /// Whether the edges that touch the block-start or the block-end of a band that overlaps the bounding box of the polygons
+    /// are in the band: the contour of a box whose corners are shaped by <c>corner-shape</c> is measured at the two ends of the
+    /// band, as the boxes with rounded corners (an arm of the zero-width cross that four notches leave shortens the lines on
+    /// both of its sides, WPT css/css-borders/corner-shape/corner-shape-outside-right.html).
+    /// </param>
+    public PolygonShape((double X, double Y)[][] contours, double margin, bool includesBandEdges = false)
     {
         _contours = contours;
         _margin = margin;
+        _includesBandEdges = includesBandEdges;
     }
 
     public override bool TryGetLineExtent(double blockStart, double blockEnd, out double lineLeft, out double lineRight)
@@ -102,16 +112,34 @@ internal sealed class PolygonShape : FloatShape
         lineLeft = double.PositiveInfinity;
         lineRight = double.NegativeInfinity;
         var found = false;
+        var includesBandEdges = _includesBandEdges && _margin <= 0 && blockEnd > blockStart && OverlapsBoundingBox(blockStart, blockEnd);
         foreach (var vertices in _contours)
         {
-            found |= ExtendWithContour(vertices, blockStart, blockEnd, ref lineLeft, ref lineRight);
+            found |= ExtendWithContour(vertices, blockStart, blockEnd, includesBandEdges, ref lineLeft, ref lineRight);
         }
 
         return found;
     }
 
+    /// <summary>Returns whether the band overlaps the bounding box of the polygons (an edge of the box that only touches the band is not in it).</summary>
+    private bool OverlapsBoundingBox(double blockStart, double blockEnd)
+    {
+        var top = double.PositiveInfinity;
+        var bottom = double.NegativeInfinity;
+        foreach (var vertices in _contours)
+        {
+            foreach (var vertex in vertices)
+            {
+                top = Math.Min(top, vertex.Y);
+                bottom = Math.Max(bottom, vertex.Y);
+            }
+        }
+
+        return blockStart < bottom && blockEnd > top;
+    }
+
     /// <summary>Extends the extent with the edges of a closed polygon in the band.</summary>
-    private bool ExtendWithContour((double X, double Y)[] vertices, double blockStart, double blockEnd, ref double lineLeft, ref double lineRight)
+    private bool ExtendWithContour((double X, double Y)[] vertices, double blockStart, double blockEnd, bool includesBandEdges, ref double lineLeft, ref double lineRight)
     {
         var found = false;
         for (var i = 0; i < vertices.Length; i++)
@@ -129,7 +157,7 @@ internal sealed class PolygonShape : FloatShape
             // band: it is in the edges that continue after it
             var low = Math.Min(p.Y, q.Y);
             var high = Math.Max(p.Y, q.Y);
-            if (blockEnd > blockStart ? high <= blockStart || low >= blockEnd : high <= blockStart || low > blockStart)
+            if (includesBandEdges ? high < blockStart || low > blockEnd : blockEnd > blockStart ? high <= blockStart || low >= blockEnd : high <= blockStart || low > blockStart)
                 continue;
 
             found = true;
@@ -350,7 +378,7 @@ internal static class FloatShapes
                     vertices[i] = mapping.Map(contourPolygon[i].X, contourPolygon[i].Y);
                 }
 
-                return new PolygonShape([vertices], shapeMargin);
+                return new PolygonShape([vertices], shapeMargin, includesBandEdges: true);
             }
 
             return mapping.CreateRoundedRectangle(rect, radii ?? default, shapeMargin);

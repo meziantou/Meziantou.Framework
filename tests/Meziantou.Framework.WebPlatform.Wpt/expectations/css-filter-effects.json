@@ -600,7 +600,7 @@
     "reftest": "PASS"
   },
   "css/filter-effects/fecolormatrix-display-p3.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/filter-effects/fecolormatrix-negative.html": {
     "reftest": "PASS"

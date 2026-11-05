@@ -645,7 +645,19 @@ internal sealed partial class InlineLayoutAlgorithm
         if (_blockSpaceAdvance is { } advance)
             return advance;
 
-        var style = _block.Style;
+        // The box of an initial letter is laid out as a block container, but it is an inline-level box of its line (as in
+        // Chrome, the tabs of the ::first-letter use the space of the block container of the line)
+        var block = _block;
+        while (block.InitialLetter is not null && block.Parent is { } parent)
+        {
+            block = parent;
+            while (block.IsInlineBox && block.Parent is { } ancestor)
+            {
+                block = ancestor;
+            }
+        }
+
+        var style = block.Style;
         advance = TextShaper.MeasureWidth(" ", style.Fonts, GetShapingOptions(style, isRightToLeft: false));
         _blockSpaceAdvance = advance;
         return advance;

@@ -136,10 +136,10 @@ internal sealed class SqliteCacheStorageBackend : CacheStorageBackend, IDisposab
         return new string(chars);
     }
 
-    private sealed record StoredRequest(string Method, string Url, List<string[]> Headers, string Mode, string Credentials, string Cache, string Redirect, string Integrity, string Referrer, string ReferrerPolicy)
+    private sealed record StoredRequest(string Method, string Url, List<string[]> Headers, string Mode, string Credentials, string Cache, string Redirect, string Integrity, string Referrer, string ReferrerPolicy, bool IsReloadNavigation = false, bool IsHistoryNavigation = false)
     {
         public static StoredRequest From(CachedRequest request)
-            => new(request.Method, request.Url, [.. request.Headers.Select(header => new[] { header.Key, header.Value })], request.Mode, request.Credentials, request.Cache, request.Redirect, request.Integrity, request.Referrer, request.ReferrerPolicy);
+            => new(request.Method, request.Url, [.. request.Headers.Select(header => new[] { header.Key, header.Value })], request.Mode, request.Credentials, request.Cache, request.Redirect, request.Integrity, request.Referrer, request.ReferrerPolicy, request.IsReloadNavigation, request.IsHistoryNavigation);
 
         public CachedRequest ToCachedRequest() => new()
         {
@@ -153,6 +153,8 @@ internal sealed class SqliteCacheStorageBackend : CacheStorageBackend, IDisposab
             Integrity = Integrity,
             Referrer = Referrer,
             ReferrerPolicy = ReferrerPolicy,
+            IsReloadNavigation = IsReloadNavigation,
+            IsHistoryNavigation = IsHistoryNavigation,
         };
     }
 

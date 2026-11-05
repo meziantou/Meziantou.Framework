@@ -892,19 +892,13 @@
     "total": 1
   },
   "shadow-dom/focus-navigation/tentative/focus-navigation-scroller-interactive-child.html": {
-    "total": 1,
-    "failures": {
-      "While focusing a keyboard-focusable scroller, adding interactive content should not cancel focusability": "FAIL"
-    }
+    "total": 1
   },
   "shadow-dom/focus-navigation/tentative/focus-navigation-scroller-tabindex.html": {
     "total": 1
   },
   "shadow-dom/focus-navigation/tentative/focus-scroller-layout-update.html": {
-    "total": 1,
-    "failures": {
-      "When checking that element is a scroller, layout information should be up to date.": "FAIL"
-    }
+    "total": 1
   },
   "shadow-dom/focus-within-shadow.html": {
     "total": 1

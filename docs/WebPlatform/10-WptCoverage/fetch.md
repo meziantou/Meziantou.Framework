@@ -9,17 +9,17 @@ description: "The results of the web-platform-tests of fetch, and why the tests 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 331 | 408 | 1 | 81% |
+| [Stable](#stable-tests) | 332 | 408 | 1 | 82% |
 | [Tentative](#tentative-tests) | 14 | 77 | 1 | 18% |
 | [Reftests](#reftests) | 9 | 11 | 0 | 82% |
-| **All** | **354** | **496** | **2** | **72%** |
+| **All** | **355** | **496** | **2** | **72%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 5
-- **TEST BUG**: 22
+- **BUG**: 2
+- **TEST BUG**: 24
 - **NOT IMPLEMENTED**: 91
 - **REQUIRES**: 3
   - `layout`: 2
@@ -36,7 +36,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`api/abort/general.any.js`](https://wpt.fyi/results/fetch/api/abort/general.any.js) | Pass | 183 / 183 |  |  |
 | [`api/abort/keepalive.html`](https://wpt.fyi/results/fetch/api/abort/keepalive.html) | Pass | 2 / 2 |  |  |
 | [`api/abort/request.any.js`](https://wpt.fyi/results/fetch/api/abort/request.any.js) | Pass | 54 / 54 |  |  |
-| [`api/abort/serviceworker-intercepted.https.html`](https://wpt.fyi/results/fetch/api/abort/serviceworker-intercepted.https.html) | Timeout | 10 / 12 | BUG | aborting a fetch while its fetch event is handled does not abort `event.request.signal` in the service worker, so `sw-intercept-abort.js` never responds |
+| [`api/abort/serviceworker-intercepted.https.html`](https://wpt.fyi/results/fetch/api/abort/serviceworker-intercepted.https.html) | Timeout | 10 / 12 | TEST BUG | the iframe of the test navigates to the scope of `sw-intercept-abort.js`, whose fetch event of the navigation request waits for the abort of its signal: the iframe never loads, so `with_iframe()` never resolves and the test times out (as in the browsers on wpt.fyi, 10 of 12 subtests with a TIMEOUT). The signal of the request of the fetch event is aborted with the serialized abort reason of the fetch |
 | [`api/basic/accept-header.any.js`](https://wpt.fyi/results/fetch/api/basic/accept-header.any.js) | Pass | 12 / 12 |  |  |
 | [`api/basic/block-mime-as-script.html`](https://wpt.fyi/results/fetch/api/basic/block-mime-as-script.html) | Pass | 22 / 22 |  |  |
 | [`api/basic/conditional-get.any.js`](https://wpt.fyi/results/fetch/api/basic/conditional-get.any.js) | Pass | 3 / 3 |  |  |
@@ -253,7 +253,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`cross-origin-resource-policy/iframe-loads.html`](https://wpt.fyi/results/fetch/cross-origin-resource-policy/iframe-loads.html) | Pass | 1 / 1 |  |  |
 | [`cross-origin-resource-policy/image-loads.html`](https://wpt.fyi/results/fetch/cross-origin-resource-policy/image-loads.html) | Pass | 6 / 6 |  |  |
 | [`cross-origin-resource-policy/scheme-restriction.any.js`](https://wpt.fyi/results/fetch/cross-origin-resource-policy/scheme-restriction.any.js) | Fail | 0 / 2 | TEST BUG | the test expects `Cross-Origin-Resource-Policy: same-site` to block a no-cors request from an `http:` page to a same-site `https:` URL, but the cross-origin resource policy internal check of the Fetch Standard allows it: the origins are schemelessly same site, and only an `https:` request origin requires an `https:` response |
-| [`cross-origin-resource-policy/scheme-restriction.https.window.js`](https://wpt.fyi/results/fetch/cross-origin-resource-policy/scheme-restriction.https.window.js) | Fail | 0 / 1 | BUG | the mixed-content `<img>` (to be upgraded to `https:`) fires `error` and never reaches `image.py` |
+| [`cross-origin-resource-policy/scheme-restriction.https.window.js`](https://wpt.fyi/results/fetch/cross-origin-resource-policy/scheme-restriction.https.window.js) | Fail | 0 / 1 | TEST BUG | the mixed-content `<img>` of `HTTP_REMOTE_ORIGIN` is upgraded to `https:` on the same port (the port of the HTTP server, https://w3c.github.io/webappsec-mixed-content/#upgrade-algorithm only changes port 80), where no HTTPS server listens: the image fires `error` (it fails in the browsers on wpt.fyi too) |
 | [`cross-origin-resource-policy/script-loads.html`](https://wpt.fyi/results/fetch/cross-origin-resource-policy/script-loads.html) | Pass | 6 / 6 |  |  |
 | [`cross-origin-resource-policy/syntax.any.js`](https://wpt.fyi/results/fetch/cross-origin-resource-policy/syntax.any.js) | Pass | 14 / 14 |  |  |
 | [`data-urls/base64.any.js`](https://wpt.fyi/results/fetch/data-urls/base64.any.js) | Pass | 243 / 243 |  |  |
@@ -424,7 +424,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`redirect-navigate/302-found-post.html`](https://wpt.fyi/results/fetch/redirect-navigate/302-found-post.html) | Fail | 0 / 1 | TEST RUNNER | `fetch/redirect-navigate/302-found-post-handler.py` is not emulated (the frame shows a 404 page of another origin) |
 | [`redirect-navigate/preserve-fragment.html`](https://wpt.fyi/results/fetch/redirect-navigate/preserve-fragment.html) | Pass | 120 / 120 |  |  |
 | [`redirects/data.window.js`](https://wpt.fyi/results/fetch/redirects/data.window.js) | Pass | 3 / 3 |  |  |
-| [`redirects/subresource-fragments.html`](https://wpt.fyi/results/fetch/redirects/subresource-fragments.html) | Fail | 2 / 4 | BUG | the document of an SVG image has the URL of the request: the fragment of the `Location` header of a redirect is not used for `:target` |
+| [`redirects/subresource-fragments.html`](https://wpt.fyi/results/fetch/redirects/subresource-fragments.html) | Pass | 4 / 4 |  |  |
 | [`security/1xx-response.any.js`](https://wpt.fyi/results/fetch/security/1xx-response.any.js) | Fail | 2 / 8 | TEST RUNNER | the `pipe=status(100)`/`103`/`199` responses are delivered as final responses (an HTTP client treats 1xx as interim and then fails) |
 | [`security/canvas-tainted-serviceworker-passthrough-redirect.https.html`](https://wpt.fyi/results/fetch/security/canvas-tainted-serviceworker-passthrough-redirect.https.html) | Pass | 1 / 1 |  |  |
 | [`security/dangling-markup/dangling-markup-mitigation-allowed-apis.https.html`](https://wpt.fyi/results/fetch/security/dangling-markup/dangling-markup-mitigation-allowed-apis.https.html) | Timeout | 0 / 0 | REQUIRES(workers) | the requests are recorded by a service worker (`navigator.serviceWorker`) |

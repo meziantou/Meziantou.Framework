@@ -101,6 +101,9 @@ public sealed class EditingInsertionTests : IDisposable
     [InlineData("foo<br>ba[]r", "foo<br><div>ba</div><div>r</div>")]
     // A single-line container that is inline-level is a content of its line
     [InlineData("<div style=\"display:inline\">a[]bc</div>", "<div><div style=\"display:inline\">a</div></div><div><div style=\"display:inline\">bc</div></div>")]
+    // The item of a flex or grid container is split, not the container
+    [InlineData("<div style=\"display:flex\"><span>a[]bc</span></div>", "<div style=\"display:flex\"><span>a</span><span>bc</span></div>")]
+    [InlineData("<div style=\"display:grid\"><span>abc[]</span></div>", "<div style=\"display:grid\"><span>abc</span><span><br></span></div>")]
     public void InsertParagraph(string html, string expected)
     {
         Assert.Equal(expected, Run(html, "insertParagraph"));

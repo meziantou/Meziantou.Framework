@@ -204,6 +204,7 @@ public partial class Document
         if (fragmentChanged)
         {
             IncrementElementStateVersion();
+            ScrolledTargetElement = null;
         }
 
         if (origin is not null)
@@ -218,6 +219,13 @@ public partial class Document
             RecordVisitedLink(url);
         }
     }
+
+    /// <summary>
+    /// The element the document last scrolled to as its target element (https://html.spec.whatwg.org/multipage/browsing-the-web.html#target-element),
+    /// until the fragment changes. Unlike <see cref="Css.Selectors.HtmlElementStates.GetTargetElement"/>, which is derived from
+    /// the URL, it stays set when the element is removed from the document (the autofocus candidates are still skipped).
+    /// </summary>
+    internal Element? ScrolledTargetElement { get; set; }
 
     private string? _keptTargetFragment;
     private bool _isTargetFragmentKept;

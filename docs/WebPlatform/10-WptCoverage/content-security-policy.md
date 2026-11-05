@@ -9,18 +9,18 @@ description: "The results of the web-platform-tests of content-security-policy, 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 857 | 893 | 0 | 96% |
+| [Stable](#stable-tests) | 862 | 893 | 0 | 97% |
 | [Tentative](#tentative-tests) | 8 | 15 | 0 | 53% |
 | [Reftests](#reftests) | 8 | 8 | 0 | 100% |
-| **All** | **873** | **916** | **0** | **95%** |
+| **All** | **878** | **916** | **0** | **96%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 2
+- **BUG**: 1
 - **TEST BUG**: 9
-- **NOT IMPLEMENTED**: 24
+- **NOT IMPLEMENTED**: 20
 - **TEST RUNNER**: 1
 - **OUT OF SCOPE**: 7
 
@@ -574,7 +574,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`reporting-api/reporting-api-report-to-only-sends-reports-to-first-endpoint.https.sub.html`](https://wpt.fyi/results/content-security-policy/reporting-api/reporting-api-report-to-only-sends-reports-to-first-endpoint.https.sub.html) | Pass | 3 / 3 |  |  |
 | [`reporting-api/reporting-api-report-to-overrides-report-uri-1.https.sub.html`](https://wpt.fyi/results/content-security-policy/reporting-api/reporting-api-report-to-overrides-report-uri-1.https.sub.html) | Pass | 3 / 3 |  |  |
 | [`reporting-api/reporting-api-report-to-overrides-report-uri-2.https.sub.html`](https://wpt.fyi/results/content-security-policy/reporting-api/reporting-api-report-to-overrides-report-uri-2.https.sub.html) | Pass | 3 / 3 |  |  |
-| [`reporting-api/reporting-api-sends-reports-on-violation-2.https.sub.html`](https://wpt.fyi/results/content-security-policy/reporting-api/reporting-api-sends-reports-on-violation-2.https.sub.html) | Fail | 3 / 4 | BUG | the source location of the violation of a fetch started after the script ends (the image whose `src` is set by the script is fetched by a microtask): no script runs, so the report has no `sourceFile`; the browsers capture the location when the attribute is set |
+| [`reporting-api/reporting-api-sends-reports-on-violation-2.https.sub.html`](https://wpt.fyi/results/content-security-policy/reporting-api/reporting-api-sends-reports-on-violation-2.https.sub.html) | Pass | 4 / 4 |  |  |
 | [`reporting-api/reporting-api-sends-reports-on-violation-for-css-background-image.https.sub.html`](https://wpt.fyi/results/content-security-policy/reporting-api/reporting-api-sends-reports-on-violation-for-css-background-image.https.sub.html) | Pass | 1 / 1 |  |  |
 | [`reporting-api/reporting-api-sends-reports-on-violation-for-dedicated-worker-import.https.sub.html`](https://wpt.fyi/results/content-security-policy/reporting-api/reporting-api-sends-reports-on-violation-for-dedicated-worker-import.https.sub.html) | Pass | 2 / 2 |  |  |
 | [`reporting-api/reporting-api-sends-reports-on-violation-for-shared-worker-import.https.sub.html`](https://wpt.fyi/results/content-security-policy/reporting-api/reporting-api-sends-reports-on-violation-for-shared-worker-import.https.sub.html) | Pass | 2 / 2 |  |  |
@@ -752,10 +752,10 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`securitypolicyviolation/no-violation-for-inline-handler-in-document-without-browsing-context.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/no-violation-for-inline-handler-in-document-without-browsing-context.html) | Pass | 5 / 5 |  |  |
 | [`securitypolicyviolation/script-sample-no-opt-in.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/script-sample-no-opt-in.html) | Pass | 4 / 4 |  |  |
 | [`securitypolicyviolation/script-sample.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/script-sample.html) | Pass | 6 / 6 |  |  |
-| [`securitypolicyviolation/securitypolicyviolation-block-cross-origin-image-from-script.sub.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/securitypolicyviolation-block-cross-origin-image-from-script.sub.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the source location of a violation is the location of the script that runs when the request is checked, not of the script that started the request: the image is fetched later (in a microtask), so the line and column of the violation are not the ones of the `src` setter or of `appendChild()` |
-| [`securitypolicyviolation/securitypolicyviolation-block-cross-origin-image.sub.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/securitypolicyviolation-block-cross-origin-image.sub.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the source location of a violation is the location of the script that runs when the request is checked, not of the script that started the request: the image is fetched later (in a microtask), so the line and column of the violation are not the ones of the `src` setter or of `appendChild()` |
-| [`securitypolicyviolation/securitypolicyviolation-block-image-from-script.sub.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/securitypolicyviolation-block-image-from-script.sub.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the source location of a violation is the location of the script that runs when the request is checked, not of the script that started the request: the image is fetched later (in a microtask), so the line and column of the violation are not the ones of the `src` setter or of `appendChild()` |
-| [`securitypolicyviolation/securitypolicyviolation-block-image.sub.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/securitypolicyviolation-block-image.sub.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the source location of a violation is the location of the script that runs when the request is checked, not of the script that started the request: the image is fetched later (in a microtask), so the line and column of the violation are not the ones of the `src` setter or of `appendChild()` |
+| [`securitypolicyviolation/securitypolicyviolation-block-cross-origin-image-from-script.sub.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/securitypolicyviolation-block-cross-origin-image-from-script.sub.html) | Pass | 1 / 1 |  |  |
+| [`securitypolicyviolation/securitypolicyviolation-block-cross-origin-image.sub.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/securitypolicyviolation-block-cross-origin-image.sub.html) | Pass | 1 / 1 |  |  |
+| [`securitypolicyviolation/securitypolicyviolation-block-image-from-script.sub.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/securitypolicyviolation-block-image-from-script.sub.html) | Pass | 1 / 1 |  |  |
+| [`securitypolicyviolation/securitypolicyviolation-block-image.sub.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/securitypolicyviolation-block-image.sub.html) | Pass | 1 / 1 |  |  |
 | [`securitypolicyviolation/source-file-blob-scheme.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/source-file-blob-scheme.html) | Pass | 1 / 1 |  |  |
 | [`securitypolicyviolation/source-file-data-scheme.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/source-file-data-scheme.html) | Pass | 1 / 1 |  |  |
 | [`securitypolicyviolation/source-file.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/source-file.html) | Pass | 17 / 17 |  |  |

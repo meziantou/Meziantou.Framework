@@ -490,13 +490,24 @@ internal static class ClipboardFormats
 
     /// <summary>
     /// The sanitized copy of HTML read from the system clipboard: the scripts and the other unsafe content are removed by the
-    /// HTML Sanitizer (the safe default configuration of <c>Document.parseHTML()</c>).
+    /// HTML Sanitizer (an empty configuration of the safe methods, e.g. <c>setHTML(html, { sanitizer: {} })</c>). As in the
+    /// browsers, the other content is kept (e.g. the images, which are not loaded: the document has no browsing context).
+    /// The markup is sanitized again until its serialization is stable: a serialization that is parsed differently (mutation
+    /// XSS, e.g. the content of an <c>xmp</c> element in a <c>math</c> element) cannot bring back unsafe content.
     /// </summary>
     public static string SanitizeHtml(string html)
     {
-        var document = new HtmlDocumentParser(new HtmlParserOptions { ScriptingEnabled = false }).Parse(html);
-        var sanitizer = Sanitizer.FromOptions(SanitizerPresets.Default, safe: true);
-        Html.SanitizerConfiguration.Sanitize(document, sanitizer.Configuration, safe: true);
-        return document.GetHtml();
+        const int MaxPasses = 8;
+        var configuration = Sanitizer.FromOptions(new SanitizerConfig(), safe: true).Configuration;
+        string? previous = null;
+        for (var pass = 0; pass < MaxPasses && html != previous; pass++)
+        {
+            previous = html;
+            var document = new HtmlDocumentParser(new HtmlParserOptions { ScriptingEnabled = false }).Parse(html);
+            Html.SanitizerConfiguration.Sanitize(document, configuration, safe: true);
+            html = document.GetHtml();
+        }
+
+        return html == previous ? html : "";
     }
 }

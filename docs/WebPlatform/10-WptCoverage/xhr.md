@@ -9,16 +9,16 @@ description: "The results of the web-platform-tests of xhr, and why the tests th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 318 | 330 | 0 | 96% |
+| [Stable](#stable-tests) | 319 | 330 | 0 | 97% |
 | [Tentative](#tentative-tests) | 2 | 2 | 0 | 100% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **320** | **332** | **0** | **96%** |
+| **All** | **321** | **332** | **0** | **97%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 3
+- **BUG**: 2
 - **TEST BUG**: 2
 - **NOT IMPLEMENTED**: 2
 - **TEST RUNNER**: 5
@@ -188,10 +188,10 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`open-url-javascript-window-2.htm`](https://wpt.fyi/results/xhr/open-url-javascript-window-2.htm) | Pass | 1 / 1 |  |  |
 | [`open-url-javascript-window.htm`](https://wpt.fyi/results/xhr/open-url-javascript-window.htm) | Pass | 1 / 1 |  |  |
 | [`open-url-multi-window-2.htm`](https://wpt.fyi/results/xhr/open-url-multi-window-2.htm) | Pass | 1 / 1 |  |  |
-| [`open-url-multi-window-3.htm`](https://wpt.fyi/results/xhr/open-url-multi-window-3.htm) | Fail | 0 / 1 | BUG | `send()` does not throw `InvalidStateError` when the document of the XHR's relevant global (a removed iframe) is not fully active |
+| [`open-url-multi-window-3.htm`](https://wpt.fyi/results/xhr/open-url-multi-window-3.htm) | Pass | 1 / 1 |  |  |
 | [`open-url-multi-window-4.htm`](https://wpt.fyi/results/xhr/open-url-multi-window-4.htm) | Timeout | 0 / 1 | TEST BUG | the test (whose comment says the pass condition is unclear and follows a proposal, whatwg/xhr#3, that was not merged) expects `error` and `loadend` events for an XHR of an iframe removed during the request: the document is destroyed, its fetch group is terminated, and the tasks of the terminated fetch do not run (the document is not fully active), so no event is fired, as in Firefox |
 | [`open-url-multi-window-5.htm`](https://wpt.fyi/results/xhr/open-url-multi-window-5.htm) | Pass | 1 / 1 |  |  |
-| [`open-url-multi-window-6.htm`](https://wpt.fyi/results/xhr/open-url-multi-window-6.htm) | Fail | 0 / 1 | BUG | the `InvalidStateError` thrown by `open()` in a document that is not fully active is created in the caller's realm instead of the XHR's realm |
+| [`open-url-multi-window-6.htm`](https://wpt.fyi/results/xhr/open-url-multi-window-6.htm) | Fail | 0 / 1 | BUG | the `InvalidStateError` thrown by `open()` in a document that is not fully active is created in the realm of the `open()` function (the realm of the XHR, the current realm that Web IDL specifies); the test expects an exception of the realm of the caller |
 | [`open-url-multi-window.htm`](https://wpt.fyi/results/xhr/open-url-multi-window.htm) | Pass | 1 / 1 |  |  |
 | [`open-url-redirected-sharedworker-origin.htm`](https://wpt.fyi/results/xhr/open-url-redirected-sharedworker-origin.htm) | Pass | 3 / 3 |  |  |
 | [`open-url-redirected-worker-origin.htm`](https://wpt.fyi/results/xhr/open-url-redirected-worker-origin.htm) | Pass | 3 / 3 |  |  |

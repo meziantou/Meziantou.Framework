@@ -359,9 +359,13 @@ public sealed class NavigateEvent : Event
         }
     }
 
+    /// <summary>The scroll position of the viewport when the navigation was committed (see <see cref="ProcessScrollBehavior"/>).</summary>
+    internal Css.Layout.PhysicalOffset? ViewportScrollOffsetAtCommit { get; set; }
+
     /// <summary>
-    /// https://html.spec.whatwg.org/multipage/nav-history-apis.html#process-scroll-behavior: a traversal or a reload restores the
-    /// scroll position of the active entry, the other navigations scroll to the fragment (or to the beginning of the document).
+    /// https://html.spec.whatwg.org/multipage/nav-history-apis.html#process-scroll-behavior: a traversal restores the scroll
+    /// position of the active entry, the other navigations (including a reload) scroll to the fragment (or to the beginning of
+    /// the document).
     /// </summary>
     private void ProcessScrollBehavior()
     {
@@ -369,10 +373,16 @@ public sealed class NavigateEvent : Event
         if (Navigation?.Window is not { BrowsingContext: { } browsingContext } window)
             return;
 
-        if (NavigationType is Dom.NavigationType.Traverse or Dom.NavigationType.Reload)
+        if (NavigationType is Dom.NavigationType.Traverse)
         {
+            // https://html.spec.whatwg.org/multipage/browsing-the-web.html#restore-scroll-position-data: the restoration is
+            // skipped when the document "has been scrolled by the user". As in Chromium and Firefox, a scroll by a script during
+            // the navigation (e.g. window.scrollTo() in a handler) counts.
+            if (ViewportScrollOffsetAtCommit is { } offsetAtCommit && window.Document.LayoutEngineOrNull?.ViewportScrollState.Offset is { } offset && offset != offsetAtCommit)
+                return;
+
             // The traversal may not be applied yet when the handlers settle: the destination entry becomes the active entry
-            browsingContext.RestoreScrollPositionData(NavigationType == Dom.NavigationType.Traverse ? Destination.Entry?.SessionHistoryEntry ?? browsingContext.ActiveEntry : browsingContext.ActiveEntry);
+            browsingContext.RestoreScrollPositionData(Destination.Entry?.SessionHistoryEntry ?? browsingContext.ActiveEntry);
         }
         else
         {

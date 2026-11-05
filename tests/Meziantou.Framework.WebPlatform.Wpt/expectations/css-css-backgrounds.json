@@ -90,13 +90,7 @@
     "reftest": "PASS"
   },
   "css/css-backgrounds/animations/background-color-interpolation.html": {
-    "total": 172,
-    "failures": {
-      "CSS Animations: property <background-color> from [currentcolor] to [rgba(0, 255, 0, 0.75)] at (0.75) should be [rgba(0, 208, 47, 0.69)]": "FAIL",
-      "CSS Transitions with transition: all: property <background-color> from [currentcolor] to [rgba(0, 255, 0, 0.75)] at (0.75) should be [rgba(0, 208, 47, 0.69)]": "FAIL",
-      "CSS Transitions: property <background-color> from [currentcolor] to [rgba(0, 255, 0, 0.75)] at (0.75) should be [rgba(0, 208, 47, 0.69)]": "FAIL",
-      "Web Animations: property <background-color> from [currentcolor] to [rgba(0, 255, 0, 0.75)] at (0.75) should be [rgba(0, 208, 47, 0.69)]": "FAIL"
-    }
+    "total": 172
   },
   "css/css-backgrounds/animations/background-color-scroll-into-viewport.html": {
     "reftest": "PASS"

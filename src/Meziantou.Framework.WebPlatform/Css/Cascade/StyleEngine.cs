@@ -3504,14 +3504,19 @@ internal sealed partial class StyleEngine
             }
 
             var source = GetStyleAttributeSource(root);
-            if (declarations.Exists(d => !d.Important))
+            var currentBaseUrl = source?.BaseUrl;
+            if (HasOtherBaseUrl(declarations, _document, currentBaseUrl))
             {
-                blocks.Add(new MatchedBlock(declarations, Important: false, CascadeOrigin.Author, depth, Attached: true, CascadeRule.Unlayered, default, NoProximity, 0, source));
+                // The declarations parsed before a change of the base URL keep the base URL they were parsed with: they are
+                // in separate blocks of the same precedence (the names of the declarations of a block are distinct)
+                foreach (var group in declarations.GroupBy(d => d.GetBaseUrl(_document) ?? currentBaseUrl, StringComparer.Ordinal))
+                {
+                    AddStyleAttributeBlocks(blocks, [.. group], depth, string.Equals(group.Key, currentBaseUrl, StringComparison.Ordinal) ? source : CascadedValueSource.Create(group.Key, root, mixin: null));
+                }
             }
-
-            if (declarations.Exists(d => d.Important))
+            else
             {
-                blocks.Add(new MatchedBlock(declarations, Important: true, CascadeOrigin.Author, depth, Attached: true, CascadeRule.Unlayered, default, NoProximity, 0, source));
+                AddStyleAttributeBlocks(blocks, declarations, depth, source);
             }
         }
 
@@ -4181,6 +4186,30 @@ internal sealed partial class StyleEngine
         }
 
         return false;
+    }
+
+    private static bool HasOtherBaseUrl(List<CssDeclarationEntry> declarations, Document document, string? baseUrl)
+    {
+        foreach (var declaration in declarations)
+        {
+            if (declaration.GetBaseUrl(document) is { } declarationBaseUrl && !string.Equals(declarationBaseUrl, baseUrl, StringComparison.Ordinal))
+                return true;
+        }
+
+        return false;
+    }
+
+    private static void AddStyleAttributeBlocks(List<MatchedBlock> blocks, List<CssDeclarationEntry> declarations, int depth, CascadedValueSource? source)
+    {
+        if (declarations.Exists(d => !d.Important))
+        {
+            blocks.Add(new MatchedBlock(declarations, Important: false, CascadeOrigin.Author, depth, Attached: true, CascadeRule.Unlayered, default, NoProximity, 0, source));
+        }
+
+        if (declarations.Exists(d => d.Important))
+        {
+            blocks.Add(new MatchedBlock(declarations, Important: true, CascadeOrigin.Author, depth, Attached: true, CascadeRule.Unlayered, default, NoProximity, 0, source));
+        }
     }
 
     /// <summary>The source of the declarations of the last style attribute (see <see cref="GetStyleAttributeSource"/>), with the version of the styles and the base URL it was created for.</summary>

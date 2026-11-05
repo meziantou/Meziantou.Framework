@@ -9,16 +9,15 @@ description: "The results of the web-platform-tests of html/interaction, and why
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 55 | 58 | 0 | 95% |
+| [Stable](#stable-tests) | 56 | 58 | 0 | 97% |
 | [Tentative](#tentative-tests) | 1 | 146 | 138 | 13% |
 | [Reftests](#reftests) | 1 | 1 | 0 | 100% |
-| **All** | **57** | **205** | **138** | **85%** |
+| **All** | **58** | **205** | **138** | **87%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
 - **NOT IMPLEMENTED**: 146
 - **REQUIRES**: 139
   - `layout`: 1
@@ -66,7 +65,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`focus/the-autofocus-attribute/autofocus-on-stable-document.html`](https://wpt.fyi/results/html/interaction/focus/the-autofocus-attribute/autofocus-on-stable-document.html) | Pass | 1 / 1 |  |  |
 | [`focus/the-autofocus-attribute/document-with-fragment-empty.html`](https://wpt.fyi/results/html/interaction/focus/the-autofocus-attribute/document-with-fragment-empty.html) | Pass | 2 / 2 |  |  |
 | [`focus/the-autofocus-attribute/document-with-fragment-nonexistent.html`](https://wpt.fyi/results/html/interaction/focus/the-autofocus-attribute/document-with-fragment-nonexistent.html) | Pass | 2 / 2 |  |  |
-| [`focus/the-autofocus-attribute/document-with-fragment-removed-target.html`](https://wpt.fyi/results/html/interaction/focus/the-autofocus-attribute/document-with-fragment-removed-target.html) | Fail | 0 / 1 | BUG | the target element of a document is derived from its URL (it is not set by scrolling to the fragment), so removing it resets it and the autofocus candidates are not skipped |
+| [`focus/the-autofocus-attribute/document-with-fragment-removed-target.html`](https://wpt.fyi/results/html/interaction/focus/the-autofocus-attribute/document-with-fragment-removed-target.html) | Pass | 1 / 1 |  |  |
 | [`focus/the-autofocus-attribute/document-with-fragment-top.html`](https://wpt.fyi/results/html/interaction/focus/the-autofocus-attribute/document-with-fragment-top.html) | Pass | 2 / 2 |  |  |
 | [`focus/the-autofocus-attribute/document-with-fragment-valid.html`](https://wpt.fyi/results/html/interaction/focus/the-autofocus-attribute/document-with-fragment-valid.html) | Pass | 3 / 3 |  |  |
 | [`focus/the-autofocus-attribute/first-reconnected.html`](https://wpt.fyi/results/html/interaction/focus/the-autofocus-attribute/first-reconnected.html) | Pass | 1 / 1 |  |  |

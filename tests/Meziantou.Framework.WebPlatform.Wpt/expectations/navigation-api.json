@@ -1429,37 +1429,22 @@
     "total": 1
   },
   "navigation-api/scroll-behavior/after-transition-reload-after-traverse.html": {
-    "total": 1,
-    "failures": {
-      "scroll: after-transition on a reload of a traversed-to fragment entry scrolls to the fragment": "FAIL"
-    }
+    "total": 1
   },
   "navigation-api/scroll-behavior/after-transition-reload-no-fragment.html": {
-    "total": 1,
-    "failures": {
-      "scroll: after-transition on a reload without a fragment scrolls to the beginning of the document": "FAIL"
-    }
+    "total": 1
   },
   "navigation-api/scroll-behavior/after-transition-reload-no-scroll-anchoring.html": {
-    "total": 1,
-    "failures": {
-      "scroll: after-transition should work on a reload navigation": "FAIL"
-    }
+    "total": 1
   },
   "navigation-api/scroll-behavior/after-transition-reload.html": {
-    "total": 1,
-    "failures": {
-      "scroll: after-transition should work on a reload navigation": "FAIL"
-    }
+    "total": 1
   },
   "navigation-api/scroll-behavior/after-transition-replace.html": {
     "total": 1
   },
   "navigation-api/scroll-behavior/after-transition-skips-restore-when-scrolled.html": {
-    "total": 1,
-    "failures": {
-      "scroll: after-transition should not restore scroll if the document was scrolled during the navigation": "FAIL"
-    }
+    "total": 1
   },
   "navigation-api/scroll-behavior/after-transition-timing.html": {
     "total": 1
@@ -1498,16 +1483,10 @@
     "total": 1
   },
   "navigation-api/scroll-behavior/manual-scroll-reload-no-scroll-anchoring.html": {
-    "total": 1,
-    "failures": {
-      "scroll: scroll() should work on a reload navigation": "FAIL"
-    }
+    "total": 1
   },
   "navigation-api/scroll-behavior/manual-scroll-reload.html": {
-    "total": 1,
-    "failures": {
-      "scroll: scroll() should work on a reload navigation": "FAIL"
-    }
+    "total": 1
   },
   "navigation-api/scroll-behavior/manual-scroll-repeated.html": {
     "total": 1

@@ -10,9 +10,9 @@ description: "The results of the web-platform-tests of shadow-dom, and why the t
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 217 | 254 | 0 | 85% |
-| [Tentative](#tentative-tests) | 31 | 98 | 0 | 32% |
+| [Tentative](#tentative-tests) | 33 | 98 | 0 | 34% |
 | [Reftests](#reftests) | 26 | 26 | 0 | 100% |
-| **All** | **274** | **378** | **0** | **72%** |
+| **All** | **276** | **378** | **0** | **73%** |
 
 ## Failure reasons
 
@@ -20,7 +20,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 1
 - **TEST BUG**: 6
-- **NOT IMPLEMENTED**: 97
+- **NOT IMPLEMENTED**: 95
 
 ## Stable tests
 
@@ -364,9 +364,9 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`focus-navigation/reading-flow/tentative/source-order-invalid.html`](https://wpt.fyi/results/shadow-dom/focus-navigation/reading-flow/tentative/source-order-invalid.html) | Pass | 1 / 1 |  |  |
 | [`focus-navigation/reading-flow/tentative/source-order-valid.html`](https://wpt.fyi/results/shadow-dom/focus-navigation/reading-flow/tentative/source-order-valid.html) | Pass | 5 / 5 |  |  |
 | [`focus-navigation/tentative/focus-navigation-scroller-delegatesFocus.html`](https://wpt.fyi/results/shadow-dom/focus-navigation/tentative/focus-navigation-scroller-delegatesFocus.html) | Pass | 1 / 1 |  |  |
-| [`focus-navigation/tentative/focus-navigation-scroller-interactive-child.html`](https://wpt.fyi/results/shadow-dom/focus-navigation/tentative/focus-navigation-scroller-interactive-child.html) | Fail | 0 / 1 | NOT IMPLEMENTED | keyboard-focusable scroll containers (in Chromium, a scroll container that overflows and has no focusable descendant is a tab stop, and stays one while it is focused): a scroll container without `tabindex` is not focusable, so Tab skips `#scroller` |
+| [`focus-navigation/tentative/focus-navigation-scroller-interactive-child.html`](https://wpt.fyi/results/shadow-dom/focus-navigation/tentative/focus-navigation-scroller-interactive-child.html) | Pass | 1 / 1 |  |  |
 | [`focus-navigation/tentative/focus-navigation-scroller-tabindex.html`](https://wpt.fyi/results/shadow-dom/focus-navigation/tentative/focus-navigation-scroller-tabindex.html) | Pass | 1 / 1 |  |  |
-| [`focus-navigation/tentative/focus-scroller-layout-update.html`](https://wpt.fyi/results/shadow-dom/focus-navigation/tentative/focus-scroller-layout-update.html) | Fail | 0 / 1 | NOT IMPLEMENTED | keyboard-focusable scroll containers (in Chromium, a scroll container that overflows and has no focusable descendant is a tab stop): a scroll container without `tabindex` is not focusable, so Tab skips `#scroller` |
+| [`focus-navigation/tentative/focus-scroller-layout-update.html`](https://wpt.fyi/results/shadow-dom/focus-navigation/tentative/focus-scroller-layout-update.html) | Pass | 1 / 1 |  |  |
 | [`reference-target/tentative/aria-labelledby.html`](https://wpt.fyi/results/shadow-dom/reference-target/tentative/aria-labelledby.html) | Fail | 1 / 5 | NOT IMPLEMENTED | reference target (`ShadowRoot.referenceTarget`, the `shadowrootreferencetarget` attribute) |
 | [`reference-target/tentative/commandfor.html`](https://wpt.fyi/results/shadow-dom/reference-target/tentative/commandfor.html) | Fail | 0 / 3 | NOT IMPLEMENTED | reference target (`ShadowRoot.referenceTarget`, the `shadowrootreferencetarget` attribute) |
 | [`reference-target/tentative/dom-mutation.html`](https://wpt.fyi/results/shadow-dom/reference-target/tentative/dom-mutation.html) | Fail | 0 / 15 | NOT IMPLEMENTED | reference target (`ShadowRoot.referenceTarget`, the `shadowrootreferencetarget` attribute) |

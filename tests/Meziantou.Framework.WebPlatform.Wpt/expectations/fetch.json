@@ -3606,11 +3606,7 @@
     "total": 3
   },
   "fetch/redirects/subresource-fragments.html": {
-    "total": 4,
-    "failures": {
-      "Redirect with both the original URL and response Location header containing a fragment": "FAIL",
-      "Redirect with the response Location header containing a fragment": "FAIL"
-    }
+    "total": 4
   },
   "fetch/security/1xx-response.any.js": {
     "total": 4,

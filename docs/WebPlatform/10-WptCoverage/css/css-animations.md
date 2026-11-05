@@ -9,16 +9,16 @@ description: "The results of the web-platform-tests of css/css-animations, and w
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 94 | 98 | 0 | 96% |
+| [Stable](#stable-tests) | 95 | 98 | 0 | 97% |
 | [Tentative](#tentative-tests) | 27 | 29 | 0 | 93% |
 | [Reftests](#reftests) | 36 | 36 | 0 | 100% |
-| **All** | **157** | **163** | **0** | **96%** |
+| **All** | **158** | **163** | **0** | **97%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 2
+- **BUG**: 1
 - **NOT IMPLEMENTED**: 4
 
 ## Stable tests
@@ -55,7 +55,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`animationevent-marker-pseudoelement.html`](https://wpt.fyi/results/css/css-animations/animationevent-marker-pseudoelement.html) | Pass | 1 / 1 |  |  |
 | [`animationevent-pseudoelement.html`](https://wpt.fyi/results/css/css-animations/animationevent-pseudoelement.html) | Pass | 1 / 1 |  |  |
 | [`animationevent-types.html`](https://wpt.fyi/results/css/css-animations/animationevent-types.html) | Pass | 3 / 3 |  |  |
-| [`cancel-events-on-remove.html`](https://wpt.fyi/results/css/css-animations/cancel-events-on-remove.html) | Fail | 4 / 5 | BUG | a re-parented element: the `animationcancel` event of its canceled CSS animation is dispatched after the `animationstart` event of the new one (the start event of a paused animation has no scheduled event time, and is sorted first) |
+| [`cancel-events-on-remove.html`](https://wpt.fyi/results/css/css-animations/cancel-events-on-remove.html) | Pass | 5 / 5 |  |  |
 | [`computed-style-animation-parsing.html`](https://wpt.fyi/results/css/css-animations/computed-style-animation-parsing.html) | Pass | 7 / 7 |  |  |
 | [`dialog-animation.html`](https://wpt.fyi/results/css/css-animations/dialog-animation.html) | Pass | 1 / 1 |  |  |
 | [`dialog-backdrop-animation.html`](https://wpt.fyi/results/css/css-animations/dialog-backdrop-animation.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the animations of `::backdrop` (only `::before`, `::after` and `::marker` have CSS animations and transitions) |

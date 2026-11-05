@@ -325,7 +325,12 @@ internal static class SharedWorkerManager
     {
         var groupLoop = GetGroupEventLoop(owner.EventLoop);
         var registry = Workers.GetValue(groupLoop, static _ => []);
-        var key = owner.Origin + "\n" + url.Serialize() + "\n" + options.Name;
+
+        // The shared workers are partitioned by the site of the top-level document (https://privacycg.github.io/storage-partitioning/),
+        // as in the browsers: a secure frame of an https page does not connect to the worker created by the same frame in an
+        // http page, which is not a secure context (secure-contexts/shared-worker-*.tentative.https.html)
+        var topLevelSite = owner.EnvironmentDocument.EnvironmentRootDocument?.BrowsingContext?.Top.Document.Origin is { IsOpaque: false } topLevelOrigin ? topLevelOrigin.GetSiteKey().ToString() : "";
+        var key = owner.Origin + "\n" + url.Serialize() + "\n" + options.Name + "\n" + topLevelSite;
         WorkerAgent? agent = null;
         lock (registry)
         {

@@ -1038,6 +1038,7 @@ public sealed class Navigation : EventTarget
             if (@event.InterceptionState != NavigateEventInterceptionState.None)
             {
                 @event.InterceptionState = NavigateEventInterceptionState.Committed;
+                @event.ViewportScrollOffsetAtCommit = document.LayoutEngineOrNull?.ViewportScrollState.Offset;
                 switch (@event.NavigationType)
                 {
                     case NavigationType.Push or NavigationType.Replace:

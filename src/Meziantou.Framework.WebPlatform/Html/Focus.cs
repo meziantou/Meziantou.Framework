@@ -1356,7 +1356,7 @@ internal static class FocusModel
         if (candidates.Count == 0)
             return;
 
-        if (topDocument.FocusedArea is not null || HtmlElementStates.GetTargetElement(topDocument) is not null)
+        if (topDocument.FocusedArea is not null || HasTargetElement(topDocument))
         {
             candidates.Clear();
             topDocument.AutofocusProcessed = true;
@@ -1381,7 +1381,7 @@ internal static class FocusModel
             var hasTargetElement = false;
             for (var navigable = document.BrowsingContext; navigable is not null; navigable = navigable.Parent)
             {
-                if (HtmlElementStates.GetTargetElement(navigable.Document) is not null)
+                if (HasTargetElement(navigable.Document))
                 {
                     hasTargetElement = true;
                     break;
@@ -1400,6 +1400,9 @@ internal static class FocusModel
             }
         }
     }
+
+    /// <summary>Whether the document has a target element, which stays set when the element is removed from the document.</summary>
+    private static bool HasTargetElement(Document document) => document.ScrolledTargetElement is not null || HtmlElementStates.GetTargetElement(document) is not null;
 
     /// <summary>The steps of the dialogs and popovers that empty the autofocus candidates of the top-level document after focusing an element (https://html.spec.whatwg.org/multipage/interactive-elements.html#dialog-focusing-steps).</summary>
     private static void SetAutofocusProcessed(Node control)

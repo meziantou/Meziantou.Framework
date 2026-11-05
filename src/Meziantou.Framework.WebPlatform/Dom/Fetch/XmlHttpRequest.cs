@@ -246,6 +246,11 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
         if (_sendFlag)
             throw DomException.InvalidState("The request is already sent");
 
+        // Not in the XMLHttpRequest Standard (only open() checks it): as in the browsers, a request whose document is no longer
+        // fully active (e.g. the document of a removed iframe) cannot be sent
+        if (RelevantWindow is { } relevantWindow && !relevantWindow.Document.IsFullyActive)
+            throw DomException.InvalidState("The document is not fully active");
+
         // The "sync-xhr" policy-controlled feature, which XMLHttpRequest does not specify: as in Chromium, a document whose
         // permissions policy disables it cannot send a synchronous request
         if (_synchronous && RelevantWindow is { } window && !PermissionsPolicyAlgorithms.IsFeatureEnabled(PolicyControlledFeature.SyncXhr, window.Document, window.Document.Origin))

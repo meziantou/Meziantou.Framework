@@ -1855,7 +1855,7 @@ public sealed partial class BrowsingContext : IDisposable
             parameters.ReferrerPolicy = historyPolicyContainer?.ReferrerPolicy ?? sourceDocument?.ReferrerPolicy ?? "";
             parameters.OriginDocument = initiatorOrigin;
             parameters.OpaqueOrigin = initiatorOrigin is null;
-            parameters.AboutBaseUrl = sourceDocument?.DocumentBaseUrl;
+            parameters.AboutBaseUrl = traversalEntry?.DocumentState.AboutBaseUrl ?? sourceDocument?.DocumentBaseUrl;
             parameters.EmbedderPolicy = Container?.NodeDocument.EmbedderPolicy;
             parameters.DocumentIsolationPolicy = Container?.NodeDocument.DocumentIsolationPolicy ?? EmbedderPolicyValue.UnsafeNone;
         }
@@ -3757,7 +3757,9 @@ public sealed partial class BrowsingContext : IDisposable
             return;
 
         document.IsTargetTextIndicated = false;
-        if (Css.Selectors.HtmlElementStates.GetTargetElement(document) is not { } target)
+        var indicatedElement = Css.Selectors.HtmlElementStates.GetTargetElement(document);
+        document.ScrolledTargetElement = indicatedElement;
+        if (indicatedElement is not { } target)
         {
             // https://html.spec.whatwg.org/multipage/browsing-the-web.html#the-indicated-part-of-the-document: "If fragment is the
             // empty string or an ASCII case-insensitive match for "top", then return the top of the document", which "scrolls to

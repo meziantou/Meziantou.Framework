@@ -87,6 +87,12 @@ internal sealed class DocumentState(Document? document)
     /// <summary>https://html.spec.whatwg.org/multipage/browsing-the-web.html#document-state-request-referrer-policy</summary>
     public string RequestReferrerPolicy { get; set; } = ReferrerPolicies.Default;
 
+    /// <summary>
+    /// https://html.spec.whatwg.org/multipage/browsing-the-web.html#document-state-about-base-url: the fallback base URL of
+    /// an about:blank or about:srcdoc document when it was created, which a traversal gives to the document it loads again.
+    /// </summary>
+    public UrlRecord? AboutBaseUrl { get; set; } = document?.AboutBaseUrl;
+
     /// <summary>Whether the document of the document state is an initial about:blank document.</summary>
     public bool IsInitialAboutBlank { get; init; } = document?.IsInitialAboutBlank ?? false;
 

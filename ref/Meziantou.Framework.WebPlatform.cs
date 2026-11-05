@@ -3362,6 +3362,8 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public string Credentials { get => throw null; init { } }
         public System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, string>> Headers { get => throw null; init { } }
         public string Integrity { get => throw null; init { } }
+        public bool IsHistoryNavigation { get => throw null; init { } }
+        public bool IsReloadNavigation { get => throw null; init { } }
         public string Method { get => throw null; init { } }
         public string Mode { get => throw null; init { } }
         public string Redirect { get => throw null; init { } }

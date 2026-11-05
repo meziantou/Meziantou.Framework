@@ -9,16 +9,15 @@ description: "The results of the web-platform-tests of css/cssom, and why the te
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 259 | 263 | 0 | 98% |
+| [Stable](#stable-tests) | 260 | 263 | 0 | 99% |
 | [Tentative](#tentative-tests) | 6 | 9 | 0 | 67% |
 | [Reftests](#reftests) | 9 | 12 | 0 | 75% |
-| **All** | **274** | **284** | **0** | **96%** |
+| **All** | **275** | **284** | **0** | **97%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
 - **TEST BUG**: 2
 - **NOT IMPLEMENTED**: 7
 
@@ -112,7 +111,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`computed-style-005.html`](https://wpt.fyi/results/css/cssom/computed-style-005.html) | Pass | 4 / 4 |  |  |
 | [`computed-style-set-property.html`](https://wpt.fyi/results/css/cssom/computed-style-set-property.html) | Pass | 5 / 5 |  |  |
 | [`css-rule-selector-text.html`](https://wpt.fyi/results/css/cssom/css-rule-selector-text.html) | Pass | 2 / 2 |  |  |
-| [`css-style-attr-decl-block.html`](https://wpt.fyi/results/css/cssom/css-style-attr-decl-block.html) | Fail | 6 / 7 | BUG | the `url()` of a declaration block is resolved against the base URL when the style is computed, not when it is parsed, so a later `<base>` change alters unchanged declarations |
+| [`css-style-attr-decl-block.html`](https://wpt.fyi/results/css/cssom/css-style-attr-decl-block.html) | Pass | 7 / 7 |  |  |
 | [`css-style-attribute-modifications.html`](https://wpt.fyi/results/css/cssom/css-style-attribute-modifications.html) | Pass | 1 / 1 |  |  |
 | [`css-style-declaration-modifications.html`](https://wpt.fyi/results/css/cssom/css-style-declaration-modifications.html) | Pass | 4 / 4 |  |  |
 | [`css-style-reparse.html`](https://wpt.fyi/results/css/cssom/css-style-reparse.html) | Pass | 2 / 2 |  |  |

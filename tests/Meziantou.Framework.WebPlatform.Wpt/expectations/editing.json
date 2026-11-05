@@ -2488,14 +2488,7 @@
   "editing/run/bold.html?1-1000": {
     "total": 1000,
     "failures": {
-      "[[\"bold\",\"\"]] \"<b>foo</b>[bar]<strong>baz</strong>\" compare innerHTML": "FAIL",
-      "[[\"bold\",\"\"]] \"<strong>foo</strong>[bar]<strong>baz</strong>\" compare innerHTML": "FAIL",
-      "[[\"bold\",\"\"]] \"[foo]<strong>bar</strong>baz\" compare innerHTML": "FAIL",
-      "[[\"bold\",\"\"]] \"foo<strong>bar</strong>[baz]\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"false\"],[\"bold\",\"\"]] \"<strong>foo</strong>[bar]<b>baz</b>\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"bold\",\"\"]] \"<b>foo</b>[bar]<b>baz</b>\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"bold\",\"\"]] \"<p>[foo</p> <p>bar]</p>\" queryCommandState(\"stylewithcss\") before": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"bold\",\"\"]] \"<strong>foo</strong>[bar]<b>baz</b>\" compare innerHTML": "FAIL"
+      "[[\"stylewithcss\",\"true\"],[\"bold\",\"\"]] \"<p>[foo</p> <p>bar]</p>\" queryCommandState(\"stylewithcss\") before": "FAIL"
     }
   },
   "editing/run/bold.html?1001-2000": {
@@ -2614,9 +2607,6 @@
       "[[\"delete\",\"\"]] \"012<div style=display:inline-grid><span>[]abc</span><span>def</span></div>\" compare innerHTML": "FAIL",
       "[[\"delete\",\"\"]] \"<div style=display:inline-flex><span>abc</span><span>def</span></div>[]ghi\" compare innerHTML": "FAIL",
       "[[\"delete\",\"\"]] \"<div style=display:inline-grid><span>abc</span><span>def</span></div>[]ghi\" compare innerHTML": "FAIL",
-      "[[\"delete\",\"\"]] \"<div style=white-space:nowrap>foo \\n[]bar</div>\" compare innerHTML": "FAIL",
-      "[[\"delete\",\"\"]] \"<div style=white-space:nowrap>foo\\n []bar</div>\" compare innerHTML": "FAIL",
-      "[[\"delete\",\"\"]] \"<div style=white-space:nowrap>foo\\n\\n[]bar</div>\" compare innerHTML": "FAIL",
       "[[\"delete\",\"\"]] \"<div style=white-space:pre-line>foo\\n []bar</div>\" compare innerHTML": "FAIL",
       "[[\"delete\",\"\"]] \"<div><div contenteditable=false><div contenteditable><div>{}<br></div></div></div></div>\" compare innerHTML": "FAIL",
       "[[\"delete\",\"\"]] \"<div><div>{}<br></div></div>\" compare innerHTML": "FAIL",
@@ -2709,12 +2699,10 @@
     "failures": {
       "[[\"defaultparagraphseparator\",\"div\"],[\"formatblock\",\"<div>\"]] \"<quasit>[foobar]</quasit>\" queryCommandValue(\"defaultparagraphseparator\") before": "FAIL",
       "[[\"defaultparagraphseparator\",\"div\"],[\"formatblock\",\"<p>\"]] \"<dl><dt>[foo<dd>bar]</dl>\" queryCommandIndeterm(\"formatblock\") before": "FAIL",
-      "[[\"defaultparagraphseparator\",\"div\"],[\"formatblock\",\"<p>\"]] \"<listing>[foobar]</listing>\" compare innerHTML": "FAIL",
       "[[\"defaultparagraphseparator\",\"div\"],[\"formatblock\",\"<p>\"]] \"<ol><li>[foobar]</ol>\" compare innerHTML": "FAIL",
       "[[\"defaultparagraphseparator\",\"div\"],[\"formatblock\",\"<p>\"]] \"<ul><li>[foobar]</ul>\" compare innerHTML": "FAIL",
       "[[\"defaultparagraphseparator\",\"p\"],[\"formatblock\",\"<div>\"]] \"<del>[foobar]</del>\" queryCommandValue(\"formatblock\") after": "FAIL",
       "[[\"defaultparagraphseparator\",\"p\"],[\"formatblock\",\"<p>\"]] \"<dl><dt>[foo<dd>bar]</dl>\" queryCommandIndeterm(\"formatblock\") before": "FAIL",
-      "[[\"defaultparagraphseparator\",\"p\"],[\"formatblock\",\"<p>\"]] \"<listing>[foobar]</listing>\" compare innerHTML": "FAIL",
       "[[\"defaultparagraphseparator\",\"p\"],[\"formatblock\",\"<p>\"]] \"<ol><li>[foobar]</ol>\" compare innerHTML": "FAIL",
       "[[\"defaultparagraphseparator\",\"p\"],[\"formatblock\",\"<p>\"]] \"<ul><li>[foobar]</ul>\" compare innerHTML": "FAIL"
     }
@@ -2722,14 +2710,11 @@
   "editing/run/formatblock.html?2001-3000": {
     "total": 1000,
     "failures": {
-      "[[\"defaultparagraphseparator\",\"div\"],[\"formatblock\",\"<p>\"]] \"<xmp>[foobar]</xmp>\" compare innerHTML": "FAIL",
       "[[\"defaultparagraphseparator\",\"div\"],[\"formatblock\",\"<p>\"]] \"<xmp>[foobar]</xmp>\" queryCommandValue(\"defaultparagraphseparator\") before": "FAIL",
       "[[\"defaultparagraphseparator\",\"p\"],[\"formatblock\",\"<p>\"]] \"<listing>[foobar]</listing>\" queryCommandValue(\"formatblock\") after": "FAIL",
-      "[[\"defaultparagraphseparator\",\"p\"],[\"formatblock\",\"<p>\"]] \"<xmp>[foobar]</xmp>\" compare innerHTML": "FAIL",
       "[[\"defaultparagraphseparator\",\"p\"],[\"formatblock\",\"<pre>\"]] \"<div>[foobar]</div>\" queryCommandValue(\"defaultparagraphseparator\") before": "FAIL",
       "[[\"formatblock\",\"<blockquote>\"]] \"<p>[foo<p>bar]<p>baz\" queryCommandValue(\"formatblock\") before": "FAIL",
-      "[[\"formatblock\",\"<blockquote>\"]] \"<section><hgroup><h1>[foo]</h1><h2>bar</h2></hgroup><p>baz</section>\" compare innerHTML": "FAIL",
-      "[[\"formatblock\",\"<blockquote>\"]] \"[foo]<blockquote>bar</blockquote><p>extra\" compare innerHTML": "FAIL"
+      "[[\"formatblock\",\"<blockquote>\"]] \"<section><hgroup><h1>[foo]</h1><h2>bar</h2></hgroup><p>baz</section>\" compare innerHTML": "FAIL"
     }
   },
   "editing/run/formatblock.html?3001-4000": {
@@ -2744,38 +2729,18 @@
     "total": 1000,
     "failures": {
       "[[\"defaultparagraphseparator\",\"div\"],[\"formatblock\",\"<div>\"]] \"<div><ol><li>[foo]</ol></div>\" compare innerHTML": "FAIL",
-      "[[\"defaultparagraphseparator\",\"div\"],[\"formatblock\",\"<div>\"]] \"<div><ol><li>[foo]</ol></div>\" queryCommandValue(\"formatblock\") before": "FAIL",
-      "[[\"defaultparagraphseparator\",\"div\"],[\"formatblock\",\"<div>\"]] \"<div>[foo</div>bar]\" queryCommandValue(\"formatblock\") before": "FAIL",
-      "[[\"defaultparagraphseparator\",\"div\"],[\"formatblock\",\"<div>\"]] \"<h1>[foo</h1><h2>bar]</h2>\" queryCommandValue(\"formatblock\") before": "FAIL",
-      "[[\"defaultparagraphseparator\",\"div\"],[\"formatblock\",\"<div>\"]] \"<p>[foo<h1>bar]</h1>\" queryCommandValue(\"formatblock\") before": "FAIL",
-      "[[\"defaultparagraphseparator\",\"div\"],[\"formatblock\",\"<div>\"]] \"<xmp>[foo]</xmp>\" compare innerHTML": "FAIL",
-      "[[\"defaultparagraphseparator\",\"div\"],[\"formatblock\",\"<h1>\"]] \"<p>[foo</p>bar]\" queryCommandValue(\"formatblock\") before": "FAIL",
       "[[\"defaultparagraphseparator\",\"div\"],[\"formatblock\",\"<h1>\"]] \"<p>[foo<br>bar]</p>\" queryCommandValue(\"defaultparagraphseparator\") before": "FAIL",
-      "[[\"defaultparagraphseparator\",\"div\"],[\"formatblock\",\"<h1>\"]] \"{<p>foo</p>ba]r\" queryCommandValue(\"formatblock\") before": "FAIL",
       "[[\"defaultparagraphseparator\",\"div\"],[\"formatblock\",\"<p>\"]] \"<div>[foo<p>bar]</p></div>\" compare innerHTML": "FAIL",
-      "[[\"defaultparagraphseparator\",\"div\"],[\"formatblock\",\"<p>\"]] \"<xmp>[foo]</xmp>\" compare innerHTML": "FAIL",
       "[[\"defaultparagraphseparator\",\"p\"],[\"formatblock\",\"<div>\"]] \"<div><ol><li>[foo]</ol></div>\" compare innerHTML": "FAIL",
-      "[[\"defaultparagraphseparator\",\"p\"],[\"formatblock\",\"<div>\"]] \"<div><ol><li>[foo]</ol></div>\" queryCommandValue(\"formatblock\") before": "FAIL",
-      "[[\"defaultparagraphseparator\",\"p\"],[\"formatblock\",\"<div>\"]] \"<div>[foo</div>bar]\" queryCommandValue(\"formatblock\") before": "FAIL",
-      "[[\"defaultparagraphseparator\",\"p\"],[\"formatblock\",\"<div>\"]] \"<h1>[foo</h1><h2>bar]</h2>\" queryCommandValue(\"formatblock\") before": "FAIL",
-      "[[\"defaultparagraphseparator\",\"p\"],[\"formatblock\",\"<div>\"]] \"<p>[foo<h1>bar]</h1>\" queryCommandValue(\"formatblock\") before": "FAIL",
-      "[[\"defaultparagraphseparator\",\"p\"],[\"formatblock\",\"<div>\"]] \"<xmp>[foo]</xmp>\" compare innerHTML": "FAIL",
-      "[[\"defaultparagraphseparator\",\"p\"],[\"formatblock\",\"<h1>\"]] \"<p>[foo</p>bar]\" queryCommandValue(\"formatblock\") before": "FAIL",
-      "[[\"defaultparagraphseparator\",\"p\"],[\"formatblock\",\"<h1>\"]] \"{<p>foo</p>ba]r\" queryCommandValue(\"formatblock\") before": "FAIL",
       "[[\"defaultparagraphseparator\",\"p\"],[\"formatblock\",\"<p>\"]] \"<div>[foo<p>bar]</p></div>\" compare innerHTML": "FAIL",
       "[[\"defaultparagraphseparator\",\"p\"],[\"formatblock\",\"<p>\"]] \"<h1>[foo<br>bar]</h1>\" compare innerHTML": "FAIL",
       "[[\"defaultparagraphseparator\",\"p\"],[\"formatblock\",\"<p>\"]] \"<h1>[foo<br>bar]</h1>\" queryCommandValue(\"defaultparagraphseparator\") after": "FAIL",
       "[[\"defaultparagraphseparator\",\"p\"],[\"formatblock\",\"<p>\"]] \"<h1>[foo<br>bar]</h1>\" queryCommandValue(\"formatblock\") after": "FAIL",
-      "[[\"defaultparagraphseparator\",\"p\"],[\"formatblock\",\"<p>\"]] \"<xmp>[foo]</xmp>\" compare innerHTML": "FAIL",
       "[[\"formatblock\",\"p\"]] \"<div><div contenteditable=false><span contenteditable>[foo]</span></div></div>\" compare innerHTML": "FAIL",
       "[[\"formatblock\",\"p\"]] \"<div><div contenteditable=false><span contenteditable>[foo]</span></div></div>\" queryCommandValue(\"formatblock\") after": "FAIL",
       "[[\"formatblock\",\"p\"]] \"<div><div contenteditable=false><span contenteditable>[foo]</span></div></div>\": execCommand(\"formatblock\", false, \"p\") return value": "FAIL",
       "[[\"formatblock\",\"p\"]] \"<div><p contenteditable=false><span contenteditable>[foo]</span></p></div>\": execCommand(\"formatblock\", false, \"p\") return value": "FAIL",
-      "[[\"stylewithcss\",\"false\"],[\"defaultparagraphseparator\",\"div\"],[\"formatblock\",\"<p>\"]] \"<div style=color:blue>[foo]</div>\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"false\"],[\"defaultparagraphseparator\",\"p\"],[\"formatblock\",\"<p>\"]] \"<div style=color:blue>[foo]</div>\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"defaultparagraphseparator\",\"div\"],[\"formatblock\",\"<p>\"]] \"<div style=color:blue>[foo]</div>\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"defaultparagraphseparator\",\"div\"],[\"formatblock\",\"<p>\"]] \"<div style=color:blue>[foo]</div>\" queryCommandState(\"stylewithcss\") before": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"defaultparagraphseparator\",\"p\"],[\"formatblock\",\"<p>\"]] \"<div style=color:blue>[foo]</div>\" compare innerHTML": "FAIL"
+      "[[\"stylewithcss\",\"true\"],[\"defaultparagraphseparator\",\"div\"],[\"formatblock\",\"<p>\"]] \"<div style=color:blue>[foo]</div>\" queryCommandState(\"stylewithcss\") before": "FAIL"
     }
   },
   "editing/run/formatblock.html?5001-last": {
@@ -2832,9 +2797,6 @@
     "failures": {
       "[[\"defaultparagraphseparator\",\"div\"],[\"forwarddelete\",\"\"]] \"<ol><li>foo[</ol><p>bar]<ol><li>baz</ol>\" queryCommandValue(\"defaultparagraphseparator\") before": "FAIL",
       "[[\"forwarddelete\",\"\"]] \"<div style=white-space:nowrap>[]f\\nbar</div>\" compare innerHTML": "FAIL",
-      "[[\"forwarddelete\",\"\"]] \"<div style=white-space:nowrap>foo[] \\nbar</div>\" compare innerHTML": "FAIL",
-      "[[\"forwarddelete\",\"\"]] \"<div style=white-space:nowrap>foo[]\\n bar</div>\" compare innerHTML": "FAIL",
-      "[[\"forwarddelete\",\"\"]] \"<div style=white-space:nowrap>foo[]\\n\\nbar</div>\" compare innerHTML": "FAIL",
       "[[\"forwarddelete\",\"\"]] \"<div style=white-space:pre-line>foo[] \\nbar</div>\" compare innerHTML": "FAIL",
       "[[\"forwarddelete\",\"\"]] \"<div><div contenteditable=false><div contenteditable><div>{}<br></div></div></div></div>\" compare innerHTML": "FAIL",
       "[[\"forwarddelete\",\"\"]] \"<div><div><p>foo[]</p></div></div><div></div><div><div>bar</div></div></div>\" compare innerHTML": "FAIL",
@@ -3088,40 +3050,13 @@
   "editing/run/insertparagraph.html?7001-last": {
     "total": 195,
     "failures": {
-      "[[\"defaultparagraphseparator\",\"div\"],[\"insertparagraph\",\"\"]] \" <span contenteditable=\\\"false\\\">A</span>[] ; <span contenteditable=\\\"false\\\">B</span> ; <span contenteditable=\\\"false\\\">C</span> \" compare innerHTML": "FAIL",
-      "[[\"defaultparagraphseparator\",\"div\"],[\"insertparagraph\",\"\"]] \"<div style=display:flex><span>[]abc</span></div>\" compare innerHTML": "FAIL",
-      "[[\"defaultparagraphseparator\",\"div\"],[\"insertparagraph\",\"\"]] \"<div style=display:flex><span>a[]bc</span></div>\" compare innerHTML": "FAIL",
-      "[[\"defaultparagraphseparator\",\"div\"],[\"insertparagraph\",\"\"]] \"<div style=display:flex><span>abc[]</span></div>\" compare innerHTML": "FAIL",
-      "[[\"defaultparagraphseparator\",\"div\"],[\"insertparagraph\",\"\"]] \"<div style=display:grid><span>[]abc</span></div>\" compare innerHTML": "FAIL",
-      "[[\"defaultparagraphseparator\",\"div\"],[\"insertparagraph\",\"\"]] \"<div style=display:grid><span>a[]bc</span></div>\" compare innerHTML": "FAIL",
-      "[[\"defaultparagraphseparator\",\"div\"],[\"insertparagraph\",\"\"]] \"<div style=display:grid><span>abc[]</span></div>\" compare innerHTML": "FAIL",
-      "[[\"defaultparagraphseparator\",\"div\"],[\"insertparagraph\",\"\"]] \"<div style=display:inline-flex><span>[]abc</span></div>\" compare innerHTML": "FAIL",
-      "[[\"defaultparagraphseparator\",\"div\"],[\"insertparagraph\",\"\"]] \"<div style=display:inline-flex><span>a[]bc</span></div>\" compare innerHTML": "FAIL",
-      "[[\"defaultparagraphseparator\",\"div\"],[\"insertparagraph\",\"\"]] \"<div style=display:inline-flex><span>abc[]</span></div>\" compare innerHTML": "FAIL",
-      "[[\"defaultparagraphseparator\",\"div\"],[\"insertparagraph\",\"\"]] \"<div style=display:inline-grid><span>[]abc</span></div>\" compare innerHTML": "FAIL",
-      "[[\"defaultparagraphseparator\",\"div\"],[\"insertparagraph\",\"\"]] \"<div style=display:inline-grid><span>a[]bc</span></div>\" compare innerHTML": "FAIL",
-      "[[\"defaultparagraphseparator\",\"div\"],[\"insertparagraph\",\"\"]] \"<div style=display:inline-grid><span>abc[]</span></div>\" compare innerHTML": "FAIL",
-      "[[\"defaultparagraphseparator\",\"div\"],[\"insertparagraph\",\"\"]] \"{}<br><span style=display:block>abc<br>def<br></span>\" compare innerHTML": "FAIL",
-      "[[\"defaultparagraphseparator\",\"p\"],[\"insertparagraph\",\"\"]] \"<div style=display:flex><span>[]abc</span></div>\" compare innerHTML": "FAIL",
-      "[[\"defaultparagraphseparator\",\"p\"],[\"insertparagraph\",\"\"]] \"<div style=display:flex><span>a[]bc</span></div>\" compare innerHTML": "FAIL",
-      "[[\"defaultparagraphseparator\",\"p\"],[\"insertparagraph\",\"\"]] \"<div style=display:flex><span>abc[]</span></div>\" compare innerHTML": "FAIL",
-      "[[\"defaultparagraphseparator\",\"p\"],[\"insertparagraph\",\"\"]] \"<div style=display:grid><span>[]abc</span></div>\" compare innerHTML": "FAIL",
-      "[[\"defaultparagraphseparator\",\"p\"],[\"insertparagraph\",\"\"]] \"<div style=display:grid><span>a[]bc</span></div>\" compare innerHTML": "FAIL",
-      "[[\"defaultparagraphseparator\",\"p\"],[\"insertparagraph\",\"\"]] \"<div style=display:grid><span>abc[]</span></div>\" compare innerHTML": "FAIL",
-      "[[\"defaultparagraphseparator\",\"p\"],[\"insertparagraph\",\"\"]] \"<div style=display:inline-flex><span>[]abc</span></div>\" compare innerHTML": "FAIL",
-      "[[\"defaultparagraphseparator\",\"p\"],[\"insertparagraph\",\"\"]] \"<div style=display:inline-flex><span>a[]bc</span></div>\" compare innerHTML": "FAIL",
-      "[[\"defaultparagraphseparator\",\"p\"],[\"insertparagraph\",\"\"]] \"<div style=display:inline-flex><span>abc[]</span></div>\" compare innerHTML": "FAIL",
-      "[[\"defaultparagraphseparator\",\"p\"],[\"insertparagraph\",\"\"]] \"<div style=display:inline-grid><span>[]abc</span></div>\" compare innerHTML": "FAIL",
-      "[[\"defaultparagraphseparator\",\"p\"],[\"insertparagraph\",\"\"]] \"<div style=display:inline-grid><span>a[]bc</span></div>\" compare innerHTML": "FAIL",
-      "[[\"defaultparagraphseparator\",\"p\"],[\"insertparagraph\",\"\"]] \"<div style=display:inline-grid><span>abc[]</span></div>\" compare innerHTML": "FAIL",
-      "[[\"defaultparagraphseparator\",\"p\"],[\"insertparagraph\",\"\"]] \"{}<br><span style=display:block>abc<br>def<br></span>\" compare innerHTML": "FAIL"
+      "[[\"defaultparagraphseparator\",\"div\"],[\"insertparagraph\",\"\"]] \" <span contenteditable=\\\"false\\\">A</span>[] ; <span contenteditable=\\\"false\\\">B</span> ; <span contenteditable=\\\"false\\\">C</span> \" compare innerHTML": "FAIL"
     }
   },
   "editing/run/inserttext.html?1-1000": {
     "total": 1000,
     "failures": {
-      "[[\"inserttext\",\" \"]] \"<b>a@b</b>{}\" compare innerHTML": "FAIL",
-      "[[\"inserttext\",\" \"]] \"foo []&nbsp;        bar\" compare innerHTML": "FAIL"
+      "[[\"inserttext\",\" \"]] \"<b>a@b</b>{}\" compare innerHTML": "FAIL"
     }
   },
   "editing/run/inserttext.html?1001-2000": {
@@ -3137,8 +3072,6 @@
   "editing/run/inserttext.html?2001-last": {
     "total": 1009,
     "failures": {
-      "[[\"inserttext\",\"    \"]] \"<div style=white-space:nowrap>foo[]bar</div>\" compare innerHTML": "FAIL",
-      "[[\"inserttext\",\"    \"]] \"<div style=white-space:pre-line>foo[]bar</div>\" compare innerHTML": "FAIL",
       "[[\"inserttext\",\"X\"],[\"inserttext\",\"Y\"]] \"<div style=white-space:pre-line>abc []\\n</div>\" compare innerHTML": "FAIL",
       "[[\"inserttext\",\"X\"]] \"<div style=white-space:pre-line>abc []\\n</div>\" compare innerHTML": "FAIL",
       "[[\"inserttext\",\"a\"]] \"foo<a href=http://www.google.com><font color=black>[bar</font></a>baz]\" compare innerHTML": "FAIL",
@@ -3150,11 +3083,6 @@
       "[[\"inserttext\",\"d\"],[\"inserttext\",\"e\"],[\"inserttext\",\"f\"]] \"<div>abc[<b><i><img src=\\\"/img/lion.svg\\\">def</i></b>]ghi</div>\" compare innerHTML": "FAIL",
       "[[\"inserttext\",\"d\"],[\"inserttext\",\"e\"],[\"inserttext\",\"f\"]] \"<div>abc[<b><i><img src=\\\"/img/lion.svg\\\">def]</i></b>ghi</div>\" compare innerHTML": "FAIL",
       "[[\"inserttext\",\"d\"],[\"inserttext\",\"e\"],[\"inserttext\",\"f\"]] \"<div>abc{<b><i><img src=\\\"/img/lion.svg\\\">def</i></b>]ghi</div>\" compare innerHTML": "FAIL",
-      "[[\"inserttext\",\"d\"],[\"inserttext\",\"e\"]] \"<div>abc[<b><i><img src=\\\"/img/lion.svg\\\">de]f</i></b>ghi</div>\" compare innerHTML": "FAIL",
-      "[[\"inserttext\",\"g\"],[\"inserttext\",\"h\"]] \"<div style=display:flex><span><b>{abc</b></span><span>def</span>}</div>\" compare innerHTML": "FAIL",
-      "[[\"inserttext\",\"g\"],[\"inserttext\",\"h\"]] \"<div style=display:flex><span>abc</span><span><b>{def</b></span>}</div>\" compare innerHTML": "FAIL",
-      "[[\"inserttext\",\"g\"],[\"inserttext\",\"h\"]] \"<div style=display:grid><span><b>{abc</b></span><span>def</span>}</div>\" compare innerHTML": "FAIL",
-      "[[\"inserttext\",\"g\"],[\"inserttext\",\"h\"]] \"<div style=display:grid><span>abc</span><span><b>{def</b></span>}</div>\" compare innerHTML": "FAIL",
       "[[\"stylewithcss\",\"true\"],[\"inserttext\",\"a\"]] \"[foo<font color=blue><a href=http://www.google.com>bar]</a></font>baz\" queryCommandState(\"stylewithcss\") before": "FAIL"
     }
   },
@@ -3213,9 +3141,7 @@
   "editing/run/italic.html?1-1000": {
     "total": 1000,
     "failures": {
-      "[[\"stylewithcss\",\"false\"],[\"italic\",\"\"]] \"foo<em>b[a]r</em>baz\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"italic\",\"\"]] \"<p>[foo</p> <p>bar]</p>\" queryCommandState(\"stylewithcss\") before": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"italic\",\"\"]] \"foo<em>b[a]r</em>baz\" compare innerHTML": "FAIL"
+      "[[\"stylewithcss\",\"true\"],[\"italic\",\"\"]] \"<p>[foo</p> <p>bar]</p>\" queryCommandState(\"stylewithcss\") before": "FAIL"
     }
   },
   "editing/run/italic.html?1001-2000": {
@@ -3631,10 +3557,6 @@
       "[[\"delete\",\"\"],[\"inserttext\",\"d\"],[\"inserttext\",\"e\"]] \"<div>abc[<s></s><b><i>de]f</i></b>ghi</div>\" compare innerHTML": "FAIL",
       "[[\"delete\",\"\"],[\"inserttext\",\"d\"],[\"inserttext\",\"e\"]] \"<div>abc{<b><i>de]f</i></b>ghi</div>\" compare innerHTML": "FAIL",
       "[[\"delete\",\"\"],[\"inserttext\",\"d\"],[\"inserttext\",\"e\"]] \"<div>abc{<s></s><b><i>de]f</i></b>ghi</div>\" compare innerHTML": "FAIL",
-      "[[\"delete\",\"\"],[\"inserttext\",\"g\"],[\"inserttext\",\"h\"]] \"<div style=display:flex><span><b>{abc</b></span><span>def</span>}</div>\" compare innerHTML": "FAIL",
-      "[[\"delete\",\"\"],[\"inserttext\",\"g\"],[\"inserttext\",\"h\"]] \"<div style=display:flex><span>abc</span><span><b>{def</b></span>}</div>\" compare innerHTML": "FAIL",
-      "[[\"delete\",\"\"],[\"inserttext\",\"g\"],[\"inserttext\",\"h\"]] \"<div style=display:grid><span><b>{abc</b></span><span>def</span>}</div>\" compare innerHTML": "FAIL",
-      "[[\"delete\",\"\"],[\"inserttext\",\"g\"],[\"inserttext\",\"h\"]] \"<div style=display:grid><span>abc</span><span><b>{def</b></span>}</div>\" compare innerHTML": "FAIL",
       "[[\"forwarddelete\",\"\"],[\"inserttext\",\"B\"]] \"<table><tr><th>a<th><b>[b</b><th><b>c</b><th><b>d]</b><th>e</table>\" compare innerHTML": "FAIL",
       "[[\"forwarddelete\",\"\"],[\"inserttext\",\"d\"],[\"inserttext\",\"e\"],[\"inserttext\",\"f\"]] \"<div>abc[<b><i><img src=\\\"/img/lion.svg\\\">def</i></b>]ghi</div>\" compare innerHTML": "FAIL",
       "[[\"forwarddelete\",\"\"],[\"inserttext\",\"d\"],[\"inserttext\",\"e\"],[\"inserttext\",\"f\"]] \"<div>abc[<b><i><img src=\\\"/img/lion.svg\\\">def]</i></b>ghi</div>\" compare innerHTML": "FAIL",
@@ -3724,15 +3646,12 @@
       "[[\"stylewithcss\",\"true\"],[\"strikethrough\",\"\"]] \"<s>foo[b<span style=\\\"color:blue\\\" id=foo>ar]ba</span>z</s>\" compare innerHTML": "FAIL",
       "[[\"stylewithcss\",\"true\"],[\"strikethrough\",\"\"]] \"<s>foo[b<span style=\\\"color:blue\\\">ar]ba</span>z</s>\" compare innerHTML": "FAIL",
       "[[\"stylewithcss\",\"true\"],[\"strikethrough\",\"\"]] \"<s>foo[b<span style=\\\"font-size:3em\\\">ar]ba</span>z</s>\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"strikethrough\",\"\"]] \"<s>foo[bar]baz</s>\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"strikethrough\",\"\"]] \"foo<span style=\\\"text-decoration: underline\\\">[bar]</span>baz\" compare innerHTML": "FAIL",
       "[[\"stylewithcss\",\"true\"],[\"strikethrough\",\"\"]] \"foo<u>[bar]</u>baz\" compare innerHTML": "FAIL"
     }
   },
   "editing/run/strikethrough.html?1001-2000": {
     "total": 1000,
     "failures": {
-      "[[\"strikethrough\",\"\"]] \"fo[o<s>b]ar</s>baz\" compare innerHTML": "FAIL",
       "[[\"strikethrough\",\"\"]] \"foo<s>ba[r</s>b]az\" compare innerHTML": "FAIL",
       "[[\"stylewithcss\",\"false\"],[\"strikethrough\",\"\"]] \"<strike>foo[bar]baz</strike>\" queryCommandState(\"strikethrough\") after": "FAIL",
       "[[\"stylewithcss\",\"false\"],[\"strikethrough\",\"\"]] \"foo<s style=\\\"text-decoration: overline\\\">[bar]</s>baz\" compare innerHTML": "FAIL",
@@ -3746,22 +3665,14 @@
       "[[\"stylewithcss\",\"true\"],[\"strikethrough\",\"\"]] \"foo<s style=\\\"text-decoration: overline\\\">b[a]r</s>baz\" compare innerHTML": "FAIL",
       "[[\"stylewithcss\",\"true\"],[\"strikethrough\",\"\"]] \"foo<s style=\\\"text-decoration: underline\\\">[bar]</s>baz\" compare innerHTML": "FAIL",
       "[[\"stylewithcss\",\"true\"],[\"strikethrough\",\"\"]] \"foo<s style=\\\"text-decoration: underline\\\">b[a]r</s>baz\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"strikethrough\",\"\"]] \"foo<s>ba[r</s>]baz\" compare innerHTML": "FAIL",
       "[[\"stylewithcss\",\"true\"],[\"strikethrough\",\"\"]] \"foo<span class=\\\"underline\\\">[bar]</span>baz\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"strikethrough\",\"\"]] \"foo<u style=\\\"text-decoration: overline\\\">[bar]</u>baz\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"strikethrough\",\"\"]] \"foo[<s>b]ar</s>baz\" compare innerHTML": "FAIL"
+      "[[\"stylewithcss\",\"true\"],[\"strikethrough\",\"\"]] \"foo<u style=\\\"text-decoration: overline\\\">[bar]</u>baz\" compare innerHTML": "FAIL"
     }
   },
   "editing/run/strikethrough.html?2001-last": {
     "total": 147,
     "failures": {
       "[[\"strikethrough\",\"\"]] \"fo[o<span style=text-decoration:line-through>b]ar</span>baz\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"strikethrough\",\"\"]] \"<s>fo[o</s><del>b]ar</del>\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"strikethrough\",\"\"]] \"<strike>fo[o</strike><s>b]ar</s>\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"strikethrough\",\"\"]] \"abc<span style=\\\"text-decoration:blink line-through underline overline\\\">[def]</span>ghi\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"strikethrough\",\"\"]] \"abc<span style=\\\"text-decoration:blink overline underline\\\">[def]</span>ghi\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"strikethrough\",\"\"]] \"abc<span style=\\\"text-decoration:underline blue dotted\\\">[def]</span>ghi\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"strikethrough\",\"\"]] \"abc<span style=\\\"text-decoration:underline line-through blue dotted\\\">[def]</span>ghi\" compare innerHTML": "FAIL",
       "[[\"stylewithcss\",\"true\"],[\"strikethrough\",\"\"]] \"foo<s>[bar]</s>baz\" queryCommandState(\"strikethrough\") after": "FAIL"
     }
   },
@@ -3795,7 +3706,6 @@
       "[[\"stylewithcss\",\"true\"],[\"underline\",\"\"]] \"<p>[foo</p> <p>bar]</p>\" queryCommandState(\"stylewithcss\") before": "FAIL",
       "[[\"stylewithcss\",\"true\"],[\"underline\",\"\"]] \"<p>[foo</p><p> <span>bar</span> </p><p>baz]</p>\" compare innerHTML": "FAIL",
       "[[\"stylewithcss\",\"true\"],[\"underline\",\"\"]] \"foo<s>[bar]</s>baz\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"underline\",\"\"]] \"foo<span style=\\\"text-decoration: line-through\\\">[bar]</span>baz\" compare innerHTML": "FAIL",
       "[[\"stylewithcss\",\"true\"],[\"underline\",\"\"]] \"foo<strike>[bar]</strike>baz\" compare innerHTML": "FAIL"
     }
   },
@@ -3813,10 +3723,6 @@
   "editing/run/underline.html?2001-last": {
     "total": 147,
     "failures": {
-      "[[\"stylewithcss\",\"true\"],[\"underline\",\"\"]] \"abc<span style=\\\"text-decoration:blink line-through overline\\\">[def]</span>ghi\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"underline\",\"\"]] \"abc<span style=\\\"text-decoration:blink line-through underline overline\\\">[def]</span>ghi\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"underline\",\"\"]] \"abc<span style=\\\"text-decoration:line-through blue dotted\\\">[def]</span>ghi\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"underline\",\"\"]] \"abc<span style=\\\"text-decoration:underline line-through blue dotted\\\">[def]</span>ghi\" compare innerHTML": "FAIL",
       "[[\"stylewithcss\",\"true\"],[\"underline\",\"\"]] \"foo<u>[bar]</u>baz\" queryCommandState(\"underline\") after": "FAIL"
     }
   },

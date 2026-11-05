@@ -29,6 +29,12 @@ public abstract partial class CanvasRenderingContext2DBase
 {
     private readonly List<DrawingState> _stack = [];
     private readonly CanvasPath _path = new();
+
+    // The current default path in user space (built with the identity matrix), valid while all its segments were added with the same
+    // transformation matrix (_userSpacePathTransform): isPointInPath uses it when the path in the coordinates of the canvas overflows
+    private readonly CanvasPath _userSpacePath = new();
+    private DisplayMatrix? _userSpacePathTransform;
+    private bool _userSpacePathValid = true;
     private DrawingState _state = new();
 
     private protected CanvasRenderingContext2DBase(CanvasBitmap bitmap, CanvasRenderingContext2DSettings settings)
@@ -109,7 +115,7 @@ public abstract partial class CanvasRenderingContext2DBase
     {
         _state = new DrawingState();
         _stack.Clear();
-        _path.Clear();
+        BeginPath();
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -690,38 +696,66 @@ public abstract partial class CanvasRenderingContext2DBase
     /// <summary>https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-closepath</summary>
     /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-closepath"/>
     [IdlMember("closePath", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-closepath")]
-    public void ClosePath() => _path.ClosePath();
+    public void ClosePath()
+    {
+        _path.ClosePath();
+        GetUserSpacePathToRecord()?.ClosePath();
+    }
 
     /// <summary>https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-moveto</summary>
     /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-moveto"/>
     [IdlMember("moveTo", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-moveto")]
-    public void MoveTo(double x, double y) => _path.MoveTo(x, y, _state.Transform);
+    public void MoveTo(double x, double y)
+    {
+        _path.MoveTo(x, y, _state.Transform);
+        GetUserSpacePathToRecord()?.MoveTo(x, y, DisplayMatrix.Identity);
+    }
 
     /// <summary>https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-lineto</summary>
     /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-lineto"/>
     [IdlMember("lineTo", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-lineto")]
-    public void LineTo(double x, double y) => _path.LineTo(x, y, _state.Transform);
+    public void LineTo(double x, double y)
+    {
+        _path.LineTo(x, y, _state.Transform);
+        GetUserSpacePathToRecord()?.LineTo(x, y, DisplayMatrix.Identity);
+    }
 
     /// <summary>https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-quadraticcurveto</summary>
     /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-quadraticcurveto"/>
     [IdlMember("quadraticCurveTo", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-quadraticcurveto")]
-    public void QuadraticCurveTo(double cpx, double cpy, double x, double y) => _path.QuadraticCurveTo(cpx, cpy, x, y, _state.Transform);
+    public void QuadraticCurveTo(double cpx, double cpy, double x, double y)
+    {
+        _path.QuadraticCurveTo(cpx, cpy, x, y, _state.Transform);
+        GetUserSpacePathToRecord()?.QuadraticCurveTo(cpx, cpy, x, y, DisplayMatrix.Identity);
+    }
 
     /// <summary>https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-beziercurveto</summary>
     /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-beziercurveto"/>
     [IdlMember("bezierCurveTo", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-beziercurveto")]
-    public void BezierCurveTo(double cp1x, double cp1y, double cp2x, double cp2y, double x, double y) => _path.BezierCurveTo(cp1x, cp1y, cp2x, cp2y, x, y, _state.Transform);
+    public void BezierCurveTo(double cp1x, double cp1y, double cp2x, double cp2y, double x, double y)
+    {
+        _path.BezierCurveTo(cp1x, cp1y, cp2x, cp2y, x, y, _state.Transform);
+        GetUserSpacePathToRecord()?.BezierCurveTo(cp1x, cp1y, cp2x, cp2y, x, y, DisplayMatrix.Identity);
+    }
 
     /// <summary>https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-arcto</summary>
     /// <exception cref="DomException">An <c>IndexSizeError</c> when the radius is negative.</exception>
     /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-arcto"/>
     [IdlMember("arcTo", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-arcto")]
-    public void ArcTo(double x1, double y1, double x2, double y2, double radius) => _path.ArcTo(x1, y1, x2, y2, radius, _state.Transform, Invert(_state.Transform));
+    public void ArcTo(double x1, double y1, double x2, double y2, double radius)
+    {
+        _path.ArcTo(x1, y1, x2, y2, radius, _state.Transform, Invert(_state.Transform));
+        GetUserSpacePathToRecord()?.ArcTo(x1, y1, x2, y2, radius, DisplayMatrix.Identity, DisplayMatrix.Identity);
+    }
 
     /// <summary>https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-rect</summary>
     /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-rect"/>
     [IdlMember("rect", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-rect")]
-    public void Rect(double x, double y, double w, double h) => _path.Rect(x, y, w, h, _state.Transform);
+    public void Rect(double x, double y, double w, double h)
+    {
+        _path.Rect(x, y, w, h, _state.Transform);
+        GetUserSpacePathToRecord()?.Rect(x, y, w, h, DisplayMatrix.Identity);
+    }
 
     /// <summary>https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-roundrect</summary>
     /// <param name="x">The x coordinate of the rectangle.</param>
@@ -740,6 +774,7 @@ public abstract partial class CanvasRenderingContext2DBase
         if (CanvasPath.NormalizeRoundRectRadii(radii ?? 0d) is { } normalized)
         {
             _path.RoundRect(x, y, w, h, normalized, _state.Transform);
+            GetUserSpacePathToRecord()?.RoundRect(x, y, w, h, normalized, DisplayMatrix.Identity);
         }
     }
 
@@ -747,14 +782,21 @@ public abstract partial class CanvasRenderingContext2DBase
     /// <exception cref="DomException">An <c>IndexSizeError</c> when the radius is negative.</exception>
     /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-arc"/>
     [IdlMember("arc", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-arc")]
-    public void Arc(double x, double y, double radius, double startAngle, double endAngle, bool counterclockwise = false) => _path.Arc(x, y, radius, startAngle, endAngle, counterclockwise, _state.Transform);
+    public void Arc(double x, double y, double radius, double startAngle, double endAngle, bool counterclockwise = false)
+    {
+        _path.Arc(x, y, radius, startAngle, endAngle, counterclockwise, _state.Transform);
+        GetUserSpacePathToRecord()?.Arc(x, y, radius, startAngle, endAngle, counterclockwise, DisplayMatrix.Identity);
+    }
 
     /// <summary>https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-ellipse</summary>
     /// <exception cref="DomException">An <c>IndexSizeError</c> when a radius is negative.</exception>
     /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-ellipse"/>
     [IdlMember("ellipse", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-ellipse")]
     public void Ellipse(double x, double y, double radiusX, double radiusY, double rotation, double startAngle, double endAngle, bool counterclockwise = false)
-        => _path.Ellipse(x, y, radiusX, radiusY, rotation, startAngle, endAngle, counterclockwise, _state.Transform);
+    {
+        _path.Ellipse(x, y, radiusX, radiusY, rotation, startAngle, endAngle, counterclockwise, _state.Transform);
+        GetUserSpacePathToRecord()?.Ellipse(x, y, radiusX, radiusY, rotation, startAngle, endAngle, counterclockwise, DisplayMatrix.Identity);
+    }
 
     // ----------------------------------------------------------------------------------------------------------------
     // CanvasDrawPath (https://html.spec.whatwg.org/multipage/canvas.html#drawing-paths-to-the-canvas)
@@ -763,7 +805,28 @@ public abstract partial class CanvasRenderingContext2DBase
     /// <summary>Empties the current default path (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-beginpath).</summary>
     /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-beginpath"/>
     [IdlMember("beginPath", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-beginpath")]
-    public void BeginPath() => _path.Clear();
+    public void BeginPath()
+    {
+        _path.Clear();
+        _userSpacePath.Clear();
+        _userSpacePathTransform = null;
+        _userSpacePathValid = true;
+    }
+
+    /// <summary>Returns the current default path in user space to add a segment to, or null when the segments do not share one transformation matrix.</summary>
+    private CanvasPath? GetUserSpacePathToRecord()
+    {
+        if (!_userSpacePathValid)
+            return null;
+
+        _userSpacePathTransform ??= _state.Transform;
+        if (_userSpacePathTransform == _state.Transform)
+            return _userSpacePath;
+
+        _userSpacePathValid = false;
+        _userSpacePath.Clear();
+        return null;
+    }
 
     /// <summary>Fills the current default path with the fill style (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-fill).</summary>
     /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-fill"/>
@@ -884,9 +947,25 @@ public abstract partial class CanvasRenderingContext2DBase
 
     private bool IsPointInPath(CanvasPath path, bool isDefaultPath, double x, double y, CanvasFillRule fillRule)
     {
-        // As in the browsers, nothing is inside a path with a non-invertible transformation matrix
-        if (!double.IsFinite(x) || !double.IsFinite(y) || !path.HasSubpaths || Invert(_state.Transform) is null)
+        if (!double.IsFinite(x) || !double.IsFinite(y) || !path.HasSubpaths)
             return false;
+
+        if (Invert(_state.Transform) is null)
+        {
+            // A scale so large that the determinant overflows (scale(Number.MAX_VALUE, Number.MAX_VALUE)): as in the browsers, which keep
+            // the path in user space, the point is mapped to the user space of the current default path when the axes are not mixed
+            var transform = _state.Transform;
+            if (isDefaultPath && _userSpacePathValid && _userSpacePathTransform == transform && transform.B == 0 && transform.C == 0
+                && transform.A != 0 && transform.D != 0 && double.IsFinite(transform.A) && double.IsFinite(transform.D))
+            {
+                var point = new SvgPathData.SvgPoint((x - transform.E) / transform.A, (y - transform.F) / transform.D);
+                return double.IsFinite(point.X) && double.IsFinite(point.Y)
+                    && SvgShapeGeometry.FromCommands(_userSpacePath.ToSvgCommands()).IsPointInFill(point, fillRule == CanvasFillRule.EvenOdd);
+            }
+
+            // As in the browsers, nothing is inside a path with a non-invertible transformation matrix
+            return false;
+        }
 
         var commands = isDefaultPath ? path.ToSvgCommands() : path.ToSvgCommands(_state.Transform);
         return SvgShapeGeometry.FromCommands(commands).IsPointInFill(new SvgPathData.SvgPoint(x, y), fillRule == CanvasFillRule.EvenOdd);

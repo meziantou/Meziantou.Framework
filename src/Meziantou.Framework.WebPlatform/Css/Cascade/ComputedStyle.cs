@@ -1564,7 +1564,8 @@ internal sealed partial class ComputedStyle
         return ComputeCustomProperty(name, cascaded, registration, rollbacks: 0);
     }
 
-    private string? ComputeCustomProperty(string name, CascadedValue cascaded, CustomPropertyRegistration? registration, int rollbacks)
+    /// <param name="nullWhenInvalid">Whether a value of a registered custom property that is invalid at computed-value time is null instead of the unset value.</param>
+    private string? ComputeCustomProperty(string name, CascadedValue cascaded, CustomPropertyRegistration? registration, int rollbacks, bool nullWhenInvalid = false)
     {
         var text = cascaded.Value.Value;
         if (TryResolveKeyword(name, text, registration, out var keywordValue))
@@ -1580,7 +1581,7 @@ internal sealed partial class ComputedStyle
         {
             var keyword = InfraAscii.ToAsciiLowercase(substituted);
             if (cascaded.RollBackSubstitution is { } rollBack && rollbacks < MaxSubstitutionRollbacks && keyword is "revert" or "revert-layer" or "revert-rule")
-                return ComputeCustomProperty(name, rollBack(keyword), registration, rollbacks + 1);
+                return ComputeCustomProperty(name, rollBack(keyword), registration, rollbacks + 1, nullWhenInvalid);
 
             if (TryResolveKeyword(name, substituted, registration, out keywordValue))
                 return keywordValue;
@@ -1614,7 +1615,7 @@ internal sealed partial class ComputedStyle
         }
 
         if (substituted is null || registration.Syntax.Compute(this, substituted, cascaded.BaseUrl) is not { } computed)
-            return GetUnsetValue(name, registration);
+            return nullWhenInvalid ? null : GetUnsetValue(name, registration);
 
         if (taintedRanges is not null)
         {

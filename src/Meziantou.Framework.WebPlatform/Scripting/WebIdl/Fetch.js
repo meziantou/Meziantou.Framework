@@ -999,7 +999,7 @@
       hooks.addAbortAlgorithm(signal, () => {
         locallyAborted = true;
         abortFetch(deferred, request, responseObject, apply(abortSignalReason, signal, []));
-        if (controller !== null) controller();
+        if (controller !== null) controller(apply(abortSignalReason, signal, []));
       });
 
       const start = (bodyBytes) => {
@@ -1134,6 +1134,8 @@
     serialized.integrity = request.integrity;
     serialized.referrer = request.referrer;
     serialized.referrerPolicy = request.referrerPolicy;
+    serialized.reloadNavigation = request.reloadNavigation;
+    serialized.historyNavigation = request.historyNavigation;
     return serialized;
   };
 
@@ -1164,6 +1166,8 @@
     request.integrity = serialized.integrity;
     request.referrer = serialized.referrer;
     request.referrerPolicy = serialized.referrerPolicy;
+    request.reloadNavigation = serialized.reloadNavigation === true;
+    request.historyNavigation = serialized.historyNavigation === true;
     const headers = hooks.createHeaders(serialized.headers, request.mode === 'no-cors' ? 'request-no-cors' : 'request');
     return createRequestObject(realm, request, headers, apply(abortSignalAny, AbortSignal_, [[]]));
   };

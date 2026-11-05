@@ -549,7 +549,17 @@ internal static class ServiceWorkerFetchHandling
         var abortController = new AbortController();
         if (cancellationToken.CanBeCanceled)
         {
-            cancellationToken.Register(() => global.QueueGlobalTask(() => abortController.Abort()));
+            // The signal of the request is aborted with the deserialized abort reason of the fetch controller (https://w3c.github.io/ServiceWorker/#on-fetch-request-algorithm)
+            cancellationToken.Register(() => global.QueueGlobalTask(() =>
+            {
+                object? reason = null;
+                if (request.SerializedAbortReason is { } serializedReason && !serializedReason.TryDeserialize(global, out reason, out _))
+                {
+                    reason = null;
+                }
+
+                abortController.Abort(reason);
+            }));
         }
 
         var requestObject = operations.CreateRequest(request, abortController.Signal);

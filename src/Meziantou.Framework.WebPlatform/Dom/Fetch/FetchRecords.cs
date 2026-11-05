@@ -159,6 +159,19 @@ internal sealed partial class FetchRequest
     /// <summary>The document of the environment settings object of the request (https://fetch.spec.whatwg.org/#concept-request-client).</summary>
     public Document? Client { get; set; }
 
+    /// <summary>
+    /// The serialized abort reason of the fetch controller (https://fetch.spec.whatwg.org/#fetch-controller-serialized-abort-reason),
+    /// set when the fetch is aborted by its signal: the signal of the request of a fetch event is aborted with it.
+    /// </summary>
+    internal PortMessage? SerializedAbortReason { get; set; }
+
+    /// <summary>
+    /// The location of the script that started the request when it is fetched after the script ended (e.g. an image whose
+    /// <c>src</c> is set by a script is fetched from a microtask): as in the browsers, the source location of the violations
+    /// of the content security policies (https://w3c.github.io/webappsec-csp/#create-violation-for-request).
+    /// </summary>
+    internal Scripting.ScriptLocation? ScriptLocation { get; set; }
+
     /// <summary>https://fetch.spec.whatwg.org/#concept-request-origin: the serialized origin of the client, or <c>null</c>.</summary>
     public string Origin { get; set; } = "null";
 

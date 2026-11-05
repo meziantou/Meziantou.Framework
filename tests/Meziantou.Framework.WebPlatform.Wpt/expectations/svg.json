@@ -3622,10 +3622,7 @@
     "total": 5
   },
   "svg/text/parsing/shape-inside-invalid.svg": {
-    "total": 4,
-    "failures": {
-      "e.style['shape-inside'] = \"inset(25%)\" should not set the property value": "FAIL"
-    }
+    "total": 4
   },
   "svg/text/parsing/shape-inside-valid.svg": {
     "total": 6
@@ -4332,28 +4329,16 @@
     "total": 3
   },
   "svg/types/scripted/SVGPoint.html": {
-    "total": 1,
-    "failures": {
-      "SVGPoint interface, 'x' and 'y' attributes": "FAIL"
-    }
+    "total": 1
   },
   "svg/types/scripted/SVGPointList-error-handling.html": {
     "total": 16
   },
   "svg/types/scripted/SVGRect-negative-dimensions.html": {
-    "total": 4,
-    "failures": {
-      "A rectangle's height accepts negatives and rejects non-finite numbers": "FAIL",
-      "A rectangle's width accepts negatives and rejects non-finite numbers": "FAIL",
-      "A rectangle's x accepts negatives and rejects non-finite numbers": "FAIL",
-      "A rectangle's y accepts negatives and rejects non-finite numbers": "FAIL"
-    }
+    "total": 4
   },
   "svg/types/scripted/SVGRect.html": {
-    "total": 3,
-    "failures": {
-      "SVGRect interface, assignment, invalid values": "FAIL"
-    }
+    "total": 3
   },
   "svg/types/scripted/event-handler-all-document-element-events.svg": {
     "total": 16

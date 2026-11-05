@@ -183,11 +183,7 @@
     "total": 2
   },
   "html/infrastructure/urls/base-url/document-base-url-changes-after-nav-about-srcdoc.https.window.js": {
-    "total": 2,
-    "failures": {
-      "non-sandboxed srcdoc - parent changes baseURI": "FAIL",
-      "sandboxed srcdoc - parent changes baseURI": "FAIL"
-    }
+    "total": 2
   },
   "html/infrastructure/urls/base-url/document-base-url-initiated-grand-parent.https.window.js": {
     "total": 3

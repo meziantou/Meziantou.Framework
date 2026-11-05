@@ -210,6 +210,8 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         Integrity = GetString(serialized, "integrity"),
         Referrer = GetString(serialized, "referrer"),
         ReferrerPolicy = GetString(serialized, "referrerPolicy"),
+        IsReloadNavigation = Adapter.ToBoolean(Adapter.Get(serialized, Key("reloadNavigation"))),
+        IsHistoryNavigation = Adapter.ToBoolean(Adapter.Get(serialized, Key("historyNavigation"))),
     };
 
     private TValue FromCachedRequest(CachedRequest request)
@@ -225,6 +227,8 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         SetMember(result, "integrity", Adapter.FromString(request.Integrity));
         SetMember(result, "referrer", Adapter.FromString(request.Referrer));
         SetMember(result, "referrerPolicy", Adapter.FromString(request.ReferrerPolicy));
+        SetMember(result, "reloadNavigation", Adapter.FromBoolean(request.IsReloadNavigation));
+        SetMember(result, "historyNavigation", Adapter.FromBoolean(request.IsHistoryNavigation));
         return result;
     }
 

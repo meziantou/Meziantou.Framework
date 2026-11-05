@@ -11,14 +11,14 @@ description: "The results of the web-platform-tests of css/css-inline, and why t
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 52 | 53 | 0 | 98% |
 | [Tentative](#tentative-tests) | 5 | 6 | 0 | 83% |
-| [Reftests](#reftests) | 189 | 199 | 0 | 95% |
-| **All** | **246** | **258** | **0** | **95%** |
+| [Reftests](#reftests) | 191 | 199 | 0 | 96% |
+| **All** | **248** | **258** | **0** | **96%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 7
+- **BUG**: 5
 - **TEST BUG**: 5
 
 ## Stable tests
@@ -189,8 +189,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`initial-letter/initial-letter-sunk-initial-vrl.html`](https://wpt.fyi/results/css/css-inline/initial-letter/initial-letter-sunk-initial-vrl.html) | Pass | 1 / 1 |  |  |
 | [`initial-letter/initial-letter-sunk-initial.html`](https://wpt.fyi/results/css/css-inline/initial-letter/initial-letter-sunk-initial.html) | Pass | 4 / 4 |  |  |
 | [`initial-letter/initial-letter-with-first-line.html`](https://wpt.fyi/results/css/css-inline/initial-letter/initial-letter-with-first-line.html) | Pass | 1 / 1 |  |  |
-| [`initial-letter/initial-letter-with-tab-rtl.html`](https://wpt.fyi/results/css/css-inline/initial-letter/initial-letter-with-tab-rtl.html) | Fail | 0 / 1 | BUG | the tab preserved before the first letter (`white-space: pre`) is not part of the `::first-letter` pseudo-element (its leading white space is skipped): the tab is laid out after the initial letter box, on its line, where the reference expects it before the letter, in the box of the initial letter (with its background) |
-| [`initial-letter/initial-letter-with-tab.html`](https://wpt.fyi/results/css/css-inline/initial-letter/initial-letter-with-tab.html) | Fail | 0 / 1 | BUG | the tab preserved before the first letter (`white-space: pre`) is not part of the `::first-letter` pseudo-element (its leading white space is skipped): the tab is laid out after the initial letter box, on its line, where the reference expects it before the letter, in the box of the initial letter (with its background) |
+| [`initial-letter/initial-letter-with-tab-rtl.html`](https://wpt.fyi/results/css/css-inline/initial-letter/initial-letter-with-tab-rtl.html) | Pass | 1 / 1 |  |  |
+| [`initial-letter/initial-letter-with-tab.html`](https://wpt.fyi/results/css/css-inline/initial-letter/initial-letter-with-tab.html) | Pass | 1 / 1 |  |  |
 | [`inline-block-baseline-with-block-in-inline.html`](https://wpt.fyi/results/css/css-inline/inline-block-baseline-with-block-in-inline.html) | Pass | 1 / 1 |  |  |
 | [`inline-block-last-baseline-skips-non-contributing-block-in-inline.html`](https://wpt.fyi/results/css/css-inline/inline-block-last-baseline-skips-non-contributing-block-in-inline.html) | Pass | 1 / 1 |  |  |
 | [`model/phantom-line-boxes-001.html`](https://wpt.fyi/results/css/css-inline/model/phantom-line-boxes-001.html) | Pass | 1 / 1 |  |  |

@@ -18,7 +18,7 @@ description: "The results of the web-platform-tests of FileAPI, and why the test
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
+- **TEST BUG**: 1
 - **NOT IMPLEMENTED**: 3
 - **TEST RUNNER**: 1
 
@@ -89,7 +89,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`unicode.any.js`](https://wpt.fyi/results/FileAPI/unicode.any.js) | Pass | 8 / 8 |  |  |
 | [`url/cross-global-revoke.sub.html`](https://wpt.fyi/results/FileAPI/url/cross-global-revoke.sub.html) | Pass | 3 / 3 |  |  |
 | [`url/multi-global-origin-serialization.sub.html`](https://wpt.fyi/results/FileAPI/url/multi-global-origin-serialization.sub.html) | Pass | 1 / 1 |  |  |
-| [`url/sandboxed-iframe.html`](https://wpt.fyi/results/FileAPI/url/sandboxed-iframe.html) | Fail | 37 / 40 | BUG, TEST RUNNER | a document loaded from a blob URL created by an opaque-origin (sandboxed) document does not get the opaque origin of the blob URL, so it is cross-origin with its creator; `garbageCollect()` is not defined |
+| [`url/sandboxed-iframe.html`](https://wpt.fyi/results/FileAPI/url/sandboxed-iframe.html) | Fail | 37 / 40 | TEST BUG, TEST RUNNER | the iframes created by the sandboxed document inherit its sandboxing flags, so the document loaded from the blob URL gets a new opaque origin (https://html.spec.whatwg.org/multipage/browsers.html#determining-the-origin, step 1) and is cross-origin with its creator; the two iframe subtests fail the same way in Chrome, Firefox and Safari; `garbageCollect()` is not defined |
 | [`url/unicode-origin.sub.html`](https://wpt.fyi/results/FileAPI/url/unicode-origin.sub.html) | Pass | 1 / 1 |  |  |
 | [`url/url-charset.window.js`](https://wpt.fyi/results/FileAPI/url/url-charset.window.js) | Pass | 2 / 2 |  |  |
 | [`url/url-format.any.js`](https://wpt.fyi/results/FileAPI/url/url-format.any.js) | Pass | 12 / 12 |  |  |

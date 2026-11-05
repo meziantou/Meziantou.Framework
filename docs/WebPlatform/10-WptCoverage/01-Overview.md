@@ -48,17 +48,17 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 26,207 | 29,691 | 2,106 | 95% |
+| [Stable](#stable-tests) | 26,210 | 29,691 | 2,106 | 95% |
 | [Tentative](#tentative-tests) | 1,360 | 3,074 | 698 | 57% |
 | [Reftests](#reftests) | 27,919 | 29,220 | 172 | 96% |
-| **All** | **55,486** | **61,985** | **2,976** | **94%** |
+| **All** | **55,489** | **61,985** | **2,976** | **94%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 206
-- **TEST BUG**: 1,028
+- **BUG**: 200
+- **TEST BUG**: 1,030
 - **NOT IMPLEMENTED**: 4,297
 - **REQUIRES**: 770
   - `hardware`: 574
@@ -257,7 +257,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`html/syntax`](html/syntax.md) | 105 | 106 | 0 | 99% |
 | [`html/the-xhtml-syntax`](html/the-xhtml-syntax.md) | 13 | 13 | 0 | 100% |
 | [`html/user-activation`](html/user-activation.md) | 15 | 18 | 0 | 83% |
-| [`html/webappapis`](html/webappapis.md) | 317 | 338 | 1 | 94% |
+| [`html/webappapis`](html/webappapis.md) | 320 | 338 | 1 | 95% |
 | [`idle-detection`](idle-detection.md) | 7 | 10 | 0 | 70% |
 | [`imagebitmap-renderingcontext`](imagebitmap-renderingcontext.md) | 14 | 14 | 0 | 100% |
 | [`import-maps`](import-maps.md) | 49 | 49 | 0 | 100% |
@@ -419,7 +419,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 320 | 330 | 0 | 97% |
 | [`xml`](xml.md) | 0 | 12 | 12 | – |
-| **Total (343 sections)** | **26,207** | **29,691** | **2,106** | **95%** |
+| **Total (343 sections)** | **26,210** | **29,691** | **2,106** | **95%** |
 
 ## Tentative tests
 

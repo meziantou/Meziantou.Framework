@@ -9,17 +9,16 @@ description: "The results of the web-platform-tests of html/webappapis, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 317 | 338 | 1 | 94% |
+| [Stable](#stable-tests) | 320 | 338 | 1 | 95% |
 | [Tentative](#tentative-tests) | 2 | 6 | 0 | 33% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **319** | **344** | **1** | **93%** |
+| **All** | **322** | **344** | **1** | **94%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 4
-- **TEST BUG**: 2
+- **TEST BUG**: 3
 - **NOT IMPLEMENTED**: 8
 - **TEST RUNNER**: 11
 
@@ -108,12 +107,12 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`dynamic-markup-insertion/document-write/iframe_009.html`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/document-write/iframe_009.html) | Pass | 1 / 1 |  |  |
 | [`dynamic-markup-insertion/document-write/iframe_010.html`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/document-write/iframe_010.html) | Pass | 1 / 1 |  |  |
 | [`dynamic-markup-insertion/document-write/module-delayed.html`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/document-write/module-delayed.html) | Pass | 1 / 1 |  |  |
-| [`dynamic-markup-insertion/document-write/module-dynamic-import.html`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/document-write/module-dynamic-import.html) | Fail | 0 / 1 | BUG | the module imported with a dynamic `import()` runs its `document.write()` before the iframe's `load` event fires, so `onload` is not called first |
+| [`dynamic-markup-insertion/document-write/module-dynamic-import.html`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/document-write/module-dynamic-import.html) | Pass | 1 / 1 |  |  |
 | [`dynamic-markup-insertion/document-write/module-static-import-delayed.html`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/document-write/module-static-import-delayed.html) | Pass | 1 / 1 |  |  |
 | [`dynamic-markup-insertion/document-write/module-static-import.html`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/document-write/module-static-import.html) | Pass | 1 / 1 |  |  |
 | [`dynamic-markup-insertion/document-write/module-tla-delayed.html`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/document-write/module-tla-delayed.html) | Pass | 1 / 1 |  |  |
 | [`dynamic-markup-insertion/document-write/module-tla-immediate-promise.html`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/document-write/module-tla-immediate-promise.html) | Pass | 1 / 1 |  |  |
-| [`dynamic-markup-insertion/document-write/module-tla-import.html`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/document-write/module-tla-import.html) | Fail | 0 / 1 | BUG | the module imported with a top-level-await `import()` runs its `document.write()` before the iframe's `load` event fires, so `onload` is not called first |
+| [`dynamic-markup-insertion/document-write/module-tla-import.html`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/document-write/module-tla-import.html) | Pass | 1 / 1 |  |  |
 | [`dynamic-markup-insertion/document-write/module-tla-promise.html`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/document-write/module-tla-promise.html) | Pass | 1 / 1 |  |  |
 | [`dynamic-markup-insertion/document-write/module.html`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/document-write/module.html) | Pass | 1 / 1 |  |  |
 | [`dynamic-markup-insertion/document-write/mutation-observer.html`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/document-write/mutation-observer.html) | Pass | 4 / 4 |  |  |
@@ -130,7 +129,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`dynamic-markup-insertion/document-write/script_011.html`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/document-write/script_011.html) | Pass | 1 / 1 |  |  |
 | [`dynamic-markup-insertion/document-write/script_012.html`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/document-write/script_012.html) | Pass | 1 / 1 |  |  |
 | [`dynamic-markup-insertion/document-write/script_013.html`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/document-write/script_013.html) | Pass | 1 / 1 |  |  |
-| [`dynamic-markup-insertion/document-write/write-active-document.html`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/document-write/write-active-document.html) | Fail | 0 / 1 | BUG | `document.write()` on a document that is no longer active (its iframe navigated away via `link.click()`) is not ignored |
+| [`dynamic-markup-insertion/document-write/write-active-document.html`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/document-write/write-active-document.html) | Fail | 0 / 1 | TEST BUG | the HTML Standard does not ignore `document.write()` on a document that is no longer active (https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#document-write-steps checks only the unload and ignore-destructive-writes counters before the implicit `document.open()`), and `opening-the-input-stream/active.window.js` expects the implicit `document.open()` to replace the children of a document that was navigated away from; fails the same way in Chrome, Firefox and Safari |
 | [`dynamic-markup-insertion/document-writeln/document.writeln-01.xhtml`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/document-writeln/document.writeln-01.xhtml) | Pass | 1 / 1 |  |  |
 | [`dynamic-markup-insertion/document-writeln/document.writeln-02.html`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/document-writeln/document.writeln-02.html) | Pass | 3 / 3 |  |  |
 | [`dynamic-markup-insertion/document-writeln/document.writeln-03.html`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/document-writeln/document.writeln-03.html) | Pass | 1 / 1 |  |  |
@@ -199,7 +198,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`dynamic-markup-insertion/opening-the-input-stream/url-entry-document-sync-call.window.js`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/opening-the-input-stream/url-entry-document-sync-call.window.js) | Pass | 3 / 3 |  |  |
 | [`dynamic-markup-insertion/opening-the-input-stream/url-entry-document.window.js`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/opening-the-input-stream/url-entry-document.window.js) | Pass | 1 / 1 |  |  |
 | [`dynamic-markup-insertion/opening-the-input-stream/url-fragment.window.js`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/opening-the-input-stream/url-fragment.window.js) | Pass | 2 / 2 |  |  |
-| [`dynamic-markup-insertion/opening-the-input-stream/url.window.js`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/opening-the-input-stream/url.window.js) | Fail | 4 / 5 | BUG | after its parent iframe navigates, a child document that is active but not fully active reports `about:blank` as its `location.href` |
+| [`dynamic-markup-insertion/opening-the-input-stream/url.window.js`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/opening-the-input-stream/url.window.js) | Pass | 5 / 5 |  |  |
 | [`dynamic-markup-insertion/the-innerhtml-property/annotation-xml-fragment-parsing.html`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/the-innerhtml-property/annotation-xml-fragment-parsing.html) | Pass | 2 / 2 |  |  |
 | [`dynamic-markup-insertion/the-innerhtml-property/innerhtml-and-xml-namespaces.svg`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/the-innerhtml-property/innerhtml-and-xml-namespaces.svg) | Pass | 14 / 14 |  |  |
 | [`dynamic-markup-insertion/the-outerhtml-property/outerhtml-documentfragment.html`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/the-outerhtml-property/outerhtml-documentfragment.html) | Pass | 1 / 1 |  |  |

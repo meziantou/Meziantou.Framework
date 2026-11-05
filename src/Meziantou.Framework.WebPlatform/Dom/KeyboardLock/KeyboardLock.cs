@@ -33,7 +33,7 @@ public sealed class KeyboardLockOptions
 /// </summary>
 /// <seealso href="https://wicg.github.io/keyboard-lock/#dom-keyboard"/>
 [IdlInterface("Keyboard", "https://wicg.github.io/keyboard-lock/#dom-keyboard")]
-public sealed class Keyboard : EventTarget
+public sealed partial class Keyboard : EventTarget
 {
     /// <summary>The valid key code attribute values (https://w3c.github.io/uievents-code/#key-code-attribute-value).</summary>
     private static readonly FrozenSet<string> KeyCodes = CreateKeyCodes();

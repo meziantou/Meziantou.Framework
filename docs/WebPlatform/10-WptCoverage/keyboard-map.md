@@ -9,26 +9,20 @@ description: "The results of the web-platform-tests of keyboard-map, and why the
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 8 | 8 | – |
+| [Stable](#stable-tests) | 8 | 8 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **0** | **8** | **8** | **–** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **NOT IMPLEMENTED**: 8
+| **All** | **8** | **8** | **0** | **100%** |
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`idlharness.https.window.js`](https://wpt.fyi/results/keyboard-map/idlharness.https.window.js) | Disabled | – | NOT IMPLEMENTED | Keyboard Map API |
-| [`navigator-keyboard-map-allowed-from-cross-origin-iframe.https.html`](https://wpt.fyi/results/keyboard-map/navigator-keyboard-map-allowed-from-cross-origin-iframe.https.html) | Disabled | – | NOT IMPLEMENTED | Keyboard Map API |
-| [`navigator-keyboard-map-allowed-from-iframe.https.html`](https://wpt.fyi/results/keyboard-map/navigator-keyboard-map-allowed-from-iframe.https.html) | Disabled | – | NOT IMPLEMENTED | Keyboard Map API |
-| [`navigator-keyboard-map-blocked-from-cross-origin-iframe.https.html`](https://wpt.fyi/results/keyboard-map/navigator-keyboard-map-blocked-from-cross-origin-iframe.https.html) | Disabled | – | NOT IMPLEMENTED | Keyboard Map API |
-| [`navigator-keyboard-map-blocked-from-iframe.https.html`](https://wpt.fyi/results/keyboard-map/navigator-keyboard-map-blocked-from-iframe.https.html) | Disabled | – | NOT IMPLEMENTED | Keyboard Map API |
-| [`navigator-keyboard-map-two-parallel-requests.https.html`](https://wpt.fyi/results/keyboard-map/navigator-keyboard-map-two-parallel-requests.https.html) | Disabled | – | NOT IMPLEMENTED | Keyboard Map API |
-| [`navigator-keyboard-map-two-sequential-requests.https.html`](https://wpt.fyi/results/keyboard-map/navigator-keyboard-map-two-sequential-requests.https.html) | Disabled | – | NOT IMPLEMENTED | Keyboard Map API |
-| [`navigator-keyboard-map.https.html`](https://wpt.fyi/results/keyboard-map/navigator-keyboard-map.https.html) | Disabled | – | NOT IMPLEMENTED | Keyboard Map API |
+| [`idlharness.https.window.js`](https://wpt.fyi/results/keyboard-map/idlharness.https.window.js) | Pass | 17 / 17 |  |  |
+| [`navigator-keyboard-map-allowed-from-cross-origin-iframe.https.html`](https://wpt.fyi/results/keyboard-map/navigator-keyboard-map-allowed-from-cross-origin-iframe.https.html) | Pass | 1 / 1 |  |  |
+| [`navigator-keyboard-map-allowed-from-iframe.https.html`](https://wpt.fyi/results/keyboard-map/navigator-keyboard-map-allowed-from-iframe.https.html) | Pass | 1 / 1 |  |  |
+| [`navigator-keyboard-map-blocked-from-cross-origin-iframe.https.html`](https://wpt.fyi/results/keyboard-map/navigator-keyboard-map-blocked-from-cross-origin-iframe.https.html) | Pass | 1 / 1 |  |  |
+| [`navigator-keyboard-map-blocked-from-iframe.https.html`](https://wpt.fyi/results/keyboard-map/navigator-keyboard-map-blocked-from-iframe.https.html) | Pass | 1 / 1 |  |  |
+| [`navigator-keyboard-map-two-parallel-requests.https.html`](https://wpt.fyi/results/keyboard-map/navigator-keyboard-map-two-parallel-requests.https.html) | Pass | 1 / 1 |  |  |
+| [`navigator-keyboard-map-two-sequential-requests.https.html`](https://wpt.fyi/results/keyboard-map/navigator-keyboard-map-two-sequential-requests.https.html) | Pass | 1 / 1 |  |  |
+| [`navigator-keyboard-map.https.html`](https://wpt.fyi/results/keyboard-map/navigator-keyboard-map.https.html) | Pass | 4 / 4 |  |  |

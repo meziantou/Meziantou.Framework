@@ -242,6 +242,14 @@ public sealed class WptTests
 
     public static TheoryData<string> ClearSiteDataTests => GetTests("clear-site-data");
 
+    public static TheoryData<string> KeyboardMapTests => GetTests("keyboard-map");
+
+    public static TheoryData<string> MediaSessionTests => GetTests("mediasession");
+
+    public static TheoryData<string> PageLifecycleTests => GetTests("page-lifecycle");
+
+    public static TheoryData<string> DocumentPolicyTests => GetTests("document-policy");
+
     public static TheoryData<string> ComputePressureTests => GetTests("compute-pressure");
 
     public static TheoryData<string> IdleDetectionTests => GetTests("idle-detection");
@@ -1170,6 +1178,22 @@ public sealed class WptTests
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(ClearSiteDataTests))]
     public void ClearSiteData(string test) => Run("clear-site-data", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(KeyboardMapTests))]
+    public void KeyboardMap(string test) => Run("keyboard-map", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(MediaSessionTests))]
+    public void MediaSession(string test) => Run("mediasession", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(PageLifecycleTests))]
+    public void PageLifecycle(string test) => Run("page-lifecycle", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(DocumentPolicyTests))]
+    public void DocumentPolicy(string test) => Run("document-policy", test);
 
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(ComputePressureTests))]

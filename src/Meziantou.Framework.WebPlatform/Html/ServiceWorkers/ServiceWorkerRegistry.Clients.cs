@@ -154,6 +154,15 @@ internal sealed class ServiceWorkerClientEntry
 
     private bool _isInBackForwardCache;
 
+    /// <summary>Whether the document of the client is frozen (https://wicg.github.io/page-lifecycle/#serviceworker-changes): <c>Client.lifecycleState</c> is <c>frozen</c>.</summary>
+    public bool IsFrozen
+    {
+        get => Volatile.Read(ref _isFrozen);
+        set => Volatile.Write(ref _isFrozen, value);
+    }
+
+    private bool _isFrozen;
+
     /// <summary>
     /// Evicts the document of the client from the back/forward cache when it is in it (on the thread of its event loop), as
     /// in the browsers: e.g. a service worker posts a message to it, or claims it.

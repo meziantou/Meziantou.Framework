@@ -1,0 +1,26 @@
+{
+  "keyboard-map/idlharness.https.window.js": {
+    "total": 17
+  },
+  "keyboard-map/navigator-keyboard-map-allowed-from-cross-origin-iframe.https.html": {
+    "total": 1
+  },
+  "keyboard-map/navigator-keyboard-map-allowed-from-iframe.https.html": {
+    "total": 1
+  },
+  "keyboard-map/navigator-keyboard-map-blocked-from-cross-origin-iframe.https.html": {
+    "total": 1
+  },
+  "keyboard-map/navigator-keyboard-map-blocked-from-iframe.https.html": {
+    "total": 1
+  },
+  "keyboard-map/navigator-keyboard-map-two-parallel-requests.https.html": {
+    "total": 1
+  },
+  "keyboard-map/navigator-keyboard-map-two-sequential-requests.https.html": {
+    "total": 1
+  },
+  "keyboard-map/navigator-keyboard-map.https.html": {
+    "total": 4
+  }
+}

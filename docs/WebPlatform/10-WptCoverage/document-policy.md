@@ -9,33 +9,34 @@ description: "The results of the web-platform-tests of document-policy, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 7 | 7 | – |
-| [Tentative](#tentative-tests) | 0 | 3 | 3 | – |
+| [Stable](#stable-tests) | 5 | 7 | 0 | 71% |
+| [Tentative](#tentative-tests) | 0 | 3 | 0 | 0% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **0** | **10** | **10** | **–** |
+| **All** | **5** | **10** | **0** | **50%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 10
+- **TEST BUG**: 2
+- **NOT IMPLEMENTED**: 3
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`reporting/sync-xhr-report-only.html`](https://wpt.fyi/results/document-policy/reporting/sync-xhr-report-only.html) | Disabled | – | NOT IMPLEMENTED | Document Policy |
-| [`reporting/sync-xhr-reporting.html`](https://wpt.fyi/results/document-policy/reporting/sync-xhr-reporting.html) | Disabled | – | NOT IMPLEMENTED | Document Policy |
-| [`required-policy/document-policy.html`](https://wpt.fyi/results/document-policy/required-policy/document-policy.html) | Disabled | – | NOT IMPLEMENTED | Document Policy |
-| [`required-policy/no-document-policy.html`](https://wpt.fyi/results/document-policy/required-policy/no-document-policy.html) | Disabled | – | NOT IMPLEMENTED | Document Policy |
-| [`required-policy/required-document-policy-nested.html`](https://wpt.fyi/results/document-policy/required-policy/required-document-policy-nested.html) | Disabled | – | NOT IMPLEMENTED | Document Policy |
-| [`required-policy/required-document-policy.html`](https://wpt.fyi/results/document-policy/required-policy/required-document-policy.html) | Disabled | – | NOT IMPLEMENTED | Document Policy |
-| [`required-policy/separate-document-policies.html`](https://wpt.fyi/results/document-policy/required-policy/separate-document-policies.html) | Disabled | – | NOT IMPLEMENTED | Document Policy |
+| [`reporting/sync-xhr-report-only.html`](https://wpt.fyi/results/document-policy/reporting/sync-xhr-report-only.html) | Pass | 1 / 1 |  |  |
+| [`reporting/sync-xhr-reporting.html`](https://wpt.fyi/results/document-policy/reporting/sync-xhr-reporting.html) | Fail | 0 / 1 | TEST BUG | the synchronous request throws a `NetworkError` and the report has the expected type, body and source location, then the test calls `toJSON()` on it: `Report` and the report bodies are dictionaries since w3c/reporting#284 (https://w3c.github.io/reporting/#dictdef-report), so the reports given to the observers are plain objects without `toJSON()` (the browsers still implement the former `Report` interface) |
+| [`required-policy/document-policy.html`](https://wpt.fyi/results/document-policy/required-policy/document-policy.html) | Pass | 3 / 3 |  |  |
+| [`required-policy/no-document-policy.html`](https://wpt.fyi/results/document-policy/required-policy/no-document-policy.html) | Pass | 2 / 2 |  |  |
+| [`required-policy/required-document-policy-nested.html`](https://wpt.fyi/results/document-policy/required-policy/required-document-policy-nested.html) | Pass | 3 / 3 |  |  |
+| [`required-policy/required-document-policy.html`](https://wpt.fyi/results/document-policy/required-policy/required-document-policy.html) | Pass | 2 / 2 |  |  |
+| [`required-policy/separate-document-policies.html`](https://wpt.fyi/results/document-policy/required-policy/separate-document-policies.html) | Fail | 0 / 4 | TEST BUG | uses the `lossless-images-max-bpp` and `font-display-late-swap` (`no-font-display-late-swap`, the former syntax of a disabled boolean) configuration points, which no browser supports anymore (Chromium removed them): they are ignored, so no required policy is sent; `required-document-policy.html` says that no configuration point with a numeric value is defined anymore |
 
 ## Tentative tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`experimental-features/network-efficiency-guardrails-json.tentative.html`](https://wpt.fyi/results/document-policy/experimental-features/network-efficiency-guardrails-json.tentative.html) | Disabled | – | NOT IMPLEMENTED | Document Policy |
-| [`experimental-features/network-efficiency-guardrails-report-only.tentative.html`](https://wpt.fyi/results/document-policy/experimental-features/network-efficiency-guardrails-report-only.tentative.html) | Disabled | – | NOT IMPLEMENTED | Document Policy |
-| [`experimental-features/network-efficiency-guardrails.tentative.html`](https://wpt.fyi/results/document-policy/experimental-features/network-efficiency-guardrails.tentative.html) | Disabled | – | NOT IMPLEMENTED | Document Policy |
+| [`experimental-features/network-efficiency-guardrails-json.tentative.html`](https://wpt.fyi/results/document-policy/experimental-features/network-efficiency-guardrails-json.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | the tentative `network-efficiency-guardrails` configuration point of Document Policy (a report for each text resource that is not compressed), which only Chromium implemented behind a flag |
+| [`experimental-features/network-efficiency-guardrails-report-only.tentative.html`](https://wpt.fyi/results/document-policy/experimental-features/network-efficiency-guardrails-report-only.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | the tentative `network-efficiency-guardrails` configuration point of Document Policy (a report for each text resource that is not compressed), which only Chromium implemented behind a flag |
+| [`experimental-features/network-efficiency-guardrails.tentative.html`](https://wpt.fyi/results/document-policy/experimental-features/network-efficiency-guardrails.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | the tentative `network-efficiency-guardrails` configuration point of Document Policy (a report for each text resource that is not compressed), which only Chromium implemented behind a flag |

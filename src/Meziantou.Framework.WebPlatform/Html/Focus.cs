@@ -254,7 +254,7 @@ internal static class FocusModel
     /// <summary>Whether the element itself is a focusable area (see <see cref="IsFocusableArea(Element)"/>), not as the DOM anchor of a focused scroll navigation control.</summary>
     internal static bool IsFocusableElement(Element element)
     {
-        if (GetTabIndexValue(element) is null && !IsFocusableByDefault(element))
+        if (GetTabIndexValue(element) is null && !IsFocusableByDefault(element) && !IsKeyboardFocusableScroller(element))
             return false;
 
         if (element.AttachedShadowRoot is { DelegatesFocus: true })
@@ -268,6 +268,49 @@ internal static class FocusModel
             return HasRenderedImage(element);
 
         return IsBeingRendered(element);
+    }
+
+    /// <summary>
+    /// Whether the element is a keyboard-focusable scroll container, as in the browsers (unspecified):
+    /// a scroll container (not the root element, whose scrolling box is the viewport) that the user can scroll (<c>overflow: auto</c>
+    /// or <c>scroll</c> in an axis that overflows) and that has no focusable descendant is focusable (by the keyboard and by script,
+    /// not by a click, see <see cref="IsClickFocusable"/>). A focused scroll container stays focusable while it is a scroll container.
+    /// </summary>
+    private static bool IsKeyboardFocusableScroller(Element element)
+    {
+        var document = element.NodeDocument;
+        if (!element.IsHtmlNamespace || document.BrowsingContext is null || ReferenceEquals(element, document.DocumentElement) || element.TagId == TagId.Body
+            || !ComputedStyleDeclarations.IsBeingRendered(element))
+        {
+            return false;
+        }
+
+        var style = document.GetStyleEngine().GetStyle(element);
+        var userScrollableX = style.GetComputedValue("overflow-x") is "auto" or "scroll";
+        var userScrollableY = style.GetComputedValue("overflow-y") is "auto" or "scroll";
+        if (!userScrollableX && !userScrollableY)
+            return false;
+
+        // (the layout is not computed while it is computed)
+        var engine = document.GetLayoutEngine();
+        var state = engine.IsInLayout ? engine.TryGetScrollState(element) : engine.GetScrollState(element);
+        if (state is not { Fragment: not null })
+            return false;
+
+        if (ReferenceEquals(document.FocusedArea, element))
+            return true;
+
+        var overflows = (userScrollableX && state.MaxOffset.X > state.MinOffset.X) || (userScrollableY && state.MaxOffset.Y > state.MinOffset.Y);
+        if (!overflows)
+            return false;
+
+        for (var node = element.FirstChild; node is not null; node = node.GetNextInTreeOrder(element))
+        {
+            if (node is Element descendant && IsFocusableElement(descendant))
+                return false;
+        }
+
+        return true;
     }
 
     /// <summary>
@@ -483,8 +526,9 @@ internal static class FocusModel
         return ReferenceEquals(first, option);
     }
 
-    /// <summary>Whether the focusable area is click focusable (https://html.spec.whatwg.org/multipage/interaction.html#click-focusable): a dialog without a tabindex value is not.</summary>
-    public static bool IsClickFocusable(Element element) => IsFocusableElement(element) && (element is not HtmlDialogElement || GetTabIndexValue(element) is not null || IsEditingHost(element));
+    /// <summary>Whether the focusable area is click focusable (https://html.spec.whatwg.org/multipage/interaction.html#click-focusable): a dialog without a tabindex value is not, nor a keyboard-focusable scroll container.</summary>
+    public static bool IsClickFocusable(Element element) => IsFocusableElement(element) && (GetTabIndexValue(element) is not null || IsFocusableByDefault(element))
+        && (element is not HtmlDialogElement || GetTabIndexValue(element) is not null || IsEditingHost(element));
 
     /// <summary>
     /// Whether the element is considered rendered for the focus (see <see cref="BoxGeneration"/>): its document has a

@@ -21,16 +21,10 @@
     "total": 1
   },
   "css/css-scroll-snap/input/paged.html": {
-    "total": 5,
-    "failures": {
-      "Doesn't skip past small snappable content": "FAIL"
-    }
+    "total": 5
   },
   "css/css-scroll-snap/input/scroll-padding-paged.html": {
-    "total": 1,
-    "failures": {
-      "After page down, the scroll padding is also taken into account": "FAIL"
-    }
+    "total": 1
   },
   "css/css-scroll-snap/input/snap-area-overflow-boundary-viewport-covering.html": {
     "total": 2
@@ -216,11 +210,7 @@
     "total": 1
   },
   "css/css-scroll-snap/scroll-margin-overflow-ancestor.html": {
-    "total": 4,
-    "failures": {
-      "scroll-margin and scroll-padding are respected when overflowing an overflow: auto container": "FAIL",
-      "scroll-margin is respected when overflowing an overflow: auto container": "FAIL"
-    }
+    "total": 4
   },
   "css/css-scroll-snap/scroll-margin-visibility-check.html": {
     "total": 1
@@ -290,11 +280,7 @@
     "total": 1
   },
   "css/css-scroll-snap/scroll-snap-type-pair-005.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "Dispatches scrollsnapchange with the single dual-axis target under scroll-snap-type: pair": "TIMEOUT"
-    }
+    "total": 1
   },
   "css/css-scroll-snap/scroll-snap-type-pair-006.html": {
     "total": 1
@@ -630,10 +616,7 @@
     "total": 1
   },
   "css/css-scroll-snap/snap-to-combination-of-two-elements-2.html": {
-    "total": 1,
-    "failures": {
-      "Snap to points of combinations of two different elements": "FAIL"
-    }
+    "total": 1
   },
   "css/css-scroll-snap/snap-to-empty-sized-element.html": {
     "total": 1

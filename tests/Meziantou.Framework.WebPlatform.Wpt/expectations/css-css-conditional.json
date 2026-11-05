@@ -804,10 +804,7 @@
     "total": 12
   },
   "css/css-conditional/container-queries/scroll-state/scroll-state-scrolled-arrow-key-scroll.html": {
-    "total": 1,
-    "failures": {
-      "Arrow key press scroll": "FAIL"
-    }
+    "total": 1
   },
   "css/css-conditional/container-queries/scroll-state/scroll-state-scrolled-home-end-scroll.html": {
     "total": 2
@@ -825,10 +822,7 @@
     "total": 2
   },
   "css/css-conditional/container-queries/scroll-state/scroll-state-scrolled-multiple-scrollers.html": {
-    "total": 1,
-    "failures": {
-      "User scroll caused programmatic relative scroll": "FAIL"
-    }
+    "total": 1
   },
   "css/css-conditional/container-queries/scroll-state/scroll-state-scrolled-programmatic-absolute-scrolls.html": {
     "total": 3
@@ -837,10 +831,7 @@
     "total": 7
   },
   "css/css-conditional/container-queries/scroll-state/scroll-state-scrolled-pu-pd-scroll.html": {
-    "total": 2,
-    "failures": {
-      "PageUp key scroll": "FAIL"
-    }
+    "total": 2
   },
   "css/css-conditional/container-queries/scroll-state/scroll-state-scrolled-scrollbar-button-clicks.html": {
     "total": 1
@@ -849,10 +840,7 @@
     "total": 1
   },
   "css/css-conditional/container-queries/scroll-state/scroll-state-scrolled-spacebar-scroll.html": {
-    "total": 1,
-    "failures": {
-      "Spacebar scroll": "FAIL"
-    }
+    "total": 1
   },
   "css/css-conditional/container-queries/scroll-state/scroll-state-scrolled-user-touch-scroll.html": {
     "total": 2
@@ -882,11 +870,7 @@
     "total": 2
   },
   "css/css-conditional/container-queries/scroll-state/scroll-state-snapped-snap-changing.html": {
-    "total": 2,
-    "failures": {
-      "Initially snapped to #snapped1, scroll-state() styling #target1": "FAIL",
-      "scroll-state(snapped) matching #snapped2 while scrolling": "FAIL"
-    }
+    "total": 2
   },
   "css/css-conditional/container-queries/scroll-state/scroll-state-snapped-wm.html": {
     "total": 2

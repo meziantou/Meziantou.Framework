@@ -36,6 +36,28 @@ internal sealed partial class ServiceWorkerRegistry
     }
 
     /// <summary>
+    /// The cookie jar of the requests of the service workers of a storage key: the one of the browsing context group, or for
+    /// the partitioned storage key of a credentialless iframe (https://wicg.github.io/anonymous-iframe/#spec-storage-key), the
+    /// credentialless cookie jar of its clients (the cookies of the top-level page), or null when it has no client left.
+    /// </summary>
+    private CookieJar? GetCookieJar(StorageKey storageKey)
+    {
+        if (storageKey.PartitionNonce is null)
+            return GroupOwner.GetCookieJar(credentialless: false);
+
+        lock (_lock)
+        {
+            foreach (var client in _clients)
+            {
+                if (client.StorageKey == storageKey && client.Global is { } global)
+                    return global.EnvironmentDocument.CookieJar;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
     /// The environment is discarded (its document is unloaded, or its worker ends): it is no longer a client, and the
     /// registration it used may be activated or cleared (https://w3c.github.io/ServiceWorker/#on-client-unload-algorithm).
     /// </summary>

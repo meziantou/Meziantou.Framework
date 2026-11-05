@@ -2240,10 +2240,19 @@ internal static class UserAgentDefaultActions
     /// </summary>
     private static void FocusClickedArea(Document topDocument, Node target)
     {
+        // As in the browsers, a click in editable content focuses its editing host, unless the focusable area is in the editable
+        // content (e.g. a form control in the editing host): not a focusable element of a shadow tree that the editable content
+        // is slotted in
+        var editingHost = Html.Editing.GetEditingHost(target) is { } host && FocusModel.IsClickFocusable(host) ? host : null;
         for (Node? node = target; node is not null; node = HtmlElement.GetFlatTreeParent(node))
         {
             if (node is not Element element)
                 continue;
+
+            if (editingHost is not null && !editingHost.IsInclusiveAncestorOf(element) && (FocusModel.IsClickFocusable(element) || element.AttachedShadowRoot is { DelegatesFocus: true }))
+            {
+                element = editingHost;
+            }
 
             if (FocusModel.IsClickFocusable(element))
             {

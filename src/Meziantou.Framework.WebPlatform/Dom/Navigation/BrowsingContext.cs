@@ -2798,9 +2798,10 @@ public sealed partial class BrowsingContext : IDisposable
         document.StartRenderBlockingPeriod();
         InitializeServiceWorkerClient(document, parameters.ReservedClient);
 
-        // The window of an initial about:blank document is reused by a same origin-domain document
+        // The window of an initial about:blank document is reused by a same origin-domain document, unless the credentialless
+        // attribute of the iframe changed since the initial document was created (https://wicg.github.io/anonymous-iframe/#spec-window-reuse)
         Window window;
-        if (!switchesGroup && activeDocument.IsInitialAboutBlank && Document.IsSameOriginDomain(activeDocument, document))
+        if (!switchesGroup && activeDocument.IsInitialAboutBlank && Document.IsSameOriginDomain(activeDocument, document) && activeDocument.IsCredentialless == document.IsCredentialless)
         {
             window = activeDocument.RelevantWindow!;
         }

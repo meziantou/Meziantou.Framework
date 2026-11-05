@@ -3,11 +3,7 @@
     "total": 2
   },
   "html/anonymous-iframe/anonymous-window.tentative.https.window.js": {
-    "total": 3,
-    "failures": {
-      "Credentialless (false => true) => window not reused.": "FAIL",
-      "Credentialless (true => false) => window not reused.": "FAIL"
-    }
+    "total": 3
   },
   "html/anonymous-iframe/cache-storage.tentative.https.window.js": {
     "total": 1
@@ -99,10 +95,7 @@
     "total": 3
   },
   "html/anonymous-iframe/worker-cookies.tentative.https.window.js?worker=service_worker": {
-    "total": 3,
-    "failures": {
-      "Worker spawned from credentialless iframe can't access global cookies": "FAIL"
-    }
+    "total": 3
   },
   "html/anonymous-iframe/worker-cookies.tentative.https.window.js?worker=shared_worker": {
     "total": 3

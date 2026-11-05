@@ -376,6 +376,27 @@ public sealed class AdfDocumentTests
         Assert.Null(new AdfDate { Timestamp = "not a date" }.GetDateTimeOffset());
     }
 
+    [Theory]
+    [InlineData("1767225667225600000")]
+    [InlineData("-1767225667225600000")]
+    [InlineData("253402300800000")]
+    [InlineData("-62135596801")]
+    [InlineData("-99999999999")]
+    public void AnOutOfRangeDateTimestampHasNoValue(string timestamp)
+    {
+        Assert.Null(new AdfDate { Timestamp = timestamp }.GetDateTimeOffset());
+    }
+
+    [Theory]
+    [InlineData("253402300799999", "9999-12-31T23:59:59.999+00:00")]
+    [InlineData("-62135596800000", "0001-01-01T00:00:00+00:00")]
+    [InlineData("-62135596800", "0001-01-01T00:00:00+00:00")]
+    public void DateTimestampsAtTheEdgesOfTheRangeAreRead(string timestamp, string expected)
+    {
+        var date = new AdfDate { Timestamp = timestamp };
+        Assert.Equal(DateTimeOffset.Parse(expected, CultureInfo.InvariantCulture), date.GetDateTimeOffset());
+    }
+
     [Fact]
     public void DocumentsCanBeBuiltAndConvertedWithoutParsing()
     {

@@ -1,0 +1,45 @@
+{
+  "is-input-pending/idlharness.window.js": {
+    "total": 25
+  },
+  "is-input-pending/security/cross-origin-subframe-complex-clip.sub.html": {
+    "total": 1
+  },
+  "is-input-pending/security/cross-origin-subframe-masked-complex-clip.sub.html": {
+    "total": 2
+  },
+  "is-input-pending/security/cross-origin-subframe-masked-pointer-events-mixed-2.sub.html": {
+    "total": 2
+  },
+  "is-input-pending/security/cross-origin-subframe-masked-pointer-events-mixed.sub.html": {
+    "total": 1
+  },
+  "is-input-pending/security/cross-origin-subframe-masked-pointer-events-none.sub.html": {
+    "total": 1
+  },
+  "is-input-pending/security/cross-origin-subframe-overlap.sub.html": {
+    "total": 2
+  },
+  "is-input-pending/security/cross-origin-subframe-pointer-events-none.sub.html": {
+    "total": 1
+  },
+  "is-input-pending/security/cross-origin-subframe-transformed.sub.html": {
+    "total": 2
+  },
+  "is-input-pending/security/cross-origin-subframe.sub.html": {
+    "total": 1
+  },
+  "is-input-pending/tentative/same-origin-subframe.sub.html": {
+    "total": 2,
+    "failures": {
+      "can detect same-origin iframe events in parent": "FAIL",
+      "can detect same-origin iframe events in subframe": "FAIL"
+    }
+  },
+  "is-input-pending/tentative/toplevel.html": {
+    "total": 1,
+    "failures": {
+      "toplevel mouse events detected": "FAIL"
+    }
+  }
+}

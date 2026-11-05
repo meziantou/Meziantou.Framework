@@ -9,39 +9,40 @@ description: "The results of the web-platform-tests of longtask-timing, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 21 | 21 | – |
+| [Stable](#stable-tests) | 18 | 21 | 0 | 86% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **0** | **21** | **21** | **–** |
+| **All** | **18** | **21** | **0** | **86%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 21
+- **TEST BUG**: 2
+- **TEST RUNNER**: 1
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`buffered-flag.window.js`](https://wpt.fyi/results/longtask-timing/buffered-flag.window.js) | Disabled | – | NOT IMPLEMENTED | Long Tasks API |
-| [`containerNames.html`](https://wpt.fyi/results/longtask-timing/containerNames.html) | Disabled | – | NOT IMPLEMENTED | Long Tasks API |
-| [`containerTypes.html`](https://wpt.fyi/results/longtask-timing/containerTypes.html) | Disabled | – | NOT IMPLEMENTED | Long Tasks API |
-| [`idlharness.window.js`](https://wpt.fyi/results/longtask-timing/idlharness.window.js) | Disabled | – | NOT IMPLEMENTED | Long Tasks API |
-| [`long-microtask.window.js`](https://wpt.fyi/results/longtask-timing/long-microtask.window.js) | Disabled | – | NOT IMPLEMENTED | Long Tasks API |
-| [`longtask-attributes.html`](https://wpt.fyi/results/longtask-timing/longtask-attributes.html) | Disabled | – | NOT IMPLEMENTED | Long Tasks API |
-| [`longtask-before-observer.window.js`](https://wpt.fyi/results/longtask-timing/longtask-before-observer.window.js) | Disabled | – | NOT IMPLEMENTED | Long Tasks API |
-| [`longtask-detach-frame.html`](https://wpt.fyi/results/longtask-timing/longtask-detach-frame.html) | Disabled | – | NOT IMPLEMENTED | Long Tasks API |
-| [`longtask-in-childiframe-crossorigin.html`](https://wpt.fyi/results/longtask-timing/longtask-in-childiframe-crossorigin.html) | Disabled | – | NOT IMPLEMENTED | Long Tasks API |
-| [`longtask-in-childiframe.html`](https://wpt.fyi/results/longtask-timing/longtask-in-childiframe.html) | Disabled | – | NOT IMPLEMENTED | Long Tasks API |
-| [`longtask-in-externalscript.html`](https://wpt.fyi/results/longtask-timing/longtask-in-externalscript.html) | Disabled | – | NOT IMPLEMENTED | Long Tasks API |
-| [`longtask-in-parentiframe.html`](https://wpt.fyi/results/longtask-timing/longtask-in-parentiframe.html) | Disabled | – | NOT IMPLEMENTED | Long Tasks API |
-| [`longtask-in-raf.html`](https://wpt.fyi/results/longtask-timing/longtask-in-raf.html) | Disabled | – | NOT IMPLEMENTED | Long Tasks API |
-| [`longtask-in-sibling-iframe-crossorigin.html`](https://wpt.fyi/results/longtask-timing/longtask-in-sibling-iframe-crossorigin.html) | Disabled | – | NOT IMPLEMENTED | Long Tasks API |
-| [`longtask-in-sibling-iframe.html`](https://wpt.fyi/results/longtask-timing/longtask-in-sibling-iframe.html) | Disabled | – | NOT IMPLEMENTED | Long Tasks API |
-| [`longtask-promise.html`](https://wpt.fyi/results/longtask-timing/longtask-promise.html) | Disabled | – | NOT IMPLEMENTED | Long Tasks API |
-| [`longtask-sync-xhr.html`](https://wpt.fyi/results/longtask-timing/longtask-sync-xhr.html) | Disabled | – | NOT IMPLEMENTED | Long Tasks API |
-| [`longtask-tojson.html`](https://wpt.fyi/results/longtask-timing/longtask-tojson.html) | Disabled | – | NOT IMPLEMENTED | Long Tasks API |
-| [`shared-renderer/longtask-in-new-window.html`](https://wpt.fyi/results/longtask-timing/shared-renderer/longtask-in-new-window.html) | Disabled | – | NOT IMPLEMENTED | Long Tasks API |
-| [`spin-eventloop-not-longtask.html`](https://wpt.fyi/results/longtask-timing/spin-eventloop-not-longtask.html) | Disabled | – | NOT IMPLEMENTED | Long Tasks API |
-| [`supported-longtask-types.window.js`](https://wpt.fyi/results/longtask-timing/supported-longtask-types.window.js) | Disabled | – | NOT IMPLEMENTED | Long Tasks API |
+| [`buffered-flag.window.js`](https://wpt.fyi/results/longtask-timing/buffered-flag.window.js) | Pass | 1 / 1 |  |  |
+| [`containerNames.html`](https://wpt.fyi/results/longtask-timing/containerNames.html) | Pass | 1 / 1 |  |  |
+| [`containerTypes.html`](https://wpt.fyi/results/longtask-timing/containerTypes.html) | Fail | 0 / 4 | TEST BUG | `observe({ entryTypes: ['longtask'], buffered: false })`: the `buffered` member cannot be used with `entryTypes`, so `observe()` throws a `TypeError` (https://w3c.github.io/performance-timeline/#observe-method, step 4); Chromium ignores it |
+| [`idlharness.window.js`](https://wpt.fyi/results/longtask-timing/idlharness.window.js) | Fail | 0 / 1 | TEST BUG | fetches `/interfaces/longtasks.idl`, which web-platform-tests removed with the IDL of webref when the Long Tasks API was discontinued (its interfaces are still implemented) |
+| [`long-microtask.window.js`](https://wpt.fyi/results/longtask-timing/long-microtask.window.js) | Pass | 1 / 1 |  |  |
+| [`longtask-attributes.html`](https://wpt.fyi/results/longtask-timing/longtask-attributes.html) | Pass | 1 / 1 |  |  |
+| [`longtask-before-observer.window.js`](https://wpt.fyi/results/longtask-timing/longtask-before-observer.window.js) | Pass | 1 / 1 |  |  |
+| [`longtask-detach-frame.html`](https://wpt.fyi/results/longtask-timing/longtask-detach-frame.html) | Pass | 1 / 1 |  |  |
+| [`longtask-in-childiframe-crossorigin.html`](https://wpt.fyi/results/longtask-timing/longtask-in-childiframe-crossorigin.html) | Pass | 1 / 1 |  |  |
+| [`longtask-in-childiframe.html`](https://wpt.fyi/results/longtask-timing/longtask-in-childiframe.html) | Pass | 1 / 1 |  |  |
+| [`longtask-in-externalscript.html`](https://wpt.fyi/results/longtask-timing/longtask-in-externalscript.html) | Pass | 1 / 1 |  |  |
+| [`longtask-in-parentiframe.html`](https://wpt.fyi/results/longtask-timing/longtask-in-parentiframe.html) | Pass | 1 / 1 |  |  |
+| [`longtask-in-raf.html`](https://wpt.fyi/results/longtask-timing/longtask-in-raf.html) | Pass | 1 / 1 |  |  |
+| [`longtask-in-sibling-iframe-crossorigin.html`](https://wpt.fyi/results/longtask-timing/longtask-in-sibling-iframe-crossorigin.html) | Pass | 1 / 1 |  |  |
+| [`longtask-in-sibling-iframe.html`](https://wpt.fyi/results/longtask-timing/longtask-in-sibling-iframe.html) | Pass | 1 / 1 |  |  |
+| [`longtask-promise.html`](https://wpt.fyi/results/longtask-timing/longtask-promise.html) | Pass | 4 / 4 |  |  |
+| [`longtask-sync-xhr.html`](https://wpt.fyi/results/longtask-timing/longtask-sync-xhr.html) | Timeout | 0 / 1 | TEST RUNNER | a synchronous request of a window blocks the thread that advances the virtual clock: the runner answers it without delay, so the `XMLHttpRequest` of `delay-css.py?delay=100` does not last 50 ms |
+| [`longtask-tojson.html`](https://wpt.fyi/results/longtask-timing/longtask-tojson.html) | Pass | 1 / 1 |  |  |
+| [`shared-renderer/longtask-in-new-window.html`](https://wpt.fyi/results/longtask-timing/shared-renderer/longtask-in-new-window.html) | Pass | 1 / 1 |  |  |
+| [`spin-eventloop-not-longtask.html`](https://wpt.fyi/results/longtask-timing/spin-eventloop-not-longtask.html) | Pass | 1 / 1 |  |  |
+| [`supported-longtask-types.window.js`](https://wpt.fyi/results/longtask-timing/supported-longtask-types.window.js) | Pass | 2 / 2 |  |  |

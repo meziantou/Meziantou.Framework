@@ -33,6 +33,7 @@ public sealed class Performance : EventTarget
     private List<PerformanceEntry>? _firstInputBuffer;
     private List<PerformanceEntry>? _interactionContentfulPaintBuffer;
     private List<PerformanceEntry>? _softNavigationBuffer;
+    private List<PerformanceEntry>? _longTaskBuffer;
     private EventCounts? _eventCounts;
     private ulong _paintDroppedEntriesCount;
     private ulong _largestContentfulPaintDroppedEntriesCount;
@@ -42,6 +43,7 @@ public sealed class Performance : EventTarget
     private ulong _firstInputDroppedEntriesCount;
     private ulong _interactionContentfulPaintDroppedEntriesCount;
     private ulong _softNavigationDroppedEntriesCount;
+    private ulong _longTaskDroppedEntriesCount;
     private IReadOnlyList<string>? _supportedEntryTypes;
     private ulong _lastEntryId = (ulong)System.Security.Cryptography.RandomNumberGenerator.GetInt32(1, 10_000);
     private int _resourceTimingBufferSizeLimit = DefaultResourceTimingBufferSize;
@@ -60,7 +62,7 @@ public sealed class Performance : EventTarget
     /// in alphabetical order: for a window, <c>container</c> (see <see cref="WebPlatformFeatures.ContainerTimingEnabled"/>), <c>element</c> (see <see cref="WebPlatformFeatures.ElementTimingEnabled"/>),
     /// <c>event</c> and <c>first-input</c> (see <see cref="WebPlatformFeatures.EventTimingEnabled"/>), <c>interaction-contentful-paint</c>
     /// and <c>soft-navigation</c> (see <see cref="WebPlatformFeatures.SoftNavigationsEnabled"/>), <c>largest-contentful-paint</c> (see <see cref="WebPlatformFeatures.LargestContentfulPaintEnabled"/>), <c>layout-shift</c>
-    /// (see <see cref="WebPlatformFeatures.LayoutInstabilityEnabled"/>), <c>navigation</c> (see <see cref="WebPlatformFeatures.NavigationTimingEnabled"/>)
+    /// (see <see cref="WebPlatformFeatures.LayoutInstabilityEnabled"/>), <c>longtask</c> (see <see cref="WebPlatformFeatures.LongTasksEnabled"/>), <c>navigation</c> (see <see cref="WebPlatformFeatures.NavigationTimingEnabled"/>)
     /// <c>paint</c> (see <see cref="WebPlatformFeatures.PaintTimingEnabled"/>) and <c>visibility-state</c> (see
     /// <see cref="WebPlatformFeatures.VisibilityStateEntryEnabled"/>); <c>mark</c> and <c>measure</c> (see
     /// <see cref="WebPlatformFeatures.UserTimingEnabled"/>); and <c>resource</c>.
@@ -101,6 +103,11 @@ public sealed class Performance : EventTarget
         if (isWindow && features.LayoutInstabilityEnabled)
         {
             types.Add(LayoutShift.LayoutShiftEntryType);
+        }
+
+        if (isWindow && features.LongTasksEnabled)
+        {
+            types.Add(PerformanceLongTaskTiming.LongTaskEntryType);
         }
 
         if (features.UserTimingEnabled)
@@ -462,6 +469,7 @@ public sealed class Performance : EventTarget
         PerformanceEventTiming.FirstInputEntryType => _firstInputBuffer ?? [],
         InteractionContentfulPaint.InteractionContentfulPaintEntryType => _interactionContentfulPaintBuffer ?? [],
         PerformanceSoftNavigation.SoftNavigationEntryType => _softNavigationBuffer ?? [],
+        PerformanceLongTaskTiming.LongTaskEntryType => _longTaskBuffer ?? [],
         _ => [],
     };
 
@@ -478,6 +486,7 @@ public sealed class Performance : EventTarget
         PerformanceEventTiming.FirstInputEntryType => _firstInputDroppedEntriesCount,
         InteractionContentfulPaint.InteractionContentfulPaintEntryType => _interactionContentfulPaintDroppedEntriesCount,
         PerformanceSoftNavigation.SoftNavigationEntryType => _softNavigationDroppedEntriesCount,
+        PerformanceLongTaskTiming.LongTaskEntryType => _longTaskDroppedEntriesCount,
         _ => 0,
     };
 
@@ -666,6 +675,13 @@ public sealed class Performance : EventTarget
 
     /// <summary>A soft navigation entry: queued to the observers and added to the buffer of the <c>soft-navigation</c> type.</summary>
     internal void QueueSoftNavigationEntry(PerformanceSoftNavigation entry) => QueueBufferedEntry(entry, ref _softNavigationBuffer, PerformanceSoftNavigation.MaxBufferSize, ref _softNavigationDroppedEntriesCount);
+
+    /// <summary>
+    /// A long task entry (https://w3c.github.io/longtasks/#report-long-tasks): queued to the observers and added to the buffer
+    /// of the <c>longtask</c> type, which the <c>buffered</c> observers read; it is not available from the performance
+    /// timeline (<see cref="GetEntries"/>).
+    /// </summary>
+    internal void QueueLongTaskEntry(PerformanceLongTaskTiming entry) => QueueBufferedEntry(entry, ref _longTaskBuffer, PerformanceLongTaskTiming.MaxBufferSize, ref _longTaskDroppedEntriesCount);
 
     /// <summary>An element timing entry: queued to the observers and added to the buffer of the <c>element</c> type.</summary>
     internal void QueueElementTimingEntry(PerformanceElementTiming entry) => QueueBufferedEntry(entry, ref _elementTimingBuffer, PerformanceElementTiming.MaxBufferSize, ref _elementTimingDroppedEntriesCount);

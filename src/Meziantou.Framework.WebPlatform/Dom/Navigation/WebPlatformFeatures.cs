@@ -428,6 +428,21 @@ public sealed record WebPlatformFeatures
     public bool NavigationTimingEnabled { get; init; } = true;
 
     /// <summary>
+    /// Gets or sets whether the Long Tasks API is exposed (https://w3c.github.io/longtasks/): the
+    /// <c>PerformanceLongTaskTiming</c> and <c>TaskAttributionTiming</c> interfaces and the <c>longtask</c> entry type. The
+    /// tasks of the event loop that run scripts for 50 milliseconds or more are reported to the windows of their pages. The
+    /// default is true.
+    /// </summary>
+    public bool LongTasksEnabled { get; init; } = true;
+
+    /// <summary>
+    /// Gets or sets whether <c>navigator.scheduling.isInputPending()</c> is exposed (https://wicg.github.io/is-input-pending/):
+    /// the <c>Scheduling</c> interface and <c>navigator.scheduling</c> (see <see cref="BrowsingContextOptions.PendingInput"/>).
+    /// The default is true.
+    /// </summary>
+    public bool InputPendingEnabled { get; init; } = true;
+
+    /// <summary>
     /// Gets or sets whether the scroll-driven animations are enabled (https://drafts.csswg.org/scroll-animations-1/): the
     /// <c>ScrollTimeline</c> and <c>ViewTimeline</c> interfaces and the <c>rangeStart</c> and <c>rangeEnd</c> members of
     /// <c>Animation</c>. When disabled, the scroll progress and view progress timelines of the styles

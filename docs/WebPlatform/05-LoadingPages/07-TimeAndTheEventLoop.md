@@ -92,6 +92,37 @@ The animation frames are timers of the event loop, at a fixed rate. Each one run
 animations and their events, the `requestAnimationFrame()` callbacks, the styles, the resize and intersection observers.
 A screenshot or a geometry API does not wait for them: the layout is computed when it is read.
 
+## Long tasks
+
+A task that runs scripts for 50 ms or more is a long task ([Long Tasks API](https://w3c.github.io/longtasks/)): it is
+reported as a [PerformanceLongTaskTiming](cref:Meziantou.Framework.WebPlatform.Dom.PerformanceLongTaskTiming) to the `longtask` performance observers of the windows of the page. Observe
+them from your application to find the scripts that block a page:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/PerformanceTimelineScriptTests.cs;region=WebPlatform_LongTasks;format=md-fenced-code-block;dedent=true -->
+```csharp
+var window = document.DefaultView!;
+var longTasks = new List<string>();
+var observer = new PerformanceObserver(window, (entries, _, _) =>
+{
+    foreach (var entry in entries.GetEntriesByType("longtask").Cast<PerformanceLongTaskTiming>())
+    {
+        // e.g. "self: 60 ms" for a script of the window, "same-origin-descendant: 60 ms (iframe #ad)" for an iframe
+        var container = entry.Attribution[0];
+        longTasks.Add(container.ContainerType == "window" ? $"{entry.Name}: {entry.Duration} ms" : $"{entry.Name}: {entry.Duration} ms ({container.ContainerType} #{container.ContainerId})");
+    }
+});
+observer.Observe(new PerformanceObserverInit { Type = "longtask", Buffered = true });
+```
+<!-- endref -->
+
+The name of an entry tells where the scripts ran, seen from the window that observes it: `self`, a frame of the same
+origin (`same-origin-ancestor`, `same-origin-descendant`, `same-origin`, whose container is in
+[Attribution](cref:Meziantou.Framework.WebPlatform.Dom.PerformanceLongTaskTiming.Attribution)), a cross-origin frame, or `multiple-contexts`. With the system clock, a task is timed from its
+first script to its end. A fake clock is never read for the long tasks, as each read can advance it: a task lasts from
+the first to the last time its scripts read the time (`performance.now()`, the time stamps of the events), so a script
+that waits on `performance.now()` for 60 ms makes a long task. The tasks that run no script are not reported, and the
+parsing of the document of `Navigate()` counts as one task.
+
 ## Run the event loop on your own thread
 
 A host that runs a page on its own thread (as the Playwright server does) sets `EventLoop.WorkSignal`: the callback is

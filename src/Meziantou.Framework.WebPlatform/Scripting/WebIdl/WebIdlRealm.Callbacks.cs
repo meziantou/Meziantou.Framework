@@ -65,6 +65,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         var callbackRealm = Agent.GetAssociatedRealm(function) ?? this;
 
         using var authorCode = Html.AuthorCodeScope.Enter();
+        callbackRealm.GlobalScope.EventLoop.RecordScriptEvaluation(callbackRealm.GlobalScope);
         Agent.Host.OnCallbackInvoking();
 
         // https://webidl.spec.whatwg.org/#prepare-to-run-a-callback: the realm of the callback is the entry realm
@@ -94,6 +95,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         // object ("prepare to run script"), which is the entry realm: the TypeErrors are created in this realm
         var callbackRealm = Agent.GetAssociatedRealm(obj) ?? this;
         var function = obj;
+        callbackRealm.GlobalScope.EventLoop.RecordScriptEvaluation(callbackRealm.GlobalScope);
         Agent.Host.OnCallbackInvoking();
         var previousEntryDocument = Document.EntryGlobalDocument;
         Document.EntryGlobalDocument = callbackRealm.GlobalScope.EnvironmentDocument;

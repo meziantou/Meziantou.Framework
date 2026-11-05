@@ -10,16 +10,16 @@ description: "The results of the web-platform-tests of performance-timeline, and
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 29 | 30 | 0 | 97% |
-| [Tentative](#tentative-tests) | 6 | 21 | 0 | 29% |
+| [Tentative](#tentative-tests) | 7 | 21 | 0 | 33% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **35** | **51** | **0** | **69%** |
+| **All** | **36** | **51** | **0** | **71%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **TEST BUG**: 1
-- **NOT IMPLEMENTED**: 15
+- **NOT IMPLEMENTED**: 14
 
 ## Stable tests
 
@@ -65,7 +65,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`navigation-id-detached-frame.tentative.html`](https://wpt.fyi/results/performance-timeline/navigation-id-detached-frame.tentative.html) | Pass | 1 / 1 |  |  |
 | [`navigation-id-element-timing.tentative.html`](https://wpt.fyi/results/performance-timeline/navigation-id-element-timing.tentative.html) | Pass | 1 / 1 |  |  |
 | [`navigation-id-initial-load.tentative.html`](https://wpt.fyi/results/performance-timeline/navigation-id-initial-load.tentative.html) | Pass | 1 / 1 |  |  |
-| [`navigation-id-long-task-task-attribution.tentative.html`](https://wpt.fyi/results/performance-timeline/navigation-id-long-task-task-attribution.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | the Long Tasks API (the `longtask` entry type) |
+| [`navigation-id-long-task-task-attribution.tentative.html`](https://wpt.fyi/results/performance-timeline/navigation-id-long-task-task-attribution.tentative.html) | Pass | 1 / 1 |  |  |
 | [`navigation-id-mark-measure.tentative.html`](https://wpt.fyi/results/performance-timeline/navigation-id-mark-measure.tentative.html) | Pass | 1 / 1 |  |  |
 | [`navigation-id-reset.tentative.html`](https://wpt.fyi/results/performance-timeline/navigation-id-reset.tentative.html) | Fail | 0 / 1 | TEST BUG | the test does not wait for the reload: `location.reload()` navigates from a task, so the `waitForPageShow` and the mark of the next scripts still run in the document restored from the back/forward cache, and the second navigation id is the one of that document (the restoration does regenerate it, which the first assertion checks) |
 | [`navigation-id-resource-timing.tentative.html`](https://wpt.fyi/results/performance-timeline/navigation-id-resource-timing.tentative.html) | Pass | 1 / 1 |  |  |

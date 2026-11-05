@@ -56,6 +56,7 @@ internal sealed class JavaScriptHost(JavaScriptScriptEngine owner) : JsHost
         // Prepare to run a callback with the incumbent settings object (the backup incumbent settings object stack), and
         // push the script execution context of the active script
         owner.BackupIncumbentGlobals.Push(state.Incumbent);
+        state.Incumbent?.EventLoop.RecordScriptEvaluation(state.Incumbent);
         var continuationState = state.ContinuationState;
         var previousContinuationState = continuationState?.EventLoop.CurrentContinuationState;
         if (continuationState is not null)

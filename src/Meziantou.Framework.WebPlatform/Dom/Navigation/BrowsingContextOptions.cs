@@ -639,6 +639,13 @@ public sealed partial class BrowsingContextOptions
     /// </summary>
     public ViewportSegmentsOptions? ViewportSegments { get; init; }
 
+    /// <summary>
+    /// Gets or sets the host hooks of <c>navigator.scheduling.isInputPending()</c> (https://wicg.github.io/is-input-pending/):
+    /// <see cref="PendingInputOptions.IsInputPending"/> tells whether input events are waiting to be dispatched to a window.
+    /// The default is null: no input is pending (the input that the host gives to the library is dispatched at once).
+    /// </summary>
+    public PendingInputOptions? PendingInput { get; init; }
+
     /// <summary>The list of notifications (https://notifications.spec.whatwg.org/#list-of-notifications) of the browsing contexts. Lock it to use it.</summary>
     internal List<Notification> ShownNotifications { get; } = [];
 }

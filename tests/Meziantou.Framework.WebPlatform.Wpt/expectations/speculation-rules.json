@@ -1658,10 +1658,9 @@
     }
   },
   "speculation-rules/prerender/restriction-screen-orientation-lock.https.html": {
-    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
-      "The access to the Screen Orienation Lock API should be deferred until the\n    prerendered page is activated": "TIMEOUT"
+      "The access to the Screen Orienation Lock API should be deferred until the\n    prerendered page is activated": "FAIL"
     }
   },
   "speculation-rules/prerender/restriction-sensor-accelerometer.https.html?target_hint=_blank": {

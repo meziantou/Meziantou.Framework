@@ -4240,8 +4240,8 @@ The [viewports](https://drafts.csswg.org/cssom-view/#viewport) of a document fro
   Blink); the resize steps also update the layout of the documents whose visual viewport is observed (a change of the
   viewport size). It is never scrolled relative to the layout viewport: no `scroll`/`scrollend` events.
 - **Viewport segments** (`window.viewport.segments`, [css-viewport](https://drafts.csswg.org/css-viewport/#viewport-segments)):
-  a single segment, the rectangle of the viewport; the `env(viewport-segment-*)` variables are not supported (no display
-  features). `<meta name=viewport>` is ignored, as in the desktop browsers.
+  a single segment, the rectangle of the viewport, unless the display features of `BrowsingContextOptions.ViewportSegments`
+  split it (see [Device APIs](browsing-context.md#device-apis)). `<meta name=viewport>` is ignored, as in the desktop browsers.
 
 ### Scroll snapping (`Css/Layout/Scrolling/SnapContainer.cs`, `SnapSelectionStrategy.cs`, `LayoutEngine.ScrollSnap.cs`)
 

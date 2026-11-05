@@ -9,34 +9,33 @@ description: "The results of the web-platform-tests of screen-orientation, and w
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 15 | 15 | – |
+| [Stable](#stable-tests) | 13 | 15 | 0 | 87% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **0** | **15** | **15** | **–** |
+| **All** | **13** | **15** | **0** | **87%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **REQUIRES**: 15
-  - `hardware`: 15
+- **TEST BUG**: 2
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`active-lock.html`](https://wpt.fyi/results/screen-orientation/active-lock.html) | Disabled | – | REQUIRES(hardware) | Screen Orientation API |
-| [`event-before-promise.html`](https://wpt.fyi/results/screen-orientation/event-before-promise.html) | Disabled | – | REQUIRES(hardware) | Screen Orientation API |
-| [`fullscreen-interactions.html`](https://wpt.fyi/results/screen-orientation/fullscreen-interactions.html) | Disabled | – | REQUIRES(hardware) | Screen Orientation API |
-| [`hidden_document.html`](https://wpt.fyi/results/screen-orientation/hidden_document.html) | Disabled | – | REQUIRES(hardware) | Screen Orientation API |
-| [`idlharness.window.js`](https://wpt.fyi/results/screen-orientation/idlharness.window.js) | Disabled | – | REQUIRES(hardware) | Screen Orientation API |
-| [`lock-bad-argument.html`](https://wpt.fyi/results/screen-orientation/lock-bad-argument.html) | Disabled | – | REQUIRES(hardware) | Screen Orientation API |
-| [`lock-basic.html`](https://wpt.fyi/results/screen-orientation/lock-basic.html) | Disabled | – | REQUIRES(hardware) | Screen Orientation API |
-| [`lock-sandboxed-iframe.html`](https://wpt.fyi/results/screen-orientation/lock-sandboxed-iframe.html) | Disabled | – | REQUIRES(hardware) | Screen Orientation API |
-| [`lock-unlock-check.html`](https://wpt.fyi/results/screen-orientation/lock-unlock-check.html) | Disabled | – | REQUIRES(hardware) | Screen Orientation API |
-| [`nested-documents.html`](https://wpt.fyi/results/screen-orientation/nested-documents.html) | Disabled | – | REQUIRES(hardware) | Screen Orientation API |
-| [`non-fully-active.html`](https://wpt.fyi/results/screen-orientation/non-fully-active.html) | Disabled | – | REQUIRES(hardware) | Screen Orientation API |
-| [`onchange-event-subframe.html`](https://wpt.fyi/results/screen-orientation/onchange-event-subframe.html) | Disabled | – | REQUIRES(hardware) | Screen Orientation API |
-| [`onchange-event.html`](https://wpt.fyi/results/screen-orientation/onchange-event.html) | Disabled | – | REQUIRES(hardware) | Screen Orientation API |
-| [`orientation-reading.html`](https://wpt.fyi/results/screen-orientation/orientation-reading.html) | Disabled | – | REQUIRES(hardware) | Screen Orientation API |
-| [`unlock.html`](https://wpt.fyi/results/screen-orientation/unlock.html) | Disabled | – | REQUIRES(hardware) | Screen Orientation API |
+| [`active-lock.html`](https://wpt.fyi/results/screen-orientation/active-lock.html) | Pass | 3 / 3 |  |  |
+| [`event-before-promise.html`](https://wpt.fyi/results/screen-orientation/event-before-promise.html) | Pass | 1 / 1 |  |  |
+| [`fullscreen-interactions.html`](https://wpt.fyi/results/screen-orientation/fullscreen-interactions.html) | Fail | 1 / 2 | TEST BUG | the second subtest expects the lock request of an iframe to be rejected with a `SecurityError` when the page exits fullscreen (the error of Chromium, whose lock requires fullscreen): exiting fullscreen runs the fully unlock the screen orientation steps (https://w3c.github.io/screen-orientation/#interaction-with-fullscreen-api), which reject the pending lock requests of the documents of the tab with an `AbortError` |
+| [`hidden_document.html`](https://wpt.fyi/results/screen-orientation/hidden_document.html) | Error | 3 / 4 | TEST BUG | the cleanup of the third subtest calls `screen.orientation.unlock()` while the document is still hidden (the cleanup that restores the window is asynchronous and runs concurrently): the common safety checks throw a `SecurityError` for a hidden document (https://w3c.github.io/screen-orientation/#dfn-common-safety-checks), so the harness reports an error and the last subtest does not run |
+| [`idlharness.window.js`](https://wpt.fyi/results/screen-orientation/idlharness.window.js) | Pass | 25 / 25 |  |  |
+| [`lock-bad-argument.html`](https://wpt.fyi/results/screen-orientation/lock-bad-argument.html) | Pass | 2 / 2 |  |  |
+| [`lock-basic.html`](https://wpt.fyi/results/screen-orientation/lock-basic.html) | Pass | 3 / 3 |  |  |
+| [`lock-sandboxed-iframe.html`](https://wpt.fyi/results/screen-orientation/lock-sandboxed-iframe.html) | Pass | 2 / 2 |  |  |
+| [`lock-unlock-check.html`](https://wpt.fyi/results/screen-orientation/lock-unlock-check.html) | Pass | 2 / 2 |  |  |
+| [`nested-documents.html`](https://wpt.fyi/results/screen-orientation/nested-documents.html) | Pass | 2 / 2 |  |  |
+| [`non-fully-active.html`](https://wpt.fyi/results/screen-orientation/non-fully-active.html) | Pass | 3 / 3 |  |  |
+| [`onchange-event-subframe.html`](https://wpt.fyi/results/screen-orientation/onchange-event-subframe.html) | Pass | 2 / 2 |  |  |
+| [`onchange-event.html`](https://wpt.fyi/results/screen-orientation/onchange-event.html) | Pass | 2 / 2 |  |  |
+| [`orientation-reading.html`](https://wpt.fyi/results/screen-orientation/orientation-reading.html) | Pass | 6 / 6 |  |  |
+| [`unlock.html`](https://wpt.fyi/results/screen-orientation/unlock.html) | Pass | 5 / 5 |  |  |

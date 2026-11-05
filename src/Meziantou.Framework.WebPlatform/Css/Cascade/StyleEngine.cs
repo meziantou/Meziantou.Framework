@@ -2451,6 +2451,21 @@ internal sealed partial class StyleEngine
         // The environment is computed by each style lookup: the previous one is reused when it is the same
         var pageColorSchemes = document.PageColorSchemes;
         var scriptingEnabled = browsingContext.Options.ScriptingEnabled;
+
+        // The display features split the viewport of a top-level document (the nested documents have a single segment), and
+        // the virtual keyboard overlays it
+        Dom.ViewportSegmentGrid? segments = null;
+        Dom.VirtualKeyboardRect? keyboardInsets = null;
+        if (browsingContext.Container is null)
+        {
+            if (browsingContext.Options.ViewportSegments?.Provider?.GetDisplayFeatures() is { Count: > 0 } displayFeatures)
+            {
+                segments = Dom.ViewportSegmentGrid.Create(displayFeatures, width, height);
+            }
+
+            keyboardInsets = Dom.VirtualKeyboard.GetKeyboardInsets(document);
+        }
+
         if (document.LastMediaEnvironment is { } last
             && last.Width == width
             && last.Height == height
@@ -2467,7 +2482,9 @@ internal sealed partial class StyleEngine
             && last.PrefersContrast == prefersContrast
             && last.ForcedColors == viewport.ForcedColors
             && ReferenceEquals(last.ForcedColorsPalette, forcedColors)
-            && last.ScriptingEnabled == scriptingEnabled)
+            && last.ScriptingEnabled == scriptingEnabled
+            && Equals(last.ViewportSegments, segments)
+            && last.KeyboardInsets == keyboardInsets)
         {
             return last;
         }
@@ -2490,6 +2507,8 @@ internal sealed partial class StyleEngine
             ForcedColors = viewport.ForcedColors,
             ForcedColorsPalette = forcedColors,
             ScriptingEnabled = scriptingEnabled,
+            ViewportSegments = segments,
+            KeyboardInsets = keyboardInsets,
         };
         document.LastMediaEnvironment = environment;
         return environment;

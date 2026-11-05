@@ -1,0 +1,11 @@
+{
+  "virtual-keyboard/idlharness.https.window.js": {
+    "total": 33
+  },
+  "virtual-keyboard/virtual-keyboard-policy.html": {
+    "total": 6
+  },
+  "virtual-keyboard/virtual-keyboard-type.https.html": {
+    "total": 4
+  }
+}

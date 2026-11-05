@@ -446,8 +446,10 @@ like the imported style sheets (`DocumentRequest.Initiator` is null), when the d
   tainted value (e.g. `style(--x: attr(data-x type(*)))`, or a tainted `--x`), a `random-item()` whose key is, and a custom
   function whose result is (the parameters, default values and local variables keep their taint, also in the called
   functions): a tainted value used in a `url()`, `src()` or as the string
-  of `image-set()` makes the declaration invalid at computed-value time. `env()` (the insets are `0px`, the indices of the two-dimensional variables are not
-  supported: their fallback is used), `attr()` (its name and type can be given by substitution functions; without type, or
+  of `image-set()` makes the declaration invalid at computed-value time. `env()` (the safe area and title bar insets are `0px`, the `keyboard-inset-*` variables
+  are the rectangle of the virtual keyboard when the page sets `navigator.virtualKeyboard.overlaysContent`, `0px`
+  otherwise, and the two-dimensional `viewport-segment-*` variables take the column and the row of a segment, and are only
+  defined when display features split the viewport, see [Device APIs](browsing-context.md#device-apis)), `attr()` (its name and type can be given by substitution functions; without type, or
   with `raw-string`, the value is a string, an empty string when the attribute is missing and there is no fallback; with
   `number` or a unit, it is a number; with `type()`, whose `<syntax>` cannot contain `<url>`, the arbitrary substitution
   functions of the value are substituted, then it must match the syntax, and the values of the data types are serialized as
@@ -1362,7 +1364,8 @@ contents of a replaced element or a form control, and it is not a never-rendered
   scrollbars, from the layout: its `width` and `height` are the `clientWidth` and `clientHeight` of the root element, its
   `scale` is 1, its `offsetLeft`/`offsetTop` 0 and its `pageLeft`/`pageTop` the scroll position of the viewport; it fires
   `resize` events when its size changes (e.g. the classic scrollbars of the viewport appear), never `scroll` nor `scrollend`
-  events. `window.viewport.segments` is a single segment, the rectangle of the viewport.
+  events. `window.viewport.segments` is a single segment, the rectangle of the viewport, unless display features split it
+  (see [Device APIs](browsing-context.md#device-apis)); it is null in the frames.
 - `HTMLImageElement.width` and `height` are the rendered size of the content box of an image that is being rendered (the
   natural size and the `width`/`height` attributes otherwise), and `x` and `y` the position of its first box relative to
   the initial containing block, from the layout (see [Replaced elements](layout.md#replaced-elements-csslayoutreplaced));

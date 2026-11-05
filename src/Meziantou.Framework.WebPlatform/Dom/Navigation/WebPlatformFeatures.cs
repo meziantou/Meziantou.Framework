@@ -240,6 +240,20 @@ public sealed record WebPlatformFeatures
     public bool GlobalPrivacyControlEnabled { get; init; } = true;
 
     /// <summary>
+    /// Gets or sets whether the Screen Orientation API is exposed (https://w3c.github.io/screen-orientation/):
+    /// <c>screen.orientation</c> and the <c>ScreenOrientation</c> interface (see <see cref="BrowsingContextOptions.ScreenOrientation"/>).
+    /// The default is true.
+    /// </summary>
+    public bool ScreenOrientationEnabled { get; init; } = true;
+
+    /// <summary>
+    /// Gets or sets whether the VirtualKeyboard API is exposed (https://w3c.github.io/virtual-keyboard/):
+    /// <c>navigator.virtualKeyboard</c>, the <c>VirtualKeyboard</c> interface and the <c>virtualKeyboardPolicy</c> attribute (see
+    /// <see cref="BrowsingContextOptions.VirtualKeyboard"/>). The default is true.
+    /// </summary>
+    public bool VirtualKeyboardEnabled { get; init; } = true;
+
+    /// <summary>
     /// Gets or sets whether the Web Storage API is exposed (https://html.spec.whatwg.org/multipage/webstorage.html):
     /// <c>localStorage</c>, <c>sessionStorage</c>, <c>Storage</c> and <c>StorageEvent</c>. The default is true.
     /// </summary>

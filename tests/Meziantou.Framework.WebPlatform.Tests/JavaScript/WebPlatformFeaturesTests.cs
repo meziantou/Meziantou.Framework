@@ -34,6 +34,8 @@ public sealed class WebPlatformFeaturesTests : IDisposable
           NetworkInformationEnabled: typeof navigator.connection + typeof NetworkInformation + ('connection' in navigator),
           DeviceMemoryEnabled: typeof navigator.deviceMemory + ('deviceMemory' in navigator),
           GlobalPrivacyControlEnabled: typeof navigator.globalPrivacyControl + ('globalPrivacyControl' in navigator),
+          ScreenOrientationEnabled: typeof screen.orientation + typeof ScreenOrientation + ('orientation' in screen),
+          VirtualKeyboardEnabled: typeof navigator.virtualKeyboard + typeof VirtualKeyboard + ('virtualKeyboard' in navigator) + ('virtualKeyboardPolicy' in HTMLElement.prototype),
           IndexedDBEnabled: typeof indexedDB + typeof IDBFactory + typeof IDBKeyRange + ('indexedDB' in self),
           CacheStorageEnabled: typeof caches + typeof Cache + typeof CacheStorage + ('caches' in self),
           WebStorageEnabled: typeof localStorage + typeof sessionStorage + typeof Storage + typeof StorageEvent + ('localStorage' in window),

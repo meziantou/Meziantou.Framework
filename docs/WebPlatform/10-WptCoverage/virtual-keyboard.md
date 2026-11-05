@@ -9,22 +9,15 @@ description: "The results of the web-platform-tests of virtual-keyboard, and why
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 3 | 3 | – |
+| [Stable](#stable-tests) | 3 | 3 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **0** | **3** | **3** | **–** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **REQUIRES**: 3
-  - `hardware`: 3
+| **All** | **3** | **3** | **0** | **100%** |
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`idlharness.https.window.js`](https://wpt.fyi/results/virtual-keyboard/idlharness.https.window.js) | Disabled | – | REQUIRES(hardware) | VirtualKeyboard API |
-| [`virtual-keyboard-policy.html`](https://wpt.fyi/results/virtual-keyboard/virtual-keyboard-policy.html) | Disabled | – | REQUIRES(hardware) | VirtualKeyboard API |
-| [`virtual-keyboard-type.https.html`](https://wpt.fyi/results/virtual-keyboard/virtual-keyboard-type.https.html) | Disabled | – | REQUIRES(hardware) | VirtualKeyboard API |
+| [`idlharness.https.window.js`](https://wpt.fyi/results/virtual-keyboard/idlharness.https.window.js) | Pass | 33 / 33 |  |  |
+| [`virtual-keyboard-policy.html`](https://wpt.fyi/results/virtual-keyboard/virtual-keyboard-policy.html) | Pass | 6 / 6 |  |  |
+| [`virtual-keyboard-type.https.html`](https://wpt.fyi/results/virtual-keyboard/virtual-keyboard-type.https.html) | Pass | 4 / 4 |  |  |

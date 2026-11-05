@@ -3267,6 +3267,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public System.Func<Meziantou.Framework.WebPlatform.Dom.CallbackContext, string, Meziantou.Framework.WebPlatform.Dom.PermissionState>? RequestPermission { get => throw null; init { } }
         public System.Func<Meziantou.Framework.WebPlatform.Dom.CallbackContext, Meziantou.Framework.WebPlatform.Dom.PointerLockOptions, bool>? RequestPointerLock { get => throw null; init { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.CallbackContext>? SameDocumentNavigated { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ScreenOrientationOptions? ScreenOrientation { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Scripting.ScriptEngine? ScriptEngine { get => throw null; init { } }
         public bool ScriptingEnabled { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.ServiceWorkerBackend? ServiceWorkers { get => throw null; init { } }
@@ -3283,6 +3284,8 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public System.Func<Meziantou.Framework.WebPlatform.Dom.CallbackContext, Meziantou.Framework.WebPlatform.Dom.UserPrompt, Meziantou.Framework.WebPlatform.Dom.UserPromptResult>? UserPromptHandler { get => throw null; init { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.CallbackContext, System.Collections.Generic.IReadOnlyList<System.TimeSpan>>? Vibrate { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.ViewportOptions? Viewport { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ViewportSegmentsOptions? ViewportSegments { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.VirtualKeyboardOptions? VirtualKeyboard { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.VisitedLinkStore? VisitedLinks { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.WakeLockOptions? WakeLock { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.WebAssembly.WebAssemblyRuntime? WebAssemblyRuntime { get => throw null; init { } }
@@ -4125,6 +4128,35 @@ namespace Meziantou.Framework.WebPlatform.Dom
         Horizontal = 0,
         Rl = 1,
         Lr = 2,
+    }
+
+    public sealed class DisplayFeature : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.DisplayFeature>
+    {
+        public double MaskLength { get => throw null; init { } }
+        public double Offset { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.DisplayFeatureOrientation Orientation { get => throw null; init { } }
+        public DisplayFeature(Meziantou.Framework.WebPlatform.Dom.DisplayFeatureOrientation Orientation, double Offset, double MaskLength) { }
+        public void Deconstruct(out Meziantou.Framework.WebPlatform.Dom.DisplayFeatureOrientation Orientation, out double Offset, out double MaskLength) => throw null;
+        public bool Equals(Meziantou.Framework.WebPlatform.Dom.DisplayFeature? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.WebPlatform.Dom.DisplayFeature? left, Meziantou.Framework.WebPlatform.Dom.DisplayFeature? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WebPlatform.Dom.DisplayFeature? left, Meziantou.Framework.WebPlatform.Dom.DisplayFeature? right) => throw null;
+    }
+
+    public enum DisplayFeatureOrientation
+    {
+        Vertical = 0,
+        Horizontal = 1,
+    }
+
+    public class DisplayFeaturesProvider
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.DisplayFeature> DisplayFeatures { get => throw null; set { } }
+        public event System.EventHandler? DisplayFeaturesChanged;
+        public virtual System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.DisplayFeature> GetDisplayFeatures() => throw null;
+        protected void OnDisplayFeaturesChanged() { }
     }
 
     public class Document : Meziantou.Framework.WebPlatform.Dom.Node, Meziantou.Framework.WebPlatform.Dom.INonElementParentNode, Meziantou.Framework.WebPlatform.Dom.IParentNode
@@ -6226,6 +6258,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public int TabIndex { get => throw null; set { } }
         public string Title { get => throw null; set { } }
         public bool Translate { get => throw null; set { } }
+        public string VirtualKeyboardPolicy { get => throw null; set { } }
         public string WritingSuggestions { get => throw null; set { } }
         public Meziantou.Framework.WebPlatform.Dom.ElementInternals AttachInternals() => throw null;
         public void Blur() { }
@@ -8540,6 +8573,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.NavigatorUAData UserAgentData { get => throw null; }
         public string Vendor { get => throw null; }
         public string VendorSub { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.VirtualKeyboard VirtualKeyboard { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.WakeLock WakeLock { get => throw null; }
         public bool CanShare(Meziantou.Framework.WebPlatform.Dom.ShareData? data = null) => throw null;
         public System.Threading.Tasks.Task ClearAppBadge() => throw null;
@@ -8835,6 +8869,26 @@ namespace Meziantou.Framework.WebPlatform.Dom
         WebGL = 2,
         WebGL2 = 3,
         WebGpu = 4,
+    }
+
+    public enum OrientationLockType
+    {
+        Any = 0,
+        Natural = 1,
+        Landscape = 2,
+        Portrait = 3,
+        PortraitPrimary = 4,
+        PortraitSecondary = 5,
+        LandscapePrimary = 6,
+        LandscapeSecondary = 7,
+    }
+
+    public enum OrientationType
+    {
+        PortraitPrimary = 0,
+        PortraitSecondary = 1,
+        LandscapePrimary = 2,
+        LandscapeSecondary = 3,
     }
 
     public sealed class Origin
@@ -9903,8 +9957,37 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public int AvailWidth { get => throw null; }
         public uint ColorDepth { get => throw null; }
         public int Height { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.ScreenOrientation Orientation { get => throw null; }
         public uint PixelDepth { get => throw null; }
         public int Width { get => throw null; }
+    }
+
+    public sealed class ScreenOrientation : Meziantou.Framework.WebPlatform.Dom.EventTarget
+    {
+        public ushort Angle { get => throw null; }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnChange { get => throw null; set { } }
+        public Meziantou.Framework.WebPlatform.Dom.OrientationType Type { get => throw null; }
+        public System.Threading.Tasks.Task Lock(Meziantou.Framework.WebPlatform.Dom.OrientationLockType orientation) => throw null;
+        public void Unlock() { }
+    }
+
+    public sealed class ScreenOrientationOptions
+    {
+        public Meziantou.Framework.WebPlatform.Dom.ScreenOrientationProvider? Provider { get => throw null; init { } }
+    }
+
+    public class ScreenOrientationProvider
+    {
+        public Meziantou.Framework.WebPlatform.Dom.OrientationLockType? ActiveLock { get => throw null; }
+        public ushort CurrentAngle { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.OrientationType CurrentType { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.OrientationType DeviceOrientation { get => throw null; set { } }
+        public Meziantou.Framework.WebPlatform.Dom.OrientationType NaturalOrientation { get => throw null; }
+        public event System.EventHandler? OrientationChanged;
+        public ScreenOrientationProvider(Meziantou.Framework.WebPlatform.Dom.OrientationType naturalOrientation) { }
+        public virtual bool IsSupported(Meziantou.Framework.WebPlatform.Dom.OrientationLockType orientation) => throw null;
+        protected void OnOrientationChanged() { }
+        protected virtual bool TryLock(Meziantou.Framework.WebPlatform.Dom.OrientationLockType? orientation) => throw null;
     }
 
     public enum ScrollBehavior
@@ -12394,6 +12477,56 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public static bool operator !=(Meziantou.Framework.WebPlatform.Dom.ViewportOptions? left, Meziantou.Framework.WebPlatform.Dom.ViewportOptions? right) => throw null;
     }
 
+    public sealed class ViewportSegmentsOptions
+    {
+        public Meziantou.Framework.WebPlatform.Dom.DisplayFeaturesProvider? Provider { get => throw null; init { } }
+    }
+
+    public sealed class VirtualKeyboard : Meziantou.Framework.WebPlatform.Dom.EventTarget
+    {
+        public Meziantou.Framework.WebPlatform.Dom.DomRect BoundingRect { get => throw null; }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnGeometryChange { get => throw null; set { } }
+        public bool OverlaysContent { get => throw null; set { } }
+        public void Hide() { }
+        public void Show() { }
+    }
+
+    public sealed class VirtualKeyboardOptions
+    {
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.CallbackContext>? Hide { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.VirtualKeyboardProvider? Provider { get => throw null; init { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.CallbackContext>? Show { get => throw null; init { } }
+    }
+
+    public class VirtualKeyboardProvider
+    {
+        public Meziantou.Framework.WebPlatform.Dom.VirtualKeyboardRect BoundingRect { get => throw null; set { } }
+        public event System.EventHandler? GeometryChanged;
+        public virtual Meziantou.Framework.WebPlatform.Dom.VirtualKeyboardRect GetBoundingRect() => throw null;
+        protected void OnGeometryChanged() { }
+    }
+
+    public readonly struct VirtualKeyboardRect : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.VirtualKeyboardRect>
+    {
+        public double Height { get => throw null; init { } }
+        public bool IsEmpty { get => throw null; }
+        public double Width { get => throw null; init { } }
+        public double X { get => throw null; init { } }
+        public double Y { get => throw null; init { } }
+        public VirtualKeyboardRect(double X, double Y, double Width, double Height) { }
+        public void Deconstruct(out double X, out double Y, out double Width, out double Height) => throw null;
+        public bool Equals(Meziantou.Framework.WebPlatform.Dom.VirtualKeyboardRect other) => throw null;
+        #nullable disable
+        public override bool Equals(object obj) => throw null;
+        #nullable restore
+        public override int GetHashCode() => throw null;
+        #nullable disable
+        public override string ToString() => throw null;
+        #nullable restore
+        public static bool operator ==(Meziantou.Framework.WebPlatform.Dom.VirtualKeyboardRect left, Meziantou.Framework.WebPlatform.Dom.VirtualKeyboardRect right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WebPlatform.Dom.VirtualKeyboardRect left, Meziantou.Framework.WebPlatform.Dom.VirtualKeyboardRect right) => throw null;
+    }
+
     public sealed class VisibilityStateEntry : Meziantou.Framework.WebPlatform.Dom.PerformanceEntry
     {
         public new uint Duration { get => throw null; }
@@ -12551,6 +12684,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool PrioritizedTaskSchedulingEnabled { get => throw null; init { } }
         public bool ReportingObserverEnabled { get => throw null; init { } }
         public bool ResizeObserverEnabled { get => throw null; init { } }
+        public bool ScreenOrientationEnabled { get => throw null; init { } }
         public bool ScrollDrivenAnimationsEnabled { get => throw null; init { } }
         public bool ServiceWorkersEnabled { get => throw null; init { } }
         public bool SharedWorkersEnabled { get => throw null; init { } }
@@ -12565,6 +12699,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool UserTimingEnabled { get => throw null; init { } }
         public bool VibrationEnabled { get => throw null; init { } }
         public bool ViewTransitionsEnabled { get => throw null; init { } }
+        public bool VirtualKeyboardEnabled { get => throw null; init { } }
         public bool VisibilityStateEntryEnabled { get => throw null; init { } }
         public bool WakeLockEnabled { get => throw null; init { } }
         public bool WebAssemblyEnabled { get => throw null; init { } }

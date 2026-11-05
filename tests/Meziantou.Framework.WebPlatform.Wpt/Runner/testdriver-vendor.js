@@ -188,6 +188,16 @@
       resolve));
   };
 
+  // The display features of the screen (https://drafts.csswg.org/css-viewport/#set-display-features): the DisplayFeaturesProvider
+  // of the runner, which splits the viewport of the top-level documents in segments
+  internal.set_display_features = function (features, context) {
+    return new Promise((resolve, reject) => __wpt_set_display_features(JSON.stringify(features === undefined ? null : features), resolve, (message) => reject(new Error(message))));
+  };
+
+  internal.clear_display_features = function (context) {
+    return internal.set_display_features([], context);
+  };
+
   // The properties of the contact of a pointer action (https://w3c.github.io/webdriver/#dfn-process-pointer-parameters)
   const pointerProperties = ['width', 'height', 'pressure', 'tangentialPressure', 'tiltX', 'tiltY', 'twist', 'altitudeAngle', 'azimuthAngle'];
 

@@ -11,15 +11,15 @@ description: "The results of the web-platform-tests of css/css-masking, and why 
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 63 | 64 | 0 | 98% |
 | Tentative | 0 | 0 | 0 | – |
-| [Reftests](#reftests) | 488 | 500 | 1 | 98% |
-| **All** | **551** | **564** | **1** | **98%** |
+| [Reftests](#reftests) | 489 | 500 | 1 | 98% |
+| **All** | **552** | **564** | **1** | **98%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 7
-- **TEST BUG**: 2
+- **BUG**: 5
+- **TEST BUG**: 3
 - **NOT IMPLEMENTED**: 3
 - **FLAKY**: 1
 
@@ -306,8 +306,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`clip-path/clip-path-document-element.html`](https://wpt.fyi/results/css/css-masking/clip-path/clip-path-document-element.html) | Pass | 1 / 1 |  |  |
 | [`clip-path/clip-path-element-userSpaceOnUse-001.html`](https://wpt.fyi/results/css/css-masking/clip-path/clip-path-element-userSpaceOnUse-001.html) | Pass | 1 / 1 |  |  |
 | [`clip-path/clip-path-element-userSpaceOnUse-002.html`](https://wpt.fyi/results/css/css-masking/clip-path/clip-path-element-userSpaceOnUse-002.html) | Pass | 1 / 1 |  |  |
-| [`clip-path/clip-path-element-userSpaceOnUse-003.html`](https://wpt.fyi/results/css/css-masking/clip-path/clip-path-element-userSpaceOnUse-003.html) | Fail | 0 / 1 | BUG | the percentages of the shapes of a userSpaceOnUse clipPath element applied to a CSS box (`<rect x="50%" width="50%" height="100%">`) are resolved against the SVG viewport of the `svg` element that contains the clipPath (300x150) instead of the reference box of the clipped element (the 800x600 border box): a 150px wide green rectangle is painted instead of half of the page; fails in every browser |
-| [`clip-path/clip-path-element-userSpaceOnUse-004.html`](https://wpt.fyi/results/css/css-masking/clip-path/clip-path-element-userSpaceOnUse-004.html) | Fail | 0 / 1 | BUG | the percentages of the shapes of a userSpaceOnUse clipPath element applied to a CSS box (`<rect x="50%" width="50%" height="100%">`) are resolved against the SVG viewport of the `svg` element that contains the clipPath (300x150) instead of the reference box of the clipped element (the 800x600 border box): a 150px wide green rectangle is painted instead of half of the page; fails in every browser |
+| [`clip-path/clip-path-element-userSpaceOnUse-003.html`](https://wpt.fyi/results/css/css-masking/clip-path/clip-path-element-userSpaceOnUse-003.html) | Pass | 1 / 1 |  |  |
+| [`clip-path/clip-path-element-userSpaceOnUse-004.html`](https://wpt.fyi/results/css/css-masking/clip-path/clip-path-element-userSpaceOnUse-004.html) | Fail | 0 / 1 | TEST BUG | the reference places the green box with `margin-top: 50%`, a percentage of the width of the containing block (400px of the 800px wide page, then 392.5px once the vertical scrollbar that the overflowing box causes appears), not of its height: the test clips the bottom half of the page (from 300px) as its assertion says; fails in every browser |
 | [`clip-path/clip-path-ellipse-001.html`](https://wpt.fyi/results/css/css-masking/clip-path/clip-path-ellipse-001.html) | Pass | 1 / 1 |  |  |
 | [`clip-path/clip-path-ellipse-002.html`](https://wpt.fyi/results/css/css-masking/clip-path/clip-path-ellipse-002.html) | Pass | 1 / 1 |  |  |
 | [`clip-path/clip-path-ellipse-003.html`](https://wpt.fyi/results/css/css-masking/clip-path/clip-path-ellipse-003.html) | Pass | 1 / 1 |  |  |

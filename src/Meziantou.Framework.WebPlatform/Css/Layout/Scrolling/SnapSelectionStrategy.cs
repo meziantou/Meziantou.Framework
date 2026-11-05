@@ -41,6 +41,12 @@ internal abstract class SnapSelectionStrategy
     /// <summary>Whether the snap positions of <c>scroll-snap-stop: always</c> cannot be passed over (a relative scroll).</summary>
     public virtual bool ShouldRespectSnapStop => false;
 
+    /// <summary>
+    /// Whether the snap positions that pass over a snap area that is not entirely visible from the current position are not valid
+    /// (a scroll of the keys, so that a page scroll does not skip content: WPT css-scroll-snap/input/paged.html).
+    /// </summary>
+    public virtual bool AvoidsSkippingSnapAreas => false;
+
     /// <summary>Whether the current snap targets are followed (a re-snap after a layout change).</summary>
     public virtual bool ShouldPrioritizeSnapTargets => false;
 
@@ -59,6 +65,13 @@ internal abstract class SnapSelectionStrategy
     /// </summary>
     public static SnapSelectionStrategy ForDisplacement(PhysicalOffset position, PhysicalOffset displacement)
         => new DirectionStrategy(position, position, displacement, preferDistance: true, mustSnapOnly: false, includeOrigin: false);
+
+    /// <summary>
+    /// Returns a strategy for a relative scroll of the keys (see <see cref="ForDisplacement"/>) that does not pass over a snap area
+    /// that is not entirely visible from the current position.
+    /// </summary>
+    public static SnapSelectionStrategy ForKeyDisplacement(PhysicalOffset position, PhysicalOffset displacement)
+        => new DirectionStrategy(position, position, displacement, preferDistance: true, mustSnapOnly: false, includeOrigin: false, avoidSkippingSnapAreas: true);
 
     /// <summary>
     /// Returns a strategy for the end of a scroll gesture of the user (the wheel, a panning touch, a drag of the thumb of a
@@ -171,9 +184,11 @@ internal abstract class SnapSelectionStrategy
         /// <param name="preferDistance">Whether the scroll has an intended end position (else only a direction).</param>
         /// <param name="mustSnapOnly">Whether only the snap areas with <c>scroll-snap-stop: always</c> are considered.</param>
         /// <param name="includeOrigin">Whether the snap positions at the origin are valid (the end of a gesture can snap back to its start).</param>
-        public DirectionStrategy(PhysicalOffset position, PhysicalOffset origin, PhysicalOffset step, bool preferDistance, bool mustSnapOnly, bool includeOrigin)
+        /// <param name="avoidSkippingSnapAreas">Whether the snap positions that pass over a snap area not entirely visible from the current position are not valid.</param>
+        public DirectionStrategy(PhysicalOffset position, PhysicalOffset origin, PhysicalOffset step, bool preferDistance, bool mustSnapOnly, bool includeOrigin, bool avoidSkippingSnapAreas = false)
             : base(position)
         {
+            AvoidsSkippingSnapAreas = avoidSkippingSnapAreas;
             _origin = origin;
             _step = step;
             _preferDistance = preferDistance;
@@ -182,6 +197,8 @@ internal abstract class SnapSelectionStrategy
         }
 
         public override PhysicalOffset DirectionOrigin => _origin;
+
+        public override bool AvoidsSkippingSnapAreas { get; }
 
         public override PhysicalOffset IntendedPosition => _origin + _step;
 

@@ -107,7 +107,7 @@ internal sealed partial class Painter
             return highlights;
 
         var bounds = fragment.GetRangeRect(caret.CoveredStart, caret.CoveredEnd).Translate(offset);
-        (highlights ??= []).Add(new TextHighlight(SnapToDevicePixels(bounds), caret.Color, caret.TextColor, Decorations: null, bounds) { Recolors = caret.TextColor is not null });
+        (highlights ??= []).Add(new TextHighlight(SnapToDevicePixels(bounds), caret.Color, caret.TextColor, Decorations: null, bounds) { Recolors = caret.TextColor is not null, IsCaret = true });
         return highlights;
     }
 }

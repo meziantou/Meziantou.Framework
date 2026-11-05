@@ -464,7 +464,7 @@ public partial class SvgSvgElement
     /// <summary>Creates a point at the origin (0, 0).</summary>
     /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__createSVGPoint"/>
     [IdlMember("createSVGPoint", "https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__createSVGPoint")]
-    public DomPoint CreateSvgPoint() => new();
+    public DomPoint CreateSvgPoint() => new SvgDetachedPoint();
 
     /// <summary>Creates an identity matrix.</summary>
     /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__createSVGMatrix"/>
@@ -474,7 +474,7 @@ public partial class SvgSvgElement
     /// <summary>Creates a rectangle whose position and size are all zero.</summary>
     /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__createSVGRect"/>
     [IdlMember("createSVGRect", "https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__createSVGRect")]
-    public DomRect CreateSvgRect() => new();
+    public DomRect CreateSvgRect() => new SvgDetachedRect();
 
     /// <summary>Creates a transform of type <c>SVG_TRANSFORM_MATRIX</c> with the identity matrix.</summary>
     /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__createSVGTransform"/>
@@ -564,6 +564,40 @@ public partial class SvgSvgElement
             if (!element.IsOutermost)
                 throw DomException.NoModificationAllowed("The currentTranslate of an svg element that is not the outermost one is read only");
         }
+    }
+
+    /// <summary>
+    /// A point created by <c>createSVGPoint()</c>. The browsers implement <c>SVGPoint</c> with <c>float</c> coordinates
+    /// (not <c>unrestricted float</c>), so assigning a non-finite value throws a <c>TypeError</c>.
+    /// </summary>
+    private sealed class SvgDetachedPoint : DomPoint
+    {
+        public override double X { get => base.X; set => base.X = EnsureFinite(value); }
+
+        public override double Y { get => base.Y; set => base.Y = EnsureFinite(value); }
+    }
+
+    /// <summary>
+    /// A rectangle created by <c>createSVGRect()</c>. The browsers implement <c>SVGRect</c> with <c>float</c> members
+    /// (not <c>unrestricted float</c>), so assigning a non-finite value throws a <c>TypeError</c>.
+    /// </summary>
+    private sealed class SvgDetachedRect : DomRect
+    {
+        public override double X { get => base.X; set => base.X = EnsureFinite(value); }
+
+        public override double Y { get => base.Y; set => base.Y = EnsureFinite(value); }
+
+        public override double Width { get => base.Width; set => base.Width = EnsureFinite(value); }
+
+        public override double Height { get => base.Height; set => base.Height = EnsureFinite(value); }
+    }
+
+    private static double EnsureFinite(double value)
+    {
+        if (!double.IsFinite(value))
+            throw new TypeErrorException("The value is not a finite floating-point value");
+
+        return value;
     }
 }
 

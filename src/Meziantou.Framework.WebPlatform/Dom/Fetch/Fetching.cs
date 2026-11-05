@@ -539,7 +539,8 @@ internal static class Fetching
     private static async Task<FetchResponse> HttpFetchAsync(FetchRequest request, bool makeCorsPreflight, CancellationToken cancellationToken)
     {
         // Step 5: the service workers (https://w3c.github.io/ServiceWorker/#handle-fetch): the response of a service worker
-        // is already filtered, it is not checked by the CORS check and the cross-origin resource policy
+        // is already filtered, it is not checked by the CORS check. The cross-origin resource policy check of an opaque
+        // response uses the embedder policy of the client (the service worker can have another one)
         // The request of a service worker to the URL of a request whose race-network-and-fetch-handler router rule is
         // running (e.g. fetch(event.request)) gets the response of the network request of the race
         if (request is { Method: "GET", Body: null, Client.WorkerGlobal: ServiceWorkerGlobalScope serviceWorkerGlobal }
@@ -559,6 +560,22 @@ internal static class Fetching
                 || (request.RedirectMode != FetchRedirectMode.Follow && serviceWorkerResponse.UrlList.Count > 1))
             {
                 return FetchResponse.NetworkError();
+            }
+
+            // Step 7: the cross-origin resource policy check of an opaque response
+            if ((request.ResponseTainting == FetchResponseTainting.Opaque || serviceWorkerResponse.Type == FetchResponseType.Opaque) && request.Client is { } serviceWorkerClient
+                && IsBlockedByCrossOriginResourcePolicy(request, serviceWorkerClient, serviceWorkerResponse.Internal.UrlList is [.., var serviceWorkerResponseUrl] ? serviceWorkerResponseUrl : request.CurrentUrl, serviceWorkerResponse.Internal.HeaderList, serviceWorkerResponse.Internal.RequestIncludesCredentials))
+            {
+                return FetchResponse.NetworkError();
+            }
+
+            // The timing allow check of a cross-origin response that the service worker fetched (its CORS or opaque filtered
+            // response, https://fetch.spec.whatwg.org/#concept-response-timing-allow-passed) fails for the request too, as in
+            // the browsers: the worker has the origin of the client
+            if (serviceWorkerResponse.Type is FetchResponseType.Cors or FetchResponseType.Opaque
+                && !(HeaderList.GetDecodeAndSplit(serviceWorkerResponse.Internal.HeaderList, "Timing-Allow-Origin") is { } timingAllowOrigins && (timingAllowOrigins.Contains("*") || timingAllowOrigins.Contains(request.Origin))))
+            {
+                request.TimingAllowFailed = true;
             }
 
             // The timing of a response given by a service worker is reported as the one of a response of the network
@@ -614,8 +631,7 @@ internal static class Fetching
         }
 
         // Step 4.5: the cross-origin resource policy check of an opaque response
-        if (request.ResponseTainting == FetchResponseTainting.Opaque && request.Client is { } client
-            && CrossOriginResourcePolicy.IsBlocked(client, client.SubresourceEmbedderPolicy, request.Destination == RequestDestination.Empty ? "" : FetchMetadata.GetDestinationName(request.Destination), request.Url, request.CurrentUrl, response.HeaderList, forNavigation: false,
+        if (request.ResponseTainting == FetchResponseTainting.Opaque && request.Client is { } client && IsBlockedByCrossOriginResourcePolicy(request, client, request.CurrentUrl, response.HeaderList,
                 requestIncludesCredentials: request.CredentialsMode == FetchCredentialsMode.Include && client.SubresourceEmbedderPolicy != EmbedderPolicyValue.Credentialless))
         {
             return FetchResponse.NetworkError();
@@ -623,6 +639,10 @@ internal static class Fetching
 
         return await ProcessRedirectAsync(request, response, cancellationToken).ConfigureAwait(false);
     }
+
+    /// <summary>https://fetch.spec.whatwg.org/#cross-origin-resource-policy-check of a response of the request of a client.</summary>
+    private static bool IsBlockedByCrossOriginResourcePolicy(FetchRequest request, Document client, UrlRecord responseUrl, IReadOnlyList<KeyValuePair<string, string>> headers, bool requestIncludesCredentials)
+        => CrossOriginResourcePolicy.IsBlocked(client, client.SubresourceEmbedderPolicy, request.Destination == RequestDestination.Empty ? "" : FetchMetadata.GetDestinationName(request.Destination), request.Url, responseUrl, headers, forNavigation: false, requestIncludesCredentials);
 
     /// <summary>https://fetch.spec.whatwg.org/#concept-http-fetch, step 8: the redirects</summary>
     private static async Task<FetchResponse> ProcessRedirectAsync(FetchRequest request, FetchResponse response, CancellationToken cancellationToken)

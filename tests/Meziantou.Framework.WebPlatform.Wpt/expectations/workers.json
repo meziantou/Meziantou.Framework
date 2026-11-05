@@ -984,10 +984,7 @@
     }
   },
   "workers/shared-worker-partitioned.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Test partitioning of shared workers": "FAIL"
-    }
+    "total": 1
   },
   "workers/shared-worker-runtime-error-is-not-parse-error.html": {
     "total": 3

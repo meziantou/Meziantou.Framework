@@ -18,8 +18,8 @@ description: "The results of the web-platform-tests of quirks, and why the tests
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 2
-- **TEST BUG**: 1
+- **BUG**: 1
+- **TEST BUG**: 2
 - **NOT IMPLEMENTED**: 3
 
 ## Stable tests
@@ -32,7 +32,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`hashless-hex-color/no-quirks.html`](https://wpt.fyi/results/quirks/hashless-hex-color/no-quirks.html) | Pass | 684 / 684 |  |  |
 | [`hashless-hex-color/quirks.html`](https://wpt.fyi/results/quirks/hashless-hex-color/quirks.html) | Pass | 692 / 692 |  |  |
 | [`line-height-calculation.html`](https://wpt.fyi/results/quirks/line-height-calculation.html) | Fail | 21 / 23 | NOT IMPLEMENTED | the image of a `data:` URL is not available synchronously: the height of the line of an image with borders or paddings is checked before the image has a natural size (the browsers decode it before) |
-| [`percentage-height-calculation.html`](https://wpt.fyi/results/quirks/percentage-height-calculation.html) | Fail | 47 / 53 | BUG, NOT IMPLEMENTED | in the 20px wide quirks mode iframe, the empty body (or the body that is not the child of the root) overflows the viewport horizontally with its margins and the root element is not as tall as the viewport, and a body element in another namespace than the root is not the body of the quirk; the image of a `data:` URL is not available synchronously (the browsers decode it before) |
+| [`percentage-height-calculation.html`](https://wpt.fyi/results/quirks/percentage-height-calculation.html) | Fail | 49 / 53 | BUG, NOT IMPLEMENTED | in the 20px wide quirks mode iframe, the empty body (or the body that is not the child of the root) overflows the viewport horizontally with its margins (its border box of width 0 at 8px is scrollable overflow) and the root element is not as tall as the viewport (185px), and a test in a body element in a body element resolves its percentage against the outer body instead of the root; with an `html` root element in no namespace, the body is 15px shorter (a horizontal scrollbar); the image of a `data:` URL is not available synchronously (the browsers decode it before) |
 | [`supports.html`](https://wpt.fyi/results/quirks/supports.html) | Pass | 6 / 6 |  |  |
 | [`table-cell-nowrap-minimum-width-calculation.html`](https://wpt.fyi/results/quirks/table-cell-nowrap-minimum-width-calculation.html) | Pass | 1 / 1 |  |  |
 | [`table-cell-width-calculation-applies-to.html`](https://wpt.fyi/results/quirks/table-cell-width-calculation-applies-to.html) | Pass | 1 / 1 |  |  |
@@ -62,7 +62,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`html-fills-viewport-quirk.html`](https://wpt.fyi/results/quirks/html-fills-viewport-quirk.html) | Pass | 1 / 1 |  |  |
 | [`line-height-in-list-item.html`](https://wpt.fyi/results/quirks/line-height-in-list-item.html) | Pass | 1 / 1 |  |  |
 | [`line-height-limited-quirks-mode.html`](https://wpt.fyi/results/quirks/line-height-limited-quirks-mode.html) | Pass | 1 / 1 |  |  |
-| [`line-height-preserved-segment-break.html`](https://wpt.fyi/results/quirks/line-height-preserved-segment-break.html) | Fail | 0 / 1 | BUG | in quirks mode, an inline box that only contains a preserved segment break (`white-space: pre-line`) is ignored by the line height calculation quirk: the line is 0px tall instead of using the `line-height: 100px` of the inline box; fails in every browser |
+| [`line-height-preserved-segment-break.html`](https://wpt.fyi/results/quirks/line-height-preserved-segment-break.html) | Fail | 0 / 1 | TEST BUG | the test is in quirks mode and its reference (`ref-filled-green-100px-square.xht`) in standards mode: the green square is rendered as expected (the inline box of the preserved segment break gives its 100px line), but the paragraph that starts the body has no top margin in quirks mode (https://html.spec.whatwg.org/multipage/rendering.html#flow-content-3: "any element with default margins that is the child of a body [...] element and has no substantial previous siblings is expected to have [...] its margin-block-start property [set] to zero"): the whole page is 8px higher than the reference; fails in every browser |
 | [`line-height-quirks-mode.html`](https://wpt.fyi/results/quirks/line-height-quirks-mode.html) | Pass | 1 / 1 |  |  |
 | [`line-height-trailing-collapsable-whitespace.html`](https://wpt.fyi/results/quirks/line-height-trailing-collapsable-whitespace.html) | Pass | 1 / 1 |  |  |
 | [`percentage-height-quirk-excludes-flex-grid-001.html`](https://wpt.fyi/results/quirks/percentage-height-quirk-excludes-flex-grid-001.html) | Pass | 1 / 1 |  |  |

@@ -10,15 +10,9 @@ description: "The results of the web-platform-tests of secure-contexts, and why 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 10 | 10 | 0 | 100% |
-| [Tentative](#tentative-tests) | 0 | 2 | 0 | 0% |
+| [Tentative](#tentative-tests) | 2 | 2 | 0 | 100% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **10** | **12** | **0** | **83%** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **BUG**: 2
+| **All** | **12** | **12** | **0** | **100%** |
 
 ## Stable tests
 
@@ -39,5 +33,5 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`shared-worker-insecure-first.tentative.https.html`](https://wpt.fyi/results/secure-contexts/shared-worker-insecure-first.tentative.https.html) | Fail | 2 / 4 | BUG | a `SharedWorker` with the same URL and name as one created first by a context with another secure-context state fires an `error` event at the connecting context (the tentative tests expect it to connect) |
-| [`shared-worker-secure-first.tentative.https.html`](https://wpt.fyi/results/secure-contexts/shared-worker-secure-first.tentative.https.html) | Fail | 2 / 4 | BUG | a `SharedWorker` with the same URL and name as one created first by a context with another secure-context state fires an `error` event at the connecting context (the tentative tests expect it to connect) |
+| [`shared-worker-insecure-first.tentative.https.html`](https://wpt.fyi/results/secure-contexts/shared-worker-insecure-first.tentative.https.html) | Pass | 4 / 4 |  |  |
+| [`shared-worker-secure-first.tentative.https.html`](https://wpt.fyi/results/secure-contexts/shared-worker-secure-first.tentative.https.html) | Pass | 4 / 4 |  |  |

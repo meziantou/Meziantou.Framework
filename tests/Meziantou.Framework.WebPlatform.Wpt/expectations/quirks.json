@@ -72,8 +72,6 @@
   "quirks/percentage-height-calculation.html": {
     "total": 53,
     "failures": {
-      "The percentage height calculation quirk, <HTML xmlns=\"{html}\"><head><style>#test { height:100% }</style></head><body><div id=\"test\"/></body></HTML>": "FAIL",
-      "The percentage height calculation quirk, <div xmlns=\"{html}\"><head><style>#test { height:100% }</style></head><body><div id=\"test\"/></body></div>": "FAIL",
       "The percentage height calculation quirk, <html xmlns=\"{html}\"><head><style>#test { height:100% }</style></head><body/><div id=\"test\"/></html>": "FAIL",
       "The percentage height calculation quirk, <html xmlns=\"{html}\"><head><style>#test { height:100% }</style></head><body><body><div id=\"test\"/></body></body></html>": "FAIL",
       "The percentage height calculation quirk, <html xmlns=\"{html}\"><head><style>#test { height:100% }</style></head><span><body><div id=\"test\"/></body></span></html>": "FAIL",

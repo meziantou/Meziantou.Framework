@@ -9,21 +9,21 @@ description: "The results of the web-platform-tests of service-workers, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 244 | 283 | 4 | 87% |
+| [Stable](#stable-tests) | 247 | 283 | 4 | 89% |
 | [Tentative](#tentative-tests) | 1 | 11 | 0 | 9% |
 | [Reftests](#reftests) | 1 | 1 | 0 | 100% |
-| **All** | **246** | **295** | **4** | **85%** |
+| **All** | **249** | **295** | **4** | **86%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 12
-- **TEST BUG**: 9
+- **BUG**: 6
+- **TEST BUG**: 10
 - **NOT IMPLEMENTED**: 24
 - **REQUIRES**: 1
   - `service-workers`: 1
-- **TEST RUNNER**: 2
+- **TEST RUNNER**: 3
 - **FLAKY**: 3
 
 ## Stable tests
@@ -34,7 +34,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`cache-storage/cache-add.https.any.js`](https://wpt.fyi/results/service-workers/cache-storage/cache-add.https.any.js) | Fail | 92 / 96 | TEST BUG | "Cache.addAll should succeed when an entry matches an earlier entry only under its own vary header": `vary.py` sets the `Vary` header from the cookie with `str()` of bytes (Python 3), i.e. `Vary: b'x-shape'`, a header that neither request has: the two requests match under the `Vary` of the first response, so `addAll()` rejects with an `InvalidStateError` (https://w3c.github.io/ServiceWorker/#batch-cache-operations) |
 | [`cache-storage/cache-api-nested-worker.https.html`](https://wpt.fyi/results/service-workers/cache-storage/cache-api-nested-worker.https.html) | Pass | 1 / 1 |  |  |
 | [`cache-storage/cache-delete.https.any.js`](https://wpt.fyi/results/service-workers/cache-storage/cache-delete.https.any.js) | Pass | 36 / 36 |  |  |
-| [`cache-storage/cache-keys-attributes-for-service-worker.https.html`](https://wpt.fyi/results/service-workers/cache-storage/cache-keys-attributes-for-service-worker.https.html) | Fail | 0 / 2 | BUG | the reload navigation and history navigation flags of a request are not stored by the Cache API: `isReloadNavigation` and `isHistoryNavigation` of the request read back from the cache are false (Firefox and Safari fail the test too) |
+| [`cache-storage/cache-keys-attributes-for-service-worker.https.html`](https://wpt.fyi/results/service-workers/cache-storage/cache-keys-attributes-for-service-worker.https.html) | Pass | 2 / 2 |  |  |
 | [`cache-storage/cache-keys.https.any.js`](https://wpt.fyi/results/service-workers/cache-storage/cache-keys.https.any.js) | Pass | 68 / 68 |  |  |
 | [`cache-storage/cache-match.https.any.js`](https://wpt.fyi/results/service-workers/cache-storage/cache-match.https.any.js) | Pass | 100 / 100 |  |  |
 | [`cache-storage/cache-matchAll.https.any.js`](https://wpt.fyi/results/service-workers/cache-storage/cache-matchAll.https.any.js) | Pass | 64 / 64 |  |  |
@@ -113,7 +113,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`service-worker/fetch-canvas-tainting-video.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-canvas-tainting-video.https.html) | Pass | 40 / 40 |  |  |
 | [`service-worker/fetch-cors-exposed-header-names.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-cors-exposed-header-names.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/fetch-cors-xhr.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-cors-xhr.https.html) | Pass | 41 / 41 |  |  |
-| [`service-worker/fetch-csp.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-csp.https.html) | Fail | 0 / 1 | BUG | the CSP of the document does not block the image redirected by the service worker to a disallowed URL |
+| [`service-worker/fetch-csp.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-csp.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/fetch-error.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-error.https.html) | Pass | 3 / 3 |  |  |
 | [`service-worker/fetch-event-add-async.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-event-add-async.https.html) | Pass | 2 / 2 |  |  |
 | [`service-worker/fetch-event-after-navigation-within-page.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-event-after-navigation-within-page.https.html) | Pass | 2 / 2 |  |  |
@@ -133,7 +133,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`service-worker/fetch-event-throws-after-respond-with.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-event-throws-after-respond-with.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/fetch-event-within-sw.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-event-within-sw.https.html) | Pass | 2 / 2 |  |  |
 | [`service-worker/fetch-event.https.h2.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-event.https.h2.html) | Fail | 5 / 7 | NOT IMPLEMENTED | the bodies are not streamed: the streaming request bodies (HTTP/2) |
-| [`service-worker/fetch-event.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-event.https.html) | Fail | 40 / 43 | BUG | `event.clientId` of a navigation request is the id of the client of the request (the document that starts the navigation), as Create Fetch Event and Dispatch specifies and as speculation-rules/prefetch/tentative/service-worker expects; Chrome, Firefox and Safari give the empty string, which this test expects. The reload or the traversal of a document created by a POST navigation sends a GET request (`method = GET` instead of `POST` in the two POST subtests) |
+| [`service-worker/fetch-event.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-event.https.html) | Fail | 42 / 43 | BUG | `event.clientId` of a navigation request is the id of the client of the request (the document that starts the navigation), as Create Fetch Event and Dispatch specifies and as speculation-rules/prefetch/tentative/service-worker expects; Chrome, Firefox and Safari give the empty string, which this test expects |
 | [`service-worker/fetch-frame-resource.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-frame-resource.https.html) | Pass | 6 / 6 |  |  |
 | [`service-worker/fetch-header-visibility.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-header-visibility.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/fetch-mixed-content-to-inscope.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-mixed-content-to-inscope.https.html) | Pass | 1 / 1 |  |  |
@@ -180,7 +180,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`service-worker/multipart-image.https.html`](https://wpt.fyi/results/service-workers/service-worker/multipart-image.https.html) | Fail | 3 / 6 | NOT IMPLEMENTED | multipart/x-mixed-replace images |
 | [`service-worker/multiple-register.https.html`](https://wpt.fyi/results/service-workers/service-worker/multiple-register.https.html) | Pass | 3 / 3 |  |  |
 | [`service-worker/multiple-update.https.html`](https://wpt.fyi/results/service-workers/service-worker/multiple-update.https.html) | Pass | 1 / 1 |  |  |
-| [`service-worker/navigate-window.https.html`](https://wpt.fyi/results/service-workers/service-worker/navigate-window.https.html) | Fail | 1 / 2 | BUG | `clients.matchAll()` does not list the window opened by `window.open()` after it navigates |
+| [`service-worker/navigate-window.https.html`](https://wpt.fyi/results/service-workers/service-worker/navigate-window.https.html) | Fail | 1 / 2 | TEST RUNNER | the subtest of the uncontrolled windows expects the window of the WPT harness (`/testharness_runner.html`) and the test window as an auxiliary window among the clients; the subtest of the controlled windows passes |
 | [`service-worker/navigation-headers.https.html`](https://wpt.fyi/results/service-workers/service-worker/navigation-headers.https.html) | Pass | 83 / 83 |  |  |
 | [`service-worker/navigation-preload/broken-chunked-encoding.https.html`](https://wpt.fyi/results/service-workers/service-worker/navigation-preload/broken-chunked-encoding.https.html) | Pass | 2 / 2 |  |  |
 | [`service-worker/navigation-preload/chunked-encoding.https.html`](https://wpt.fyi/results/service-workers/service-worker/navigation-preload/chunked-encoding.https.html) | Pass | 1 / 1 |  |  |
@@ -199,7 +199,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`service-worker/navigation-redirect.https.html`](https://wpt.fyi/results/service-workers/service-worker/navigation-redirect.https.html) | Pass | 78 / 78 |  |  |
 | [`service-worker/navigation-sets-cookie.https.html`](https://wpt.fyi/results/service-workers/service-worker/navigation-sets-cookie.https.html) | Pass | 16 / 16 |  |  |
 | [`service-worker/navigation-timing-extended.https.html`](https://wpt.fyi/results/service-workers/service-worker/navigation-timing-extended.https.html) | Pass | 1 / 1 |  |  |
-| [`service-worker/navigation-timing-sizes.https.html`](https://wpt.fyi/results/service-workers/service-worker/navigation-timing-sizes.https.html) | Fail | 2 / 3 | BUG | the `encodedBodySize` of the navigation timing entry of a gzip response passed through a service worker is its `Content-Length` (the size of the encoded body), while the worker gives the decoded body, whose size the test expects; the other subtests pass |
+| [`service-worker/navigation-timing-sizes.https.html`](https://wpt.fyi/results/service-workers/service-worker/navigation-timing-sizes.https.html) | Pass | 3 / 3 |  |  |
 | [`service-worker/navigation-timing.https.html`](https://wpt.fyi/results/service-workers/service-worker/navigation-timing.https.html) | Pass | 3 / 3 |  |  |
 | [`service-worker/nested-blob-url-workers.https.html`](https://wpt.fyi/results/service-workers/service-worker/nested-blob-url-workers.https.html) | Pass | 3 / 3 |  |  |
 | [`service-worker/next-hop-protocol.https.html`](https://wpt.fyi/results/service-workers/service-worker/next-hop-protocol.https.html) | Fail | 1 / 2 | NOT IMPLEMENTED | the protocol of the connection is not reported by the loader: `nextHopProtocol` is `http/1.1` for the HTTP/2 resource of the network (the H1 subtest passes) |
@@ -242,8 +242,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`service-worker/rejections.https.html`](https://wpt.fyi/results/service-workers/service-worker/rejections.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/request-end-to-end.https.html`](https://wpt.fyi/results/service-workers/service-worker/request-end-to-end.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/resource-timing-bodySize.https.html`](https://wpt.fyi/results/service-workers/service-worker/resource-timing-bodySize.https.html) | Pass | 24 / 24 |  |  |
-| [`service-worker/resource-timing-cross-origin-server-timing.https.html`](https://wpt.fyi/results/service-workers/service-worker/resource-timing-cross-origin-server-timing.https.html) | Fail | 0 / 1 | BUG | the result of the timing allow check of the response that the service worker fetched from another origin is not kept when the worker gives the response to its client: the `Server-Timing` metrics of a CORS response without `Timing-Allow-Origin` are exposed |
-| [`service-worker/resource-timing-cross-origin.https.html`](https://wpt.fyi/results/service-workers/service-worker/resource-timing-cross-origin.https.html) | Fail | 0 / 2 | BUG, TEST BUG | the result of the timing allow check of the response that the service worker fetched from another origin is not kept when the worker gives the response to its client: the response time is exposed; the test expects the connection times of an entry whose timing allow check fails to equal `fetchStart`; they are 0 (https://w3c.github.io/resource-timing/). Chrome, Firefox and Safari fail the two subtests on `domainLookupStart` |
+| [`service-worker/resource-timing-cross-origin-server-timing.https.html`](https://wpt.fyi/results/service-workers/service-worker/resource-timing-cross-origin-server-timing.https.html) | Fail | 0 / 1 | TEST BUG | the test expects the `decodedBodySize` and `encodedBodySize` of a CORS response without `Timing-Allow-Origin` to be 0: the body sizes are CORS-protected, not TAO-protected (https://w3c.github.io/resource-timing/, `resource-timing/body-size-cross-origin.https.html`). The `Server-Timing` metrics of the response are not exposed, as the test expects |
+| [`service-worker/resource-timing-cross-origin.https.html`](https://wpt.fyi/results/service-workers/service-worker/resource-timing-cross-origin.https.html) | Fail | 0 / 2 | TEST BUG | the test expects the connection times of an entry whose timing allow check fails to equal `fetchStart`; they are 0 (https://w3c.github.io/resource-timing/). Chrome, Firefox and Safari fail the two subtests on `domainLookupStart` |
 | [`service-worker/resource-timing-fetch-variants.https.html`](https://wpt.fyi/results/service-workers/service-worker/resource-timing-fetch-variants.https.html) | Pass | 5 / 5 |  |  |
 | [`service-worker/resource-timing.sub.https.html`](https://wpt.fyi/results/service-workers/service-worker/resource-timing.sub.https.html) | Fail | 1 / 2 | TEST RUNNER | the server of the runner does not answer the request of a missing file (`missing.jpg`) with a 404 response: the loader fails, so the entry of the image is the one of a network error (`responseStart` is 0); the assertions of the other resources pass |
 | [`service-worker/respond-with-body-accessed-response.https.html`](https://wpt.fyi/results/service-workers/service-worker/respond-with-body-accessed-response.https.html) | Pass | 20 / 20 |  |  |

@@ -18,8 +18,8 @@ description: "The results of the web-platform-tests of mathml, and why the tests
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 2
-- **TEST BUG**: 12
+- **BUG**: 1
+- **TEST BUG**: 13
 - **NOT IMPLEMENTED**: 7
 - **FLAKY**: 1
 
@@ -157,7 +157,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`relations/css-styling/floats/not-floating-001.html`](https://wpt.fyi/results/mathml/relations/css-styling/floats/not-floating-001.html) | Pass | 24 / 24 |  |  |
 | [`relations/css-styling/ignored-properties-001.html`](https://wpt.fyi/results/mathml/relations/css-styling/ignored-properties-001.html) | Pass | 260 / 260 |  |  |
 | [`relations/css-styling/lengths-2.html`](https://wpt.fyi/results/mathml/relations/css-styling/lengths-2.html) | Pass | 6 / 6 |  |  |
-| [`relations/css-styling/lengths-vi-vb-units.html`](https://wpt.fyi/results/mathml/relations/css-styling/lengths-vi-vb-units.html) | Fail | 1 / 2 | BUG | `vi`/`vb` resolve against the writing mode of the element (MathML forces `horizontal-tb`), the test expects the writing mode of the root element |
+| [`relations/css-styling/lengths-vi-vb-units.html`](https://wpt.fyi/results/mathml/relations/css-styling/lengths-vi-vb-units.html) | Fail | 1 / 2 | TEST BUG | the test expects the `vi`/`vb` of the `width` attribute of an `mspace` to follow the writing mode of the root element (`vertical-rl`), but they resolve against the writing mode of the element itself (https://drafts.csswg.org/css-values-4/#viewport-relative-lengths, WPT `css/css-values/viewport-units-writing-mode.html`: "The writing-mode of the document element does not matter"), which MathML Core forces to `horizontal-tb` on every MathML element (https://w3c.github.io/mathml-core/#user-agent-stylesheet, WPT `mathml/relations/css-styling/writing-mode/force-horizontal-tb.html`): `vi` is the width and `vb` the height of the viewport in both cases |
 | [`relations/css-styling/mathvariant-auto-selection.html`](https://wpt.fyi/results/mathml/relations/css-styling/mathvariant-auto-selection.html) | Pass | 112 / 112 |  |  |
 | [`relations/css-styling/multi-column-layout.html`](https://wpt.fyi/results/mathml/relations/css-styling/multi-column-layout.html) | Pass | 2 / 2 |  |  |
 | [`relations/css-styling/not-participating-to-parent-layout.html`](https://wpt.fyi/results/mathml/relations/css-styling/not-participating-to-parent-layout.html) | Pass | 166 / 166 |  |  |

@@ -1552,11 +1552,13 @@ internal abstract class FormattingContext
         if (box.PseudoElement is not null || box.Element is not { } element || !boxModel.GetSize(blockIsHorizontal).IsAuto || style.IsAbsolutelyPositioned || style.IsFloating)
             return null;
 
-        if (element.IsHtml(TagId.Html) && style.Style.IsRoot)
+        // As in the browsers, the quirks apply to the root element and to its body child whatever the root element is (e.g. an
+        // HTML div element or an html element in no namespace: WPT quirks/percentage-height-calculation.html)
+        if (style.Style.IsRoot)
             return (blockIsHorizontal ? context.InitialContainingBlockSize.Width : context.InitialContainingBlockSize.Height) - margin.BlockSum();
 
-        // The body element of the document (the body child of the html root element), block-level
-        if (element.IsHtml(TagId.Body) && element.ParentNode is Element { ParentNode: Document } parent && parent.IsHtml(TagId.Html) && box.IsBlockLevel
+        // The body element of the document (the body child of the root element), block-level
+        if (element.IsHtml(TagId.Body) && element.ParentNode is Element { ParentNode: Document } && box.IsBlockLevel
             && (space.PercentageBlockSize ?? space.QuirksPercentageBlockSize) is { } parentContentBlockSize)
         {
             return parentContentBlockSize - margin.BlockSum();

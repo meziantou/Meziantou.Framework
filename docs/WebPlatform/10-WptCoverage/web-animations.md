@@ -9,16 +9,16 @@ description: "The results of the web-platform-tests of web-animations, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 124 | 136 | 0 | 91% |
+| [Stable](#stable-tests) | 127 | 136 | 0 | 93% |
 | [Tentative](#tentative-tests) | 3 | 8 | 0 | 38% |
 | [Reftests](#reftests) | 18 | 18 | 0 | 100% |
-| **All** | **145** | **162** | **0** | **90%** |
+| **All** | **148** | **162** | **0** | **91%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 5
+- **BUG**: 2
 - **TEST BUG**: 3
 - **NOT IMPLEMENTED**: 8
 - **TEST RUNNER**: 1
@@ -32,7 +32,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`animation-model/animation-types/addition-per-property-001.html`](https://wpt.fyi/results/web-animations/animation-model/animation-types/addition-per-property-001.html) | Pass | 404 / 404 |  |  |
 | [`animation-model/animation-types/addition-per-property-002.html`](https://wpt.fyi/results/web-animations/animation-model/animation-types/addition-per-property-002.html) | Fail | 408 / 409 | TEST BUG | expects the computed `list-style` to include `outside` (it contradicts css/css-lists/parsing/list-style-computed.sub.html) |
 | [`animation-model/animation-types/discrete.html`](https://wpt.fyi/results/web-animations/animation-model/animation-types/discrete.html) | Pass | 5 / 5 |  |  |
-| [`animation-model/animation-types/interpolation-per-property-001.html`](https://wpt.fyi/results/web-animations/animation-model/animation-types/interpolation-per-property-001.html) | Fail | 506 / 507 | BUG | the interpolated `hue-rotate()` angle converted from radians keeps 6 decimals (`2869.788976deg` instead of `2869.79deg`) |
+| [`animation-model/animation-types/interpolation-per-property-001.html`](https://wpt.fyi/results/web-animations/animation-model/animation-types/interpolation-per-property-001.html) | Pass | 507 / 507 |  |  |
 | [`animation-model/animation-types/interpolation-per-property-002.html`](https://wpt.fyi/results/web-animations/animation-model/animation-types/interpolation-per-property-002.html) | Fail | 502 / 505 | TEST BUG | expects the computed `list-style` to include `outside` (it contradicts css/css-lists/parsing/list-style-computed.sub.html) |
 | [`animation-model/animation-types/scrollbar-interpolation.html`](https://wpt.fyi/results/web-animations/animation-model/animation-types/scrollbar-interpolation.html) | Pass | 1 / 1 |  |  |
 | [`animation-model/animation-types/visibility.html`](https://wpt.fyi/results/web-animations/animation-model/animation-types/visibility.html) | Pass | 2 / 2 |  |  |
@@ -45,7 +45,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`animation-model/keyframe-effects/effect-value-context.html`](https://wpt.fyi/results/web-animations/animation-model/keyframe-effects/effect-value-context.html) | Pass | 5 / 5 |  |  |
 | [`animation-model/keyframe-effects/effect-value-easing-on-keyframe-without-property.html`](https://wpt.fyi/results/web-animations/animation-model/keyframe-effects/effect-value-easing-on-keyframe-without-property.html) | Pass | 2 / 2 |  |  |
 | [`animation-model/keyframe-effects/effect-value-interval-distance.html`](https://wpt.fyi/results/web-animations/animation-model/keyframe-effects/effect-value-interval-distance.html) | Pass | 1 / 1 |  |  |
-| [`animation-model/keyframe-effects/effect-value-iteration-composite-operation.html`](https://wpt.fyi/results/web-animations/animation-model/keyframe-effects/effect-value-iteration-composite-operation.html) | Fail | 35 / 38 | BUG | the iteration composite operation of transform lists whose functions are mismatched, and the operand order of the accumulated math functions (`2 * max(...)` before the current term) |
+| [`animation-model/keyframe-effects/effect-value-iteration-composite-operation.html`](https://wpt.fyi/results/web-animations/animation-model/keyframe-effects/effect-value-iteration-composite-operation.html) | Pass | 38 / 38 |  |  |
 | [`animation-model/keyframe-effects/effect-value-overlapping-keyframes.html`](https://wpt.fyi/results/web-animations/animation-model/keyframe-effects/effect-value-overlapping-keyframes.html) | Pass | 2 / 2 |  |  |
 | [`animation-model/keyframe-effects/effect-value-replaced-animations.html`](https://wpt.fyi/results/web-animations/animation-model/keyframe-effects/effect-value-replaced-animations.html) | Pass | 5 / 5 |  |  |
 | [`animation-model/keyframe-effects/effect-value-step-easing-reversed-direction.html`](https://wpt.fyi/results/web-animations/animation-model/keyframe-effects/effect-value-step-easing-reversed-direction.html) | Pass | 2 / 2 |  |  |
@@ -128,7 +128,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`responsive/strokeDasharray.html`](https://wpt.fyi/results/web-animations/responsive/strokeDasharray.html) | Pass | 1 / 1 |  |  |
 | [`responsive/text-size-adjust.html`](https://wpt.fyi/results/web-animations/responsive/text-size-adjust.html) | Pass | 1 / 1 |  |  |
 | [`responsive/textIndent.html`](https://wpt.fyi/results/web-animations/responsive/textIndent.html) | Pass | 2 / 2 |  |  |
-| [`responsive/to-color-change.html`](https://wpt.fyi/results/web-animations/responsive/to-color-change.html) | Fail | 12 / 13 | BUG | the alpha of an interpolated legacy color keeps 6 decimals instead of the 8-bit precision of the browsers (`0.596079` instead of `0.596`) |
+| [`responsive/to-color-change.html`](https://wpt.fyi/results/web-animations/responsive/to-color-change.html) | Pass | 13 / 13 |  |  |
 | [`responsive/to-inherited-change.html`](https://wpt.fyi/results/web-animations/responsive/to-inherited-change.html) | Pass | 3 / 3 |  |  |
 | [`responsive/to-style-change.html`](https://wpt.fyi/results/web-animations/responsive/to-style-change.html) | Pass | 3 / 3 |  |  |
 | [`responsive/transform.html`](https://wpt.fyi/results/web-animations/responsive/transform.html) | Pass | 1 / 1 |  |  |

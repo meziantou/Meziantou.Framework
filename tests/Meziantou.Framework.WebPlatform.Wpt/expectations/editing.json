@@ -235,7 +235,6 @@
     "total": 12,
     "failures": {
       "delete from <div> around invisible <head> element should not delete the <head>": "FAIL",
-      "delete from <div> following invisible <head> element shouldn't delete the <head> element": "FAIL",
       "delete should merge <div> before <body> into the <body>": "FAIL",
       "delete should merge <div> before <body> into the <div> in the <body>": "FAIL",
       "delete should merge <div> before <body> into the empty <body>": "FAIL"
@@ -254,7 +253,6 @@
     "total": 12,
     "failures": {
       "delete from <div> around invisible <head> element should not delete the <head>": "FAIL",
-      "delete from <div> following invisible <head> element shouldn't delete the <head> element": "FAIL",
       "delete should merge <div> before <body> into the <body>": "FAIL",
       "delete should merge <div> before <body> into the <div> in the <body>": "FAIL",
       "delete should merge <div> before <body> into the empty <body>": "FAIL"
@@ -468,10 +466,6 @@
   "editing/other/editing-around-select-element.tentative.html?insertText": {
     "total": 37,
     "failures": {
-      "execCommand(insertText, false, \"XYZ\") in <div contenteditable><p>abc</p>{<select multiple><optgroup><option>def</option><option>ghi</option></optgroup></select>}<p>jkl</p></div>: <select multiple> element itself should be removable": "FAIL",
-      "execCommand(insertText, false, \"XYZ\") in <div contenteditable><p>abc</p>{<select multiple><option>def</option><option>ghi</option></select>}<p>jkl</p></div>: <select multiple> element itself should be removable": "FAIL",
-      "execCommand(insertText, false, \"XYZ\") in <div contenteditable><p>abc</p>{<select><optgroup><option>def</option><option>ghi</option></optgroup></select>}<p>jkl</p></div>: <select> element itself should be removable": "FAIL",
-      "execCommand(insertText, false, \"XYZ\") in <div contenteditable><p>abc</p>{<select><option>def</option><option>ghi</option></select>}<p>jkl</p></div>: <select> element itself should be removable": "FAIL",
       "execCommand(insertText, false, \"XYZ\") in <optgroup contenteditable><option>{abc}</option><option>def</option></optgroup>: shouldn't delete <option>s nor optgroup": "FAIL",
       "execCommand(insertText, false, \"XYZ\") in <option contenteditable>{abc}</option>: shouldn't modify <option>": "FAIL"
     }
@@ -2591,10 +2585,6 @@
     "failures": {
       "[[\"defaultparagraphseparator\",\"div\"],[\"delete\",\"\"]] \"<ol><li>foo</ol><p>[bar<ol><li><p>]baz</ol>\" compare innerHTML": "FAIL",
       "[[\"defaultparagraphseparator\",\"p\"],[\"delete\",\"\"]] \"<ol><li>foo</ol><p>[bar<ol><li><p>]baz</ol>\" compare innerHTML": "FAIL",
-      "[[\"delete\",\"\"]] \"<div> [] abc</div>\" compare innerHTML": "FAIL",
-      "[[\"delete\",\"\"]] \"<div> []abc</div>\" compare innerHTML": "FAIL",
-      "[[\"delete\",\"\"]] \"<div><div><p>foo</p></div></div><div></div><div><div>[]bar</div></div></div>\" compare innerHTML": "FAIL",
-      "[[\"delete\",\"\"]] \"<div>foo</div><div></div><div>[]bar</div>\" compare innerHTML": "FAIL",
       "[[\"delete\",\"\"]] \"<ol><li>foo</ol><p>[bar<ol><li>]baz</ol>\" compare innerHTML": "FAIL",
       "[[\"stylewithcss\",\"true\"],[\"delete\",\"\"]] \"<span style=display:block>fo[o</span><span style=display:block>b]ar</span>\" queryCommandState(\"stylewithcss\") before": "FAIL"
     }
@@ -2799,11 +2789,7 @@
       "[[\"forwarddelete\",\"\"]] \"<div style=white-space:nowrap>[]f\\nbar</div>\" compare innerHTML": "FAIL",
       "[[\"forwarddelete\",\"\"]] \"<div style=white-space:pre-line>foo[] \\nbar</div>\" compare innerHTML": "FAIL",
       "[[\"forwarddelete\",\"\"]] \"<div><div contenteditable=false><div contenteditable><div>{}<br></div></div></div></div>\" compare innerHTML": "FAIL",
-      "[[\"forwarddelete\",\"\"]] \"<div><div><p>foo[]</p></div></div><div></div><div><div>bar</div></div></div>\" compare innerHTML": "FAIL",
       "[[\"forwarddelete\",\"\"]] \"<div><div>{}<br></div></div>\" compare innerHTML": "FAIL",
-      "[[\"forwarddelete\",\"\"]] \"<div>abc [] </div>\" compare innerHTML": "FAIL",
-      "[[\"forwarddelete\",\"\"]] \"<div>abc[] </div>\" compare innerHTML": "FAIL",
-      "[[\"forwarddelete\",\"\"]] \"<div>foo[]</div><div></div><div>bar</div>\" compare innerHTML": "FAIL",
       "[[\"forwarddelete\",\"\"]] \"<ol><li><p>foo</ol><p>{}<br></p><ol><li>bar</ol>\" compare innerHTML": "FAIL",
       "[[\"forwarddelete\",\"\"]] \"<ol><li>foo</ol><p>[bar<ol><li>]baz</ol>\" compare innerHTML": "FAIL",
       "[[\"forwarddelete\",\"\"]] \"<ol><li>foo</ol><p>{}<br></p><ol><li>bar</ol>\" compare innerHTML": "FAIL",
@@ -2910,8 +2896,6 @@
       "[[\"inserthtml\",\"X\"]] \"<div style=white-space:pre-line>[]\\n</div>\" compare innerHTML": "FAIL",
       "[[\"inserthtml\",\"X\"]] \"<div style=white-space:pre-line>abc []\\n</div>\" compare innerHTML": "FAIL",
       "[[\"inserthtml\",\"X\"]] \"<div style=white-space:pre>[]\\n</div>\" compare innerHTML": "FAIL",
-      "[[\"inserthtml\",\"abc\"]] \"<p><!--foo--><span><br></span>{}<!--bar--></p>\" compare innerHTML": "FAIL",
-      "[[\"inserthtml\",\"abc\"]] \"<p><br>{}</p>\" compare innerHTML": "FAIL",
       "[[\"inserthtml\",\"abc\"]] \"<p><span><!--foo--><br><!--bar--></span>{}</p>\" compare innerHTML": "FAIL",
       "[[\"stylewithcss\",\"false\"],[\"inserthtml\",\"<span style=display:none></span>\"]] \"<p>[foo]</p>\" compare innerHTML": "FAIL",
       "[[\"stylewithcss\",\"true\"],[\"inserthtml\",\"<span style=display:none></span>\"]] \"<p>[foo]</p>\" compare innerHTML": "FAIL",
@@ -2930,7 +2914,6 @@
   "editing/run/insertlinebreak.html?1001-last": {
     "total": 691,
     "failures": {
-      "[[\"insertlinebreak\",\"\"]] \" <span contenteditable=\\\"false\\\">A</span>[] ; <span contenteditable=\\\"false\\\">B</span> ; <span contenteditable=\\\"false\\\">C</span> \" compare innerHTML": "FAIL",
       "[[\"stylewithcss\",\"true\"],[\"insertlinebreak\",\"\"]] \"<p>[foo<span style=color:#aBcDeF>bar]</span>baz\" queryCommandState(\"stylewithcss\") before": "FAIL"
     }
   },
@@ -2952,8 +2935,6 @@
       "[[\"insertorderedlist\",\"\"],[\"inserttext\",\"abc\"]] \"<p>{}</p>\" queryCommandValue(\"insertorderedlist\") before": "FAIL",
       "[[\"insertorderedlist\",\"\"],[\"inserttext\",\"abc\"]] \"<p>{}<br></p>\" queryCommandValue(\"insertorderedlist\") after": "FAIL",
       "[[\"insertorderedlist\",\"\"],[\"inserttext\",\"abc\"]] \"<p>{}<br></p>\" queryCommandValue(\"insertorderedlist\") before": "FAIL",
-      "[[\"insertorderedlist\",\"\"],[\"inserttext\",\"abc\"]] \"{}\" compare innerHTML": "FAIL",
-      "[[\"insertorderedlist\",\"\"],[\"inserttext\",\"abc\"]] \"{}\" queryCommandState(\"insertorderedlist\") after": "FAIL",
       "[[\"insertorderedlist\",\"\"],[\"inserttext\",\"abc\"]] \"{}\" queryCommandValue(\"insertorderedlist\") after": "FAIL",
       "[[\"insertorderedlist\",\"\"],[\"inserttext\",\"abc\"]] \"{}\" queryCommandValue(\"insertorderedlist\") before": "FAIL",
       "[[\"insertorderedlist\",\"\"]] \"<div dir=\\\"rtl\\\">a[]bc</div><div dir=\\\"rtl\\\">def</div>\" compare innerHTML": "FAIL",
@@ -3112,8 +3093,6 @@
       "[[\"insertunorderedlist\",\"\"],[\"inserttext\",\"abc\"]] \"<div>{}</div>\" queryCommandValue(\"insertunorderedlist\") after": "FAIL",
       "[[\"insertunorderedlist\",\"\"],[\"inserttext\",\"abc\"]] \"<div>{}</div>\" queryCommandValue(\"insertunorderedlist\") before": "FAIL",
       "[[\"insertunorderedlist\",\"\"],[\"inserttext\",\"abc\"]] \"<div>{}<br></div>\" compare innerHTML": "FAIL",
-      "[[\"insertunorderedlist\",\"\"],[\"inserttext\",\"abc\"]] \"{}\" compare innerHTML": "FAIL",
-      "[[\"insertunorderedlist\",\"\"],[\"inserttext\",\"abc\"]] \"{}\" queryCommandState(\"insertunorderedlist\") after": "FAIL",
       "[[\"insertunorderedlist\",\"\"],[\"inserttext\",\"abc\"]] \"{}\" queryCommandValue(\"insertunorderedlist\") after": "FAIL",
       "[[\"insertunorderedlist\",\"\"],[\"inserttext\",\"abc\"]] \"{}\" queryCommandValue(\"insertunorderedlist\") before": "FAIL",
       "[[\"stylewithcss\",\"true\"],[\"defaultparagraphseparator\",\"div\"],[\"insertunorderedlist\",\"\"]] \"<ul style=color:blue><li>foo<li>[bar]<li>baz</ul>\" queryCommandState(\"stylewithcss\") before": "FAIL"

@@ -719,6 +719,20 @@ internal sealed partial class EditingAlgorithms
         if (mode == "enable")
         {
             nodeList.RemoveAll(static node => IsHtmlElement(node, ListNames) && !IsHtmlElement(node.ParentNode, ListNames));
+
+            // The specification does nothing when the range contains no node. As in the browsers, a caret in an empty
+            // editing host gets an empty list item, in which the text typed afterwards is inserted
+            if (nodeList.Count == 0 && range.Collapsed && range.StartContainer is Element container && IsEditingHost(container)
+                && !HasVisibleChild(container) && IsAllowedChild(tagName, container))
+            {
+                var list = CreateElement(tagName);
+                var item = CreateElement("li");
+                item.AppendChild(CreateElement("br"));
+                list.AppendChild(item);
+                container.InsertBefore(list, ChildAt(container, (int)range.StartOffset));
+                CollapseTo(item, 0);
+                return;
+            }
         }
 
         var index = 0;

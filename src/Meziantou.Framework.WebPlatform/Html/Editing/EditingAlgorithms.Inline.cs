@@ -512,8 +512,24 @@ internal sealed partial class EditingAlgorithms
     }
 
     /// <summary>https://w3c.github.io/editing/docs/execCommand/#formattable-node</summary>
+    /// <remarks>
+    /// As in the browsers, the text of the options of an editable select element, which the control renders, is not
+    /// formattable: it does not give the formatting of a selection that contains the select element (its background color
+    /// would be restored on the text that replaces it).
+    /// </remarks>
     private bool IsFormattableNode(Node node)
-        => IsEditable(node) && IsVisible(node) && (node is Text || IsHtmlElement(node, "img") || IsHtmlElement(node, "br"));
+        => IsEditable(node) && IsVisible(node) && (node is Text || IsHtmlElement(node, "img") || IsHtmlElement(node, "br")) && !IsInEditableSelectElement(node);
+
+    private static bool IsInEditableSelectElement(Node node)
+    {
+        for (var ancestor = node.ParentNode; ancestor is not null; ancestor = ancestor.ParentNode)
+        {
+            if (IsHtmlElement(ancestor, "select"))
+                return IsEditable(ancestor);
+        }
+
+        return false;
+    }
 
     /// <summary>https://w3c.github.io/editing/docs/execCommand/#equivalent-values</summary>
     private bool AreEquivalentValues(string command, string? value1, string? value2)

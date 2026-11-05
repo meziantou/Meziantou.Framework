@@ -2817,7 +2817,20 @@ specification, the browsers are followed, as the tests expect:
 - the head and the body elements are never deleted: a boundary point of the range that is in the document element
   (`selectAllChildren(document.documentElement)` in an editable `html` element) is moved into the body element, and
   `delete` does nothing at the start of an editing host (the caret does not leave it, e.g. when the host only contains
-  collapsed white space).
+  collapsed white space). Backspace at the start of a block that follows a `head` element that is not rendered does
+  nothing (the specification removes the invisible `head`, then joins the block to it);
+- `delete` and `forwardDelete` keep the white space that collapses at the start (or at the end) of an editing host when the
+  caret is after (or before) it: there is nothing to delete (`<div> []abc</div>` is unchanged), and they remove an empty block
+  (without children, so without a line) between the lines that they join (`<div>foo</div><div></div><div>[]bar</div>` gives
+  `<div>foobar</div>`);
+- `insertOrderedList` and `insertUnorderedList` at a caret in an empty editing host create a list with an empty item
+  (`<ol><li><br></li></ol>`) that contains the caret; the specification creates no list when the range contains no node;
+- `insertLineBreak` replaces the space that follows the new `br` with a no-break space when the space was rendered (content
+  precedes the caret on its line): it would collapse at the start of the new line;
+- `insertHTML` removes the collapsed block prop (`<p><br>{}</p>`) that precedes the caret when the fragment has text, which
+  replaces it (the specification only removes the ones that follow the caret);
+- the text of the options of an editable `select` element is not a formattable node: the formatting that a deletion records
+  and that the text typed afterwards gets does not come from it (the background color of the `select` element).
 
 An inert node behaves as a node that is not editable (https://html.spec.whatwg.org/multipage/interaction.html#inert): the
 subtree of an element with the `inert` attribute is not editable, the commands are not enabled in an inert editing host,

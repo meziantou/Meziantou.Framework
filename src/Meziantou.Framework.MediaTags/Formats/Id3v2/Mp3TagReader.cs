@@ -45,8 +45,13 @@ internal sealed class Mp3TagReader : IMediaTagReader
             stream.Position = 0;
             Id3v2Reader.TryReadTag(stream, tags);
 
-            // Then try ID3v1 (at end of file) — ID3v2 values take priority (already set via ??=)
-            Id3v1.Id3v1Reader.TryReadTag(stream, tags);
+            // Then try ID3v1 (at end of file) — ID3v2 values take priority (already set via ??=). "TAG" inside the
+            // ID3v2 tag is not an ID3v1 tag, even in the last 128 bytes of the file.
+            if (Mp3AudioLocator.HasId3v1Tag(stream))
+            {
+                Id3v1.Id3v1Reader.TryReadTag(stream, tags);
+            }
+
             if (tags.Duration is null)
             {
                 tags.Duration = TryReadDuration(stream);

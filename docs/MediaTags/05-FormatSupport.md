@@ -21,7 +21,8 @@ description: Which fields each audio format stores, and what each format does wh
 rather than wrapped.
 
 <sup>2</sup> Stored in a `TLEN` frame. A duration computed from the audio is not written; see
-[Change some fields](04-WritingTags.md#change-some-fields).
+[Change some fields](04-WritingTags.md#change-some-fields). A `TLEN` of 0 means the duration is unknown, so the duration
+is computed from the audio instead.
 
 <sup>3</sup> Stored in the embedded ID3v2 tag, not as native chunks.
 
@@ -31,7 +32,8 @@ rather than wrapped.
   [`WriteId3v1Tag`](04-WritingTags.md#write-options) is `false`. ID3v1 truncates each field to 30 Latin-1 characters.
 - The ID3v2 frames this library does not read, such as the publisher, the sort names, ratings, `UFID`, `PRIV` or the
   `COMM` frames of iTunes, are copied from the existing ID3v2.3 or ID3v2.4 tag. [RemoveTags](cref:Meziantou.Framework.MediaTags.MediaFile.RemoveTags) removes them too.
-- A file with only an ID3v1 tag is read.
+- A file with only an ID3v1 tag is read. "TAG" in the last 128 bytes of the file is not an ID3v1 tag when the ID3v2 tag covers it, as
+  when a text frame holds it and less than 128 bytes of audio follow the ID3v2 tag.
 
 ## OGG Vorbis, OGG Opus and FLAC
 

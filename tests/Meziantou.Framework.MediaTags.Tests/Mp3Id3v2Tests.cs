@@ -243,6 +243,39 @@ public sealed class Mp3Id3v2Tests
         Assert.Equal(TimeSpan.FromMilliseconds(123456), result.Value.Duration.Value);
     }
 
+    [Fact]
+    public void ReadTags_Id3v2TlenZero_IsUnknown()
+    {
+        // The writer does not write a zero duration, so reading one would change the duration on a read-modify-write
+        var bytes = CreateId3v24WithTextFrame("TLEN", "0");
+
+        var tags = ReadMp3(bytes);
+        Assert.Null(tags.Duration);
+        Assert.Null(ReadMp3(WriteMp3(bytes, tags)).Duration);
+    }
+
+    [Fact]
+    public void ReadTags_Id3v1MagicInsideTheId3v2Tag_IsNotAnId3v1Tag()
+    {
+        // "TAG" starts 128 bytes before the end of the file, but inside the text of the ID3v2 tag
+        var artist = "TAG" + new string('x', 120);
+        byte[] audio = [1, 2, 3, 4, 5];
+        byte[] bytes = [.. CreateId3v24WithTextFrame("TPE1", artist), .. audio];
+        Assert.Equal("TAG"u8.ToArray(), bytes[^128..^125]);
+
+        var tags = ReadMp3(bytes);
+        Assert.Equal(artist, tags.Artist);
+        Assert.Null(tags.Title);
+
+        var written = WriteMp3(bytes, tags);
+        Assert.Equal(artist, ReadMp3(written).Artist);
+
+        using var input = new MemoryStream(bytes);
+        using var output = new MemoryStream();
+        Assert.True(MediaFile.RemoveTags(input, output, MediaFormat.Mp3).IsSuccess);
+        Assert.Equal(audio, output.ToArray());
+    }
+
     private static byte[] CreateSyntheticMp3(int frameCount, bool includeId3v2Tag)
     {
         const int Mpeg1Layer3FrameLength = 417;

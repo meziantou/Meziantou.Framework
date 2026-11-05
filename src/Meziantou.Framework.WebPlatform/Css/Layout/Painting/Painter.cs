@@ -624,6 +624,10 @@ internal sealed partial class Painter
                     PaintOutlines(_group);
                     break;
 
+                case PaintItemMarker.AtomicOutlines:
+                    PaintAtomicOutlines(_group, item.Fragment);
+                    break;
+
                 default:
                     // The band of a block split out of inline boxes (hit tested as the inline boxes): as in the browsers, the
                     // backgrounds of the inline boxes are not painted behind the block (css/CSS2/box-display/block-in-inline-003.xht)
@@ -694,6 +698,7 @@ internal sealed partial class Painter
                     break;
 
                 case PaintItemMarker.Outlines:
+                case PaintItemMarker.AtomicOutlines:
                     break;
 
                 default:
@@ -974,6 +979,41 @@ internal sealed partial class Painter
         {
             SyncClips(GetClipChain(fragment, includeSelf: false));
             PaintOutline(fragment, fragment.GetOffsetInRoot() - _group.Origin);
+        }
+    }
+
+    /// <summary>Paints the pending outlines of a box painted atomically and of its descendants (see <see cref="PaintItemMarker.AtomicOutlines"/>).</summary>
+    private void PaintAtomicOutlines(Group group, Fragment atomic)
+    {
+        if (group.Outlines is not { } outlines)
+            return;
+
+        var index = 0;
+        for (var i = 0; i < outlines.Count; i++)
+        {
+            var fragment = outlines[i];
+            if (IsSelfOrDescendant(fragment, atomic))
+            {
+                SyncClips(GetClipChain(fragment, includeSelf: false));
+                PaintOutline(fragment, fragment.GetOffsetInRoot() - _group.Origin);
+            }
+            else
+            {
+                outlines[index++] = fragment;
+            }
+        }
+
+        outlines.RemoveRange(index, outlines.Count - index);
+
+        static bool IsSelfOrDescendant(Fragment fragment, Fragment ancestor)
+        {
+            for (Fragment? current = fragment; current is not null; current = current.Parent)
+            {
+                if (ReferenceEquals(current, ancestor))
+                    return true;
+            }
+
+            return false;
         }
     }
 

@@ -68,6 +68,15 @@ internal enum PaintItemMarker : byte
     /// step of https://drafts.csswg.org/css2/#elaborate-stacking-contexts).
     /// </summary>
     Outlines,
+
+    /// <summary>
+    /// The outlines of the fragment and of its descendants painted since the previous outlines of the stacking context are
+    /// painted: a box painted atomically (an atomic inline, a flex or grid item, a float) ends. As in Blink, such a box paints
+    /// all its phases, its outlines included, before the content that follows it (WPT css/css-ui/outline-with-padding-001.html:
+    /// the outline of a flex item is below the outline of a block that follows it), the outlines of the boxes painted before it
+    /// stay pending.
+    /// </summary>
+    AtomicOutlines,
 }
 
 /// <summary>
@@ -710,7 +719,7 @@ internal static class PaintOrder
                 {
                     if (IsFloat(fragment) && !IsLayer(fragment) && !fragment.IsHiddenForPaint)
                     {
-                        PaintPseudoStackingContext(fragment, output, markers);
+                        PaintAtomically(fragment, output, markers);
                     }
                 }
             }
@@ -1065,6 +1074,16 @@ internal static class PaintOrder
         }
     }
 
+    /// <summary>Paints a box atomically (a float, an atomic inline, a flex or grid item): as a pseudo stacking context, followed by its outlines.</summary>
+    private static void PaintAtomically(BoxFragment fragment, List<PaintItem> output, bool markers)
+    {
+        PaintPseudoStackingContext(fragment, output, markers);
+        if (markers)
+        {
+            output.Add(new PaintItem(fragment) { Marker = PaintItemMarker.AtomicOutlines });
+        }
+    }
+
     /// <summary>
     /// Paints the in-flow contents of a box: the block-level descendants, the floats, then the inline content. When the painting
     /// order is collected for the painting (<paramref name="markers"/>), the lines are truncated by <c>text-overflow</c>.
@@ -1244,7 +1263,7 @@ internal static class PaintOrder
                     // (a float in an inline box that establishes a stacking context is painted in that stacking context)
                     if (GetInlineStackingContextOfFloat(box.Box) is null)
                     {
-                        PaintPseudoStackingContext(box, output, markers);
+                        PaintAtomically(box, output, markers);
                     }
 
                     continue;
@@ -1278,7 +1297,7 @@ internal static class PaintOrder
             {
                 if (child is BoxFragment { IsHiddenForPaint: false } item && !IsLayer(item) && !IsFloat(item))
                 {
-                    PaintPseudoStackingContext(item, output, markers);
+                    PaintAtomically(item, output, markers);
                 }
             }
 
@@ -1476,7 +1495,7 @@ internal static class PaintOrder
                 case BoxFragment atomic:
                     if (truncation?.IsHidden(atomic) != true)
                     {
-                        PaintPseudoStackingContext(atomic, output, markers);
+                        PaintAtomically(atomic, output, markers);
                     }
 
                     break;

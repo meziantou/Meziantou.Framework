@@ -1494,6 +1494,20 @@ public sealed class PaintingTests : IDisposable
     }
 
     [Fact]
+    public void Outline_OfAFlexItemPaintedBelowTheOutlineOfAFollowingBlock()
+    {
+        // A flex item is painted atomically, its outline with it: the outline of the block that follows it is painted above it
+        var document = Parse("""
+            <div style='display: flex'><div id=a style='width: 10px; height: 10px; outline: 2px solid rgb(255, 0, 0)'></div></div>
+            <div id=b style='height: 10px; outline: 2px solid rgb(0, 0, 255)'></div>
+            """);
+        var dump = Dump(document);
+        var item = dump.IndexOf("fill #ff0000  [div#a]", StringComparison.Ordinal);
+        var block = dump.IndexOf("fill #0000ff  [div#b]", StringComparison.Ordinal);
+        Assert.True(item >= 0 && block > item, dump);
+    }
+
+    [Fact]
     public void Outline_AutoIsARoundedFocusRingOfTwoColors()
     {
         // The inner ring (2px) in the color of the outline, the outer ring (1px) white, with rounded corners

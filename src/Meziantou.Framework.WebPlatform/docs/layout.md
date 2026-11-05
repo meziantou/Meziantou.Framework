@@ -4880,7 +4880,9 @@ something asks for the display list (`LayoutEngine.PaintCount` for the tests).
   marker; without `markers` the list is unchanged for the hit testing). The top layer is painted after the viewport group.
   The outlines are collected per stacking context and painted at the `Outlines` markers, which follow the in-flow content of
   each stacking context and of each positioned box (as in Blink and WebKit, rather than at the end of the stacking context,
-  CSS 2 Appendix E step 10: an outline is below the positioned boxes that follow its box). The layers with the
+  CSS 2 Appendix E step 10: an outline is below the positioned boxes that follow its box). A box painted atomically (an
+  atomic inline, a flex or grid item, a float) is followed by an `AtomicOutlines` marker that paints the pending outlines of
+  its subtree only (as in Blink, its outline is below the outline of a block that follows it). The layers with the
   same `z-index` are sorted in tree order of their boxes (`TreeOrder`: a preorder index of the box tree; the flex and grid
   items keep their order-modified document order, the absolutely positioned children of the container being ordered as
   `order: 0`), and a layer whose containing block chain skips its nearest ancestor

@@ -2976,7 +2976,7 @@
     "total": 12
   },
   "css/css-ui/outline-with-padding-001.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-ui/parsing/box-sizing-computed.html": {
     "total": 2

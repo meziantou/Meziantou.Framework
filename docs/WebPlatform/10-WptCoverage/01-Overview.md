@@ -48,17 +48,17 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 26,210 | 29,691 | 2,106 | 95% |
+| [Stable](#stable-tests) | 26,207 | 29,691 | 2,106 | 95% |
 | [Tentative](#tentative-tests) | 1,360 | 3,074 | 698 | 57% |
-| [Reftests](#reftests) | 27,919 | 29,220 | 172 | 96% |
-| **All** | **55,489** | **61,985** | **2,976** | **94%** |
+| [Reftests](#reftests) | 27,920 | 29,220 | 172 | 96% |
+| **All** | **55,487** | **61,985** | **2,976** | **94%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 201
-- **TEST BUG**: 1,028
+- **BUG**: 205
+- **TEST BUG**: 1,027
 - **NOT IMPLEMENTED**: 4,297
 - **REQUIRES**: 770
   - `hardware`: 574
@@ -121,7 +121,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`css/css-borders`](css/css-borders.md) | 36 | 37 | 0 | 97% |
 | [`css/css-box`](css/css-box.md) | 53 | 79 | 0 | 67% |
 | [`css/css-break`](css/css-break.md) | 42 | 42 | 0 | 100% |
-| [`css/css-cascade`](css/css-cascade.md) | 92 | 92 | 0 | 100% |
+| [`css/css-cascade`](css/css-cascade.md) | 91 | 92 | 0 | 99% |
 | [`css/css-color`](css/css-color.md) | 67 | 69 | 0 | 97% |
 | [`css/css-color-adjust`](css/css-color-adjust.md) | 14 | 15 | 0 | 93% |
 | [`css/css-color-hdr`](css/css-color-hdr.md) | 3 | 4 | 0 | 75% |
@@ -267,7 +267,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`input-device-capabilities`](input-device-capabilities.md) | 0 | 1 | 1 | – |
 | [`input-events`](input-events.md) | 16 | 18 | 0 | 89% |
 | [`installedapp`](installedapp.md) | 0 | 2 | 2 | – |
-| [`intersection-observer`](intersection-observer.md) | 140 | 153 | 0 | 92% |
+| [`intersection-observer`](intersection-observer.md) | 139 | 153 | 0 | 91% |
 | [`intervention-reporting`](intervention-reporting.md) | 1 | 1 | 0 | 100% |
 | [`is-input-pending`](is-input-pending.md) | 10 | 10 | 0 | 100% |
 | [`jpegxl`](jpegxl.md) | 9 | 12 | 0 | 75% |
@@ -337,7 +337,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`reporting`](reporting.md) | 19 | 25 | 0 | 76% |
 | [`requestidlecallback`](requestidlecallback.md) | 20 | 20 | 0 | 100% |
 | [`resize-observer`](resize-observer.md) | 35 | 35 | 0 | 100% |
-| [`resource-timing`](resource-timing.md) | 107 | 118 | 0 | 91% |
+| [`resource-timing`](resource-timing.md) | 106 | 118 | 0 | 90% |
 | [`sanitizer-api`](sanitizer-api.md) | 48 | 50 | 0 | 96% |
 | [`savedata`](savedata.md) | 1 | 1 | 0 | 100% |
 | [`scheduler`](scheduler.md) | 24 | 24 | 0 | 100% |
@@ -419,7 +419,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 320 | 330 | 0 | 97% |
 | [`xml`](xml.md) | 0 | 12 | 12 | – |
-| **Total (343 sections)** | **26,210** | **29,691** | **2,106** | **95%** |
+| **Total (343 sections)** | **26,207** | **29,691** | **2,106** | **95%** |
 
 ## Tentative tests
 
@@ -661,7 +661,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`css/css-transforms`](css/css-transforms.md#reftests) | 794 | 797 | 0 | 99.6% |
 | [`css/css-transitions`](css/css-transitions.md#reftests) | 6 | 6 | 0 | 100% |
 | [`css/css-typed-om`](css/css-typed-om.md#reftests) | 5 | 5 | 0 | 100% |
-| [`css/css-ui`](css/css-ui.md#reftests) | 959 | 964 | 0 | 99% |
+| [`css/css-ui`](css/css-ui.md#reftests) | 960 | 964 | 0 | 99.5% |
 | [`css/css-values`](css/css-values.md#reftests) | 211 | 214 | 0 | 99% |
 | [`css/css-variables`](css/css-variables.md#reftests) | 183 | 183 | 0 | 100% |
 | [`css/css-view-transitions`](css/css-view-transitions.md#reftests) | 308 | 318 | 0 | 97% |
@@ -725,4 +725,4 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`webgl`](webgl.md#reftests) | 0 | 2 | 0 | 0% |
 | [`webvtt`](webvtt.md#reftests) | 182 | 251 | 0 | 73% |
 | [`xml`](xml.md#reftests) | 0 | 3 | 3 | – |
-| **Total (130 sections)** | **27,919** | **29,220** | **172** | **96%** |
+| **Total (130 sections)** | **27,920** | **29,220** | **172** | **96%** |

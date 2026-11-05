@@ -1286,6 +1286,7 @@ internal sealed partial class Painter
             {
                 case PaintItemMarker.EndStackingContext:
                 case PaintItemMarker.Outlines:
+                case PaintItemMarker.AtomicOutlines:
                     // The outlines are the ones of the boxes of the plane
                     continue;
 

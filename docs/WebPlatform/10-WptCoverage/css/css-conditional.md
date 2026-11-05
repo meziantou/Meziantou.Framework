@@ -11,14 +11,14 @@ description: "The results of the web-platform-tests of css/css-conditional, and 
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 218 | 226 | 0 | 96% |
 | [Tentative](#tentative-tests) | 6 | 6 | 0 | 100% |
-| [Reftests](#reftests) | 170 | 173 | 0 | 98% |
-| **All** | **394** | **405** | **0** | **97%** |
+| [Reftests](#reftests) | 171 | 173 | 0 | 99% |
+| **All** | **395** | **405** | **0** | **98%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 7
+- **BUG**: 6
 - **TEST BUG**: 1
 - **NOT IMPLEMENTED**: 3
 
@@ -384,7 +384,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`container-queries/pseudo-elements-010.html`](https://wpt.fyi/results/css/css-conditional/container-queries/pseudo-elements-010.html) | Pass | 1 / 1 |  |  |
 | [`container-queries/pseudo-elements-011.html`](https://wpt.fyi/results/css/css-conditional/container-queries/pseudo-elements-011.html) | Pass | 1 / 1 |  |  |
 | [`container-queries/pseudo-elements-012.html`](https://wpt.fyi/results/css/css-conditional/container-queries/pseudo-elements-012.html) | Pass | 1 / 1 |  |  |
-| [`container-queries/query-style-color.html`](https://wpt.fyi/results/css/css-conditional/container-queries/query-style-color.html) | Fail | 0 / 1 | BUG | a registered `<color>` custom property with a `none` component (`hwb(none 0 100)`, `color(srgb none 0 0)`, `oklch(0 0 none)`) is compared by `style(--c: black)` after its conversion to sRGB, where `none` is 0: the query matches although the computed values differ; only Firefox passes |
+| [`container-queries/query-style-color.html`](https://wpt.fyi/results/css/css-conditional/container-queries/query-style-color.html) | Pass | 1 / 1 |  |  |
 | [`container-queries/resize-while-content-visibility-hidden.html`](https://wpt.fyi/results/css/css-conditional/container-queries/resize-while-content-visibility-hidden.html) | Pass | 1 / 1 |  |  |
 | [`container-queries/scrollbar-container-units-block.html`](https://wpt.fyi/results/css/css-conditional/container-queries/scrollbar-container-units-block.html) | Pass | 1 / 1 |  |  |
 | [`container-queries/scrollbar-container-units-inline.html`](https://wpt.fyi/results/css/css-conditional/container-queries/scrollbar-container-units-inline.html) | Pass | 1 / 1 |  |  |

@@ -22,10 +22,7 @@
     "total": 5
   },
   "html-aam/accname-computation-by-element/img.html": {
-    "total": 8,
-    "failures": {
-      "img expecting name from ancestor figure figcaption": "FAIL"
-    }
+    "total": 8
   },
   "html-aam/accname-computation-by-element/input-button-submit-reset.html": {
     "total": 23
@@ -55,15 +52,7 @@
     "total": 6
   },
   "html-aam/accname-computation-by-element/tr-td-th.tentative.html": {
-    "total": 30,
-    "failures": {
-      "td expecting name from title": "FAIL",
-      "td expecting name to be empty": "FAIL",
-      "th expecting name from title": "FAIL",
-      "th expecting name to be empty": "FAIL",
-      "tr expecting name from title": "FAIL",
-      "tr expecting name to be empty": "FAIL"
-    }
+    "total": 30
   },
   "html-aam/area-role.html": {
     "total": 2
@@ -75,13 +64,7 @@
     "total": 1
   },
   "html-aam/figure-name-no-figcaption.tentative.html": {
-    "total": 9,
-    "failures": {
-      "figure with figcaption - no name": "FAIL",
-      "figure with figcaption and img without alt": "FAIL",
-      "figure with figcaption and title": "FAIL",
-      "img without alt within a figure with figcaption": "FAIL"
-    }
+    "total": 9
   },
   "html-aam/heading/invalid-nesting.html": {
     "total": 16

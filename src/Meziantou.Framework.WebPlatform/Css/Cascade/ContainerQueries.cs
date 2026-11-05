@@ -649,9 +649,11 @@ internal sealed class ContainerQueryContext(ComputedStyle container)
     }
 
     /// <summary>
-    /// https://drafts.csswg.org/css-color-4/#comparing-color-values: the powerless components are missing; two colors of the
-    /// same color space (hsl, hwb and the legacy colors are sRGB colors) are equivalent when their components are equal (a
-    /// missing component is zero), and two colors of different color spaces when they are equal in Oklab.
+    /// https://drafts.csswg.org/css-color-4/#comparing-color-values: two colors of the same color space (hsl, hwb and the legacy
+    /// colors are sRGB colors) are equivalent when their components are equal, a missing component being only equal to a missing
+    /// component (the powerless hue of lch() and oklch() is missing); two colors of different color spaces are not equivalent when
+    /// one of them has a missing component, and are equivalent when they are equal in Oklab otherwise. The powerless hue of an
+    /// achromatic color of another color space is not missing (oklch(0 0 0) is black).
     /// </summary>
     private static bool AreEquivalentColors(string first, string second)
     {
@@ -660,8 +662,16 @@ internal sealed class ContainerQueryContext(ComputedStyle container)
 
         if (a.Space != b.Space)
         {
+            if (HasMissingComponent(a) || HasMissingComponent(b))
+                return false;
+
             a = CssColorConversion.Convert(a, "oklab");
             b = CssColorConversion.Convert(b, "oklab");
+        }
+        else
+        {
+            a = WithMissingPowerlessHue(a);
+            b = WithMissingPowerlessHue(b);
         }
 
         for (var i = 0; i < 3; i++)
@@ -675,22 +685,27 @@ internal sealed class ContainerQueryContext(ComputedStyle container)
         static CssColorComponents? ParseColor(string value)
         {
             if (!value.Contains('(', StringComparison.Ordinal) || ValueMatcher.RemoveWhitespace(CssParser.ParseListOfComponentValues(value)) is not [var token]
-                || CssColor.Parse(token) is not { } color || CssColorConversion.FromColor(color) is not { } components)
+                || CssColor.Parse(token) is not { } color)
             {
                 return null;
             }
 
-            // https://drafts.csswg.org/css-color-4/#powerless: the hue of an achromatic lch() or oklch() color is powerless
-            var channels = components.Channels;
-            if (components.Space is "lch" or "oklch" && channels[1] is { } chroma && chroma <= (components.Space == "lch" ? 0.0015 : 0.000004))
-            {
-                channels = [channels[0], channels[1], null];
-            }
-
-            return components with { Channels = channels };
+            return CssColorConversion.FromColor(color);
         }
 
-        static bool AreEqualComponents(double? first, double? second) => Math.Abs((first ?? 0) - (second ?? 0)) <= 1e-6;
+        static bool HasMissingComponent(CssColorComponents color) => color.Alpha is null || Array.Exists(color.Channels, channel => channel is null);
+
+        // https://drafts.csswg.org/css-color-4/#powerless: the hue of an achromatic lch() or oklch() color is powerless
+        static CssColorComponents WithMissingPowerlessHue(CssColorComponents color)
+        {
+            var channels = color.Channels;
+            if (color.Space is "lch" or "oklch" && channels[1] is { } chroma && chroma <= (color.Space == "lch" ? 0.0015 : 0.000004))
+                return color with { Channels = [channels[0], channels[1], null] };
+
+            return color;
+        }
+
+        static bool AreEqualComponents(double? first, double? second) => first is null || second is null ? first is null && second is null : Math.Abs(first.Value - second.Value) <= 1e-6;
     }
 
     /// <summary>https://drafts.csswg.org/css-conditional-5/#evaluate-a-style-range</summary>

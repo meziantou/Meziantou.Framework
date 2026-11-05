@@ -9,16 +9,16 @@ description: "The results of the web-platform-tests of css/cssom, and why the te
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 258 | 263 | 0 | 98% |
+| [Stable](#stable-tests) | 259 | 263 | 0 | 98% |
 | [Tentative](#tentative-tests) | 6 | 9 | 0 | 67% |
 | [Reftests](#reftests) | 9 | 12 | 0 | 75% |
-| **All** | **273** | **284** | **0** | **96%** |
+| **All** | **274** | **284** | **0** | **96%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 2
+- **BUG**: 1
 - **TEST BUG**: 2
 - **NOT IMPLEMENTED**: 7
 
@@ -123,7 +123,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`cssom-cssstyledeclaration-set.html`](https://wpt.fyi/results/css/cssom/cssom-cssstyledeclaration-set.html) | Pass | 1 / 1 |  |  |
 | [`cssom-fontfacerule-constructors.html`](https://wpt.fyi/results/css/cssom/cssom-fontfacerule-constructors.html) | Pass | 2 / 2 |  |  |
 | [`cssom-fontfacerule.html`](https://wpt.fyi/results/css/cssom/cssom-fontfacerule.html) | Pass | 1 / 1 |  |  |
-| [`cssom-getPropertyValue-common-checks.html`](https://wpt.fyi/results/css/cssom/cssom-getPropertyValue-common-checks.html) | Fail | 9 / 11 | BUG | the initial values of the `timeline-trigger`, `timeline-trigger-range`, `timeline-trigger-activation-range` and `timeline-trigger-active-range` shorthands serialize as "" (their longhands are lists of ranges whose omitted values are not defined like the ones of `animation-range`) |
+| [`cssom-getPropertyValue-common-checks.html`](https://wpt.fyi/results/css/cssom/cssom-getPropertyValue-common-checks.html) | Pass | 11 / 11 |  |  |
 | [`cssom-pagerule.html`](https://wpt.fyi/results/css/cssom/cssom-pagerule.html) | Pass | 22 / 22 |  |  |
 | [`cssom-ruleTypeAndOrder.html`](https://wpt.fyi/results/css/cssom/cssom-ruleTypeAndOrder.html) | Pass | 7 / 7 |  |  |
 | [`cssom-setProperty-shorthand.html`](https://wpt.fyi/results/css/cssom/cssom-setProperty-shorthand.html) | Pass | 76 / 76 |  |  |

@@ -9,16 +9,10 @@ description: "The results of the web-platform-tests of mixed-content, and why th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 383 | 384 | 0 | 99.7% |
+| [Stable](#stable-tests) | 384 | 384 | 0 | 100% |
 | [Tentative](#tentative-tests) | 4 | 4 | 0 | 100% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **387** | **388** | **0** | **99.7%** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **BUG**: 1
+| **All** | **388** | **388** | **0** | **100%** |
 
 ## Stable tests
 
@@ -406,7 +400,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`gen/worker-module.http-rp/unset/worker-classic.https.html`](https://wpt.fyi/results/mixed-content/gen/worker-module.http-rp/unset/worker-classic.https.html) | Pass | 4 / 4 |  |  |
 | [`gen/worker-module.http-rp/unset/worker-module.https.html`](https://wpt.fyi/results/mixed-content/gen/worker-module.http-rp/unset/worker-module.https.html) | Pass | 4 / 4 |  |  |
 | [`gen/worker-module.http-rp/unset/xhr.https.html`](https://wpt.fyi/results/mixed-content/gen/worker-module.http-rp/unset/xhr.https.html) | Pass | 8 / 8 |  |  |
-| [`imageset.https.sub.html`](https://wpt.fyi/results/mixed-content/imageset.https.sub.html) | Fail | 0 / 1 | BUG | the image of the `image-set()` loaded over HTTPS (`?img_src`) is not requested |
+| [`imageset.https.sub.html`](https://wpt.fyi/results/mixed-content/imageset.https.sub.html) | Pass | 1 / 1 |  |  |
 | [`nested-iframes.window.js`](https://wpt.fyi/results/mixed-content/nested-iframes.window.js) | Pass | 2 / 2 |  |  |
 
 ## Tentative tests

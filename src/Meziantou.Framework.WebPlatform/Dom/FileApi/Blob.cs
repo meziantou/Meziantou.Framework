@@ -137,6 +137,7 @@ public class Blob : Scripting.IStructuredSerializable
     /// <summary>https://w3c.github.io/FileAPI/#dfn-slice</summary>
     /// <seealso href="https://w3c.github.io/FileAPI/#dfn-slice"/>
     [IdlMember("slice", "https://w3c.github.io/FileAPI/#dfn-slice")]
+    [IdlResultInRelevantRealm]
     public Blob Slice(long? start = null, long? end = null, string? contentType = null)
     {
         var size = Content.LongLength;

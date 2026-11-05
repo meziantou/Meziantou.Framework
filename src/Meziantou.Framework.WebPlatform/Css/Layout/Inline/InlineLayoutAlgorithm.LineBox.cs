@@ -354,7 +354,7 @@ internal sealed partial class InlineLayoutAlgorithm
     private LineContent CollectLineContent(LinePosition start, in LineEnd end, double availableSize, bool isFirstLine, double fontScale)
     {
         ClearLineSpacing();
-        var edges = CollectLeaves(start, end);
+        var edges = CollectLeaves(start, end, isFirstLine);
         TrimTrailingSpaces();
         _fontScale = fontScale;
         if (end.IsHyphenated)
@@ -444,7 +444,7 @@ internal sealed partial class InlineLayoutAlgorithm
         _justifiedSpace = 0;
         var shift = AlignLine(end, opportunity.Size, indent, contentWidth + ellipsisWidth - ellipsisHang, hangWidth + endHang + ellipsisHang, startHang, isRightToLeft);
         ApplyLineSpacing();
-        PlaceLeaves(reordered);
+        PlaceLeaves(reordered, isFirstLine);
         var contentShift = ellipsis is not null && isRightToLeft ? shift + ellipsisWidth : shift;
         foreach (ref var node in CollectionsMarshal.AsSpan(_nodes))
         {
@@ -549,7 +549,7 @@ internal sealed partial class InlineLayoutAlgorithm
     /// without children). Returns the inline size of the margins, borders and paddings of the inline boxes that start or end
     /// on the line.
     /// </summary>
-    private double CollectLeaves(LinePosition start, in LineEnd end)
+    private double CollectLeaves(LinePosition start, in LineEnd end, bool isFirstLine)
     {
         _leaves.Clear();
         _openedOnLine.Clear();
@@ -573,14 +573,14 @@ internal sealed partial class InlineLayoutAlgorithm
                     var openedBox = (ContainerBox)item.Box;
                     _openTags.Add(openedBox);
                     _openedOnLine.Add((openedBox, _leaves.Count));
-                    edges += item.InlineSize;
+                    edges += GetLineInlineSize(index, isFirstLine);
                     _lineHasEdges |= item.HasFlag(InlineItemFlags.HasEdges);
                     break;
 
                 case InlineItemKind.CloseTag:
                     var closedBox = (ContainerBox)item.Box;
                     _closeTags.Add(closedBox);
-                    edges += item.InlineSize;
+                    edges += GetLineInlineSize(index, isFirstLine);
                     _lineHasEdges |= item.HasFlag(InlineItemFlags.HasEdges);
                     if (_openedOnLine.Count > 0 && ReferenceEquals(_openedOnLine[^1].Box, closedBox))
                     {

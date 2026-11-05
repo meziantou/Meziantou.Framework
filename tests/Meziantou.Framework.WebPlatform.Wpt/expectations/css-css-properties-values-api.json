@@ -113,8 +113,7 @@
   "css/css-properties-values-api/animation/custom-property-animation-transform-list-multiple-values.html": {
     "total": 11,
     "failures": {
-      "Additive <transform-list> animation stacked on top of a discrete var(--invalid, invalid) animation": "FAIL",
-      "Additive <transform-list> | none animation with dynamic underlying value update from none": "FAIL"
+      "Additive <transform-list> animation stacked on top of a discrete var(--invalid, invalid) animation": "FAIL"
     }
   },
   "css/css-properties-values-api/animation/custom-property-animation-transform-list-single-values.html": {
@@ -394,10 +393,7 @@
     "total": 4
   },
   "css/css-properties-values-api/resolved-color-value.html": {
-    "total": 1,
-    "failures": {
-      "Resolved <color> value with sibling-index()": "FAIL"
-    }
+    "total": 1
   },
   "css/css-properties-values-api/self-utils.html": {
     "total": 3

@@ -18,14 +18,14 @@ description: "The results of the web-platform-tests of css/css-rhythm, and why t
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
+- **TEST BUG**: 1
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
 | [`computedstyle/block-level-replaced-elements-affected-by-block-step-size.html`](https://wpt.fyi/results/css/css-rhythm/computedstyle/block-level-replaced-elements-affected-by-block-step-size.html) | Pass | 14 / 14 |  |  |
-| [`computedstyle/inline-level-replaced-elements-not-affected-by-block-step-size.html`](https://wpt.fyi/results/css/css-rhythm/computedstyle/inline-level-replaced-elements-not-affected-by-block-step-size.html) | Fail | 12 / 14 | BUG | the 12 other subtests pass; an `object` element without `data` attribute (it represents its fallback content: an inline box) has a height of 0 where the browsers keep the 20px of its `height` attribute |
+| [`computedstyle/inline-level-replaced-elements-not-affected-by-block-step-size.html`](https://wpt.fyi/results/css/css-rhythm/computedstyle/inline-level-replaced-elements-not-affected-by-block-step-size.html) | Fail | 12 / 14 | TEST BUG | the 12 other subtests pass; the `object` element without `data` attribute represents its fallback content (HTML, "the object element": no data, no image, plugin or content navigable), and HTML 15.4.1 "Embedded content" says that such an object element is "expected to be treated as an ordinary element in the rendering model": an empty inline box, to which `height` does not apply, so its `font-size: 0` container is 0px tall; the test expects the 20px of the `height` attribute of a replaced element (as the browsers, which render an empty object as replaced) |
 | [`parsing/block-step-align-computed.html`](https://wpt.fyi/results/css/css-rhythm/parsing/block-step-align-computed.html) | Pass | 4 / 4 |  |  |
 | [`parsing/block-step-align-invalid.html`](https://wpt.fyi/results/css/css-rhythm/parsing/block-step-align-invalid.html) | Pass | 13 / 13 |  |  |
 | [`parsing/block-step-align-valid.html`](https://wpt.fyi/results/css/css-rhythm/parsing/block-step-align-valid.html) | Pass | 4 / 4 |  |  |

@@ -11,14 +11,8 @@ description: "The results of the web-platform-tests of css/css-content, and why 
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 9 | 9 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
-| [Reftests](#reftests) | 63 | 65 | 0 | 97% |
-| **All** | **72** | **74** | **0** | **97%** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **BUG**: 2
+| [Reftests](#reftests) | 65 | 65 | 0 | 100% |
+| **All** | **74** | **74** | **0** | **100%** |
 
 ## Stable tests
 
@@ -52,7 +46,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`element-replacement-image-alt.html`](https://wpt.fyi/results/css/css-content/element-replacement-image-alt.html) | Pass | 1 / 1 |  |  |
 | [`element-replacement-image-no-src.tentative.html`](https://wpt.fyi/results/css/css-content/element-replacement-image-no-src.tentative.html) | Pass | 1 / 1 |  |  |
 | [`element-replacement-image-src.tentative.html`](https://wpt.fyi/results/css/css-content/element-replacement-image-src.tentative.html) | Pass | 1 / 1 |  |  |
-| [`element-replacement-on-replaced-element.tentative.html`](https://wpt.fyi/results/css/css-content/element-replacement-on-replaced-element.tentative.html) | Fail | 0 / 1 | BUG | `content: url()` replaces the image of an `img` element (the yellow image is painted) but not the poster frame of a `video` element (the reference, which stays blue): the tentative test expects the replaced elements to behave the same; only Chrome passes (https://github.com/w3c/csswg-drafts/issues/2831) |
+| [`element-replacement-on-replaced-element.tentative.html`](https://wpt.fyi/results/css/css-content/element-replacement-on-replaced-element.tentative.html) | Pass | 1 / 1 |  |  |
 | [`element-replacement-root-canvas-bg-from-body.html`](https://wpt.fyi/results/css/css-content/element-replacement-root-canvas-bg-from-body.html) | Pass | 1 / 1 |  |  |
 | [`element-replacement-root-canvas-bg.html`](https://wpt.fyi/results/css/css-content/element-replacement-root-canvas-bg.html) | Pass | 1 / 1 |  |  |
 | [`element-replacement-root.html`](https://wpt.fyi/results/css/css-content/element-replacement-root.html) | Pass | 1 / 1 |  |  |
@@ -89,7 +83,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`quotes-027.html`](https://wpt.fyi/results/css/css-content/quotes-027.html) | Pass | 1 / 1 |  |  |
 | [`quotes-028.html`](https://wpt.fyi/results/css/css-content/quotes-028.html) | Pass | 1 / 1 |  |  |
 | [`quotes-029.html`](https://wpt.fyi/results/css/css-content/quotes-029.html) | Pass | 1 / 1 |  |  |
-| [`quotes-030.html`](https://wpt.fyi/results/css/css-content/quotes-030.html) | Fail | 0 / 1 | BUG | the quotation marks of `quotes: auto` are the ones of the content language of the `q` element itself (as Chrome and Safari); the test expects the marks of the language of its parent (the language of the text around the quotation), as Firefox does (css-content: "based on the content language of the element and/or its parent") |
+| [`quotes-030.html`](https://wpt.fyi/results/css/css-content/quotes-030.html) | Pass | 1 / 1 |  |  |
 | [`quotes-031.html`](https://wpt.fyi/results/css/css-content/quotes-031.html) | Pass | 1 / 1 |  |  |
 | [`quotes-032.html`](https://wpt.fyi/results/css/css-content/quotes-032.html) | Pass | 1 / 1 |  |  |
 | [`quotes-033.html`](https://wpt.fyi/results/css/css-content/quotes-033.html) | Pass | 1 / 1 |  |  |

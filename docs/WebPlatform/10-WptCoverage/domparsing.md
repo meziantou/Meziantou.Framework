@@ -10,15 +10,14 @@ description: "The results of the web-platform-tests of domparsing, and why the t
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 52 | 56 | 0 | 93% |
-| [Tentative](#tentative-tests) | 35 | 39 | 0 | 90% |
+| [Tentative](#tentative-tests) | 36 | 39 | 0 | 92% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **87** | **95** | **0** | **92%** |
+| **All** | **88** | **95** | **0** | **93%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
 - **TEST BUG**: 4
 - **NOT IMPLEMENTED**: 3
 
@@ -95,10 +94,10 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`tentative/stream-append-html-unsafe.html`](https://wpt.fyi/results/domparsing/tentative/stream-append-html-unsafe.html) | Pass | 14 / 14 |  |  |
 | [`tentative/stream-append-html.html`](https://wpt.fyi/results/domparsing/tentative/stream-append-html.html) | Pass | 17 / 17 |  |  |
 | [`tentative/stream-fragment-context.html`](https://wpt.fyi/results/domparsing/tentative/stream-fragment-context.html) | Pass | 54 / 54 |  |  |
-| [`tentative/stream-html-abort-unblocks-rendering.html`](https://wpt.fyi/results/domparsing/tentative/stream-html-abort-unblocks-rendering.html) | Fail | 0 / 1 | BUG | `abort()` does not unblock the rendering blocked by a streamed render-blocking script: the rendering waits for the script to load |
+| [`tentative/stream-html-abort-unblocks-rendering.html`](https://wpt.fyi/results/domparsing/tentative/stream-html-abort-unblocks-rendering.html) | Pass | 1 / 1 |  |  |
 | [`tentative/stream-html-custom-element-sanitizer.html`](https://wpt.fyi/results/domparsing/tentative/stream-html-custom-element-sanitizer.html) | Pass | 80 / 80 |  |  |
 | [`tentative/stream-html-custom-element.html`](https://wpt.fyi/results/domparsing/tentative/stream-html-custom-element.html) | Pass | 40 / 40 |  |  |
-| [`tentative/stream-html-defer-async-script.html`](https://wpt.fyi/results/domparsing/tentative/stream-html-defer-async-script.html) | Fail | 6 / 12 | NOT IMPLEMENTED | the `defer` and `async` scripts of the streaming HTML methods: with `runScripts`, a streamed script runs when its end tag is parsed, as a script inserted by a script |
+| [`tentative/stream-html-defer-async-script.html`](https://wpt.fyi/results/domparsing/tentative/stream-html-defer-async-script.html) | Fail | 8 / 12 | NOT IMPLEMENTED | the `defer` and `async` scripts of the streaming HTML methods: with `runScripts`, a streamed script runs when its end tag is parsed, as a script inserted by a script |
 | [`tentative/stream-html-element.html`](https://wpt.fyi/results/domparsing/tentative/stream-html-element.html) | Pass | 28 / 28 |  |  |
 | [`tentative/stream-html-parser-blocking-script.html`](https://wpt.fyi/results/domparsing/tentative/stream-html-parser-blocking-script.html) | Error | 8 / 26 | NOT IMPLEMENTED | the parser-blocking scripts of the streaming HTML methods (the parser does not pause for an external script streamed with `runScripts`) |
 | [`tentative/stream-html-run-scripts-option.html`](https://wpt.fyi/results/domparsing/tentative/stream-html-run-scripts-option.html) | Pass | 14 / 14 |  |  |

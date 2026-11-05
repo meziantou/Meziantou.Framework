@@ -1526,12 +1526,7 @@
     "total": 4
   },
   "svg/historical.html": {
-    "total": 68,
-    "failures": {
-      "SVGPathElement.prototype.getPointAtLength must be moved to SVGGeometryElement.prototype": "FAIL",
-      "SVGPathElement.prototype.getTotalLength must be moved to SVGGeometryElement.prototype": "FAIL",
-      "SVGPathElement.prototype.pathLength must be moved to SVGGeometryElement.prototype": "FAIL"
-    }
+    "total": 68
   },
   "svg/interact/focus-inside-hidden-svg-containers-01.html": {
     "total": 1
@@ -3633,10 +3628,7 @@
     }
   },
   "svg/text/parsing/shape-inside-valid.svg": {
-    "total": 6,
-    "failures": {
-      "e.style['shape-inside'] = \"circle(10px at 20px -30px) url(\\\"https://example.com/\\\") ellipse(10px 20px at -30px 40px)\" should set the property value": "FAIL"
-    }
+    "total": 6
   },
   "svg/text/parsing/shape-margin-invalid.svg": {
     "total": 5

@@ -768,6 +768,13 @@ internal static class CssShorthands
             yield break;
         }
 
+        // The timeline-trigger shorthand is expanded by its grammar (the round trip checks the serialization)
+        if (shorthand.Name == "timeline-trigger")
+        {
+            yield return CssPropertyRules.SerializeTimelineTrigger(lookup);
+            yield break;
+        }
+
         if (IsBoxShorthand(shorthand, grammar))
         {
             yield return SerializeBox(shorthand, lookup);

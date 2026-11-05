@@ -11,14 +11,14 @@ description: "The results of the web-platform-tests of css/css-transforms, and w
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 101 | 105 | 0 | 96% |
 | [Tentative](#tentative-tests) | 1 | 3 | 0 | 33% |
-| [Reftests](#reftests) | 791 | 797 | 0 | 99% |
-| **All** | **893** | **905** | **0** | **99%** |
+| [Reftests](#reftests) | 793 | 797 | 0 | 99% |
+| **All** | **895** | **905** | **0** | **99%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 3
+- **BUG**: 1
 - **TEST BUG**: 5
 - **NOT IMPLEMENTED**: 4
 
@@ -798,8 +798,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`transform-table-004.html`](https://wpt.fyi/results/css/css-transforms/transform-table-004.html) | Pass | 1 / 1 |  |  |
 | [`transform-table-005.html`](https://wpt.fyi/results/css/css-transforms/transform-table-005.html) | Pass | 1 / 1 |  |  |
 | [`transform-table-006.html`](https://wpt.fyi/results/css/css-transforms/transform-table-006.html) | Pass | 1 / 1 |  |  |
-| [`transform-table-007.html`](https://wpt.fyi/results/css/css-transforms/transform-table-007.html) | Fail | 0 / 1 | BUG | a 3D rendering context nested in a flattened descendant of another 3D rendering context is not flattened into the plane of its ancestor: the plane of the inner context (the div of the `td` with `transform: rotateX(90deg)`) is composed in 3D with the `rotateX(90deg)` of the outer plane although the `tbody` inserted by the parser between them is not `preserve-3d`, which gives rotateX(180deg): the text is painted upside down instead of being invisible (edge-on) |
-| [`transform-table-008.html`](https://wpt.fyi/results/css/css-transforms/transform-table-008.html) | Fail | 0 / 1 | BUG | a 3D rendering context nested in a flattened descendant of another 3D rendering context is not flattened into the plane of its ancestor: the plane of the inner context (the div of the `display: table-cell` box with `transform: rotateX(90deg)`) is composed in 3D with the `rotateX(90deg)` of the outer plane although the `display: table` and `display: table-row` boxes between them is not `preserve-3d`, which gives rotateX(180deg): the text is painted upside down instead of being invisible (edge-on) |
+| [`transform-table-007.html`](https://wpt.fyi/results/css/css-transforms/transform-table-007.html) | Pass | 1 / 1 |  |  |
+| [`transform-table-008.html`](https://wpt.fyi/results/css/css-transforms/transform-table-008.html) | Pass | 1 / 1 |  |  |
 | [`transform-table-009.html`](https://wpt.fyi/results/css/css-transforms/transform-table-009.html) | Pass | 1 / 1 |  |  |
 | [`transform-table-010.html`](https://wpt.fyi/results/css/css-transforms/transform-table-010.html) | Pass | 1 / 1 |  |  |
 | [`transform-table-011.html`](https://wpt.fyi/results/css/css-transforms/transform-table-011.html) | Pass | 1 / 1 |  |  |

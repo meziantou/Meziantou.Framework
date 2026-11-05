@@ -1852,7 +1852,7 @@ public sealed partial class BrowsingContext : IDisposable
             resource = new DocumentResource(srcdoc);
             parameters.Srcdoc = srcdoc;
             parameters.Referrer = sourceDocument?.Url ?? "";
-            parameters.ReferrerPolicy = sourceDocument?.ReferrerPolicy ?? "";
+            parameters.ReferrerPolicy = historyPolicyContainer?.ReferrerPolicy ?? sourceDocument?.ReferrerPolicy ?? "";
             parameters.OriginDocument = initiatorOrigin;
             parameters.OpaqueOrigin = initiatorOrigin is null;
             parameters.AboutBaseUrl = sourceDocument?.DocumentBaseUrl;
@@ -1863,7 +1863,7 @@ public sealed partial class BrowsingContext : IDisposable
         {
             // about:blank documents have the origin of the initiator; the other about: URLs are network errors
             resource = new DocumentResource("");
-            parameters.ReferrerPolicy = sourceDocument?.ReferrerPolicy ?? "";
+            parameters.ReferrerPolicy = historyPolicyContainer?.ReferrerPolicy ?? sourceDocument?.ReferrerPolicy ?? "";
             parameters.PolicyContainer = historyPolicyContainer ?? PolicyContainer.CloneOrNull(sourceDocument) ?? PolicyContainer.Empty;
             parameters.OriginDocument = MatchesAboutBlank(url) ? initiatorOrigin : null;
             parameters.OpaqueOrigin = initiatorOrigin is null || !MatchesAboutBlank(url);

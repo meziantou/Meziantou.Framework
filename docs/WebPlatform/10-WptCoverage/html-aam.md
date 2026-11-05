@@ -9,18 +9,17 @@ description: "The results of the web-platform-tests of html-aam, and why the tes
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 24 | 26 | 0 | 92% |
-| [Tentative](#tentative-tests) | 5 | 10 | 0 | 50% |
+| [Stable](#stable-tests) | 25 | 26 | 0 | 96% |
+| [Tentative](#tentative-tests) | 7 | 10 | 0 | 70% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **29** | **36** | **0** | **81%** |
+| **All** | **32** | **36** | **0** | **89%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 2
 - **TEST BUG**: 2
-- **NOT IMPLEMENTED**: 4
+- **NOT IMPLEMENTED**: 3
 
 ## Stable tests
 
@@ -32,7 +31,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`accname-computation-by-element/fieldset.html`](https://wpt.fyi/results/html-aam/accname-computation-by-element/fieldset.html) | Pass | 6 / 6 |  |  |
 | [`accname-computation-by-element/figure.html`](https://wpt.fyi/results/html-aam/accname-computation-by-element/figure.html) | Pass | 5 / 5 |  |  |
 | [`accname-computation-by-element/iframe.html`](https://wpt.fyi/results/html-aam/accname-computation-by-element/iframe.html) | Pass | 5 / 5 |  |  |
-| [`accname-computation-by-element/img.html`](https://wpt.fyi/results/html-aam/accname-computation-by-element/img.html) | Fail | 7 / 8 | NOT IMPLEMENTED | the name of an `<img>` without `alt` from its ancestor `<figure>`'s `<figcaption>` |
+| [`accname-computation-by-element/img.html`](https://wpt.fyi/results/html-aam/accname-computation-by-element/img.html) | Pass | 8 / 8 |  |  |
 | [`accname-computation-by-element/input-button-submit-reset.html`](https://wpt.fyi/results/html-aam/accname-computation-by-element/input-button-submit-reset.html) | Pass | 23 / 23 |  |  |
 | [`accname-computation-by-element/input-image.html`](https://wpt.fyi/results/html-aam/accname-computation-by-element/input-image.html) | Pass | 9 / 9 |  |  |
 | [`accname-computation-by-element/inputs-with-placeholders.html`](https://wpt.fyi/results/html-aam/accname-computation-by-element/inputs-with-placeholders.html) | Pass | 80 / 80 |  |  |
@@ -57,9 +56,9 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`accname-computation-by-element/tr-td-th.tentative.html`](https://wpt.fyi/results/html-aam/accname-computation-by-element/tr-td-th.tentative.html) | Fail | 24 / 30 | BUG | `tr` and `th` elements get their accessible name from their content instead of `title` (or empty) |
+| [`accname-computation-by-element/tr-td-th.tentative.html`](https://wpt.fyi/results/html-aam/accname-computation-by-element/tr-td-th.tentative.html) | Pass | 30 / 30 |  |  |
 | [`dir-role.tentative.html`](https://wpt.fyi/results/html-aam/dir-role.tentative.html) | Pass | 1 / 1 |  |  |
-| [`figure-name-no-figcaption.tentative.html`](https://wpt.fyi/results/html-aam/figure-name-no-figcaption.tentative.html) | Fail | 5 / 9 | BUG | a `<figure>` gets its accessible name from its `<figcaption>`, while the tentative rule gives it no name (or its `title`) and uses the figcaption to name an `<img>` without `alt` |
+| [`figure-name-no-figcaption.tentative.html`](https://wpt.fyi/results/html-aam/figure-name-no-figcaption.tentative.html) | Pass | 9 / 9 |  |  |
 | [`img-src-srcset-roles.tentative.html`](https://wpt.fyi/results/html-aam/img-src-srcset-roles.tentative.html) | Pass | 49 / 49 |  |  |
 | [`optgroup-role.tentative.html`](https://wpt.fyi/results/html-aam/optgroup-role.tentative.html) | Pass | 1 / 1 |  |  |
 | [`roles-contextual.tentative.html`](https://wpt.fyi/results/html-aam/roles-contextual.tentative.html) | Pass | 4 / 4 |  |  |

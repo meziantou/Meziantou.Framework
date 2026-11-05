@@ -29,6 +29,9 @@ internal static class CssCustomPropertyInterpolation
 
     public static Func<double, string?>? Prepare(CssInterpolationContext context, string property, string from, string to)
     {
+        if (IsTransformList(property, context.Style, from) && IsTransformList(property, context.Style, to))
+            return CssTransformInterpolation.Prepare(context, from, to);
+
         var traits = GetTraits(property, context.Style, from);
         var a = CssGenericInterpolation.Parse(from);
         var b = CssGenericInterpolation.Parse(to);
@@ -40,9 +43,20 @@ internal static class CssCustomPropertyInterpolation
 
     public static string? Combine(CssInterpolationContext context, string property, string underlying, string value, CssCombineOperation operation)
     {
+        // A value that parsed as a <transform-list> is added and accumulated like the transform property (a syntax may have
+        // other components, e.g. <transform-list> | none: the values of different components are not combined)
+        if (IsTransformList(property, context.Style, underlying) && IsTransformList(property, context.Style, value))
+            return operation == CssCombineOperation.Add ? CssTransformInterpolation.Add(underlying, value) : CssTransformInterpolation.Accumulate(context, underlying, value);
+
         var traits = GetTraits(property, context.Style, value);
         return CssGenericInterpolation.CombineLists(context, property, traits, CssGenericInterpolation.Parse(underlying), CssGenericInterpolation.Parse(value), operation, 1);
     }
+
+    /// <summary>Returns whether a value of a registered custom property matches the <c>&lt;transform-list&gt;</c> component of its syntax.</summary>
+    private static bool IsTransformList(string property, ComputedStyle? style, string value)
+        => style?.RegisteredProperties.GetValueOrDefault(property) is { } registration
+            && registration.Syntax.TryMatch(Syntax.CssParser.ParseListOfComponentValues(value), out var component)
+            && component is { IsDataType: true, Name: "transform-list" };
 
     /// <summary>
     /// The numeric traits of the values of a registered custom property: the ones of the component of its syntax that

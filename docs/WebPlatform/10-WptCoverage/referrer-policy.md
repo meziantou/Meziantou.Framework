@@ -9,16 +9,15 @@ description: "The results of the web-platform-tests of referrer-policy, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 1,475 | 1,478 | 0 | 99.7% |
+| [Stable](#stable-tests) | 1,477 | 1,478 | 0 | 99.9% |
 | [Tentative](#tentative-tests) | 4 | 4 | 0 | 100% |
 | [Reftests](#reftests) | 0 | 1 | 0 | 0% |
-| **All** | **1,479** | **1,483** | **0** | **99.7%** |
+| **All** | **1,481** | **1,483** | **0** | **99.8%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 2
 - **TEST RUNNER**: 2
 
 ## Stable tests
@@ -1467,8 +1466,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`generic/inheritance/iframe-inheritance-about-blank.html`](https://wpt.fyi/results/referrer-policy/generic/inheritance/iframe-inheritance-about-blank.html) | Pass | 4 / 4 |  |  |
 | [`generic/inheritance/iframe-inheritance-data.html`](https://wpt.fyi/results/referrer-policy/generic/inheritance/iframe-inheritance-data.html) | Pass | 1 / 1 |  |  |
 | [`generic/inheritance/iframe-inheritance-document-write.html`](https://wpt.fyi/results/referrer-policy/generic/inheritance/iframe-inheritance-document-write.html) | Pass | 1 / 1 |  |  |
-| [`generic/inheritance/iframe-inheritance-history-about-blank.html`](https://wpt.fyi/results/referrer-policy/generic/inheritance/iframe-inheritance-history-about-blank.html) | Fail | 0 / 1 | BUG | a history traversal that reloads an `about:blank` iframe document does not restore the referrer policy it inherited at creation (`no-referrer`); the requests use the default policy |
-| [`generic/inheritance/iframe-inheritance-history-about-srcdoc.html`](https://wpt.fyi/results/referrer-policy/generic/inheritance/iframe-inheritance-history-about-srcdoc.html) | Fail | 1 / 2 | BUG | a history traversal that reloads an `about:srcdoc` iframe document does not restore the referrer policy it inherited at creation (`no-referrer`); the requests use the default policy |
+| [`generic/inheritance/iframe-inheritance-history-about-blank.html`](https://wpt.fyi/results/referrer-policy/generic/inheritance/iframe-inheritance-history-about-blank.html) | Pass | 1 / 1 |  |  |
+| [`generic/inheritance/iframe-inheritance-history-about-srcdoc.html`](https://wpt.fyi/results/referrer-policy/generic/inheritance/iframe-inheritance-history-about-srcdoc.html) | Pass | 2 / 2 |  |  |
 | [`generic/inheritance/iframe-inheritance-javascript-child.html`](https://wpt.fyi/results/referrer-policy/generic/inheritance/iframe-inheritance-javascript-child.html) | Pass | 4 / 4 |  |  |
 | [`generic/inheritance/iframe-inheritance-javascript.html`](https://wpt.fyi/results/referrer-policy/generic/inheritance/iframe-inheritance-javascript.html) | Pass | 2 / 2 |  |  |
 | [`generic/inheritance/iframe-inheritance-srcdoc-child.html`](https://wpt.fyi/results/referrer-policy/generic/inheritance/iframe-inheritance-srcdoc-child.html) | Pass | 1 / 1 |  |  |

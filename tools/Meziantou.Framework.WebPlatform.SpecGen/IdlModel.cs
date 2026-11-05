@@ -394,6 +394,7 @@ internal sealed partial class IdlModel
         AddAnimationRanges(model);
         AddUrlPatternTentativeMethods(model);
         ReplaceSvgPathSegmentInterfaceWithDictionary(model);
+        RemoveSvgPathElementGeometryMembers(model);
         FixCssParserApiTypes(model);
         return model;
     }
@@ -1122,6 +1123,19 @@ internal sealed partial class IdlModel
                 value.Type = new IdlType { Union = true, Subtypes = [new IdlType { Name = "TrustedHTML" }, new IdlType { Name = "DOMString" }] };
             }
         }
+    }
+
+    /// <summary>
+    /// The SVG Paths specification still declares pathLength, getTotalLength() and getPointAtLength() on SVGPathElement, where
+    /// SVG 2 moved them to SVGGeometryElement (https://svgwg.org/svg2-draft/types.html#InterfaceSVGGeometryElement). The browsers
+    /// (and svg/historical.html) only define them on SVGGeometryElement.prototype, so the redeclarations are removed.
+    /// </summary>
+    private static void RemoveSvgPathElementGeometryMembers(IdlModel model)
+    {
+        if (!model.Definitions.TryGetValue("SVGPathElement", out var definition) || !model.Definitions.TryGetValue("SVGGeometryElement", out var geometry))
+            return;
+
+        definition.Members.RemoveAll(m => m is { Kind: IdlMemberKind.Attribute or IdlMemberKind.Operation, IsStatic: false } && geometry.Members.Exists(g => g.Kind == m.Kind && g.Name == m.Name));
     }
 
     /// <summary>

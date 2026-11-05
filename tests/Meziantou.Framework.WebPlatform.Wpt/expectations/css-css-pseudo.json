@@ -305,7 +305,7 @@
     "reftest": "PASS"
   },
   "css/css-pseudo/first-line-font-relative-units-001.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-pseudo/first-line-inherited-no-transition.html": {
     "reftest": "PASS"

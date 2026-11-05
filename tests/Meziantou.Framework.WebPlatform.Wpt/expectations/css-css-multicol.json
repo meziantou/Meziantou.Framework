@@ -774,7 +774,7 @@
     "reftest": "PASS"
   },
   "css/css-multicol/multicol-inherit-003.xht": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-multicol/multicol-list-item-001.xht": {
     "reftest": "PASS"
@@ -1676,7 +1676,7 @@
     "reftest": "PASS"
   },
   "css/css-multicol/table/table-cell-multicol-nested-002.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-multicol/table/table-cell-multicol-nested-003.html": {
     "reftest": "PASS"

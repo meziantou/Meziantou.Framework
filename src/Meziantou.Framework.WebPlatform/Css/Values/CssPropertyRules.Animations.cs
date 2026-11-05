@@ -340,7 +340,8 @@ internal static partial class CssPropertyRules
 
     /// <summary>
     /// The specified value of animation-range-start and animation-range-end (https://drafts.csswg.org/scroll-animations-1/#animation-range-start):
-    /// the default offset of a timeline range name (0% for the start, 100% for the end) is omitted.
+    /// the default offset of a timeline range name (0% for the start, 100% for the end) is omitted. The longhands of the ranges
+    /// of the timeline triggers have "the same meaning" (https://drafts.csswg.org/animation-triggers-1/#timeline-trigger-activation-range).
     /// </summary>
     private static string CanonicalizeAnimationRange(CssPropertyDefinition property, List<CssComponentValue> significant)
     {
@@ -600,45 +601,65 @@ internal static partial class CssPropertyRules
         return columns;
     }
 
+    /// <summary>The start and end longhands of a range shorthand, and the end of an item whose end is omitted.</summary>
+    private static (string Start, string End, string DefaultEnd) GetRangeLonghands(CssPropertyDefinition shorthand)
+        => (shorthand.Name + "-start", shorthand.Name + "-end", shorthand.Name == "timeline-trigger-active-range" ? "auto" : "normal");
+
     /// <summary>
     /// https://drafts.csswg.org/scroll-animations-1/#animation-range: the omitted end is the timeline range name of the start
-    /// (with 100%), or normal. Like the browsers, an end offset of 100% without a timeline range name is normal.
+    /// (with 100%), or normal. Like the browsers, an end offset of 100% without a timeline range name is normal. The
+    /// timeline-trigger-activation-range and timeline-trigger-active-range shorthands "have the same syntax as the
+    /// animation-range property" (https://drafts.csswg.org/animation-triggers-1/#timeline-trigger-activation-range): their
+    /// omitted end without a timeline range name is the initial value of the end longhand (auto for the active range).
     /// </summary>
     private static Dictionary<string, string>? ExpandAnimationRange(CssPropertyDefinition shorthand, List<CssComponentValue> significant)
     {
+        var (startName, endName, defaultEnd) = GetRangeLonghands(shorthand);
         var starts = new List<string>();
         var ends = new List<string>();
         foreach (var item in ValueMatcher.SplitAtCommas(significant))
         {
-            var startLength = GetRangeLength(item, 0);
-            var start = item[..startLength];
-            var end = item[startLength..];
-            if (end.Count > 0 && GetRangeLength(end, 0) != end.Count)
+            if (!TryExpandRangeItem(item, defaultEnd, starts, ends))
                 return null;
-
-            starts.Add(string.Join(' ', start.Select(value => SerializeComponent(value, property: null))));
-            if (end.Count == 0)
-            {
-                ends.Add(IsTimelineRangeName(start[0]) ? SerializeComponent(start[0], property: null) : "normal");
-            }
-            else if (end is [CssPreservedToken { Type: CssTokenType.Percentage } percentage] && percentage.Token.NumericValue == 100)
-            {
-                ends.Add("normal");
-            }
-            else
-            {
-                ends.Add(string.Join(' ', end.Select(value => SerializeComponent(value, property: null))));
-            }
         }
 
-        if (ParseListLonghand("animation-range-start", starts) is not { } startValue || ParseListLonghand("animation-range-end", ends) is not { } endValue)
+        if (ParseListLonghand(startName, starts) is not { } startValue || ParseListLonghand(endName, ends) is not { } endValue)
             return null;
 
         return new(StringComparer.Ordinal)
         {
-            ["animation-range-start"] = startValue,
-            ["animation-range-end"] = endValue,
+            [startName] = startValue,
+            [endName] = endValue,
         };
+    }
+
+    /// <summary>Adds the start and the end of an item of a range shorthand (see <see cref="ExpandAnimationRange"/>); returns false when it is invalid.</summary>
+    private static bool TryExpandRangeItem(List<CssComponentValue> item, string defaultEnd, List<string> starts, List<string> ends)
+    {
+        var startLength = GetRangeLength(item, 0);
+        if (startLength == 0)
+            return false;
+
+        var start = item[..startLength];
+        var end = item[startLength..];
+        if (end.Count > 0 && GetRangeLength(end, 0) != end.Count)
+            return false;
+
+        starts.Add(string.Join(' ', start.Select(value => SerializeComponent(value, property: null))));
+        if (end.Count == 0)
+        {
+            ends.Add(IsTimelineRangeName(start[0]) ? SerializeComponent(start[0], property: null) : defaultEnd);
+        }
+        else if (end is [CssPreservedToken { Type: CssTokenType.Percentage } percentage] && percentage.Token.NumericValue == 100)
+        {
+            ends.Add("normal");
+        }
+        else
+        {
+            ends.Add(string.Join(' ', end.Select(value => SerializeComponent(value, property: null))));
+        }
+
+        return true;
 
         // normal, <length-percentage>, or <timeline-range-name> <length-percentage>?
         static int GetRangeLength(List<CssComponentValue> values, int start)
@@ -654,12 +675,68 @@ internal static partial class CssPropertyRules
     }
 
     /// <summary>
+    /// https://drafts.csswg.org/animation-triggers-1/#timeline-trigger-range: each item is an activation range, optionally
+    /// followed by a slash and an active range (auto when it is omitted). The ranges expand like animation-range.
+    /// </summary>
+    private static Dictionary<string, string>? ExpandTimelineTriggerRange(CssPropertyDefinition shorthand, List<CssComponentValue> significant)
+    {
+        var activationStarts = new List<string>();
+        var activationEnds = new List<string>();
+        var activeStarts = new List<string>();
+        var activeEnds = new List<string>();
+        foreach (var item in ValueMatcher.SplitAtCommas(significant))
+        {
+            var slash = item.FindIndex(value => value is CssPreservedToken token && token.Token.IsDelim('/'));
+            if (!TryExpandRangeItem(slash < 0 ? item : item[..slash], "normal", activationStarts, activationEnds))
+                return null;
+
+            if (slash < 0)
+            {
+                activeStarts.Add("auto");
+                activeEnds.Add("auto");
+            }
+            else if (!TryExpandRangeItem(item[(slash + 1)..], "auto", activeStarts, activeEnds))
+            {
+                return null;
+            }
+        }
+
+        if (ParseListLonghand("timeline-trigger-activation-range-start", activationStarts) is not { } activationStart
+            || ParseListLonghand("timeline-trigger-activation-range-end", activationEnds) is not { } activationEnd
+            || ParseListLonghand("timeline-trigger-active-range-start", activeStarts) is not { } activeStart
+            || ParseListLonghand("timeline-trigger-active-range-end", activeEnds) is not { } activeEnd)
+        {
+            return null;
+        }
+
+        return new(StringComparer.Ordinal)
+        {
+            ["timeline-trigger-activation-range-start"] = activationStart,
+            ["timeline-trigger-activation-range-end"] = activationEnd,
+            ["timeline-trigger-active-range-start"] = activeStart,
+            ["timeline-trigger-active-range-end"] = activeEnd,
+        };
+    }
+
+    /// <summary>
+    /// https://drafts.csswg.org/animation-triggers-1/#timeline-trigger-range: each item is the activation range, followed by
+    /// the active range after a slash when it is not auto (its initial value).
+    /// </summary>
+    private static string? SerializeTimelineTriggerRange(CssPropertyDefinition shorthand, Dictionary<string, string> lookup)
+        => SerializeTimelineTriggerRangeItems(lookup) is { } items ? string.Join(", ", items) : null;
+
+    /// <summary>
     /// The end of each item is omitted when it is the end set by the start alone (its timeline range name, or normal); the
     /// offset of a timeline range name is kept when the end is a single offset.
     /// </summary>
     private static string? SerializeAnimationRange(CssPropertyDefinition shorthand, Dictionary<string, string> lookup)
+        => SerializeRangeItems(shorthand, lookup) is { } items ? string.Join(", ", items) : null;
+
+    /// <summary>The serialized items of a range shorthand (see <see cref="SerializeAnimationRange"/>), or null when the lists of its longhands have different lengths.</summary>
+    private static List<string>? SerializeRangeItems(CssPropertyDefinition shorthand, Dictionary<string, string> lookup)
     {
-        if (!lookup.TryGetValue("animation-range-start", out var startValue) || !lookup.TryGetValue("animation-range-end", out var endValue))
+        var (startName, endName, defaultEnd) = GetRangeLonghands(shorthand);
+        if (!lookup.TryGetValue(startName, out var startValue) || !lookup.TryGetValue(endName, out var endValue))
             return null;
 
         var starts = SplitItems(startValue);
@@ -673,19 +750,65 @@ internal static partial class CssPropertyRules
             var start = starts[i];
             var startComponents = Cascade.CssValueComputer.SplitComponents(start);
             var rangeName = startComponents is [var name, ..] && IsTimelineRangeName(name) ? name : null;
-            if (ends[i] == (rangeName ?? "normal"))
+            if (ends[i] == (rangeName ?? defaultEnd))
             {
                 items.Add(start);
                 continue;
             }
 
             // entry 0% 50%: the end offset would be the offset of the start
-            if (rangeName is not null && startComponents.Length == 1 && Cascade.CssValueComputer.SplitComponents(ends[i]) is [var offset, ..] && offset != "normal" && !IsTimelineRangeName(offset))
+            if (rangeName is not null && startComponents.Length == 1 && Cascade.CssValueComputer.SplitComponents(ends[i]) is [var offset, ..] && offset is not ("normal" or "auto") && !IsTimelineRangeName(offset))
             {
                 start += " 0%";
             }
 
             items.Add(start + " " + ends[i]);
+        }
+
+        return items;
+    }
+
+    private static List<string>? SerializeTimelineTriggerRangeItems(Dictionary<string, string> lookup)
+    {
+        if (SerializeRangeItems(CssPropertyRegistry.Get("timeline-trigger-activation-range")!, lookup) is not { } activation
+            || SerializeRangeItems(CssPropertyRegistry.Get("timeline-trigger-active-range")!, lookup) is not { } active
+            || activation.Count != active.Count)
+        {
+            return null;
+        }
+
+        for (var i = 0; i < activation.Count; i++)
+        {
+            if (active[i] != "auto")
+            {
+                activation[i] += " / " + active[i];
+            }
+        }
+
+        return activation;
+    }
+
+    /// <summary>
+    /// https://drafts.csswg.org/animation-triggers-1/#timeline-trigger: each item is the name and the source of the trigger,
+    /// followed by its range when it is not the initial one (normal). The longhands are expanded by the grammar.
+    /// </summary>
+    internal static string? SerializeTimelineTrigger(Dictionary<string, string> lookup)
+    {
+        if (!lookup.TryGetValue("timeline-trigger-name", out var nameValue) || !lookup.TryGetValue("timeline-trigger-source", out var sourceValue)
+            || SerializeTimelineTriggerRangeItems(lookup) is not { } ranges)
+        {
+            return null;
+        }
+
+        var names = SplitItems(nameValue);
+        var sources = SplitItems(sourceValue);
+        if (names.Count != sources.Count || names.Count != ranges.Count)
+            return null;
+
+        var items = new List<string>(names.Count);
+        for (var i = 0; i < names.Count; i++)
+        {
+            items.Add(ranges[i] == "normal" ? names[i] + " " + sources[i] : names[i] + " " + sources[i] + " " + ranges[i]);
         }
 
         return string.Join(", ", items);

@@ -918,7 +918,7 @@ public sealed partial class Range : AbstractRange
             EndOffsetInternal += (uint)count;
         }
 
-        Selection?.OnChanged();
+        Selection?.OnChanged(byMutation: true);
     }
 
     /// <summary>https://dom.spec.whatwg.org/#live-range-pre-remove-steps</summary>
@@ -946,7 +946,7 @@ public sealed partial class Range : AbstractRange
             EndOffsetInternal--;
         }
 
-        Selection?.OnChanged();
+        Selection?.OnChanged(byMutation: true);
     }
 
     /// <summary>The live range steps of the "replace data" algorithm (https://dom.spec.whatwg.org/#concept-cd-replace).</summary>
@@ -972,7 +972,7 @@ public sealed partial class Range : AbstractRange
             EndOffsetInternal = EndOffsetInternal + dataLength - count;
         }
 
-        Selection?.OnChanged();
+        Selection?.OnChanged(byMutation: true);
     }
 
     /// <summary>The live range steps of the "split a Text node" algorithm.</summary>
@@ -1000,7 +1000,7 @@ public sealed partial class Range : AbstractRange
             EndOffsetInternal++;
         }
 
-        Selection?.OnChanged();
+        Selection?.OnChanged(byMutation: true);
     }
 
     /// <summary>The live range steps of the normalize algorithm for a merged Text node.</summary>
@@ -1030,6 +1030,6 @@ public sealed partial class Range : AbstractRange
             EndOffsetInternal = length;
         }
 
-        Selection?.OnChanged();
+        Selection?.OnChanged(byMutation: true);
     }
 }

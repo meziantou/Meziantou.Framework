@@ -73,8 +73,11 @@ internal static class ScriptFetching
             var sourceText = resource.Content ?? Decode(resource.ContentBytes!.Value.Span, resource.MimeType, fallbackEncoding);
 
             // The errors of a script whose response is not CORS-same-origin are muted (e.g. a cross-origin script without
-            // CORS, even when it is redirected back to the origin of the document)
-            return new ClassicScript(window, sourceText, responseUrl) { Url = responseUrl, MutedErrors = !resource.IsCorsSameOrigin, Element = element };
+            // CORS, even when it is redirected back to the origin of the document). As in the browsers, the stack traces of a
+            // script whose errors are muted have the URL of the request: the URL of the response after the redirects is not
+            // exposed (https://w3c.github.io/webappsec-csp/#security-violation-reports)
+            var mutedErrors = !resource.IsCorsSameOrigin;
+            return new ClassicScript(window, sourceText, responseUrl) { Url = mutedErrors ? request.Url.Serialize() : responseUrl, MutedErrors = mutedErrors, Element = element };
         }
     }
 

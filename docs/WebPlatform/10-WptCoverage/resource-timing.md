@@ -9,16 +9,16 @@ description: "The results of the web-platform-tests of resource-timing, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 105 | 118 | 0 | 89% |
+| [Stable](#stable-tests) | 106 | 118 | 0 | 90% |
 | [Tentative](#tentative-tests) | 1 | 33 | 0 | 3% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **106** | **151** | **0** | **70%** |
+| **All** | **107** | **151** | **0** | **71%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 2
+- **BUG**: 1
 - **TEST BUG**: 2
 - **NOT IMPLEMENTED**: 41
 
@@ -82,7 +82,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`initiator-type/img.html`](https://wpt.fyi/results/resource-timing/initiator-type/img.html) | Pass | 1 / 1 |  |  |
 | [`initiator-type/input.html`](https://wpt.fyi/results/resource-timing/initiator-type/input.html) | Pass | 1 / 1 |  |  |
 | [`initiator-type/link.html`](https://wpt.fyi/results/resource-timing/initiator-type/link.html) | Fail | 7 / 8 | NOT IMPLEMENTED | `<link rel="manifest">` is not fetched (the manifest is only fetched when the user agent needs it); the style sheets, the preloads, the module preloads, the prefetches and the icons pass |
-| [`initiator-type/misc.html`](https://wpt.fyi/results/resource-timing/initiator-type/misc.html) | Fail | 5 / 6 | BUG | the image of `<body background>` is fetched as a CSS image (a presentational hint), so its initiator type is `css` instead of `body` |
+| [`initiator-type/misc.html`](https://wpt.fyi/results/resource-timing/initiator-type/misc.html) | Pass | 6 / 6 |  |  |
 | [`initiator-type/picture.html`](https://wpt.fyi/results/resource-timing/initiator-type/picture.html) | Pass | 4 / 4 |  |  |
 | [`initiator-type/script.html`](https://wpt.fyi/results/resource-timing/initiator-type/script.html) | Pass | 3 / 3 |  |  |
 | [`initiator-type/style.html`](https://wpt.fyi/results/resource-timing/initiator-type/style.html) | Pass | 4 / 4 |  |  |

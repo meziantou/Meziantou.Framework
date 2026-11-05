@@ -9,16 +9,16 @@ description: "The results of the web-platform-tests of FileAPI, and why the test
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 68 | 73 | 0 | 93% |
+| [Stable](#stable-tests) | 69 | 73 | 0 | 95% |
 | Tentative | 0 | 0 | 0 | – |
 | [Reftests](#reftests) | 1 | 1 | 0 | 100% |
-| **All** | **69** | **74** | **0** | **93%** |
+| **All** | **70** | **74** | **0** | **95%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 2
+- **BUG**: 1
 - **NOT IMPLEMENTED**: 3
 - **TEST RUNNER**: 1
 
@@ -26,7 +26,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`Blob-methods-from-detached-frame.html`](https://wpt.fyi/results/FileAPI/Blob-methods-from-detached-frame.html) | Fail | 4 / 5 | BUG | `slice()` called through a detached frame's `Blob.prototype` creates the new `Blob` in that frame's realm instead of the receiver's |
+| [`Blob-methods-from-detached-frame.html`](https://wpt.fyi/results/FileAPI/Blob-methods-from-detached-frame.html) | Pass | 5 / 5 |  |  |
 | [`BlobURL/cross-partition-navigation.https.html`](https://wpt.fyi/results/FileAPI/BlobURL/cross-partition-navigation.https.html) | Fail | 0 / 5 | NOT IMPLEMENTED | partitioning the blob URL store by top-level site (cross-site navigations to blob URLs are not forced to noopener/blocked) |
 | [`BlobURL/cross-partition-self-fetch.https.html`](https://wpt.fyi/results/FileAPI/BlobURL/cross-partition-self-fetch.https.html) | Pass | 1 / 1 |  |  |
 | [`BlobURL/cross-partition-worker-creation.https.html`](https://wpt.fyi/results/FileAPI/BlobURL/cross-partition-worker-creation.https.html) | Fail | 0 / 2 | NOT IMPLEMENTED | partitioning the blob URL store by top-level site (a cross-site iframe can create a worker from the blob URL) |

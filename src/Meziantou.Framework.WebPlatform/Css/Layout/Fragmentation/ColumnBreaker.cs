@@ -397,9 +397,18 @@ internal static partial class ColumnBreaker
             // (the contents of a parallel flow end before the edges that the boxes around it repeat at the end of the fragmentainer)
             var candidates = _flow.Candidates;
             var endReserve = _flow.OwnerItem?.Group is { } ownerGroup ? ownerGroup.CloneEndEdges + (ownerGroup.HasEnded ? 0 : ownerGroup.OwnCloneEnd) : 0;
-            if (!isUnfinished && GetOffset(_end) <= blockSize - endReserve + Epsilon && !HasForcedBreak())
+            // (the block-end margin of the last child of the strip is truncated at the end of the last fragmentainer when the
+            // content before it fits: it would only make an empty fragmentainer, https://drafts.csswg.org/css-break-3/#break-margins)
+            var flowEnd = GetOffset(_end) <= blockSize - endReserve + Epsilon || _flow.TrailingMargin is not { } trailingMargin || Math.Abs(trailingMargin.End - _end) > Epsilon ? _end : trailingMargin.Start;
+            if (!isUnfinished && GetOffset(flowEnd) <= blockSize - endReserve + Epsilon && !HasForcedBreak())
             {
-                SetLastExtent();
+                SetLastExtent(flowEnd);
+                if (flowEnd < _end)
+                {
+                    // (the truncated margin fills the rest of the fragmentainer)
+                    LastExtent = Math.Max(LastExtent, Math.Min(blockSize, GetOffset(_end)));
+                }
+
                 Commit(double.PositiveInfinity);
                 return new AdvanceResult(IsFinished: true, _end, 0, worstAppeal, shortage);
             }
@@ -979,9 +988,12 @@ internal static partial class ColumnBreaker
         }
 
         /// <summary>Sets <see cref="LastExtent"/> when the flow ends in the current fragmentainer.</summary>
-        private void SetLastExtent()
+        private void SetLastExtent() => SetLastExtent(_end);
+
+        /// <summary>Sets <see cref="LastExtent"/> when the flow ends in the current fragmentainer at a position (the end of the flow, or the start of its truncated block-end margin).</summary>
+        private void SetLastExtent(double end)
         {
-            var extent = GetOffset(_end);
+            var extent = GetOffset(end);
             foreach (var item in _advanced)
             {
                 if (item.IsBoxDone && item.EndIndex == _index)

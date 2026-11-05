@@ -167,7 +167,14 @@ internal static partial class CssSerializer
                 var isLegacy = value switch
                 {
                     CssPreservedToken { Type: CssTokenType.Hash or CssTokenType.Ident } => true,
-                    CssFunction color => InfraAscii.ToAsciiLowercase(color.Name) is "rgb" or "rgba" or "hsl" or "hsla" or "hwb" && !color.Value.Exists(v => GetIdent(v) == "from"),
+                    // An rgb() color with a missing component is not a legacy color: it is a color(srgb) color
+                    // (https://drafts.csswg.org/css-color-4/#serializing-sRGB-values), unlike hsl() and hwb()
+                    CssFunction color => InfraAscii.ToAsciiLowercase(color.Name) switch
+                    {
+                        "rgb" or "rgba" => !color.Value.Exists(v => GetIdent(v) is "from" or "none"),
+                        "hsl" or "hsla" or "hwb" => !color.Value.Exists(v => GetIdent(v) == "from"),
+                        _ => false,
+                    },
                     _ => false,
                 };
 

@@ -560,7 +560,8 @@ internal static class Accessibility
             }
 
             // 2F: name from content
-            if (traversal.Recursion || NameFromContentRoles.Contains(role) || role is "" && ReferenceEquals(element, root) is false)
+            // (the tr, td and th elements are not named by their content: https://w3c.github.io/html-aam/#tr-td-th-elements-accessible-name-computation)
+            if (traversal.Recursion || (NameFromContentRoles.Contains(role) && !IsTableRowOrCellWithImplicitRole(element)) || role is "" && ReferenceEquals(element, root) is false)
             {
                 var content = GetNameFromContent(element, traversal with { Recursion = true });
                 if (traversal.Recursion || content.Trim().Length > 0)
@@ -584,6 +585,9 @@ internal static class Accessibility
 
             return "";
         }
+
+        private static bool IsTableRowOrCellWithImplicitRole(Element element)
+            => element.IsHtmlNamespace && element.TagId is TagId.Tr or TagId.Td or TagId.Th && GetExplicitRole(element, element.GetAttributeValue("role")) is null;
 
         /// <summary>https://w3c.github.io/accname/#comp_embedded_control</summary>
         private static string? GetEmbeddedControlValue(Element element, string role)
@@ -665,14 +669,23 @@ internal static class Accessibility
                 case TagId.Textarea:
                     return element.GetAttributeValue("title") is { Length: > 0 } textareaTitle ? textareaTitle : element.GetAttributeValue("placeholder") ?? element.GetAttributeValue("aria-placeholder");
 
-                case TagId.Img or TagId.Area:
+                case TagId.Img:
+                    if (element.GetAttributeValue("alt") is { } imgAlt)
+                        return imgAlt;
+
+                    // https://w3c.github.io/html-aam/#img-element-accessible-name-computation (step 4): an img without alt and
+                    // title that is the only content of a figure is named by the figcaption of the figure
+                    return element.GetAttributeValue("title") is null && GetFigureCaptionOfSoleImage(element, traversal) is { } imgCaption ? Compute(imgCaption, traversal with { Recursion = true }) : null;
+
+                case TagId.Area:
                     return element.GetAttributeValue("alt");
 
                 case TagId.Fieldset:
                     return FirstVisibleChild(element, TagId.Legend, traversal) is { } legend ? Compute(legend, traversal with { Recursion = true }) : null;
 
+                // A figcaption does not name its figure (https://w3c.github.io/html-aam/#figure-element-accessible-name-computation)
                 case TagId.Figure:
-                    return FirstVisibleChild(element, TagId.Figcaption, traversal) is { } figcaption ? Compute(figcaption, traversal with { Recursion = true }) : null;
+                    return null;
 
                 case TagId.Table:
                     return FirstVisibleChild(element, TagId.Caption, traversal) is { } caption ? Compute(caption, traversal with { Recursion = true }) : null;
@@ -854,6 +867,43 @@ internal static class Accessibility
             }
 
             return element.LocalName == "a" ? element.GetAttribute("xlink:title") : null;
+        }
+
+        /// <summary>
+        /// The figcaption child of the figure ancestor of an img, when the figure has no other non-whitespace flow content than the
+        /// img (https://w3c.github.io/html-aam/#img-element-accessible-name-computation).
+        /// </summary>
+        private static Element? GetFigureCaptionOfSoleImage(Element image, Traversal traversal)
+        {
+            var figure = image.ParentElement;
+            while (figure is not null && !figure.IsHtml(TagId.Figure))
+            {
+                figure = figure.ParentElement;
+            }
+
+            if (figure is null || FirstVisibleChild(figure, TagId.Figcaption, traversal) is not { } figcaption)
+                return null;
+
+            for (var node = figure.FirstChild; node is not null;)
+            {
+                if (node is Element caption && caption.IsHtml(TagId.Figcaption))
+                {
+                    node = node.GetNextInTreeOrderSkippingChildren(figure);
+                    continue;
+                }
+
+                switch (node)
+                {
+                    case Text text when !string.IsNullOrWhiteSpace(text.Data):
+                        return null;
+                    case Element child when !ReferenceEquals(child, image) && !child.IsShadowIncludingInclusiveAncestorOf(image):
+                        return null;
+                }
+
+                node = node.GetNextInTreeOrder(figure);
+            }
+
+            return figcaption;
         }
 
         private static Element? FirstVisibleChild(Element element, TagId tagId, Traversal traversal)

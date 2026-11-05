@@ -9,16 +9,16 @@ description: "The results of the web-platform-tests of css/css-backgrounds, and 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 128 | 132 | 0 | 97% |
+| [Stable](#stable-tests) | 129 | 132 | 0 | 98% |
 | Tentative | 0 | 0 | 0 | – |
 | [Reftests](#reftests) | 705 | 719 | 1 | 98% |
-| **All** | **833** | **851** | **1** | **98%** |
+| **All** | **834** | **851** | **1** | **98%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 10
+- **BUG**: 9
 - **TEST BUG**: 6
 - **NOT IMPLEMENTED**: 1
 - **FLAKY**: 1
@@ -67,7 +67,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`background-336.html`](https://wpt.fyi/results/css/css-backgrounds/background-336.html) | Pass | 2 / 2 |  |  |
 | [`background-border-cssText.html`](https://wpt.fyi/results/css/css-backgrounds/background-border-cssText.html) | Pass | 5 / 5 |  |  |
 | [`background-clip-001.html`](https://wpt.fyi/results/css/css-backgrounds/background-clip-001.html) | Pass | 4 / 4 |  |  |
-| [`background-image-cors-no-reload.html`](https://wpt.fyi/results/css/css-backgrounds/background-image-cors-no-reload.html) | Fail | 0 / 1 | BUG | the images of the computed styles are fetched by the rendering updates and do not delay the `load` event: the two fetches of the image (with and without CORS) have no resource timing entry yet when the `load` event handler reads the performance timeline |
+| [`background-image-cors-no-reload.html`](https://wpt.fyi/results/css/css-backgrounds/background-image-cors-no-reload.html) | Pass | 1 / 1 |  |  |
 | [`background-origin-001.html`](https://wpt.fyi/results/css/css-backgrounds/background-origin-001.html) | Pass | 4 / 4 |  |  |
 | [`background-shorthand-clip.html`](https://wpt.fyi/results/css/css-backgrounds/background-shorthand-clip.html) | Pass | 4 / 4 |  |  |
 | [`background-shorthand-keyword.html`](https://wpt.fyi/results/css/css-backgrounds/background-shorthand-keyword.html) | Pass | 2 / 2 |  |  |

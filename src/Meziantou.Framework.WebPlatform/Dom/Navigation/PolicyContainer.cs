@@ -4,10 +4,11 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// A snapshot of the policy container of a document (https://html.spec.whatwg.org/multipage/browsers.html#policy-containers),
 /// as cloned by "clone a policy container": the policies that a document of a local scheme inherits from its initiator, its
 /// parent or its creator, and that the session history keeps for the URLs that require storing the policy container in
-/// history. It holds the CSP list (and its self-origin) and the Trusted Types directives of its policies; the referrer
-/// policy and the embedder policies of the documents are still inherited by the navigations separately
-/// (<see cref="Document.ReferrerPolicy"/>, <see cref="Document.EmbedderPolicy"/>). The other policies that are inherited
-/// with the policy container (e.g. the insecure requests policy) can be added to it.
+/// history. It holds the CSP list (and its self-origin) and the Trusted Types directives of its policies, and the referrer
+/// policy of the document, which a traversal restores from the session history; the referrer policy and the embedder policies
+/// of the documents are still inherited by the other navigations separately (<see cref="Document.ReferrerPolicy"/>,
+/// <see cref="Document.EmbedderPolicy"/>). The other policies that are inherited with the policy container (e.g. the insecure
+/// requests policy) can be added to it.
 /// </summary>
 /// <remarks>The policies are immutable, so a clone shares them with the original (a copy of a policy is the policy).</remarks>
 internal sealed class PolicyContainer
@@ -30,6 +31,12 @@ internal sealed class PolicyContainer
     /// </summary>
     public string? RequiredContentSecurityPolicy { get; init; }
 
+    /// <summary>
+    /// The referrer policy of the policy container (https://html.spec.whatwg.org/multipage/browsers.html#policy-container-referrer-policy),
+    /// or null when it is not known (e.g. the policy container of a worker).
+    /// </summary>
+    public string? ReferrerPolicy { get; init; }
+
     /// <summary>Whether the container holds no policy.</summary>
     public bool IsEmpty => ContentSecurityPolicies is null && TrustedTypesDirectives is null;
 
@@ -47,6 +54,7 @@ internal sealed class PolicyContainer
             ContentSecurityPolicySelfOrigin = document.ContentSecurityPolicySelfOrigin,
             TrustedTypesDirectives = trustedTypesDirectives is { Count: > 0 } ? [.. trustedTypesDirectives] : null,
             RequiredContentSecurityPolicy = document.RequiredContentSecurityPolicy,
+            ReferrerPolicy = document.ReferrerPolicy,
         };
     }
 

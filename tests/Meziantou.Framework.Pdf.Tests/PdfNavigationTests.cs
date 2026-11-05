@@ -195,6 +195,20 @@ public sealed class PdfNavigationTests
         Assert.Null(destinations[4]);
     }
 
+    [Fact]
+    public void AStringDestinationWithTheNullCharacterIsNotFound()
+    {
+        // A name cannot contain the null character: the string names no entry of the /Dests dictionary
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R /Dests << /ab [3 0 R /Fit] >> >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 100 100] >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /Annots [4 0 R] >>")
+            .Add(4, "<< /Subtype /Link /Rect [0 0 1 1] /Dest (a\\000b) >>");
+        var document = PdfDocument.Open(file.ToArray());
+
+        Assert.Null(((PdfLinkAnnotation)document.Pages[0].Annotations.Single()).Destination);
+    }
+
     [Theory]
     [InlineData("<< /S /URI /URI (https://example.com) >>")]
     [InlineData("<< /S /Launch /F (file.exe) >>")]

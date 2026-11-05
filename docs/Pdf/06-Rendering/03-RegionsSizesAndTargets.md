@@ -39,6 +39,10 @@ shorter. They are the simplest way to make thumbnails: `Width = 200` and `Height
 [PdfRenderer.GetImageSize](cref:Meziantou.Framework.Pdf.Rendering.PdfRenderer.GetImageSize) gives the size of the image
 a page renders to with options, without rendering it. The image is limited to 32,768 pixels on each side: a larger size
 throws [PdfResourceLimitException](cref:Meziantou.Framework.Pdf.PdfResourceLimitException).
+[RenderPage](cref:Meziantou.Framework.Pdf.Rendering.PdfRenderer.RenderPage) also throws it when the image it allocates
+exceeds the limits of the [Configuration](cref:Meziantou.Framework.Pdf.Rendering.PdfRenderOptions.Configuration) of the
+options, such as their maximum number of pixels (100 million by default, see
+[Resource limits](../../Imaging/05-LoadingAndSaving/07-ResourceLimits.md)).
 
 ## Render to an image of the application
 

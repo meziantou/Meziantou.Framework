@@ -10,5 +10,7 @@ internal sealed class Type3Glyphs(PdfDictionary font, SimpleFontDecoder decoder)
 
     public PdfMatrix FontMatrix { get; } = Graphics.ContentRenderer.ReadMatrix(font.Get<PdfArray>(PdfNames.FontMatrix));
 
-    public PdfStream? GetProcedure(uint code) => decoder.GetGlyphName(code) is { } name ? font.Get<PdfDictionary>(PdfNames.CharProcs)?.Get<PdfStream>(PdfName.Create(name)) : null;
+    /// <summary>Gets the glyph procedure of a code, or <see langword="null"/> when the font has none for it.</summary>
+    /// <remarks>A glyph name with the null character (a <c>#00</c> escape) cannot be a key of <c>/CharProcs</c> (7.3.5): it has no procedure.</remarks>
+    public PdfStream? GetProcedure(uint code) => decoder.GetGlyphName(code) is { } name && !name.Contains('\0', StringComparison.Ordinal) ? font.Get<PdfDictionary>(PdfNames.CharProcs)?.Get<PdfStream>(PdfName.Create(name)) : null;
 }

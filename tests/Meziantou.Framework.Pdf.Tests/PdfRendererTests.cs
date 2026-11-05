@@ -408,6 +408,23 @@ public sealed class PdfRendererTests
     }
 
     [Fact]
+    public void Type3GlyphNameWithTheNullCharacterHasNoProcedure()
+    {
+        // The name /squ#00are of the encoding cannot be a key of /CharProcs: the glyph is not drawn
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 100 100] >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /Contents 4 0 R /Resources << /Font << /T3 5 0 R >> >> >>")
+            .Add(4, HandWrittenPdf.Stream("0 0 1 rg BT /T3 40 Tf 10 10 Td (A) Tj ET"))
+            .Add(5, "<< /Type /Font /Subtype /Type3 /FontBBox [0 0 1000 1000] /FontMatrix [0.001 0 0 0.001 0 0] /CharProcs << /square 6 0 R >> /Encoding << /Differences [65 /squ#00are] >> /FirstChar 65 /LastChar 65 /Widths [1000] >>")
+            .Add(6, Type3SquareProcedure);
+
+        using var image = PdfRenderer.RenderPage(PdfDocument.Open(file.ToArray()).Pages[0], new PdfRenderOptions { UseSystemFonts = false });
+
+        AssertColor(Pixel(image, 30, 30), 255, 255, 255);
+    }
+
+    [Fact]
     public void TextClippingModes()
     {
         // Mode 7 adds the glyphs to the clipping path: the rectangle painted after is visible only inside the H
@@ -1399,6 +1416,25 @@ public sealed class PdfRendererTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new PdfRenderOptions { Width = 0 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new PdfRenderOptions { Height = -1 });
         Assert.Throws<PdfResourceLimitException>(() => PdfRenderer.GetImageSize(page, new PdfRenderOptions { Width = 1_000_000 }));
+    }
+
+    [Fact]
+    public void APageLargerThanTheLimitsOfTheImageConfigurationIsRejected()
+    {
+        // Each side is below the largest side the renderer accepts, but the image has more pixels than the configuration allows
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 61200 65535] >>");
+        var page = PdfDocument.Open(file.ToArray()).Pages[0];
+
+        Assert.Throws<PdfResourceLimitException>(() => PdfRenderer.RenderPage(page, new PdfRenderOptions { Dpi = 12, UseSystemFonts = false }));
+        Assert.Throws<PdfResourceLimitException>(() => PdfRenderer.RenderPage(page, new PdfRenderOptions
+        {
+            Width = 100,
+            UseSystemFonts = false,
+            Configuration = new ImageConfiguration { Limits = new ImageResourceLimits { MaxFramePixels = 1000 } },
+        }));
     }
 
     [Fact]

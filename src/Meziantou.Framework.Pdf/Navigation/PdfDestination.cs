@@ -260,7 +260,8 @@ public sealed class PdfDestination
                 if (dests is not null)
                 {
                     var text = key.ToText();
-                    return text.Length > 0 ? dests.GetResolved(PdfName.Create(text)) : null;
+                    // A name cannot contain the null character (7.3.5): no entry of the dictionary has such a name
+                    return text.Length > 0 && !text.Contains('\0', StringComparison.Ordinal) ? dests.GetResolved(PdfName.Create(text)) : null;
                 }
 
                 return null;

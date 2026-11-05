@@ -51,7 +51,11 @@ public sealed record ViewportOptions
     /// </summary>
     public bool IsMobile { get; init; }
 
-    /// <summary>Gets or sets the preferred color scheme (the <c>prefers-color-scheme</c> media feature, and the used color scheme of <c>light-dark()</c> and the system colors).</summary>
+    /// <summary>
+    /// Gets or sets the preferred color scheme (the <c>prefers-color-scheme</c> media feature, and the used color scheme of
+    /// <c>light-dark()</c> and the system colors). The <c>prefers-color-scheme</c> media feature of a page whose
+    /// <c>color-scheme</c> meta element supports a single color scheme matches that color scheme instead.
+    /// </summary>
     public PreferredColorScheme PreferredColorScheme { get; init; }
 
     /// <summary>Gets or sets whether the user prefers reduced motion (the <c>prefers-reduced-motion</c> media feature).</summary>

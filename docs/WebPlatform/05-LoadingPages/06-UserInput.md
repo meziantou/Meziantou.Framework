@@ -73,6 +73,32 @@ The default actions run: the text is inserted in the text fields and the editabl
 and Space activate the focused element (Enter submits the form of a text field), the arrow keys move the caret, and
 Escape closes the dialogs and the popovers.
 
+## Pending input
+
+A long script can call `navigator.scheduling.isInputPending()` to yield when the user is waiting. The library dispatches
+the input you send at once, so nothing is pending by default. When your application queues input before sending it (for
+instance from a UI thread while a script runs), answer the question with
+[BrowsingContextOptions.PendingInput](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.PendingInput):
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_PendingInput;format=md-fenced-code-block;dedent=true -->
+```csharp
+var pendingInput = new Queue<string>(["pointermove", "click"]);
+var options = new BrowsingContextOptions
+{
+    PendingInput = new PendingInputOptions
+    {
+        // The input events that the host has not dispatched yet; the continuous events (e.g. pointermove) are
+        // only considered when includeContinuous is true
+        IsInputPending = (callbackContext, includeContinuous) => pendingInput.Any(type => includeContinuous || type is not ("pointermove" or "mousemove" or "wheel" or "touchmove")),
+    },
+};
+```
+<!-- endref -->
+
+The callback runs while the script runs, on the thread of the event loop: return quickly. Return false for the input of
+a cross-origin frame, and when you are not sure the input targets the window. The documents that are not fully active
+always get false.
+
 ## Without input
 
 [HtmlElement.Click()](cref:Meziantou.Framework.WebPlatform.Dom.HtmlElement.Click), [Focus()](cref:Meziantou.Framework.WebPlatform.Dom.HtmlElement.Focus) and [DispatchEvent()](cref:Meziantou.Framework.WebPlatform.Dom.EventTarget.DispatchEvent) act on an element directly, as the same methods of a script: the

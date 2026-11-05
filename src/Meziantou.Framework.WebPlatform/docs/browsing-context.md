@@ -886,8 +886,8 @@ Each window and each worker has a performance timeline ([Performance Timeline](h
 `resource`, `mark` and `measure`, described below, `visibility-state` (see [Page visibility](#page-visibility)), and the entry types of the rendering: `layout-shift`, observed only by
 the performance observers of the windows (see [Layout shifts](layout.md#layout-shifts-csslayoutlayoutshifttrackercs)), and
 `paint`, `largest-contentful-paint`, `element`, `container`, `soft-navigation` and `interaction-contentful-paint` (see
-[Paint timing](rendering.md#paint-timing)), and the entry types of the user input of the windows, `event` and `first-input`,
-described below. The `navigationId` of the entries is the one of the document, or of its last soft navigation. The times are measured
+[Paint timing](rendering.md#paint-timing)), the entry types of the user input of the windows, `event` and `first-input`,
+and the `longtask` entries of the windows, described below. The `navigationId` of the entries is the one of the document, or of its last soft navigation. The times are measured
 with the `TimeProvider` of the event loop, relative to the time origin of the global object, and coarsened to 100 µs.
 
 **[Resource Timing](https://w3c.github.io/resource-timing/)**: the requests sent to the loader for the subresources (the
@@ -1021,6 +1021,22 @@ mark, or with `PerformanceMeasureOptions`: `start`, `end`, `duration`, `detail`)
 created (the entry returns the same object each time). In a window, a mark cannot have the name of an attribute of
 `PerformanceTiming` (a `SyntaxError`), and `measure()` accepts these names as marks (an `InvalidAccessError` while the
 attribute is 0).
+
+**[Long Tasks](https://w3c.github.io/longtasks/)** (a discontinued draft that Chromium implements): a task of the event loop
+(with its microtask checkpoint) that runs scripts for 50 ms or more is reported as a `PerformanceLongTaskTiming` entry to the
+windows of the top-level browsing contexts of its scripts and to their descendants (`buffered` observers included: the
+buffer holds 200 entries; the entries are not in `getEntries()`). With `TimeProvider.System`, a task is timed from its first
+script to its end; another clock is not read for the long tasks (reading a fake clock can advance it): a task lasts from
+the first to the last current high resolution time it reads (`performance.now()`, the time stamps of the events). The
+scripts are the classic and module scripts, the callbacks and the promise jobs.
+The parsing of a document given synchronously to `Navigate()` is one task, as the tasks of the networking task source of
+a browser. The name is `self`, `same-origin-ancestor`, `same-origin-descendant`, `same-origin`, `cross-origin-ancestor`,
+`cross-origin-descendant`, `cross-origin-unreachable` or `multiple-contexts`, and the single `TaskAttributionTiming` of
+`attribution` gives the container (`iframe`, `frame`, `object` or `embed`, its `id`, `name` and `src` or `data`) of a
+same-origin culprit browsing context, as the table of the draft and the browsers do (the algorithm of the draft also
+reports the cross-origin descendants), or `window`. The durations are whole milliseconds. Not done: the rendering updates
+and the work of the user agent outside of the tasks are not reported; a synchronous `XMLHttpRequest` lasts as long as the
+`DocumentLoader` takes.
 
 ### Speculative parsing
 
@@ -3134,6 +3150,13 @@ point is in its content box), and `UserInput.MapToTopLevel(document, x, y)` and 
 the coordinates between the viewport of a document and the top-level viewport (e.g. to click the center of the
 `getBoundingClientRect()` of an element of an `iframe`).
 
+The input is dispatched as soon as the host sends it, so `navigator.scheduling.isInputPending()`
+([Early detection of input events](https://wicg.github.io/is-input-pending/)) returns false. A host that queues the input
+of the user before giving it to the library (e.g. while a long script runs) answers with
+`BrowsingContextOptions.PendingInput`: `PendingInputOptions.IsInputPending` gets the window and `includeContinuous` (whether
+the continuous events, such as `pointermove` and `wheel`, count), and must return false for the input of a cross-origin
+frame. A document that is not fully active always gets false.
+
 ## Host callbacks
 
 The callbacks of `BrowsingContextOptions` let a host follow the browsing contexts that use the options (the nested browsing
@@ -3927,6 +3950,7 @@ using var context = new BrowsingContext(new BrowsingContextOptions
 | `BatteryStatusEnabled` | The [Battery Status API](#device-apis): `navigator.getBattery()`, `BatteryManager` |
 | `WakeLockEnabled` | The [Screen Wake Lock API](#device-apis): `navigator.wakeLock`, `WakeLock`, `WakeLockSentinel` |
 | `KeyboardLockEnabled` | The [Keyboard Lock API](#device-apis): `navigator.keyboard`, `Keyboard` |
+| `InputPendingEnabled` | `navigator.scheduling.isInputPending()` (see [User input](#user-input)): `navigator.scheduling`, `Scheduling` |
 | `WebStorageEnabled` | `localStorage`, `sessionStorage`, `Storage`, `StorageEvent` |
 | `IndexedDBEnabled` | `indexedDB` and the `IDB*` interfaces |
 | `CacheStorageEnabled` | `caches`, `Cache`, `CacheStorage` (also hidden when `FetchEnabled` is false) |
@@ -3954,6 +3978,7 @@ using var context = new BrowsingContext(new BrowsingContextOptions
 | `SoftNavigationsEnabled` | `PerformanceSoftNavigation`, `InteractionContentfulPaint` and the `soft-navigation` and `interaction-contentful-paint` entry types; the interactions are not tracked |
 | `UserTimingEnabled` | `PerformanceMark`, `PerformanceMeasure`, `performance.mark()`, `measure()`, `clearMarks()`, `clearMeasures()` and the `mark` and `measure` entry types |
 | `NavigationTimingEnabled` | `PerformanceNavigationTiming`, `PerformanceTiming`, `PerformanceNavigation`, `performance.timing`, `performance.navigation` and the `navigation` entry type |
+| `LongTasksEnabled` | `PerformanceLongTaskTiming`, `TaskAttributionTiming` and the `longtask` entry type: no task is reported |
 | `ScrollDrivenAnimationsEnabled` | `ScrollTimeline`, `ViewTimeline`, `Animation.rangeStart` and `Animation.rangeEnd`; the scroll and view timelines of `animation-timeline` are then no timeline |
 | `SvgAnimationsEnabled` | The SVG animations (SMIL): the `animate`, `set`, `animateMotion` and `animateTransform` elements have no effect and fire no event, and `TimeEvent` is hidden |
 | `MediaSourceEnabled` | The [Media Source Extensions](#media-source-extensions): `MediaSource`, `MediaSourceHandle`, `SourceBuffer`, `SourceBufferList`, `ManagedMediaSource`, `ManagedSourceBuffer`, `BufferedChangeEvent` and the `sourceBuffer` attribute of the tracks |

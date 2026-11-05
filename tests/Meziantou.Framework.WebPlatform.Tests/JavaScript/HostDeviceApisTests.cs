@@ -10,7 +10,8 @@ namespace Meziantou.Framework.WebPlatform.Tests.JavaScript;
 /// Web Share (https://w3c.github.io/web-share/), Vibration (https://w3c.github.io/vibration/), Geolocation
 /// (https://w3c.github.io/geolocation/), Notifications (https://notifications.spec.whatwg.org/), Badging
 /// (https://w3c.github.io/badging/), Battery Status (https://w3c.github.io/battery/), Screen Wake Lock
-/// (https://w3c.github.io/screen-wake-lock/) and Keyboard Lock (https://wicg.github.io/keyboard-lock/).
+/// (https://w3c.github.io/screen-wake-lock/), Keyboard Lock (https://wicg.github.io/keyboard-lock/) and the early detection of
+/// input events (https://wicg.github.io/is-input-pending/).
 /// </summary>
 public sealed class HostDeviceApisTests : IDisposable
 {
@@ -42,6 +43,7 @@ public sealed class HostDeviceApisTests : IDisposable
             BatteryStatus = options.BatteryStatus,
             WakeLock = options.WakeLock,
             KeyboardLock = options.KeyboardLock,
+            PendingInput = options.PendingInput,
             Features = options.Features,
         });
 
@@ -981,12 +983,60 @@ public sealed class HostDeviceApisTests : IDisposable
     }
 
     [Fact]
+    public void IsInputPending_WithoutHandler_ReturnsFalse()
+    {
+        var document = Load("<p>");
+
+        Assert.Equal("false,false,true", Run(document, "document.title = [navigator.scheduling.isInputPending(), navigator.scheduling.isInputPending({ includeContinuous: true }), navigator.scheduling === navigator.scheduling].join()"));
+    }
+
+    [Fact]
+    public void IsInputPending_CallsTheHost()
+    {
+        #region WebPlatform_PendingInput
+        var pendingInput = new Queue<string>(["pointermove", "click"]);
+        var options = new BrowsingContextOptions
+        {
+            PendingInput = new PendingInputOptions
+            {
+                // The input events that the host has not dispatched yet; the continuous events (e.g. pointermove) are
+                // only considered when includeContinuous is true
+                IsInputPending = (callbackContext, includeContinuous) => pendingInput.Any(type => includeContinuous || type is not ("pointermove" or "mousemove" or "wheel" or "touchmove")),
+            },
+        };
+        #endregion
+
+        var document = Load("<p>", options);
+
+        Assert.Equal("true,true", Run(document, "document.title = [navigator.scheduling.isInputPending(), navigator.scheduling.isInputPending({ includeContinuous: true })].join()"));
+
+        pendingInput.Dequeue();
+        pendingInput.Dequeue();
+        pendingInput.Enqueue("pointermove");
+        Assert.Equal("false,true", Run(document, "document.title = [navigator.scheduling.isInputPending(), navigator.scheduling.isInputPending({ includeContinuous: true })].join()"));
+    }
+
+    [Fact]
+    public void IsInputPending_NotFullyActive_ReturnsFalse()
+    {
+        var document = Load("<iframe srcdoc='<p>'></iframe>", new BrowsingContextOptions { PendingInput = new PendingInputOptions { IsInputPending = (_, _) => true } });
+
+        Assert.Equal("true,false", Run(document, """
+            const iframe = document.querySelector('iframe');
+            const scheduling = iframe.contentWindow.navigator.scheduling;
+            const before = scheduling.isInputPending();
+            iframe.remove();
+            document.title = [before, scheduling.isInputPending()].join();
+            """));
+    }
+
+    [Fact]
     public void DisabledFeatures_HideTheApis()
     {
         var document = Load(
-            "<script>document.title = ['share' in navigator, 'vibrate' in navigator, 'geolocation' in navigator, typeof Notification, 'setAppBadge' in navigator, 'getBattery' in navigator, typeof BatteryManager, 'wakeLock' in navigator, typeof WakeLockSentinel, 'keyboard' in navigator, typeof Keyboard].join();</script>",
-            new BrowsingContextOptions { Features = new WebPlatformFeatures { WebShareEnabled = false, VibrationEnabled = false, GeolocationEnabled = false, NotificationsEnabled = false, BadgingEnabled = false, BatteryStatusEnabled = false, WakeLockEnabled = false, KeyboardLockEnabled = false } });
+            "<script>document.title = ['share' in navigator, 'vibrate' in navigator, 'geolocation' in navigator, typeof Notification, 'setAppBadge' in navigator, 'getBattery' in navigator, typeof BatteryManager, 'wakeLock' in navigator, typeof WakeLockSentinel, 'keyboard' in navigator, typeof Keyboard, 'scheduling' in navigator, typeof Scheduling].join();</script>",
+            new BrowsingContextOptions { Features = new WebPlatformFeatures { WebShareEnabled = false, VibrationEnabled = false, GeolocationEnabled = false, NotificationsEnabled = false, BadgingEnabled = false, BatteryStatusEnabled = false, WakeLockEnabled = false, KeyboardLockEnabled = false, InputPendingEnabled = false } });
 
-        Assert.Equal("false,false,false,undefined,false,false,undefined,false,undefined,false,undefined", Run(document));
+        Assert.Equal("false,false,false,undefined,false,false,undefined,false,undefined,false,undefined,false,undefined", Run(document));
     }
 }

@@ -1445,6 +1445,13 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return result;
     }
 
+    internal static TValue FromDictionary_Dom_IsInputPendingOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.IsInputPendingOptions value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "includeContinuous", r.FromBoolean(value.IncludeContinuous));
+        return result;
+    }
+
     internal static TValue FromDictionary_Dom_KeyboardEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.KeyboardEventInit value)
     {
         var result = r.CreateObject();
@@ -5709,6 +5716,17 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
             ScrollMargin = m3,
             Threshold = m4,
             TrackVisibility = m5,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.IsInputPendingOptions ToDictionary_Dom_IsInputPendingOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "IsInputPendingOptions");
+        var m0_value = r.GetDictionaryMember(value, "includeContinuous");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (bool)false : r.ToBoolean(m0_value);
+        return new global::Meziantou.Framework.WebPlatform.Dom.IsInputPendingOptions
+        {
+            IncludeContinuous = m0,
         };
     }
 

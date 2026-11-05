@@ -408,6 +408,7 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["PerformanceElementTiming"] = Binding_PerformanceElementTiming<TAdapter, TValue>.Binding,
             ["PerformanceEntry"] = Binding_PerformanceEntry<TAdapter, TValue>.Binding,
             ["PerformanceEventTiming"] = Binding_PerformanceEventTiming<TAdapter, TValue>.Binding,
+            ["PerformanceLongTaskTiming"] = Binding_PerformanceLongTaskTiming<TAdapter, TValue>.Binding,
             ["PerformanceMark"] = Binding_PerformanceMark<TAdapter, TValue>.Binding,
             ["PerformanceMeasure"] = Binding_PerformanceMeasure<TAdapter, TValue>.Binding,
             ["PerformanceNavigation"] = Binding_PerformanceNavigation<TAdapter, TValue>.Binding,
@@ -533,6 +534,7 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["SVGViewElement"] = Binding_SVGViewElement<TAdapter, TValue>.Binding,
             ["Sanitizer"] = Binding_Sanitizer<TAdapter, TValue>.Binding,
             ["Scheduler"] = Binding_Scheduler<TAdapter, TValue>.Binding,
+            ["Scheduling"] = Binding_Scheduling<TAdapter, TValue>.Binding,
             ["Screen"] = Binding_Screen<TAdapter, TValue>.Binding,
             ["ScriptProcessorNode"] = Binding_ScriptProcessorNode<TAdapter, TValue>.Binding,
             ["ScrollTimeline"] = Binding_ScrollTimeline<TAdapter, TValue>.Binding,
@@ -558,6 +560,7 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["StyleSheet"] = Binding_StyleSheet<TAdapter, TValue>.Binding,
             ["StyleSheetList"] = Binding_StyleSheetList<TAdapter, TValue>.Binding,
             ["SubmitEvent"] = Binding_SubmitEvent<TAdapter, TValue>.Binding,
+            ["TaskAttributionTiming"] = Binding_TaskAttributionTiming<TAdapter, TValue>.Binding,
             ["TaskController"] = Binding_TaskController<TAdapter, TValue>.Binding,
             ["TaskPriorityChangeEvent"] = Binding_TaskPriorityChangeEvent<TAdapter, TValue>.Binding,
             ["TaskSignal"] = Binding_TaskSignal<TAdapter, TValue>.Binding,
@@ -1111,6 +1114,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.IntrinsicSizesResultOptions dictionaryDom_IntrinsicSizesResultOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_IntrinsicSizesResultOptions(r, dictionaryDom_IntrinsicSizesResultOptions);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.IsInputPendingOptions dictionaryDom_IsInputPendingOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_IsInputPendingOptions(r, dictionaryDom_IsInputPendingOptions);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.LayoutConstraintsOptions dictionaryDom_LayoutConstraintsOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_LayoutConstraintsOptions(r, dictionaryDom_LayoutConstraintsOptions);

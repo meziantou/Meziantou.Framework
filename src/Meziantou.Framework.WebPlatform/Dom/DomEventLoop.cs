@@ -844,12 +844,13 @@ public sealed partial class DomEventLoop
         // steps determine the relevance to the user of the elements with content-visibility: auto (and fire their events). So are
         // the documents whose styles may use container scroll-state queries: the rendering steps snapshot the scroll states, and the
         // documents whose styles may use position options: the rendering steps record the last successful position options, and
-        // the documents whose styles may generate scroll navigation controls: the rendering steps determine the active scroll markers
+        // the documents whose styles may generate scroll navigation controls: the rendering steps determine the active scroll markers,
+        // and the documents whose styles may create scroll snap containers: the rendering steps snap them
         foreach (var document in cssDocuments.Concat(styleDocuments))
         {
             if (document.IsFullyActive && document.LayoutEngineOrNull is not { IsLayoutRequested: true }
                 && (document.GetStyleEngine().MayHaveContentVisibility() || document.GetStyleEngine().MayHaveScrollStateQueries() || document.GetStyleEngine().MayHavePositionTryFallbacks()
-                    || document.GetStyleEngine().MayHaveScrollNavigationControls()))
+                    || document.GetStyleEngine().MayHaveScrollNavigationControls() || document.GetStyleEngine().MayHaveScrollSnapContainers()))
             {
                 document.GetLayoutEngine().EnsureLayout();
             }

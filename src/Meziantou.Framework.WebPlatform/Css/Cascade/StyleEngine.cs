@@ -360,6 +360,18 @@ internal sealed partial class StyleEngine
     }
 
     /// <summary>
+    /// Returns whether the styles of the document may create scroll snap containers (https://drafts.csswg.org/css-scroll-snap-1/#scroll-snap-type):
+    /// a rule of its style sheets or a style attribute declares <c>scroll-snap-type</c>. The rendering steps then lay out the
+    /// document, so that its scroll snap containers snap (and re-snap after a change of their styles) and fire their snap
+    /// events (https://drafts.csswg.org/css-scroll-snap-2/#snap-events), as the browsers render the document from its loading.
+    /// </summary>
+    public bool MayHaveScrollSnapContainers()
+    {
+        EnsureUpToDate();
+        return _document.InlineStylesDeclareScrollSnapType || GetTreeStyles(_document).Rules.DeclaresScrollSnapType;
+    }
+
+    /// <summary>
     /// Returns whether the styles of the document may use container scroll-state queries: a rule of its style sheets, or of the
     /// style sheets of its shadow trees whose styles were computed, is in a @container rule with a scroll-state query. The
     /// rendering steps then lay out the document to take the snapshots of the scroll-state query containers

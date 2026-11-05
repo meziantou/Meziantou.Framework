@@ -99,10 +99,12 @@ internal sealed partial class LayoutEngine
     /// Sets the snap targets of a scrolling box, and updates its scrollsnapchanging targets
     /// (https://drafts.csswg.org/css-scroll-snap-2/#update-scrollsnapchanging-targets): a <c>scrollsnapchanging</c> event is
     /// queued when they change. The browsers fire a scrollsnapchange event (and no scrollsnapchanging event) for the first snap
-    /// of a box, by the first rendering update of the document. The layout is computed lazily (when the geometry is read, or for
-    /// the observers of the scroll and snap events), so the first snap may happen long after: its scrollsnapchange event is only
-    /// queued when a listener added before the first rendering update observes it (a listener added later would not receive
-    /// it in the browsers).
+    /// of a box, by the rendering update that first lays it out as a snap container. The layout is computed lazily (when the
+    /// geometry is read, or for the observers of the scroll and snap events); the rendering steps lay out the documents whose
+    /// styles declare <c>scroll-snap-type</c> (see <see cref="Cascade.StyleEngine.MayHaveScrollSnapContainers"/>), so their
+    /// first snaps happen when the browsers' do, and the listeners observe them (e.g. a box that becomes a snap container after
+    /// a change of its styles). Otherwise, the first snap may happen long after: its scrollsnapchange event is only queued when a
+    /// listener added before the first rendering update observes it (a listener added later would not receive it in the browsers).
     /// </summary>
     private void SetSnapTargets(ScrollState state, SnapTarget? targetX, SnapTarget? targetY)
     {
@@ -124,7 +126,7 @@ internal sealed partial class LayoutEngine
             snap.EventTargetsInitialized = true;
             snap.ChangingBlock = snap.ChangeBlock = block;
             snap.ChangingInline = snap.ChangeInline = inline;
-            if (_firstSnapChangeObserved && (block is not null || inline is not null) && HasSnapChangeListener(state.Element ?? (EventTarget)_document))
+            if ((block is not null || inline is not null) && (_firstSnapChangeObserved || _document.GetStyleEngine().MayHaveScrollSnapContainers()) && HasSnapChangeListener(state.Element ?? (EventTarget)_document))
             {
                 QueueSnapEvent(state, "scrollsnapchange", block, inline);
             }

@@ -78,6 +78,9 @@ public partial class Document
     /// <summary>Whether a style attribute of the document declared <c>position-try-fallbacks</c> (see <see cref="Css.Cascade.StyleEngine.MayHavePositionTryFallbacks"/>).</summary>
     internal bool InlineStylesDeclarePositionTryFallbacks { get; set; }
 
+    /// <summary>Whether a style attribute of the document declared <c>scroll-snap-type</c> (see <see cref="Css.Cascade.StyleEngine.MayHaveScrollSnapContainers"/>).</summary>
+    internal bool InlineStylesDeclareScrollSnapType { get; set; }
+
     /// <summary>
     /// Updates the styles of the elements of the document, which creates, updates and cancels their CSS animations and
     /// transitions (https://drafts.csswg.org/css-animations-1/#animations): the styles discarded since the last update are

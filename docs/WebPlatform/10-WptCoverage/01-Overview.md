@@ -48,27 +48,27 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 25,910 | 29,691 | 2,350 | 95% |
+| [Stable](#stable-tests) | 25,999 | 29,691 | 2,257 | 95% |
 | [Tentative](#tentative-tests) | 1,339 | 3,074 | 709 | 57% |
 | [Reftests](#reftests) | 27,901 | 29,220 | 173 | 96% |
-| **All** | **55,150** | **61,985** | **3,232** | **94%** |
+| **All** | **55,239** | **61,985** | **3,139** | **94%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **BUG**: 308
-- **TEST BUG**: 1,010
-- **NOT IMPLEMENTED**: 4,413
-- **REQUIRES**: 927
-  - `hardware`: 730
+- **TEST BUG**: 1,014
+- **NOT IMPLEMENTED**: 4,406
+- **REQUIRES**: 834
+  - `hardware`: 637
   - `layout`: 30
   - `media`: 18
   - `service-workers`: 1
   - `user-input`: 155
   - `workers`: 3
-- **TEST RUNNER**: 306
-- **OUT OF SCOPE**: 203
+- **TEST RUNNER**: 309
+- **OUT OF SCOPE**: 204
 - **FLAKY**: 15
 - **PERFORMANCE**: 7
 
@@ -76,12 +76,12 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 | Section | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [`accelerometer`](accelerometer.md) | 0 | 12 | 12 | – |
+| [`accelerometer`](accelerometer.md) | 9 | 12 | 0 | 75% |
 | [`accessibility`](accessibility.md) | 1 | 1 | 0 | 100% |
 | [`accname`](accname.md) | 17 | 17 | 0 | 100% |
 | [`acid`](acid.md) | 0 | 1 | 1 | – |
 | [`ai`](ai.md) | 0 | 11 | 11 | – |
-| [`ambient-light`](ambient-light.md) | 0 | 10 | 10 | – |
+| [`ambient-light`](ambient-light.md) | 10 | 10 | 0 | 100% |
 | [`animation-worklet`](animation-worklet.md) | 15 | 23 | 0 | 65% |
 | [`apng`](apng.md) | 1 | 1 | 0 | 100% |
 | [`audio-output`](audio-output.md) | 0 | 10 | 10 | – |
@@ -230,12 +230,12 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`fs`](fs.md) | 32 | 35 | 0 | 91% |
 | [`fullscreen`](fullscreen.md) | 81 | 87 | 0 | 93% |
 | [`gamepad`](gamepad.md) | 0 | 6 | 6 | – |
-| [`generic-sensor`](generic-sensor.md) | 0 | 3 | 3 | – |
+| [`generic-sensor`](generic-sensor.md) | 3 | 3 | 0 | 100% |
 | [`geolocation`](geolocation.md) | 20 | 23 | 0 | 87% |
-| [`geolocation-sensor`](geolocation-sensor.md) | 0 | 1 | 1 | – |
+| [`geolocation-sensor`](geolocation-sensor.md) | 1 | 1 | 0 | 100% |
 | [`gpc`](gpc.md) | 0 | 4 | 4 | – |
 | [`graphics-aria`](graphics-aria.md) | 0 | 1 | 1 | – |
-| [`gyroscope`](gyroscope.md) | 0 | 10 | 10 | – |
+| [`gyroscope`](gyroscope.md) | 9 | 10 | 0 | 90% |
 | [`hr-time`](hr-time.md) | 13 | 13 | 0 | 100% |
 | [`html-aam`](html-aam.md) | 25 | 26 | 0 | 96% |
 | [`html-media-capture`](html-media-capture.md) | 0 | 2 | 2 | – |
@@ -280,7 +280,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`loading`](loading.md) | 7 | 53 | 0 | 13% |
 | [`long-animation-frame`](long-animation-frame.md) | 0 | 39 | 39 | – |
 | [`longtask-timing`](longtask-timing.md) | 0 | 21 | 21 | – |
-| [`magnetometer`](magnetometer.md) | 0 | 10 | 10 | – |
+| [`magnetometer`](magnetometer.md) | 8 | 10 | 0 | 80% |
 | [`managed`](managed.md) | 0 | 2 | 2 | – |
 | [`mathml`](mathml.md) | 200 | 208 | 0 | 96% |
 | [`measure-memory`](measure-memory.md) | 0 | 15 | 15 | – |
@@ -307,8 +307,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`network-error-logging`](network-error-logging.md) | 0 | 12 | 12 | – |
 | [`notifications`](notifications.md) | 12 | 20 | 0 | 60% |
 | [`old-tests`](old-tests.md) | 0 | 15 | 15 | – |
-| [`orientation-event`](orientation-event.md) | 0 | 27 | 27 | – |
-| [`orientation-sensor`](orientation-sensor.md) | 0 | 16 | 16 | – |
+| [`orientation-event`](orientation-event.md) | 27 | 27 | 0 | 100% |
+| [`orientation-sensor`](orientation-sensor.md) | 14 | 16 | 0 | 88% |
 | [`page-lifecycle`](page-lifecycle.md) | 0 | 2 | 2 | – |
 | [`page-visibility`](page-visibility.md) | 10 | 10 | 0 | 100% |
 | [`paint-timing`](paint-timing.md) | 58 | 59 | 0 | 98% |
@@ -319,7 +319,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`performance-timeline`](performance-timeline.md) | 29 | 30 | 0 | 97% |
 | [`periodic-background-sync`](periodic-background-sync.md) | 0 | 2 | 2 | – |
 | [`permissions`](permissions.md) | 11 | 14 | 2 | 92% |
-| [`permissions-policy`](permissions-policy.md) | 41 | 94 | 0 | 44% |
+| [`permissions-policy`](permissions-policy.md) | 43 | 94 | 0 | 46% |
 | [`permissions-request`](permissions-request.md) | 0 | 1 | 1 | – |
 | [`permissions-revoke`](permissions-revoke.md) | 0 | 1 | 1 | – |
 | [`picture-in-picture`](picture-in-picture.md) | 0 | 18 | 18 | – |
@@ -329,7 +329,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`preload`](preload.md) | 63 | 69 | 0 | 91% |
 | [`presentation-api`](presentation-api.md) | 0 | 13 | 13 | – |
 | [`private-click-measurement`](private-click-measurement.md) | 0 | 1 | 1 | – |
-| [`proximity`](proximity.md) | 0 | 4 | 4 | – |
+| [`proximity`](proximity.md) | 2 | 4 | 0 | 50% |
 | [`push-api`](push-api.md) | 0 | 8 | 8 | – |
 | [`quirks`](quirks.md) | 14 | 18 | 0 | 78% |
 | [`referrer-policy`](referrer-policy.md) | 1,477 | 1,478 | 0 | 99.9% |
@@ -356,7 +356,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`shadow-dom`](shadow-dom.md) | 217 | 254 | 0 | 85% |
 | [`shape-detection`](shape-detection.md) | 0 | 25 | 0 | 0% |
 | [`soft-navigation-heuristics`](soft-navigation-heuristics.md) | 1 | 1 | 0 | 100% |
-| [`speculation-rules`](speculation-rules.md) | 126 | 185 | 1 | 68% |
+| [`speculation-rules`](speculation-rules.md) | 130 | 185 | 1 | 71% |
 | [`speech-api`](speech-api.md) | 0 | 16 | 16 | – |
 | [`storage`](storage.md) | 11 | 14 | 0 | 79% |
 | [`storage-access-api`](storage-access-api.md) | 0 | 37 | 37 | – |
@@ -419,7 +419,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 318 | 330 | 0 | 96% |
 | [`xml`](xml.md) | 0 | 12 | 12 | – |
-| **Total (343 sections)** | **25,910** | **29,691** | **2,350** | **95%** |
+| **Total (343 sections)** | **25,999** | **29,691** | **2,257** | **95%** |
 
 ## Tentative tests
 

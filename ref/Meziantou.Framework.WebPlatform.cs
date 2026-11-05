@@ -2942,6 +2942,11 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public AbortSignalException(string? message, System.Exception? innerException) { }
     }
 
+    public sealed class AbsoluteOrientationSensor : Meziantou.Framework.WebPlatform.Dom.OrientationSensor
+    {
+        public AbsoluteOrientationSensor(Meziantou.Framework.WebPlatform.Dom.OrientationSensorOptions? sensorOptions = null) { }
+    }
+
     public abstract class AbstractRange
     {
         public bool Collapsed { get => throw null; }
@@ -2949,6 +2954,25 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public uint EndOffset { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.Node StartContainer { get => throw null; }
         public uint StartOffset { get => throw null; }
+    }
+
+    public class Accelerometer : Meziantou.Framework.WebPlatform.Dom.Sensor
+    {
+        public double? X { get => throw null; }
+        public double? Y { get => throw null; }
+        public double? Z { get => throw null; }
+        public Accelerometer(Meziantou.Framework.WebPlatform.Dom.AccelerometerSensorOptions? options = null) { }
+    }
+
+    public enum AccelerometerLocalCoordinateSystem
+    {
+        Device = 0,
+        Screen = 1,
+    }
+
+    public sealed class AccelerometerSensorOptions : Meziantou.Framework.WebPlatform.Dom.SensorOptions
+    {
+        public Meziantou.Framework.WebPlatform.Dom.AccelerometerLocalCoordinateSystem ReferenceFrame { get => throw null; init { } }
     }
 
     public sealed class AcceptCHCache
@@ -2974,6 +2998,12 @@ namespace Meziantou.Framework.WebPlatform.Dom
         End = 2,
         Left = 3,
         Right = 4,
+    }
+
+    public sealed class AmbientLightSensor : Meziantou.Framework.WebPlatform.Dom.Sensor
+    {
+        public double? Illuminance { get => throw null; }
+        public AmbientLightSensor(Meziantou.Framework.WebPlatform.Dom.SensorOptions? sensorOptions = null) { }
     }
 
     public sealed class AnimationWorkletGlobalScope : Meziantou.Framework.WebPlatform.Dom.WorkletGlobalScope
@@ -3267,6 +3297,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public System.Action<Meziantou.Framework.WebPlatform.Dom.CallbackContext>? SameDocumentNavigated { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Scripting.ScriptEngine? ScriptEngine { get => throw null; init { } }
         public bool ScriptingEnabled { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.DeviceSensorsOptions? Sensors { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.ServiceWorkerBackend? ServiceWorkers { get => throw null; init { } }
         public System.Func<Meziantou.Framework.WebPlatform.Dom.CallbackContext, Meziantou.Framework.WebPlatform.Dom.ShareRequest, System.Threading.Tasks.ValueTask<bool>>? Share { get => throw null; init { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.CallbackContext, Meziantou.Framework.WebPlatform.Dom.HtmlInputElement>? ShowFilePicker { get => throw null; init { } }
@@ -4103,6 +4134,133 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public override string ToString() => throw null;
         public static bool operator ==(Meziantou.Framework.WebPlatform.Dom.DeviceDescriptor? left, Meziantou.Framework.WebPlatform.Dom.DeviceDescriptor? right) => throw null;
         public static bool operator !=(Meziantou.Framework.WebPlatform.Dom.DeviceDescriptor? left, Meziantou.Framework.WebPlatform.Dom.DeviceDescriptor? right) => throw null;
+    }
+
+    public sealed class DeviceMotionEvent : Meziantou.Framework.WebPlatform.Dom.Event
+    {
+        public Meziantou.Framework.WebPlatform.Dom.DeviceMotionEventAcceleration? Acceleration { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.DeviceMotionEventAcceleration? AccelerationIncludingGravity { get => throw null; }
+        public double Interval { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.DeviceMotionEventRotationRate? RotationRate { get => throw null; }
+        public DeviceMotionEvent(string type, Meziantou.Framework.WebPlatform.Dom.DeviceMotionEventInit? eventInitDict = null) : base(default(string), default(Meziantou.Framework.WebPlatform.Dom.EventInit)) { }
+        public static System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.PermissionState> RequestPermission() => throw null;
+    }
+
+    public sealed class DeviceMotionEventAcceleration
+    {
+        public double? X { get => throw null; }
+        public double? Y { get => throw null; }
+        public double? Z { get => throw null; }
+    }
+
+    public sealed class DeviceMotionEventAccelerationInit
+    {
+        public double? X { get => throw null; init { } }
+        public double? Y { get => throw null; init { } }
+        public double? Z { get => throw null; init { } }
+    }
+
+    public sealed class DeviceMotionEventInit : Meziantou.Framework.WebPlatform.Dom.EventInit
+    {
+        public Meziantou.Framework.WebPlatform.Dom.DeviceMotionEventAccelerationInit? Acceleration { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.DeviceMotionEventAccelerationInit? AccelerationIncludingGravity { get => throw null; init { } }
+        public double Interval { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.DeviceMotionEventRotationRateInit? RotationRate { get => throw null; init { } }
+    }
+
+    public sealed class DeviceMotionEventRotationRate
+    {
+        public double? Alpha { get => throw null; }
+        public double? Beta { get => throw null; }
+        public double? Gamma { get => throw null; }
+    }
+
+    public sealed class DeviceMotionEventRotationRateInit
+    {
+        public double? Alpha { get => throw null; init { } }
+        public double? Beta { get => throw null; init { } }
+        public double? Gamma { get => throw null; init { } }
+    }
+
+    public sealed class DeviceOrientationEvent : Meziantou.Framework.WebPlatform.Dom.Event
+    {
+        public bool Absolute { get => throw null; }
+        public double? Alpha { get => throw null; }
+        public double? Beta { get => throw null; }
+        public double? Gamma { get => throw null; }
+        public DeviceOrientationEvent(string type, Meziantou.Framework.WebPlatform.Dom.DeviceOrientationEventInit? eventInitDict = null) : base(default(string), default(Meziantou.Framework.WebPlatform.Dom.EventInit)) { }
+        public static System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.PermissionState> RequestPermission(bool absolute = false) => throw null;
+    }
+
+    public sealed class DeviceOrientationEventInit : Meziantou.Framework.WebPlatform.Dom.EventInit
+    {
+        public bool Absolute { get => throw null; init { } }
+        public double? Alpha { get => throw null; init { } }
+        public double? Beta { get => throw null; init { } }
+        public double? Gamma { get => throw null; init { } }
+    }
+
+    public sealed class DeviceSensor
+    {
+        public bool CanProvideReadings { get => throw null; }
+        public bool IsRemoved { get => throw null; }
+        public double MaximumSamplingFrequency { get => throw null; }
+        public double MinimumSamplingFrequency { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.DeviceSensorReading? Reading { get => throw null; }
+        public double RequestedSamplingFrequency { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.DeviceSensorType Type { get => throw null; }
+        public void Update(Meziantou.Framework.WebPlatform.Dom.DeviceSensorReading reading) { }
+    }
+
+    public sealed class DeviceSensorProvider
+    {
+        public const double DefaultMaximumSamplingFrequency = 60d;
+        public const double DefaultMinimumSamplingFrequency = 1d;
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.DeviceSensor> Sensors { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.DeviceSensor AddSensor(Meziantou.Framework.WebPlatform.Dom.DeviceSensorType type, bool canProvideReadings = true, double? minimumSamplingFrequency = null, double? maximumSamplingFrequency = null) => throw null;
+        public Meziantou.Framework.WebPlatform.Dom.DeviceSensor? GetSensor(Meziantou.Framework.WebPlatform.Dom.DeviceSensorType type) => throw null;
+        public bool RemoveSensor(Meziantou.Framework.WebPlatform.Dom.DeviceSensorType type) => throw null;
+    }
+
+    public sealed class DeviceSensorReading
+    {
+        public double? Alpha { get => throw null; }
+        public double? Beta { get => throw null; }
+        public double? Distance { get => throw null; }
+        public double? Gamma { get => throw null; }
+        public double? Illuminance { get => throw null; }
+        public double? Max { get => throw null; }
+        public bool? Near { get => throw null; }
+        public double? X { get => throw null; }
+        public double? XBias { get => throw null; }
+        public double? Y { get => throw null; }
+        public double? YBias { get => throw null; }
+        public double? Z { get => throw null; }
+        public double? ZBias { get => throw null; }
+        public static Meziantou.Framework.WebPlatform.Dom.DeviceSensorReading FromEulerAngles(double alpha, double beta, double gamma) => throw null;
+        public static Meziantou.Framework.WebPlatform.Dom.DeviceSensorReading FromIlluminance(double illuminance) => throw null;
+        public static Meziantou.Framework.WebPlatform.Dom.DeviceSensorReading FromProximity(double distance, double max, bool near) => throw null;
+        public static Meziantou.Framework.WebPlatform.Dom.DeviceSensorReading FromUncalibratedMagnetometer(double x, double y, double z, double xBias, double yBias, double zBias) => throw null;
+        public static Meziantou.Framework.WebPlatform.Dom.DeviceSensorReading FromXyz(double x, double y, double z) => throw null;
+    }
+
+    public enum DeviceSensorType
+    {
+        Accelerometer = 0,
+        LinearAcceleration = 1,
+        Gravity = 2,
+        Gyroscope = 3,
+        Magnetometer = 4,
+        UncalibratedMagnetometer = 5,
+        AmbientLight = 6,
+        Proximity = 7,
+        AbsoluteOrientation = 8,
+        RelativeOrientation = 9,
+    }
+
+    public sealed class DeviceSensorsOptions
+    {
+        public Meziantou.Framework.WebPlatform.Dom.DeviceSensorProvider? Provider { get => throw null; init { } }
     }
 
     public enum DirectionSetting
@@ -5794,6 +5952,30 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public int SetTimeout(Meziantou.Framework.WebPlatform.Dom.TimerHandler handler, int timeout = 0, params object?[] arguments) => throw null;
         public object? StructuredClone(object? value, Meziantou.Framework.WebPlatform.Dom.StructuredSerializeOptions? options = null) => throw null;
         public void TrackPromiseRejection(object promise, object? reason, Meziantou.Framework.WebPlatform.Scripting.PromiseRejectionOperation operation) { }
+    }
+
+    public sealed class GravitySensor : Meziantou.Framework.WebPlatform.Dom.Accelerometer
+    {
+        public GravitySensor(Meziantou.Framework.WebPlatform.Dom.AccelerometerSensorOptions? options = null) : base(default(Meziantou.Framework.WebPlatform.Dom.AccelerometerSensorOptions)) { }
+    }
+
+    public sealed class Gyroscope : Meziantou.Framework.WebPlatform.Dom.Sensor
+    {
+        public double? X { get => throw null; }
+        public double? Y { get => throw null; }
+        public double? Z { get => throw null; }
+        public Gyroscope(Meziantou.Framework.WebPlatform.Dom.GyroscopeSensorOptions? sensorOptions = null) { }
+    }
+
+    public enum GyroscopeLocalCoordinateSystem
+    {
+        Device = 0,
+        Screen = 1,
+    }
+
+    public sealed class GyroscopeSensorOptions : Meziantou.Framework.WebPlatform.Dom.SensorOptions
+    {
+        public Meziantou.Framework.WebPlatform.Dom.GyroscopeLocalCoordinateSystem ReferenceFrame { get => throw null; init { } }
     }
 
     public sealed class HashChangeEvent : Meziantou.Framework.WebPlatform.Dom.Event
@@ -7913,6 +8095,11 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public static implicit operator Meziantou.Framework.WebPlatform.Dom.LineAndPositionSetting(double value) => throw null;
     }
 
+    public sealed class LinearAccelerationSensor : Meziantou.Framework.WebPlatform.Dom.Accelerometer
+    {
+        public LinearAccelerationSensor(Meziantou.Framework.WebPlatform.Dom.AccelerometerSensorOptions? options = null) : base(default(Meziantou.Framework.WebPlatform.Dom.AccelerometerSensorOptions)) { }
+    }
+
     public sealed class Location
     {
         public Meziantou.Framework.WebPlatform.Dom.DomStringList AncestorOrigins { get => throw null; }
@@ -7965,6 +8152,25 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.LockMode Mode { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.AbortSignal? Signal { get => throw null; init { } }
         public bool Steal { get => throw null; init { } }
+    }
+
+    public sealed class Magnetometer : Meziantou.Framework.WebPlatform.Dom.Sensor
+    {
+        public double? X { get => throw null; }
+        public double? Y { get => throw null; }
+        public double? Z { get => throw null; }
+        public Magnetometer(Meziantou.Framework.WebPlatform.Dom.MagnetometerSensorOptions? sensorOptions = null) { }
+    }
+
+    public enum MagnetometerLocalCoordinateSystem
+    {
+        Device = 0,
+        Screen = 1,
+    }
+
+    public sealed class MagnetometerSensorOptions : Meziantou.Framework.WebPlatform.Dom.SensorOptions
+    {
+        public Meziantou.Framework.WebPlatform.Dom.MagnetometerLocalCoordinateSystem ReferenceFrame { get => throw null; init { } }
     }
 
     public sealed class ManagedMediaSource : Meziantou.Framework.WebPlatform.Dom.MediaSource
@@ -8765,6 +8971,23 @@ namespace Meziantou.Framework.WebPlatform.Dom
         WebGpu = 4,
     }
 
+    public abstract class OrientationSensor : Meziantou.Framework.WebPlatform.Dom.Sensor
+    {
+        public System.Collections.Generic.IReadOnlyList<double>? Quaternion { get => throw null; }
+        public void PopulateMatrix(object? targetMatrix) { }
+    }
+
+    public enum OrientationSensorLocalCoordinateSystem
+    {
+        Device = 0,
+        Screen = 1,
+    }
+
+    public sealed class OrientationSensorOptions : Meziantou.Framework.WebPlatform.Dom.SensorOptions
+    {
+        public Meziantou.Framework.WebPlatform.Dom.OrientationSensorLocalCoordinateSystem ReferenceFrame { get => throw null; init { } }
+    }
+
     public sealed class Origin
     {
         public bool Opaque { get => throw null; }
@@ -9398,6 +9621,14 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public object? Reason { get => throw null; init { } }
     }
 
+    public sealed class ProximitySensor : Meziantou.Framework.WebPlatform.Dom.Sensor
+    {
+        public double? Distance { get => throw null; }
+        public double? Max { get => throw null; }
+        public bool? Near { get => throw null; }
+        public ProximitySensor(Meziantou.Framework.WebPlatform.Dom.SensorOptions? sensorOptions = null) { }
+    }
+
     public sealed class QuotaExceededError : Meziantou.Framework.WebPlatform.Dom.DomException
     {
         public double? Quota { get => throw null; }
@@ -9482,6 +9713,11 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public string? Scope { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.WorkerType Type { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.ServiceWorkerUpdateViaCache UpdateViaCache { get => throw null; init { } }
+    }
+
+    public sealed class RelativeOrientationSensor : Meziantou.Framework.WebPlatform.Dom.OrientationSensor
+    {
+        public RelativeOrientationSensor(Meziantou.Framework.WebPlatform.Dom.OrientationSensorOptions? sensorOptions = null) { }
     }
 
     public sealed class Report
@@ -9952,6 +10188,34 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public void SetBaseAndExtent(Meziantou.Framework.WebPlatform.Dom.Node anchorNode, uint anchorOffset, Meziantou.Framework.WebPlatform.Dom.Node focusNode, uint focusOffset) { }
         public void SetPosition(Meziantou.Framework.WebPlatform.Dom.Node? node, uint offset = 0U) { }
         public override string ToString() => throw null;
+    }
+
+    public abstract class Sensor : Meziantou.Framework.WebPlatform.Dom.EventTarget
+    {
+        public bool Activated { get => throw null; }
+        public bool HasReading { get => throw null; }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnActivate { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnError { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnReading { get => throw null; set { } }
+        public double? Timestamp { get => throw null; }
+        public void Start() { }
+        public void Stop() { }
+    }
+
+    public sealed class SensorErrorEvent : Meziantou.Framework.WebPlatform.Dom.Event
+    {
+        public Meziantou.Framework.WebPlatform.Dom.DomException Error { get => throw null; }
+        public SensorErrorEvent(string type, Meziantou.Framework.WebPlatform.Dom.SensorErrorEventInit errorEventInitDict) : base(default(string), default(Meziantou.Framework.WebPlatform.Dom.EventInit)) { }
+    }
+
+    public sealed class SensorErrorEventInit : Meziantou.Framework.WebPlatform.Dom.EventInit
+    {
+        public required Meziantou.Framework.WebPlatform.Dom.DomException Error { get => throw null; init { } }
+    }
+
+    public class SensorOptions
+    {
+        public double? Frequency { get => throw null; init { } }
     }
 
     public sealed class ServiceWorker : Meziantou.Framework.WebPlatform.Dom.EventTarget
@@ -12023,6 +12287,17 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public uint Which { get => throw null; init { } }
     }
 
+    public sealed class UncalibratedMagnetometer : Meziantou.Framework.WebPlatform.Dom.Sensor
+    {
+        public double? X { get => throw null; }
+        public double? XBias { get => throw null; }
+        public double? Y { get => throw null; }
+        public double? YBias { get => throw null; }
+        public double? Z { get => throw null; }
+        public double? ZBias { get => throw null; }
+        public UncalibratedMagnetometer(Meziantou.Framework.WebPlatform.Dom.MagnetometerSensorOptions? sensorOptions = null) { }
+    }
+
     public sealed class Url
     {
         public string Hash { get => throw null; set { } }
@@ -12449,6 +12724,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool DeclarativePartialUpdatesEnabled { get => throw null; init { } }
         public bool DedicatedWorkersEnabled { get => throw null; init { } }
         public static Meziantou.Framework.WebPlatform.Dom.WebPlatformFeatures Default { get => throw null; }
+        public bool DeviceOrientationEnabled { get => throw null; init { } }
         public bool ElementTimingEnabled { get => throw null; init { } }
         public bool EventSourceEnabled { get => throw null; init { } }
         public bool EventTimingEnabled { get => throw null; init { } }
@@ -12477,6 +12753,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool ReportingObserverEnabled { get => throw null; init { } }
         public bool ResizeObserverEnabled { get => throw null; init { } }
         public bool ScrollDrivenAnimationsEnabled { get => throw null; init { } }
+        public bool SensorsEnabled { get => throw null; init { } }
         public bool ServiceWorkersEnabled { get => throw null; init { } }
         public bool SharedWorkersEnabled { get => throw null; init { } }
         public bool SoftNavigationsEnabled { get => throw null; init { } }
@@ -12615,6 +12892,9 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnCueChange { get => throw null; set { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnCut { get => throw null; set { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnDblClick { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnDeviceMotion { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnDeviceOrientation { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnDeviceOrientationAbsolute { get => throw null; set { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnDrag { get => throw null; set { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnDragEnd { get => throw null; set { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnDragEnter { get => throw null; set { } }

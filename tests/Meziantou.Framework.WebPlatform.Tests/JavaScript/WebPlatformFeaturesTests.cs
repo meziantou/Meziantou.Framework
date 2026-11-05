@@ -31,6 +31,8 @@ public sealed class WebPlatformFeaturesTests : IDisposable
           BatteryStatusEnabled: typeof navigator.getBattery + typeof BatteryManager + ('getBattery' in navigator),
           WakeLockEnabled: typeof navigator.wakeLock + typeof WakeLock + typeof WakeLockSentinel + ('wakeLock' in navigator),
           KeyboardLockEnabled: typeof navigator.keyboard + typeof Keyboard + ('keyboard' in navigator),
+          SensorsEnabled: typeof Sensor + typeof SensorErrorEvent + typeof Accelerometer + typeof LinearAccelerationSensor + typeof GravitySensor + typeof Gyroscope + typeof Magnetometer + typeof UncalibratedMagnetometer + typeof AmbientLightSensor + typeof ProximitySensor + typeof OrientationSensor + typeof AbsoluteOrientationSensor + typeof RelativeOrientationSensor,
+          DeviceOrientationEnabled: typeof DeviceOrientationEvent + typeof DeviceMotionEvent + typeof DeviceMotionEventAcceleration + typeof DeviceMotionEventRotationRate + ('ondeviceorientation' in window) + ('ondeviceorientationabsolute' in window) + ('ondevicemotion' in window),
           IndexedDBEnabled: typeof indexedDB + typeof IDBFactory + typeof IDBKeyRange + ('indexedDB' in self),
           CacheStorageEnabled: typeof caches + typeof Cache + typeof CacheStorage + ('caches' in self),
           WebStorageEnabled: typeof localStorage + typeof sessionStorage + typeof Storage + typeof StorageEvent + ('localStorage' in window),

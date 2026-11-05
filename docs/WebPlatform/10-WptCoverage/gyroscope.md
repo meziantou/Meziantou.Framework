@@ -9,29 +9,28 @@ description: "The results of the web-platform-tests of gyroscope, and why the te
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 10 | 10 | – |
+| [Stable](#stable-tests) | 9 | 10 | 0 | 90% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **0** | **10** | **10** | **–** |
+| **All** | **9** | **10** | **0** | **90%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **REQUIRES**: 10
-  - `hardware`: 10
+- **TEST RUNNER**: 1
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`Gyroscope-disabled-by-permissions-policy.https.html`](https://wpt.fyi/results/gyroscope/Gyroscope-disabled-by-permissions-policy.https.html) | Disabled | – | REQUIRES(hardware) | Gyroscope sensor |
-| [`Gyroscope-enabled-by-permissions-policy-attribute-redirect-on-load.https.html`](https://wpt.fyi/results/gyroscope/Gyroscope-enabled-by-permissions-policy-attribute-redirect-on-load.https.html) | Disabled | – | REQUIRES(hardware) | Gyroscope sensor |
-| [`Gyroscope-enabled-by-permissions-policy-attribute.https.html`](https://wpt.fyi/results/gyroscope/Gyroscope-enabled-by-permissions-policy-attribute.https.html) | Disabled | – | REQUIRES(hardware) | Gyroscope sensor |
-| [`Gyroscope-enabled-by-permissions-policy.https.html`](https://wpt.fyi/results/gyroscope/Gyroscope-enabled-by-permissions-policy.https.html) | Disabled | – | REQUIRES(hardware) | Gyroscope sensor |
-| [`Gyroscope-enabled-on-self-origin-by-permissions-policy.https.html`](https://wpt.fyi/results/gyroscope/Gyroscope-enabled-on-self-origin-by-permissions-policy.https.html) | Disabled | – | REQUIRES(hardware) | Gyroscope sensor |
-| [`Gyroscope-iframe-access.https.html`](https://wpt.fyi/results/gyroscope/Gyroscope-iframe-access.https.html) | Disabled | – | REQUIRES(hardware) | Gyroscope sensor |
-| [`Gyroscope-supported-by-permissions-policy.html`](https://wpt.fyi/results/gyroscope/Gyroscope-supported-by-permissions-policy.html) | Disabled | – | REQUIRES(hardware) | Gyroscope sensor |
-| [`Gyroscope.https.html`](https://wpt.fyi/results/gyroscope/Gyroscope.https.html) | Disabled | – | REQUIRES(hardware) | Gyroscope sensor |
-| [`Gyroscope_insecure_context.html`](https://wpt.fyi/results/gyroscope/Gyroscope_insecure_context.html) | Disabled | – | REQUIRES(hardware) | Gyroscope sensor |
-| [`idlharness.https.window.js`](https://wpt.fyi/results/gyroscope/idlharness.https.window.js) | Disabled | – | REQUIRES(hardware) | Gyroscope sensor |
+| [`Gyroscope-disabled-by-permissions-policy.https.html`](https://wpt.fyi/results/gyroscope/Gyroscope-disabled-by-permissions-policy.https.html) | Pass | 3 / 3 |  |  |
+| [`Gyroscope-enabled-by-permissions-policy-attribute-redirect-on-load.https.html`](https://wpt.fyi/results/gyroscope/Gyroscope-enabled-by-permissions-policy-attribute-redirect-on-load.https.html) | Pass | 2 / 2 |  |  |
+| [`Gyroscope-enabled-by-permissions-policy-attribute.https.html`](https://wpt.fyi/results/gyroscope/Gyroscope-enabled-by-permissions-policy-attribute.https.html) | Pass | 2 / 2 |  |  |
+| [`Gyroscope-enabled-by-permissions-policy.https.html`](https://wpt.fyi/results/gyroscope/Gyroscope-enabled-by-permissions-policy.https.html) | Pass | 3 / 3 |  |  |
+| [`Gyroscope-enabled-on-self-origin-by-permissions-policy.https.html`](https://wpt.fyi/results/gyroscope/Gyroscope-enabled-on-self-origin-by-permissions-policy.https.html) | Pass | 3 / 3 |  |  |
+| [`Gyroscope-iframe-access.https.html`](https://wpt.fyi/results/gyroscope/Gyroscope-iframe-access.https.html) | Pass | 4 / 4 |  |  |
+| [`Gyroscope-supported-by-permissions-policy.html`](https://wpt.fyi/results/gyroscope/Gyroscope-supported-by-permissions-policy.html) | Pass | 1 / 1 |  |  |
+| [`Gyroscope.https.html`](https://wpt.fyi/results/gyroscope/Gyroscope.https.html) | Fail | 19 / 20 | TEST RUNNER | the `referenceFrame: 'screen'` subtest calls `test_driver.bidi.emulation.set_screen_orientation_override()`, which the runner does not implement: the screen of the library has no orientation (`screen.orientation`), so the screen coordinate system is the device one |
+| [`Gyroscope_insecure_context.html`](https://wpt.fyi/results/gyroscope/Gyroscope_insecure_context.html) | Pass | 1 / 1 |  |  |
+| [`idlharness.https.window.js`](https://wpt.fyi/results/gyroscope/idlharness.https.window.js) | Pass | 16 / 16 |  |  |

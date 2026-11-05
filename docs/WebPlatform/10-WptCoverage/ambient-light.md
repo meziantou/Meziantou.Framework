@@ -9,29 +9,22 @@ description: "The results of the web-platform-tests of ambient-light, and why th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 10 | 10 | – |
+| [Stable](#stable-tests) | 10 | 10 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **0** | **10** | **10** | **–** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **REQUIRES**: 10
-  - `hardware`: 10
+| **All** | **10** | **10** | **0** | **100%** |
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`AmbientLightSensor-disabled-by-permissions-policy.https.html`](https://wpt.fyi/results/ambient-light/AmbientLightSensor-disabled-by-permissions-policy.https.html) | Disabled | – | REQUIRES(hardware) | AmbientLightSensor |
-| [`AmbientLightSensor-enabled-by-permissions-policy-attribute-redirect-on-load.https.html`](https://wpt.fyi/results/ambient-light/AmbientLightSensor-enabled-by-permissions-policy-attribute-redirect-on-load.https.html) | Disabled | – | REQUIRES(hardware) | AmbientLightSensor |
-| [`AmbientLightSensor-enabled-by-permissions-policy-attribute.https.html`](https://wpt.fyi/results/ambient-light/AmbientLightSensor-enabled-by-permissions-policy-attribute.https.html) | Disabled | – | REQUIRES(hardware) | AmbientLightSensor |
-| [`AmbientLightSensor-enabled-by-permissions-policy.https.html`](https://wpt.fyi/results/ambient-light/AmbientLightSensor-enabled-by-permissions-policy.https.html) | Disabled | – | REQUIRES(hardware) | AmbientLightSensor |
-| [`AmbientLightSensor-enabled-on-self-origin-by-permissions-policy.https.html`](https://wpt.fyi/results/ambient-light/AmbientLightSensor-enabled-on-self-origin-by-permissions-policy.https.html) | Disabled | – | REQUIRES(hardware) | AmbientLightSensor |
-| [`AmbientLightSensor-iframe-access.https.html`](https://wpt.fyi/results/ambient-light/AmbientLightSensor-iframe-access.https.html) | Disabled | – | REQUIRES(hardware) | AmbientLightSensor |
-| [`AmbientLightSensor-supported-by-permissions-policy.html`](https://wpt.fyi/results/ambient-light/AmbientLightSensor-supported-by-permissions-policy.html) | Disabled | – | REQUIRES(hardware) | AmbientLightSensor |
-| [`AmbientLightSensor.https.html`](https://wpt.fyi/results/ambient-light/AmbientLightSensor.https.html) | Disabled | – | REQUIRES(hardware) | AmbientLightSensor |
-| [`AmbientLightSensor_insecure_context.html`](https://wpt.fyi/results/ambient-light/AmbientLightSensor_insecure_context.html) | Disabled | – | REQUIRES(hardware) | AmbientLightSensor |
-| [`idlharness.https.window.js`](https://wpt.fyi/results/ambient-light/idlharness.https.window.js) | Disabled | – | REQUIRES(hardware) | AmbientLightSensor |
+| [`AmbientLightSensor-disabled-by-permissions-policy.https.html`](https://wpt.fyi/results/ambient-light/AmbientLightSensor-disabled-by-permissions-policy.https.html) | Pass | 3 / 3 |  |  |
+| [`AmbientLightSensor-enabled-by-permissions-policy-attribute-redirect-on-load.https.html`](https://wpt.fyi/results/ambient-light/AmbientLightSensor-enabled-by-permissions-policy-attribute-redirect-on-load.https.html) | Pass | 2 / 2 |  |  |
+| [`AmbientLightSensor-enabled-by-permissions-policy-attribute.https.html`](https://wpt.fyi/results/ambient-light/AmbientLightSensor-enabled-by-permissions-policy-attribute.https.html) | Pass | 2 / 2 |  |  |
+| [`AmbientLightSensor-enabled-by-permissions-policy.https.html`](https://wpt.fyi/results/ambient-light/AmbientLightSensor-enabled-by-permissions-policy.https.html) | Pass | 3 / 3 |  |  |
+| [`AmbientLightSensor-enabled-on-self-origin-by-permissions-policy.https.html`](https://wpt.fyi/results/ambient-light/AmbientLightSensor-enabled-on-self-origin-by-permissions-policy.https.html) | Pass | 3 / 3 |  |  |
+| [`AmbientLightSensor-iframe-access.https.html`](https://wpt.fyi/results/ambient-light/AmbientLightSensor-iframe-access.https.html) | Pass | 4 / 4 |  |  |
+| [`AmbientLightSensor-supported-by-permissions-policy.html`](https://wpt.fyi/results/ambient-light/AmbientLightSensor-supported-by-permissions-policy.html) | Pass | 1 / 1 |  |  |
+| [`AmbientLightSensor.https.html`](https://wpt.fyi/results/ambient-light/AmbientLightSensor.https.html) | Pass | 19 / 19 |  |  |
+| [`AmbientLightSensor_insecure_context.html`](https://wpt.fyi/results/ambient-light/AmbientLightSensor_insecure_context.html) | Pass | 1 / 1 |  |  |
+| [`idlharness.https.window.js`](https://wpt.fyi/results/ambient-light/idlharness.https.window.js) | Pass | 12 / 12 |  |  |

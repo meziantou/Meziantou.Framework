@@ -26,6 +26,12 @@ internal sealed partial class PolicyControlledFeature
 
     // The features that the library enforces (https://html.spec.whatwg.org/multipage/infrastructure.html#policy-controlled-features
     // and the specifications of the features)
+    /// <summary>https://w3c.github.io/deviceorientation/#permissions-policy: its default allowlist is 'self'.</summary>
+    public static PolicyControlledFeature Accelerometer { get; } = new("accelerometer", isAllowedForAllByDefault: false);
+
+    /// <summary>https://w3c.github.io/ambient-light/#permissions-policy-integration: its default allowlist is 'self'.</summary>
+    public static PolicyControlledFeature AmbientLightSensor { get; } = new("ambient-light-sensor", isAllowedForAllByDefault: false);
+
     public static PolicyControlledFeature Autoplay { get; } = new("autoplay", isAllowedForAllByDefault: false);
 
     /// <summary>https://w3c.github.io/battery/#permissions-policy-integration: its default allowlist is 'self'.</summary>
@@ -43,6 +49,12 @@ internal sealed partial class PolicyControlledFeature
 
     public static PolicyControlledFeature Geolocation { get; } = new("geolocation", isAllowedForAllByDefault: false);
 
+    /// <summary>https://w3c.github.io/deviceorientation/#permissions-policy: its default allowlist is 'self'.</summary>
+    public static PolicyControlledFeature Gyroscope { get; } = new("gyroscope", isAllowedForAllByDefault: false);
+
+    /// <summary>https://w3c.github.io/deviceorientation/#permissions-policy: its default allowlist is 'self'.</summary>
+    public static PolicyControlledFeature Magnetometer { get; } = new("magnetometer", isAllowedForAllByDefault: false);
+
     /// <summary>https://fetch.spec.whatwg.org/#policy-controlled-feature-deferred-fetch: its default allowlist is 'self'.</summary>
     public static PolicyControlledFeature DeferredFetch { get; } = new("deferred-fetch", isAllowedForAllByDefault: false);
 
@@ -50,6 +62,9 @@ internal sealed partial class PolicyControlledFeature
     public static PolicyControlledFeature DeferredFetchMinimal { get; } = new("deferred-fetch-minimal", isAllowedForAllByDefault: true);
 
     public static PolicyControlledFeature MediaPlaybackWhileNotVisible { get; } = new("media-playback-while-not-visible", isAllowedForAllByDefault: true);
+
+    /// <summary>https://w3c.github.io/proximity/#permissions-policy-integration: its default allowlist is 'self'.</summary>
+    public static PolicyControlledFeature ProximitySensor { get; } = new("proximity-sensor", isAllowedForAllByDefault: false);
 
     public static PolicyControlledFeature ScreenWakeLock { get; } = new("screen-wake-lock", isAllowedForAllByDefault: false);
 
@@ -70,8 +85,8 @@ internal sealed partial class PolicyControlledFeature
     /// </summary>
     public static IReadOnlyList<PolicyControlledFeature> Supported { get; } =
     [
-        new("accelerometer", isAllowedForAllByDefault: false),
-        new("ambient-light-sensor", isAllowedForAllByDefault: false),
+        Accelerometer,
+        AmbientLightSensor,
         Autoplay,
         Battery,
         new("bluetooth", isAllowedForAllByDefault: false),
@@ -86,9 +101,9 @@ internal sealed partial class PolicyControlledFeature
         FocusWithoutUserActivation,
         Fullscreen,
         Geolocation,
-        new("gyroscope", isAllowedForAllByDefault: false),
+        Gyroscope,
         new("local-fonts", isAllowedForAllByDefault: false),
-        new("magnetometer", isAllowedForAllByDefault: false),
+        Magnetometer,
         MediaPlaybackWhileNotVisible,
         new("microphone", isAllowedForAllByDefault: false),
         new("midi", isAllowedForAllByDefault: false),
@@ -96,6 +111,7 @@ internal sealed partial class PolicyControlledFeature
         new("picture-in-picture", isAllowedForAllByDefault: true),
         new("private-state-token-issuance", isAllowedForAllByDefault: false),
         new("private-state-token-redemption", isAllowedForAllByDefault: false),
+        ProximitySensor,
         ScreenWakeLock,
         new("serial", isAllowedForAllByDefault: false),
         SpeakerSelection,

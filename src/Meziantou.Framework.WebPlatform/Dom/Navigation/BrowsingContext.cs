@@ -3306,7 +3306,8 @@ public sealed partial class BrowsingContext : IDisposable
 
     /// <summary>
     /// The document is no longer fully active: its wake locks are released (https://w3c.github.io/screen-wake-lock/#handling-document-loss-of-full-activity),
-    /// and its keyboard is unlocked (https://wicg.github.io/keyboard-lock/#h-keyboard-unlock).
+    /// its keyboard is unlocked (https://wicg.github.io/keyboard-lock/#h-keyboard-unlock), and its sensor objects are
+    /// disconnected from the sensors of the device.
     /// </summary>
     private static void ReleaseDeviceLocks(Document document)
     {
@@ -3314,6 +3315,12 @@ public sealed partial class BrowsingContext : IDisposable
         {
             navigator.WakeLockOrNull?.ReleaseAll();
             navigator.KeyboardOrNull?.OnDocumentUnloaded();
+        }
+
+        // The sensor objects are disconnected from the sensors of the device
+        if (document.RelevantWindow is { SensorsOrNull: { } sensors } sensorsWindow && ReferenceEquals(sensorsWindow.Document, document))
+        {
+            sensors.OnDocumentUnloaded();
         }
     }
 

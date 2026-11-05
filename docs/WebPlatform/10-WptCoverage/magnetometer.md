@@ -9,29 +9,29 @@ description: "The results of the web-platform-tests of magnetometer, and why the
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 10 | 10 | – |
+| [Stable](#stable-tests) | 8 | 10 | 0 | 80% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **0** | **10** | **10** | **–** |
+| **All** | **8** | **10** | **0** | **80%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **REQUIRES**: 10
-  - `hardware`: 10
+- **TEST BUG**: 2
+- **TEST RUNNER**: 1
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`Magnetometer-disabled-by-permissions-policy.https.html`](https://wpt.fyi/results/magnetometer/Magnetometer-disabled-by-permissions-policy.https.html) | Disabled | – | REQUIRES(hardware) | Magnetometer sensor |
-| [`Magnetometer-enabled-by-permissions-policy-attribute-redirect-on-load.https.html`](https://wpt.fyi/results/magnetometer/Magnetometer-enabled-by-permissions-policy-attribute-redirect-on-load.https.html) | Disabled | – | REQUIRES(hardware) | Magnetometer sensor |
-| [`Magnetometer-enabled-by-permissions-policy-attribute.https.html`](https://wpt.fyi/results/magnetometer/Magnetometer-enabled-by-permissions-policy-attribute.https.html) | Disabled | – | REQUIRES(hardware) | Magnetometer sensor |
-| [`Magnetometer-enabled-by-permissions-policy.https.html`](https://wpt.fyi/results/magnetometer/Magnetometer-enabled-by-permissions-policy.https.html) | Disabled | – | REQUIRES(hardware) | Magnetometer sensor |
-| [`Magnetometer-enabled-on-self-origin-by-permissions-policy.https.html`](https://wpt.fyi/results/magnetometer/Magnetometer-enabled-on-self-origin-by-permissions-policy.https.html) | Disabled | – | REQUIRES(hardware) | Magnetometer sensor |
-| [`Magnetometer-iframe-access.https.html`](https://wpt.fyi/results/magnetometer/Magnetometer-iframe-access.https.html) | Disabled | – | REQUIRES(hardware) | Magnetometer sensor |
-| [`Magnetometer-supported-by-permissions-policy.html`](https://wpt.fyi/results/magnetometer/Magnetometer-supported-by-permissions-policy.html) | Disabled | – | REQUIRES(hardware) | Magnetometer sensor |
-| [`Magnetometer.https.html`](https://wpt.fyi/results/magnetometer/Magnetometer.https.html) | Disabled | – | REQUIRES(hardware) | Magnetometer sensor |
-| [`Magnetometer_insecure_context.html`](https://wpt.fyi/results/magnetometer/Magnetometer_insecure_context.html) | Disabled | – | REQUIRES(hardware) | Magnetometer sensor |
-| [`idlharness.https.window.js`](https://wpt.fyi/results/magnetometer/idlharness.https.window.js) | Disabled | – | REQUIRES(hardware) | Magnetometer sensor |
+| [`Magnetometer-disabled-by-permissions-policy.https.html`](https://wpt.fyi/results/magnetometer/Magnetometer-disabled-by-permissions-policy.https.html) | Pass | 6 / 6 |  |  |
+| [`Magnetometer-enabled-by-permissions-policy-attribute-redirect-on-load.https.html`](https://wpt.fyi/results/magnetometer/Magnetometer-enabled-by-permissions-policy-attribute-redirect-on-load.https.html) | Pass | 4 / 4 |  |  |
+| [`Magnetometer-enabled-by-permissions-policy-attribute.https.html`](https://wpt.fyi/results/magnetometer/Magnetometer-enabled-by-permissions-policy-attribute.https.html) | Pass | 4 / 4 |  |  |
+| [`Magnetometer-enabled-by-permissions-policy.https.html`](https://wpt.fyi/results/magnetometer/Magnetometer-enabled-by-permissions-policy.https.html) | Pass | 6 / 6 |  |  |
+| [`Magnetometer-enabled-on-self-origin-by-permissions-policy.https.html`](https://wpt.fyi/results/magnetometer/Magnetometer-enabled-on-self-origin-by-permissions-policy.https.html) | Pass | 6 / 6 |  |  |
+| [`Magnetometer-iframe-access.https.html`](https://wpt.fyi/results/magnetometer/Magnetometer-iframe-access.https.html) | Timeout | 4 / 8 | TEST BUG | the `UncalibratedMagnetometer` subtests create the `magnetometer` virtual sensor instead of `uncalibrated-magnetometer` (https://w3c.github.io/magnetometer/#uncalibrated-magnetometer-automation): the sensors fail to start with a `NotReadableError` |
+| [`Magnetometer-supported-by-permissions-policy.html`](https://wpt.fyi/results/magnetometer/Magnetometer-supported-by-permissions-policy.html) | Pass | 1 / 1 |  |  |
+| [`Magnetometer.https.html`](https://wpt.fyi/results/magnetometer/Magnetometer.https.html) | Timeout | 23 / 40 | TEST BUG, TEST RUNNER | the `UncalibratedMagnetometer` subtests create the `magnetometer` virtual sensor instead of `uncalibrated-magnetometer` (https://w3c.github.io/magnetometer/#uncalibrated-magnetometer-automation), so `start()` fails with a `NotReadableError`, and `get_sensor_reading_properties()` of the helpers does not know `UncalibratedMagnetometer`; the `referenceFrame: 'screen'` subtest calls `test_driver.bidi.emulation.set_screen_orientation_override()`, which the runner does not implement: the screen of the library has no orientation (`screen.orientation`), so the screen coordinate system is the device one |
+| [`Magnetometer_insecure_context.html`](https://wpt.fyi/results/magnetometer/Magnetometer_insecure_context.html) | Pass | 2 / 2 |  |  |
+| [`idlharness.https.window.js`](https://wpt.fyi/results/magnetometer/idlharness.https.window.js) | Pass | 36 / 36 |  |  |

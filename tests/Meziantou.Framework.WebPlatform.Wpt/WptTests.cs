@@ -232,6 +232,24 @@ public sealed class WptTests
 
     public static TheoryData<string> KeyboardLockTests => GetTests("keyboard-lock");
 
+    public static TheoryData<string> GenericSensorTests => GetTests("generic-sensor");
+
+    public static TheoryData<string> AccelerometerTests => GetTests("accelerometer");
+
+    public static TheoryData<string> GyroscopeTests => GetTests("gyroscope");
+
+    public static TheoryData<string> MagnetometerTests => GetTests("magnetometer");
+
+    public static TheoryData<string> AmbientLightTests => GetTests("ambient-light");
+
+    public static TheoryData<string> OrientationSensorTests => GetTests("orientation-sensor");
+
+    public static TheoryData<string> ProximityTests => GetTests("proximity");
+
+    public static TheoryData<string> GeolocationSensorTests => GetTests("geolocation-sensor");
+
+    public static TheoryData<string> OrientationEventTests => GetTests("orientation-event");
+
     public static TheoryData<string> ClientHintsTests => GetTests("client-hints");
 
     public static TheoryData<string> UAClientHintsTests => GetTests("ua-client-hints");
@@ -1120,6 +1138,42 @@ public sealed class WptTests
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(KeyboardLockTests))]
     public void KeyboardLock(string test) => Run("keyboard-lock", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(GenericSensorTests))]
+    public void GenericSensor(string test) => Run("generic-sensor", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(AccelerometerTests))]
+    public void Accelerometer(string test) => Run("accelerometer", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(GyroscopeTests))]
+    public void Gyroscope(string test) => Run("gyroscope", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(MagnetometerTests))]
+    public void Magnetometer(string test) => Run("magnetometer", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(AmbientLightTests))]
+    public void AmbientLight(string test) => Run("ambient-light", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(OrientationSensorTests))]
+    public void OrientationSensor(string test) => Run("orientation-sensor", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(ProximityTests))]
+    public void Proximity(string test) => Run("proximity", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(GeolocationSensorTests))]
+    public void GeolocationSensor(string test) => Run("geolocation-sensor", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(OrientationEventTests))]
+    public void OrientationEvent(string test) => Run("orientation-event", test);
 
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(ClientHintsTests))]

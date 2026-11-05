@@ -1,6 +1,6 @@
 ---
 title: Permissions and devices
-description: Answer the permission prompts, and decide what the clipboard, sharing, vibration, geolocation, notifications, badging, battery, wake lock and keyboard lock APIs do in your pages.
+description: Answer the permission prompts, and decide what the clipboard, sharing, vibration, geolocation, notifications, badging, battery, wake lock, keyboard lock and sensor APIs do in your pages.
 ---
 
 Some web APIs depend on the device or on the user: a browser asks the user for a permission, shows a share sheet, reads
@@ -21,6 +21,7 @@ the device in a test, or to connect the API to your application.
 | [BatteryStatus](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.BatteryStatus) | `navigator.getBattery()` | A fully charged battery that is plugged in |
 | [WakeLock](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.WakeLock) | `navigator.wakeLock.request()` | Nothing is kept on, but the page gets its locks once the permission is granted |
 | [KeyboardLock](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.KeyboardLock) | `navigator.keyboard.lock()`, `navigator.keyboard.unlock()` | No key is captured |
+| [Sensors](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Sensors) | `Accelerometer`, `Gyroscope`, `AmbientLightSensor` and the other sensors, the `deviceorientation` and `devicemotion` events | The device has no sensor: the sensors fail to start, and the events report null values |
 
 To remove an API completely, so that the pages see it as unsupported, disable it with
 [Features](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Features): for instance
@@ -262,3 +263,75 @@ var options = new BrowsingContextOptions
 
 Only the page of a tab can lock the keyboard, not its frames. As in Chromium, a page whose keyboard is locked is not
 kept in the back/forward cache.
+
+## Sensors
+
+The sensor objects of the pages (`Accelerometer`, `LinearAccelerationSensor`, `GravitySensor`, `Gyroscope`,
+`Magnetometer`, `UncalibratedMagnetometer`, `AmbientLightSensor`, `ProximitySensor`, `AbsoluteOrientationSensor` and
+`RelativeOrientationSensor`) read the sensors of a
+[DeviceSensorProvider](cref:Meziantou.Framework.WebPlatform.Dom.DeviceSensorProvider). Add a sensor with
+[AddSensor](cref:Meziantou.Framework.WebPlatform.Dom.DeviceSensorProvider.AddSensor), then push its readings with
+[Update](cref:Meziantou.Framework.WebPlatform.Dom.DeviceSensor.Update):
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_Sensors;format=md-fenced-code-block;dedent=true -->
+```csharp
+var sensors = new DeviceSensorProvider();
+
+// The accelerometer of the device: Update() makes a new reading available to the sensor objects of the documents
+var accelerometer = sensors.AddSensor(DeviceSensorType.Accelerometer);
+
+var permissions = new PermissionStore();
+permissions.SetState("accelerometer", PermissionState.Granted);
+var options = new BrowsingContextOptions
+{
+    Sensors = new DeviceSensorsOptions { Provider = sensors },
+    Permissions = permissions,
+};
+```
+<!-- endref -->
+
+The readings are created with the factory method of the shape of the sensor:
+[FromXyz](cref:Meziantou.Framework.WebPlatform.Dom.DeviceSensorReading.FromXyz) for the motion sensors and the
+magnetometer, [FromIlluminance](cref:Meziantou.Framework.WebPlatform.Dom.DeviceSensorReading.FromIlluminance),
+[FromProximity](cref:Meziantou.Framework.WebPlatform.Dom.DeviceSensorReading.FromProximity),
+[FromUncalibratedMagnetometer](cref:Meziantou.Framework.WebPlatform.Dom.DeviceSensorReading.FromUncalibratedMagnetometer)
+and [FromEulerAngles](cref:Meziantou.Framework.WebPlatform.Dom.DeviceSensorReading.FromEulerAngles) for the orientation
+sensors. A provider can be shared by several browsing contexts, and `Update` can be called from any thread.
+
+`start()` asks for the permissions of the sensor (`accelerometer`, `gyroscope`, `magnetometer` or
+`ambient-light-sensor`) and fires the `error` event with a `NotAllowedError` when one is denied, or with a
+`NotReadableError` when the device has no working sensor of the type. Chromium grants these permissions without asking
+the user: to do the same, grant them in the permission store. The constructors throw a `SecurityError` in the frames
+that their permissions policy does not allow.
+
+The pages get the readings as in a browser:
+
+- The `reading` event is fired at most at the frequency the page asked for (5 Hz by default), clamped to the bounds of
+  the sensor (1 Hz to 60 Hz by default). [RequestedSamplingFrequency](cref:Meziantou.Framework.WebPlatform.Dom.DeviceSensor.RequestedSamplingFrequency)
+  is the highest frequency the started sensors ask for.
+- The values are rounded to limit the fingerprinting: the accelerations to 0.1 m/s², the angular velocities to
+  0.1 deg/s (as Chromium), and the illuminance to 50 lux, whose changes of less than 25 lux are discarded.
+- A hidden page, or a frame that is not same origin with the focused frame, gets no reading: the latest one is
+  delivered when it becomes visible or focused.
+
+## Device orientation and motion
+
+The `deviceorientation`, `deviceorientationabsolute` and `devicemotion` events read the same provider: the relative
+orientation sensor (or the absolute one when the device has no relative orientation sensor), the absolute orientation
+sensor, and the linear acceleration sensor, the accelerometer and the gyroscope:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_DeviceOrientation;format=md-fenced-code-block;dedent=true -->
+```csharp
+var sensors = new DeviceSensorProvider();
+
+// The deviceorientation event reads the relative orientation sensor, as Euler angles in degrees
+var orientation = sensors.AddSensor(DeviceSensorType.RelativeOrientation);
+```
+<!-- endref -->
+
+As in Chromium, the first event is fired when the page adds a listener, then the orientation events are fired when the
+orientation changes and the motion events every 16 ms while the sensors get new readings. The angles are rounded to 0.1
+degree, the accelerations to 0.1 m/s² and the rotation rates to 0.1 deg/s. Without a working sensor, or without the
+`accelerometer` and `gyroscope` permissions, the first event is fired with null values. A hidden page gets no event.
+`DeviceOrientationEvent.requestPermission()` and `DeviceMotionEvent.requestPermission()` resolve with the state of the
+permissions, and need a user activation when a permission would prompt the user.

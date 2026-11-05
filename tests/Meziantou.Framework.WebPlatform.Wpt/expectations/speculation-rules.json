@@ -1665,60 +1665,28 @@
     }
   },
   "speculation-rules/prerender/restriction-sensor-accelerometer.https.html?target_hint=_blank": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "the access to the Accelerometer API should be deferred until the prerendered\n    page is activated": "TIMEOUT"
-    }
+    "total": 1
   },
   "speculation-rules/prerender/restriction-sensor-accelerometer.https.html?target_hint=_self": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "the access to the Accelerometer API should be deferred until the prerendered\n    page is activated": "TIMEOUT"
-    }
+    "total": 1
   },
   "speculation-rules/prerender/restriction-sensor-ambient-light-sensor.https.html?target_hint=_blank": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "the access to the Ambient Light Sensor API should be deferred until the\n    prerendered page is activated": "TIMEOUT"
-    }
+    "total": 1
   },
   "speculation-rules/prerender/restriction-sensor-ambient-light-sensor.https.html?target_hint=_self": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "the access to the Ambient Light Sensor API should be deferred until the\n    prerendered page is activated": "TIMEOUT"
-    }
+    "total": 1
   },
   "speculation-rules/prerender/restriction-sensor-gyroscope.https.html?target_hint=_blank": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "the access to the Gyroscope API should be deferred until the prerendered\n    page is activated": "TIMEOUT"
-    }
+    "total": 1
   },
   "speculation-rules/prerender/restriction-sensor-gyroscope.https.html?target_hint=_self": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "the access to the Gyroscope API should be deferred until the prerendered\n    page is activated": "TIMEOUT"
-    }
+    "total": 1
   },
   "speculation-rules/prerender/restriction-sensor-magnetometer.https.html?target_hint=_blank": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "the access to the Magnetometer API should be deferred until the prerendered\n    page is activated": "TIMEOUT"
-    }
+    "total": 1
   },
   "speculation-rules/prerender/restriction-sensor-magnetometer.https.html?target_hint=_self": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "the access to the Magnetometer API should be deferred until the prerendered\n    page is activated": "TIMEOUT"
-    }
+    "total": 1
   },
   "speculation-rules/prerender/restriction-service-worker-postmessage.https.html": {
     "total": 1

@@ -19,10 +19,11 @@ description: "The results of the web-platform-tests of dom, and why the tests th
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **TEST BUG**: 7
-- **NOT IMPLEMENTED**: 29
+- **NOT IMPLEMENTED**: 28
 - **REQUIRES**: 1
   - `user-input`: 1
 - **TEST RUNNER**: 2
+- **OUT OF SCOPE**: 1
 - **PERFORMANCE**: 6
 
 ## Stable tests
@@ -298,7 +299,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`nodes/Document-createElement.html`](https://wpt.fyi/results/dom/nodes/Document-createElement.html) | Pass | 147 / 147 |  |  |
 | [`nodes/Document-createElementNS.html`](https://wpt.fyi/results/dom/nodes/Document-createElementNS.html) | Pass | 596 / 596 |  |  |
 | [`nodes/Document-createEvent-touchevent.window.js`](https://wpt.fyi/results/dom/nodes/Document-createEvent-touchevent.window.js) | Pass | 3 / 3 |  |  |
-| [`nodes/Document-createEvent.https.html`](https://wpt.fyi/results/dom/nodes/Document-createEvent.https.html) | Fail | 261 / 279 | NOT IMPLEMENTED | `DeviceMotionEvent` and `DeviceOrientationEvent` (`createEvent()` aliases) |
+| [`nodes/Document-createEvent.https.html`](https://wpt.fyi/results/dom/nodes/Document-createEvent.https.html) | Fail | 273 / 279 | OUT OF SCOPE | the `TouchEvent` aliases: as the desktop browsers, the library does not expose the legacy touch event APIs, so the subtests report a failed precondition |
 | [`nodes/Document-createProcessingInstruction-xhtml.xhtml`](https://wpt.fyi/results/dom/nodes/Document-createProcessingInstruction-xhtml.xhtml) | Pass | 12 / 12 |  |  |
 | [`nodes/Document-createProcessingInstruction.html`](https://wpt.fyi/results/dom/nodes/Document-createProcessingInstruction.html) | Pass | 12 / 12 |  |  |
 | [`nodes/Document-createTextNode.html`](https://wpt.fyi/results/dom/nodes/Document-createTextNode.html) | Pass | 6 / 6 |  |  |

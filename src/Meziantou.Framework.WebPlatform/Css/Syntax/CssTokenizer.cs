@@ -443,12 +443,9 @@ internal sealed class CssTokenizer
             isInteger = false;
         }
 
-        var numberEnd = _position;
-        var exponentStart = -1;
         if (Next is 'E' or 'e' && (IsDigit(Next2) || (Next2 is '+' or '-' && IsDigit(Next3))))
         {
             Consume();
-            exponentStart = _position;
             if (Next is '+' or '-')
             {
                 Consume();
@@ -462,13 +459,9 @@ internal sealed class CssTokenizer
             isInteger = false;
         }
 
-        var value = double.Parse(_input.AsSpan(start, numberEnd - start), NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture);
-        if (exponentStart >= 0)
-        {
-            var exponent = double.Parse(_input.AsSpan(exponentStart, _position - exponentStart), NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture);
-            value *= Math.Pow(10, exponent);
-        }
-
+        // The number is parsed with its exponent, so that the value is the double nearest to the number: scaling the
+        // significand by a power of 10 rounds twice (e.g. 4.008e45 is not the value of 4008 followed by 42 zeros)
+        var value = double.Parse(_input.AsSpan(start, _position - start), NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent, CultureInfo.InvariantCulture);
         return (value, isInteger, sign);
     }
 

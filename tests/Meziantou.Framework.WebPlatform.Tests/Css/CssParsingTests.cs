@@ -294,6 +294,18 @@ public sealed class CssParsingTests
         }
     }
 
+    [Theory]
+    [InlineData("4.008e45", 4.008e45)]
+    [InlineData("4008000000000000000000000000000000000000000000", 4.008e45)]
+    [InlineData("+.1e-5", 1e-6)]
+    [InlineData("-12.5E+3", -12500d)]
+    [InlineData("1e400", double.PositiveInfinity)]
+    [InlineData("0e400", 0d)]
+    public void Number_IsTheNearestDouble(string text, double expected)
+    {
+        Assert.Equal(expected, Assert.Single(CssTokenizer.Tokenize(text)).NumericValue);
+    }
+
     private static void AssertJson(JsonNode? expected, JsonNode? actual, string input)
     {
         if (!JsonEquals(expected, actual))

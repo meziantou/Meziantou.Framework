@@ -1214,7 +1214,7 @@ internal sealed partial class EditingAlgorithms
             items.Add(child);
         }
 
-        var parent = listItem.ParentNode!;
+        var parent = listItem.ParentNode;
         foreach (var item in items)
         {
             parent.InsertBefore(item, listItem);

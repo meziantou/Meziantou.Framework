@@ -9,16 +9,16 @@ description: "The results of the web-platform-tests of html/canvas, and why the 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 3,076 | 3,165 | 0 | 97% |
+| [Stable](#stable-tests) | 3,079 | 3,165 | 0 | 97% |
 | [Tentative](#tentative-tests) | 7 | 259 | 0 | 3% |
 | [Reftests](#reftests) | 213 | 552 | 0 | 39% |
-| **All** | **3,296** | **3,976** | **0** | **83%** |
+| **All** | **3,299** | **3,976** | **0** | **83%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 14
+- **BUG**: 11
 - **TEST BUG**: 4
 - **NOT IMPLEMENTED**: 658
 - **REQUIRES**: 3
@@ -588,7 +588,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`element/line-styles/2d.line.width.valid.html`](https://wpt.fyi/results/html/canvas/element/line-styles/2d.line.width.valid.html) | Pass | 1 / 1 |  |  |
 | [`element/manual/context-attributes/canvas-with-padding.html`](https://wpt.fyi/results/html/canvas/element/manual/context-attributes/canvas-with-padding.html) | Pass | 1 / 1 |  |  |
 | [`element/manual/context-attributes/getContextAttributes.html`](https://wpt.fyi/results/html/canvas/element/manual/context-attributes/getContextAttributes.html) | Fail | 12 / 16 | NOT IMPLEMENTED | the HDR settings of the canvases (`toneMapping`, `colorType` in `getContextAttributes()`) |
-| [`element/manual/drawing-images-to-the-canvas/drawimage_canvas.html`](https://wpt.fyi/results/html/canvas/element/manual/drawing-images-to-the-canvas/drawimage_canvas.html) | Fail | 150 / 151 | BUG | scenario 12 (a source rectangle partly outside of the image, enlarged 2.5 times): the pixel whose center maps to the corner between four pixels of the image (three blue pixels of its border and a black pixel of its inside) is the bilinear interpolation of the four (three quarters blue), where the test expects blue |
+| [`element/manual/drawing-images-to-the-canvas/drawimage_canvas.html`](https://wpt.fyi/results/html/canvas/element/manual/drawing-images-to-the-canvas/drawimage_canvas.html) | Fail | 150 / 151 | BUG | scenario 12 (a source rectangle partly outside of the image, enlarged 2.5 times, `imageSmoothingEnabled = false`): the center of the pixel (82, 82) maps exactly to the corner between four pixels of the image (5, 5); the nearest sampling of Meziantou.Framework.Imaging takes the pixel `floor(u)` (the black inside), where the test expects the pixel before it (the blue border: the exact tie rounded down); changing the rounding of the nearest sampling of every drawing is not attempted |
 | [`element/manual/drawing-images-to-the-canvas/drawimage_crossorigin.sub.html`](https://wpt.fyi/results/html/canvas/element/manual/drawing-images-to-the-canvas/drawimage_crossorigin.sub.html) | Pass | 4 / 4 |  |  |
 | [`element/manual/drawing-images-to-the-canvas/drawimage_html_image.html`](https://wpt.fyi/results/html/canvas/element/manual/drawing-images-to-the-canvas/drawimage_html_image.html) | Pass | 127 / 127 |  |  |
 | [`element/manual/drawing-images-to-the-canvas/drawimage_svg_image_1.html`](https://wpt.fyi/results/html/canvas/element/manual/drawing-images-to-the-canvas/drawimage_svg_image_1.html) | Pass | 1 / 1 |  |  |
@@ -735,7 +735,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`element/path-objects/2d.path.isPointInPath.arc.html`](https://wpt.fyi/results/html/canvas/element/path-objects/2d.path.isPointInPath.arc.html) | Pass | 1 / 1 |  |  |
 | [`element/path-objects/2d.path.isPointInPath.basic.1.html`](https://wpt.fyi/results/html/canvas/element/path-objects/2d.path.isPointInPath.basic.1.html) | Pass | 1 / 1 |  |  |
 | [`element/path-objects/2d.path.isPointInPath.basic.2.html`](https://wpt.fyi/results/html/canvas/element/path-objects/2d.path.isPointInPath.basic.2.html) | Pass | 1 / 1 |  |  |
-| [`element/path-objects/2d.path.isPointInPath.basic.html`](https://wpt.fyi/results/html/canvas/element/path-objects/2d.path.isPointInPath.basic.html) | Fail | 0 / 1 | BUG | the current default path is stored in the coordinates of the canvas: a path transformed by `scale(Number.MAX_VALUE, ...)` overflows (the browsers keep it in user space) |
+| [`element/path-objects/2d.path.isPointInPath.basic.html`](https://wpt.fyi/results/html/canvas/element/path-objects/2d.path.isPointInPath.basic.html) | Pass | 1 / 1 |  |  |
 | [`element/path-objects/2d.path.isPointInPath.bezier.html`](https://wpt.fyi/results/html/canvas/element/path-objects/2d.path.isPointInPath.bezier.html) | Pass | 1 / 1 |  |  |
 | [`element/path-objects/2d.path.isPointInPath.bigarc.html`](https://wpt.fyi/results/html/canvas/element/path-objects/2d.path.isPointInPath.bigarc.html) | Pass | 1 / 1 |  |  |
 | [`element/path-objects/2d.path.isPointInPath.edge.html`](https://wpt.fyi/results/html/canvas/element/path-objects/2d.path.isPointInPath.edge.html) | Pass | 1 / 1 |  |  |
@@ -2385,8 +2385,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`offscreen/path-objects/2d.path.isPointInPath.basic.1.worker.js`](https://wpt.fyi/results/html/canvas/offscreen/path-objects/2d.path.isPointInPath.basic.1.worker.js) | Pass | 1 / 1 |  |  |
 | [`offscreen/path-objects/2d.path.isPointInPath.basic.2.html`](https://wpt.fyi/results/html/canvas/offscreen/path-objects/2d.path.isPointInPath.basic.2.html) | Pass | 1 / 1 |  |  |
 | [`offscreen/path-objects/2d.path.isPointInPath.basic.2.worker.js`](https://wpt.fyi/results/html/canvas/offscreen/path-objects/2d.path.isPointInPath.basic.2.worker.js) | Pass | 1 / 1 |  |  |
-| [`offscreen/path-objects/2d.path.isPointInPath.basic.html`](https://wpt.fyi/results/html/canvas/offscreen/path-objects/2d.path.isPointInPath.basic.html) | Fail | 0 / 1 | BUG | the current default path is stored in the coordinates of the canvas: a path transformed by `scale(Number.MAX_VALUE, ...)` overflows (the browsers keep it in user space) |
-| [`offscreen/path-objects/2d.path.isPointInPath.basic.worker.js`](https://wpt.fyi/results/html/canvas/offscreen/path-objects/2d.path.isPointInPath.basic.worker.js) | Fail | 0 / 1 | BUG | the current default path is stored in the coordinates of the canvas: a path transformed by `scale(Number.MAX_VALUE, ...)` overflows (the browsers keep it in user space) |
+| [`offscreen/path-objects/2d.path.isPointInPath.basic.html`](https://wpt.fyi/results/html/canvas/offscreen/path-objects/2d.path.isPointInPath.basic.html) | Pass | 1 / 1 |  |  |
+| [`offscreen/path-objects/2d.path.isPointInPath.basic.worker.js`](https://wpt.fyi/results/html/canvas/offscreen/path-objects/2d.path.isPointInPath.basic.worker.js) | Pass | 1 / 1 |  |  |
 | [`offscreen/path-objects/2d.path.isPointInPath.bezier.html`](https://wpt.fyi/results/html/canvas/offscreen/path-objects/2d.path.isPointInPath.bezier.html) | Pass | 1 / 1 |  |  |
 | [`offscreen/path-objects/2d.path.isPointInPath.bezier.worker.js`](https://wpt.fyi/results/html/canvas/offscreen/path-objects/2d.path.isPointInPath.bezier.worker.js) | Pass | 1 / 1 |  |  |
 | [`offscreen/path-objects/2d.path.isPointInPath.bigarc.html`](https://wpt.fyi/results/html/canvas/offscreen/path-objects/2d.path.isPointInPath.bigarc.html) | Pass | 1 / 1 |  |  |

@@ -1,0 +1,14 @@
+module examplule example.com/app
+
+require github.com/foo/bar v.
+2.13
+require (
+    golang.org/ample.com/local v0.1.0
+)e.com/app
+
+require github.com/foo/bar v1.2.3
+
+require (
+    golang.org/x/text v0.14.0 // indirect
+    example.com/local v0.1.0
+)

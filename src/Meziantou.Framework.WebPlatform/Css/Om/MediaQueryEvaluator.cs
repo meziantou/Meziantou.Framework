@@ -647,6 +647,48 @@ internal static class MediaQueryEvaluator
 
     private static bool? Not(bool? value) => value is null ? null : !value.Value;
 
+    /// <summary>
+    /// Returns the value of the <c>prefers-color-scheme</c> media feature: the page color scheme when the page supports a single
+    /// one of light and dark (<c>&lt;meta name="color-scheme" content="dark"&gt;</c>), otherwise the preferred color scheme
+    /// (https://github.com/w3c/csswg-drafts/issues/13377, as in Firefox). When printing, the browser may use another color
+    /// scheme than the page's one, so only a page color scheme with <c>only</c> applies; in the forced colors mode, the palette
+    /// sets the preferred color scheme.
+    /// </summary>
+    private static string GetPrefersColorScheme(MediaEnvironment environment)
+    {
+        if (environment.ForcedColors || environment.PageColorSchemes is not { } pageColorSchemes)
+            return environment.PrefersColorScheme;
+
+        var light = false;
+        var dark = false;
+        var only = false;
+        foreach (var range in pageColorSchemes.AsSpan().Split(' '))
+        {
+            switch (pageColorSchemes.AsSpan()[range])
+            {
+                case "light":
+                    light = true;
+                    break;
+                case "dark":
+                    dark = true;
+                    break;
+                case "only":
+                    only = true;
+                    break;
+            }
+        }
+
+        if (IsPrint(environment) && !only)
+            return environment.PrefersColorScheme;
+
+        return (light, dark) switch
+        {
+            (true, false) => "light",
+            (false, true) => "dark",
+            _ => environment.PrefersColorScheme,
+        };
+    }
+
     private static bool IsPrint(MediaEnvironment environment) => InfraAscii.EqualsIgnoreAsciiCase(environment.MediaType, "print");
 
     /// <summary>https://drafts.csswg.org/mediaqueries-5/#media-types: the deprecated and unknown media types match nothing.</summary>
@@ -734,7 +776,7 @@ internal static class MediaQueryEvaluator
             ["prefers-reduced-transparency"] = Keywords(["no-preference", "reduce"], environment => environment.PrefersReducedTransparency ? "reduce" : "no-preference"),
             ["prefers-contrast"] = Keywords(["no-preference", "less", "more", "custom"], environment => environment.PrefersContrast),
             ["forced-colors"] = Keywords(["none", "active"], environment => environment.ForcedColors ? "active" : "none"),
-            ["prefers-color-scheme"] = Keywords(["light", "dark"], environment => environment.PrefersColorScheme),
+            ["prefers-color-scheme"] = Keywords(["light", "dark"], GetPrefersColorScheme),
             ["ua-color-scheme"] = Keywords(["light", "dark"], environment => environment.PrefersColorScheme),
             ["prefers-reduced-data"] = Keywords(["no-preference", "reduce"], environment => environment.PrefersReducedData ? "reduce" : "no-preference"),
 

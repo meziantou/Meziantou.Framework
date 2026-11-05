@@ -98,6 +98,32 @@ using var screenshot = context.TakeScreenshot();
 The `color-scheme` meta element lets the browser colors (the canvas, the text, the form controls, the scrollbars) follow
 the dark scheme, as in a browser.
 
+When the `color-scheme` meta element supports a single scheme (`dark`, `light`, `only dark`), `prefers-color-scheme`
+matches that scheme instead of the preference of the user, as in Firefox ([csswg-drafts#13377](https://github.com/w3c/csswg-drafts/issues/13377)).
+A page that supports both schemes follows the preference. When printing, only a scheme with `only` applies, and in the
+forced colors mode the palette decides:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/Dom/BrowsingContextTests.cs;region=PreferredColorScheme_PageColorScheme;format=md-fenced-code-block;dedent=true -->
+```csharp
+using var context = new BrowsingContext(new BrowsingContextOptions
+{
+    Viewport = new ViewportOptions { PreferredColorScheme = PreferredColorScheme.Light },
+});
+var document = context.Navigate("https://example.com/", _ => """
+    <!DOCTYPE html>
+    <meta name="color-scheme" content="dark">
+    """);
+var window = document.DefaultView!;
+
+// The page only supports the dark color scheme
+Assert.True(window.MatchMedia("(prefers-color-scheme: dark)").Matches);
+
+// The page supports both color schemes: the preference of the user applies
+document.QuerySelector("meta")!.SetAttribute("content", "light dark");
+Assert.True(window.MatchMedia("(prefers-color-scheme: light)").Matches);
+```
+<!-- endref -->
+
 ## Print media
 
 `MediaType = "print"` applies the print styles (`@media print`) to the page in the viewport. To print the pages themselves (the

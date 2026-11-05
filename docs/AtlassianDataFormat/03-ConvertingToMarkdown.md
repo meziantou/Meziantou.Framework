@@ -181,7 +181,8 @@ Assert.Equal("[Alex](https://example.atlassian.net/people/557058:1) moved it to 
   identifier.
 - In [StatusFormat](cref:Meziantou.Framework.AtlassianDataFormat.AdfToMarkdownOptions.StatusFormat), `{text}` is the text of the lozenge and `{color}` its color. The text is inserted as it is, not
   escaped, because the default format puts it in a code span.
-- [DateFormat](cref:Meziantou.Framework.AtlassianDataFormat.AdfToMarkdownOptions.DateFormat) is a `DateTimeOffset` format string, applied with the invariant culture to the date in UTC.
+- [DateFormat](cref:Meziantou.Framework.AtlassianDataFormat.AdfToMarkdownOptions.DateFormat) is a `DateTimeOffset` format string, applied with the invariant culture to the date in UTC. When the timestamp is not a number, or is outside the range of `DateTimeOffset`, the
+  timestamp is written as it is.
 
 ## Media and mentions
 

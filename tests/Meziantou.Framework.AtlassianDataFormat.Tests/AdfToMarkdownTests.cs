@@ -754,6 +754,14 @@ public sealed class AdfToMarkdownTests
     }
 
     [Fact]
+    public void DateOutOfRangeKeepsTheTimestamp()
+    {
+        AssertMarkdown(
+            Doc(Paragraph("""{"type":"date","attrs":{"timestamp":"1767225667225600000"}}""")),
+            "1767225667225600000");
+    }
+
+    [Fact]
     public void DateWithCustomFormat()
     {
         AssertMarkdown(

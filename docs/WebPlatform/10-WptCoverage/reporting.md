@@ -9,17 +9,17 @@ description: "The results of the web-platform-tests of reporting, and why the te
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 16 | 25 | 0 | 64% |
+| [Stable](#stable-tests) | 19 | 25 | 0 | 76% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **16** | **25** | **0** | **64%** |
+| **All** | **19** | **25** | **0** | **76%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **TEST BUG**: 1
-- **NOT IMPLEMENTED**: 8
+- **NOT IMPLEMENTED**: 5
 - **TEST RUNNER**: 1
 
 ## Stable tests
@@ -32,12 +32,12 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`cross-origin-reports-isolated.https.sub.html`](https://wpt.fyi/results/reporting/cross-origin-reports-isolated.https.sub.html) | Pass | 1 / 1 |  |  |
 | [`cross-origin-same-site-credentials.https.sub.html`](https://wpt.fyi/results/reporting/cross-origin-same-site-credentials.https.sub.html) | Pass | 1 / 1 |  |  |
 | [`disconnect.html`](https://wpt.fyi/results/reporting/disconnect.html) | Pass | 1 / 1 |  |  |
-| [`document-reporting-bypass-report-to.https.sub.html`](https://wpt.fyi/results/reporting/document-reporting-bypass-report-to.https.sub.html) | Timeout | 0 / 2 | NOT IMPLEMENTED | Document Policy (`Document-Policy-Report-Only: sync-xhr=?0`, https://wicg.github.io/document-policy/): no `document-policy-violation` report is generated |
+| [`document-reporting-bypass-report-to.https.sub.html`](https://wpt.fyi/results/reporting/document-reporting-bypass-report-to.https.sub.html) | Pass | 2 / 2 |  |  |
 | [`document-reporting-default-endpoint.https.sub.html`](https://wpt.fyi/results/reporting/document-reporting-default-endpoint.https.sub.html) | Timeout | 0 / 2 | NOT IMPLEMENTED | `deprecation` reports: no feature of the library is deprecated, so nothing generates them (the tests use `webkitRequestAnimationFrame()` or `window.fullScreen`) |
 | [`document-reporting-destroy-after-document-close.https.sub.html`](https://wpt.fyi/results/reporting/document-reporting-destroy-after-document-close.https.sub.html) | Fail | 0 / 1 | NOT IMPLEMENTED, TEST RUNNER | `deprecation` reports: no feature of the library is deprecated, so nothing generates them (the tests use `webkitRequestAnimationFrame()` or `window.fullScreen`); the `reporting/resources/generate-report-once.py` handler is not emulated |
-| [`document-reporting-named-endpoints.https.sub.html`](https://wpt.fyi/results/reporting/document-reporting-named-endpoints.https.sub.html) | Timeout | 2 / 4 | NOT IMPLEMENTED | Document Policy (`Document-Policy-Report-Only: sync-xhr=?0`, https://wicg.github.io/document-policy/): no `document-policy-violation` report is generated |
+| [`document-reporting-named-endpoints.https.sub.html`](https://wpt.fyi/results/reporting/document-reporting-named-endpoints.https.sub.html) | Pass | 4 / 4 |  |  |
 | [`document-reporting-not-batch-different-document.https.html`](https://wpt.fyi/results/reporting/document-reporting-not-batch-different-document.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `deprecation` reports: no feature of the library is deprecated, so nothing generates them (the tests use `webkitRequestAnimationFrame()` or `window.fullScreen`) |
-| [`document-reporting-override-endpoint.https.sub.html`](https://wpt.fyi/results/reporting/document-reporting-override-endpoint.https.sub.html) | Timeout | 0 / 2 | NOT IMPLEMENTED | Document Policy (`Document-Policy-Report-Only: sync-xhr=?0`, https://wicg.github.io/document-policy/): no `document-policy-violation` report is generated |
+| [`document-reporting-override-endpoint.https.sub.html`](https://wpt.fyi/results/reporting/document-reporting-override-endpoint.https.sub.html) | Pass | 2 / 2 |  |  |
 | [`document-reporting-path-absolute.https.sub.html`](https://wpt.fyi/results/reporting/document-reporting-path-absolute.https.sub.html) | Timeout | 0 / 2 | NOT IMPLEMENTED | `deprecation` reports: no feature of the library is deprecated, so nothing generates them (the tests use `webkitRequestAnimationFrame()` or `window.fullScreen`) |
 | [`generateTestReport-honors-endpoint.https.sub.html`](https://wpt.fyi/results/reporting/generateTestReport-honors-endpoint.https.sub.html) | Pass | 2 / 2 |  |  |
 | [`generateTestReport-honors-loopback-endpoint.https.sub.html`](https://wpt.fyi/results/reporting/generateTestReport-honors-loopback-endpoint.https.sub.html) | Pass | 1 / 1 |  |  |

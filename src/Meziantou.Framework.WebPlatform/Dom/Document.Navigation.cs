@@ -445,7 +445,8 @@ public partial class Document
 
     /// <summary>
     /// Queues a task that runs only if the document is fully active (https://html.spec.whatwg.org/multipage/webappapis.html#queue-a-global-task):
-    /// the task of a document in the back/forward cache runs once the document is reactivated.
+    /// the task of a document in the back/forward cache runs once the document is reactivated, and the task of a frozen
+    /// document once it is resumed.
     /// </summary>
     internal void QueueGlobalTask(Action task)
     {
@@ -462,7 +463,11 @@ public partial class Document
 
         browsingContext.EventLoop.QueueTask(() =>
         {
-            if (IsFullyActive)
+            if (IsFrozen)
+            {
+                DeferTaskUntilReactivated(task);
+            }
+            else if (IsFullyActive)
             {
                 task();
             }

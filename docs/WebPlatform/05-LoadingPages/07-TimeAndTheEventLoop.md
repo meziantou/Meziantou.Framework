@@ -92,6 +92,26 @@ The animation frames are timers of the event loop, at a fixed rate. Each one run
 animations and their events, the `requestAnimationFrame()` callbacks, the styles, the resize and intersection observers.
 A screenshot or a geometry API does not wait for them: the layout is computed when it is read.
 
+## Freeze and discard the page
+
+A browser freezes the tabs that are in the background to save resources, and discards them when the memory is low. Set
+[IsFrozen](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContext.IsFrozen) to do the same: the documents of the page
+and of its frames get the `freeze` event, then their tasks and their timers wait until the page is resumed, which fires
+the `resume` event. The tasks are deferred, not lost.
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_PageLifecycle;format=md-fenced-code-block;dedent=true -->
+```csharp
+// Freezes the tab: the freeze event is fired, then the tasks and the timers of the documents wait
+document.BrowsingContext!.IsFrozen = true;
+```
+<!-- endref -->
+
+[Discard()](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContext.Discard) unloads the page and loads it again, as a
+browser does when the user goes back to a discarded tab: `document.wasDiscarded` is true in the new document. The pages
+are also frozen while they are in the back/forward cache, and the frames whose permissions policy disables
+`execution-while-not-rendered` (or `execution-while-out-of-viewport`) are frozen while they are hidden (or out of the
+viewport).
+
 ## Run the event loop on your own thread
 
 A host that runs a page on its own thread (as the Playwright server does) sets `EventLoop.WorkSignal`: the callback is

@@ -19,11 +19,10 @@ description: "The results of the web-platform-tests of service-workers, and why 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **BUG**: 12
-- **TEST BUG**: 8
+- **TEST BUG**: 9
 - **NOT IMPLEMENTED**: 24
-- **REQUIRES**: 2
+- **REQUIRES**: 1
   - `service-workers`: 1
-  - `user-input`: 1
 - **TEST RUNNER**: 2
 - **FLAKY**: 3
 
@@ -85,7 +84,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`service-worker/clients-matchall-blob-url-worker.https.html`](https://wpt.fyi/results/service-workers/service-worker/clients-matchall-blob-url-worker.https.html) | Pass | 2 / 2 |  |  |
 | [`service-worker/clients-matchall-client-types.https.html`](https://wpt.fyi/results/service-workers/service-worker/clients-matchall-client-types.https.html) | Pass | 2 / 2 |  |  |
 | [`service-worker/clients-matchall-exact-controller.https.html`](https://wpt.fyi/results/service-workers/service-worker/clients-matchall-exact-controller.https.html) | Pass | 1 / 1 |  |  |
-| [`service-worker/clients-matchall-frozen.https.html`](https://wpt.fyi/results/service-workers/service-worker/clients-matchall-frozen.https.html) | Timeout | 0 / 1 | REQUIRES(user-input) | the test driver freezes the page (`test_driver.freeze()`) |
+| [`service-worker/clients-matchall-frozen.https.html`](https://wpt.fyi/results/service-workers/service-worker/clients-matchall-frozen.https.html) | Fail | 0 / 1 | TEST BUG | the windows are opened by `window.open()`, so they are auxiliary browsing contexts whose `frameType` is `auxiliary` (https://w3c.github.io/ServiceWorker/#dom-client-frametype), not `top-level`; their `lifecycleState` is correct (`frozen` for the window frozen by `test_driver.freeze()`) |
 | [`service-worker/clients-matchall-include-uncontrolled.https.html`](https://wpt.fyi/results/service-workers/service-worker/clients-matchall-include-uncontrolled.https.html) | Pass | 2 / 2 |  |  |
 | [`service-worker/clients-matchall-on-evaluation.https.html`](https://wpt.fyi/results/service-workers/service-worker/clients-matchall-on-evaluation.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/clients-matchall-order.https.html`](https://wpt.fyi/results/service-workers/service-worker/clients-matchall-order.https.html) | Fail | 4 / 7 | TEST RUNNER | the three subtests of the uncontrolled windows expect the window of the WPT harness (`/testharness_runner.html`) among the clients; the subtests of the controlled windows pass |

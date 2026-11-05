@@ -83,6 +83,22 @@ public enum FrameType
     None,
 }
 
+/// <summary>The lifecycle state of a service worker client (https://wicg.github.io/page-lifecycle/#enumdef-clientlifecyclestate).</summary>
+/// <seealso href="https://wicg.github.io/page-lifecycle/#enumdef-clientlifecyclestate"/>
+[IdlInterface("ClientLifecycleState", "https://wicg.github.io/page-lifecycle/#enumdef-clientlifecyclestate")]
+public enum ClientLifecycleState
+{
+    /// <summary>The document of the client runs its tasks.</summary>
+    /// <seealso href="https://wicg.github.io/page-lifecycle/#dom-clientlifecyclestate-active"/>
+    [IdlMember("active", "https://wicg.github.io/page-lifecycle/#dom-clientlifecyclestate-active")]
+    Active,
+
+    /// <summary>The document of the client is frozen.</summary>
+    /// <seealso href="https://wicg.github.io/page-lifecycle/#dom-clientlifecyclestate-frozen"/>
+    [IdlMember("frozen", "https://wicg.github.io/page-lifecycle/#dom-clientlifecyclestate-frozen")]
+    Frozen,
+}
+
 /// <summary>The type of a service worker client (https://w3c.github.io/ServiceWorker/#enumdef-clienttype).</summary>
 /// <seealso href="https://w3c.github.io/ServiceWorker/#enumdef-clienttype"/>
 [IdlInterface("ClientType", "https://w3c.github.io/ServiceWorker/#enumdef-clienttype")]

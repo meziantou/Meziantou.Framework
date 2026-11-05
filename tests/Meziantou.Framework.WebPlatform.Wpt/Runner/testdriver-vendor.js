@@ -71,6 +71,13 @@
     return setWindowVisibility(context, true);
   };
 
+  // The Page Lifecycle of the top-level browsing context (BrowsingContext.IsFrozen of the library): the documents are frozen
+  // from a task, which fires their freeze events; the promise of the frozen document is resolved once it is resumed
+  internal.freeze = function (context) {
+    const target = (context === null || context === undefined ? window : context).top;
+    return new Promise(resolve => __wpt_freeze(target, resolve));
+  };
+
   internal.get_window_rect = function (context) {
     return Promise.resolve(windowRect((context === null || context === undefined ? window : context).top));
   };

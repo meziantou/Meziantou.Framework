@@ -593,6 +593,20 @@ public sealed partial class BrowsingContextOptions
     /// </summary>
     public KeyboardLockOptions? KeyboardLock { get; init; }
 
+    /// <summary>
+    /// Gets or sets the host hooks of the Keyboard Map API (https://wicg.github.io/keyboard-map/, <c>navigator.keyboard.getLayoutMap()</c>):
+    /// <see cref="KeyboardMapOptions.Provider"/> is the source of the keyboard layout. The default is null: the layout is US
+    /// QWERTY, and it never changes.
+    /// </summary>
+    public KeyboardMapOptions? KeyboardMap { get; init; }
+
+    /// <summary>
+    /// Gets or sets the host hooks of the Media Session API (https://w3c.github.io/mediasession/, <c>navigator.mediaSession</c>):
+    /// <see cref="MediaSessionOptions.SessionChanged"/> receives the metadata, the playback state, the position state and the
+    /// action handlers of the pages, to show them in media controls. The default is null: the media session is shown nowhere.
+    /// </summary>
+    public MediaSessionOptions? MediaSession { get; init; }
+
     /// <summary>The list of notifications (https://notifications.spec.whatwg.org/#list-of-notifications) of the browsing contexts. Lock it to use it.</summary>
     internal List<Notification> ShownNotifications { get; } = [];
 }

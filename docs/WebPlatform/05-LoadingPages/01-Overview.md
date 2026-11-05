@@ -76,7 +76,7 @@ Use a browsing context from one thread at a time, the thread that runs its event
 | [RenderingBackend](cref:Meziantou.Framework.WebPlatform.Rendering.RenderingBackend) | Screenshots, printing, canvases and image decoding (see [Rendering](../07-Rendering/01-Overview.md)) |
 | [TimeProvider](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.TimeProvider) | The clock of the event loop (see [Time and the event loop](07-TimeAndTheEventLoop.md)) |
 | [UseSystemFonts](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.UseSystemFonts) | The fonts installed on the machine (see [Fonts](../07-Rendering/06-Fonts.md)) |
-| [Permissions](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Permissions), [Geolocation](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Geolocation), [ShowNotification](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.ShowNotification)... | The permissions, the clipboard, sharing, vibration, geolocation, notifications, the badge, the battery, the wake lock and the keyboard lock (see [Permissions and devices](08-PermissionsAndDevices.md)) |
+| [Permissions](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Permissions), [Geolocation](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Geolocation), [ShowNotification](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.ShowNotification)... | The permissions, the clipboard, sharing, vibration, geolocation, notifications, the badge, the battery, the wake lock, the keyboard and the media session (see [Permissions and devices](08-PermissionsAndDevices.md)) |
 
 The callbacks of the options report what happens in the pages: [ConsoleMessage](cref:Meziantou.Framework.WebPlatform.Scripting.ConsoleMessage) and [UnhandledScriptError](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.UnhandledScriptError) for the
 scripts, [BrowsingContextCreated](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.BrowsingContextCreated) and [BrowsingContextDestroyed](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.BrowsingContextDestroyed) for the frames and the popups, [DocumentActivated](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.DocumentActivated) for
@@ -132,4 +132,5 @@ requests are canceled, and the pending tasks and timers are dropped. No event is
 - [User input](06-UserInput.md): click, tap, scroll and type as a user.
 - [Time and the event loop](07-TimeAndTheEventLoop.md): timers, animations and fake clocks.
 - [Permissions and devices](08-PermissionsAndDevices.md): answer the permission prompts, and simulate the clipboard,
-  sharing, vibration, geolocation, notifications, the badge, the battery, the wake lock and the keyboard lock.
+  sharing, vibration, geolocation, notifications, the badge, the battery, the wake lock, the keyboard and the media
+  session.

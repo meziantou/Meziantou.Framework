@@ -340,10 +340,9 @@
     "total": 1
   },
   "service-workers/service-worker/clients-matchall-frozen.https.html": {
-    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
-      "Test Clients.matchAll()": "TIMEOUT"
+      "Test Clients.matchAll()": "FAIL"
     }
   },
   "service-workers/service-worker/clients-matchall-include-uncontrolled.https.html": {

@@ -22,6 +22,7 @@ internal static class Binding_Client<TAdapter, TValue> where TAdapter : struct, 
     private static TValue Get_frameType(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Client>(t, Binding); return r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_FrameType(o.FrameType)); }
     private static TValue Get_id(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Client>(t, Binding); return r.FromString(o.Id); }
     private static TValue Get_type(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Client>(t, Binding); return r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_ClientType(o.Type)); }
+    private static TValue Get_lifecycleState(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Client>(t, Binding); return r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_ClientLifecycleState(o.LifecycleState)); }
     private static readonly global::Meziantou.Framework.WebPlatform.Scripting.OverloadInfo[] Op_postMessage_Overloads = [new(new global::Meziantou.Framework.WebPlatform.Scripting.OverloadArgument[] { new("any", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Any, new global::System.Type[] {  }, false, false), new("sequence<object>", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Sequence, new global::System.Type[] {  }, false, false) }), new(new global::Meziantou.Framework.WebPlatform.Scripting.OverloadArgument[] { new("any", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Any, new global::System.Type[] {  }, false, false), new("StructuredSerializeOptions", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Dictionary, new global::System.Type[] {  }, true, false) })];
     private static TValue Op_postMessage(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
@@ -52,6 +53,7 @@ internal static class Binding_Client<TAdapter, TValue> where TAdapter : struct, 
         r.DefineAttribute(instanceTarget, "frameType", Get_frameType, null);
         r.DefineAttribute(instanceTarget, "id", Get_id, null);
         r.DefineAttribute(instanceTarget, "type", Get_type, null);
+        r.DefineAttribute(instanceTarget, "lifecycleState", Get_lifecycleState, null);
         r.DefineOperation(instanceTarget, "postMessage", 1, Op_postMessage);
     }
 }

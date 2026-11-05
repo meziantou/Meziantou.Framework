@@ -245,6 +245,9 @@ public partial class HtmlIFrameElement
         // https://w3c.github.io/webappsec-permissions-policy/#changes-to-html: the features that the allow attribute delegates
         // although the policy of the document disables them are reported
         PermissionsPolicyAlgorithms.CheckPotentialViolationInContainer(this);
+
+        // https://wicg.github.io/page-lifecycle/#update-document-frozenness-steps: the document can be frozen once loaded
+        Document.ObserveContainerForFrozenness(this, childDocument);
     }
 }
 

@@ -37,6 +37,12 @@ internal sealed partial class PolicyControlledFeature
 
     public static PolicyControlledFeature CrossOriginIsolated { get; } = new("cross-origin-isolated", isAllowedForAllByDefault: false);
 
+    /// <summary>https://wicg.github.io/page-lifecycle/#feature-policies: its default allowlist is *.</summary>
+    public static PolicyControlledFeature ExecutionWhileNotRendered { get; } = new("execution-while-not-rendered", isAllowedForAllByDefault: true);
+
+    /// <summary>https://wicg.github.io/page-lifecycle/#feature-policies: its default allowlist is *.</summary>
+    public static PolicyControlledFeature ExecutionWhileOutOfViewport { get; } = new("execution-while-out-of-viewport", isAllowedForAllByDefault: true);
+
     public static PolicyControlledFeature FocusWithoutUserActivation { get; } = new("focus-without-user-activation", isAllowedForAllByDefault: false);
 
     public static PolicyControlledFeature Fullscreen { get; } = new("fullscreen", isAllowedForAllByDefault: false);
@@ -48,6 +54,9 @@ internal sealed partial class PolicyControlledFeature
 
     /// <summary>https://fetch.spec.whatwg.org/#policy-controlled-feature-deferred-fetch-minimal: its default allowlist is *.</summary>
     public static PolicyControlledFeature DeferredFetchMinimal { get; } = new("deferred-fetch-minimal", isAllowedForAllByDefault: true);
+
+    /// <summary>https://wicg.github.io/keyboard-map/#permissions-policy: its default allowlist is 'self'.</summary>
+    public static PolicyControlledFeature KeyboardMap { get; } = new("keyboard-map", isAllowedForAllByDefault: false);
 
     public static PolicyControlledFeature MediaPlaybackWhileNotVisible { get; } = new("media-playback-while-not-visible", isAllowedForAllByDefault: true);
 
@@ -83,10 +92,13 @@ internal sealed partial class PolicyControlledFeature
         DeferredFetch,
         DeferredFetchMinimal,
         new("encrypted-media", isAllowedForAllByDefault: false),
+        ExecutionWhileNotRendered,
+        ExecutionWhileOutOfViewport,
         FocusWithoutUserActivation,
         Fullscreen,
         Geolocation,
         new("gyroscope", isAllowedForAllByDefault: false),
+        KeyboardMap,
         new("local-fonts", isAllowedForAllByDefault: false),
         new("magnetometer", isAllowedForAllByDefault: false),
         MediaPlaybackWhileNotVisible,

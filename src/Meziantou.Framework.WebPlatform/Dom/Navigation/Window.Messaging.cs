@@ -65,6 +65,18 @@ public sealed partial class Window
         // yet) is delivered to that document, as in the browsers, which replace these documents sooner.
         EventLoop.QueueTask(() =>
         {
+            // https://wicg.github.io/page-lifecycle/#html-task-queue-changes: the posted messages of a frozen document wait until it is resumed
+            if (Document.IsFrozen)
+            {
+                Document.DeferTaskUntilReactivated(Deliver);
+                return;
+            }
+
+            Deliver();
+        });
+
+        void Deliver()
+        {
             if (!Document.IsFullyActive || (targetOriginRecord is not null && !OriginRecord.IsSameOrigin(Document.Origin, targetOriginRecord)))
                 return;
 
@@ -75,6 +87,6 @@ public sealed partial class Window
             }
 
             FireEvent(new MessageEvent("message", new MessageEventInit { Data = data, Ports = ports, Source = source }) { OriginRecord = incumbentOrigin });
-        });
+        }
     }
 }

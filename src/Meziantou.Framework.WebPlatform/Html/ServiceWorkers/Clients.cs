@@ -289,6 +289,11 @@ public class Client
     [IdlMember("type", "https://w3c.github.io/ServiceWorker/#dom-client-type")]
     public ClientType Type => Entry.Type;
 
+    /// <summary>Gets whether the document of the client is frozen (https://wicg.github.io/page-lifecycle/#dom-client-lifecyclestate).</summary>
+    /// <seealso href="https://wicg.github.io/page-lifecycle/#dom-client-lifecyclestate"/>
+    [IdlMember("lifecycleState", "https://wicg.github.io/page-lifecycle/#dom-client-lifecyclestate")]
+    public ClientLifecycleState LifecycleState => Entry.IsFrozen ? ClientLifecycleState.Frozen : ClientLifecycleState.Active;
+
     /// <summary>Posts a message to the client (https://w3c.github.io/ServiceWorker/#dom-client-postmessage).</summary>
     /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-client-postmessage"/>
     [IdlMember("postMessage", "https://w3c.github.io/ServiceWorker/#dom-client-postmessage")]

@@ -452,6 +452,12 @@ public partial class Document
         {
             batteryManager.OnDocumentVisible();
         }
+
+        // The keyboard layout that changed while the document was hidden is reported
+        if (visible && RelevantWindow is { NavigatorOrNull.KeyboardOrNull: { } keyboard } keyboardWindow && ReferenceEquals(keyboardWindow.Document, this))
+        {
+            keyboard.OnDocumentVisible();
+        }
     }
 
     /// <summary>Does nothing; this obsolete method is kept for compatibility.</summary>

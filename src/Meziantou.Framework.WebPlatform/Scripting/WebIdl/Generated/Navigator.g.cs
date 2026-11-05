@@ -23,6 +23,7 @@ internal static class Binding_Navigator<TAdapter, TValue> where TAdapter : struc
     private static TValue Get_userActivation(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.UserActivation); }
     private static TValue Get_ink(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.Ink); }
     private static TValue Get_keyboard(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.Keyboard); }
+    private static TValue Get_mediaSession(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.MediaSession); }
     private static TValue Get_permissions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.Permissions); }
     private static TValue Get_maxTouchPoints(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.FromNumber((double)o.MaxTouchPoints); }
     private static TValue Get_wakeLock(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.WakeLock); }
@@ -126,6 +127,7 @@ internal static class Binding_Navigator<TAdapter, TValue> where TAdapter : struc
         r.DefineAttribute(instanceTarget, "userActivation", Get_userActivation, null);
         r.DefineAttribute(instanceTarget, "ink", Get_ink, null);
         if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "keyboard", Get_keyboard, null);
+        r.DefineAttribute(instanceTarget, "mediaSession", Get_mediaSession, null);
         r.DefineAttribute(instanceTarget, "permissions", Get_permissions, null);
         r.DefineAttribute(instanceTarget, "maxTouchPoints", Get_maxTouchPoints, null);
         if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "wakeLock", Get_wakeLock, null);

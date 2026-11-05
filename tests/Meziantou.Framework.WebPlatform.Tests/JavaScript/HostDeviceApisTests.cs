@@ -10,7 +10,9 @@ namespace Meziantou.Framework.WebPlatform.Tests.JavaScript;
 /// Web Share (https://w3c.github.io/web-share/), Vibration (https://w3c.github.io/vibration/), Geolocation
 /// (https://w3c.github.io/geolocation/), Notifications (https://notifications.spec.whatwg.org/), Badging
 /// (https://w3c.github.io/badging/), Battery Status (https://w3c.github.io/battery/), Screen Wake Lock
-/// (https://w3c.github.io/screen-wake-lock/) and Keyboard Lock (https://wicg.github.io/keyboard-lock/).
+/// (https://w3c.github.io/screen-wake-lock/), Keyboard Lock (https://wicg.github.io/keyboard-lock/), Keyboard Map
+/// (https://wicg.github.io/keyboard-map/), Media Session (https://w3c.github.io/mediasession/) and Page Lifecycle
+/// (https://wicg.github.io/page-lifecycle/).
 /// </summary>
 public sealed class HostDeviceApisTests : IDisposable
 {
@@ -42,6 +44,9 @@ public sealed class HostDeviceApisTests : IDisposable
             BatteryStatus = options.BatteryStatus,
             WakeLock = options.WakeLock,
             KeyboardLock = options.KeyboardLock,
+            KeyboardMap = options.KeyboardMap,
+            MediaSession = options.MediaSession,
+            DocumentLoader = options.DocumentLoader,
             Features = options.Features,
         });
 
@@ -980,12 +985,180 @@ public sealed class HostDeviceApisTests : IDisposable
         Assert.Equal("InvalidStateError", Run(document, "go(document.querySelector('iframe').contentWindow.navigator.keyboard.lock())"));
     }
 
+    // Keyboard Map
+
+    private const string LayoutMapScript = "window.go = () => navigator.keyboard.getLayoutMap().then(map => document.title = [map.get('KeyQ'), map.get('KeyA'), map.get('Digit1'), map.size, map.has('IntlRo'), map instanceof KeyboardLayoutMap].join(), e => document.title = e.name);";
+
+    [Fact]
+    public void KeyboardMap_DefaultLayout_IsUsQwerty()
+    {
+        var document = Load("<script>" + LayoutMapScript + "</script>");
+
+        Assert.Equal("q,a,1,47,false,true", Run(document, "go()"));
+    }
+
+    [Fact]
+    public void KeyboardMap_ReadsTheProvider()
+    {
+        #region WebPlatform_KeyboardMap
+        var keyboard = new KeyboardLayoutProvider
+        {
+            // The key produced by each key of the keyboard, by code: setting the layout fires the layoutchange event
+            Layout = new Dictionary<string, string>(KeyboardLayoutProvider.UsQwerty) { ["KeyQ"] = "a", ["KeyA"] = "q", ["Digit1"] = "&" },
+        };
+
+        var options = new BrowsingContextOptions
+        {
+            KeyboardMap = new KeyboardMapOptions { Provider = keyboard },
+        };
+        #endregion
+
+        var document = Load("<script>" + LayoutMapScript + "</script>", options);
+
+        Assert.Equal("a,q,&,47,false,true", Run(document, "go()"));
+
+        Run(document, "navigator.keyboard.onlayoutchange = () => go()");
+        keyboard.Layout = KeyboardLayoutProvider.UsQwerty;
+        Assert.Equal("q,a,1,47,false,true", Run(document));
+    }
+
+    [Fact]
+    public void KeyboardMap_ParallelCalls_ReturnTheSamePromise()
+    {
+        var document = Load("<script>const p = navigator.keyboard.getLayoutMap(); const same = p === navigator.keyboard.getLayoutMap(); p.then(() => document.title = same + ',' + (p === navigator.keyboard.getLayoutMap()));</script>");
+
+        Assert.Equal("true,false", Run(document));
+    }
+
+    [Fact]
+    public void KeyboardMap_DisallowedIframe_IsRejectedWithSecurityError()
+    {
+        var document = Load("""<iframe allow="keyboard-map 'none'" srcdoc="<p>"></iframe><script>""" + LayoutMapScript + "</script>");
+
+        Assert.Equal("SecurityError", Run(document, "document.querySelector('iframe').contentWindow.navigator.keyboard.getLayoutMap().catch(e => document.title = e.name)"));
+    }
+
+    // Media Session
+
+    [Fact]
+    public void MediaSession_NotifiesTheHostAndRunsTheActions()
+    {
+        #region WebPlatform_MediaSession
+        string? nowPlaying = null;
+        MediaSession? session = null;
+        var options = new BrowsingContextOptions
+        {
+            MediaSession = new MediaSessionOptions
+            {
+                // Called when the page changes its metadata, its playback state, its position or its action handlers
+                SessionChanged = (callbackContext, mediaSession) =>
+                {
+                    session = mediaSession;
+                    nowPlaying = mediaSession.Metadata is { } metadata ? $"{metadata.Title} - {metadata.Artist} ({mediaSession.PlaybackState})" : null;
+                },
+            },
+        };
+        #endregion
+
+        var document = Load("""
+            <script>
+              navigator.mediaSession.metadata = new MediaMetadata({ title: 'Song', artist: 'Band', artwork: [{ src: 'cover.png', sizes: '96x96' }] });
+              navigator.mediaSession.playbackState = 'playing';
+              navigator.mediaSession.setActionHandler('pause', details => document.title = details.action);
+              navigator.mediaSession.setPositionState({ duration: 60, position: 10 });
+            </script>
+            """, options);
+
+        Assert.Equal("Song - Band (Playing)", nowPlaying);
+        Assert.Equal("https://example.com/cover.png", Assert.Single(session!.Metadata!.Artwork).Src);
+        Assert.Equal([MediaSessionAction.Pause], session.SupportedActions);
+        Assert.Equal(10, session.PositionState!.Position);
+        Assert.Equal(1, session.PositionState.PlaybackRate);
+
+        Run(document, "navigator.mediaSession.metadata.title = 'Other song'");
+        Assert.Equal("Other song - Band (Playing)", nowPlaying);
+
+        Assert.False(session.HandleAction(new MediaSessionActionDetails { Action = MediaSessionAction.Play }));
+        Assert.True(session.HandleAction(new MediaSessionActionDetails { Action = MediaSessionAction.Pause }));
+        Assert.Equal("pause", Run(document));
+    }
+
+    [Fact]
+    public void MediaSession_SetPositionState_ValidatesTheState()
+    {
+        var document = Load("<script></script>");
+
+        Assert.Equal("TypeError,TypeError,TypeError,TypeError,ok", Run(document, """
+            const results = [];
+            for (const state of [{ position: 1 }, { duration: -1 }, { duration: 10, position: 20 }, { duration: 10, playbackRate: 0 }, {}]) {
+              try { navigator.mediaSession.setPositionState(state); results.push('ok'); } catch (e) { results.push(e.name); }
+            }
+            document.title = results.join();
+            """));
+    }
+
+    [Fact]
+    public void MediaMetadata_Artwork_IsFrozen()
+    {
+        var document = Load("<script></script>");
+
+        Assert.Equal("true,true,true,http://example.com/a", Run(document, """
+            const metadata = new MediaMetadata({ artwork: [{ src: 'http://example.com/a' }] });
+            document.title = [Object.isFrozen(metadata.artwork), Object.isFrozen(metadata.artwork[0]), metadata.artwork === metadata.artwork, metadata.artwork[0].src].join();
+            """));
+    }
+
+    // Page Lifecycle
+
+    [Fact]
+    public void PageLifecycle_FreezeDefersTheTasks()
+    {
+        var document = Load("""
+            <script>
+              window.log = [];
+              document.onfreeze = () => log.push('freeze');
+              document.onresume = () => log.push('resume');
+              window.onmessage = e => log.push(e.data);
+              window.done = () => document.title = log.join();
+            </script>
+            """);
+
+        #region WebPlatform_PageLifecycle
+        // Freezes the tab: the freeze event is fired, then the tasks and the timers of the documents wait
+        document.BrowsingContext!.IsFrozen = true;
+        #endregion
+
+        Run(document);
+        Run(document, "postMessage('message', '*')");
+        Assert.Equal("freeze", Run(document, "done()"));
+
+        document.BrowsingContext.IsFrozen = false;
+        Assert.Equal("freeze,resume,message", Run(document, "setTimeout(done, 0)"));
+    }
+
+    [Fact]
+    public async Task PageLifecycle_Discard_ReloadsTheDocument()
+    {
+        var loader = new RecordingLoader();
+        loader.Resources["https://example.com/"] = new DocumentResource("<script>document.title = document.wasDiscarded;</script>");
+        var document = Load("<script>document.title = document.wasDiscarded;</script>", new BrowsingContextOptions { DocumentLoader = loader });
+        Assert.Equal("false", document.Title);
+
+        var browsingContext = document.BrowsingContext!;
+        browsingContext.Discard();
+        await RunAsync(document);
+
+        Assert.NotSame(document, browsingContext.Document);
+        Assert.Equal("true", browsingContext.Document.Title);
+        Assert.True(browsingContext.Document.WasDiscarded);
+    }
+
     [Fact]
     public void DisabledFeatures_HideTheApis()
     {
         var document = Load(
             "<script>document.title = ['share' in navigator, 'vibrate' in navigator, 'geolocation' in navigator, typeof Notification, 'setAppBadge' in navigator, 'getBattery' in navigator, typeof BatteryManager, 'wakeLock' in navigator, typeof WakeLockSentinel, 'keyboard' in navigator, typeof Keyboard].join();</script>",
-            new BrowsingContextOptions { Features = new WebPlatformFeatures { WebShareEnabled = false, VibrationEnabled = false, GeolocationEnabled = false, NotificationsEnabled = false, BadgingEnabled = false, BatteryStatusEnabled = false, WakeLockEnabled = false, KeyboardLockEnabled = false } });
+            new BrowsingContextOptions { Features = new WebPlatformFeatures { WebShareEnabled = false, VibrationEnabled = false, GeolocationEnabled = false, NotificationsEnabled = false, BadgingEnabled = false, BatteryStatusEnabled = false, WakeLockEnabled = false, KeyboardLockEnabled = false, KeyboardMapEnabled = false } });
 
         Assert.Equal("false,false,false,undefined,false,false,undefined,false,undefined,false,undefined", Run(document));
     }

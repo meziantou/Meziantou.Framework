@@ -48,6 +48,15 @@ internal static class Fetching
     /// </summary>
     public static Task<FetchResponse> FetchAsync(FetchRequest request, CancellationToken cancellationToken)
     {
+        // As in Chromium, the requests of a frozen document (https://wicg.github.io/page-lifecycle/) wait until it is resumed,
+        // except the keepalive requests (e.g. navigator.sendBeacon()), which outlive the document
+        if (!request.Keepalive && request.Mode != RequestMode.Navigate && request.Client is { IsFrozen: true, WorkerGlobal: null } frozenClient)
+        {
+            var completion = new TaskCompletionSource<FetchResponse>(TaskCreationOptions.RunContinuationsAsynchronously);
+            frozenClient.DeferTaskUntilReactivated(() => _ = ForwardAsync(FetchAsync(request, cancellationToken), completion));
+            return completion.Task;
+        }
+
         // https://fetch.spec.whatwg.org/#fetching, step 12: the Accept header
         if (!FetchHeaders.Contains(request.HeaderList, "Accept"))
         {
@@ -75,6 +84,20 @@ internal static class Fetching
         }
 
         return MainFetchAsync(request, recursive: false, cancellationToken);
+    }
+
+    private static async Task ForwardAsync(Task<FetchResponse> task, TaskCompletionSource<FetchResponse> completion)
+    {
+        try
+        {
+            completion.TrySetResult(await task.ConfigureAwait(false));
+        }
+#pragma warning disable CA1031 // The exception is given to the deferred task
+        catch (Exception ex)
+#pragma warning restore CA1031
+        {
+            completion.TrySetException(ex);
+        }
     }
 
     /// <summary>

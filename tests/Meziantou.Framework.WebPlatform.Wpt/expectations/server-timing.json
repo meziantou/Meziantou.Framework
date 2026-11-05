@@ -1,0 +1,32 @@
+{
+  "server-timing/cross_origin.https.html": {
+    "total": 3
+  },
+  "server-timing/idlharness.https.any.js": {
+    "total": 97
+  },
+  "server-timing/idlharness.https.any.js#dedicatedworker": {
+    "total": 97
+  },
+  "server-timing/navigation-timing-trickle.https.html": {
+    "total": 1
+  },
+  "server-timing/navigation_timing_idl.https.html": {
+    "total": 1
+  },
+  "server-timing/resource_timing_idl.https.html": {
+    "total": 1
+  },
+  "server-timing/server_timing_header-parsing.https.html": {
+    "total": 331
+  },
+  "server-timing/server_timing_headers_not_visible_in_fetch.https.html": {
+    "total": 1
+  },
+  "server-timing/service_worker_idl.https.html": {
+    "total": 1
+  },
+  "server-timing/test_server_timing.https.html": {
+    "total": 7
+  }
+}

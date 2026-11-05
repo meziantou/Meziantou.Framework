@@ -1,0 +1,11 @@
+{
+  "timing-entrytypes-registry/registry.any.js": {
+    "total": 4
+  },
+  "timing-entrytypes-registry/registry.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "timing-entrytypes-registry/registry.window.js": {
+    "total": 4
+  }
+}

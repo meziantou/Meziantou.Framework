@@ -1,10 +1,11 @@
 using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Framework.WebPlatform.Scripting;
 using Meziantou.Framework.WebPlatform.Tests.Scripting;
+using Microsoft.Extensions.Time.Testing;
 
 namespace Meziantou.Framework.WebPlatform.Tests.JavaScript;
 
-/// <summary>The performance timeline used by the scripts: User Timing, Navigation Timing and the performance observers.</summary>
+/// <summary>The performance timeline used by the scripts: User Timing, Navigation Timing, Long Tasks and the performance observers.</summary>
 public sealed class PerformanceTimelineScriptTests : IDisposable
 {
     private readonly BrowsingContextScope _contexts = new();
@@ -18,12 +19,16 @@ public sealed class PerformanceTimelineScriptTests : IDisposable
         TestScriptEngines.Dispose(_engine);
     }
 
+    // Each read of the clock advances it by 1 ms: a script that waits for 60 ms of performance.now() runs for 60 ms
+    private readonly FakeTimeProvider _clock = new() { AutoAdvanceAmount = TimeSpan.FromMilliseconds(1) };
+
     private Document Load(string html)
     {
         var context = _contexts.Create(new BrowsingContextOptions
         {
             ScriptEngine = _engine,
             DocumentLoader = _loader,
+            TimeProvider = _clock,
             UnhandledScriptError = (_, error) => _errors.Add(error),
         });
 
@@ -92,6 +97,112 @@ public sealed class PerformanceTimelineScriptTests : IDisposable
             """);
 
         Assert.Equal("""[true,true,"https://example.com/dir/page.html","navigate",0,true,"navigate",true,true,true,true,true,true,["interactionCount","navigation","timeOrigin","timing"]]""", document.Title);
+        Assert.Empty(_errors);
+    }
+
+    private const string LongTaskScript = "const begin = performance.now(); while (performance.now() < begin + 60);";
+
+    [Fact]
+    public void LongTask_IsReportedToTheObservers()
+    {
+        var document = Load($$"""
+            <script>
+              const results = [];
+              new PerformanceObserver(list => {
+                for (const entry of list.getEntries()) {
+                  const attribution = entry.attribution[0];
+                  results.push(JSON.stringify([
+                    entry instanceof PerformanceLongTaskTiming, entry.name, entry.entryType, Number.isInteger(entry.duration), entry.duration >= 50, entry.startTime > 0,
+                    entry.attribution.length, attribution instanceof TaskAttributionTiming, attribution.name, attribution.entryType, attribution.containerType,
+                    entry.toJSON().attribution[0].containerType, performance.getEntriesByType('longtask').length,
+                    attribution.navigationId === entry.navigationId, attribution.id > 0,
+                  ]));
+                }
+                document.title = results.join('|');
+              }).observe({ type: 'longtask' });
+              window.onload = () => setTimeout(() => { {{LongTaskScript}} });
+            </script>
+            """);
+
+        Assert.Equal("""[true,"self","longtask",true,true,true,1,true,"unknown","taskattribution","window","window",0,true,true]""", document.Title);
+        Assert.Empty(_errors);
+    }
+
+    [Fact]
+    public void LongTask_ShortTasks_AreNotReported()
+    {
+        var document = Load("""
+            <script>
+              document.title = PerformanceObserver.supportedEntryTypes.includes('longtask');
+              new PerformanceObserver(list => document.title += list.getEntries().length).observe({ type: 'longtask' });
+              window.onload = () => setTimeout(() => {
+                const begin = performance.now();
+                while (performance.now() < begin + 40);
+              });
+            </script>
+            """);
+
+        Assert.Equal("true", document.Title);
+        Assert.Empty(_errors);
+    }
+
+    [Fact]
+    public void LongTask_BeforeTheObserver_IsBuffered()
+    {
+        var document = Load($$"""
+            <script>
+              {{LongTaskScript}}
+              setTimeout(() => new PerformanceObserver(list => document.title = list.getEntries().map(entry => entry.name)).observe({ type: 'longtask', buffered: true }));
+            </script>
+            """);
+
+        Assert.Equal("self", document.Title);
+        Assert.Empty(_errors);
+    }
+
+    [Fact]
+    public void LongTask_InAnIframe_IsAttributedToItsContainer()
+    {
+        var document = Load($$"""
+            <script>
+              new PerformanceObserver(list => {
+                const entry = list.getEntries()[0];
+                const attribution = entry.attribution[0];
+                document.title = [entry.name, attribution.containerType, attribution.containerId, attribution.containerName, attribution.containerSrc].join();
+              }).observe({ type: 'longtask' });
+            </script>
+            <iframe id="frame-id" name="frame-name" srcdoc="<script>{{LongTaskScript}}</script>"></iframe>
+            """);
+
+        Assert.Equal("same-origin-descendant,iframe,frame-id,frame-name,", document.Title);
+        Assert.Empty(_errors);
+    }
+
+    [Fact]
+    public void LongTask_CanBeObservedByTheHost()
+    {
+        var document = Load("<p>");
+
+        #region WebPlatform_LongTasks
+        var window = document.DefaultView!;
+        var longTasks = new List<string>();
+        var observer = new PerformanceObserver(window, (entries, _, _) =>
+        {
+            foreach (var entry in entries.GetEntriesByType("longtask").Cast<PerformanceLongTaskTiming>())
+            {
+                // e.g. "self: 60 ms" for a script of the window, "same-origin-descendant: 60 ms (iframe #ad)" for an iframe
+                var container = entry.Attribution[0];
+                longTasks.Add(container.ContainerType == "window" ? $"{entry.Name}: {entry.Duration} ms" : $"{entry.Name}: {entry.Duration} ms ({container.ContainerType} #{container.ContainerId})");
+            }
+        });
+        observer.Observe(new PerformanceObserverInit { Type = "longtask", Buffered = true });
+        #endregion
+
+        TestScriptEngines.Evaluate(_engine, window, "setTimeout(() => { " + LongTaskScript + " })");
+        _contexts.EventLoop.RunUntilIdle();
+
+        var longTask = Assert.Single(longTasks);
+        Assert.StartsWith("self: ", longTask, StringComparison.Ordinal);
         Assert.Empty(_errors);
     }
 }

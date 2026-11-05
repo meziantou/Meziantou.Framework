@@ -1,0 +1,78 @@
+{
+  "longtask-timing/buffered-flag.window.js": {
+    "total": 1
+  },
+  "longtask-timing/containerNames.html": {
+    "total": 1
+  },
+  "longtask-timing/containerTypes.html": {
+    "total": 4,
+    "failures": {
+      "Performance longtask entries in embed are observable in parent.": "FAIL",
+      "Performance longtask entries in frame are observable in parent.": "FAIL",
+      "Performance longtask entries in iframe are observable in parent.": "FAIL",
+      "Performance longtask entries in object are observable in parent.": "FAIL"
+    }
+  },
+  "longtask-timing/idlharness.window.js": {
+    "total": 1,
+    "failures": {
+      "idl_test setup": "FAIL"
+    }
+  },
+  "longtask-timing/long-microtask.window.js": {
+    "total": 1
+  },
+  "longtask-timing/longtask-attributes.html": {
+    "total": 1
+  },
+  "longtask-timing/longtask-before-observer.window.js": {
+    "total": 1
+  },
+  "longtask-timing/longtask-detach-frame.html": {
+    "total": 1
+  },
+  "longtask-timing/longtask-in-childiframe-crossorigin.html": {
+    "total": 1
+  },
+  "longtask-timing/longtask-in-childiframe.html": {
+    "total": 1
+  },
+  "longtask-timing/longtask-in-externalscript.html": {
+    "total": 1
+  },
+  "longtask-timing/longtask-in-parentiframe.html": {
+    "total": 1
+  },
+  "longtask-timing/longtask-in-raf.html": {
+    "total": 1
+  },
+  "longtask-timing/longtask-in-sibling-iframe-crossorigin.html": {
+    "total": 1
+  },
+  "longtask-timing/longtask-in-sibling-iframe.html": {
+    "total": 1
+  },
+  "longtask-timing/longtask-promise.html": {
+    "total": 4
+  },
+  "longtask-timing/longtask-sync-xhr.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "A long synchronous XHR is a longtask": "TIMEOUT"
+    }
+  },
+  "longtask-timing/longtask-tojson.html": {
+    "total": 1
+  },
+  "longtask-timing/shared-renderer/longtask-in-new-window.html": {
+    "total": 1
+  },
+  "longtask-timing/spin-eventloop-not-longtask.html": {
+    "total": 1
+  },
+  "longtask-timing/supported-longtask-types.window.js": {
+    "total": 2
+  }
+}

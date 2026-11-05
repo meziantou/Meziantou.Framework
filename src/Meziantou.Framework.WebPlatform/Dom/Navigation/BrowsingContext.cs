@@ -1022,6 +1022,9 @@ public sealed partial class BrowsingContext : IDisposable
         }
 
         ApplyNavigationResponseClientHints(urlRecord, documentResource.Headers);
+
+        // The document is parsed synchronously, as by the tasks of the networking task source of a browser
+        using var task = EventLoop.EnterTask();
         return LoadDocument(urlRecord, parameters, documentResource);
     }
 

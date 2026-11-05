@@ -393,6 +393,7 @@ internal sealed partial class IdlModel
         AddTestReportBody(model);
         AddAnimationRanges(model);
         AddUrlPatternTentativeMethods(model);
+        AddLongTasks(model);
         ReplaceSvgPathSegmentInterfaceWithDictionary(model);
         RemoveSvgPathElementGeometryMembers(model);
         FixCssParserApiTypes(model);
@@ -400,6 +401,92 @@ internal sealed partial class IdlModel
         AddIFrameElementPolicy(model);
         AddDocumentPolicyViolationReportBody(model);
         return model;
+    }
+
+    /// <summary>
+    /// The interfaces of the Long Tasks API (https://w3c.github.io/longtasks/), a discontinued draft that webref no longer
+    /// includes (removed 2026-10), which the browsers based on Chromium implement and the longtask-timing directory of the
+    /// web-platform-tests tests:
+    /// <code>
+    /// [Exposed=Window] interface PerformanceLongTaskTiming : PerformanceEntry {
+    ///     readonly attribute DOMHighResTimeStamp startTime;
+    ///     readonly attribute DOMHighResTimeStamp duration;
+    ///     readonly attribute DOMString name;
+    ///     readonly attribute DOMString entryType;
+    ///     readonly attribute FrozenArray&lt;TaskAttributionTiming&gt; attribution;
+    ///     [Default] object toJSON();
+    /// };
+    /// [Exposed=Window] interface TaskAttributionTiming : PerformanceEntry {
+    ///     readonly attribute DOMHighResTimeStamp startTime;
+    ///     readonly attribute DOMHighResTimeStamp duration;
+    ///     readonly attribute DOMString name;
+    ///     readonly attribute DOMString entryType;
+    ///     readonly attribute DOMString containerType;
+    ///     readonly attribute DOMString containerSrc;
+    ///     readonly attribute DOMString containerId;
+    ///     readonly attribute DOMString containerName;
+    ///     [Default] object toJSON();
+    /// };
+    /// </code>
+    /// </summary>
+    private static void AddLongTasks(IdlModel model)
+    {
+        if (!model.Definitions.ContainsKey("PerformanceEntry") || model.Definitions.ContainsKey("PerformanceLongTaskTiming"))
+            return;
+
+        AddInterface("PerformanceLongTaskTiming", "performancelongtasktiming", [("attribution", new IdlType { Generic = "FrozenArray", Subtypes = [new IdlType { Name = "TaskAttributionTiming" }] })]);
+        AddInterface("TaskAttributionTiming", "taskattributiontiming",
+        [
+            ("containerType", new IdlType { Name = "DOMString" }),
+            ("containerSrc", new IdlType { Name = "DOMString" }),
+            ("containerId", new IdlType { Name = "DOMString" }),
+            ("containerName", new IdlType { Name = "DOMString" }),
+        ]);
+
+        void AddInterface(string name, string anchor, List<(string Name, IdlType Type)> attributes)
+        {
+            const string Source = "longtasks";
+            const string SpecUrl = "https://w3c.github.io/longtasks/";
+            List<(string Name, IdlType Type)> allAttributes =
+            [
+                ("startTime", new IdlType { Name = "DOMHighResTimeStamp" }),
+                ("duration", new IdlType { Name = "DOMHighResTimeStamp" }),
+                ("name", new IdlType { Name = "DOMString" }),
+                ("entryType", new IdlType { Name = "DOMString" }),
+                .. attributes,
+            ];
+            var members = allAttributes.ConvertAll(attribute => new IdlMember
+            {
+                Kind = IdlMemberKind.Attribute,
+                Name = attribute.Name,
+                Type = attribute.Type,
+                Readonly = true,
+                Href = SpecUrl + "#dom-" + anchor + "-" + attribute.Name.ToLowerInvariant(),
+                Source = Source,
+                DeclaringDefinition = name,
+            });
+            members.Add(new IdlMember
+            {
+                Kind = IdlMemberKind.Operation,
+                Name = "toJSON",
+                Type = new IdlType { Name = "object" },
+                ExtAttrs = [new IdlExtendedAttribute { Name = "Default" }],
+                Href = SpecUrl + "#dom-" + anchor + "-tojson",
+                Source = Source,
+                DeclaringDefinition = name,
+            });
+            model.Definitions[name] = new IdlDefinition
+            {
+                Name = name,
+                Kind = IdlDefinitionKind.Interface,
+                Inheritance = "PerformanceEntry",
+                Members = members,
+                ExtAttrs = [new IdlExtendedAttribute { Name = "Exposed", Value = "Window" }],
+                Href = SpecUrl + "#" + anchor,
+                Source = Source,
+                SpecUrl = SpecUrl,
+            };
+        }
     }
 
     /// <summary>

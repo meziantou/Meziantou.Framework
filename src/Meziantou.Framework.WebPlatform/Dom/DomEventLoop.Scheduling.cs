@@ -129,8 +129,7 @@ public sealed partial class DomEventLoop
         CurrentContinuationState = task.ContinuationState;
         try
         {
-            task.Steps();
-            PerformMicrotaskCheckpoint();
+            RunTaskAndMicrotasks(task.Steps);
         }
         finally
         {

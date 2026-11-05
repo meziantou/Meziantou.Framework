@@ -9,35 +9,35 @@ description: "The results of the web-platform-tests of is-input-pending, and why
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 10 | 10 | – |
-| [Tentative](#tentative-tests) | 0 | 2 | 2 | – |
+| [Stable](#stable-tests) | 10 | 10 | 0 | 100% |
+| [Tentative](#tentative-tests) | 0 | 2 | 0 | 0% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **0** | **12** | **12** | **–** |
+| **All** | **10** | **12** | **0** | **83%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 12
+- **TEST RUNNER**: 2
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`idlharness.window.js`](https://wpt.fyi/results/is-input-pending/idlharness.window.js) | Disabled | – | NOT IMPLEMENTED | isInputPending() |
-| [`security/cross-origin-subframe-complex-clip.sub.html`](https://wpt.fyi/results/is-input-pending/security/cross-origin-subframe-complex-clip.sub.html) | Disabled | – | NOT IMPLEMENTED | isInputPending() |
-| [`security/cross-origin-subframe-masked-complex-clip.sub.html`](https://wpt.fyi/results/is-input-pending/security/cross-origin-subframe-masked-complex-clip.sub.html) | Disabled | – | NOT IMPLEMENTED | isInputPending() |
-| [`security/cross-origin-subframe-masked-pointer-events-mixed-2.sub.html`](https://wpt.fyi/results/is-input-pending/security/cross-origin-subframe-masked-pointer-events-mixed-2.sub.html) | Disabled | – | NOT IMPLEMENTED | isInputPending() |
-| [`security/cross-origin-subframe-masked-pointer-events-mixed.sub.html`](https://wpt.fyi/results/is-input-pending/security/cross-origin-subframe-masked-pointer-events-mixed.sub.html) | Disabled | – | NOT IMPLEMENTED | isInputPending() |
-| [`security/cross-origin-subframe-masked-pointer-events-none.sub.html`](https://wpt.fyi/results/is-input-pending/security/cross-origin-subframe-masked-pointer-events-none.sub.html) | Disabled | – | NOT IMPLEMENTED | isInputPending() |
-| [`security/cross-origin-subframe-overlap.sub.html`](https://wpt.fyi/results/is-input-pending/security/cross-origin-subframe-overlap.sub.html) | Disabled | – | NOT IMPLEMENTED | isInputPending() |
-| [`security/cross-origin-subframe-pointer-events-none.sub.html`](https://wpt.fyi/results/is-input-pending/security/cross-origin-subframe-pointer-events-none.sub.html) | Disabled | – | NOT IMPLEMENTED | isInputPending() |
-| [`security/cross-origin-subframe-transformed.sub.html`](https://wpt.fyi/results/is-input-pending/security/cross-origin-subframe-transformed.sub.html) | Disabled | – | NOT IMPLEMENTED | isInputPending() |
-| [`security/cross-origin-subframe.sub.html`](https://wpt.fyi/results/is-input-pending/security/cross-origin-subframe.sub.html) | Disabled | – | NOT IMPLEMENTED | isInputPending() |
+| [`idlharness.window.js`](https://wpt.fyi/results/is-input-pending/idlharness.window.js) | Pass | 25 / 25 |  |  |
+| [`security/cross-origin-subframe-complex-clip.sub.html`](https://wpt.fyi/results/is-input-pending/security/cross-origin-subframe-complex-clip.sub.html) | Pass | 1 / 1 |  |  |
+| [`security/cross-origin-subframe-masked-complex-clip.sub.html`](https://wpt.fyi/results/is-input-pending/security/cross-origin-subframe-masked-complex-clip.sub.html) | Pass | 2 / 2 |  |  |
+| [`security/cross-origin-subframe-masked-pointer-events-mixed-2.sub.html`](https://wpt.fyi/results/is-input-pending/security/cross-origin-subframe-masked-pointer-events-mixed-2.sub.html) | Pass | 2 / 2 |  |  |
+| [`security/cross-origin-subframe-masked-pointer-events-mixed.sub.html`](https://wpt.fyi/results/is-input-pending/security/cross-origin-subframe-masked-pointer-events-mixed.sub.html) | Pass | 1 / 1 |  |  |
+| [`security/cross-origin-subframe-masked-pointer-events-none.sub.html`](https://wpt.fyi/results/is-input-pending/security/cross-origin-subframe-masked-pointer-events-none.sub.html) | Pass | 1 / 1 |  |  |
+| [`security/cross-origin-subframe-overlap.sub.html`](https://wpt.fyi/results/is-input-pending/security/cross-origin-subframe-overlap.sub.html) | Pass | 2 / 2 |  |  |
+| [`security/cross-origin-subframe-pointer-events-none.sub.html`](https://wpt.fyi/results/is-input-pending/security/cross-origin-subframe-pointer-events-none.sub.html) | Pass | 1 / 1 |  |  |
+| [`security/cross-origin-subframe-transformed.sub.html`](https://wpt.fyi/results/is-input-pending/security/cross-origin-subframe-transformed.sub.html) | Pass | 2 / 2 |  |  |
+| [`security/cross-origin-subframe.sub.html`](https://wpt.fyi/results/is-input-pending/security/cross-origin-subframe.sub.html) | Pass | 1 / 1 |  |  |
 
 ## Tentative tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`tentative/same-origin-subframe.sub.html`](https://wpt.fyi/results/is-input-pending/tentative/same-origin-subframe.sub.html) | Disabled | – | NOT IMPLEMENTED | isInputPending() |
-| [`tentative/toplevel.html`](https://wpt.fyi/results/is-input-pending/tentative/toplevel.html) | Disabled | – | NOT IMPLEMENTED | isInputPending() |
+| [`tentative/same-origin-subframe.sub.html`](https://wpt.fyi/results/is-input-pending/tentative/same-origin-subframe.sub.html) | Fail | 0 / 2 | TEST RUNNER | the test driver dispatches the input of `test_driver.Actions` from timers of the event loop, and the runner does not report these pending actions to `isInputPending()` (`BrowsingContextOptions.PendingInput` is not set, so it returns false); the security tests, which expect false, pass |
+| [`tentative/toplevel.html`](https://wpt.fyi/results/is-input-pending/tentative/toplevel.html) | Fail | 0 / 1 | TEST RUNNER | the test driver dispatches the input of `test_driver.Actions` from timers of the event loop, and the runner does not report these pending actions to `isInputPending()` (`BrowsingContextOptions.PendingInput` is not set, so it returns false); the security tests, which expect false, pass |

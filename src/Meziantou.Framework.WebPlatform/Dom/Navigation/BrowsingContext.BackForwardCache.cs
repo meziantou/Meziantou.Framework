@@ -440,6 +440,14 @@ public sealed partial class BrowsingContext
         }
 
         document.IsUnloaded = false;
+
+        // https://wicg.github.io/page-lifecycle/#bfcache-changes: the document is resumed before the pageshow event (unless
+        // its top-level browsing context is frozen)
+        if (!Top.IsFrozen)
+        {
+            document.ChangeFrozenness(frozen: false);
+        }
+
         window.Performance.IncrementNavigationId();
         if (document.ReadyState == DocumentReadyState.Complete && !document.PageShowing)
         {

@@ -163,3 +163,10 @@ are module source objects. Only the script engine adapters implement or call the
 `URLPattern.compareComponent()` and `URLPattern.prototype.generate()` methods, as tested by the pinned
 [web-platform-tests](https://github.com/web-platform-tests/wpt/tree/3d98b9b722ca38685e04dea4e5208d45ce7fd55f/urlpattern).
 Their APIs and behavior may change while the proposals are under discussion.
+
+## WEBPLATEXP0016: iframe policy attribute
+
+`HtmlIFrameElement.Policy` implements the `policy` attribute of the `iframe` elements of the
+[Document Policy](https://wicg.github.io/document-policy/#iframe-policy-attribute) draft: the required document policy of
+the iframe, sent in the `Sec-Required-Document-Policy` header of its navigations. Only Chromium implements it, behind a
+flag. Its API and behavior may change while the proposal is under discussion.

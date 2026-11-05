@@ -1766,6 +1766,9 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         });
     }
 
+    /// <summary>Freezes an object (<c>Object.freeze</c>), e.g. an element of a frozen array that the specification freezes.</summary>
+    internal TValue Freeze(TValue value) => Adapter.Call(EvaluateBuiltIn("Object.freeze"), Adapter.Undefined, [value]);
+
     /// <summary>Converts a task to a promise (https://webidl.spec.whatwg.org/#es-promise).</summary>
     internal TValue ToPromise(Task task) => ToPromiseCore(task, () => Adapter.Undefined);
 

@@ -53,7 +53,7 @@ public sealed partial class Window : GlobalScope
 
     internal override TimeSpan SuspendedDuration => Document.GetSuspendedDuration();
 
-    internal override bool AreTimersSuspended => Document.IsInBackForwardCache;
+    internal override bool AreTimersSuspended => Document.IsSuspended;
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#concept-document-window</summary>
     /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-document-2"/>

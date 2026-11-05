@@ -397,6 +397,9 @@ internal sealed partial class IdlModel
         ReplaceSvgPathSegmentInterfaceWithDictionary(model);
         RemoveSvgPathElementGeometryMembers(model);
         FixCssParserApiTypes(model);
+        SetMediaMetadataArtworkType(model);
+        AddIFrameElementPolicy(model);
+        AddDocumentPolicyViolationReportBody(model);
         return model;
     }
 
@@ -1156,6 +1159,98 @@ internal sealed partial class IdlModel
                 ExperimentalApi = "UIEventPseudoTarget",
             });
         }
+    }
+
+    /// <summary>
+    /// The <c>artwork</c> attribute of MediaMetadata is a <c>FrozenArray&lt;object&gt;</c>, whose setter converts the objects
+    /// to MediaImage dictionaries (https://w3c.github.io/mediasession/#convert-artwork-algorithm, which throws a TypeError for
+    /// an image without <c>src</c>) and whose getter returns the converted dictionaries: it is a <c>FrozenArray&lt;MediaImage&gt;</c>.
+    /// </summary>
+    private static void SetMediaMetadataArtworkType(IdlModel model)
+    {
+        if (!model.Definitions.TryGetValue("MediaMetadata", out var definition))
+            return;
+
+        var index = definition.Members.FindIndex(m => m.Name == "artwork" && m.Kind == IdlMemberKind.Attribute);
+        if (index < 0 || definition.Members[index] is not { Type: { Generic: "FrozenArray", Subtypes: [{ Name: "object" }] } } member)
+            return;
+
+        definition.Members[index] = new IdlMember
+        {
+            Kind = member.Kind,
+            Name = member.Name,
+            Type = new IdlType { Generic = "FrozenArray", Subtypes = [new IdlType { Name = "MediaImage" }] },
+            Readonly = member.Readonly,
+            ExtAttrs = member.ExtAttrs,
+            Href = member.Href,
+            Source = member.Source,
+            DeclaringDefinition = member.DeclaringDefinition,
+        };
+    }
+
+    /// <summary>
+    /// The body of the <c>document-policy-violation</c> reports (https://wicg.github.io/document-policy/#reporting), which the
+    /// draft describes without IDL; its members are the ones of the browsers:
+    /// <code>dictionary DocumentPolicyViolationReportBody : ReportBody { DOMString featureId; DOMString? sourceFile; long? lineNumber; long? columnNumber; DOMString disposition; DOMString? message; };</code>
+    /// </summary>
+    private static void AddDocumentPolicyViolationReportBody(IdlModel model)
+    {
+        if (!model.Definitions.ContainsKey("ReportBody") || model.Definitions.ContainsKey("DocumentPolicyViolationReportBody"))
+            return;
+
+        IdlMember Field(string name, string type, bool nullable = false) => new()
+        {
+            Kind = IdlMemberKind.Field,
+            Name = name,
+            Type = new IdlType { Name = type, Nullable = nullable },
+            Source = "document-policy",
+            DeclaringDefinition = "DocumentPolicyViolationReportBody",
+        };
+
+        model.Definitions["DocumentPolicyViolationReportBody"] = new IdlDefinition
+        {
+            Name = "DocumentPolicyViolationReportBody",
+            Kind = IdlDefinitionKind.Dictionary,
+            Inheritance = "ReportBody",
+            Members =
+            [
+                Field("featureId", "DOMString"),
+                Field("sourceFile", "DOMString", nullable: true),
+                Field("lineNumber", "long", nullable: true),
+                Field("columnNumber", "long", nullable: true),
+                Field("disposition", "DOMString"),
+                Field("message", "DOMString", nullable: true),
+            ],
+            Source = "document-policy",
+            SpecUrl = "https://wicg.github.io/document-policy/",
+        };
+    }
+
+    /// <summary>
+    /// The <c>policy</c> attribute of the <c>iframe</c> elements (https://wicg.github.io/document-policy/#iframe-policy-attribute):
+    /// the required document policy of the iframe, which webref does not include (Document Policy is a WICG draft).
+    /// <code>
+    /// partial interface HTMLIFrameElement {
+    ///   [CEReactions] attribute DOMString policy;
+    /// };
+    /// </code>
+    /// </summary>
+    private static void AddIFrameElementPolicy(IdlModel model)
+    {
+        if (!model.Definitions.TryGetValue("HTMLIFrameElement", out var definition) || definition.Members.Exists(m => m.Name == "policy"))
+            return;
+
+        definition.Members.Add(new IdlMember
+        {
+            Kind = IdlMemberKind.Attribute,
+            Name = "policy",
+            Type = new IdlType { Name = "DOMString" },
+            ExtAttrs = [new IdlExtendedAttribute { Name = "CEReactions" }],
+            Href = "https://wicg.github.io/document-policy/#iframe-policy-attribute",
+            Source = "document-policy",
+            DeclaringDefinition = definition.Name,
+            ExperimentalApi = "DocumentPolicyIframeAttribute",
+        });
     }
 
     /// <summary>

@@ -9,27 +9,27 @@ description: "The results of the web-platform-tests of mediasession, and why the
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 9 | 9 | – |
+| [Stable](#stable-tests) | 8 | 9 | 0 | 89% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **0** | **9** | **9** | **–** |
+| **All** | **8** | **9** | **0** | **89%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 9
+- **NOT IMPLEMENTED**: 1
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`artwork-url-encoding-euc-kr.html`](https://wpt.fyi/results/mediasession/artwork-url-encoding-euc-kr.html) | Disabled | – | NOT IMPLEMENTED | Media Session API |
-| [`idlharness.window.js`](https://wpt.fyi/results/mediasession/idlharness.window.js) | Disabled | – | NOT IMPLEMENTED | Media Session API |
-| [`media-session-artwork-fetch.https.html`](https://wpt.fyi/results/mediasession/media-session-artwork-fetch.https.html) | Disabled | – | NOT IMPLEMENTED | Media Session API |
-| [`mediametadata.html`](https://wpt.fyi/results/mediasession/mediametadata.html) | Disabled | – | NOT IMPLEMENTED | Media Session API |
-| [`playbackstate.html`](https://wpt.fyi/results/mediasession/playbackstate.html) | Disabled | – | NOT IMPLEMENTED | Media Session API |
-| [`positionstate.html`](https://wpt.fyi/results/mediasession/positionstate.html) | Disabled | – | NOT IMPLEMENTED | Media Session API |
-| [`setactionhandler.html`](https://wpt.fyi/results/mediasession/setactionhandler.html) | Disabled | – | NOT IMPLEMENTED | Media Session API |
-| [`setcameraactive.html`](https://wpt.fyi/results/mediasession/setcameraactive.html) | Disabled | – | NOT IMPLEMENTED | Media Session API |
-| [`setmicrophoneactive.html`](https://wpt.fyi/results/mediasession/setmicrophoneactive.html) | Disabled | – | NOT IMPLEMENTED | Media Session API |
+| [`artwork-url-encoding-euc-kr.html`](https://wpt.fyi/results/mediasession/artwork-url-encoding-euc-kr.html) | Pass | 1 / 1 |  |  |
+| [`idlharness.window.js`](https://wpt.fyi/results/mediasession/idlharness.window.js) | Pass | 70 / 70 |  |  |
+| [`media-session-artwork-fetch.https.html`](https://wpt.fyi/results/mediasession/media-session-artwork-fetch.https.html) | Timeout | 2 / 4 | NOT IMPLEMENTED | the images of the artwork of the media session are not fetched (the host gets their URLs, `MediaSessionOptions.SessionChanged`), so the service worker sees no request |
+| [`mediametadata.html`](https://wpt.fyi/results/mediasession/mediametadata.html) | Pass | 20 / 20 |  |  |
+| [`playbackstate.html`](https://wpt.fyi/results/mediasession/playbackstate.html) | Pass | 3 / 3 |  |  |
+| [`positionstate.html`](https://wpt.fyi/results/mediasession/positionstate.html) | Pass | 12 / 12 |  |  |
+| [`setactionhandler.html`](https://wpt.fyi/results/mediasession/setactionhandler.html) | Pass | 18 / 18 |  |  |
+| [`setcameraactive.html`](https://wpt.fyi/results/mediasession/setcameraactive.html) | Pass | 1 / 1 |  |  |
+| [`setmicrophoneactive.html`](https://wpt.fyi/results/mediasession/setmicrophoneactive.html) | Pass | 1 / 1 |  |  |

@@ -11,14 +11,14 @@ description: "The results of the web-platform-tests of css/css-highlight-api, an
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 19 | 19 | 0 | 100% |
 | [Tentative](#tentative-tests) | 3 | 3 | 0 | 100% |
-| [Reftests](#reftests) | 112 | 118 | 0 | 95% |
-| **All** | **134** | **140** | **0** | **96%** |
+| [Reftests](#reftests) | 113 | 118 | 0 | 96% |
+| **All** | **135** | **140** | **0** | **96%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 2
+- **BUG**: 1
 - **NOT IMPLEMENTED**: 4
 
 ## Stable tests
@@ -128,7 +128,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`painting/custom-highlight-painting-018.html`](https://wpt.fyi/results/css/css-highlight-api/painting/custom-highlight-painting-018.html) | Pass | 1 / 1 |  |  |
 | [`painting/custom-highlight-painting-019.html`](https://wpt.fyi/results/css/css-highlight-api/painting/custom-highlight-painting-019.html) | Pass | 1 / 1 |  |  |
 | [`painting/custom-highlight-painting-020.html`](https://wpt.fyi/results/css/css-highlight-api/painting/custom-highlight-painting-020.html) | Pass | 1 / 1 |  |  |
-| [`painting/custom-highlight-painting-021.html`](https://wpt.fyi/results/css/css-highlight-api/painting/custom-highlight-painting-021.html) | Fail | 0 / 1 | BUG | the backgrounds of the highlights are painted before the glyphs of the whole text fragment, so the `-webkit-text-stroke` of the glyph before the highlighted range overhangs the background of the highlight (14 pixels on its left edge); the reference paints the background of a `span` over the stroke of the text before it (a highlight overlay is expected over the text that is not highlighted); Safari fails too |
+| [`painting/custom-highlight-painting-021.html`](https://wpt.fyi/results/css/css-highlight-api/painting/custom-highlight-painting-021.html) | Pass | 1 / 1 |  |  |
 | [`painting/custom-highlight-painting-anonymous-block-001.html`](https://wpt.fyi/results/css/css-highlight-api/painting/custom-highlight-painting-anonymous-block-001.html) | Pass | 1 / 1 |  |  |
 | [`painting/custom-highlight-painting-below-grammar.html`](https://wpt.fyi/results/css/css-highlight-api/painting/custom-highlight-painting-below-grammar.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the spelling and grammar checking (`::spelling-error`, `::grammar-error`) |
 | [`painting/custom-highlight-painting-below-selection-transparency.html`](https://wpt.fyi/results/css/css-highlight-api/painting/custom-highlight-painting-below-selection-transparency.html) | Pass | 1 / 1 |  |  |

@@ -80,6 +80,12 @@ internal static class CssFilterInterpolation
             if (combined is null)
                 return null;
 
+            // An angle converted from another unit (e.g. rad) is serialized with 6 significant digits, as in the browsers
+            if (filterA.Name == "hue-rotate" && CssGenericInterpolation.Parse(combined) is [CssPreservedToken { Type: CssTokenType.Dimension } angle])
+            {
+                combined = CssColor.FormatNumber(angle.Token.NumericValue) + angle.Token.Value;
+            }
+
             // The values of the functions cannot be negative (the accumulated values are clamped after the interpolation)
             if (operation == CssCombineOperation.Interpolate && combined.StartsWith('-', StringComparison.Ordinal) && filterA.Name != "hue-rotate")
             {

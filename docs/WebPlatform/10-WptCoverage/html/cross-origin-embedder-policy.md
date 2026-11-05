@@ -9,16 +9,15 @@ description: "The results of the web-platform-tests of html/cross-origin-embedde
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 53 | 73 | 0 | 73% |
+| [Stable](#stable-tests) | 56 | 73 | 0 | 77% |
 | [Tentative](#tentative-tests) | 0 | 3 | 0 | 0% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **53** | **76** | **0** | **70%** |
+| **All** | **56** | **76** | **0** | **74%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 3
 - **TEST BUG**: 14
 - **NOT IMPLEMENTED**: 5
 - **TEST RUNNER**: 1
@@ -35,7 +34,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`cache-storage-reporting-service-worker.https.html`](https://wpt.fyi/results/html/cross-origin-embedder-policy/cache-storage-reporting-service-worker.https.html) | Timeout | 0 / 2 | TEST BUG | the test calls `toJSON()` on the reports: `Report` and the report bodies are dictionaries since w3c/reporting#284 (https://w3c.github.io/reporting/#dictdef-report), so the reports given to the observers are plain objects without `toJSON()` (the browsers still implement the former `Report` interface) |
 | [`cache-storage-reporting-shared-worker.https.html`](https://wpt.fyi/results/html/cross-origin-embedder-policy/cache-storage-reporting-shared-worker.https.html) | Timeout | 0 / 2 | TEST BUG | the test calls `toJSON()` on the reports: `Report` and the report bodies are dictionaries since w3c/reporting#284 (https://w3c.github.io/reporting/#dictdef-report), so the reports given to the observers are plain objects without `toJSON()` (the browsers still implement the former `Report` interface) |
 | [`coep-frame-javascript.https.html`](https://wpt.fyi/results/html/cross-origin-embedder-policy/coep-frame-javascript.https.html) | Pass | 1 / 1 |  |  |
-| [`coep-on-response-from-service-worker.https.html`](https://wpt.fyi/results/html/cross-origin-embedder-policy/coep-on-response-from-service-worker.https.html) | Fail | 12 / 13 | BUG | the COEP check of a response of a service worker for an iframe of a COEP document |
+| [`coep-on-response-from-service-worker.https.html`](https://wpt.fyi/results/html/cross-origin-embedder-policy/coep-on-response-from-service-worker.https.html) | Pass | 13 / 13 |  |  |
 | [`credentialless/cache-storage.https.window.js`](https://wpt.fyi/results/html/cross-origin-embedder-policy/credentialless/cache-storage.https.window.js) | Pass | 56 / 56 |  |  |
 | [`credentialless/cache.window.js`](https://wpt.fyi/results/html/cross-origin-embedder-policy/credentialless/cache.window.js) | Pass | 1 / 1 |  |  |
 | [`credentialless/cross-origin-isolated.window.js`](https://wpt.fyi/results/html/cross-origin-embedder-policy/credentialless/cross-origin-isolated.window.js) | Pass | 5 / 5 |  |  |
@@ -53,7 +52,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`credentialless/reporting-subresource-corp.https.window.js`](https://wpt.fyi/results/html/cross-origin-embedder-policy/credentialless/reporting-subresource-corp.https.window.js) | Timeout | 0 / 1 | TEST BUG | the test calls `toJSON()` on the reports: `Report` and the report bodies are dictionaries since w3c/reporting#284 (https://w3c.github.io/reporting/#dictdef-report), so the reports given to the observers are plain objects without `toJSON()` (the browsers still implement the former `Report` interface) |
 | [`credentialless/script.https.window.js`](https://wpt.fyi/results/html/cross-origin-embedder-policy/credentialless/script.https.window.js) | Pass | 7 / 7 |  |  |
 | [`credentialless/service-worker-coep-credentialless-proxy.https.window.js`](https://wpt.fyi/results/html/cross-origin-embedder-policy/credentialless/service-worker-coep-credentialless-proxy.https.window.js) | Pass | 1 / 1 |  |  |
-| [`credentialless/service-worker-coep-none-proxy.https.window.js`](https://wpt.fyi/results/html/cross-origin-embedder-policy/credentialless/service-worker-coep-none-proxy.https.window.js) | Fail | 0 / 1 | BUG | the COEP of a service worker whose script has no COEP is not checked against the documents it controls |
+| [`credentialless/service-worker-coep-none-proxy.https.window.js`](https://wpt.fyi/results/html/cross-origin-embedder-policy/credentialless/service-worker-coep-none-proxy.https.window.js) | Pass | 1 / 1 |  |  |
 | [`credentialless/service-worker.https.window.js`](https://wpt.fyi/results/html/cross-origin-embedder-policy/credentialless/service-worker.https.window.js) | Pass | 5 / 5 |  |  |
 | [`credentialless/shared-worker.https.window.js`](https://wpt.fyi/results/html/cross-origin-embedder-policy/credentialless/shared-worker.https.window.js) | Pass | 8 / 8 |  |  |
 | [`credentialless/video.https.window.js`](https://wpt.fyi/results/html/cross-origin-embedder-policy/credentialless/video.https.window.js) | Pass | 6 / 6 |  |  |
@@ -74,7 +73,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`non-initial-about-blank.https.html`](https://wpt.fyi/results/html/cross-origin-embedder-policy/non-initial-about-blank.https.html) | Pass | 1 / 1 |  |  |
 | [`none-load-from-cache-storage.https.html`](https://wpt.fyi/results/html/cross-origin-embedder-policy/none-load-from-cache-storage.https.html) | Pass | 29 / 29 |  |  |
 | [`none-sw-from-none.https.html`](https://wpt.fyi/results/html/cross-origin-embedder-policy/none-sw-from-none.https.html) | Pass | 13 / 13 |  |  |
-| [`none-sw-from-require-corp.https.html`](https://wpt.fyi/results/html/cross-origin-embedder-policy/none-sw-from-require-corp.https.html) | Fail | 12 / 13 | BUG | the registration of a service worker without COEP from a COEP document is not rejected |
+| [`none-sw-from-require-corp.https.html`](https://wpt.fyi/results/html/cross-origin-embedder-policy/none-sw-from-require-corp.https.html) | Pass | 13 / 13 |  |  |
 | [`none.https.html`](https://wpt.fyi/results/html/cross-origin-embedder-policy/none.https.html) | Pass | 4 / 4 |  |  |
 | [`report-only-require-corp.https.html`](https://wpt.fyi/results/html/cross-origin-embedder-policy/report-only-require-corp.https.html) | Pass | 4 / 4 |  |  |
 | [`reporting-cached-and-service-worker-responses.https.html`](https://wpt.fyi/results/html/cross-origin-embedder-policy/reporting-cached-and-service-worker-responses.https.html) | Timeout | 0 / 12 | TEST BUG | the test calls `toJSON()` on the reports: `Report` and the report bodies are dictionaries since w3c/reporting#284 (https://w3c.github.io/reporting/#dictdef-report), so the reports given to the observers are plain objects without `toJSON()` (the browsers still implement the former `Report` interface); the observer callback of the first subtest throws, so it times out and the other subtests do not run |

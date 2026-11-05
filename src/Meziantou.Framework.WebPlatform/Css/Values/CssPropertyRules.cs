@@ -46,7 +46,23 @@ internal static partial class CssPropertyRules
         ["font-language-override"] = IsValidFontLanguageOverride,
         ["flex"] = IsValidFlex,
         ["-webkit-flex"] = IsValidFlex,
+        ["shape-inside"] = IsValidShapeInside,
     };
+
+    /// <summary>
+    /// shape-inside: SVG 2 (https://svgwg.org/svg2-draft/text.html#ShapeInsideProperty) says that the inset() basic shape is
+    /// invalid, as in the browsers (the grammar is the union of the ones of SVG 2 and CSS Shapes 2).
+    /// </summary>
+    private static bool IsValidShapeInside(CssPropertyDefinition property, List<CssComponentValue> significant)
+    {
+        foreach (var value in significant)
+        {
+            if (value is CssFunction function && InfraAscii.EqualsIgnoreAsciiCase(function.Name, "inset"))
+                return false;
+        }
+
+        return true;
+    }
 
     /// <summary>
     /// flex (https://drafts.csswg.org/css-flexbox-1/#flex-property): "A unitless zero that is not already preceded by two flex

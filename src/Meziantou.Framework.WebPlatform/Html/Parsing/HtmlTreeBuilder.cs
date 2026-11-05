@@ -1137,6 +1137,21 @@ internal sealed partial class HtmlTreeBuilder
             return;
         }
 
+        // The fragment parser creates the children of the root in its own document, and their insertion in the fragment adopts
+        // them, which gives an element whose registry is null the global registry of the document. As in the browsers, the
+        // element keeps the registry of its intended parent (custom-elements/registries/Element-innerHTML.html)
+        if (ContextElement is not null && !ReferenceEquals(element.NodeDocument, targetParent.NodeDocument))
+        {
+            var registry = element.CustomElementRegistry;
+            targetParent.InsertBeforeCore(element, referenceChild);
+            if (registry is null && element.CustomElementRegistry is not null)
+            {
+                element.CustomElementRegistry = null;
+            }
+
+            return;
+        }
+
         targetParent.InsertBeforeCore(element, referenceChild);
     }
 

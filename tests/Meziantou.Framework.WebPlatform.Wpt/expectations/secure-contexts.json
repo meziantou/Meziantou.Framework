@@ -27,20 +27,12 @@
     "total": 4
   },
   "secure-contexts/shared-worker-insecure-first.tentative.https.html": {
-    "total": 4,
-    "failures": {
-      "Nested worker in shared worker in subframe": "FAIL",
-      "Shared worker in subframe": "FAIL"
-    }
+    "total": 4
   },
   "secure-contexts/shared-worker-secure-first.https.html": {
     "total": 4
   },
   "secure-contexts/shared-worker-secure-first.tentative.https.html": {
-    "total": 4,
-    "failures": {
-      "Nested worker from shared worker in popup": "FAIL",
-      "Shared worker in popup": "FAIL"
-    }
+    "total": 4
   }
 }

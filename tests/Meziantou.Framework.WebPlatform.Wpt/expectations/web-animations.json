@@ -31,10 +31,7 @@
     "total": 1
   },
   "web-animations/animation-model/animation-types/interpolation-per-property-001.html": {
-    "total": 507,
-    "failures": {
-      "filter: hue-rotate function with different unit(deg -> rad)": "FAIL"
-    }
+    "total": 507
   },
   "web-animations/animation-model/animation-types/interpolation-per-property-002.html": {
     "total": 505,
@@ -91,12 +88,7 @@
     "total": 1
   },
   "web-animations/animation-model/keyframe-effects/effect-value-iteration-composite-operation.html": {
-    "total": 38,
-    "failures": {
-      "iteration composition of complex math functions preserves AST left-to-right operand order": "FAIL",
-      "iteration composition of transform list animation whose order is mismatched": "FAIL",
-      "iteration composition of transform list animation whose order is mismatched because of missing functions": "FAIL"
-    }
+    "total": 38
   },
   "web-animations/animation-model/keyframe-effects/effect-value-opacity-replaced-effect-in-shadow-root.html": {
     "reftest": "PASS"
@@ -471,10 +463,7 @@
     "total": 2
   },
   "web-animations/responsive/to-color-change.html": {
-    "total": 13,
-    "failures": {
-      "Color interpolation uses pre-multiplied colors": "FAIL"
-    }
+    "total": 13
   },
   "web-animations/responsive/to-inherited-change.html": {
     "total": 3

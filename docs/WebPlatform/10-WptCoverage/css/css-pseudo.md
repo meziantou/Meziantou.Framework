@@ -10,15 +10,15 @@ description: "The results of the web-platform-tests of css/css-pseudo, and why t
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 45 | 49 | 0 | 92% |
-| [Tentative](#tentative-tests) | 9 | 12 | 0 | 75% |
-| [Reftests](#reftests) | 254 | 275 | 0 | 92% |
-| **All** | **308** | **336** | **0** | **92%** |
+| [Tentative](#tentative-tests) | 10 | 12 | 0 | 83% |
+| [Reftests](#reftests) | 256 | 275 | 0 | 93% |
+| **All** | **311** | **336** | **0** | **93%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 5
+- **BUG**: 2
 - **TEST BUG**: 9
 - **NOT IMPLEMENTED**: 14
 
@@ -82,7 +82,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 |---|---|--:|---|---|
 | [`CSSPseudoElement-convertPoint.tentative.html`](https://wpt.fyi/results/css/css-pseudo/CSSPseudoElement-convertPoint.tentative.html) | Pass | 7 / 7 |  |  |
 | [`CSSPseudoElement-geometry-edge-cases.tentative.html`](https://wpt.fyi/results/css/css-pseudo/CSSPseudoElement-geometry-edge-cases.tentative.html) | Pass | 23 / 23 |  |  |
-| [`CSSPseudoElement-getBoxQuads.tentative.html`](https://wpt.fyi/results/css/css-pseudo/CSSPseudoElement-getBoxQuads.tentative.html) | Fail | 7 / 8 | BUG | the margin box of the block-level `::before` includes its used margin-right (the over-constrained margin of CSS 2 §10.3.3, 147px in a 200px container); the test (Blink) expects its computed margin (3px) |
+| [`CSSPseudoElement-getBoxQuads.tentative.html`](https://wpt.fyi/results/css/css-pseudo/CSSPseudoElement-getBoxQuads.tentative.html) | Pass | 8 / 8 |  |  |
 | [`CSSPseudoElement-view-transitions-scoped.tentative.html`](https://wpt.fyi/results/css/css-pseudo/CSSPseudoElement-view-transitions-scoped.tentative.html) | Pass | 2 / 2 |  |  |
 | [`CSSPseudoElement-view-transitions.tentative.html`](https://wpt.fyi/results/css/css-pseudo/CSSPseudoElement-view-transitions.tentative.html) | Pass | 5 / 5 |  |  |
 | [`events-on-after-before-marker.tentative.html`](https://wpt.fyi/results/css/css-pseudo/events-on-after-before-marker.tentative.html) | Fail | 2 / 4 | NOT IMPLEMENTED | the sub-pseudo-element `::after::marker`: the box of the marker of a `::before`/`::after` list item is a box of its pseudo-element (it has no box quads and is hit as the `::after`) |
@@ -225,7 +225,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`highlight-custom-properties-dynamic-001.html`](https://wpt.fyi/results/css/css-pseudo/highlight-custom-properties-dynamic-001.html) | Pass | 1 / 1 |  |  |
 | [`highlight-fill-color-ignores-stroke-color.html`](https://wpt.fyi/results/css/css-pseudo/highlight-fill-color-ignores-stroke-color.html) | Pass | 1 / 1 |  |  |
 | [`highlight-painting-001.html`](https://wpt.fyi/results/css/css-pseudo/highlight-painting-001.html) | Pass | 1 / 1 |  |  |
-| [`highlight-painting-002.html`](https://wpt.fyi/results/css/css-pseudo/highlight-painting-002.html) | Fail | 0 / 1 | BUG | the shadow of the selected text is painted under the text of the whole fragment, so the text after the selection is over the shadow that overlaps it, where the reference paints the selection overlay (its background, its shadow and its text) over the text that is not selected. `highlight-painting-shadows-*` expect the opposite order when two highlights apply (the text that is not highlighted over the shadows of the highlights): Blink, the only browser that passes both, has a painting path for a selection alone |
+| [`highlight-painting-002.html`](https://wpt.fyi/results/css/css-pseudo/highlight-painting-002.html) | Pass | 1 / 1 |  |  |
 | [`highlight-painting-003.html`](https://wpt.fyi/results/css/css-pseudo/highlight-painting-003.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the spelling and grammar checking (`::spelling-error`, `::grammar-error`) |
 | [`highlight-painting-004.html`](https://wpt.fyi/results/css/css-pseudo/highlight-painting-004.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the spelling and grammar checking (`::spelling-error`, `::grammar-error`) |
 | [`highlight-painting-currentcolor-001.html`](https://wpt.fyi/results/css/css-pseudo/highlight-painting-currentcolor-001.html) | Pass | 1 / 1 |  |  |
@@ -319,7 +319,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`selection-background-color-non-applicable-properties.html`](https://wpt.fyi/results/css/css-pseudo/selection-background-color-non-applicable-properties.html) | Pass | 1 / 1 |  |  |
 | [`selection-background-color-revert.html`](https://wpt.fyi/results/css/css-pseudo/selection-background-color-revert.html) | Pass | 1 / 1 |  |  |
 | [`selection-background-color-transparent.html`](https://wpt.fyi/results/css/css-pseudo/selection-background-color-transparent.html) | Pass | 1 / 1 |  |  |
-| [`selection-background-painting-order.html`](https://wpt.fyi/results/css/css-pseudo/selection-background-painting-order.html) | Fail | 0 / 1 | BUG | the part of the italic glyph after the selection that overhangs the selected text is not painted under the background of `::selection` (the reference paints the glyphs in two layers) |
+| [`selection-background-painting-order.html`](https://wpt.fyi/results/css/css-pseudo/selection-background-painting-order.html) | Pass | 1 / 1 |  |  |
 | [`selection-contenteditable-011.html`](https://wpt.fyi/results/css/css-pseudo/selection-contenteditable-011.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `Selection.addRange()` in a `contenteditable` element does not move the focus to the editing host, as the browsers do: the reference, which focuses the element, has a focus ring (`outline: auto`) that the test does not have |
 | [`selection-input-011.html`](https://wpt.fyi/results/css/css-pseudo/selection-input-011.html) | Fail | 0 / 1 | TEST BUG | the selection of the value is highlighted with `::selection` as in the reference, but the reference focuses its `input` (it is painted with a focus ring): the test relies on `select()` giving the focus to the control, as in Chrome, which the standard does not specify (the only different pixels are the ones of the focus ring); Firefox and Safari fail too |
 | [`selection-intercharacter-011.html`](https://wpt.fyi/results/css/css-pseudo/selection-intercharacter-011.html) | Pass | 1 / 1 |  |  |

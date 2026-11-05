@@ -207,10 +207,7 @@
     "total": 2
   },
   "html/interaction/focus/the-autofocus-attribute/document-with-fragment-removed-target.html": {
-    "total": 1,
-    "failures": {
-      "Autofocus should be skipped when the target element has been removed from the document.": "FAIL"
-    }
+    "total": 1
   },
   "html/interaction/focus/the-autofocus-attribute/document-with-fragment-top.html": {
     "total": 2

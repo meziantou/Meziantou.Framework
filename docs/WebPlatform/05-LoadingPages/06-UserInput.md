@@ -71,7 +71,9 @@ a key such as `Enter`, `Tab`, `Backspace`, `ArrowLeft`, `Shift`) and the layout 
 
 The default actions run: the text is inserted in the text fields and the editable content, Tab moves the focus, Enter
 and Space activate the focused element (Enter submits the form of a text field), the arrow keys move the caret, and
-Escape closes the dialogs and the popovers.
+Escape closes the dialogs and the popovers. Outside of the editable content, the arrow keys, `PageUp`, `PageDown`, Space,
+`Home` and `End` scroll the focused scroll container (or the viewport). As in the browsers, a scroll container that the
+user can scroll and that has no focusable descendant can be focused by Tab and by `focus()` (not by a click).
 
 ## Pending input
 

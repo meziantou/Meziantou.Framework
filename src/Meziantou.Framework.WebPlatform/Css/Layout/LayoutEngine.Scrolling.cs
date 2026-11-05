@@ -232,6 +232,9 @@ internal sealed partial class LayoutEngine
         ResolvePendingPromises(state);
         if (smooth && position != state.Offset && eventLoop is not null)
         {
+            // The scroll is not completed: the scrollend event of a previous scroll of the box that is not fired yet (e.g. an
+            // instant scroll of the same task) is fired at the end of the smooth scroll, as in Blink
+            CancelPendingScrollEndEvent(state);
             state.SmoothScroll = new SmoothScroll(state.Offset, position, eventLoop.TimeProvider.GetTimestamp());
             eventLoop.RequestScrollSteps(_document);
             return AddPendingPromise(state);
@@ -250,6 +253,39 @@ internal sealed partial class LayoutEngine
         }
 
         return Task.CompletedTask;
+    }
+
+    private void CancelPendingScrollEndEvent(ScrollState state)
+    {
+        // (the events of the scroll containers of the pseudo-elements of an element are fired at the element: a pending event may
+        // be the one of another scrolling box)
+        if (state.PseudoElement is not null || (state.Element is { } element && HasPseudoElementScrollStates(element)))
+            return;
+
+        var target = state.Element ?? (EventTarget)_document;
+        for (var i = 0; i < _pendingScrollEvents.Count; i++)
+        {
+            if (ReferenceEquals(_pendingScrollEvents[i].Target, target) && _pendingScrollEvents[i].Type == "scrollend")
+            {
+                _pendingScrollEvents.RemoveAt(i);
+                state.ChangedSinceScrollEnd = true;
+                return;
+            }
+        }
+    }
+
+    private bool HasPseudoElementScrollStates(Element element)
+    {
+        if (_pseudoElementScrollStates is not null)
+        {
+            foreach (var key in _pseudoElementScrollStates.Keys)
+            {
+                if (ReferenceEquals(key.Element, element))
+                    return true;
+            }
+        }
+
+        return false;
     }
 
     private static Task AddPendingPromise(ScrollState state)

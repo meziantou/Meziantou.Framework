@@ -110,7 +110,7 @@ internal sealed partial class Painter
                 // element), the clip-path property must be treated as if it hadn't been specified"
                 if (style.Element is { } element && SvgResources.GetReferencedElement(element, url) is SvgClipPathElement clip)
                 {
-                    path = GetClipPathElementAsPath(clip, space);
+                    path = GetClipPathElementAsPath(clip, space, GetClipPathContentViewport(clip, space, cssBox: true));
                     if (path is null)
                     {
                         clipPathElement = clip;
@@ -256,7 +256,7 @@ internal sealed partial class Painter
         if (mask.ClipPath is { } clipPath)
         {
             _builder.SaveLayer(new SaveLayerItem(1, BlendMode.DestinationIn, Filters: null) { Source = source });
-            PaintClipPathElement(clipPath, mask.Space, depth: 0);
+            PaintClipPathElement(clipPath, mask.Space, cssBox: mask.Fragment is not null, depth: 0);
             _builder.Restore();
         }
 
@@ -319,7 +319,7 @@ internal sealed partial class Painter
             {
                 if (SvgResources.GetReferencedElement(element, url) is SvgClipPathElement clip)
                 {
-                    path = GetClipPathElementAsPath(clip, space);
+                    path = GetClipPathElementAsPath(clip, space, contentViewport: null);
                     if (path is null)
                     {
                         clipPathElement = clip;
@@ -489,6 +489,15 @@ internal sealed partial class Painter
 
     private const int MaxResourceDepth = 8;
 
+    /// <summary>
+    /// Returns the viewport that resolves the percentages of the contents of a clipPath element applied to a CSS box: with
+    /// userSpaceOnUse, its reference box (https://drafts.fxtf.org/css-masking/#element-attrdef-clippath-clippathunits: the user
+    /// coordinate system of the referencing element), not the SVG viewport of the svg element that contains the clipPath element;
+    /// null to resolve them in the SVG viewport of the clipPath element.
+    /// </summary>
+    private static SvgOutermostViewport? GetClipPathContentViewport(SvgClipPathElement clip, SvgResourceSpace space, bool cssBox)
+        => cssBox && !SvgResourceSpace.IsObjectBoundingBox(clip, "clipPathUnits", defaultIsObjectBoundingBox: false) ? new SvgOutermostViewport(space.Viewport.Width, space.Viewport.Height, 1) : null;
+
     /// <summary>Returns the transform from the coordinates of the contents of a clipPath element to the coordinates of the painting.</summary>
     private static SvgAffine GetClipPathContentTransform(SvgClipPathElement clip, SvgResourceSpace space)
     {
@@ -509,7 +518,7 @@ internal sealed partial class Painter
     /// area of a single shape without clip path (a clip of the display list); null when the clip needs a mask (several shapes,
     /// texts, nested clip paths). An empty clipPath element clips everything (an empty path).
     /// </summary>
-    private static DisplayPath? GetClipPathElementAsPath(SvgClipPathElement clip, SvgResourceSpace space)
+    private static DisplayPath? GetClipPathElementAsPath(SvgClipPathElement clip, SvgResourceSpace space, SvgOutermostViewport? contentViewport)
     {
         if (SvgUserSpace.GetComputedValue(clip, "clip-path") is { } nested && nested != "none")
             return null;
@@ -529,7 +538,7 @@ internal sealed partial class Painter
         if (shape is null)
             return new DisplayPath();
 
-        var path = DisplayPath.FromSvg(SvgShapeGeometry.GetPath(shape), GetClipRule(shape));
+        var path = DisplayPath.FromSvg(SvgShapeGeometry.GetPath(shape, contentViewport), GetClipRule(shape));
         return BasicShapePaths.Transform(path, SvgUserSpace.GetTransform(shape).Then(GetClipPathContentTransform(clip, space)));
     }
 
@@ -549,7 +558,7 @@ internal sealed partial class Painter
     /// union of the fill areas of its shapes (with <c>clip-rule</c>), each one clipped by its own clip path, the whole clipped by the
     /// clip path of the clipPath element.
     /// </summary>
-    private void PaintClipPathElement(SvgClipPathElement clip, SvgResourceSpace space, int depth)
+    private void PaintClipPathElement(SvgClipPathElement clip, SvgResourceSpace space, bool cssBox, int depth)
     {
         if (depth > MaxResourceDepth)
             return;
@@ -570,6 +579,7 @@ internal sealed partial class Painter
         }
 
         var toPainting = GetClipPathContentTransform(clip, space);
+        var contentViewport = GetClipPathContentViewport(clip, space, cssBox);
         var paint = new DisplayPaint(DisplayColor.Black);
         foreach (var child in clip.Children)
         {
@@ -599,7 +609,7 @@ internal sealed partial class Painter
             if (geometry is null)
                 continue;
 
-            var path = BasicShapePaths.Transform(DisplayPath.FromSvg(SvgShapeGeometry.GetPath(geometry), GetClipRule(child)), transform.Then(toPainting));
+            var path = BasicShapePaths.Transform(DisplayPath.FromSvg(SvgShapeGeometry.GetPath(geometry, contentViewport), GetClipRule(child)), transform.Then(toPainting));
             var childClip = GetNestedClipPath(child);
             if (childClip is not null && !active.Contains(childClip))
             {
@@ -610,7 +620,7 @@ internal sealed partial class Painter
                 // The clip path of a child applies in the user space of the child (the coordinates of the contents of the clipPath
                 // element, with the transform of the child)
                 _builder.Transform(DisplayMatrix.FromSvg(childTransform.Then(toPainting)));
-                PaintClipPathElement(childClip, GetClipPathChildSpace(child, space), depth + 1);
+                PaintClipPathElement(childClip, GetClipPathChildSpace(child, space), cssBox: false, depth + 1);
                 _builder.Restore();
                 _builder.Restore();
             }
@@ -623,7 +633,7 @@ internal sealed partial class Painter
         if (nested is not null)
         {
             _builder.SaveLayer(new SaveLayerItem(1, BlendMode.DestinationIn, Filters: null));
-            PaintClipPathElement(nested, space, depth + 1);
+            PaintClipPathElement(nested, space, cssBox, depth + 1);
         }
 
         _builder.RestoreTo(saveCount);

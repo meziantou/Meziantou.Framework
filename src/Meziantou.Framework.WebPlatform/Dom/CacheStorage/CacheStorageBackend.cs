@@ -114,6 +114,12 @@ public sealed class CachedRequest
     /// <summary>Gets the referrer policy.</summary>
     public string ReferrerPolicy { get; init; } = "";
 
+    /// <summary>Gets a value indicating whether the request is a reload navigation (https://fetch.spec.whatwg.org/#concept-request-reload-navigation-flag).</summary>
+    public bool IsReloadNavigation { get; init; }
+
+    /// <summary>Gets a value indicating whether the request is a history navigation (https://fetch.spec.whatwg.org/#concept-request-history-navigation-flag).</summary>
+    public bool IsHistoryNavigation { get; init; }
+
     /// <summary>Returns the URL without its query and its fragment.</summary>
     public static string GetUrlWithoutQuery(string url)
     {

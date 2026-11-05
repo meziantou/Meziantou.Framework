@@ -418,6 +418,10 @@ internal sealed partial class EditingAlgorithms
         return value.Length > 0 ? value : GetInlineStyleValue(element, "text-decoration-line");
     }
 
+    /// <summary>The line keywords (underline, overline, line-through) of a value of text-decoration.</summary>
+    private static IEnumerable<string> GetTextDecorationLines(string decoration)
+        => decoration.Split(' ', StringSplitOptions.RemoveEmptyEntries).Where(static token => token is "underline" or "overline" or "line-through");
+
     private static void RemoveEmptyStyleAttribute(Element element)
     {
         if (element.GetAttributeValue("style") is { } style && string.IsNullOrWhiteSpace(style))
@@ -780,10 +784,10 @@ internal sealed partial class EditingAlgorithms
     }
 
     /// <summary>https://w3c.github.io/editing/docs/execCommand/#reorder-modifiable-descendants</summary>
-    private void ReorderModifiableDescendants(Node? node, string command, string newValue)
+    private bool ReorderModifiableDescendants(Node? node, string command, string newValue)
     {
         if (node is null)
-            return;
+            return false;
 
         var candidate = node;
         while (IsModifiableElement(candidate) && candidate.ChildCount == 1 && IsModifiableElement(candidate.FirstChild)
@@ -796,7 +800,7 @@ internal sealed partial class EditingAlgorithms
             || !AreEquivalentValues(command, GetSpecifiedCommandValue((Element)candidate, command), newValue)
             || !IsEffectiveValueLooselyEquivalent(candidate, command, newValue))
         {
-            return;
+            return false;
         }
 
         while (candidate.FirstChild is { } child)
@@ -806,6 +810,7 @@ internal sealed partial class EditingAlgorithms
 
         node.ParentNode!.InsertBefore(candidate, node.NextSibling);
         MovePreservingRanges(node, candidate, -1);
+        return true;
     }
 
     /// <summary>https://w3c.github.io/editing/docs/execCommand/#record-the-values</summary>
@@ -902,7 +907,8 @@ internal sealed partial class EditingAlgorithms
             var decoration = GetInlineTextDecoration(element);
             if (decoration.Contains(keyword, StringComparison.Ordinal))
             {
-                var remaining = decoration.Replace(keyword, "", StringComparison.Ordinal).Trim();
+                // As in the browsers, only the other lines are kept: the blink keyword, the color and the style are dropped
+                var remaining = string.Join(' ', GetTextDecorationLines(decoration).Where(line => line != keyword));
                 element.GetInlineStyle().RemoveProperty("text-decoration");
                 element.GetInlineStyle().RemoveProperty("text-decoration-line");
                 if (remaining.Length > 0)
@@ -1010,6 +1016,9 @@ internal sealed partial class EditingAlgorithms
                 _lineThroughElementName = ancestor.LocalName;
             }
 
+            var keptElementName = _keptElementName;
+            _keptElementName = GetKeptElementName(ancestor, command) ?? keptElementName;
+
             if (specified is not null)
             {
                 ClearValue(ancestor, command);
@@ -1030,8 +1039,32 @@ internal sealed partial class EditingAlgorithms
             }
 
             _lineThroughElementName = lineThroughElementName;
+            _keptElementName = keptElementName;
         }
     }
+
+    /// <summary>
+    /// The specification pushes the value of an ancestor down to new elements (b, i, s, u, or span elements when the CSS
+    /// styling flag is set). As in the browsers, the parts of an em element that stay italic are wrapped in em elements, and
+    /// when the CSS styling flag is set, the parts of an s element (or of a strike element when the range is not in it) that
+    /// keep the line-through decoration are wrapped in elements of the same name.
+    /// </summary>
+    private string? GetKeptElementName(Element ancestor, string command)
+    {
+        if (!ancestor.IsHtmlNamespace || ancestor.Attributes.Count > 0)
+            return null;
+
+        return (command, ancestor.LocalName) switch
+        {
+            ("italic", "em") => "em",
+            ("strikethrough", "s") when _state.CssStyling => "s",
+            ("strikethrough", "strike") when _state.CssStyling && !(ancestor.IsInclusiveAncestorOf(ActiveRange.StartContainer) && ancestor.IsInclusiveAncestorOf(ActiveRange.EndContainer)) => "strike",
+            _ => null,
+        };
+    }
+
+    /// <summary>The local name of the element created for the value pushed down from an ancestor (see <see cref="GetKeptElementName"/>).</summary>
+    private string? _keptElementName;
 
     /// <summary>
     /// The local name of the element created for the line-through value of strikethrough when the CSS styling flag is not
@@ -1050,6 +1083,22 @@ internal sealed partial class EditingAlgorithms
     {
         if (node is not Element element || !IsEditable(element) || !element.HasChildNodes())
             return false;
+
+        if (command is "strikethrough" or "underline" && _state.CssStyling && IsHtmlElement(element, "span")
+            && GetTextDecorationLines(GetInlineTextDecoration(element)).ToList() is { Count: > 0 } lines)
+        {
+            // As in the browsers, the line is added to the text-decoration of a span element that has one (the blink
+            // keyword, the color and the style are dropped)
+            if (!lines.Contains(newValue, StringComparer.Ordinal))
+            {
+                lines.Add(newValue);
+            }
+
+            element.GetInlineStyle().RemoveProperty("text-decoration");
+            element.GetInlineStyle().RemoveProperty("text-decoration-line");
+            element.GetInlineStyle().SetProperty("text-decoration", string.Join(' ', lines));
+            return true;
+        }
 
         if (command is "backcolor" or "hilitecolor")
         {
@@ -1091,14 +1140,15 @@ internal sealed partial class EditingAlgorithms
 
         if (IsAllowedChild(node, "span"))
         {
-            ReorderModifiableDescendants(node.PreviousSibling, command, newValue);
-            ReorderModifiableDescendants(node.NextSibling, command, newValue);
+            var reordered = ReorderModifiableDescendants(node.PreviousSibling, command, newValue);
+            reordered |= ReorderModifiableDescendants(node.NextSibling, command, newValue);
 
             Wrap(
                 [node],
                 sibling => IsSimpleModifiableElement(sibling)
                     && AreEquivalentValues(command, GetSpecifiedCommandValue((Element)sibling, command), newValue)
-                    && IsEffectiveValueLooselyEquivalent(sibling, command, newValue));
+                    && IsEffectiveValueLooselyEquivalent(sibling, command, newValue)
+                    && IsBrowserCompatibleWrapSibling((Element)sibling, command, reordered));
         }
 
         if (IsInvisible(node))
@@ -1120,7 +1170,11 @@ internal sealed partial class EditingAlgorithms
             return;
 
         Element? newParent = null;
-        if (!_state.CssStyling)
+        if (_keptElementName is not null && command is "italic" or "strikethrough" && IsActivatedValue(command, newValue))
+        {
+            newParent = CreateElement(_keptElementName);
+        }
+        else if (!_state.CssStyling)
         {
             switch (command)
             {
@@ -1195,6 +1249,25 @@ internal sealed partial class EditingAlgorithms
         }
     }
 
+    /// <summary>
+    /// The specification moves the node in any adjacent simple modifiable element that has the new value. As in the
+    /// browsers (and as the tests expect), a strong or em element is not reused for the bold or italic command (a b or i
+    /// element is created next to it), and when the CSS styling flag is set, a b element is reused for the bold command only
+    /// when the reordering of the modifiable descendants of a sibling moved it (a span element is created otherwise). The
+    /// strike element created by the strikethrough command is not merged in an s element, and conversely.
+    /// </summary>
+    private bool IsBrowserCompatibleWrapSibling(Element sibling, string command, bool reordered)
+    {
+        return command switch
+        {
+            "bold" when IsHtmlElement(sibling, "strong") => false,
+            "italic" when IsHtmlElement(sibling, "em") => false,
+            "bold" when _state.CssStyling && !reordered => !IsHtmlElement(sibling, "b"),
+            "strikethrough" when !_state.CssStyling && _keptElementName is null && (IsHtmlElement(sibling, "s") || IsHtmlElement(sibling, "strike")) => IsHtmlElement(sibling, _lineThroughElementName),
+            _ => true,
+        };
+    }
+
     /// <summary>Forces the value of the children of a node, except the elements that specify another value.</summary>
     private void ForceValueOfChildren(Node node, string command, string newValue)
     {
@@ -1212,6 +1285,11 @@ internal sealed partial class EditingAlgorithms
             ForceValue(child, command, newValue);
         }
     }
+
+    /// <summary>Whether the element is an item of a flex or grid container whose display would be inline in a block container.</summary>
+    private bool IsDisplayInlineBeforeBlockification(Element element)
+        => element.ParentNode is Element parent && GetDisplay(parent) is var display && (display.IsFlexContainer || display.IsGridContainer)
+            && IsHtmlElement(element) && !IsProhibitedParagraphChild(element) && !element.HasAttributeWithLocalName("style");
 
     /// <summary>https://w3c.github.io/editing/docs/execCommand/#set-the-selection's-value</summary>
     private void SetSelectionValue(string command, string? newValue)
@@ -1261,7 +1339,8 @@ internal sealed partial class EditingAlgorithms
                 // The value is never forced on the blocks (it is forced on their children)
                 if (IsAllowedChild(element, "span"))
                 {
-                    if (!IsDisplayInline(element) || IsAtomicElement(element) || element.HasAttributeWithLocalName("style")
+                    // An inline element that is an item of a flex or grid container is blockified: it is an inline element here
+                    if (!(IsDisplayInline(element) || IsDisplayInlineBeforeBlockification(element)) || IsAtomicElement(element) || element.HasAttributeWithLocalName("style")
                         || !(element.IsInclusiveAncestorOf(range.StartContainer) || element.IsInclusiveAncestorOf(range.EndContainer))
                         || (command is "createlink" or "unlink" && IsHtmlElement(element, "a"))
                         || (command is "backcolor" or "hilitecolor" && (IsHtmlElement(element, "font") || IsHtmlElement(element, "span")) && element.Attributes.Count > 0))

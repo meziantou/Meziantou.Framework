@@ -193,9 +193,12 @@ public class NormalizeRenderer : TextRendererBase<NormalizeRenderer>
     internal void WriteParagraphInline(LeafBlock leafBlock)
     {
         var text = RenderLeafInline(leafBlock);
-        if (!EscapeTablePipes && !EscapeLiteralPipes && text.Contains('|', StringComparison.Ordinal) && IsGfmTable(text))
+        // The lines that continue a paragraph lazily are written indented, which makes them part of a GFM table. The pipes of the
+        // paragraph before the header row of a GFM table are unescaped before the inlines are parsed, as in the cells, so they
+        // are written as in the cells: an escaped pipe would be read back as a pipe that is not escaped.
+        if (!EscapeTablePipes && !EscapeLiteralPipes &&
+            ((text.Contains('|', StringComparison.Ordinal) && IsGfmTable(text)) || (leafBlock.Parser is GfmPipeTableParser && text.AsSpan().ContainsAny('|', '\\'))))
         {
-            // The lines that continue a paragraph lazily are written indented, which makes them part of a GFM table
             EscapeLiteralPipes = true;
             try
             {

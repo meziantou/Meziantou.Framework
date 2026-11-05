@@ -103,13 +103,17 @@ public partial class RoundtripRenderer
             return;
         }
 
-        if (obj is LeafBlock)
+        if (obj is LeafBlock leaf)
         {
-            _leafLines = null;
+            if (!ContinuesLeafText(leaf))
+            {
+                _leafLines = null;
+            }
         }
         else if (obj is Inline inline)
         {
-            if (inline is { PreviousSibling: null, Parent: { Parent: null, ParentBlock: not null } })
+            // The cells of a table are written without their paragraph
+            if (inline is { PreviousSibling: null, Parent: { Parent: null, ParentBlock: LeafBlock inlineLeaf } } && !ContinuesLeafText(inlineLeaf))
             {
                 // The first inline of a leaf block: its first line starts here, or after the indent of the containers
                 _leafLines = [];
@@ -124,6 +128,40 @@ public partial class RoundtripRenderer
                 changedAttributes.TextBefore = GetLeafText();
             }
         }
+    }
+
+    // Whether a leaf block continues the text of the previous one, which the inline parser parsed with it
+    private bool ContinuesLeafText(LeafBlock leaf) => _leafLines is not null && ContinuesParagraphOfPipeTable(leaf);
+
+    // The inline parser of the pipe tables (not the GFM ones) parses the paragraph that has the table as one text, then splits it in
+    // the paragraph before the table, the cells, and the paragraph after it. The parsers of the inlines, such as the one of the
+    // attributes, read the whole text, so its leaf text is the text of all these blocks.
+    private static bool ContinuesParagraphOfPipeTable(LeafBlock leaf)
+    {
+        if (leaf is not ParagraphBlock paragraph)
+        {
+            return false;
+        }
+
+        if (paragraph.Parent is TableCell { Parent: TableRow { Parent: Table { Parser: null } table } row } cell)
+        {
+            return row.IndexOf(cell) > 0 || table.IndexOf(row) > 0 || ContinuesParagraph(table);
+        }
+
+        return paragraph.LinesBefore is not { Count: > 0 } && paragraph.Parent is { } parent && parent.IndexOf(paragraph) is > 0 and var index && parent[index - 1] is Table { Parser: null };
+
+        static bool ContinuesParagraph(Table table)
+        {
+            return table.LinesBefore is not { Count: > 0 } && table.Parent is { } parent && parent.IndexOf(table) is > 0 and var index && parent[index - 1] is ParagraphBlock;
+        }
+    }
+
+    // Whether the paragraph is the text before a pipe table that the inline parser split from it: its last line break is
+    // followed by the first row of the table
+    private static bool IsBeforePipeTable(Block? block)
+    {
+        return block is ParagraphBlock { Parent: { } parent } paragraph && parent.IndexOf(paragraph) is var index && index + 1 < parent.Count
+            && parent[index + 1] is Table { Parser: null, LinesBefore: not { Count: > 0 } };
     }
 
     private void OnAttributesObjectWriteAfter(MarkdownObject obj)
@@ -382,8 +420,16 @@ public partial class RoundtripRenderer
             }
         }
 
-        // The parser reads the line break that follows attributes as part of them, which only matters before another line
-        if (inline.NextSibling is LineBreakInline { NextSibling: not null } || (inline.NextSibling is LiteralInline literal && literal.Content.AsSpan() is ['\r' or '\n', ..]))
+        // The parser reads the line break that follows attributes as part of them, which only matters before another line. The line
+        // break that ends a paragraph is before the first row of the pipe table that the inline parser splits from it. A container
+        // that is not a construct writes nothing after its inlines.
+        var next = inline.NextSibling;
+        for (var parent = inline.Parent; next is null && parent is not null && parent.GetType() == typeof(ContainerInline) && parent.Parent is not null; parent = parent.Parent)
+        {
+            next = parent.NextSibling;
+        }
+
+        if ((next is LineBreakInline lineBreak && (lineBreak.NextSibling is not null || IsBeforePipeTable(leaf))) || (next is LiteralInline literal && literal.Content.AsSpan() is ['\r' or '\n', ..]))
         {
             AttributesTrivia.ThrowCannotWrite(inline, "it ends a line, whose line break would be read as part of the attributes");
         }

@@ -1006,6 +1006,19 @@ public sealed class TestPipeTable
         TestRoundtrip.RoundTrip(markdown, new MarkdownPipelineBuilder().UsePipeTables());
     }
 
+    [Theory]
+    [InlineData("|b\n|-\n|{}\n=-\n")]
+    [InlineData("|b\n|-\n|c{}\nx\n")]
+    [InlineData("|b\n|-\n|{}\n|x\n")]
+    [InlineData("|a|\n|-|\n|b|{}\r\n|c|\n")]
+    public void AttributesAtTheEndOfARowDoNotContinueTheRow(string markdown)
+    {
+        // The parser of the attributes skipped the line ending after them, which ends the row: the next line was part of the row
+        var pipeline = new MarkdownPipelineBuilder().UsePipeTables().UseGenericAttributes().Build();
+        Assert.Equal(MarkdownConverter.ToHtml(markdown.Replace("{}", "", StringComparison.Ordinal), pipeline), MarkdownConverter.ToHtml(markdown, pipeline));
+        TestRoundtrip.RoundTrip(markdown, new MarkdownPipelineBuilder().UsePipeTables().UseGenericAttributes());
+    }
+
     [Fact]
     public void CodeSpanAcrossRowsWithTrivia()
     {

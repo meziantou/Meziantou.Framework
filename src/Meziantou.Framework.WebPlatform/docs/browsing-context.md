@@ -3306,8 +3306,9 @@ text).
 
 The APIs whose behavior depends on the device or on the user are answered by the host, with callbacks of
 `BrowsingContextOptions` (grouped in a nested options object for the newer APIs: `Badging`, `BatteryStatus`, `WakeLock`,
-`KeyboardLock`, `ScreenOrientation`, `VirtualKeyboard`, `ViewportSegments` and `Sensors`). Each one has a default that works without a host, and a flag of `WebPlatformFeatures` that hides
-it (see [Disabling features](#disabling-features)).
+`KeyboardLock`, `ScreenOrientation`, `VirtualKeyboard`, `ViewportSegments`, `ComputePressure`, `IdleDetection`,
+`DevicePosture` and `Sensors`). Each one has a default that works without a host, and a flag of `WebPlatformFeatures` that
+hides it (see [Disabling features](#disabling-features)).
 
 - **Web Share** ([Web Share API](https://w3c.github.io/web-share/)): `navigator.share()` and `navigator.canShare()`, in
   secure contexts. The library checks the document (fully active, allowed by the `web-share` permissions policy, with a
@@ -3392,6 +3393,31 @@ it (see [Disabling features](#disabling-features)).
   `gyroscope` permissions), then the orientation events are fired when the orientation changes and the motion events every
   16 ms while the sensors get new readings; the motion event always has its acceleration and rotation rate objects. The
   values are rounded to 0.1 degree, 0.1 m/s² and 0.1 deg/s, and a hidden document gets no event.
+- **Compute Pressure** ([Compute Pressure](https://w3c.github.io/compute-pressure/)): `PressureObserver` and
+  `PressureRecord`, in the windows and the dedicated and shared workers, read from the `PressureSourceProvider` of
+  `ComputePressure.Provider` (`SetSample()` reports the state of a source, `SetSupported()` makes it unsupported:
+  `observe()` is then rejected with a `NotSupportedError`). The library implements the observers of a global object and
+  their platform collectors, the `sampleInterval` (the latest sample is read again at that interval, as a platform
+  collector samples the source), the rate test and the "should dispatch" test, `takeRecords()`, `disconnect()` and
+  `unobserve()` (pending `observe()` calls are rejected with an `AbortError`), the `compute-pressure` permissions policy
+  feature (default allowlist `'self'`, checked on the documents that own a worker) and the focus: the observers only get
+  the samples while the top-level browsing context has the system focus and the focused document is same origin. The
+  data collection stops when the document is unloaded. Without provider, `cpu` is supported but reports no state. The
+  rate obfuscation and `ownContributionEstimate` (not in the IDL of webref) are not exposed.
+- **Idle Detection** ([Idle Detection API](https://wicg.github.io/idle-detection/)): `IdleDetector` (in the windows and
+  the dedicated workers), `start()` with its `threshold` (at least 60 seconds, `TypeError` otherwise) and `signal`,
+  `userState`, `screenState` and the `change` event, and `IdleDetector.requestPermission()` (with a transient activation,
+  asked with `RequestPermission`). The state is read from the `IdleStateProvider` of `IdleDetection.Provider`: its
+  `Status` gives the time of the last interaction of the user (measured with the clock of the event loop; the user is
+  idle once the threshold elapsed) and whether the screen is locked. `start()` is rejected with an `InvalidStateError`
+  for a document that is not fully active, and with a `NotAllowedError` by the `idle-detection` permissions policy
+  feature (default allowlist `'self'`) or when the `idle-detection` permission is denied. Without provider, the user is
+  active and the screen is unlocked.
+- **Device Posture** ([Device Posture API](https://w3c.github.io/device-posture/)): `navigator.devicePosture` (its `type`
+  and `change` event) and the `device-posture` media feature, read from the `DevicePostureProvider` of
+  `DevicePosture.Provider`. Setting its `Posture` runs the device posture change steps: the visible documents fire
+  `change`, the hidden ones when they become visible, and the media query lists are evaluated again. All the documents of
+  a browsing context tree have the posture of the provider. Without provider, the posture is `continuous`.
 - **Screen Orientation** ([Screen Orientation](https://w3c.github.io/screen-orientation/)): `screen.orientation` (`type`,
   `angle`, `change`), `lock()` and `unlock()`, on the `ScreenOrientationProvider` of `ScreenOrientation.Provider` (its
   natural orientation, the `DeviceOrientation` the user holds the device in, and `TryLock` to lock the screen of the

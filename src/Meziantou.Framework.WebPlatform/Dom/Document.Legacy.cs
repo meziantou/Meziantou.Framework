@@ -465,6 +465,12 @@ public partial class Document
         {
             sensors.OnDocumentVisible();
         }
+
+        // https://w3c.github.io/device-posture/#dfn-device-posture-change-steps: the posture that changed while the document was hidden is reported
+        if (visible && RelevantWindow is { NavigatorOrNull.DevicePostureOrNull: { } devicePosture } postureWindow && ReferenceEquals(postureWindow.Document, this))
+        {
+            devicePosture.RunChangeSteps();
+        }
     }
 
     /// <summary>Does nothing; this obsolete method is kept for compatibility.</summary>

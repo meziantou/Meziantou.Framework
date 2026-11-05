@@ -1,6 +1,6 @@
 ---
 title: Permissions and devices
-description: Answer the permission prompts, and decide what the clipboard, sharing, vibration, geolocation, notifications, badging, battery, wake lock, keyboard lock, screen orientation, virtual keyboard, viewport segments and sensor APIs do in your pages.
+description: Answer the permission prompts, and decide what the clipboard, sharing, vibration, geolocation, notifications, badging, battery, wake lock, keyboard lock, screen orientation, virtual keyboard, viewport segments, compute pressure, idle detection, device posture and sensor APIs do in your pages.
 ---
 
 Some web APIs depend on the device or on the user: a browser asks the user for a permission, shows a share sheet, reads
@@ -24,6 +24,9 @@ the device in a test, or to connect the API to your application.
 | [ScreenOrientation](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.ScreenOrientation) | `screen.orientation` | A desktop screen, which cannot be locked |
 | [VirtualKeyboard](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.VirtualKeyboard) | `navigator.virtualKeyboard`, the `keyboard-inset-*` environment variables | There is no on-screen keyboard |
 | [ViewportSegments](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.ViewportSegments) | `window.viewport.segments`, the `*-viewport-segments` media features | The viewport has a single segment |
+| [ComputePressure](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.ComputePressure) | `PressureObserver` | The `cpu` source is supported, but reports no state |
+| [IdleDetection](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.IdleDetection) | `IdleDetector` | The user is active and the screen is unlocked |
+| [DevicePosture](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.DevicePosture) | `navigator.devicePosture`, the `device-posture` media feature | The posture is `continuous` |
 | [Sensors](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Sensors) | `Accelerometer`, `Gyroscope`, `AmbientLightSensor` and the other sensors, the `deviceorientation` and `devicemotion` events | The device has no sensor: the sensors fail to start, and the events report null values |
 
 To remove an API completely, so that the pages see it as unsupported, disable it with
@@ -347,6 +350,89 @@ The page then sees two segments in `window.viewport.segments`, the `horizontal-v
 `vertical-viewport-segments` media features match the number of columns and rows of segments, and the
 `viewport-segment-*` environment variables give their edges (`env(viewport-segment-width 1 0)` is the width of the
 second column). As in Chromium, the frames have a single segment, and their `viewport.segments` is null.
+
+## Compute pressure
+
+A `PressureObserver` reads the samples of a
+[PressureSourceProvider](cref:Meziantou.Framework.WebPlatform.Dom.PressureSourceProvider). Call
+[SetSample](cref:Meziantou.Framework.WebPlatform.Dom.PressureSourceProvider.SetSample) to report the pressure state of a
+source:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_ComputePressure;format=md-fenced-code-block;dedent=true -->
+```csharp
+var pressure = new PressureSourceProvider();
+pressure.SetSample(PressureSource.Cpu, new PressureSample(PressureState.Nominal));
+
+var options = new BrowsingContextOptions
+{
+    ComputePressure = new ComputePressureOptions { Provider = pressure },
+};
+```
+<!-- endref -->
+
+An observer is called when the state changes, or at its `sampleInterval` when it sets one, with the latest sample. It
+only gets the samples while the tab has the focus and the focused frame is same origin with its page (or the page that
+owns its worker). [SetSupported](cref:Meziantou.Framework.WebPlatform.Dom.PressureSourceProvider.SetSupported) makes a
+source unsupported: `observe()` is then rejected with a `NotSupportedError`. To read the pressure of the operating system,
+derive from `PressureSourceProvider`, override
+[GetSample](cref:Meziantou.Framework.WebPlatform.Dom.PressureSourceProvider.GetSample), and call
+[OnSampleChanged](cref:Meziantou.Framework.WebPlatform.Dom.PressureSourceProvider.OnSampleChanged) when it changes. The
+frames that their permissions policy does not allow (`compute-pressure`) get a `NotAllowedError`. The rate obfuscation of
+the specification is not applied.
+
+## Idle detection
+
+An `IdleDetector` reads the state of an [IdleStateProvider](cref:Meziantou.Framework.WebPlatform.Dom.IdleStateProvider).
+Its [Status](cref:Meziantou.Framework.WebPlatform.Dom.IdleStateProvider.Status) gives the time of the last interaction of
+the user, measured by the clock of the browsing context, and whether the screen is locked:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_IdleDetection;format=md-fenced-code-block;dedent=true -->
+```csharp
+var clock = new FakeTimeProvider(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));
+var idleState = new IdleStateProvider
+{
+    // The user interacted with the device now: they are idle once the threshold of a detector elapsed
+    Status = new IdleStatus { LastInteractionTime = clock.GetUtcNow() },
+};
+
+var permissions = new PermissionStore();
+permissions.SetState("idle-detection", PermissionState.Granted);
+
+var options = new BrowsingContextOptions
+{
+    Permissions = permissions,
+    IdleDetection = new IdleDetectionOptions { Provider = idleState },
+    TimeProvider = clock,
+};
+```
+<!-- endref -->
+
+The user becomes idle for a detector once its `threshold` (one minute at least) elapsed since the last interaction.
+Changing `Status` updates the started detectors, which fire their `change` event. `start()` is rejected with a
+`NotAllowedError` when the `idle-detection` permission is denied, or when the permissions policy does not allow
+`idle-detection`. `IdleDetector.requestPermission()` needs a click of the user, and asks with `RequestPermission`.
+
+## Device posture
+
+`navigator.devicePosture` and the `device-posture` media feature read the posture of a
+[DevicePostureProvider](cref:Meziantou.Framework.WebPlatform.Dom.DevicePostureProvider):
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_DevicePosture;format=md-fenced-code-block;dedent=true -->
+```csharp
+var posture = new DevicePostureProvider();
+var options = new BrowsingContextOptions
+{
+    DevicePosture = new DevicePostureOptions { Provider = posture },
+};
+
+// Fires the change event of navigator.devicePosture, and updates the device-posture media feature
+posture.Posture = DevicePostureType.Folded;
+```
+<!-- endref -->
+
+Changing [Posture](cref:Meziantou.Framework.WebPlatform.Dom.DevicePostureProvider.Posture) fires the `change` event of
+`navigator.devicePosture`, and the `change` event of the media query lists such as `matchMedia('(device-posture: folded)')`.
+A hidden page gets the event when it becomes visible. All the frames of a tab have the posture of the tab.
 
 ## Sensors
 

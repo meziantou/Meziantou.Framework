@@ -237,6 +237,27 @@ public sealed record WebPlatformFeatures
     public bool DeviceOrientationEnabled { get; init; } = true;
 
     /// <summary>
+    /// Gets or sets whether the Compute Pressure API is exposed (https://w3c.github.io/compute-pressure/): the
+    /// <c>PressureObserver</c> and <c>PressureRecord</c> interfaces, in the windows and the workers (see
+    /// <see cref="BrowsingContextOptions.ComputePressure"/>). The default is true.
+    /// </summary>
+    public bool ComputePressureEnabled { get; init; } = true;
+
+    /// <summary>
+    /// Gets or sets whether the Idle Detection API is exposed (https://wicg.github.io/idle-detection/): the <c>IdleDetector</c>
+    /// interface, in the windows and the dedicated workers (see <see cref="BrowsingContextOptions.IdleDetection"/>). The
+    /// default is true.
+    /// </summary>
+    public bool IdleDetectionEnabled { get; init; } = true;
+
+    /// <summary>
+    /// Gets or sets whether the Device Posture API is exposed (https://w3c.github.io/device-posture/): <c>navigator.devicePosture</c>
+    /// and the <c>DevicePosture</c> interface (see <see cref="BrowsingContextOptions.DevicePosture"/>). The <c>device-posture</c>
+    /// media feature is evaluated whatever the value. The default is true.
+    /// </summary>
+    public bool DevicePostureEnabled { get; init; } = true;
+
+    /// <summary>
     /// Gets or sets whether the Screen Orientation API is exposed (https://w3c.github.io/screen-orientation/):
     /// <c>screen.orientation</c> and the <c>ScreenOrientation</c> interface (see <see cref="BrowsingContextOptions.ScreenOrientation"/>).
     /// The default is true.

@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of speculation-rules, and wh
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 130 | 185 | 1 | 71% |
+| [Stable](#stable-tests) | 131 | 185 | 1 | 71% |
 | [Tentative](#tentative-tests) | 6 | 26 | 0 | 23% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **136** | **211** | **1** | **65%** |
+| **All** | **137** | **211** | **1** | **65%** |
 
 ## Failure reasons
 
@@ -20,8 +20,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 9
 - **TEST BUG**: 7
-- **NOT IMPLEMENTED**: 56
-- **TEST RUNNER**: 29
+- **NOT IMPLEMENTED**: 55
+- **TEST RUNNER**: 28
 - **OUT OF SCOPE**: 1
 - **FLAKY**: 1
 
@@ -146,7 +146,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`prerender/restriction-encrypted-media-unsupported-config.https.html`](https://wpt.fyi/results/speculation-rules/prerender/restriction-encrypted-media-unsupported-config.https.html) | Timeout | 0 / 1 | NOT IMPLEMENTED, TEST RUNNER | the API that the test expects to be restricted or delayed while prerendering: Audio Output Devices (`setSinkId()`), Background Fetch, Background Sync, Web Bluetooth, Encrypted Media, Idle Detection, File System Access, Media Capture (`getUserMedia()`, `enumerateDevices()`, `getDisplayMedia()`), Media Capabilities, Web MIDI, Notifications, Presentation, Push, Picture-in-Picture, Web Speech, WebHID, Web NFC, Web Serial, Web Share, WebUSB or WebXR; `test_driver.set_permission()` only supports the clipboard permissions |
 | [`prerender/restriction-encrypted-media.https.html`](https://wpt.fyi/results/speculation-rules/prerender/restriction-encrypted-media.https.html) | Timeout | 0 / 1 | NOT IMPLEMENTED, TEST RUNNER | the API that the test expects to be restricted or delayed while prerendering: Audio Output Devices (`setSinkId()`), Background Fetch, Background Sync, Web Bluetooth, Encrypted Media, Idle Detection, File System Access, Media Capture (`getUserMedia()`, `enumerateDevices()`, `getDisplayMedia()`), Media Capabilities, Web MIDI, Notifications, Presentation, Push, Picture-in-Picture, Web Speech, WebHID, Web NFC, Web Serial, Web Share, WebUSB or WebXR; `test_driver.set_permission()` only supports the clipboard permissions |
 | [`prerender/restriction-focus.https.html`](https://wpt.fyi/results/speculation-rules/prerender/restriction-focus.https.html) | Pass | 1 / 1 |  |  |
-| [`prerender/restriction-idle-detection.https.html`](https://wpt.fyi/results/speculation-rules/prerender/restriction-idle-detection.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED, TEST RUNNER | the API that the test expects to be restricted or delayed while prerendering: Audio Output Devices (`setSinkId()`), Background Fetch, Background Sync, Web Bluetooth, Encrypted Media, Idle Detection, File System Access, Media Capture (`getUserMedia()`, `enumerateDevices()`, `getDisplayMedia()`), Media Capabilities, Web MIDI, Notifications, Presentation, Push, Picture-in-Picture, Web Speech, WebHID, Web NFC, Web Serial, Web Share, WebUSB or WebXR; `test_driver.set_permission()` only supports the clipboard permissions |
+| [`prerender/restriction-idle-detection.https.html`](https://wpt.fyi/results/speculation-rules/prerender/restriction-idle-detection.https.html) | Pass | 1 / 1 |  |  |
 | [`prerender/restriction-local-file-system-access.https.html`](https://wpt.fyi/results/speculation-rules/prerender/restriction-local-file-system-access.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED, TEST RUNNER | the API that the test expects to be restricted or delayed while prerendering: Audio Output Devices (`setSinkId()`), Background Fetch, Background Sync, Web Bluetooth, Encrypted Media, Idle Detection, File System Access, Media Capture (`getUserMedia()`, `enumerateDevices()`, `getDisplayMedia()`), Media Capabilities, Web MIDI, Notifications, Presentation, Push, Picture-in-Picture, Web Speech, WebHID, Web NFC, Web Serial, Web Share, WebUSB or WebXR; `test_driver.set_permission()` only supports the clipboard permissions |
 | [`prerender/restriction-media-auto-play-attribute.https.html`](https://wpt.fyi/results/speculation-rules/prerender/restriction-media-auto-play-attribute.https.html) | Fail | 0 / 4 | NOT IMPLEMENTED | the loading and the playback of the media elements are not delayed while the document is prerendering |
 | [`prerender/restriction-media-camera.https.html`](https://wpt.fyi/results/speculation-rules/prerender/restriction-media-camera.https.html) | Timeout | 0 / 2 | NOT IMPLEMENTED, TEST RUNNER | the API that the test expects to be restricted or delayed while prerendering: Audio Output Devices (`setSinkId()`), Background Fetch, Background Sync, Web Bluetooth, Encrypted Media, Idle Detection, File System Access, Media Capture (`getUserMedia()`, `enumerateDevices()`, `getDisplayMedia()`), Media Capabilities, Web MIDI, Notifications, Presentation, Push, Picture-in-Picture, Web Speech, WebHID, Web NFC, Web Serial, Web Share, WebUSB or WebXR; `test_driver.set_permission()` only supports the clipboard permissions |

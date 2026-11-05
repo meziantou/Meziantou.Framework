@@ -200,6 +200,7 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["DeviceMotionEventAcceleration"] = Binding_DeviceMotionEventAcceleration<TAdapter, TValue>.Binding,
             ["DeviceMotionEventRotationRate"] = Binding_DeviceMotionEventRotationRate<TAdapter, TValue>.Binding,
             ["DeviceOrientationEvent"] = Binding_DeviceOrientationEvent<TAdapter, TValue>.Binding,
+            ["DevicePosture"] = Binding_DevicePosture<TAdapter, TValue>.Binding,
             ["Document"] = Binding_Document<TAdapter, TValue>.Binding,
             ["DocumentFragment"] = Binding_DocumentFragment<TAdapter, TValue>.Binding,
             ["DocumentTimeline"] = Binding_DocumentTimeline<TAdapter, TValue>.Binding,
@@ -340,6 +341,7 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["IDBVersionChangeEvent"] = Binding_IDBVersionChangeEvent<TAdapter, TValue>.Binding,
             ["IIRFilterNode"] = Binding_IIRFilterNode<TAdapter, TValue>.Binding,
             ["IdleDeadline"] = Binding_IdleDeadline<TAdapter, TValue>.Binding,
+            ["IdleDetector"] = Binding_IdleDetector<TAdapter, TValue>.Binding,
             ["ImageBitmap"] = Binding_ImageBitmap<TAdapter, TValue>.Binding,
             ["ImageBitmapRenderingContext"] = Binding_ImageBitmapRenderingContext<TAdapter, TValue>.Binding,
             ["ImageData"] = Binding_ImageData<TAdapter, TValue>.Binding,
@@ -439,6 +441,8 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["PluginArray"] = Binding_PluginArray<TAdapter, TValue>.Binding,
             ["PointerEvent"] = Binding_PointerEvent<TAdapter, TValue>.Binding,
             ["PopStateEvent"] = Binding_PopStateEvent<TAdapter, TValue>.Binding,
+            ["PressureObserver"] = Binding_PressureObserver<TAdapter, TValue>.Binding,
+            ["PressureRecord"] = Binding_PressureRecord<TAdapter, TValue>.Binding,
             ["ProcessingInstruction"] = Binding_ProcessingInstruction<TAdapter, TValue>.Binding,
             ["ProgressEvent"] = Binding_ProgressEvent<TAdapter, TValue>.Binding,
             ["PromiseRejectionEvent"] = Binding_PromiseRejectionEvent<TAdapter, TValue>.Binding,
@@ -1125,6 +1129,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.IdbTransactionOptions dictionaryDom_IdbTransactionOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_IdbTransactionOptions(r, dictionaryDom_IdbTransactionOptions);
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.IdleOptions dictionaryDom_IdleOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_IdleOptions(r, dictionaryDom_IdleOptions);
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.IdleRequestOptions dictionaryDom_IdleRequestOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_IdleRequestOptions(r, dictionaryDom_IdleRequestOptions);
                 return true;
@@ -1223,6 +1230,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.PositionOptions dictionaryDom_PositionOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_PositionOptions(r, dictionaryDom_PositionOptions);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.PressureObserverOptions dictionaryDom_PressureObserverOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_PressureObserverOptions(r, dictionaryDom_PressureObserverOptions);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.QuotaExceededErrorOptions dictionaryDom_QuotaExceededErrorOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_QuotaExceededErrorOptions(r, dictionaryDom_QuotaExceededErrorOptions);
@@ -1488,6 +1498,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.CssBoxType enumDom_CssBoxType:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_CssBoxType(enumDom_CssBoxType));
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.DevicePostureType enumDom_DevicePostureType:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_DevicePostureType(enumDom_DevicePostureType));
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.DirectionSetting enumDom_DirectionSetting:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_DirectionSetting(enumDom_DirectionSetting));
                 return true;
@@ -1599,6 +1612,12 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.PresentationStyle enumDom_PresentationStyle:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_PresentationStyle(enumDom_PresentationStyle));
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.PressureSource enumDom_PressureSource:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_PressureSource(enumDom_PressureSource));
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.PressureState enumDom_PressureState:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_PressureState(enumDom_PressureState));
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.RequestCredentials enumDom_RequestCredentials:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_RequestCredentials(enumDom_RequestCredentials));
                 return true;
@@ -1616,6 +1635,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.SanitizerPresets enumDom_SanitizerPresets:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_SanitizerPresets(enumDom_SanitizerPresets));
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.ScreenIdleState enumDom_ScreenIdleState:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_ScreenIdleState(enumDom_ScreenIdleState));
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.ScrollBehavior enumDom_ScrollBehavior:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_ScrollBehavior(enumDom_ScrollBehavior));
@@ -1658,6 +1680,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.TouchType enumDom_TouchType:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_TouchType(enumDom_TouchType));
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.UserIdleState enumDom_UserIdleState:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_UserIdleState(enumDom_UserIdleState));
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.WakeLockType enumDom_WakeLockType:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_WakeLockType(enumDom_WakeLockType));

@@ -41,6 +41,9 @@ internal sealed partial class PolicyControlledFeature
 
     public static PolicyControlledFeature ClipboardWrite { get; } = new("clipboard-write", isAllowedForAllByDefault: false);
 
+    /// <summary>https://w3c.github.io/compute-pressure/#policy-control: its default allowlist is 'self'.</summary>
+    public static PolicyControlledFeature ComputePressure { get; } = new("compute-pressure", isAllowedForAllByDefault: false);
+
     public static PolicyControlledFeature CrossOriginIsolated { get; } = new("cross-origin-isolated", isAllowedForAllByDefault: false);
 
     public static PolicyControlledFeature FocusWithoutUserActivation { get; } = new("focus-without-user-activation", isAllowedForAllByDefault: false);
@@ -60,6 +63,9 @@ internal sealed partial class PolicyControlledFeature
 
     /// <summary>https://fetch.spec.whatwg.org/#policy-controlled-feature-deferred-fetch-minimal: its default allowlist is *.</summary>
     public static PolicyControlledFeature DeferredFetchMinimal { get; } = new("deferred-fetch-minimal", isAllowedForAllByDefault: true);
+
+    /// <summary>https://wicg.github.io/idle-detection/#api-permissions-policy: its default allowlist is 'self'.</summary>
+    public static PolicyControlledFeature IdleDetection { get; } = new("idle-detection", isAllowedForAllByDefault: false);
 
     public static PolicyControlledFeature MediaPlaybackWhileNotVisible { get; } = new("media-playback-while-not-visible", isAllowedForAllByDefault: true);
 
@@ -94,6 +100,7 @@ internal sealed partial class PolicyControlledFeature
         .. ClientHintFeatures.All,
         ClipboardRead,
         ClipboardWrite,
+        ComputePressure,
         CrossOriginIsolated,
         DeferredFetch,
         DeferredFetchMinimal,
@@ -102,6 +109,7 @@ internal sealed partial class PolicyControlledFeature
         Fullscreen,
         Geolocation,
         Gyroscope,
+        IdleDetection,
         new("local-fonts", isAllowedForAllByDefault: false),
         Magnetometer,
         MediaPlaybackWhileNotVisible,

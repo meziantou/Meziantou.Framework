@@ -11,14 +11,14 @@ description: "The results of the web-platform-tests of html/canvas, and why the 
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 3,079 | 3,165 | 0 | 97% |
 | [Tentative](#tentative-tests) | 7 | 259 | 0 | 3% |
-| [Reftests](#reftests) | 213 | 552 | 0 | 39% |
-| **All** | **3,299** | **3,976** | **0** | **83%** |
+| [Reftests](#reftests) | 214 | 552 | 0 | 39% |
+| **All** | **3,300** | **3,976** | **0** | **83%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 11
+- **BUG**: 10
 - **TEST BUG**: 4
 - **NOT IMPLEMENTED**: 658
 - **REQUIRES**: 3
@@ -3666,7 +3666,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`element/manual/drawing-images-to-the-canvas/image-orientation/drawImage-from-element-swap-width-height.tentative.html`](https://wpt.fyi/results/html/canvas/element/manual/drawing-images-to-the-canvas/image-orientation/drawImage-from-element-swap-width-height.tentative.html) | Pass | 1 / 1 |  |  |
 | [`element/manual/drawing-images-to-the-canvas/image-orientation/drawImage-from-element.tentative.html`](https://wpt.fyi/results/html/canvas/element/manual/drawing-images-to-the-canvas/image-orientation/drawImage-from-element.tentative.html) | Pass | 1 / 1 |  |  |
 | [`element/manual/drawing-images-to-the-canvas/image-orientation/drawImage-with-src-rect.tentative.html`](https://wpt.fyi/results/html/canvas/element/manual/drawing-images-to-the-canvas/image-orientation/drawImage-with-src-rect.tentative.html) | Pass | 1 / 1 |  |  |
-| [`element/manual/drawing-text-to-the-canvas/canvas.2d.disconnected-font-size-math.html`](https://wpt.fyi/results/html/canvas/element/manual/drawing-text-to-the-canvas/canvas.2d.disconnected-font-size-math.html) | Fail | 0 / 1 | BUG | the `math` font size of a canvas of a document without browsing context |
+| [`element/manual/drawing-text-to-the-canvas/canvas.2d.disconnected-font-size-math.html`](https://wpt.fyi/results/html/canvas/element/manual/drawing-text-to-the-canvas/canvas.2d.disconnected-font-size-math.html) | Pass | 1 / 1 |  |  |
 | [`element/manual/fill-and-stroke-styles/conic-gradient-rotation.html`](https://wpt.fyi/results/html/canvas/element/manual/fill-and-stroke-styles/conic-gradient-rotation.html) | Pass | 1 / 1 |  |  |
 | [`element/manual/fill-and-stroke-styles/conic-gradient.html`](https://wpt.fyi/results/html/canvas/element/manual/fill-and-stroke-styles/conic-gradient.html) | Pass | 1 / 1 |  |  |
 | [`element/manual/filters/canvas-fillStyle-opacity.html`](https://wpt.fyi/results/html/canvas/element/manual/filters/canvas-fillStyle-opacity.html) | Pass | 1 / 1 |  |  |

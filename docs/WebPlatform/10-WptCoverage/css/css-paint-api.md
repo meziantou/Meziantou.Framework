@@ -11,14 +11,13 @@ description: "The results of the web-platform-tests of css/css-paint-api, and wh
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 1 | 2 | 0 | 50% |
 | Tentative | 0 | 0 | 0 | – |
-| [Reftests](#reftests) | 114 | 115 | 0 | 99% |
-| **All** | **115** | **117** | **0** | **98%** |
+| [Reftests](#reftests) | 115 | 115 | 0 | 100% |
+| **All** | **116** | **117** | **0** | **99%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
 - **TEST BUG**: 1
 
 ## Stable tests
@@ -67,7 +66,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`paint2d-canvasFilter.tentative.https.html`](https://wpt.fyi/results/css/css-paint-api/paint2d-canvasFilter.tentative.https.html) | Pass | 1 / 1 |  |  |
 | [`paint2d-composite.https.html`](https://wpt.fyi/results/css/css-paint-api/paint2d-composite.https.html) | Pass | 1 / 1 |  |  |
 | [`paint2d-conicGradient.https.html`](https://wpt.fyi/results/css/css-paint-api/paint2d-conicGradient.https.html) | Pass | 1 / 1 |  |  |
-| [`paint2d-filter.https.html`](https://wpt.fyi/results/css/css-paint-api/paint2d-filter.https.html) | Fail | 0 / 1 | BUG | the `filter` attribute of `PaintRenderingContext2D` (an extension of Chromium: the specification does not include `CanvasFilters`) resolves the lengths relative to a font or to the viewport with the default font of the canvases (10px) and the viewport of an empty document: `blur(1em)` is a blur of 10px and `blur(50vh)` a large blur, where the test expects 16px and no blur (a viewport of size zero); the 13 other filters match |
+| [`paint2d-filter.https.html`](https://wpt.fyi/results/css/css-paint-api/paint2d-filter.https.html) | Pass | 1 / 1 |  |  |
 | [`paint2d-gradient.https.html`](https://wpt.fyi/results/css/css-paint-api/paint2d-gradient.https.html) | Pass | 1 / 1 |  |  |
 | [`paint2d-image.https.html`](https://wpt.fyi/results/css/css-paint-api/paint2d-image.https.html) | Pass | 1 / 1 |  |  |
 | [`paint2d-imageSmoothingQuality.high.https.html`](https://wpt.fyi/results/css/css-paint-api/paint2d-imageSmoothingQuality.high.https.html) | Pass | 1 / 1 |  |  |

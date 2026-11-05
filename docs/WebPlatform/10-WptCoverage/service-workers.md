@@ -9,16 +9,16 @@ description: "The results of the web-platform-tests of service-workers, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 247 | 283 | 4 | 89% |
+| [Stable](#stable-tests) | 248 | 283 | 4 | 89% |
 | [Tentative](#tentative-tests) | 1 | 11 | 0 | 9% |
 | [Reftests](#reftests) | 1 | 1 | 0 | 100% |
-| **All** | **249** | **295** | **4** | **86%** |
+| **All** | **250** | **295** | **4** | **86%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 6
+- **BUG**: 5
 - **TEST BUG**: 9
 - **NOT IMPLEMENTED**: 24
 - **REQUIRES**: 2
@@ -309,7 +309,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`service-worker/windowclient-navigate.https.html`](https://wpt.fyi/results/service-workers/service-worker/windowclient-navigate.https.html) | Fail | 21 / 22 | TEST BUG | the subtest expects the frame type of a window opened with `window.open()` to be "top-level"; its browsing context is an auxiliary browsing context, whose frame type is "auxiliary" (https://w3c.github.io/ServiceWorker/#get-frame-type). Firefox fails the subtest in the same way; the other subtests pass |
 | [`service-worker/worker-client-id.https.html`](https://wpt.fyi/results/service-workers/service-worker/worker-client-id.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/worker-in-sandboxed-iframe-by-csp-fetch-event.https.html`](https://wpt.fyi/results/service-workers/service-worker/worker-in-sandboxed-iframe-by-csp-fetch-event.https.html) | Pass | 5 / 5 |  |  |
-| [`service-worker/worker-interception-redirect.https.html`](https://wpt.fyi/results/service-workers/service-worker/worker-interception-redirect.https.html) | Fail | 50 / 54 | BUG | a module SharedWorker whose script is redirected (by the network or by the service worker) fires an error event at the SharedWorker object (the four `module SharedWorker` subtests; not analyzed further). The classic and module DedicatedWorker subtests and the classic SharedWorker subtests pass |
+| [`service-worker/worker-interception-redirect.https.html`](https://wpt.fyi/results/service-workers/service-worker/worker-interception-redirect.https.html) | Pass | 66 / 66 |  |  |
 | [`service-worker/worker-interception.https.html`](https://wpt.fyi/results/service-workers/service-worker/worker-interception.https.html) | Pass | 16 / 16 |  |  |
 | [`service-worker/xhr-content-length.https.window.js`](https://wpt.fyi/results/service-workers/service-worker/xhr-content-length.https.window.js) | Pass | 5 / 5 |  |  |
 | [`service-worker/xhr-response-url.https.html`](https://wpt.fyi/results/service-workers/service-worker/xhr-response-url.https.html) | Pass | 6 / 6 |  |  |

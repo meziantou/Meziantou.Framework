@@ -331,7 +331,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`clip-path/clip-path-inline-004.html`](https://wpt.fyi/results/css/css-masking/clip-path/clip-path-inline-004.html) | Pass | 1 / 1 |  |  |
 | [`clip-path/clip-path-inline-005.html`](https://wpt.fyi/results/css/css-masking/clip-path/clip-path-inline-005.html) | Pass | 1 / 1 |  |  |
 | [`clip-path/clip-path-inline-006.html`](https://wpt.fyi/results/css/css-masking/clip-path/clip-path-inline-006.html) | Pass | 1 / 1 |  |  |
-| [`clip-path/clip-path-inline-007.html`](https://wpt.fyi/results/css/css-masking/clip-path/clip-path-inline-007.html) | Fail | 0 / 1 | BUG | the antialiased edge of the clip path (a circle, an ellipse, a rounded inset) is not rasterized as the edge of the shape of the reference (`border-radius`, an SVG shape): the pixels of the curve differ by up to 76/255 |
+| [`clip-path/clip-path-inline-007.html`](https://wpt.fyi/results/css/css-masking/clip-path/clip-path-inline-007.html) | Fail | 0 / 1 | BUG | the coverage of the antialiased edge of the clip (`border-box` with a `border-radius` of 50%) matches the `circle(50%)` of the reference, but the red outline that the clip hides is painted under the edge pixels before they are clipped: 364 pixels of the edge are tinted by up to 63 levels, where 62 levels on 332 pixels are allowed |
 | [`clip-path/clip-path-inline-008.html`](https://wpt.fyi/results/css/css-masking/clip-path/clip-path-inline-008.html) | Pass | 1 / 1 |  |  |
 | [`clip-path/clip-path-inline-009.html`](https://wpt.fyi/results/css/css-masking/clip-path/clip-path-inline-009.html) | Pass | 1 / 1 |  |  |
 | [`clip-path/clip-path-inline-010.html`](https://wpt.fyi/results/css/css-masking/clip-path/clip-path-inline-010.html) | Pass | 1 / 1 |  |  |

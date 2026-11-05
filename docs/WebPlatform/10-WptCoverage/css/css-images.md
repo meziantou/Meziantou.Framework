@@ -18,8 +18,8 @@ description: "The results of the web-platform-tests of css/css-images, and why t
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 3
-- **TEST BUG**: 5
+- **BUG**: 2
+- **TEST BUG**: 6
 - **NOT IMPLEMENTED**: 2
 - **TEST RUNNER**: 1
 
@@ -95,7 +95,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`cross-fade-basic.html`](https://wpt.fyi/results/css/css-images/cross-fade-basic.html) | Pass | 1 / 1 |  |  |
 | [`cross-fade-cross-origin-orientation.sub.html`](https://wpt.fyi/results/css/css-images/cross-fade-cross-origin-orientation.sub.html) | Pass | 1 / 1 |  |  |
 | [`cross-fade-natural-size.html`](https://wpt.fyi/results/css/css-images/cross-fade-natural-size.html) | Fail | 0 / 1 | BUG | the SVG images of the `cross-fade()` have no `viewBox`: drawn at the size of the cross-fade (375x350, which is right), they keep their aspect ratio (a synthesized `viewBox` with the default `preserveAspectRatio`, as Blink does for the SVG images), where the reference expects them stretched to the size (the `preserveAspectRatio="none"` that Gecko uses for a synthesized `viewBox`); `cross-fade()` fails in every browser |
-| [`cross-fade-premultiplied-alpha.html`](https://wpt.fyi/results/css/css-images/cross-fade-premultiplied-alpha.html) | Fail | 0 / 1 | BUG | the mixed color is exact (`color(srgb 0.0099 0.990 0 / 0.505)`), but the fuzziness of the test requires a difference of exactly 1 with its reference on every pixel, and the difference is 2 for a channel; `cross-fade()` fails in every browser |
+| [`cross-fade-premultiplied-alpha.html`](https://wpt.fyi/results/css/css-images/cross-fade-premultiplied-alpha.html) | Fail | 0 / 1 | TEST BUG | the mixed color is exact (`color(srgb 0.0099 0.990 0 / 0.505)`), but the fuzziness of the test requires a difference of exactly 1 with its reference on every pixel, which only holds when the alphas are quantized to 8 bits before compositing (as in Blink: 129/255 and 128/255): composited exactly on white, the blue channel is 126.2 (0.495 × 255) in the test and 127.5 (0.5 × 255) in the reference, a difference of 2 after rounding; `cross-fade()` fails in every browser |
 | [`cross-fade-target-alpha.html`](https://wpt.fyi/results/css/css-images/cross-fade-target-alpha.html) | Pass | 1 / 1 |  |  |
 | [`css-image-fallbacks-and-annotations.html`](https://wpt.fyi/results/css/css-images/css-image-fallbacks-and-annotations.html) | Pass | 1 / 1 |  |  |
 | [`css-image-fallbacks-and-annotations002.html`](https://wpt.fyi/results/css/css-images/css-image-fallbacks-and-annotations002.html) | Pass | 1 / 1 |  |  |

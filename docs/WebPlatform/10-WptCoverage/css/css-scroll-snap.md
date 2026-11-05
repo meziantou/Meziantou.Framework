@@ -9,17 +9,17 @@ description: "The results of the web-platform-tests of css/css-scroll-snap, and 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 151 | 157 | 0 | 96% |
+| [Stable](#stable-tests) | 153 | 157 | 0 | 97% |
 | [Tentative](#tentative-tests) | 30 | 31 | 0 | 97% |
 | [Reftests](#reftests) | 24 | 26 | 0 | 92% |
-| **All** | **205** | **214** | **0** | **96%** |
+| **All** | **207** | **214** | **0** | **97%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **BUG**: 1
-- **TEST BUG**: 5
+- **TEST BUG**: 2
 - **NOT IMPLEMENTED**: 4
 
 ## Stable tests
@@ -83,7 +83,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`scroll-on-large-element-not-covering-snapport.html`](https://wpt.fyi/results/css/css-scroll-snap/scroll-on-large-element-not-covering-snapport.html) | Pass | 1 / 1 |  |  |
 | [`scroll-padding-and-margin.html`](https://wpt.fyi/results/css/css-scroll-snap/scroll-padding-and-margin.html) | Pass | 2 / 2 |  |  |
 | [`scroll-padding-focus.html`](https://wpt.fyi/results/css/css-scroll-snap/scroll-padding-focus.html) | Pass | 2 / 2 |  |  |
-| [`scroll-padding-percentage.html`](https://wpt.fyi/results/css/css-scroll-snap/scroll-padding-percentage.html) | Fail | 0 / 2 | TEST BUG | expects `focus()` not to scroll a visible element: the focusing steps scroll the element to the center of its scrolling boxes (`center`, `center`: https://html.spec.whatwg.org/multipage/interaction.html#dom-focus) while the browsers only scroll an element that is not visible |
+| [`scroll-padding-percentage.html`](https://wpt.fyi/results/css/css-scroll-snap/scroll-padding-percentage.html) | Pass | 2 / 2 |  |  |
 | [`scroll-padding.html`](https://wpt.fyi/results/css/css-scroll-snap/scroll-padding.html) | Pass | 1 / 1 |  |  |
 | [`scroll-snap-nested-snap-area-layout-changed.html`](https://wpt.fyi/results/css/css-scroll-snap/scroll-snap-nested-snap-area-layout-changed.html) | Pass | 2 / 2 |  |  |
 | [`scroll-snap-stop-001.html`](https://wpt.fyi/results/css/css-scroll-snap/scroll-snap-stop-001.html) | Pass | 4 / 4 |  |  |
@@ -121,8 +121,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`snap-after-relayout/changing-scroll-snap-align.html`](https://wpt.fyi/results/css/css-scroll-snap/snap-after-relayout/changing-scroll-snap-align.html) | Pass | 3 / 3 |  |  |
 | [`snap-after-relayout/changing-scroll-snap-type-on-root-element.html`](https://wpt.fyi/results/css/css-scroll-snap/snap-after-relayout/changing-scroll-snap-type-on-root-element.html) | Pass | 3 / 3 |  |  |
 | [`snap-after-relayout/changing-scroll-snap-type.html`](https://wpt.fyi/results/css/css-scroll-snap/snap-after-relayout/changing-scroll-snap-type.html) | Pass | 3 / 3 |  |  |
-| [`snap-after-relayout/focus-element-no-snap.html`](https://wpt.fyi/results/css/css-scroll-snap/snap-after-relayout/focus-element-no-snap.html) | Fail | 0 / 1 | TEST BUG | expects `focus()` not to scroll a partially visible element to the center of its scroll container: the focusing steps scroll the element to the center of its scrolling boxes (`center`, `center`: https://html.spec.whatwg.org/multipage/interaction.html#dom-focus) while the browsers only scroll an element that is not visible |
-| [`snap-after-relayout/layout-follows-focused-targeted-block.html`](https://wpt.fyi/results/css/css-scroll-snap/snap-after-relayout/layout-follows-focused-targeted-block.html) | Fail | 0 / 4 | TEST BUG, NOT IMPLEMENTED | expects `focus()` not to scroll a partially visible element to the center of its scroll container: the focusing steps scroll the element to the center of its scrolling boxes (`center`, `center`: https://html.spec.whatwg.org/multipage/interaction.html#dom-focus) while the browsers only scroll an element that is not visible; a scroll container without `tabindex` is not focusable (the keyboard-focusable scroll containers of the browsers) |
+| [`snap-after-relayout/focus-element-no-snap.html`](https://wpt.fyi/results/css/css-scroll-snap/snap-after-relayout/focus-element-no-snap.html) | Pass | 1 / 1 |  |  |
+| [`snap-after-relayout/layout-follows-focused-targeted-block.html`](https://wpt.fyi/results/css/css-scroll-snap/snap-after-relayout/layout-follows-focused-targeted-block.html) | Fail | 1 / 4 | NOT IMPLEMENTED | a scroll container without `tabindex` is not focusable (the keyboard-focusable scroll containers of the browsers) |
 | [`snap-after-relayout/move-current-target.html`](https://wpt.fyi/results/css/css-scroll-snap/snap-after-relayout/move-current-target.html) | Pass | 4 / 4 |  |  |
 | [`snap-after-relayout/multiple-aligned-targets/common-to-both-axes-supercedes-first-in-tree-order.html`](https://wpt.fyi/results/css/css-scroll-snap/snap-after-relayout/multiple-aligned-targets/common-to-both-axes-supercedes-first-in-tree-order.html) | Pass | 10 / 10 |  |  |
 | [`snap-after-relayout/multiple-aligned-targets/nested-supercedes-common-to-both-axes.html`](https://wpt.fyi/results/css/css-scroll-snap/snap-after-relayout/multiple-aligned-targets/nested-supercedes-common-to-both-axes.html) | Pass | 1 / 1 |  |  |

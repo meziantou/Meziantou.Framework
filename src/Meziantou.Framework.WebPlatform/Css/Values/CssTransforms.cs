@@ -111,12 +111,7 @@ internal static class CssTransforms
         z /= length;
         // Like in the browsers, the angle is reduced modulo 360 first (the remainder is exact): the conversion of a large angle
         // to radians is not precise, e.g. an infinite angle is clamped to the largest float, a multiple of 360 (no rotation)
-        // sc = sin(α/2) cos(α/2) = sin(α) / 2 and sq = sin²(α/2) = (1 - cos(α)) / 2, computed from the sine and the cosine of the
-        // angle, which are exact for the multiples of 30deg (a rotation of 60deg halves the lengths exactly, as in the browsers,
-        // whose results are single-precision: WPT css/css-ui/resize-iframe-3d-transform.tentative.html)
-        var (sin, cos) = SinCosDegrees(angle % 360);
-        var sc = sin / 2;
-        var sq = (1 - cos) / 2;
+        var (sc, sq) = GetRotationFactors(angle % 360);
         return
         [
             1 - (2 * ((y * y) + (z * z)) * sq), 2 * ((x * y * sq) + (z * sc)), 2 * ((x * z * sq) - (y * sc)), 0,
@@ -126,17 +121,24 @@ internal static class CssTransforms
         ];
     }
 
-    /// <summary>Returns the sine and the cosine of an angle in degrees, exact for the multiples of 30 degrees.</summary>
-    private static (double Sin, double Cos) SinCosDegrees(double angle)
+    /// <summary>Returns sc = sin(α/2) cos(α/2) and sq = sin²(α/2) for an angle α in degrees.</summary>
+    private static (double Sc, double Sq) GetRotationFactors(double angle)
     {
+        // For the multiples of 30deg, sc = sin(α) / 2 and sq = (1 - cos(α)) / 2 are computed from the sine and the cosine of the
+        // angle, which are exact (a rotation of 60deg halves the lengths exactly, as in the browsers, whose results are
+        // single-precision: WPT css/css-ui/resize-iframe-3d-transform.tentative.html). Other angles keep the half-angle
+        // formulas: their rounding decides the pixel snapping of results that land on half pixels
+        // (WPT css/motion/offset-path-ray-contain-003.html on x64).
         var reduced = angle < 0 ? angle + 360 : angle;
         if (reduced % 30 == 0)
         {
             var (sin, cos) = Math.SinCos(reduced * Math.PI / 180);
-            return (RoundToExact(sin), RoundToExact(cos));
+            return (RoundToExact(sin) / 2, (1 - RoundToExact(cos)) / 2);
         }
 
-        return Math.SinCos(angle * Math.PI / 180);
+        var alpha = angle * Math.PI / 180;
+        var halfSin = Math.Sin(alpha / 2);
+        return (halfSin * Math.Cos(alpha / 2), halfSin * halfSin);
 
         // The sines and cosines of the multiples of 30 degrees that are exact in binary: 0 (not -0), ±1/2 and ±1
         static double RoundToExact(double value)

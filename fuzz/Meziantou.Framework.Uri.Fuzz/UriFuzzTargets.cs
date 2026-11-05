@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -153,6 +154,26 @@ public static partial class UriFuzzTargets
         }
 
         return builder.ToString();
+    }
+
+    /// <summary>Creates an absolute <see cref="System.Uri"/>, to match it with the overloads that take one.</summary>
+    private static bool TryCreateSystemUri(string url, [NotNullWhen(true)] out System.Uri? uri)
+    {
+#if NET11_0_OR_GREATER
+        return System.Uri.TryCreate(url, UriKind.Absolute, out uri);
+#else
+        // On .NET 10, System.Uri throws IndexOutOfRangeException instead of returning false or a URI for a file URL whose
+        // host is made of bidirectional control characters ("file://‎", "//‏"). .NET 11 gives "file:///".
+        try
+        {
+            return System.Uri.TryCreate(url, UriKind.Absolute, out uri);
+        }
+        catch (IndexOutOfRangeException)
+        {
+            uri = null;
+            return false;
+        }
+#endif
     }
 
     // A regular (not verbatim, not interpolated, not raw) string literal on one line

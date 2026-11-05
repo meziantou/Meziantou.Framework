@@ -73,6 +73,17 @@ public static partial class UriFuzzTargets
 
         var again = CreateFromPatternStrings(fixedPoint, options);
         FuzzAssert.True(again is not null, $"The pattern strings of the pattern created from the pattern strings do not compile: {FormatPattern(fixedPoint)}");
+
+        // A group whose fixed text canonicalizes to nothing ("{\r}*") is written "{}*", as in the spec. Reading it back gives
+        // no part, so the fixed texts around it are written as one ("*////{}*%2e%2e" becomes "*////%2e%2e"), and this text
+        // is only canonicalized in the next round ("/%2e%2e" is a ".." segment: "*///")
+        if (FormatPattern(pattern).Contains("{}", StringComparison.Ordinal))
+        {
+            fixedPoint = again;
+            again = CreateFromPatternStrings(fixedPoint, options);
+            FuzzAssert.True(again is not null, $"The pattern strings of the pattern created from the pattern strings do not compile: {FormatPattern(fixedPoint)}");
+        }
+
         FuzzAssert.Equal(FormatPattern(fixedPoint), FormatPattern(again), "The pattern strings are not a fixed point after one round");
 
         // A default port is only dropped when the pattern spells it as the default port ("080" is kept as "80"), as the
@@ -126,7 +137,7 @@ public static partial class UriFuzzTargets
                 FuzzAssert.True(input.IsMatch(ignoreCase, testCase.InputBaseUrl), $"{input} matches the case-sensitive pattern, but not the one that ignores the case");
             }
 
-            if (input.Url is not null && testCase.InputBaseUrl is null && System.Uri.TryCreate(input.Url, UriKind.Absolute, out var uri))
+            if (input.Url is not null && testCase.InputBaseUrl is null && TryCreateSystemUri(input.Url, out var uri))
             {
                 FuzzAssert.Equal(pattern.Match(uri) is not null, pattern.IsMatch(uri), $"IsMatch(Uri) and Match(Uri) disagree on {input}");
             }

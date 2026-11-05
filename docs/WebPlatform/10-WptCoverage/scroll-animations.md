@@ -9,17 +9,17 @@ description: "The results of the web-platform-tests of scroll-animations, and wh
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 142 | 148 | 0 | 96% |
-| [Tentative](#tentative-tests) | 39 | 76 | 0 | 51% |
-| [Reftests](#reftests) | 30 | 37 | 0 | 81% |
-| **All** | **211** | **261** | **0** | **81%** |
+| [Stable](#stable-tests) | 141 | 148 | 0 | 95% |
+| [Tentative](#tentative-tests) | 40 | 76 | 0 | 53% |
+| [Reftests](#reftests) | 31 | 37 | 0 | 84% |
+| **All** | **212** | **261** | **0** | **81%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 5
-- **TEST BUG**: 1
+- **BUG**: 2
+- **TEST BUG**: 3
 - **NOT IMPLEMENTED**: 43
 - **OUT OF SCOPE**: 1
 
@@ -80,7 +80,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`css/timeline-scope-computed.html`](https://wpt.fyi/results/scroll-animations/css/timeline-scope-computed.html) | Pass | 12 / 12 |  |  |
 | [`css/timeline-scope-parsing.html`](https://wpt.fyi/results/scroll-animations/css/timeline-scope-parsing.html) | Pass | 25 / 25 |  |  |
 | [`css/timeline-scope.html`](https://wpt.fyi/results/scroll-animations/css/timeline-scope.html) | Pass | 12 / 12 |  |  |
-| [`css/view-timeline-animation.html`](https://wpt.fyi/results/scroll-animations/css/view-timeline-animation.html) | Fail | 0 / 3 | BUG | a `fill: none` animation is in its after phase when its view progress timeline is at 100% (the end of the cover range, `scrollTop` 200 of 250): the scroller is not at its maximum scroll offset, so it is not "at timeline boundary" (https://drafts.csswg.org/web-animations-2/#at-timeline-boundary: the minimum and maximum timeline times are the ones of the minimum and maximum scroll offsets) and the active-after boundary is exclusive; the browsers apply its effect |
+| [`css/view-timeline-animation.html`](https://wpt.fyi/results/scroll-animations/css/view-timeline-animation.html) | Fail | 0 / 3 | TEST BUG | the last step expects a `fill: none` animation to apply its effect when its view progress timeline is at 100% (the end of the cover range, `scrollTop` 200 of 250): the scroller is not at its maximum scroll offset, so the active-after boundary is not "at timeline boundary" (https://drafts.csswg.org/web-animations-2/#at-timeline-boundary: the minimum and maximum timeline times are the ones of the minimum and maximum scroll offsets) and it is exclusive, as `view-timelines/block-view-timeline-current-time.tentative.html` and `range-boundary.tentative.html` expect ("Effect is in the after phase at effect end time"); Chromium fails it too |
 | [`css/view-timeline-axis-computed.html`](https://wpt.fyi/results/scroll-animations/css/view-timeline-axis-computed.html) | Pass | 14 / 14 |  |  |
 | [`css/view-timeline-axis-parsing.html`](https://wpt.fyi/results/scroll-animations/css/view-timeline-axis-parsing.html) | Pass | 18 / 18 |  |  |
 | [`css/view-timeline-dynamic.html`](https://wpt.fyi/results/scroll-animations/css/view-timeline-dynamic.html) | Pass | 4 / 4 |  |  |
@@ -94,7 +94,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`css/view-timeline-name-shadow.html`](https://wpt.fyi/results/scroll-animations/css/view-timeline-name-shadow.html) | Pass | 4 / 4 |  |  |
 | [`css/view-timeline-on-pseudo.html`](https://wpt.fyi/results/scroll-animations/css/view-timeline-on-pseudo.html) | Pass | 1 / 1 |  |  |
 | [`css/view-timeline-paused-animations.html`](https://wpt.fyi/results/scroll-animations/css/view-timeline-paused-animations.html) | Pass | 1 / 1 |  |  |
-| [`css/view-timeline-pseudo-on-scroller.html`](https://wpt.fyi/results/scroll-animations/css/view-timeline-pseudo-on-scroller.html) | Pass | 1 / 1 |  |  |
+| [`css/view-timeline-pseudo-on-scroller.html`](https://wpt.fyi/results/scroll-animations/css/view-timeline-pseudo-on-scroller.html) | Fail | 0 / 1 | TEST BUG | the `::before` pseudo-element is at the start of the horizontal scroller, so the end of its cover range (100%) is the minimum scroll offset: at `scrollLeft` 0, the local time of the `fill: none` animation is its active-after boundary, which is exclusive when playing forwards because the end of the range is not aligned with the maximum scroll offset (https://drafts.csswg.org/web-animations-2/#at-timeline-boundary, `range-boundary.tentative.html` expects no effect when the end of the range is at the minimum offset), so the background stays red; Chromium fails it too |
 | [`css/view-timeline-range-animation.html`](https://wpt.fyi/results/scroll-animations/css/view-timeline-range-animation.html) | Pass | 17 / 17 |  |  |
 | [`css/view-timeline-scroll-range-source-content-resize.html`](https://wpt.fyi/results/scroll-animations/css/view-timeline-scroll-range-source-content-resize.html) | Pass | 1 / 1 |  |  |
 | [`css/view-timeline-shorthand.html`](https://wpt.fyi/results/scroll-animations/css/view-timeline-shorthand.html) | Pass | 84 / 84 |  |  |
@@ -245,7 +245,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`scroll-timelines/effect-updateTiming.tentative.html`](https://wpt.fyi/results/scroll-animations/scroll-timelines/effect-updateTiming.tentative.html) | Pass | 1 / 1 |  |  |
 | [`scroll-timelines/intrinsic-iteration-duration.tentative.html`](https://wpt.fyi/results/scroll-animations/scroll-timelines/intrinsic-iteration-duration.tentative.html) | Pass | 6 / 6 |  |  |
 | [`scroll-timelines/scroll-animation-effect-fill-modes.tentative.html`](https://wpt.fyi/results/scroll-animations/scroll-timelines/scroll-animation-effect-fill-modes.tentative.html) | Pass | 26 / 26 |  |  |
-| [`scroll-timelines/scroll-animation-effect-phases.tentative.html`](https://wpt.fyi/results/scroll-animations/scroll-timelines/scroll-animation-effect-phases.tentative.html) | Fail | 29 / 30 | BUG | at the maximum scroll offset with a playback rate of -2 and no delay (current time 0%), the effect is in its active phase: the before-active boundary is inclusive because the timeline is at its boundary (https://drafts.csswg.org/web-animations-2/#at-timeline-boundary), the tentative test expects the before phase there but the active phase with a playback rate of -1 |
+| [`scroll-timelines/scroll-animation-effect-phases.tentative.html`](https://wpt.fyi/results/scroll-animations/scroll-timelines/scroll-animation-effect-phases.tentative.html) | Pass | 30 / 30 |  |  |
 | [`scroll-timelines/setting-timeline.tentative.html`](https://wpt.fyi/results/scroll-animations/scroll-timelines/setting-timeline.tentative.html) | Pass | 16 / 16 |  |  |
 | [`view-timelines/block-view-timeline-current-time-vertical-rl.tentative.html`](https://wpt.fyi/results/scroll-animations/view-timelines/block-view-timeline-current-time-vertical-rl.tentative.html) | Pass | 1 / 1 |  |  |
 | [`view-timelines/block-view-timeline-current-time.tentative.html`](https://wpt.fyi/results/scroll-animations/view-timelines/block-view-timeline-current-time.tentative.html) | Pass | 3 / 3 |  |  |
@@ -285,7 +285,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`css/view-timeline-range-update-reversed-animation.html`](https://wpt.fyi/results/scroll-animations/css/view-timeline-range-update-reversed-animation.html) | Pass | 1 / 1 |  |  |
 | [`css/view-timeline-range-update.html`](https://wpt.fyi/results/scroll-animations/css/view-timeline-range-update.html) | Pass | 1 / 1 |  |  |
 | [`css/view-timeline-subject-bounds-update.html`](https://wpt.fyi/results/scroll-animations/css/view-timeline-subject-bounds-update.html) | Pass | 1 / 1 |  |  |
-| [`responsive/repaint-after-finished.html`](https://wpt.fyi/results/scroll-animations/responsive/repaint-after-finished.html) | Timeout | 0 / 1 | BUG | the page never removes the `reftest-wait` class of its root element (an error of its scripts, or an event that is not fired) |
+| [`responsive/repaint-after-finished.html`](https://wpt.fyi/results/scroll-animations/responsive/repaint-after-finished.html) | Timeout | 0 / 1 | BUG | the page never removes the `reftest-wait` class of its root element: the `scroll(x)` timeline of `#t2::after` is inactive, so its play-pending animation is never ready, because the 200px column track of the `::after` grid container (without items) is not in the scrollable overflow of its scroll container `#t2`; including the grid of a grid container that is not a scroll container in the scrollable overflow of its ancestors makes it scrollable, but the browsers do not (it breaks css-grid/grid-items/grid-item-margin-box-overflowing-grid-area-paint-001.html and grid-lanes/item-placement/row-auto-placement-002.html) |
 | [`scroll-timelines/animation-with-animatable-interface.html`](https://wpt.fyi/results/scroll-animations/scroll-timelines/animation-with-animatable-interface.html) | Pass | 1 / 1 |  |  |
 | [`scroll-timelines/animation-with-display-none.html`](https://wpt.fyi/results/scroll-animations/scroll-timelines/animation-with-display-none.html) | Pass | 1 / 1 |  |  |
 | [`scroll-timelines/animation-with-overflow-hidden.html`](https://wpt.fyi/results/scroll-animations/scroll-timelines/animation-with-overflow-hidden.html) | Pass | 1 / 1 |  |  |
@@ -297,4 +297,4 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`scroll-timelines/set-current-time-before-play.html`](https://wpt.fyi/results/scroll-animations/scroll-timelines/set-current-time-before-play.html) | Pass | 1 / 1 |  |  |
 | [`scroll-timelines/two-animations-attach-to-same-scroll-timeline-cancel-one.html`](https://wpt.fyi/results/scroll-animations/scroll-timelines/two-animations-attach-to-same-scroll-timeline-cancel-one.html) | Pass | 1 / 1 |  |  |
 | [`scroll-timelines/two-animations-attach-to-same-scroll-timeline.html`](https://wpt.fyi/results/scroll-animations/scroll-timelines/two-animations-attach-to-same-scroll-timeline.html) | Pass | 1 / 1 |  |  |
-| [`view-timelines/range-boundary.tentative.html`](https://wpt.fyi/results/scroll-animations/view-timelines/range-boundary.tentative.html) | Fail | 0 / 1 | BUG | the boundaries of the active interval of an animation on a view timeline are inclusive whenever the scroller is at its minimum or maximum scroll offset, as the "at timeline boundary" procedure of web-animations-2 defines (the timeline current time matches the minimum or the maximum timeline time), whatever the playback direction; the tentative test expects the active-after boundary to be inclusive only at the maximum offset when playing forwards, and the before-active boundary only at offset 0 when reversed (`#scroller-2` and `#scroller-4` show the effect instead of no effect); only Chrome passes |
+| [`view-timelines/range-boundary.tentative.html`](https://wpt.fyi/results/scroll-animations/view-timelines/range-boundary.tentative.html) | Pass | 1 / 1 |  |  |

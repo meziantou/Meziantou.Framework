@@ -9,16 +9,15 @@ description: "The results of the web-platform-tests of css/fill-stroke, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 4 | 8 | 0 | 50% |
+| [Stable](#stable-tests) | 5 | 8 | 0 | 63% |
 | [Tentative](#tentative-tests) | 0 | 2 | 0 | 0% |
 | [Reftests](#reftests) | 1 | 1 | 0 | 100% |
-| **All** | **5** | **11** | **0** | **45%** |
+| **All** | **6** | **11** | **0** | **55%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
 - **NOT IMPLEMENTED**: 5
 
 ## Stable tests
@@ -26,7 +25,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
 | [`animation/fill-interpolation.html`](https://wpt.fyi/results/css/fill-stroke/animation/fill-interpolation.html) | Pass | 192 / 192 |  |  |
-| [`animation/stroke-color-interpolation.html`](https://wpt.fyi/results/css/fill-stroke/animation/stroke-color-interpolation.html) | Fail | 168 / 172 | BUG | the interpolation from `currentcolor` to a translucent color is off by one unit (`rgba(0, 209, 46, 0.69)` instead of `rgba(0, 208, 47, 0.69)`) |
+| [`animation/stroke-color-interpolation.html`](https://wpt.fyi/results/css/fill-stroke/animation/stroke-color-interpolation.html) | Pass | 172 / 172 |  |  |
 | [`inheritance.html`](https://wpt.fyi/results/css/fill-stroke/inheritance.html) | Fail | 0 / 4 | NOT IMPLEMENTED | the `text-decoration-fill` and `text-decoration-stroke` properties |
 | [`text-decoration-fill/text-decoration-fill-invalid.svg`](https://wpt.fyi/results/css/fill-stroke/text-decoration-fill/text-decoration-fill-invalid.svg) | Pass | 5 / 5 |  |  |
 | [`text-decoration-fill/text-decoration-fill-valid.svg`](https://wpt.fyi/results/css/fill-stroke/text-decoration-fill/text-decoration-fill-valid.svg) | Fail | 0 / 7 | NOT IMPLEMENTED | the `text-decoration-fill` property |

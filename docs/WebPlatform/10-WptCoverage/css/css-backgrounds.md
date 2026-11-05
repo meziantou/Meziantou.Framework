@@ -9,17 +9,17 @@ description: "The results of the web-platform-tests of css/css-backgrounds, and 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 129 | 132 | 0 | 98% |
+| [Stable](#stable-tests) | 130 | 132 | 0 | 98% |
 | Tentative | 0 | 0 | 0 | – |
 | [Reftests](#reftests) | 705 | 719 | 1 | 98% |
-| **All** | **834** | **851** | **1** | **98%** |
+| **All** | **835** | **851** | **1** | **98%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **BUG**: 9
-- **TEST BUG**: 6
+- **TEST BUG**: 5
 - **NOT IMPLEMENTED**: 1
 - **FLAKY**: 1
 
@@ -27,7 +27,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`animations/background-color-interpolation.html`](https://wpt.fyi/results/css/css-backgrounds/animations/background-color-interpolation.html) | Fail | 168 / 172 | TEST BUG | from currentcolor (rgba(0, 0, 255, 0.5)) to rgba(0, 255, 0, 0.75) at 0.75: the premultiplied interpolation gives alpha 0.6875, green 143.4375 / 0.6875 = 208.6 and blue 31.875 / 0.6875 = 46.4, so rgba(0, 209, 46, 0.69) (the result of the library); the expected rgba(0, 208, 47, 0.69) comes from the 8-bit premultiplied colors of Blink |
+| [`animations/background-color-interpolation.html`](https://wpt.fyi/results/css/css-backgrounds/animations/background-color-interpolation.html) | Pass | 172 / 172 |  |  |
 | [`animations/background-color-transition-colormix.html`](https://wpt.fyi/results/css/css-backgrounds/animations/background-color-transition-colormix.html) | Pass | 1 / 1 |  |  |
 | [`animations/background-image-interpolation.html`](https://wpt.fyi/results/css/css-backgrounds/animations/background-image-interpolation.html) | Pass | 288 / 288 |  |  |
 | [`animations/background-position-composition.html`](https://wpt.fyi/results/css/css-backgrounds/animations/background-position-composition.html) | Pass | 70 / 70 |  |  |

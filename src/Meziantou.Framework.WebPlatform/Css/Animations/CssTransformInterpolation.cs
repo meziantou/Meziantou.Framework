@@ -74,6 +74,36 @@ internal static class CssTransformInterpolation
         return Combine(context, a, b, CssCombineOperation.Accumulate, 1);
     }
 
+    /// <summary>
+    /// Returns the final value of an animation whose iterations are accumulated onto the value of a keyframe: as in the browsers,
+    /// it is converted to a matrix when the functions of the two lists cannot be accumulated pair by pair (e.g. translateX(0px)
+    /// scale(2) and scale(3) translateX(10px)), so that its multiples are accumulated as matrices.
+    /// </summary>
+    public static string GetIterationFinalValue(CssInterpolationContext context, string finalValue, string value)
+    {
+        if (Parse(finalValue) is not { Count: > 0 } a || Parse(value) is not { } b)
+            return finalValue;
+
+        var count = Math.Max(a.Count, b.Count);
+        for (var i = 0; i < count; i++)
+        {
+            var functionA = i < a.Count ? a[i] : GetIdentity(b[i]);
+            var functionB = i < b.Count ? b[i] : GetIdentity(a[i]);
+            if (CombinePair(context, functionA, functionB, CssCombineOperation.Accumulate, 1) is null)
+            {
+                (double Width, double Height)? referenceBox;
+                using (new CssColor.OutOfRangeRgbScope(enable: false))
+                {
+                    referenceBox = context.Style?.GetTransformReferenceBox();
+                }
+
+                return ToMatrix(a, referenceBox) is { } matrix ? CssTransforms.Serialize(matrix) : finalValue;
+            }
+        }
+
+        return finalValue;
+    }
+
     private static string? Combine(CssInterpolationContext context, List<TransformFunction> a, List<TransformFunction> b, CssCombineOperation operation, double progress)
     {
         // The shorter list is padded with the identity functions of the other list (none is an empty list)

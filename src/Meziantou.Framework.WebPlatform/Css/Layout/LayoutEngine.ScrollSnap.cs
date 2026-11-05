@@ -17,6 +17,9 @@ internal sealed partial class LayoutEngine
     /// <summary>Whether a scrolling box of the last layout is a scroll snap container, or was one.</summary>
     private bool _hasSnapStates;
 
+    /// <summary>Whether a scrollsnapchange listener was added before the first rendering update of the document (see <see cref="SetSnapTargets"/>).</summary>
+    private bool _firstSnapChangeObserved;
+
     /// <summary>
     /// Returns the snap position of a scroll operation intended to scroll to an element whose nearest scroll container is the
     /// scroll container (https://drafts.csswg.org/css-scroll-snap-1/#choosing: "the user agent must snap to one of that element's
@@ -95,9 +98,11 @@ internal sealed partial class LayoutEngine
     /// <summary>
     /// Sets the snap targets of a scrolling box, and updates its scrollsnapchanging targets
     /// (https://drafts.csswg.org/css-scroll-snap-2/#update-scrollsnapchanging-targets): a <c>scrollsnapchanging</c> event is
-    /// queued when they change. The first targets of a box are set without snap events: the layout is computed lazily (when the
-    /// geometry is read, or for the observers of the scroll and snap events), so the first snap may happen long after the load
-    /// of the document, unlike in the browsers, which fire a scrollsnapchange event for the first snap.
+    /// queued when they change. The browsers fire a scrollsnapchange event (and no scrollsnapchanging event) for the first snap
+    /// of a box, by the first rendering update of the document. The layout is computed lazily (when the geometry is read, or for
+    /// the observers of the scroll and snap events), so the first snap may happen long after: its scrollsnapchange event is only
+    /// queued when a listener added before the first rendering update observes it (a listener added later would not receive
+    /// it in the browsers).
     /// </summary>
     private void SetSnapTargets(ScrollState state, SnapTarget? targetX, SnapTarget? targetY)
     {
@@ -119,6 +124,11 @@ internal sealed partial class LayoutEngine
             snap.EventTargetsInitialized = true;
             snap.ChangingBlock = snap.ChangeBlock = block;
             snap.ChangingInline = snap.ChangeInline = inline;
+            if (_firstSnapChangeObserved && (block is not null || inline is not null) && HasSnapChangeListener(state.Element ?? (EventTarget)_document))
+            {
+                QueueSnapEvent(state, "scrollsnapchange", block, inline);
+            }
+
             return;
         }
 
@@ -130,6 +140,26 @@ internal sealed partial class LayoutEngine
         QueueSnapEvent(state, "scrollsnapchanging", block, inline);
     }
 
+    /// <summary>Whether a <c>scrollsnapchange</c> listener observes the snap events of a target (the events at a document bubble to its window).</summary>
+    private static bool HasSnapChangeListener(EventTarget target)
+    {
+        if (HasListener(target))
+            return true;
+
+        return target is Document { DefaultView: { } window } && HasListener(window);
+
+        static bool HasListener(EventTarget eventTarget)
+        {
+            foreach (var listener in eventTarget.EventListenerList)
+            {
+                if (listener.Type == "scrollsnapchange")
+                    return true;
+            }
+
+            return false;
+        }
+    }
+
     private void QueueSnapEvent(ScrollState state, string type, SnapTarget? block, SnapTarget? inline)
         => QueuePendingScrollEvent(state.Element ?? (EventTarget)_document, type, block?.Element, inline?.Element);
 
@@ -138,7 +168,7 @@ internal sealed partial class LayoutEngine
     /// (e.g. a fragment navigation, the snapping after a layout change), so the layout of the document is computed by the next
     /// rendering updates (a document whose geometry is never read is not laid out).
     /// </summary>
-    internal static void OnScrollEventListenerAdded(EventTarget target)
+    internal static void OnScrollEventListenerAdded(EventTarget target, string type)
     {
         var document = target switch
         {
@@ -148,7 +178,15 @@ internal sealed partial class LayoutEngine
         };
         if (document?.BrowsingContext is not null)
         {
-            document.GetLayoutEngine().RequestRenderingUpdates();
+            var engine = document.GetLayoutEngine();
+
+            // A listener added before the first rendering update of the document observes the first snap of the browsers
+            if (type == "scrollsnapchange" && !document.HasBeenRevealed)
+            {
+                engine._firstSnapChangeObserved = true;
+            }
+
+            engine.RequestRenderingUpdates();
         }
     }
 

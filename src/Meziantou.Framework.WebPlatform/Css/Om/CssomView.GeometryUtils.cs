@@ -458,7 +458,8 @@ internal static class GeometryUtils
     /// <summary>Returns the rectangle of a box of a fragment in the coordinates of its border box (https://drafts.csswg.org/cssom-view/#adjust-a-point-to-the-border-box).</summary>
     private static PhysicalRect GetBoxRect(BoxFragment fragment, CssBoxType box) => box switch
     {
-        CssBoxType.Margin => fragment.Box.IsInlineBox ? GetInlineMarginBoxRect(fragment) : fragment.MarginBoxRect,
+        // The margin box of a block has its computed margins, not the used margin of an over-constrained block (as in the browsers)
+        CssBoxType.Margin => fragment.Box.IsInlineBox ? GetInlineMarginBoxRect(fragment) : fragment.BorderBoxRect.Expand(BasicShapePaths.GetMargins(fragment)),
         CssBoxType.Padding => fragment.PaddingBoxRect,
         CssBoxType.Content => fragment.ContentBoxRect,
         _ => fragment.BorderBoxRect,

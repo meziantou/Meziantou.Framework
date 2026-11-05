@@ -433,6 +433,9 @@ internal static class DynamicMarkup
     public static bool IsHtmlElementOfHtmlDocument(Element element) => element.NodeDocument.IsHtmlDocument && element.IsHtml(TagId.Html);
 
     public static Element CreateBodyElement(Document document) => ElementFactory.CreateElement(document, "body", Namespaces.Html, prefix: null, isValue: null, synchronousCustomElements: false);
+
+    /// <summary>Creates a body element with the given custom element registry (null, or a registry).</summary>
+    public static Element CreateBodyElement(Document document, CustomElementRegistry? registry) => ElementFactory.CreateElement(document, "body", Namespaces.Html, prefix: null, isValue: null, synchronousCustomElements: false, registry);
 }
 
 public partial class Element
@@ -546,9 +549,12 @@ public partial class Element
             throw DomException.Syntax($"'{position}' is not a valid position");
         }
 
+        // As in the browsers, the body element that replaces the context has the custom element registry of the context (the
+        // specification creates it with the registry of the document): the parsed elements get the registry of the node into
+        // which they are inserted, even when it is null (custom-elements/registries/Element-innerHTML.html)
         if (context is not Element contextElement || DynamicMarkup.IsHtmlElementOfHtmlDocument(contextElement))
         {
-            context = DynamicMarkup.CreateBodyElement(NodeDocument);
+            context = DynamicMarkup.CreateBodyElement(NodeDocument, CustomElementRegistry.LookUp(context));
         }
 
         using var ceReactions = CEReactionsScope.Enter();

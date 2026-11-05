@@ -1018,7 +1018,7 @@ internal sealed partial class CssRuleParser
                 if (!stream.IsEmpty)
                     return null;
 
-                supportsMatches = IsSupportedDeclaration(declaration.Name, declaration.Value, _quirks);
+                supportsMatches = IsSupportedDeclaration(declaration.Name, declaration.Value, _quirks, Namespaces);
             }
 
             supportsText = GetOriginalText(supports.Value);
@@ -1702,7 +1702,7 @@ internal sealed partial class CssRuleParser
                 {
                     stream.DiscardWhitespace();
                     if (stream.IsEmpty)
-                        return IsSupportedDeclaration(declaration.Name, declaration.Value, quirks);
+                        return IsSupportedDeclaration(declaration.Name, declaration.Value, quirks, namespaces);
                 }
 
                 // <general-enclosed>
@@ -1837,14 +1837,47 @@ internal sealed partial class CssRuleParser
 
     /// <summary>
     /// Returns whether a declaration is supported (https://drafts.csswg.org/css-conditional-3/#dfn-support). In quirks mode, the
-    /// quirky lengths and colors are valid (https://drafts.csswg.org/css-values-4/#deprecated-quirky-length).
+    /// quirky lengths and colors are valid (https://drafts.csswg.org/css-values-4/#deprecated-quirky-length). In a style sheet, the
+    /// namespace prefixes of the attr() functions must be declared by its @namespace rules (https://drafts.csswg.org/css-values-5/#attr-notation).
     /// </summary>
-    public static bool IsSupportedDeclaration(string property, List<CssComponentValue> values, bool quirks = false)
+    public static bool IsSupportedDeclaration(string property, List<CssComponentValue> values, bool quirks = false, SelectorNamespaceContext? namespaces = null)
     {
+        if (namespaces is not null && HasUndeclaredAttrNamespace(values, namespaces))
+            return false;
+
         var name = CssPropertyRegistry.NormalizeName(property);
         if (CssShorthands.ParseValue(name, values, originalText: "") is not null)
             return true;
 
         return quirks && CssQuirks.RewriteQuirkyValues(name, values) is { } rewritten && CssShorthands.ParseValue(name, rewritten, originalText: "") is not null;
+    }
+
+    /// <summary>Returns whether a value contains an attr() whose attribute name has a namespace prefix that is not declared (e.g. attr(y|href)).</summary>
+    private static bool HasUndeclaredAttrNamespace(List<CssComponentValue> values, SelectorNamespaceContext namespaces)
+    {
+        foreach (var value in values)
+        {
+            switch (value)
+            {
+                case CssFunction function:
+                    if (InfraAscii.EqualsIgnoreAsciiCase(function.Name, "attr")
+                        && ValueMatcher.RemoveWhitespace(function.Value) is [CssPreservedToken { Type: CssTokenType.Ident } prefix, CssPreservedToken bar, CssPreservedToken { Type: CssTokenType.Ident }, ..]
+                        && bar.Token.IsDelim('|')
+                        && namespaces.ResolvePrefix?.Invoke(prefix.Token.Value) is null)
+                    {
+                        return true;
+                    }
+
+                    if (HasUndeclaredAttrNamespace(function.Value, namespaces))
+                        return true;
+
+                    break;
+
+                case CssSimpleBlock block when HasUndeclaredAttrNamespace(block.Value, namespaces):
+                    return true;
+            }
+        }
+
+        return false;
     }
 }

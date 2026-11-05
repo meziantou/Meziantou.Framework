@@ -10,15 +10,14 @@ description: "The results of the web-platform-tests of html/document-isolation-p
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | Stable | 0 | 0 | 0 | – |
-| [Tentative](#tentative-tests) | 21 | 44 | 0 | 48% |
+| [Tentative](#tentative-tests) | 22 | 44 | 0 | 50% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **21** | **44** | **0** | **48%** |
+| **All** | **22** | **44** | **0** | **50%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
 - **TEST BUG**: 5
 - **NOT IMPLEMENTED**: 22
 
@@ -66,7 +65,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`reporting-subresource-corp.tentative.https.html`](https://wpt.fyi/results/html/document-isolation-policy/reporting-subresource-corp.tentative.https.html) | Timeout | 1 / 16 | TEST BUG, NOT IMPLEMENTED | the test calls `toJSON()` on the reports: `Report` and the report bodies are dictionaries since w3c/reporting#284 (https://w3c.github.io/reporting/#dictdef-report), so the reports given to the observers are plain objects without `toJSON()` (the browsers still implement the former `Report` interface); Document-Isolation-Policy violation reports (`dip` reports) |
 | [`reporting.tentative.https.html`](https://wpt.fyi/results/html/document-isolation-policy/reporting.tentative.https.html) | Timeout | 0 / 5 | TEST BUG, NOT IMPLEMENTED | the test calls `toJSON()` on the reports: `Report` and the report bodies are dictionaries since w3c/reporting#284 (https://w3c.github.io/reporting/#dictdef-report), so the reports given to the observers are plain objects without `toJSON()` (the browsers still implement the former `Report` interface); Document-Isolation-Policy violation reports (`dip` reports) and the `Document-Isolation-Policy-Report-Only` header |
 | [`service-worker-coep-credentialless-proxy.https.tentative.window.js`](https://wpt.fyi/results/html/document-isolation-policy/service-worker-coep-credentialless-proxy.https.tentative.window.js) | Pass | 1 / 1 |  |  |
-| [`service-worker-coep-none-proxy.https.tentative.window.js`](https://wpt.fyi/results/html/document-isolation-policy/service-worker-coep-none-proxy.https.tentative.window.js) | Fail | 0 / 1 | BUG | the COEP of a service worker whose script has no COEP is not checked against the documents it controls |
+| [`service-worker-coep-none-proxy.https.tentative.window.js`](https://wpt.fyi/results/html/document-isolation-policy/service-worker-coep-none-proxy.https.tentative.window.js) | Pass | 1 / 1 |  |  |
 | [`shared-array-buffer.tentative.https.html`](https://wpt.fyi/results/html/document-isolation-policy/shared-array-buffer.tentative.https.html) | Fail | 0 / 3 | NOT IMPLEMENTED | the agent clusters and the cross-origin isolation of `Document-Isolation-Policy` (`crossOriginIsolated` is only true with COOP + COEP) |
 | [`shared-workers.tentative.https.html`](https://wpt.fyi/results/html/document-isolation-policy/shared-workers.tentative.https.html) | Fail | 6 / 8 | NOT IMPLEMENTED | the document isolation policy of a shared worker created from a local URL is the one of its creator, not derived from all the owners of its owner set |
 | [`window-reuse.tentative.https.html`](https://wpt.fyi/results/html/document-isolation-policy/window-reuse.tentative.https.html) | Fail | 3 / 6 | NOT IMPLEMENTED | the agent clusters of `Document-Isolation-Policy`: the `Window` of an initial `about:blank` document is reused by a same-origin document whose policy differs, although the two documents need different agent clusters (WICG/document-isolation-policy#11) |

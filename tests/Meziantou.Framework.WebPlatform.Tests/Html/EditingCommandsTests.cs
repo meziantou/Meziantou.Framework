@@ -84,6 +84,10 @@ public sealed class EditingCommandsTests : IDisposable
     [InlineData("<font face=monospace>[a]bc</font>", "fontSize", "7", "<font face=\"monospace\"><font size=\"7\">a</font>bc</font>")]
     [InlineData("foo<span style=vertical-align:super>[bar]</span>baz", "subscript", "", "foo<sub>bar</sub>baz")]
     [InlineData("<sup>fo[o</sup><span style=vertical-align:bottom>b]ar</span>", "superscript", "", "<sup>foob</sup><span style=\"vertical-align:bottom\">ar</span>")]
+    [InlineData("<b>foo</b>[bar]<strong>baz</strong>", "bold", "", "<b>foobar</b><strong>baz</strong>")]
+    [InlineData("[foo]<strong>bar</strong>baz", "bold", "", "<b>foo</b><strong>bar</strong>baz")]
+    [InlineData("foo<em>b[a]r</em>baz", "italic", "", "foo<em>b</em>a<em>r</em>baz")]
+    [InlineData("fo[o<s>b]ar</s>baz", "strikethrough", "", "fo<strike>o</strike><s>bar</s>baz")]
     public void InlineFormatting(string html, string command, string value, string expected)
         => Assert.Equal(expected, Run(html, command, value));
 
@@ -91,12 +95,19 @@ public sealed class EditingCommandsTests : IDisposable
     [InlineData("foo[bar]baz", "bold", "", "foo<span style=\"font-weight: bold;\">bar</span>baz")]
     [InlineData("foo[bar]baz", "hiliteColor", "#00FFFF", "foo<span style=\"background-color: rgb(0, 255, 255);\">bar</span>baz")]
     [InlineData("foo[bar]baz", "fontSize", "4", "foo<span style=\"font-size: large;\">bar</span>baz")]
+    [InlineData("<b>foo</b>[bar]<b>baz</b>", "bold", "", "<b>foo</b><span style=\"font-weight: bold;\">bar</span><b>baz</b>")]
+    [InlineData("<s>foo[bar]baz</s>", "strikethrough", "", "<s>foo</s>bar<s>baz</s>")]
+    [InlineData("abc<span style=\"text-decoration:line-through blue dotted\">[def]</span>ghi", "underline", "", "abc<span style=\"text-decoration: underline line-through;\">def</span>ghi")]
+    [InlineData("abc<span style=\"text-decoration:underline line-through blue dotted\">[def]</span>ghi", "underline", "", "abc<span style=\"text-decoration: line-through;\">def</span>ghi")]
     public void InlineFormatting_StyleWithCss(string html, string command, string value, string expected)
         => Assert.Equal(expected, Run(html, command, value, styleWithCss: true));
 
     [Theory]
     [InlineData("<p>[foo]</p>", "formatBlock", "<h1>", "<h1>foo</h1>")]
     [InlineData("foo[]bar", "formatBlock", "blockquote", "<blockquote>foobar</blockquote>")]
+    [InlineData("<xmp>[foo]</xmp>", "formatBlock", "<p>", "<p><xmp>foo</xmp></p>")]
+    [InlineData("<div style=color:blue>[foo]</div>", "formatBlock", "<p>", "<p style=\"color:blue\">foo</p>")]
+    [InlineData("[foo]<blockquote>bar</blockquote>", "formatBlock", "<blockquote>", "<blockquote>foo</blockquote><blockquote>bar</blockquote>")]
     [InlineData("<p>[foo]</p><p>bar</p>", "indent", "", "<blockquote><p>foo</p></blockquote><p>bar</p>")]
     [InlineData("<blockquote><p>[foo]</p></blockquote>", "outdent", "", "<p>foo</p>")]
     [InlineData("<p>[foo]</p>", "insertOrderedList", "", "<ol><li>foo</li></ol>")]
@@ -164,6 +175,18 @@ public sealed class EditingCommandsTests : IDisposable
         Assert.True(document.ExecCommand("insertText", showUI: false, "a"));
         Assert.Equal("foo<b>a</b>bar", host.InnerHtml);
         Assert.True(document.QueryCommandState("bold"));
+    }
+
+    [Theory]
+    [InlineData("<p>[foo</p><p>bar]</p>", "p")]
+    [InlineData("<p>[foo</p>bar]", "")]
+    [InlineData("<h1>[foo</h1><h2>bar]</h2>", "")]
+    [InlineData("<div><ol><li>[foo]</li></ol></div>", "div")]
+    [InlineData("<div><table><tbody><tr><td>[foo]</td></tr></tbody></table></div>", "")]
+    public void QueryCommandValue_FormatBlock(string html, string expected)
+    {
+        var (document, _) = Load(html);
+        Assert.Equal(expected, document.QueryCommandValue("formatBlock"));
     }
 
     [Fact]

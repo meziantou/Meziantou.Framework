@@ -1764,10 +1764,7 @@
     "total": 3
   },
   "content-security-policy/reporting-api/reporting-api-sends-reports-on-violation-2.https.sub.html": {
-    "total": 4,
-    "failures": {
-      "Report is observable to ReportingObserver": "FAIL"
-    }
+    "total": 4
   },
   "content-security-policy/reporting-api/reporting-api-sends-reports-on-violation-for-css-background-image.https.sub.html": {
     "total": 1
@@ -2390,28 +2387,16 @@
     "total": 6
   },
   "content-security-policy/securitypolicyviolation/securitypolicyviolation-block-cross-origin-image-from-script.sub.html": {
-    "total": 1,
-    "failures": {
-      "Non-redirected cross-origin URLs are not stripped.": "FAIL"
-    }
+    "total": 1
   },
   "content-security-policy/securitypolicyviolation/securitypolicyviolation-block-cross-origin-image.sub.html": {
-    "total": 1,
-    "failures": {
-      "Non-redirected cross-origin URLs are not stripped.": "FAIL"
-    }
+    "total": 1
   },
   "content-security-policy/securitypolicyviolation/securitypolicyviolation-block-image-from-script.sub.html": {
-    "total": 1,
-    "failures": {
-      "Non-redirected cross-origin URLs are not stripped.": "FAIL"
-    }
+    "total": 1
   },
   "content-security-policy/securitypolicyviolation/securitypolicyviolation-block-image.sub.html": {
-    "total": 1,
-    "failures": {
-      "Non-redirected same-origin URLs are not stripped.": "FAIL"
-    }
+    "total": 1
   },
   "content-security-policy/securitypolicyviolation/source-file-blob-scheme.html": {
     "total": 1

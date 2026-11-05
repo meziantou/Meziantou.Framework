@@ -9,18 +9,18 @@ description: "The results of the web-platform-tests of clipboard-apis, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 32 | 38 | 0 | 84% |
+| [Stable](#stable-tests) | 34 | 38 | 0 | 89% |
 | [Tentative](#tentative-tests) | 14 | 20 | 0 | 70% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **46** | **58** | **0** | **79%** |
+| **All** | **48** | **58** | **0** | **83%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 5
+- **TEST BUG**: 4
 - **NOT IMPLEMENTED**: 3
-- **TEST RUNNER**: 4
+- **TEST RUNNER**: 3
 
 ## Stable tests
 
@@ -28,14 +28,14 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 |---|---|--:|---|---|
 | [`async-clipboard-read-unsanitized-null.https.html`](https://wpt.fyi/results/clipboard-apis/async-clipboard-read-unsanitized-null.https.html) | Pass | 1 / 1 |  |  |
 | [`async-html-script-removal.https.html`](https://wpt.fyi/results/clipboard-apis/async-html-script-removal.https.html) | Pass | 1 / 1 |  |  |
-| [`async-navigator-clipboard-basics.https.html`](https://wpt.fyi/results/clipboard-apis/async-navigator-clipboard-basics.https.html) | Fail | 15 / 17 | TEST RUNNER | the clipboard is empty when the test starts, so `readText()` rejects with `NotFoundError` (the test assumes the system clipboard holds text) |
-| [`async-navigator-clipboard-read-resource-load.https.html`](https://wpt.fyi/results/clipboard-apis/async-navigator-clipboard-read-resource-load.https.html) | Fail | 0 / 1 | BUG | the `text/html` item read by `navigator.clipboard.read()` does not contain the `<img>` markup that the `copy` event handler wrote with `clipboardData.setData()` (the first assertion of the test); no resource is loaded |
+| [`async-navigator-clipboard-basics.https.html`](https://wpt.fyi/results/clipboard-apis/async-navigator-clipboard-basics.https.html) | Fail | 16 / 17 | TEST BUG | the test expects `write()` of an `image/png` representation whose data is a string to reject with a `TypeError` (Chromium): the string is the data of the representation (https://w3c.github.io/clipboard-apis/#dom-clipboard-write), and it is rejected with a `DataError` because it is not a PNG image, as `async-write-image-read-image.https.html` expects for a blob |
+| [`async-navigator-clipboard-read-resource-load.https.html`](https://wpt.fyi/results/clipboard-apis/async-navigator-clipboard-read-resource-load.https.html) | Pass | 1 / 1 |  |  |
 | [`async-navigator-clipboard-read-sanitize.https.html`](https://wpt.fyi/results/clipboard-apis/async-navigator-clipboard-read-sanitize.https.html) | Pass | 1 / 1 |  |  |
 | [`async-navigator-clipboard-write-domstring.https.html`](https://wpt.fyi/results/clipboard-apis/async-navigator-clipboard-write-domstring.https.html) | Pass | 8 / 8 |  |  |
 | [`async-promise-write-blobs-read-blobs.https.html`](https://wpt.fyi/results/clipboard-apis/async-promise-write-blobs-read-blobs.https.html) | Pass | 1 / 1 |  |  |
 | [`async-write-blobs-read-blobs.https.html`](https://wpt.fyi/results/clipboard-apis/async-write-blobs-read-blobs.https.html) | Pass | 2 / 2 |  |  |
 | [`async-write-html-read-html.https.html`](https://wpt.fyi/results/clipboard-apis/async-write-html-read-html.https.html) | Pass | 1 / 1 |  |  |
-| [`async-write-image-read-image.https.html`](https://wpt.fyi/results/clipboard-apis/async-write-image-read-image.https.html) | Fail | 1 / 2 | BUG | `ClipboardItem` does not reject a malformed `image/png` blob (the clipboard does not decode the images) |
+| [`async-write-image-read-image.https.html`](https://wpt.fyi/results/clipboard-apis/async-write-image-read-image.https.html) | Pass | 2 / 2 |  |  |
 | [`clipboard-copy-selection-line-break.https.html`](https://wpt.fyi/results/clipboard-apis/clipboard-copy-selection-line-break.https.html) | Pass | 32 / 32 |  |  |
 | [`clipboard-events-synthetic.html`](https://wpt.fyi/results/clipboard-apis/clipboard-events-synthetic.html) | Pass | 9 / 9 |  |  |
 | [`clipboard-item.https.html`](https://wpt.fyi/results/clipboard-apis/clipboard-item.https.html) | Pass | 35 / 35 |  |  |
@@ -45,8 +45,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`detached-iframe/paste-on-detaching-iframe.https.html`](https://wpt.fyi/results/clipboard-apis/detached-iframe/paste-on-detaching-iframe.https.html) | Pass | 1 / 1 |  |  |
 | [`detached-iframe/read-on-detaching-iframe.https.html`](https://wpt.fyi/results/clipboard-apis/detached-iframe/read-on-detaching-iframe.https.html) | Pass | 1 / 1 |  |  |
 | [`detached-iframe/write-on-detaching-iframe.https.html`](https://wpt.fyi/results/clipboard-apis/detached-iframe/write-on-detaching-iframe.https.html) | Pass | 1 / 1 |  |  |
-| [`detached-iframe/write-read-on-detached-iframe.https.html`](https://wpt.fyi/results/clipboard-apis/detached-iframe/write-read-on-detached-iframe.https.html) | Fail | 0 / 1 | BUG | the clipboard calls of a detached iframe reject with `NotAllowedError`, where the test expects them to fail silently (resolve with `undefined`) |
-| [`detached-iframe/writeText-readText-on-detached-iframe.https.html`](https://wpt.fyi/results/clipboard-apis/detached-iframe/writeText-readText-on-detached-iframe.https.html) | Fail | 0 / 1 | BUG | the clipboard calls of a detached iframe reject with `NotAllowedError`, where the test expects them to fail silently (resolve with `undefined`) |
+| [`detached-iframe/write-read-on-detached-iframe.https.html`](https://wpt.fyi/results/clipboard-apis/detached-iframe/write-read-on-detached-iframe.https.html) | Fail | 0 / 1 | TEST BUG | the tests expect `read()`, `write()`, `readText()` and `writeText()` of the clipboard of a detached iframe to return `undefined` (the Chromium bindings do not run the operations of a destroyed execution context): these operations return a promise (https://w3c.github.io/clipboard-apis/#clipboard-interface), which is rejected with a `NotAllowedError` because the document is not fully active |
+| [`detached-iframe/writeText-readText-on-detached-iframe.https.html`](https://wpt.fyi/results/clipboard-apis/detached-iframe/writeText-readText-on-detached-iframe.https.html) | Fail | 0 / 1 | TEST BUG | the tests expect `read()`, `write()`, `readText()` and `writeText()` of the clipboard of a detached iframe to return `undefined` (the Chromium bindings do not run the operations of a destroyed execution context): these operations return a promise (https://w3c.github.io/clipboard-apis/#clipboard-interface), which is rejected with a `NotAllowedError` because the document is not fully active |
 | [`drag-multiple-urls.html`](https://wpt.fyi/results/clipboard-apis/drag-multiple-urls.html) | Pass | 1 / 1 |  |  |
 | [`events/copy-event.html`](https://wpt.fyi/results/clipboard-apis/events/copy-event.html) | Pass | 1 / 1 |  |  |
 | [`idlharness.https.window.js`](https://wpt.fyi/results/clipboard-apis/idlharness.https.window.js) | Pass | 62 / 62 |  |  |
@@ -78,7 +78,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`async-custom-formats-write-read.tentative.https.html`](https://wpt.fyi/results/clipboard-apis/async-custom-formats-write-read.tentative.https.html) | Pass | 1 / 1 |  |  |
 | [`async-navigator-clipboard-change-event.tentative.https.html`](https://wpt.fyi/results/clipboard-apis/async-navigator-clipboard-change-event.tentative.https.html) | Fail | 5 / 7 | NOT IMPLEMENTED | the `onclipboardchange` event handler attribute of `Clipboard` (the event is fired to the listeners only) |
 | [`async-navigator-clipboard-write-multiple.tentative.https.sub.html`](https://wpt.fyi/results/clipboard-apis/async-navigator-clipboard-write-multiple.tentative.https.sub.html) | Timeout | 0 / 4 | NOT IMPLEMENTED | a new `clipboard.write()` does not reject the pending one with `NotAllowedError` (the test waits for the pending promise) |
-| [`async-svg-read-write.tentative.https.html`](https://wpt.fyi/results/clipboard-apis/async-svg-read-write.tentative.https.html) | Fail | 0 / 1 | BUG | the `image/svg+xml` read serializes the sanitized SVG as XML (`<circle/>`) instead of with the HTML serializer (`<circle></circle>`) |
+| [`async-svg-read-write.tentative.https.html`](https://wpt.fyi/results/clipboard-apis/async-svg-read-write.tentative.https.html) | Fail | 0 / 1 | TEST BUG | the single subtest also expects the inline style that the Chromium read-time sanitizer adds to the `<svg>` element (`color: rgb(0, 0, 0); font-size: medium; ...`, the computed style of the copied content), which no specification defines |
 | [`async-unsanitized-html-formats-write-read.tentative.https.html`](https://wpt.fyi/results/clipboard-apis/async-unsanitized-html-formats-write-read.tentative.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | inlining the computed style of the elements in the unsanitized `text/html` read (a Chromium-specific expectation) |
 | [`async-unsanitized-plaintext-formats-write-read.tentative.https.html`](https://wpt.fyi/results/clipboard-apis/async-unsanitized-plaintext-formats-write-read.tentative.https.html) | Pass | 1 / 1 |  |  |
 | [`async-unsanitized-standard-html-read-fail.tentative.https.html`](https://wpt.fyi/results/clipboard-apis/async-unsanitized-standard-html-read-fail.tentative.https.html) | Pass | 4 / 4 |  |  |

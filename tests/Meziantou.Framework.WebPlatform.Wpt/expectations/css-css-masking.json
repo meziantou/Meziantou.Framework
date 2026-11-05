@@ -699,7 +699,7 @@
     "reftest": "PASS"
   },
   "css/css-masking/clip-path/clip-path-element-userSpaceOnUse-003.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-masking/clip-path/clip-path-element-userSpaceOnUse-004.html": {
     "reftest": "FAIL"

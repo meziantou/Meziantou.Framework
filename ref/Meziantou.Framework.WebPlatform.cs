@@ -3293,6 +3293,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.StorageShed? LocalStorage { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Media.MediaAutoplayPolicy MediaAutoplayPolicy { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Media.MediaBackend? MediaBackend { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.PendingInputOptions? PendingInput { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.PermissionStore? Permissions { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Rendering.RenderingBackend? RenderingBackend { get => throw null; init { } }
         public System.Func<Meziantou.Framework.WebPlatform.Dom.CallbackContext, string, Meziantou.Framework.WebPlatform.Dom.PermissionState>? RequestPermission { get => throw null; init { } }
@@ -7990,6 +7991,11 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public double? MinContentSize { get => throw null; init { } }
     }
 
+    public sealed class IsInputPendingOptions
+    {
+        public bool IncludeContinuous { get => throw null; set { } }
+    }
+
     public sealed class JavaScriptSyntaxErrorException : System.FormatException
     {
         public JavaScriptSyntaxErrorException(string? message) { }
@@ -8818,6 +8824,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.PluginArray Plugins { get => throw null; }
         public string Product { get => throw null; }
         public string ProductSub { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.Scheduling Scheduling { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.ServiceWorkerContainer ServiceWorker { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.StorageManager Storage { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.UserActivation UserActivation { get => throw null; }
@@ -9217,6 +9224,11 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public void RoundRect(double x, double y, double w, double h, object? radii = null) { }
     }
 
+    public sealed class PendingInputOptions
+    {
+        public System.Func<Meziantou.Framework.WebPlatform.Dom.CallbackContext, bool, bool>? IsInputPending { get => throw null; init { } }
+    }
+
     public sealed class Performance : Meziantou.Framework.WebPlatform.Dom.EventTarget
     {
         public Meziantou.Framework.WebPlatform.Dom.EventCounts? EventCounts { get => throw null; }
@@ -9282,6 +9294,15 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public double ProcessingStart { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.Node? Target { get => throw null; }
         public string TargetSelector { get => throw null; }
+    }
+
+    public sealed class PerformanceLongTaskTiming : Meziantou.Framework.WebPlatform.Dom.PerformanceEntry
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.TaskAttributionTiming> Attribution { get => throw null; }
+        public new double Duration { get => throw null; }
+        public new string EntryType { get => throw null; }
+        public new string Name { get => throw null; }
+        public new double StartTime { get => throw null; }
     }
 
     public sealed class PerformanceMark : Meziantou.Framework.WebPlatform.Dom.PerformanceEntry
@@ -10253,6 +10274,11 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public ulong Delay { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.TaskPriority? Priority { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.AbortSignal? Signal { get => throw null; init { } }
+    }
+
+    public sealed class Scheduling
+    {
+        public bool IsInputPending(Meziantou.Framework.WebPlatform.Dom.IsInputPendingOptions? isInputPendingOptions = null) => throw null;
     }
 
     public sealed class Screen
@@ -12037,6 +12063,18 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public SystemClipboardRepresentation(string name, System.ReadOnlyMemory<byte> data) { }
     }
 
+    public sealed class TaskAttributionTiming : Meziantou.Framework.WebPlatform.Dom.PerformanceEntry
+    {
+        public string ContainerId { get => throw null; }
+        public string ContainerName { get => throw null; }
+        public string ContainerSrc { get => throw null; }
+        public string ContainerType { get => throw null; }
+        public new double Duration { get => throw null; }
+        public new string EntryType { get => throw null; }
+        public new string Name { get => throw null; }
+        public new double StartTime { get => throw null; }
+    }
+
     public sealed class TaskController : Meziantou.Framework.WebPlatform.Dom.AbortController
     {
         public new Meziantou.Framework.WebPlatform.Dom.TaskSignal Signal { get => throw null; }
@@ -13022,11 +13060,13 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool GeolocationEnabled { get => throw null; init { } }
         public bool IdleDetectionEnabled { get => throw null; init { } }
         public bool IndexedDBEnabled { get => throw null; init { } }
+        public bool InputPendingEnabled { get => throw null; init { } }
         public bool IntersectionObserverEnabled { get => throw null; init { } }
         public bool KeyboardLockEnabled { get => throw null; init { } }
         public bool LargestContentfulPaintEnabled { get => throw null; init { } }
         public bool LayoutInstabilityEnabled { get => throw null; init { } }
         public bool LayoutWorkletEnabled { get => throw null; init { } }
+        public bool LongTasksEnabled { get => throw null; init { } }
         public bool MediaPlaybackQualityEnabled { get => throw null; init { } }
         public bool MediaSourceEnabled { get => throw null; init { } }
         public bool NavigationApiEnabled { get => throw null; init { } }

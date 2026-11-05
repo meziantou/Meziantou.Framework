@@ -328,6 +328,14 @@ public sealed class WptTests
 
     public static TheoryData<string> UserTimingTests => GetTests("user-timing");
 
+    public static TheoryData<string> LongTaskTimingTests => GetTests("longtask-timing");
+
+    public static TheoryData<string> IsInputPendingTests => GetTests("is-input-pending");
+
+    public static TheoryData<string> ServerTimingTests => GetTests("server-timing");
+
+    public static TheoryData<string> TimingEntryTypesRegistryTests => GetTests("timing-entrytypes-registry");
+
     public static TheoryData<string> NavigationTimingTests => GetTests("navigation-timing");
 
     public static TheoryData<string> ImportMapsTests => GetTests("import-maps");
@@ -1342,6 +1350,22 @@ public sealed class WptTests
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(UserTimingTests))]
     public void UserTiming(string test) => Run("user-timing", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(LongTaskTimingTests))]
+    public void LongTaskTiming(string test) => Run("longtask-timing", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(IsInputPendingTests))]
+    public void IsInputPending(string test) => Run("is-input-pending", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(ServerTimingTests))]
+    public void ServerTiming(string test) => Run("server-timing", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(TimingEntryTypesRegistryTests))]
+    public void TimingEntryTypesRegistry(string test) => Run("timing-entrytypes-registry", test);
 
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(NavigationTimingTests))]

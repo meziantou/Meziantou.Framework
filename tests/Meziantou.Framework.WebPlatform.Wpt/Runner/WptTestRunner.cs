@@ -94,6 +94,15 @@ internal sealed partial class WptTestRunner
     /// <summary>The position of the device, overridden by test_driver.bidi.emulation.set_geolocation_override().</summary>
     private readonly GeolocationProvider _geolocation = new() { Position = DefaultGeolocationPosition };
 
+    /// <summary>The pressure sources of the device, whose samples are set by test_driver.update_virtual_pressure_source().</summary>
+    private readonly PressureSourceProvider _pressureSources = new();
+
+    /// <summary>The virtual pressure sources created by test_driver.create_virtual_pressure_source().</summary>
+    private readonly HashSet<PressureSource> _virtualPressureSources = [];
+
+    /// <summary>The posture of the device, overridden by test_driver.set_device_posture().</summary>
+    private readonly DevicePostureProvider _devicePosture = new();
+
     /// <summary>The display features of the screen, set by test_driver.set_display_features().</summary>
     private readonly DisplayFeaturesProvider _displayFeatures = new();
     private readonly WptStash _stash = new();
@@ -191,6 +200,10 @@ internal sealed partial class WptTestRunner
 
                 // The device knows its position (overridden by test_driver.bidi.emulation.set_geolocation_override)
                 Geolocation = _geolocation,
+
+                // The virtual pressure sources and the posture override of the test driver
+                ComputePressure = new ComputePressureOptions { Provider = _pressureSources },
+                DevicePosture = new DevicePostureOptions { Provider = _devicePosture },
 
                 // A screen whose orientation can be locked (as the test environment of Chromium), and whose display features
                 // are set by test_driver.set_display_features()
@@ -1606,6 +1619,98 @@ internal sealed partial class WptTestRunner
             });
             return adapter.Undefined;
         });
+        // https://w3c.github.io/compute-pressure/#create-virtual-pressure-source: a source that is supported or not, without sample
+        Define("__wpt_create_virtual_pressure_source", 4, (_, args) =>
+        {
+            var type = adapter.ToString(args[0]);
+            var supported = adapter.ToBoolean(args[1]);
+            var completion = CreateCompletion(args[2], args[3]);
+            QueueTask(() =>
+            {
+                if (ParsePressureSource(type) is not { } source || !_virtualPressureSources.Add(source))
+                {
+                    completion("invalid argument");
+                    return;
+                }
+
+                _pressureSources.SetSupported(source, supported);
+                _pressureSources.SetSample(source, sample: null);
+                completion(null);
+            });
+            return adapter.Undefined;
+        });
+        Define("__wpt_update_virtual_pressure_source", 5, (_, args) =>
+        {
+            var type = adapter.ToString(args[0]);
+            var state = adapter.ToString(args[1]);
+            var estimate = adapter.ToNumber(args[2]);
+            var completion = CreateCompletion(args[3], args[4]);
+            QueueTask(() =>
+            {
+                if (ParsePressureSource(type) is not { } source || ParsePressureState(state) is not { } pressureState)
+                {
+                    completion("invalid argument");
+                    return;
+                }
+
+                if (!_virtualPressureSources.Contains(source))
+                {
+                    completion("unsupported operation");
+                    return;
+                }
+
+                _pressureSources.SetSample(source, new PressureSample(pressureState) { OwnContributionEstimate = double.IsNaN(estimate) ? null : estimate });
+                completion(null);
+            });
+            return adapter.Undefined;
+        });
+        Define("__wpt_remove_virtual_pressure_source", 3, (_, args) =>
+        {
+            var type = adapter.ToString(args[0]);
+            var completion = CreateCompletion(args[1], args[2]);
+            QueueTask(() =>
+            {
+                if (ParsePressureSource(type) is not { } source)
+                {
+                    completion("invalid argument");
+                    return;
+                }
+
+                // The real source of the runner is supported, but reports no sample
+                if (_virtualPressureSources.Remove(source))
+                {
+                    _pressureSources.SetSample(source, sample: null);
+                    _pressureSources.SetSupported(source, supported: true);
+                }
+
+                completion(null);
+            });
+            return adapter.Undefined;
+        });
+
+        // https://w3c.github.io/device-posture/#set-device-posture and https://w3c.github.io/device-posture/#clear-device-posture
+        Define("__wpt_set_device_posture", 3, (_, args) =>
+        {
+            DevicePostureType? posture = adapter.IsNull(args[0]) ? DevicePostureType.Continuous : adapter.ToString(args[0]) switch
+            {
+                "continuous" => DevicePostureType.Continuous,
+                "folded" => DevicePostureType.Folded,
+                _ => null,
+            };
+            var completion = CreateCompletion(args[1], args[2]);
+            QueueTask(() =>
+            {
+                if (posture is not { } value)
+                {
+                    completion("invalid argument");
+                    return;
+                }
+
+                _devicePosture.Posture = value;
+                completion(null);
+            });
+            return adapter.Undefined;
+        });
         Define("__wpt_set_display_features", 3, (_, args) =>
         {
             // https://drafts.csswg.org/css-viewport/#set-display-features: the features are validated, then set after the tasks
@@ -1661,6 +1766,22 @@ internal sealed partial class WptTestRunner
         Define("__wpt_computed_label", 1, (_, args) => adapter.FromString(realm.ToInterface<Element>(args[0], "Element").ComputedName));
     }
 
+    /// <summary>The state of a sample of a virtual pressure source (https://w3c.github.io/compute-pressure/#dom-pressurestate), or null when it is not valid.</summary>
+    private static PressureState? ParsePressureState(string state) => state switch
+    {
+        "nominal" => PressureState.Nominal,
+        "fair" => PressureState.Fair,
+        "serious" => PressureState.Serious,
+        "critical" => PressureState.Critical,
+        _ => null,
+    };
+
+    /// <summary>The source type of a virtual pressure source command (https://w3c.github.io/compute-pressure/#dom-pressuresource), or null when it is not supported.</summary>
+    private static PressureSource? ParsePressureSource(string type) => type switch
+    {
+        "cpu" => PressureSource.Cpu,
+        _ => null,
+    };
     /// <summary>
     /// Parses the display features of the Set Display Features command (https://drafts.csswg.org/css-viewport/#set-display-features),
     /// or returns null with the error.

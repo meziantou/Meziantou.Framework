@@ -71,6 +71,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.IdbGetAllOptions Defaults_Dom_IdbGetAllOptions = new();
 
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.IdleOptions Defaults_Dom_IdleOptions = new();
+
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.IdleRequestOptions Defaults_Dom_IdleRequestOptions = new();
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.ImageBitmapOptions Defaults_Dom_ImageBitmapOptions = new();
@@ -316,6 +318,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     internal static readonly string[] Enum_PremultiplyAlpha_Values = new[] { "none", "premultiply", "default" };
 
     internal static readonly string[] Enum_PresentationStyle_Values = new[] { "unspecified", "inline", "attachment" };
+
+    internal static readonly string[] Enum_PressureSource_Values = new[] { "cpu" };
 
     internal static readonly string[] Enum_RequestCredentials_Values = new[] { "omit", "same-origin", "include" };
 
@@ -1357,6 +1361,14 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return result;
     }
 
+    internal static TValue FromDictionary_Dom_IdleOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.IdleOptions value)
+    {
+        var result = r.CreateObject();
+        if (value.Signal is not null) r.SetMember(result, "signal", r.Wrap(value.Signal));
+        if (value.Threshold is not null) r.SetMember(result, "threshold", (value.Threshold.HasValue ? r.FromNumber((double)value.Threshold.GetValueOrDefault()) : r.Adapter.Null));
+        return result;
+    }
+
     internal static TValue FromDictionary_Dom_IdleRequestOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.IdleRequestOptions value)
     {
         var result = r.CreateObject();
@@ -1977,6 +1989,13 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         r.SetMember(result, "enableHighAccuracy", r.FromBoolean(value.EnableHighAccuracy));
         r.SetMember(result, "maximumAge", r.FromNumber((double)value.MaximumAge));
         r.SetMember(result, "timeout", r.FromNumber((double)value.Timeout));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_PressureObserverOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.PressureObserverOptions value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "sampleInterval", r.FromNumber((double)value.SampleInterval));
         return result;
     }
 
@@ -3234,6 +3253,13 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         _ => value.ToString(),
     };
 
+    internal static string FromEnum_Dom_DevicePostureType(global::Meziantou.Framework.WebPlatform.Dom.DevicePostureType value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.DevicePostureType.Continuous => "continuous",
+        global::Meziantou.Framework.WebPlatform.Dom.DevicePostureType.Folded => "folded",
+        _ => value.ToString(),
+    };
+
     internal static string FromEnum_Dom_DirectionSetting(global::Meziantou.Framework.WebPlatform.Dom.DirectionSetting value) => value switch
     {
         global::Meziantou.Framework.WebPlatform.Dom.DirectionSetting.Horizontal => "",
@@ -3549,6 +3575,21 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         _ => value.ToString(),
     };
 
+    internal static string FromEnum_Dom_PressureSource(global::Meziantou.Framework.WebPlatform.Dom.PressureSource value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.PressureSource.Cpu => "cpu",
+        _ => value.ToString(),
+    };
+
+    internal static string FromEnum_Dom_PressureState(global::Meziantou.Framework.WebPlatform.Dom.PressureState value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.PressureState.Nominal => "nominal",
+        global::Meziantou.Framework.WebPlatform.Dom.PressureState.Fair => "fair",
+        global::Meziantou.Framework.WebPlatform.Dom.PressureState.Serious => "serious",
+        global::Meziantou.Framework.WebPlatform.Dom.PressureState.Critical => "critical",
+        _ => value.ToString(),
+    };
+
     internal static string FromEnum_Dom_RequestCredentials(global::Meziantou.Framework.WebPlatform.Dom.RequestCredentials value) => value switch
     {
         global::Meziantou.Framework.WebPlatform.Dom.RequestCredentials.Omit => "omit",
@@ -3593,6 +3634,13 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     internal static string FromEnum_Dom_SanitizerPresets(global::Meziantou.Framework.WebPlatform.Dom.SanitizerPresets value) => value switch
     {
         global::Meziantou.Framework.WebPlatform.Dom.SanitizerPresets.Default => "default",
+        _ => value.ToString(),
+    };
+
+    internal static string FromEnum_Dom_ScreenIdleState(global::Meziantou.Framework.WebPlatform.Dom.ScreenIdleState value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.ScreenIdleState.Locked => "locked",
+        global::Meziantou.Framework.WebPlatform.Dom.ScreenIdleState.Unlocked => "unlocked",
         _ => value.ToString(),
     };
 
@@ -3704,6 +3752,13 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     {
         global::Meziantou.Framework.WebPlatform.Dom.TouchType.Direct => "direct",
         global::Meziantou.Framework.WebPlatform.Dom.TouchType.Stylus => "stylus",
+        _ => value.ToString(),
+    };
+
+    internal static string FromEnum_Dom_UserIdleState(global::Meziantou.Framework.WebPlatform.Dom.UserIdleState value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.UserIdleState.Active => "active",
+        global::Meziantou.Framework.WebPlatform.Dom.UserIdleState.Idle => "idle",
         _ => value.ToString(),
     };
 
@@ -3866,6 +3921,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     internal static global::Meziantou.Framework.WebPlatform.Dom.PositionCallback ToDelegate_Dom_PositionCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.PositionCallback((p0) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.Wrap(p0)); r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None); }));
 
     internal static global::Meziantou.Framework.WebPlatform.Dom.PositionErrorCallback ToDelegate_Dom_PositionErrorCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.PositionErrorCallback((p0) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.Wrap(p0)); r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None); }));
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.PressureUpdateCallback ToDelegate_Dom_PressureUpdateCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.PressureUpdateCallback((p0, p1) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.FromSequence(p0, static (r, e) => r.Wrap(e))); arguments.Add(r.Wrap(p1)); r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None); }));
 
     internal static global::Meziantou.Framework.WebPlatform.Dom.ReportingObserverCallback ToDelegate_Dom_ReportingObserverCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.ReportingObserverCallback((p0, p1) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.FromSequence(p0, static (r, e) => (e is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_Report(r, dictionaryValue) : r.Adapter.Null))); arguments.Add(r.Wrap(p1)); r.InvokeCallback(function, r.ToJs(p1), global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None); }));
 
@@ -5637,6 +5694,22 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         };
     }
 
+    internal static global::Meziantou.Framework.WebPlatform.Dom.IdleOptions ToDictionary_Dom_IdleOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "IdleOptions");
+        var m0_value = r.GetDictionaryMember(value, "signal");
+        var m0_present = !r.Adapter.IsUndefined(m0_value);
+        var m0 = m0_present ? (global::Meziantou.Framework.WebPlatform.Dom.AbortSignal?)r.ToInterface<global::Meziantou.Framework.WebPlatform.Dom.AbortSignal>(m0_value, "AbortSignal") : default;
+        var m1_value = r.GetDictionaryMember(value, "threshold");
+        var m1_present = !r.Adapter.IsUndefined(m1_value);
+        var m1 = m1_present ? (ulong?)r.ToUnsignedLongLong(m1_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.EnforceRange) : default;
+        return new global::Meziantou.Framework.WebPlatform.Dom.IdleOptions
+        {
+            Signal = m0_present ? m0 : Defaults_Dom_IdleOptions.Signal,
+            Threshold = m1_present ? m1 : Defaults_Dom_IdleOptions.Threshold,
+        };
+    }
+
     internal static global::Meziantou.Framework.WebPlatform.Dom.IdleRequestOptions ToDictionary_Dom_IdleRequestOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
     {
         r.CheckDictionary(value, "IdleRequestOptions");
@@ -6919,6 +6992,17 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
             EnableHighAccuracy = m0,
             MaximumAge = m1,
             Timeout = m2,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.PressureObserverOptions ToDictionary_Dom_PressureObserverOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "PressureObserverOptions");
+        var m0_value = r.GetDictionaryMember(value, "sampleInterval");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (uint)(uint)(0d) : r.ToUnsignedLong(m0_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.EnforceRange);
+        return new global::Meziantou.Framework.WebPlatform.Dom.PressureObserverOptions
+        {
+            SampleInterval = m0,
         };
     }
 
@@ -9237,6 +9321,12 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         "unspecified" => global::Meziantou.Framework.WebPlatform.Dom.PresentationStyle.Unspecified,
         "inline" => global::Meziantou.Framework.WebPlatform.Dom.PresentationStyle.Inline,
         "attachment" => global::Meziantou.Framework.WebPlatform.Dom.PresentationStyle.Attachment,
+        _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
+    };
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.PressureSource ToEnum_Dom_PressureSource(string value) => value switch
+    {
+        "cpu" => global::Meziantou.Framework.WebPlatform.Dom.PressureSource.Cpu,
         _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
     };
 

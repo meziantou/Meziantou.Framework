@@ -14,7 +14,9 @@ namespace Meziantou.Framework.WebPlatform.Tests.JavaScript;
 /// (https://w3c.github.io/screen-wake-lock/), Keyboard Lock (https://wicg.github.io/keyboard-lock/), Screen Orientation
 /// (https://w3c.github.io/screen-orientation/), VirtualKeyboard (https://w3c.github.io/virtual-keyboard/), the viewport
 /// segments (https://drafts.csswg.org/css-viewport/#viewport-segments), Keyboard Map (https://wicg.github.io/keyboard-map/),
-/// Media Session (https://w3c.github.io/mediasession/) and Page Lifecycle (https://wicg.github.io/page-lifecycle/).
+/// Media Session (https://w3c.github.io/mediasession/), Page Lifecycle (https://wicg.github.io/page-lifecycle/), Compute
+/// Pressure (https://w3c.github.io/compute-pressure/), Idle Detection (https://wicg.github.io/idle-detection/) and Device
+/// Posture (https://w3c.github.io/device-posture/).
 /// </summary>
 public sealed class HostDeviceApisTests : IDisposable
 {
@@ -46,6 +48,9 @@ public sealed class HostDeviceApisTests : IDisposable
             BatteryStatus = options.BatteryStatus,
             WakeLock = options.WakeLock,
             KeyboardLock = options.KeyboardLock,
+            ComputePressure = options.ComputePressure,
+            IdleDetection = options.IdleDetection,
+            DevicePosture = options.DevicePosture,
             ScreenOrientation = options.ScreenOrientation,
             VirtualKeyboard = options.VirtualKeyboard,
             ViewportSegments = options.ViewportSegments,
@@ -989,6 +994,246 @@ public sealed class HostDeviceApisTests : IDisposable
         var document = Load("""<iframe srcdoc="<p>"></iframe><script>""" + KeyboardScript + "</script>");
 
         Assert.Equal("InvalidStateError", Run(document, "go(document.querySelector('iframe').contentWindow.navigator.keyboard.lock())"));
+    }
+
+    // Compute Pressure
+
+    private const string PressureScript = """
+        window.log = [];
+        window.observe = (options) => {
+          window.observer = new PressureObserver(records => log.push(records.map(r => r.source + ':' + r.state).join(',')));
+          return observer.observe('cpu', options).then(() => log.push('observing'), e => log.push(e.name));
+        };
+        window.done = () => document.title = log.join('|');
+        """;
+
+    [Fact]
+    public void PressureObserver_WithoutProvider_ObservesTheCpuWithoutRecords()
+    {
+        var document = Load("<script>" + PressureScript + "observe();</script>");
+
+        Assert.Equal("cpu|observing", Run(document, "log.unshift(PressureObserver.knownSources.join()); done()"));
+    }
+
+    [Fact]
+    public void PressureObserver_ReadsTheProvider()
+    {
+        #region WebPlatform_ComputePressure
+        var pressure = new PressureSourceProvider();
+        pressure.SetSample(PressureSource.Cpu, new PressureSample(PressureState.Nominal));
+
+        var options = new BrowsingContextOptions
+        {
+            ComputePressure = new ComputePressureOptions { Provider = pressure },
+        };
+        #endregion
+
+        var document = Load("<script>" + PressureScript + "observe();</script>", options);
+        Run(document);
+
+        // A new sample is delivered when the state changes: the same state is not delivered again
+        pressure.SetSample(PressureSource.Cpu, new PressureSample(PressureState.Critical));
+        Run(document);
+        pressure.SetSample(PressureSource.Cpu, new PressureSample(PressureState.Critical));
+        Run(document);
+
+        Assert.Equal("observing|cpu:nominal|cpu:critical", Run(document, "done()"));
+        Assert.Equal("0", Run(document, "observer.disconnect(); document.title = observer.takeRecords().length"));
+    }
+
+    [Fact]
+    public void PressureObserver_UnsupportedSource_IsRejectedWithNotSupportedError()
+    {
+        var pressure = new PressureSourceProvider();
+        pressure.SetSupported(PressureSource.Cpu, supported: false);
+        var document = Load("<script>" + PressureScript + "observe();</script>", new BrowsingContextOptions { ComputePressure = new ComputePressureOptions { Provider = pressure } });
+
+        Assert.Equal("NotSupportedError", Run(document, "done()"));
+    }
+
+    [Fact]
+    public void PressureObserver_DisconnectBeforeObserveCompletes_RejectsWithAbortError()
+    {
+        var document = Load("<script>" + PressureScript + "observe(); observer.disconnect();</script>");
+
+        Assert.Equal("AbortError", Run(document, "done()"));
+    }
+
+    [Fact]
+    public void PressureObserver_SampleInterval_DeliversTheSampleAtEachInterval()
+    {
+        var clock = new FakeTimeProvider();
+        var pressure = new PressureSourceProvider();
+        pressure.SetSample(PressureSource.Cpu, new PressureSample(PressureState.Fair));
+        var document = Load("<script>" + PressureScript + "observe({ sampleInterval: 1000 });</script>", new BrowsingContextOptions
+        {
+            ComputePressure = new ComputePressureOptions { Provider = pressure },
+            TimeProvider = clock,
+        });
+        Run(document);
+
+        clock.Advance(TimeSpan.FromMilliseconds(1000));
+        Run(document);
+        clock.Advance(TimeSpan.FromMilliseconds(500));
+        Run(document);
+
+        Assert.Equal("observing|cpu:fair|cpu:fair", Run(document, "observer.disconnect(); done()"));
+    }
+
+    [Fact]
+    public void PressureObserver_InvalidSampleInterval_IsRejectedWithTypeError()
+    {
+        var document = Load("<script>" + PressureScript + "observe({ sampleInterval: -1 }).catch(e => log.push(e.name));</script>");
+
+        Assert.Equal("TypeError", Run(document, "done()"));
+    }
+
+    // Idle Detection
+
+    private const string IdleScript = """
+        window.log = [];
+        window.start = (options) => {
+          window.detector = new IdleDetector();
+          detector.onchange = () => log.push(detector.userState + ',' + detector.screenState);
+          return detector.start(options).then(() => log.push('started'), e => log.push(e.name));
+        };
+        window.done = () => document.title = log.join('|');
+        """;
+
+    [Fact]
+    public void IdleDetector_WithoutProvider_ReportsAnActiveUser()
+    {
+        var document = Load("<script>" + IdleScript + "start();</script>");
+
+        Assert.Equal("started|active,unlocked", Run(document, "done()"));
+    }
+
+    [Fact]
+    public void IdleDetector_ReadsTheProvider()
+    {
+        #region WebPlatform_IdleDetection
+        var clock = new FakeTimeProvider(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));
+        var idleState = new IdleStateProvider
+        {
+            // The user interacted with the device now: they are idle once the threshold of a detector elapsed
+            Status = new IdleStatus { LastInteractionTime = clock.GetUtcNow() },
+        };
+
+        var permissions = new PermissionStore();
+        permissions.SetState("idle-detection", PermissionState.Granted);
+
+        var options = new BrowsingContextOptions
+        {
+            Permissions = permissions,
+            IdleDetection = new IdleDetectionOptions { Provider = idleState },
+            TimeProvider = clock,
+        };
+        #endregion
+
+        var document = Load("<script>" + IdleScript + "start({ threshold: 60000 });</script>", options);
+        Run(document);
+
+        clock.Advance(TimeSpan.FromSeconds(60));
+        Run(document);
+        idleState.Status = idleState.Status with { IsScreenLocked = true };
+        Run(document);
+        idleState.Status = new IdleStatus();
+        Run(document);
+
+        Assert.Equal("started|active,unlocked|idle,unlocked|idle,locked|active,unlocked", Run(document, "done()"));
+    }
+
+    [Fact]
+    public void IdleDetector_DeniedPermission_IsRejectedWithNotAllowedError()
+    {
+        var permissions = new PermissionStore();
+        permissions.SetState("idle-detection", PermissionState.Denied);
+        var document = Load("<script>" + IdleScript + "start();</script>", new BrowsingContextOptions { Permissions = permissions });
+
+        Assert.Equal("NotAllowedError", Run(document, "done()"));
+    }
+
+    [Theory]
+    [InlineData("{ threshold: 59999 }", "TypeError")]
+    [InlineData("{ threshold: -1 }", "TypeError")]
+    [InlineData("{ threshold: 60000 }", "started")]
+    public void IdleDetector_Threshold(string options, string expected)
+    {
+        var document = Load("<script>" + IdleScript + "start(" + options + ").catch(e => log.push(e.name));</script>");
+
+        Assert.Equal(expected, Run(document, "document.title = log[0]"));
+    }
+
+    [Fact]
+    public void IdleDetector_AbortedSignal_StopsTheDetector()
+    {
+        var idleState = new IdleStateProvider();
+        var document = Load("<script>" + IdleScript + "const controller = new AbortController(); start({ signal: controller.signal }); controller.abort();</script>", new BrowsingContextOptions { IdleDetection = new IdleDetectionOptions { Provider = idleState } });
+
+        idleState.Status = new IdleStatus { IsScreenLocked = true };
+        Assert.Equal("AbortError", Run(document, "done()"));
+    }
+
+    [Fact]
+    public void IdleDetector_RequestPermission_NeedsTransientActivation()
+    {
+        var document = Load("<script>window.log = []; window.request = () => IdleDetector.requestPermission().then(p => log.push(p), e => log.push(e.name));</script>", new BrowsingContextOptions
+        {
+            RequestPermission = (_, name) => name == "idle-detection" ? PermissionState.Granted : PermissionState.Denied,
+        });
+
+        Run(document, "request()");
+        Activate(document);
+        Assert.Equal("NotAllowedError|granted", Run(document, "request().then(() => document.title = log.join('|'))"));
+    }
+
+    // Device Posture
+
+    [Fact]
+    public void DevicePosture_WithoutProvider_IsContinuous()
+    {
+        var document = Load("<script>document.title = [navigator.devicePosture.type, matchMedia('(device-posture: continuous)').matches].join();</script>");
+
+        Assert.Equal("continuous,true", Run(document));
+    }
+
+    [Fact]
+    public void DevicePosture_ReadsTheProvider()
+    {
+        #region WebPlatform_DevicePosture
+        var posture = new DevicePostureProvider();
+        var options = new BrowsingContextOptions
+        {
+            DevicePosture = new DevicePostureOptions { Provider = posture },
+        };
+
+        // Fires the change event of navigator.devicePosture, and updates the device-posture media feature
+        posture.Posture = DevicePostureType.Folded;
+        #endregion
+
+        posture.Posture = DevicePostureType.Continuous;
+        var document = Load("<script>window.log = []; navigator.devicePosture.onchange = () => log.push(navigator.devicePosture.type);</script>", options);
+
+        posture.Posture = DevicePostureType.Folded;
+        Run(document);
+
+        Assert.Equal("folded|true", Run(document, "log.push(matchMedia('(device-posture: folded)').matches); document.title = log.join('|')"));
+    }
+
+    [Fact]
+    public void DevicePosture_HiddenDocument_FiresTheEventWhenItBecomesVisible()
+    {
+        var posture = new DevicePostureProvider();
+        var document = Load("<script>window.log = []; navigator.devicePosture.onchange = () => log.push(navigator.devicePosture.type);</script>", new BrowsingContextOptions { DevicePosture = new DevicePostureOptions { Provider = posture } });
+
+        document.BrowsingContext!.IsVisible = false;
+        Run(document);
+        posture.Posture = DevicePostureType.Folded;
+        Assert.Equal("", Run(document, "document.title = log.join('|')"));
+
+        document.BrowsingContext.IsVisible = true;
+        Run(document);
+        Assert.Equal("folded", Run(document, "document.title = log.join('|')"));
     }
 
     // Screen Orientation

@@ -3408,17 +3408,23 @@ public sealed partial class BrowsingContext : IDisposable
 
     /// <summary>
     /// The document is no longer fully active: its wake locks are released (https://w3c.github.io/screen-wake-lock/#handling-document-loss-of-full-activity),
-    /// and its keyboard is unlocked (https://wicg.github.io/keyboard-lock/#h-keyboard-unlock).
+    /// its keyboard is unlocked (https://wicg.github.io/keyboard-lock/#h-keyboard-unlock), and the data collection of its
+    /// pressure observers stops (https://w3c.github.io/compute-pressure/#handling-change-of-fully-active-status).
     /// </summary>
     private static void ReleaseDeviceLocks(Document document)
     {
         // https://w3c.github.io/screen-orientation/#handling-unloading-documents: the lock request is aborted, and the screen
         // of a top-level document is unlocked
         ScreenOrientationModel.OnDocumentUnloaded(document);
-        if (document.RelevantWindow is { NavigatorOrNull: { } navigator } window && ReferenceEquals(window.Document, document))
+        if (document.RelevantWindow is { } window && ReferenceEquals(window.Document, document))
         {
-            navigator.WakeLockOrNull?.ReleaseAll();
-            navigator.KeyboardOrNull?.OnDocumentUnloaded();
+            if (window.NavigatorOrNull is { } navigator)
+            {
+                navigator.WakeLockOrNull?.ReleaseAll();
+                navigator.KeyboardOrNull?.OnDocumentUnloaded();
+            }
+
+            PressureObserverRegistry.OnUnloaded(window);
         }
     }
 

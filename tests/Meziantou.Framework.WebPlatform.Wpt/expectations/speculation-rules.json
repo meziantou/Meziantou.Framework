@@ -1495,10 +1495,7 @@
     "total": 1
   },
   "speculation-rules/prerender/restriction-idle-detection.https.html": {
-    "total": 1,
-    "failures": {
-      "prerendering pages should not be able to invoke the Idle Detection API": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prerender/restriction-local-file-system-access.https.html": {
     "total": 1,

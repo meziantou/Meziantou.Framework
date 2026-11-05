@@ -111,7 +111,7 @@
     "reftest": "PASS"
   },
   "css/css-paint-api/paint2d-filter.https.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-paint-api/paint2d-gradient.https.html": {
     "reftest": "PASS"

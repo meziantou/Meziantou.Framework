@@ -793,46 +793,38 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
     {
         var closers = new System.Text.StringBuilder();
         var value = last;
-        while (true)
+        while (value is CssFunction or CssSimpleBlock)
         {
-            if (value is CssFunction function)
+            var (children, closer) = value switch
             {
-                // The function is unclosed when its contents reach the end of the input (the ")" at the end of the input can
-                // close a nested function, e.g. "f(g(a)")
-                if (!source.EndsWith(')', StringComparison.Ordinal) || (function.Value.Count > 0 && function.Value[^1].End >= source.Length))
+                CssFunction function => (function.Value, ')'),
+                CssSimpleBlock { AssociatedToken: CssTokenType.LeftParenthesis } block => (block.Value, ')'),
+                CssSimpleBlock { AssociatedToken: CssTokenType.LeftSquareBracket } block => (block.Value, ']'),
+                _ => (((CssSimpleBlock)value).Value, '}'),
+            };
+
+            // The function or the block is unclosed when the end of the input ends it (the ")" at the end of the input can
+            // close a nested function, e.g. "f(g(a)", or be in a comment, e.g. "f(a /* )")
+            if (!value.Unterminated)
+                break;
+
+            closers.Insert(0, closer);
+
+            // Only the values that reach the end of the input can be unclosed (e.g. the {} block of "var({--x})" is closed).
+            // The text that follows the last value of an unclosed function or block is whitespace and comments: a comment
+            // that the end of the input ends is closed, so that the closers are not part of it (e.g. "calc(1px /* a")
+            if (children.Count == 0 || children[^1].End < source.Length)
+            {
+                var tailStart = children.Count > 0 ? children[^1].End : GetContentStart(source, value);
+                if (EndsInUnclosedComment(source, tailStart))
                 {
-                    closers.Insert(0, ')');
+                    closers.Insert(0, "*/");
                 }
 
-                // Only the values that reach the end of the input can be unclosed (e.g. the {} block of "var({--x})" is closed)
-                if (function.Value.Count == 0 || function.Value[^1].End < source.Length)
-                    break;
-
-                value = function.Value[^1];
-            }
-            else if (value is CssSimpleBlock block)
-            {
-                var closer = block.AssociatedToken switch
-                {
-                    CssTokenType.LeftParenthesis => ')',
-                    CssTokenType.LeftSquareBracket => ']',
-                    _ => '}',
-                };
-
-                if (!source.EndsWith(closer, StringComparison.Ordinal) || (block.Value.Count > 0 && block.Value[^1].End >= source.Length))
-                {
-                    closers.Insert(0, closer);
-                }
-
-                if (block.Value.Count == 0 || block.Value[^1].End < source.Length)
-                    break;
-
-                value = block.Value[^1];
-            }
-            else
-            {
                 break;
             }
+
+            value = children[^1];
         }
 
         if (value is CssPreservedToken { Token: var token } preserved && preserved.End >= source.Length)
@@ -904,6 +896,45 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
         {
             var document = _ownerNode.NodeDocument;
             declaration.SetBaseUrl(document, CssDeclarationEntry.MayContainUrl(declaration.Value.Value) ? document.DocumentBaseUrl.Serialize() : null);
+        }
+    }
+
+    /// <summary>Returns the position that follows the token that opens a function (its name may contain escapes, e.g. <c>a\(b(</c>) or a simple block.</summary>
+    private static int GetContentStart(string source, CssComponentValue value)
+    {
+        if (value is CssSimpleBlock)
+            return value.Start + 1;
+
+        for (var i = value.Start; i < source.Length; i++)
+        {
+            if (source[i] == '\\')
+            {
+                i++;
+            }
+            else if (source[i] == '(')
+            {
+                return i + 1;
+            }
+        }
+
+        return source.Length;
+    }
+
+    /// <summary>Returns whether a text made of whitespace and comments, from <paramref name="start"/> to the end of <paramref name="source"/>, ends in a comment that is not closed.</summary>
+    private static bool EndsInUnclosedComment(string source, int start)
+    {
+        var index = start;
+        while (true)
+        {
+            var commentStart = source.IndexOf("/*", index, StringComparison.Ordinal);
+            if (commentStart < 0)
+                return false;
+
+            var commentEnd = source.IndexOf("*/", commentStart + 2, StringComparison.Ordinal);
+            if (commentEnd < 0)
+                return true;
+
+            index = commentEnd + 2;
         }
     }
 

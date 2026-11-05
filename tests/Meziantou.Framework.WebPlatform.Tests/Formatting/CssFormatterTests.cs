@@ -141,4 +141,34 @@ public sealed class CssFormatterTests
             }
             """, sheet.ToCss(new CssPrettyFormatter()));
     }
+
+    [Theory]
+    [InlineData(":root { --x: calc(1px /* a", ":root { --x: calc(1px /* a*/); }")]
+    [InlineData(":root { --x: f(a /* ) */ /* )", ":root { --x: f(a /* ) */ /* )*/); }")]
+    [InlineData(":root { --x: f( /* a", ":root { --x: f( /* a*/); }")]
+    public void Formatters_CloseTheCommentLeftOpenAtTheEndOfTheStyleSheet(string css, string expected)
+    {
+        var sheet = new CssStyleSheet();
+        sheet.ReplaceSync(css);
+        Assert.Equal(expected, sheet.CssRules[0].CssText);
+
+        var formatted = sheet.ToCss(new CssPrettyFormatter());
+        var formattedSheet = new CssStyleSheet();
+        formattedSheet.ReplaceSync(formatted);
+        Assert.Equal(expected, formattedSheet.CssRules[0].CssText);
+        Assert.Equal(formatted, formattedSheet.ToCss(new CssPrettyFormatter()));
+    }
+
+    [Fact]
+    public void MinifyFormatter_NumberWithManyDigits_IsStable()
+    {
+        var sheet = new CssStyleSheet();
+        sheet.ReplaceSync("p { margin: 1px 2px 3px 4008000000000000000000000000000000000000000000px }");
+        var minified = sheet.ToCss(new CssMinifyFormatter());
+        Assert.Equal("p{margin:1px 2px 3px 4.008e+45px}", minified);
+
+        var minifiedSheet = new CssStyleSheet();
+        minifiedSheet.ReplaceSync(minified);
+        Assert.Equal(minified, minifiedSheet.ToCss(new CssMinifyFormatter()));
+    }
 }

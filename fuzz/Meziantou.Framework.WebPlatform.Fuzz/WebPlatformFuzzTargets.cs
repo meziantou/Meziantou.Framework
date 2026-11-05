@@ -145,10 +145,15 @@ public static partial class WebPlatformFuzzTargets
         // the parsed serialization is the same markup. Except after a plaintext element: its end tag is serialized, but the
         // parser reads the rest of the markup as its text, so each round trip adds the end tags to the text
         // (https://html.spec.whatwg.org/multipage/parsing.html#serialising-html-fragments). The parser only creates a
-        // plaintext element (in a template too) for a "<plaintext" start tag of the markup.
+        // plaintext element (in a template too) for a "<plaintext" start tag of the markup. The same goes for a script whose
+        // text ends in the "double escaped" state ("<!--" then "<script", left open at the end of the input): its end tag
+        // does not end it. And the parser drops the line feed that follows a pre, listing or textarea start tag, which the
+        // serialization does not add back, so each round trip removes one of the leading line feeds of their text
+        // (https://github.com/whatwg/html/pull/1815): the leading line feeds are removed before the round trips.
         var markup = document.ToHtml();
-        if (!markup.Contains("<plaintext", StringComparison.OrdinalIgnoreCase))
+        if (!markup.Contains("<plaintext", StringComparison.OrdinalIgnoreCase) && PrepareHtmlRoundTrips(document))
         {
+            markup = document.ToHtml();
             var rounds = new List<string> { markup };
             while (true)
             {
@@ -167,6 +172,46 @@ public static partial class WebPlatformFuzzTargets
         {
             var element = context == "svg" ? document.CreateElementNS("http://www.w3.org/2000/svg", "svg") : document.CreateElement(context);
             _ = parser.ParseFragment(input, element).ChildNodes.Length;
+        }
+
+        // Removes the leading line feeds of the pre, listing and textarea elements, and returns false when a script
+        // element has a text that its end tag does not end. The tree is walked without recursion: it can be deep.
+        static bool PrepareHtmlRoundTrips(Document document)
+        {
+            var nodes = new Stack<Node>();
+            nodes.Push(document);
+            while (nodes.TryPop(out var node))
+            {
+                if (node is Element { NamespaceUri: "http://www.w3.org/1999/xhtml" } element)
+                {
+                    switch (element.LocalName)
+                    {
+                        case "pre" or "listing" or "textarea" when element.FirstChild is Text text:
+                            text.Data = text.Data.TrimStart('\n');
+                            break;
+
+                        case "script":
+                            var script = element.TextContent ?? "";
+                            var parsed = HtmlDocumentParser.ParseDocument("<script>" + script + "</script>");
+                            if (parsed.Head?.FirstChild?.TextContent != script)
+                                return false;
+
+                            break;
+                    }
+
+                    if (element is HtmlTemplateElement template)
+                    {
+                        nodes.Push(template.Content);
+                    }
+                }
+
+                for (var child = node.FirstChild; child is not null; child = child.NextSibling)
+                {
+                    nodes.Push(child);
+                }
+            }
+
+            return true;
         }
     }
 

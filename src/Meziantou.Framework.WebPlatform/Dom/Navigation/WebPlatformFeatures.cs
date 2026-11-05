@@ -220,6 +220,26 @@ public sealed record WebPlatformFeatures
     public bool KeyboardLockEnabled { get; init; } = true;
 
     /// <summary>
+    /// Gets or sets whether the Network Information API is exposed (https://wicg.github.io/netinfo/): <c>navigator.connection</c>
+    /// and the <c>NetworkInformation</c> interface, in the windows and the workers (see <see cref="BrowsingContextOptions.NetworkInformation"/>).
+    /// The default is true.
+    /// </summary>
+    public bool NetworkInformationEnabled { get; init; } = true;
+
+    /// <summary>
+    /// Gets or sets whether the Device Memory API is exposed (https://www.w3.org/TR/device-memory/): <c>navigator.deviceMemory</c>,
+    /// in the secure windows and workers (see <see cref="ClientHintsOptions.DeviceMemory"/>). The default is true.
+    /// </summary>
+    public bool DeviceMemoryEnabled { get; init; } = true;
+
+    /// <summary>
+    /// Gets or sets whether Global Privacy Control is exposed (https://w3c.github.io/gpc/): <c>navigator.globalPrivacyControl</c>,
+    /// in the windows and the workers (see <see cref="BrowsingContextOptions.GlobalPrivacyControl"/>, which also sends the
+    /// <c>Sec-GPC</c> header). The default is true.
+    /// </summary>
+    public bool GlobalPrivacyControlEnabled { get; init; } = true;
+
+    /// <summary>
     /// Gets or sets whether the Keyboard Map API is exposed (https://wicg.github.io/keyboard-map/): <c>navigator.keyboard.getLayoutMap()</c>,
     /// <c>navigator.keyboard.onlayoutchange</c> and the <c>KeyboardLayoutMap</c> interface (see
     /// <see cref="BrowsingContextOptions.KeyboardMap"/>). <c>navigator.keyboard</c> is hidden when both this API and the

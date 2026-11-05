@@ -3258,6 +3258,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.WebPlatformFeatures? Features { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.FileSystemBackend? FileSystem { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.GeolocationProvider? Geolocation { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.GlobalPrivacyControlOptions? GlobalPrivacyControl { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.IdleDetectionOptions? IdleDetection { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.IndexedDBBackend? IndexedDB { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.KeyboardLockOptions? KeyboardLock { get => throw null; init { } }
@@ -3267,6 +3268,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Media.MediaAutoplayPolicy MediaAutoplayPolicy { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Media.MediaBackend? MediaBackend { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.MediaSessionOptions? MediaSession { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.NetworkInformationOptions? NetworkInformation { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.PendingInputOptions? PendingInput { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.PermissionStore? Permissions { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Rendering.RenderingBackend? RenderingBackend { get => throw null; init { } }
@@ -3859,6 +3861,19 @@ namespace Meziantou.Framework.WebPlatform.Dom
     public sealed class ComputePressureOptions
     {
         public Meziantou.Framework.WebPlatform.Dom.PressureSourceProvider? Provider { get => throw null; init { } }
+    }
+
+    public enum ConnectionType
+    {
+        Unknown = 0,
+        Bluetooth = 1,
+        Cellular = 2,
+        Ethernet = 3,
+        Mixed = 4,
+        None = 5,
+        Other = 6,
+        Wifi = 7,
+        Wimax = 8,
     }
 
     public sealed class ContentSecurityPolicyViolationReport
@@ -4961,6 +4976,14 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public static bool operator !=(Meziantou.Framework.WebPlatform.Dom.DragPointerState left, Meziantou.Framework.WebPlatform.Dom.DragPointerState right) => throw null;
     }
 
+    public enum EffectiveConnectionType
+    {
+        Cellular4G = 0,
+        Cellular3G = 1,
+        Cellular2G = 2,
+        Slow2G = 3,
+    }
+
     public class Element : Meziantou.Framework.WebPlatform.Dom.Node, Meziantou.Framework.WebPlatform.Dom.IChildNode, Meziantou.Framework.WebPlatform.Dom.INonDocumentTypeChildNode, Meziantou.Framework.WebPlatform.Dom.IParentNode
     {
         public Meziantou.Framework.WebPlatform.Dom.ViewTransition? ActiveViewTransition { get => throw null; }
@@ -5875,6 +5898,12 @@ namespace Meziantou.Framework.WebPlatform.Dom
     public sealed class GetRootNodeOptions
     {
         public bool Composed { get => throw null; init { } }
+    }
+
+    public sealed class GlobalPrivacyControlOptions
+    {
+        public bool Enabled { get => throw null; init { } }
+        public System.Func<Meziantou.Framework.WebPlatform.Dom.CallbackContext, bool>? IsEnabled { get => throw null; init { } }
     }
 
     public abstract class GlobalScope : Meziantou.Framework.WebPlatform.Dom.EventTarget
@@ -8768,9 +8797,12 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public string AppName { get => throw null; }
         public string AppVersion { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.Clipboard Clipboard { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.NetworkInformation Connection { get => throw null; }
         public bool CookieEnabled { get => throw null; }
+        public double DeviceMemory { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.DevicePosture DevicePosture { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.Geolocation Geolocation { get => throw null; }
+        public bool GlobalPrivacyControl { get => throw null; }
         public ulong HardwareConcurrency { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.Ink Ink { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.Keyboard Keyboard { get => throw null; }
@@ -8825,6 +8857,46 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public string Platform { get => throw null; }
         public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.UADataValues> GetHighEntropyValues(System.Collections.Generic.IReadOnlyList<string> hints) => throw null;
         public Meziantou.Framework.WebPlatform.Dom.UALowEntropyJson ToJson() => throw null;
+    }
+
+    public sealed class NetworkConnectionStatus : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.NetworkConnectionStatus>
+    {
+        public static Meziantou.Framework.WebPlatform.Dom.NetworkConnectionStatus Default { get => throw null; }
+        public double Downlink { get => throw null; init { } }
+        public double? DownlinkMax { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.EffectiveConnectionType EffectiveType { get => throw null; init { } }
+        public System.TimeSpan RoundTripTime { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ConnectionType Type { get => throw null; init { } }
+        public bool Equals(Meziantou.Framework.WebPlatform.Dom.NetworkConnectionStatus? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.WebPlatform.Dom.NetworkConnectionStatus? left, Meziantou.Framework.WebPlatform.Dom.NetworkConnectionStatus? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WebPlatform.Dom.NetworkConnectionStatus? left, Meziantou.Framework.WebPlatform.Dom.NetworkConnectionStatus? right) => throw null;
+    }
+
+    public sealed class NetworkInformation : Meziantou.Framework.WebPlatform.Dom.EventTarget
+    {
+        public double Downlink { get => throw null; }
+        public double DownlinkMax { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.EffectiveConnectionType EffectiveType { get => throw null; }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnChange { get => throw null; set { } }
+        public ulong Rtt { get => throw null; }
+        public bool SaveData { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.ConnectionType Type { get => throw null; }
+    }
+
+    public sealed class NetworkInformationOptions
+    {
+        public Meziantou.Framework.WebPlatform.Dom.NetworkInformationProvider? Provider { get => throw null; init { } }
+    }
+
+    public class NetworkInformationProvider
+    {
+        public Meziantou.Framework.WebPlatform.Dom.NetworkConnectionStatus Status { get => throw null; set { } }
+        public event System.EventHandler? StatusChanged;
+        public virtual Meziantou.Framework.WebPlatform.Dom.NetworkConnectionStatus GetStatus() => throw null;
+        protected void OnStatusChanged() { }
     }
 
     public abstract class Node : Meziantou.Framework.WebPlatform.Dom.EventTarget, Meziantou.Framework.WebPlatform.Dom.IXPathNSResolver, System.Xml.XPath.IXPathNavigable
@@ -12943,6 +13015,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool DeclarativePartialUpdatesEnabled { get => throw null; init { } }
         public bool DedicatedWorkersEnabled { get => throw null; init { } }
         public static Meziantou.Framework.WebPlatform.Dom.WebPlatformFeatures Default { get => throw null; }
+        public bool DeviceMemoryEnabled { get => throw null; init { } }
         public bool DevicePostureEnabled { get => throw null; init { } }
         public bool DocumentPolicyEnabled { get => throw null; init { } }
         public bool ElementTimingEnabled { get => throw null; init { } }
@@ -12953,6 +13026,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool FileSystemEnabled { get => throw null; init { } }
         public bool FullscreenEnabled { get => throw null; init { } }
         public bool GeolocationEnabled { get => throw null; init { } }
+        public bool GlobalPrivacyControlEnabled { get => throw null; init { } }
         public bool IdleDetectionEnabled { get => throw null; init { } }
         public bool IndexedDBEnabled { get => throw null; init { } }
         public bool InputPendingEnabled { get => throw null; init { } }
@@ -12968,6 +13042,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool MediaSourceEnabled { get => throw null; init { } }
         public bool NavigationApiEnabled { get => throw null; init { } }
         public bool NavigationTimingEnabled { get => throw null; init { } }
+        public bool NetworkInformationEnabled { get => throw null; init { } }
         public bool NotificationsEnabled { get => throw null; init { } }
         public bool ObservableEnabled { get => throw null; init { } }
         public bool PageLifecycleEnabled { get => throw null; init { } }
@@ -13333,6 +13408,9 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public string AppCodeName { get => throw null; }
         public string AppName { get => throw null; }
         public string AppVersion { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.NetworkInformation Connection { get => throw null; }
+        public double DeviceMemory { get => throw null; }
+        public bool GlobalPrivacyControl { get => throw null; }
         public ulong HardwareConcurrency { get => throw null; }
         public string Language { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<string> Languages { get => throw null; }

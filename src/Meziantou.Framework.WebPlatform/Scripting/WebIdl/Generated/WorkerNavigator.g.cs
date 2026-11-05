@@ -20,6 +20,7 @@ internal static class Binding_WorkerNavigator<TAdapter, TValue> where TAdapter :
 
     private static TValue Get_permissions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.WorkerNavigator>(t, Binding); return r.Wrap(o.Permissions); }
     private static TValue Get_serviceWorker(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.WorkerNavigator>(t, Binding); return r.Wrap(o.ServiceWorker); }
+    private static TValue Get_globalPrivacyControl(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.WorkerNavigator>(t, Binding); return r.FromBoolean(o.GlobalPrivacyControl); }
     private static TValue Get_appCodeName(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.WorkerNavigator>(t, Binding); return r.FromString(o.AppCodeName); }
     private static TValue Get_appName(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.WorkerNavigator>(t, Binding); return r.FromString(o.AppName); }
     private static TValue Get_appVersion(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.WorkerNavigator>(t, Binding); return r.FromString(o.AppVersion); }
@@ -30,6 +31,7 @@ internal static class Binding_WorkerNavigator<TAdapter, TValue> where TAdapter :
     private static TValue Get_languages(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.WorkerNavigator>(t, Binding); return r.FromFrozenArray(o.Languages, static (r, e) => r.FromString(e)); }
     private static TValue Get_onLine(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.WorkerNavigator>(t, Binding); return r.FromBoolean(o.OnLine); }
     private static TValue Get_hardwareConcurrency(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.WorkerNavigator>(t, Binding); return r.FromNumber((double)o.HardwareConcurrency); }
+    private static TValue Get_connection(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.WorkerNavigator>(t, Binding); return r.Wrap(o.Connection); }
     private static TValue Get_storage(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.WorkerNavigator>(t, Binding); return r.Wrap(o.Storage); }
     private static TValue Get_userAgentData(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.WorkerNavigator>(t, Binding); return r.Wrap(o.UserAgentData); }
     private static TValue Get_locks(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.WorkerNavigator>(t, Binding); return r.Wrap(o.Locks); }
@@ -48,6 +50,7 @@ internal static class Binding_WorkerNavigator<TAdapter, TValue> where TAdapter :
     {
         r.DefineAttribute(instanceTarget, "permissions", Get_permissions, null);
         if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "serviceWorker", Get_serviceWorker, null);
+        r.DefineAttribute(instanceTarget, "globalPrivacyControl", Get_globalPrivacyControl, null);
         r.DefineAttribute(instanceTarget, "appCodeName", Get_appCodeName, null);
         r.DefineAttribute(instanceTarget, "appName", Get_appName, null);
         r.DefineAttribute(instanceTarget, "appVersion", Get_appVersion, null);
@@ -58,6 +61,7 @@ internal static class Binding_WorkerNavigator<TAdapter, TValue> where TAdapter :
         r.DefineAttribute(instanceTarget, "languages", Get_languages, null);
         r.DefineAttribute(instanceTarget, "onLine", Get_onLine, null);
         r.DefineAttribute(instanceTarget, "hardwareConcurrency", Get_hardwareConcurrency, null);
+        r.DefineAttribute(instanceTarget, "connection", Get_connection, null);
         if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "storage", Get_storage, null);
         if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "userAgentData", Get_userAgentData, null);
         if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "locks", Get_locks, null);

@@ -41,7 +41,7 @@ public abstract partial class GlobalScope
     /// The <c>csp-hash</c> reports are not.
     /// </summary>
     internal static bool IsReportTypeVisibleToReportingObservers(string type)
-        => type is "test" or "csp-violation" or "coep" or "permissions-policy-violation" or "potential-permissions-policy-violation";
+        => type is "test" or "csp-violation" or "coep" or "permissions-policy-violation" or "potential-permissions-policy-violation" or "document-policy-violation";
 
     /// <summary>Appends an observer to the registered reporting observer list (https://w3c.github.io/reporting/#dom-reportingobserver-observe, step 2).</summary>
     internal void RegisterReportingObserver(ReportingObserver observer)

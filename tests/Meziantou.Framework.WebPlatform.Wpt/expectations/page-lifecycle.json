@@ -1,0 +1,17 @@
+{
+  "page-lifecycle/child-display-none.tentative.html": {
+    "total": 1
+  },
+  "page-lifecycle/child-out-of-viewport.tentative.html": {
+    "total": 1
+  },
+  "page-lifecycle/freeze.html": {
+    "total": 1
+  },
+  "page-lifecycle/idlharness.html": {
+    "total": 19
+  },
+  "page-lifecycle/set-composited-layer-position.html": {
+    "reftest": "PASS"
+  }
+}

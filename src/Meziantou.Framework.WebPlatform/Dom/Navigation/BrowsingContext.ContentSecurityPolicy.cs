@@ -55,9 +55,49 @@ public sealed partial class BrowsingContext
         if (!CheckXFrameOptions(headers, policies, responseOrigin))
             return true;
 
+        // https://wicg.github.io/document-policy/#algo-process-response: the response must declare a policy compatible with
+        // the required policy of the navigable
+        if (!parameters.RequiredDocumentPolicy.IsEmpty && (DocumentPolicyRecord.Parse(GetCombinedHeader(headers, "Document-Policy")) is not { } declaredPolicy || !DocumentPolicyRecord.IsCompatible(parameters.RequiredDocumentPolicy, declaredPolicy)))
+            return true;
+
         // The origin of the request of the navigation is the origin of its initiator
         return parameters.RequiredContentSecurityPolicy is { } requiredPolicy
             && ContentSecurityPolicy.IsResponseBlockedByRequiredPolicy(responseUrl, headers, policies, requiredPolicy, parameters.InitiatorOrigin?.Serialize() ?? "null");
+    }
+
+    /// <summary>
+    /// https://wicg.github.io/document-policy/#required-document-policy: the required document policy of the navigable, for a
+    /// navigation of a child navigable: the required policy of the container document, combined with the <c>policy</c>
+    /// attribute of its iframe container (https://wicg.github.io/document-policy/#iframe-policy-attribute). Empty for a
+    /// top-level navigable.
+    /// </summary>
+    private DocumentPolicyRecord GetRequiredDocumentPolicy()
+    {
+        if (Parent is null || Container is not { } container || !Options.EffectiveFeatures.DocumentPolicyEnabled)
+            return DocumentPolicyRecord.Empty;
+
+        var required = container.NodeDocument.NestedRequiredDocumentPolicy;
+        if (container is HtmlIFrameElement && container.GetAttributeValue("policy") is { } value && DocumentPolicyRecord.Parse(value) is { } attributePolicy)
+        {
+            required = DocumentPolicyRecord.Combine(required, attributePolicy);
+        }
+
+        return required;
+    }
+
+    /// <summary>The values of the headers of a name, combined (https://fetch.spec.whatwg.org/#concept-header-list-get), or null.</summary>
+    private static string? GetCombinedHeader(IReadOnlyList<KeyValuePair<string, string>> headers, string name)
+    {
+        string? result = null;
+        foreach (var (headerName, value) in headers)
+        {
+            if (Infra.InfraAscii.EqualsIgnoreAsciiCase(headerName, name))
+            {
+                result = result is null ? value : result + ", " + value;
+            }
+        }
+
+        return result;
     }
 
     /// <summary>

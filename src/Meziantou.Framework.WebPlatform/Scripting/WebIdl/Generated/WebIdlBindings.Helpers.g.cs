@@ -91,6 +91,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.LockOptions Defaults_Dom_LockOptions = new();
 
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.MediaPositionState Defaults_Dom_MediaPositionState = new();
+
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.MouseEventInit Defaults_Dom_MouseEventInit = new();
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.MutationObserverInit Defaults_Dom_MutationObserverInit = new();
@@ -282,6 +284,10 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     internal static readonly string[] Enum_LineAlignSetting_Values = new[] { "start", "center", "end" };
 
     internal static readonly string[] Enum_LockMode_Values = new[] { "shared", "exclusive" };
+
+    internal static readonly string[] Enum_MediaSessionAction_Values = new[] { "play", "pause", "seekbackward", "seekforward", "previoustrack", "nexttrack", "skipad", "stop", "seekto", "togglemicrophone", "togglecamera", "togglescreenshare", "hangup", "previousslide", "nextslide", "enterpictureinpicture", "voiceactivity" };
+
+    internal static readonly string[] Enum_MediaSessionPlaybackState_Values = new[] { "none", "paused", "playing" };
 
     internal static readonly string[] Enum_NavigationFocusReset_Values = new[] { "after-transition", "manual" };
 
@@ -723,6 +729,15 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return result;
     }
 
+    internal static TValue FromDictionary_Dom_ChapterInformationInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.ChapterInformationInit value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "artwork", r.FromSequence(value.Artwork, static (r, e) => (e is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MediaImage(r, dictionaryValue) : r.Adapter.Null)));
+        r.SetMember(result, "startTime", r.FromNumber((double)value.StartTime));
+        r.SetMember(result, "title", r.FromString(value.Title));
+        return result;
+    }
+
     internal static TValue FromDictionary_Dom_CheckVisibilityOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.CheckVisibilityOptions value)
     {
         var result = r.CreateObject();
@@ -904,6 +919,18 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         r.SetMember(result, "cancelable", r.FromBoolean(value.Cancelable));
         r.SetMember(result, "composed", r.FromBoolean(value.Composed));
         r.SetMember(result, "detail", r.ToJs((object?)value.Detail));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_DocumentPolicyViolationReportBody(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.DocumentPolicyViolationReportBody value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "columnNumber", (value.ColumnNumber.HasValue ? r.FromNumber((double)value.ColumnNumber.GetValueOrDefault()) : r.Adapter.Null));
+        if (value.Disposition is not null) r.SetMember(result, "disposition", r.FromString(value.Disposition));
+        if (value.FeatureId is not null) r.SetMember(result, "featureId", r.FromString(value.FeatureId));
+        r.SetMember(result, "lineNumber", (value.LineNumber.HasValue ? r.FromNumber((double)value.LineNumber.GetValueOrDefault()) : r.Adapter.Null));
+        r.SetMember(result, "message", r.FromString(value.Message));
+        r.SetMember(result, "sourceFile", r.FromString(value.SourceFile));
         return result;
     }
 
@@ -1568,6 +1595,47 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         r.SetMember(result, "mode", r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_LockMode(value.Mode)));
         if (value.Signal is not null) r.SetMember(result, "signal", r.Wrap(value.Signal));
         r.SetMember(result, "steal", r.FromBoolean(value.Steal));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_MediaImage(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.MediaImage value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "sizes", r.FromString(value.Sizes));
+        r.SetMember(result, "src", r.FromString(value.Src));
+        r.SetMember(result, "type", r.FromString(value.Type));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_MediaMetadataInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.MediaMetadataInit value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "album", r.FromString(value.Album));
+        r.SetMember(result, "artist", r.FromString(value.Artist));
+        r.SetMember(result, "artwork", r.FromSequence(value.Artwork, static (r, e) => (e is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MediaImage(r, dictionaryValue) : r.Adapter.Null)));
+        r.SetMember(result, "chapterInfo", r.FromSequence(value.ChapterInfo, static (r, e) => (e is { } dictionaryValue2 ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_ChapterInformationInit(r, dictionaryValue2) : r.Adapter.Null)));
+        r.SetMember(result, "title", r.FromString(value.Title));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_MediaPositionState(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.MediaPositionState value)
+    {
+        var result = r.CreateObject();
+        if (value.Duration is not null) r.SetMember(result, "duration", (value.Duration.HasValue ? r.FromNumber((double)value.Duration.GetValueOrDefault()) : r.Adapter.Null));
+        if (value.PlaybackRate is not null) r.SetMember(result, "playbackRate", (value.PlaybackRate.HasValue ? r.FromNumber((double)value.PlaybackRate.GetValueOrDefault()) : r.Adapter.Null));
+        if (value.Position is not null) r.SetMember(result, "position", (value.Position.HasValue ? r.FromNumber((double)value.Position.GetValueOrDefault()) : r.Adapter.Null));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_MediaSessionActionDetails(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.MediaSessionActionDetails value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "action", r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_MediaSessionAction(value.Action)));
+        if (value.EnterPictureInPictureReason is not null) r.SetMember(result, "enterPictureInPictureReason", (value.EnterPictureInPictureReason.HasValue ? r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_MediaSessionEnterPictureInPictureReason(value.EnterPictureInPictureReason.GetValueOrDefault())) : r.Adapter.Null));
+        if (value.FastSeek is not null) r.SetMember(result, "fastSeek", r.FromBoolean(value.FastSeek));
+        if (value.IsActivating is not null) r.SetMember(result, "isActivating", r.FromBoolean(value.IsActivating));
+        if (value.SeekOffset is not null) r.SetMember(result, "seekOffset", (value.SeekOffset.HasValue ? r.FromNumber((double)value.SeekOffset.GetValueOrDefault()) : r.Adapter.Null));
+        if (value.SeekTime is not null) r.SetMember(result, "seekTime", (value.SeekTime.HasValue ? r.FromNumber((double)value.SeekTime.GetValueOrDefault()) : r.Adapter.Null));
         return result;
     }
 
@@ -3152,6 +3220,13 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         _ => value.ToString(),
     };
 
+    internal static string FromEnum_Dom_ClientLifecycleState(global::Meziantou.Framework.WebPlatform.Dom.ClientLifecycleState value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.ClientLifecycleState.Active => "active",
+        global::Meziantou.Framework.WebPlatform.Dom.ClientLifecycleState.Frozen => "frozen",
+        _ => value.ToString(),
+    };
+
     internal static string FromEnum_Dom_ClientType(global::Meziantou.Framework.WebPlatform.Dom.ClientType value) => value switch
     {
         global::Meziantou.Framework.WebPlatform.Dom.ClientType.Window => "window",
@@ -3329,6 +3404,44 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     {
         global::Meziantou.Framework.WebPlatform.Dom.LockMode.Shared => "shared",
         global::Meziantou.Framework.WebPlatform.Dom.LockMode.Exclusive => "exclusive",
+        _ => value.ToString(),
+    };
+
+    internal static string FromEnum_Dom_MediaSessionAction(global::Meziantou.Framework.WebPlatform.Dom.MediaSessionAction value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.MediaSessionAction.Play => "play",
+        global::Meziantou.Framework.WebPlatform.Dom.MediaSessionAction.Pause => "pause",
+        global::Meziantou.Framework.WebPlatform.Dom.MediaSessionAction.SeekBackward => "seekbackward",
+        global::Meziantou.Framework.WebPlatform.Dom.MediaSessionAction.SeekForward => "seekforward",
+        global::Meziantou.Framework.WebPlatform.Dom.MediaSessionAction.PreviousTrack => "previoustrack",
+        global::Meziantou.Framework.WebPlatform.Dom.MediaSessionAction.NextTrack => "nexttrack",
+        global::Meziantou.Framework.WebPlatform.Dom.MediaSessionAction.SkipAd => "skipad",
+        global::Meziantou.Framework.WebPlatform.Dom.MediaSessionAction.Stop => "stop",
+        global::Meziantou.Framework.WebPlatform.Dom.MediaSessionAction.SeekTo => "seekto",
+        global::Meziantou.Framework.WebPlatform.Dom.MediaSessionAction.ToggleMicrophone => "togglemicrophone",
+        global::Meziantou.Framework.WebPlatform.Dom.MediaSessionAction.ToggleCamera => "togglecamera",
+        global::Meziantou.Framework.WebPlatform.Dom.MediaSessionAction.ToggleScreenshare => "togglescreenshare",
+        global::Meziantou.Framework.WebPlatform.Dom.MediaSessionAction.HangUp => "hangup",
+        global::Meziantou.Framework.WebPlatform.Dom.MediaSessionAction.PreviousSlide => "previousslide",
+        global::Meziantou.Framework.WebPlatform.Dom.MediaSessionAction.NextSlide => "nextslide",
+        global::Meziantou.Framework.WebPlatform.Dom.MediaSessionAction.EnterPictureInPicture => "enterpictureinpicture",
+        global::Meziantou.Framework.WebPlatform.Dom.MediaSessionAction.VoiceActivity => "voiceactivity",
+        _ => value.ToString(),
+    };
+
+    internal static string FromEnum_Dom_MediaSessionEnterPictureInPictureReason(global::Meziantou.Framework.WebPlatform.Dom.MediaSessionEnterPictureInPictureReason value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.MediaSessionEnterPictureInPictureReason.Other => "other",
+        global::Meziantou.Framework.WebPlatform.Dom.MediaSessionEnterPictureInPictureReason.UserAction => "useraction",
+        global::Meziantou.Framework.WebPlatform.Dom.MediaSessionEnterPictureInPictureReason.ContentOccluded => "contentoccluded",
+        _ => value.ToString(),
+    };
+
+    internal static string FromEnum_Dom_MediaSessionPlaybackState(global::Meziantou.Framework.WebPlatform.Dom.MediaSessionPlaybackState value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.MediaSessionPlaybackState.None => "none",
+        global::Meziantou.Framework.WebPlatform.Dom.MediaSessionPlaybackState.Paused => "paused",
+        global::Meziantou.Framework.WebPlatform.Dom.MediaSessionPlaybackState.Playing => "playing",
         _ => value.ToString(),
     };
 
@@ -3799,6 +3912,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     internal static global::Meziantou.Framework.WebPlatform.Dom.IntersectionObserverCallback ToDelegate_Dom_IntersectionObserverCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.IntersectionObserverCallback((p0, p1) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.FromSequence(p0, static (r, e) => r.Wrap(e))); arguments.Add(r.Wrap(p1)); r.InvokeCallback(function, r.ToJs(p1), global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.ReportExceptions); }));
 
     internal static global::Meziantou.Framework.WebPlatform.Dom.LockGrantedCallback ToDelegate_Dom_LockGrantedCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.LockGrantedCallback((p0) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.Wrap(p0)); var result = r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None); return r.ToTask<object?>(result!, static (r, v) => r.ToAny(v)); }));
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.MediaSessionActionHandler ToDelegate_Dom_MediaSessionActionHandler(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.MediaSessionActionHandler((p0) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add((p0 is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MediaSessionActionDetails(r, dictionaryValue) : r.Adapter.Null)); r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None); }));
 
     internal static global::Meziantou.Framework.WebPlatform.Dom.MutationCallback ToDelegate_Dom_MutationCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.MutationCallback((p0, p1) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.FromSequence(p0, static (r, e) => r.Wrap(e))); arguments.Add(r.Wrap(p1)); r.InvokeCallback(function, r.ToJs(p1), global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.ReportExceptions); }));
 
@@ -4388,6 +4503,23 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return new global::Meziantou.Framework.WebPlatform.Dom.CaretPositionFromPointOptions
         {
             ShadowRoots = m0,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.ChapterInformationInit ToDictionary_Dom_ChapterInformationInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "ChapterInformationInit");
+        var m0_value = r.GetDictionaryMember(value, "artwork");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (global::System.Collections.Generic.List<global::Meziantou.Framework.WebPlatform.Dom.MediaImage>)new global::System.Collections.Generic.List<global::Meziantou.Framework.WebPlatform.Dom.MediaImage>() : r.ToSequence<global::Meziantou.Framework.WebPlatform.Dom.MediaImage>(m0_value, static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_MediaImage(r, e));
+        var m1_value = r.GetDictionaryMember(value, "startTime");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (double)(double)(0d) : r.ToDouble(m1_value, restricted: true);
+        var m2_value = r.GetDictionaryMember(value, "title");
+        var m2 = r.Adapter.IsUndefined(m2_value) ? (string)"" : r.ToDomString(m2_value);
+        return new global::Meziantou.Framework.WebPlatform.Dom.ChapterInformationInit
+        {
+            Artwork = m0,
+            StartTime = m1,
+            Title = m2,
         };
     }
 
@@ -6058,6 +6190,67 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
             Mode = WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_LockMode(m1),
             Signal = m2_present ? m2 : Defaults_Dom_LockOptions.Signal,
             Steal = m3,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.MediaImage ToDictionary_Dom_MediaImage(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "MediaImage");
+        var m0_value = r.GetDictionaryMember(value, "sizes");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (string)"" : r.ToDomString(m0_value);
+        var m1_value = r.GetDictionaryMember(value, "src");
+        if (r.Adapter.IsUndefined(m1_value)) throw r.MissingRequiredDictionaryMember("MediaImage", "src");
+        var m1 = r.ToUsvString(m1_value);
+        var m2_value = r.GetDictionaryMember(value, "type");
+        var m2 = r.Adapter.IsUndefined(m2_value) ? (string)"" : r.ToDomString(m2_value);
+        return new global::Meziantou.Framework.WebPlatform.Dom.MediaImage
+        {
+            Sizes = m0,
+            Src = m1,
+            Type = m2,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.MediaMetadataInit ToDictionary_Dom_MediaMetadataInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "MediaMetadataInit");
+        var m0_value = r.GetDictionaryMember(value, "album");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (string)"" : r.ToDomString(m0_value);
+        var m1_value = r.GetDictionaryMember(value, "artist");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (string)"" : r.ToDomString(m1_value);
+        var m2_value = r.GetDictionaryMember(value, "artwork");
+        var m2 = r.Adapter.IsUndefined(m2_value) ? (global::System.Collections.Generic.List<global::Meziantou.Framework.WebPlatform.Dom.MediaImage>)new global::System.Collections.Generic.List<global::Meziantou.Framework.WebPlatform.Dom.MediaImage>() : r.ToSequence<global::Meziantou.Framework.WebPlatform.Dom.MediaImage>(m2_value, static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_MediaImage(r, e));
+        var m3_value = r.GetDictionaryMember(value, "chapterInfo");
+        var m3 = r.Adapter.IsUndefined(m3_value) ? (global::System.Collections.Generic.List<global::Meziantou.Framework.WebPlatform.Dom.ChapterInformationInit>)new global::System.Collections.Generic.List<global::Meziantou.Framework.WebPlatform.Dom.ChapterInformationInit>() : r.ToSequence<global::Meziantou.Framework.WebPlatform.Dom.ChapterInformationInit>(m3_value, static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_ChapterInformationInit(r, e));
+        var m4_value = r.GetDictionaryMember(value, "title");
+        var m4 = r.Adapter.IsUndefined(m4_value) ? (string)"" : r.ToDomString(m4_value);
+        return new global::Meziantou.Framework.WebPlatform.Dom.MediaMetadataInit
+        {
+            Album = m0,
+            Artist = m1,
+            Artwork = m2,
+            ChapterInfo = m3,
+            Title = m4,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.MediaPositionState ToDictionary_Dom_MediaPositionState(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "MediaPositionState");
+        var m0_value = r.GetDictionaryMember(value, "duration");
+        var m0_present = !r.Adapter.IsUndefined(m0_value);
+        var m0 = m0_present ? (double?)r.ToDouble(m0_value, restricted: false) : default;
+        var m1_value = r.GetDictionaryMember(value, "playbackRate");
+        var m1_present = !r.Adapter.IsUndefined(m1_value);
+        var m1 = m1_present ? (double?)r.ToDouble(m1_value, restricted: true) : default;
+        var m2_value = r.GetDictionaryMember(value, "position");
+        var m2_present = !r.Adapter.IsUndefined(m2_value);
+        var m2 = m2_present ? (double?)r.ToDouble(m2_value, restricted: true) : default;
+        return new global::Meziantou.Framework.WebPlatform.Dom.MediaPositionState
+        {
+            Duration = m0_present ? m0 : Defaults_Dom_MediaPositionState.Duration,
+            PlaybackRate = m1_present ? m1 : Defaults_Dom_MediaPositionState.PlaybackRate,
+            Position = m2_present ? m2 : Defaults_Dom_MediaPositionState.Position,
         };
     }
 
@@ -9020,6 +9213,36 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     {
         "shared" => global::Meziantou.Framework.WebPlatform.Dom.LockMode.Shared,
         "exclusive" => global::Meziantou.Framework.WebPlatform.Dom.LockMode.Exclusive,
+        _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
+    };
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.MediaSessionAction ToEnum_Dom_MediaSessionAction(string value) => value switch
+    {
+        "play" => global::Meziantou.Framework.WebPlatform.Dom.MediaSessionAction.Play,
+        "pause" => global::Meziantou.Framework.WebPlatform.Dom.MediaSessionAction.Pause,
+        "seekbackward" => global::Meziantou.Framework.WebPlatform.Dom.MediaSessionAction.SeekBackward,
+        "seekforward" => global::Meziantou.Framework.WebPlatform.Dom.MediaSessionAction.SeekForward,
+        "previoustrack" => global::Meziantou.Framework.WebPlatform.Dom.MediaSessionAction.PreviousTrack,
+        "nexttrack" => global::Meziantou.Framework.WebPlatform.Dom.MediaSessionAction.NextTrack,
+        "skipad" => global::Meziantou.Framework.WebPlatform.Dom.MediaSessionAction.SkipAd,
+        "stop" => global::Meziantou.Framework.WebPlatform.Dom.MediaSessionAction.Stop,
+        "seekto" => global::Meziantou.Framework.WebPlatform.Dom.MediaSessionAction.SeekTo,
+        "togglemicrophone" => global::Meziantou.Framework.WebPlatform.Dom.MediaSessionAction.ToggleMicrophone,
+        "togglecamera" => global::Meziantou.Framework.WebPlatform.Dom.MediaSessionAction.ToggleCamera,
+        "togglescreenshare" => global::Meziantou.Framework.WebPlatform.Dom.MediaSessionAction.ToggleScreenshare,
+        "hangup" => global::Meziantou.Framework.WebPlatform.Dom.MediaSessionAction.HangUp,
+        "previousslide" => global::Meziantou.Framework.WebPlatform.Dom.MediaSessionAction.PreviousSlide,
+        "nextslide" => global::Meziantou.Framework.WebPlatform.Dom.MediaSessionAction.NextSlide,
+        "enterpictureinpicture" => global::Meziantou.Framework.WebPlatform.Dom.MediaSessionAction.EnterPictureInPicture,
+        "voiceactivity" => global::Meziantou.Framework.WebPlatform.Dom.MediaSessionAction.VoiceActivity,
+        _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
+    };
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.MediaSessionPlaybackState ToEnum_Dom_MediaSessionPlaybackState(string value) => value switch
+    {
+        "none" => global::Meziantou.Framework.WebPlatform.Dom.MediaSessionPlaybackState.None,
+        "paused" => global::Meziantou.Framework.WebPlatform.Dom.MediaSessionPlaybackState.Paused,
+        "playing" => global::Meziantou.Framework.WebPlatform.Dom.MediaSessionPlaybackState.Playing,
         _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
     };
 

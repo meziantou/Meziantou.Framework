@@ -57,6 +57,10 @@ internal static class Binding_HTMLIFrameElement<TAdapter, TValue> where TAdapter
     private static TValue Get_marginWidth(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlIFrameElement>(t, Binding); return r.FromString(o.MarginWidth); }
     private static void Set_marginWidth(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlIFrameElement>(t, Binding); var x = r.ToDomString(v, legacyNullToEmptyString: true); o.MarginWidth = x; }
     private static TValue Get_permissionsPolicy(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlIFrameElement>(t, Binding); return r.Wrap(o.PermissionsPolicy); }
+    #pragma warning disable WEBPLATEXP0016 // The binding exposes the experimental Web IDL member
+    private static TValue Get_policy(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlIFrameElement>(t, Binding); return r.FromString(o.Policy); }
+    private static void Set_policy(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlIFrameElement>(t, Binding); var x = r.ToDomString(v); o.Policy = x; }
+    #pragma warning restore WEBPLATEXP0016
     private static TValue Op_getSVGDocument(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlIFrameElement>(t, Binding);
@@ -85,6 +89,7 @@ internal static class Binding_HTMLIFrameElement<TAdapter, TValue> where TAdapter
         r.DefineAttribute(instanceTarget, "marginHeight", Get_marginHeight, Set_marginHeight);
         r.DefineAttribute(instanceTarget, "marginWidth", Get_marginWidth, Set_marginWidth);
         r.DefineAttribute(instanceTarget, "permissionsPolicy", Get_permissionsPolicy, null);
+        r.DefineAttribute(instanceTarget, "policy", Get_policy, Set_policy);
         r.DefineOperation(instanceTarget, "getSVGDocument", 0, Op_getSVGDocument);
     }
 }

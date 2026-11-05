@@ -71,29 +71,17 @@ public partial class Document
     internal void EnterBackForwardCache()
     {
         IsInBackForwardCache = true;
-        if (_suspensionStart == 0 && RelevantWindow is { } window)
-        {
-            _suspensionStart = Math.Max(1, window.EventLoop.TimeProvider.GetTimestamp());
-        }
+        StartSuspension();
     }
 
     /// <summary>
     /// The document leaves the back/forward cache (https://html.spec.whatwg.org/multipage/browsing-the-web.html#reactivate-a-document):
-    /// the suspension of its timers ends, and its deferred tasks are queued again, in order.
+    /// unless it is frozen, the suspension of its timers ends, and its deferred tasks are queued again, in order.
     /// </summary>
     internal void LeaveBackForwardCache()
     {
         IsInBackForwardCache = false;
-        _suspendedDuration = GetSuspendedDuration();
-        _suspensionStart = 0;
-        if (_tasksDeferredByBackForwardCache is { } tasks)
-        {
-            _tasksDeferredByBackForwardCache = null;
-            foreach (var task in tasks)
-            {
-                QueueGlobalTask(task);
-            }
-        }
+        EndSuspensionIfResumed();
     }
 
     /// <summary>The document is evicted from the back/forward cache: its deferred tasks are discarded (the document is destroyed).</summary>
@@ -104,9 +92,9 @@ public partial class Document
     }
 
     /// <summary>
-    /// Defers a task of the document while it is in the back/forward cache: the tasks whose document is not fully active are
-    /// not runnable (https://html.spec.whatwg.org/multipage/webappapis.html#concept-task-runnable), they run once the document
-    /// is reactivated.
+    /// Defers a task of the document while it is in the back/forward cache or frozen: the tasks whose document is not fully
+    /// active or is frozen are not runnable (https://html.spec.whatwg.org/multipage/webappapis.html#concept-task-runnable,
+    /// https://wicg.github.io/page-lifecycle/#html-task-queue-changes), they run once the document is reactivated and resumed.
     /// </summary>
     internal void DeferTaskUntilReactivated(Action task) => (_tasksDeferredByBackForwardCache ??= []).Add(task);
 

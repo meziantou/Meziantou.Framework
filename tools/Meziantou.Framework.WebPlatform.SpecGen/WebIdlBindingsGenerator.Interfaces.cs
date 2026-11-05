@@ -205,7 +205,15 @@ internal sealed partial class WebIdlBindingsGenerator
             else if (type.Generic == "FrozenArray")
             {
                 var elementType = GetEnumerableElementType(attribute.Property.PropertyType) ?? typeof(object);
-                getterExpression = $"r.FromFrozenArray({propertyExpression}, static (r, e) => {EmitToJs(elementType, type.Subtypes[0], "e")})";
+                var elementExpression = EmitToJs(elementType, type.Subtypes[0], "e");
+
+                // The Media Session API freezes the elements of its frozen arrays (https://w3c.github.io/mediasession/#dom-mediametadata-artwork)
+                if ((model.Name, member.Name) is ("MediaMetadata", "artwork" or "chapterInfo") or ("ChapterInformation", "artwork"))
+                {
+                    elementExpression = $"r.Freeze({elementExpression})";
+                }
+
+                getterExpression = $"r.FromFrozenArray({propertyExpression}, static (r, e) => {elementExpression})";
             }
             else if (type.Name == "any" && (model.Name, member.Name) is not (("CustomEvent", "detail") or ("MessageEvent", "data") or ("PopStateEvent", "state") or ("History", "state") or ("Window", "opener") or ("XMLHttpRequest", "response") or ("PerformanceMark", "detail") or ("PerformanceMeasure", "detail")))
             {
@@ -227,6 +235,11 @@ internal sealed partial class WebIdlBindingsGenerator
             {
                 getterExpression = $"r.InCurrentGlobal(static r => {getterExpression})";
             }
+
+            // The bindings of an experimental property (e.g. HTMLIFrameElement.policy) use it without reporting its diagnostic
+            var attributeExperimentalId = attribute.Property.GetCustomAttribute<ExperimentalAttribute>()?.DiagnosticId;
+            if (attributeExperimentalId is not null)
+                writer.Line($"#pragma warning disable {attributeExperimentalId} // The binding exposes the experimental Web IDL member");
 
             writer.Line($"private static TValue {getterName}({Realm} r, TValue t) {{ {thisStatement}return {getterExpression}; }}");
 
@@ -255,6 +268,13 @@ internal sealed partial class WebIdlBindingsGenerator
             if (setterStatement is not null)
             {
                 writer.Line($"private static void {setterName}({Realm} r, TValue t, TValue v) {{ {thisStatement}{setterStatement} }}");
+            }
+
+            if (attributeExperimentalId is not null)
+                writer.Line($"#pragma warning restore {attributeExperimentalId}");
+
+            if (setterStatement is not null)
+            {
                 sink.Append($"{exposure}r.DefineAttribute({target}, {Literal(member.Name)}, {getterName}, {setterName}{configurable});\n");
             }
             else if (member.GetExtAttr("PutForwards") is { Value: { } forwardName })
@@ -1111,7 +1131,7 @@ internal sealed partial class WebIdlBindingsGenerator
         var readOnly = model.Maplike!.Readonly;
 
         // The keys are strings and the values are platform objects (e.g. maplike<DOMString, Highlight>), sequences of
-        // unsigned long (maplike<CSSOMString, sequence<unsigned long>>, converted to arrays by ToJs) or unsigned long long
+        // unsigned long (maplike<CSSOMString, sequence<unsigned long>>, converted to arrays by ToJs), unsigned long long or strings
         var keyTypeName = model.Maplike.DeclarationTypes[0].Name ?? "";
         var valueIdlType = model.Maplike.DeclarationTypes[1];
         var valueTypeName = valueIdlType is { Generic: "sequence" } ? "sequence<" + valueIdlType.Subtypes[0].Name + ">" : valueIdlType.Name ?? "";
@@ -1120,6 +1140,8 @@ internal sealed partial class WebIdlBindingsGenerator
             "sequence<unsigned long>" => typeof(IReadOnlyList<uint>),
             // maplike<DOMString, unsigned long long> (EventCounts): the numbers are converted by ToJs
             "unsigned long long" => typeof(ulong),
+            // maplike<DOMString, DOMString> (KeyboardLayoutMap)
+            "DOMString" => typeof(string),
             _ => _model.Interfaces.GetValueOrDefault(valueTypeName)?.ClrType,
         };
         if (keyTypeName is not ("DOMString" or "USVString" or "CSSOMString") || valueType is null)

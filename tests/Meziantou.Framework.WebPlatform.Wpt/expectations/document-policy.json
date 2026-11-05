@@ -1,0 +1,53 @@
+{
+  "document-policy/experimental-features/network-efficiency-guardrails-json.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "NetworkEfficiencyGuardrails json compression": "TIMEOUT"
+    }
+  },
+  "document-policy/experimental-features/network-efficiency-guardrails-report-only.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "NetworkEfficiencyGuardrails compression": "TIMEOUT"
+    }
+  },
+  "document-policy/experimental-features/network-efficiency-guardrails.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "NetworkEfficiencyGuardrails compression": "TIMEOUT"
+    }
+  },
+  "document-policy/reporting/sync-xhr-report-only.html": {
+    "total": 1
+  },
+  "document-policy/reporting/sync-xhr-reporting.html": {
+    "total": 1,
+    "failures": {
+      "Sync-xhr Report Format": "FAIL"
+    }
+  },
+  "document-policy/required-policy/document-policy.html": {
+    "total": 3
+  },
+  "document-policy/required-policy/no-document-policy.html": {
+    "total": 2
+  },
+  "document-policy/required-policy/required-document-policy-nested.html": {
+    "total": 3
+  },
+  "document-policy/required-policy/required-document-policy.html": {
+    "total": 2
+  },
+  "document-policy/required-policy/separate-document-policies.html": {
+    "total": 4,
+    "failures": {
+      "Any unrelated policy directives should combine with the parent's required policy.": "FAIL",
+      "Child frame may have a stricter policy than the parent.": "FAIL",
+      "Child frame with a less strict required policy should have the stricter value from the parent's policy applied.": "FAIL",
+      "Child frame with no explicit policy should have the same required policy as its parent.": "FAIL"
+    }
+  }
+}

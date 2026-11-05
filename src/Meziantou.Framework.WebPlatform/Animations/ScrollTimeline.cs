@@ -157,7 +157,22 @@ public class ScrollTimeline : AnimationTimeline
 
     internal override double? CurrentTimeValue => _snapshot.IsActive ? _snapshot.CurrentTime : null;
 
-    internal override bool IsAtTimelineBoundary => _snapshot.IsActive && (_snapshot.ScrollOffset <= 0 || _snapshot.ScrollOffset >= _snapshot.MaxScrollOffset);
+    /// <summary>
+    /// The range boundaries are aligned with the minimum and maximum scroll offsets of the scroll container when they round to
+    /// the same pixel (the positions of a view progress timeline are the ones of its cover range, which may extend beyond).
+    /// </summary>
+    internal override (bool Start, bool End) GetBoundaryAlignment(TimelineRangeBoundary? rangeStart, TimelineRangeBoundary? rangeEnd)
+    {
+        const double Tolerance = 0.5;
+        if (!_snapshot.IsActive)
+            return default;
+
+        var timelineStart = _snapshot.StartOffset;
+        var timelineLength = _snapshot.EndOffset - timelineStart;
+        var startOffset = timelineStart + (_snapshot.GetFraction(rangeStart, isEnd: false) * timelineLength);
+        var endOffset = timelineStart + (_snapshot.GetFraction(rangeEnd, isEnd: true) * timelineLength);
+        return (startOffset - Tolerance <= 0, endOffset + Tolerance >= _snapshot.MaxScrollOffset);
+    }
 
     /// <summary>The state of the timeline at its last update.</summary>
     internal ScrollTimelineSnapshot Snapshot => _snapshot;

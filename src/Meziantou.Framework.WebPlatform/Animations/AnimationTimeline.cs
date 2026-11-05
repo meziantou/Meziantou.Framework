@@ -42,10 +42,12 @@ public abstract class AnimationTimeline : IRealmBoundPlatformObject
     internal virtual double GetAttachmentFraction(TimelineRangeBoundary? boundary, bool isEnd) => isEnd ? 1 : 0;
 
     /// <summary>
-    /// Whether the current time of the timeline is its minimum or its maximum time (https://drafts.csswg.org/web-animations-2/#at-timeline-boundary):
-    /// the boundaries of the active interval are then inclusive. A monotonically increasing timeline has no boundary.
+    /// Returns whether the start and the end of an animation attachment range coincide with the minimum and the maximum times
+    /// the timeline can reach (https://drafts.csswg.org/web-animations-2/#at-timeline-boundary): the before-active and the
+    /// active-after boundaries of the active interval can then be inclusive, so that the effect applies when the timeline is at
+    /// its limit. A monotonically increasing timeline has no boundary.
     /// </summary>
-    internal virtual bool IsAtTimelineBoundary => false;
+    internal virtual (bool Start, bool End) GetBoundaryAlignment(TimelineRangeBoundary? rangeStart, TimelineRangeBoundary? rangeEnd) => default;
 
     /// <summary>Called when an animation is associated with the timeline.</summary>
     internal virtual void OnAnimationAttached(Animation animation)

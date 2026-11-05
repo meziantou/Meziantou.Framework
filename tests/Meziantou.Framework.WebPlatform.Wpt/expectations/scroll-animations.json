@@ -645,7 +645,10 @@
     "reftest": "FAIL"
   },
   "scroll-animations/css/view-timeline-pseudo-on-scroller.html": {
-    "total": 1
+    "total": 1,
+    "failures": {
+      "view() on pseudo-element attaches to parent scroll container": "FAIL"
+    }
   },
   "scroll-animations/css/view-timeline-range-animation.html": {
     "total": 17
@@ -759,10 +762,7 @@
     "total": 26
   },
   "scroll-animations/scroll-timelines/scroll-animation-effect-phases.tentative.html": {
-    "total": 30,
-    "failures": {
-      "Playback rate affects whether active phase boundary is inclusive.": "FAIL"
-    }
+    "total": 30
   },
   "scroll-animations/scroll-timelines/scroll-animation-inactive-timeline.html": {
     "total": 4
@@ -873,7 +873,7 @@
     "total": 1
   },
   "scroll-animations/view-timelines/range-boundary.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "scroll-animations/view-timelines/sticky/view-timeline-sticky-containing-block-clamp.html": {
     "total": 1

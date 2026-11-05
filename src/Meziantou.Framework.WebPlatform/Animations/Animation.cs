@@ -377,20 +377,24 @@ public partial class Animation : EventTarget, IRealmBoundPlatformObject
     }
 
     /// <summary>
-    /// Whether the current time of the animation follows a progress-based timeline that is at its minimum or maximum time
-    /// (https://drafts.csswg.org/web-animations-2/#at-timeline-boundary): the boundaries of the active interval are then
-    /// inclusive. A current time clamped by a hold time (e.g. a finished animation whose timeline went past its end) is not at
-    /// the boundary.
+    /// Returns whether the before-active and the active-after boundaries of the active interval are inclusive because they are
+    /// aligned with the minimum and the maximum times a progress-based timeline can reach, the minimum and maximum scroll
+    /// offsets (https://drafts.csswg.org/web-animations-2/#at-timeline-boundary): the effect then applies when the scroll
+    /// position is at the limit of the scroll range. The before-active boundary only matters when playing backwards, the
+    /// active-after boundary when playing forwards. As in Chrome, the alignment is only known when the start time is
+    /// auto-aligned with the attachment range and the effective playback rate is 1 or -1 (the current time then matches the
+    /// position of the timeline in the range). A current time clamped by a hold time (e.g. a finished animation whose timeline
+    /// went past the end of its range) does not follow the timeline, so it is not at the boundary.
     /// </summary>
-    internal bool IsAtTimelineBoundary
+    internal (bool Start, bool End) GetBoundaryAlignment()
     {
-        get
-        {
-            if (_timeline is not { IsAtTimelineBoundary: true } || CurrentTimeValue is not { } currentTime)
-                return false;
+        if (!_autoAlignStartTime || _timeline is null || Math.Abs(EffectivePlaybackRate) != 1)
+            return default;
 
-            return _holdTime is null || (GetCurrentTime(ignoreHoldTime: true) is { } unconstrained && Math.Abs(unconstrained - currentTime) < 1e-9);
-        }
+        if (_holdTime is { } holdTime && (GetCurrentTime(ignoreHoldTime: true) is not { } unconstrained || Math.Abs(unconstrained - holdTime) >= 1e-9))
+            return default;
+
+        return _timeline.GetBoundaryAlignment(_rangeStart, _rangeEnd);
     }
 
     /// <summary>Returns a time value of the animation as a <c>CSSNumberish</c>: a percentage for a progress-based timeline, milliseconds otherwise.</summary>

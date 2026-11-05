@@ -279,7 +279,7 @@
     "reftest": "PASS"
   },
   "css/css-highlight-api/painting/custom-highlight-painting-021.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-highlight-api/painting/custom-highlight-painting-anonymous-block-001.html": {
     "reftest": "PASS"

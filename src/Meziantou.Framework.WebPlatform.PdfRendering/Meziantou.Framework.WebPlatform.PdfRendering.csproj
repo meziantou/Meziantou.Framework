@@ -17,16 +17,4 @@
   <ItemGroup>
     <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.PdfRendering.Tests" />
   </ItemGroup>
-
-  <!--
-    The package reads the internal display lists, fonts and rendering surfaces of the core: it depends on the exact version
-    of the core. It uses the public API of Meziantou.Framework.WebPlatform.Imaging only, with a normal dependency.
-  -->
-  <Target Name="UseExactProjectReferenceVersions" AfterTargets="_GetProjectReferenceVersions">
-    <ItemGroup>
-      <_ExactProjectReferencesWithVersions Include="@(_ProjectReferencesWithVersions)" Condition="'%(Filename)' == 'Meziantou.Framework.WebPlatform'" ProjectVersion="[%(_ProjectReferencesWithVersions.ProjectVersion)]" />
-      <_ProjectReferencesWithVersions Remove="@(_ExactProjectReferencesWithVersions)" />
-      <_ProjectReferencesWithVersions Include="@(_ExactProjectReferencesWithVersions)" />
-    </ItemGroup>
-  </Target>
 </Project>

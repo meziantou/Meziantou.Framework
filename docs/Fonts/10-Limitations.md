@@ -12,5 +12,5 @@ description: What the font reader and the shaper do not do.
   the hints of CFF outlines, the variation of the TrueType hinting values (`cvar`), and the metadata and private blocks
   of WOFF and WOFF2 files.
 - **AFM files**: the multiple master (AMFM) and composite (ACFM) metrics files are not supported.
-- **Low-level API.** The public API is the one the Imaging, WebPlatform and Pdf libraries use; the packages that use it
-  depend on its exact version.
+- **Low-level API.** The public API is the one the Imaging, WebPlatform and Pdf libraries use; update the packages that
+  use it together.

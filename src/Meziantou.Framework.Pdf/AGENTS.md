@@ -19,7 +19,7 @@ the XML documentation and `readme.md` consistent in the same change.
   repository are `Meziantou.Framework.Imaging` (the image codecs and the ICC profiles) and `Meziantou.Framework.Fonts`
   (the fonts to embed: the reader, the shaper and the subsetter `FontSubsetter`, the AFM metrics of the standard fonts).
   The library uses their public API only, so it depends on them with normal (minimum) versions: never give it access to
-  their internals again (`InternalsVisibleTo`, `UseExactProjectReferenceVersions`); make a type public in Fonts or
+  their internals again (`InternalsVisibleTo`); make a type public in Fonts or
   Imaging, or compile its source into this library, instead.
 - **Bilevel filters** (`Filters/CcittFaxFilter.cs`, `Filters/Jbig2/`): `CCITTFaxDecode` reads the rows with the CCITT
   decoder of the TIFF codec of Imaging, and JBIG2 decodes with the MQ decoder of its JPEG 2000 codec. Their sources

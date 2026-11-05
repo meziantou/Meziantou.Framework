@@ -2,7 +2,7 @@
 
 The fully managed OpenType font reader and text shaper of [`Meziantou.Framework.Imaging`](https://www.nuget.org/packages/Meziantou.Framework.Imaging) and [`Meziantou.Framework.WebPlatform`](https://www.nuget.org/packages/Meziantou.Framework.WebPlatform).
 
-Its public API (`FontLoader`, `FontFace`, `TextShaper`, `GlyphBuffer`, ...) is the one these packages use: to load fonts and draw text, `Meziantou.Framework.Imaging` is the simpler entry point. The packages that use it depend on its exact version, so update them together.
+Its public API (`FontLoader`, `FontFace`, `TextShaper`, `GlyphBuffer`, ...) is the one these packages use: to load fonts and draw text, `Meziantou.Framework.Imaging` is the simpler entry point. Update the packages that use it together.
 
 What it covers:
 

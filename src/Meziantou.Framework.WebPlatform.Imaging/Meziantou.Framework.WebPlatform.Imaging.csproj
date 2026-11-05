@@ -17,17 +17,4 @@
     <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Imaging.Tests" />
     <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Wpt" />
   </ItemGroup>
-
-  <!--
-    The package implements the internal rendering services of the core, and draws with the internal fonts of
-    Meziantou.Framework.Imaging (the faces of Meziantou.Framework.Fonts that the core measured): it depends on the exact
-    versions of the core and of Meziantou.Framework.Imaging
-  -->
-  <Target Name="UseExactProjectReferenceVersions" AfterTargets="_GetProjectReferenceVersions">
-    <ItemGroup>
-      <_ExactProjectReferencesWithVersions Include="@(_ProjectReferencesWithVersions)" Condition="'%(Filename)' == 'Meziantou.Framework.WebPlatform' or '%(Filename)' == 'Meziantou.Framework.Imaging'" ProjectVersion="[%(_ProjectReferencesWithVersions.ProjectVersion)]" />
-      <_ProjectReferencesWithVersions Remove="@(_ExactProjectReferencesWithVersions)" />
-      <_ProjectReferencesWithVersions Include="@(_ExactProjectReferencesWithVersions)" />
-    </ItemGroup>
-  </Target>
 </Project>

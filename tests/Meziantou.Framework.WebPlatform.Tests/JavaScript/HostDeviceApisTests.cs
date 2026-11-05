@@ -1223,6 +1223,7 @@ public sealed class HostDeviceApisTests : IDisposable
         Assert.Equal("", Run(document, "document.title = log.join('|')"));
 
         document.BrowsingContext.IsVisible = true;
+        Run(document);
         Assert.Equal("folded", Run(document, "document.title = log.join('|')"));
     }
 

@@ -273,10 +273,12 @@ internal sealed partial class EditingAlgorithms
         if (!replaceSpaces)
             return;
 
+        // As in the browsers, the white space next to an element that is not editable (contenteditable=false) starts or ends
+        // with a no-break space: it stays visible when the scripts change or remove the content of the element
         var replacementWhitespace = CanonicalSpaceSequence(
             length,
-            startOffset == 0 && FollowsLineBreak(startNode),
-            endOffset == NodeLength(endNode) && PrecedesLineBreak(endNode));
+            (startOffset == 0 && FollowsLineBreak(startNode)) || IsNonEditableUnit(ChildAt(startNode, startOffset - 1)),
+            (endOffset == NodeLength(endNode) && PrecedesLineBreak(endNode)) || IsNonEditableUnit(ChildAt(endNode, endOffset)));
         var replacementIndex = 0;
         while (ComparePoints(startNode, startOffset, endNode, endOffset) < 0)
         {
@@ -1225,12 +1227,20 @@ internal sealed partial class EditingAlgorithms
     /// <summary>
     /// The sequence of white space that contains the character at the offset when it contains a line feed that collapses
     /// (white-space is normal or nowrap): it is rendered as one space, which the deletion of one of its characters removes
-    /// whole, as in the browsers.
+    /// whole, as in the browsers. When white-space is pre-line, the line feed is preserved but the spaces and tabs around it
+    /// collapse: the deletion of the line feed or of one of these spaces removes the line feed with the spaces around it.
     /// </summary>
     private (int Start, int End)? GetCollapsibleWhiteSpaceRunWithLineFeed(Text text, int offset)
     {
         var data = text.Data;
-        if (offset < 0 || offset >= data.Length || data[offset] is not (' ' or '\t' or '\n') || GetWhiteSpace(text) is not ("normal" or "nowrap"))
+        if (offset < 0 || offset >= data.Length || data[offset] is not (' ' or '\t' or '\n'))
+            return null;
+
+        var whiteSpace = GetWhiteSpace(text);
+        if (whiteSpace is "pre-line")
+            return GetCollapsibleWhiteSpaceAroundPreservedLineFeed(data, offset);
+
+        if (whiteSpace is not ("normal" or "nowrap"))
             return null;
 
         var start = offset;
@@ -1246,6 +1256,59 @@ internal sealed partial class EditingAlgorithms
         }
 
         return data.AsSpan(start, end - start).Contains('\n') ? (start, end) : null;
+    }
+
+    /// <summary>
+    /// The line feed at the offset, or next to the spaces and tabs that contain the offset, with the spaces and tabs around
+    /// it (white-space is pre-line); <see langword="null"/> when the character is a space that is not next to a line feed.
+    /// </summary>
+    private static (int Start, int End)? GetCollapsibleWhiteSpaceAroundPreservedLineFeed(string data, int offset)
+    {
+        var lineFeed = -1;
+        if (data[offset] is '\n')
+        {
+            lineFeed = offset;
+        }
+        else
+        {
+            var before = offset;
+            while (before > 0 && data[before - 1] is ' ' or '\t')
+            {
+                before--;
+            }
+
+            var after = offset + 1;
+            while (after < data.Length && data[after] is ' ' or '\t')
+            {
+                after++;
+            }
+
+            if (before > 0 && data[before - 1] is '\n')
+            {
+                lineFeed = before - 1;
+            }
+            else if (after < data.Length && data[after] is '\n')
+            {
+                lineFeed = after;
+            }
+        }
+
+        if (lineFeed < 0)
+            return null;
+
+        var start = lineFeed;
+        while (start > 0 && data[start - 1] is ' ' or '\t')
+        {
+            start--;
+        }
+
+        var end = lineFeed + 1;
+        while (end < data.Length && data[end] is ' ' or '\t')
+        {
+            end++;
+        }
+
+        return (start, end);
     }
 
     /// <summary>Replaces a character of a Text node without moving the boundary points that are after it.</summary>
@@ -2007,6 +2070,30 @@ internal sealed partial class EditingAlgorithms
         }
     }
 
+    /// <summary>
+    /// The node when it is an editable block (not a list item nor a table cell) whose children are invisible or collapsed
+    /// block props, in an editable block parent (not the editing host, where the content that follows the block is moved
+    /// into it, as the tests expect: <c>&lt;p&gt;{}&lt;br&gt;&lt;/p&gt;foo</c> gives <c>&lt;p&gt;foo&lt;/p&gt;</c>), and
+    /// followed by visible inline content of this parent; otherwise null.
+    /// </summary>
+    private Element? GetEmptyChildBlockBeforeInlineContent(Node node)
+    {
+        if (node is not Element block || !IsEditable(block) || IsInlineNode(block) || IsEditingHost(block) || !IsEditable(block.ParentNode) || IsInlineNode(block.ParentNode)
+            || IsHtmlElement(block, ListItemNames) || IsHtmlElement(block, TableSectionNames) || IsHtmlElement(block, "hr") || IsHtmlElement(block, "table") || IsAtomicElement(block))
+            return null;
+
+        if (!GetChildren(block).TrueForAll(child => IsInvisible(child) || IsCollapsedBlockProp(child)))
+            return null;
+
+        var next = block.NextSibling;
+        while (next is not null && IsInvisible(next))
+        {
+            next = next.NextSibling;
+        }
+
+        return next is not null && IsInlineNode(next) && IsEditable(next) ? block : null;
+    }
+
     private static bool HasIndentationAncestor(Node node)
     {
         for (Node? ancestor = node; ancestor is not null; ancestor = ancestor.ParentNode)
@@ -2016,6 +2103,28 @@ internal sealed partial class EditingAlgorithms
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// Whether the boundary point is followed by at least one node of its editing host, all of which are invisible (the
+    /// text of a Text node that contains the point is visible content after it).
+    /// </summary>
+    private bool HasOnlyInvisibleNodesAfter(Node node, int offset)
+    {
+        if (GetEditingHostOf(node) is not { } host || (node is CharacterData && offset < NodeLength(node)))
+            return false;
+
+        var current = ChildAt(node, offset) ?? NextNodeDescendants(node);
+        if (current is null || !host.IsInclusiveAncestorOf(current))
+            return false;
+
+        for (; current is not null && host.IsInclusiveAncestorOf(current); current = NextNode(current))
+        {
+            if (!IsEditable(current) || IsVisible(current))
+                return false;
+        }
+
+        return true;
     }
 
     /// <summary>https://w3c.github.io/editing/docs/execCommand/#the-forwarddelete-command</summary>
@@ -2031,6 +2140,11 @@ internal sealed partial class EditingAlgorithms
         // As in the browsers, a caret before the white space that collapses at the end of the editing host has nothing to
         // delete after it: the white space is kept
         if (range.StartContainer is Text startText && range.StartOffset < startText.Length && IsCollapsedWhiteSpaceAtEditingHostEdge(startText, (int)range.StartOffset, (int)startText.Length, forward: true))
+            return true;
+
+        // As in the browsers, a caret at the end of the content of the editing host has nothing to delete after it: the
+        // invisible nodes that follow it (e.g. the br that ends the last block, <p>abc[]<br></p>) are kept
+        if (HasOnlyInvisibleNodesAfter(range.StartContainer, (int)range.StartOffset))
             return true;
 
         CanonicalizeWhitespace(range.StartContainer, (int)range.StartOffset, replaceSpaces: false);
@@ -2072,6 +2186,19 @@ internal sealed partial class EditingAlgorithms
             SetRange(lineBreakNode, lineBreakOffset, lineBreakNode, lineBreakOffset + 1);
             DeleteSelectionAndRebalance();
             CollapseTo(nextBlock, 0);
+            RebalanceWhiteSpaceAtCaret(acrossSiblings: false);
+            return true;
+        }
+
+        // The specification moves the inline content that follows an empty child block into it. As in the browsers, the
+        // empty block is removed from its parent block: the caret is before the content (<div><div>{}<br></div>abc</div>
+        // gives <div>abc</div>)
+        if (GetEmptyChildBlockBeforeInlineContent(node) is { } emptyBlock)
+        {
+            var parent = emptyBlock.ParentNode!;
+            var index = NodeIndex(emptyBlock);
+            RemoveNode(emptyBlock);
+            CollapseTo(parent, index);
             RebalanceWhiteSpaceAtCaret(acrossSiblings: false);
             return true;
         }

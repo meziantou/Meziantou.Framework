@@ -464,6 +464,12 @@ internal static class Editing
             document.EditingState.History.Commit(document, transaction, editingHost);
         }
 
+        // As in Firefox, a deletion that changes nothing in the content of the editing host (e.g. Backspace at its start)
+        // fires no input event. The browsers fire it for a deletion in an empty editing host (Firefox inserts a padding
+        // line break there)
+        if (transaction is { IsEmpty: true } && editingHost.HasChildNodes() && inputType.StartsWith("delete", StringComparison.Ordinal))
+            return;
+
         editingHost.FireEvent(new InputEvent("input", new InputEventInit { Bubbles = true, Composed = true, Data = eventData, DataTransfer = dataTransfer, InputType = inputType, View = view }));
     }
 

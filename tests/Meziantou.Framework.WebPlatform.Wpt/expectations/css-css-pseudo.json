@@ -500,7 +500,7 @@
     "reftest": "PASS"
   },
   "css/css-pseudo/highlight-painting-002.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-pseudo/highlight-painting-003.html": {
     "reftest": "FAIL"
@@ -869,6 +869,9 @@
     "reftest": "PASS"
   },
   "css/css-pseudo/selection-background-color-transparent.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/selection-background-painting-order.html": {
     "reftest": "PASS"
   },
   "css/css-pseudo/selection-contenteditable-011.html": {

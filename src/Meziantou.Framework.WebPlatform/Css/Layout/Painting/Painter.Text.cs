@@ -80,7 +80,7 @@ internal sealed partial class Painter
         // shadows of the originating text, which are painted for all the text; the background of an overlay above may cover
         // the shadows of the overlays below). The shadows are under the text of the whole fragment, also the text that is not
         // highlighted (https://drafts.csswg.org/css-text-decor-4/#text-shadow-property: "UAs should avoid painting text
-        // shadows over text in adjacent elements"; as Blink when several highlights overlap)
+        // shadows over text in adjacent elements"; as Blink when several highlights overlap), except for a selection alone
         var highlights = GetHighlights(fragment, offset);
         if (_caret is not null)
         {
@@ -92,6 +92,11 @@ internal sealed partial class Painter
         // the background, the rest of it over the shadows of the highlights (as Gecko and Blink). The text after a custom highlight
         // is painted over its background (as the text after an inline box with a background, as in Blink)
         var colorSegments = runs.Count == 0 ? null : GetHighlightColorSegments(highlights, line.Horizontal);
+
+        // The overlay of a selection that is the only highlight of the text (its background, its shadows and its text) is over
+        // the text that is not selected, as in Blink (whose selection alone has its own painting path): the shadows of the
+        // selection are over the glyphs after it (css/css-pseudo/highlight-painting-002.html)
+        var selectionAlone = highlights is [{ IsSelection: true }];
         var backgroundClip = runs.Count == 0 ? null : GetHighlightBackgroundClip(highlights, line.Horizontal);
         if (backgroundClip is not null)
         {
@@ -107,22 +112,9 @@ internal sealed partial class Painter
                     _builder.Add(new DrawRectItem(highlight.Rect, new DisplayPaint(highlight.Background)) { Source = source });
                 }
 
-                if (highlight.Shadows is not { } highlightShadows || runs.Count == 0)
-                    continue;
-
-                // The shadows of the highlighted characters, the first one on top
-                var bounds = highlight.Bounds;
-                var (rangeStart, rangeEnd) = line.Horizontal ? (bounds.X, bounds.Right) : (bounds.Y, bounds.Bottom);
-                for (var i = highlightShadows.Count - 1; i >= 0; i--)
+                if (!selectionAlone)
                 {
-                    var shadow = highlightShadows[i];
-                    if (shadow.Color.IsTransparent)
-                        continue;
-
-                    _builder.Save();
-                    _builder.Transform(DisplayMatrix.Translation(shadow.X, shadow.Y));
-                    PaintGlyphsBetween(rangeStart, rangeEnd, shadow.Color, stroke: null, new DisplayPaint(shadow.Color) { BlurSigma = shadow.Blur / 2 });
-                    _builder.Restore();
+                    PaintHighlightShadows(highlight);
                 }
             }
         }
@@ -143,6 +135,11 @@ internal sealed partial class Painter
 
         PaintEmphasisMarks(fragment, offset, line, source);
         PaintDecorations(fragment, line, decorations, TextDecorationLines.LineThrough, paint: null, source);
+
+        if (selectionAlone)
+        {
+            PaintHighlightShadows(highlights![0]);
+        }
 
         // The decorations of the highlights, and the glyphs they recolor
         if (highlights is not null)
@@ -221,6 +218,27 @@ internal sealed partial class Painter
                     PaintGlyphsBetween(from, to, fill, textStroke);
                     _builder.Restore();
                 }
+            }
+        }
+
+        // The shadows of the highlighted characters, the first one on top
+        void PaintHighlightShadows(in TextHighlight highlight)
+        {
+            if (highlight.Shadows is not { } highlightShadows || runs.Count == 0)
+                return;
+
+            var bounds = highlight.Bounds;
+            var (rangeStart, rangeEnd) = line.Horizontal ? (bounds.X, bounds.Right) : (bounds.Y, bounds.Bottom);
+            for (var i = highlightShadows.Count - 1; i >= 0; i--)
+            {
+                var shadow = highlightShadows[i];
+                if (shadow.Color.IsTransparent)
+                    continue;
+
+                _builder.Save();
+                _builder.Transform(DisplayMatrix.Translation(shadow.X, shadow.Y));
+                PaintGlyphsBetween(rangeStart, rangeEnd, shadow.Color, stroke: null, new DisplayPaint(shadow.Color) { BlurSigma = shadow.Blur / 2 });
+                _builder.Restore();
             }
         }
 

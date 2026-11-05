@@ -553,10 +553,7 @@
     "total": 2
   },
   "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/url.window.js": {
-    "total": 5,
-    "failures": {
-      "document.open() does not change document's URL (active but not fully active document)": "FAIL"
-    }
+    "total": 5
   },
   "html/webappapis/dynamic-markup-insertion/the-innerhtml-property/annotation-xml-fragment-parsing.html": {
     "total": 2

@@ -32,8 +32,13 @@ public sealed class Location
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#relevant-document</summary>
     private Document? RelevantDocument => _window.BrowsingContext?.Document;
 
-    /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#concept-location-url</summary>
-    private UrlRecord Url => RelevantDocument?.UrlRecord ?? AboutBlank;
+    /// <summary>
+    /// https://html.spec.whatwg.org/multipage/nav-history-apis.html#concept-location-url. As in the browsers, the URL of a
+    /// window whose browsing context was discarded while its document was the active one (its frame was removed, or the
+    /// document of an ancestor navigable was replaced: the document is active but no longer fully active) is the URL of its
+    /// document, not about:blank (https://github.com/whatwg/html/issues/3959).
+    /// </summary>
+    private UrlRecord Url => RelevantDocument?.UrlRecord ?? (_window.DiscardedBrowsingContext is { } discarded && ReferenceEquals(discarded.ActiveWindow, _window) ? _window.Document.UrlRecord : AboutBlank);
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-location-href</summary>
     /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-location-href"/>

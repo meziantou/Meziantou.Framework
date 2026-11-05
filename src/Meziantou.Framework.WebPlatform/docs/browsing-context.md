@@ -2693,10 +2693,23 @@ its line, and preceded by a content of the line when it is extraneous). Where th
 specification, the browsers are followed, as the tests expect:
 
 - the formattable block names of `formatBlock` also include `article`, `aside`, `blockquote`, `footer`, `header`,
-  `hgroup`, `nav` and `section`, the `listing` and `xmp` elements are wrapped instead of replaced, and the value of the
-  command is `dl` for the `dt` and `dd` elements of one list;
+  `hgroup`, `nav` and `section`, the `listing` and `xmp` elements are wrapped instead of replaced, the `style` attribute of a
+  replaced element is moved to the new block (`<div style=color:blue>` gives `<p style=color:blue>`), the new block is only
+  merged with the blocks that the command creates (not with an existing `blockquote` next to it), and the value of the
+  command is `dl` for the `dt` and `dd` elements of one list; otherwise it is the name of the closest formattable block of the
+  nodes in their table cell (even when it contains a prohibited paragraph child), or the empty string when the nodes do not
+  have the same one (`<p>[foo</p>bar]`);
 - `strikethrough` creates a `strike` element (the specification: `s`), and `fontName`, `fontSize` and `foreColor` split
   the inline elements that have another value (e.g. `<font size=1>`) instead of nesting the new element in them;
+- the new element of `bold` and `italic` is not merged in an adjacent `strong` or `em` element (`[foo]<strong>bar</strong>`
+  gives `<b>foo</b><strong>bar</strong>`), the `strike` element of `strikethrough` is not merged in an `s` element, and
+  with `styleWithCSS` the new element of `bold` is a `span` next to a `b` element (it is merged in it only when the reordering
+  of the modifiable descendants of a sibling moved it). The parts of an `em` element that stay italic are wrapped in `em`
+  elements (`foo<em>b[a]r</em>baz` gives `foo<em>b</em>a<em>r</em>baz`), and with `styleWithCSS` the parts of an `s` element
+  (or of a `strike` element when the range is not in it) that keep the line-through are wrapped in elements of the same
+  name. With `styleWithCSS`, `underline` and `strikethrough` add their line to the `text-decoration` of a whole `span`
+  element that has one, and remove it from it, keeping only the other lines (the `blink` keyword, the color and the style
+  are dropped);
 - the `br` of a block that a deletion empties is a child of the block (the inline elements that the deletion empties are
   removed first), an inline editing host that a deletion empties gets no `br`, and the elements that are not editable, the
   replaced elements and the form controls are deleted as a whole, as an `img`;
@@ -2770,6 +2783,16 @@ specification, the browsers are followed, as the tests expect:
   (`<u>b</u>` in `<b>a[]c</b>` gives `<b>a</b><u>b</u><b>c</b>`), and `insertHTML` and `insertImage` at a caret leave the white space
   around it as it is;
 - `delete`, `forwardDelete` and `insertText` do nothing (they return false) when a boundary point of the selection is in a `select` element;
+- the sequence of white space that contains a line feed in a block whose line feeds collapse (`white-space: normal` or `nowrap`) is
+  rendered as one space: `delete` and `forwardDelete` remove it whole;
+- the space sequences that the canonicalization writes keep alternating spaces and no-break spaces (four spaces between two
+  characters give a space, a no-break space, a space and a no-break space; the specification ends the sequence with a no-break
+  space and a space);
+- `insertParagraph` in an inline element that is an item of a flex or grid container splits the item, not the container
+  (`<div style=display:flex><span>a[]bc</span></div>` gives two `span` items), and the line that it wraps in a new container
+  ends before an element that is a block by its style (a `span` with `display: block`). The inline formatting commands treat
+  such an item as an inline element (the text typed in an item whose contents were deleted is formatted in the item), and the
+  text that replaces a selection that begins with an image after a text is inserted at the end of this text;
 - when the range of an inline formatting command is in one inline element without `style` attribute and contains all its contents,
   the new element is created in this element (`bold` on `<i>[foo]</i>` gives `<i><b>foo</b></i>`, `createLink` on `<b>[abc]</b>` gives `<b><a>abc</a></b>`; the
   specification wraps the element), except the `font` elements of `fontName`, `fontSize` and `foreColor`, which stay around the other

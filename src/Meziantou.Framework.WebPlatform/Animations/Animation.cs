@@ -284,6 +284,21 @@ public partial class Animation : EventTarget, IRealmBoundPlatformObject
         }
     }
 
+    /// <summary>
+    /// The time of the frame whose animation frame callbacks played the animation, and its timeline: the ready time of its pending
+    /// play task (see <see cref="DocumentAnimations.RecordFrameReadyTimes"/>). A new play task forgets it.
+    /// </summary>
+    private (AnimationTimeline Timeline, double Time)? _frameReadyTime;
+
+    /// <summary>Records the current time of a monotonically increasing timeline as the ready time of a pending play task, at the end of the animation frame callbacks.</summary>
+    internal void RecordFrameReadyTime()
+    {
+        if (_pendingTask == PendingTask.Play && _frameReadyTime is null && _timeline is { IsMonotonicallyIncreasing: true, CurrentTimeValue: { } time } timeline)
+        {
+            _frameReadyTime = (timeline, time);
+        }
+    }
+
     internal bool HasPendingTask => _pendingTask != PendingTask.None;
 
     /// <summary>Gets the overall progress of the animation, from 0 to 1 (https://drafts.csswg.org/web-animations-2/#dom-animation-overallprogress).</summary>
@@ -809,6 +824,7 @@ public partial class Animation : EventTarget, IRealmBoundPlatformObject
                 }
 
                 _pendingTask = PendingTask.Play;
+                _frameReadyTime = null;
             }
 
             if (previousPlayState == AnimationPlayState.Paused && previousProgress is { } pausedProgress)
@@ -1062,6 +1078,7 @@ public partial class Animation : EventTarget, IRealmBoundPlatformObject
         }
 
         _pendingTask = PendingTask.Play;
+        _frameReadyTime = null;
         UpdateFinishedState(didSeek: false, synchronouslyNotify: false);
         OnPlaybackChanged();
     }
@@ -1121,6 +1138,13 @@ public partial class Animation : EventTarget, IRealmBoundPlatformObject
         if (_pendingTask == PendingTask.None || _timeline?.CurrentTimeValue is not { } readyTime || (_startTime is null && _holdTime is null))
             return false;
 
+        // (the animations played by the animation frame callbacks of the previous frame start at its time, see RecordFrameReadyTime)
+        if (_frameReadyTime is { } frameReadyTime && _pendingTask == PendingTask.Play && ReferenceEquals(frameReadyTime.Timeline, _timeline))
+        {
+            readyTime = frameReadyTime.Time;
+        }
+
+        _frameReadyTime = null;
         if (_pendingTask == PendingTask.Play)
         {
             // https://drafts.csswg.org/web-animations-1/#playing-an-animation-section (the pending play task)

@@ -185,6 +185,27 @@ public sealed class WebAnimationsTests : IDisposable
         Assert.Equal(frameTime, (double)document.Timeline.CurrentTime!.Value.Value);
     }
 
+    [Fact]
+    public void Animate_InAnimationFrameCallback_StartsAtTheTimeOfTheFrame()
+    {
+        var document = Load("<div id=target></div>");
+        var target = document.GetElementById("target")!;
+        Animation? animation = null;
+        double? frameTime = null;
+        document.DefaultView!.RequestAnimationFrame(t =>
+        {
+            frameTime = t;
+            animation = target.Animate(OpacityKeyframes(), 1000);
+        });
+        Advance(20);
+        Assert.NotNull(animation);
+        Assert.True(animation.Pending);
+
+        Advance(20);
+        Assert.False(animation.Pending);
+        Assert.Equal(frameTime, (double)animation.StartTime!.Value.Value);
+    }
+
     private static string GetComputed(Element element, string property, string? pseudoElement = null) =>
         element.OwnerDocument!.DefaultView!.GetComputedStyle(element, pseudoElement).GetPropertyValue(property);
 

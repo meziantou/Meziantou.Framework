@@ -817,6 +817,15 @@ public sealed partial class DomEventLoop
             window.RunAnimationFrameCallbacks(frameTimestamp);
         }
 
+        // The animations played by the animation frame callbacks start at the time of this frame
+        foreach (var window in windows)
+        {
+            if (window.Document is { IsFullyActive: true, AnimationsOrNull: { } frameAnimations })
+            {
+                frameAnimations.RecordFrameReadyTimes();
+            }
+        }
+
         // The styles are updated after the animation frame callbacks: the CSS animations and transitions are created, updated
         // and canceled, then the resources used by the styles are fetched
         var cssDocuments = TakeRenderableDocuments(_documentsWithCssResources, renderingUpdate);

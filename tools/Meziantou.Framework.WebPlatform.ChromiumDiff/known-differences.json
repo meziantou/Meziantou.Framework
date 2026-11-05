@@ -1,66 +1,5 @@
 [
   {
-    "reason": "Chromium and WebKit deviation: <![CDATA[ in an HTML integration point (SVG foreignObject, desc, title) or a MathML text integration point (mi, mo, mn, ms, mtext) is parsed as a bogus comment. The markup declaration open state only checks that the adjusted current node is not in the HTML namespace (the html5lib tests expect a CDATA section, as Firefox)",
-    "differences": [
-      "html5test-com.dat#14",
-      "html5test-com.dat#15",
-      "html5test-com.dat#18",
-      "plain-text-unsafe.dat#23",
-      "plain-text-unsafe.dat#26"
-    ],
-    "reproductions": [
-      {
-        "mode": "",
-        "input": "<svg><foreignObject><![CDATA[x]]>"
-      },
-      {
-        "mode": "",
-        "input": "<svg><desc><![CDATA[x]]>"
-      },
-      {
-        "mode": "",
-        "input": "<svg><title><![CDATA[x]]>"
-      },
-      {
-        "mode": "",
-        "input": "<math><mo><![CDATA[x]]>"
-      }
-    ],
-    "patterns": [
-      {
-        "mode": "",
-        "pattern": "(?i).*<(foreignobject|desc|title|mi|mo|mn|ms|mtext)\\b.*<!\\[CDATA\\[.*"
-      }
-    ]
-  },
-  {
-    "reason": "Chromium and WebKit deviation: <![CDATA[ is parsed as a bogus comment in a fragment whose context element is an SVG or MathML element, when the stack of open elements has only the html element. The adjusted current node is then the context element, which is not in the HTML namespace, so it is a CDATA section (as in Firefox)",
-    "differences": [
-      "html5test-com.dat#20",
-      "tests10.dat#2"
-    ],
-    "reproductions": [
-      {
-        "mode": "fragment(svg ",
-        "input": "<![CDATA[x]]>"
-      },
-      {
-        "mode": "fragment(math ",
-        "input": "<![CDATA[x]]>"
-      }
-    ],
-    "patterns": [
-      {
-        "mode": "fragment(svg ",
-        "pattern": ".*<!\\[CDATA\\[.*"
-      },
-      {
-        "mode": "fragment(math ",
-        "pattern": ".*<!\\[CDATA\\[.*"
-      }
-    ]
-  },
-  {
     "reason": "Chromium deviation: Chromium handles U+0000 in its input preprocessor instead of in the tokenizer and the tree builder. It drops the NULs in the data state (a NUL in a text, or before a <frameset> that the NUL would prevent), in the RCDATA state of a fragment whose context element is title or textarea, and in the foreign content of a fragment whose context element is an SVG or MathML element; it inserts U+FFFD after a less-than sign in body where the 'in body' insertion mode ignores the NUL (the html5lib tests expect U+FFFD or nothing)",
     "differences": [
       "domjs-unsafe.dat#4",
@@ -95,6 +34,7 @@
       "plain-text-unsafe.dat#22",
       "plain-text-unsafe.dat#23",
       "plain-text-unsafe.dat#25",
+      "plain-text-unsafe.dat#26",
       "plain-text-unsafe.dat#32",
       "plain-text-unsafe.dat#33",
       "plain-text-unsafe.dat#34",

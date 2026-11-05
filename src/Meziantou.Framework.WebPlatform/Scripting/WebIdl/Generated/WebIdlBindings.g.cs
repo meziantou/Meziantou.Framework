@@ -538,6 +538,7 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["Sanitizer"] = Binding_Sanitizer<TAdapter, TValue>.Binding,
             ["Scheduler"] = Binding_Scheduler<TAdapter, TValue>.Binding,
             ["Screen"] = Binding_Screen<TAdapter, TValue>.Binding,
+            ["ScreenOrientation"] = Binding_ScreenOrientation<TAdapter, TValue>.Binding,
             ["ScriptProcessorNode"] = Binding_ScriptProcessorNode<TAdapter, TValue>.Binding,
             ["ScrollTimeline"] = Binding_ScrollTimeline<TAdapter, TValue>.Binding,
             ["SecurityPolicyViolationEvent"] = Binding_SecurityPolicyViolationEvent<TAdapter, TValue>.Binding,
@@ -604,6 +605,7 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["ViewTransition"] = Binding_ViewTransition<TAdapter, TValue>.Binding,
             ["ViewTransitionTypeSet"] = Binding_ViewTransitionTypeSet<TAdapter, TValue>.Binding,
             ["Viewport"] = Binding_Viewport<TAdapter, TValue>.Binding,
+            ["VirtualKeyboard"] = Binding_VirtualKeyboard<TAdapter, TValue>.Binding,
             ["VisibilityStateEntry"] = Binding_VisibilityStateEntry<TAdapter, TValue>.Binding,
             ["VisualViewport"] = Binding_VisualViewport<TAdapter, TValue>.Binding,
             ["WakeLock"] = Binding_WakeLock<TAdapter, TValue>.Binding,
@@ -1550,6 +1552,12 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.OffscreenRenderingContextId enumDom_OffscreenRenderingContextId:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_OffscreenRenderingContextId(enumDom_OffscreenRenderingContextId));
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.OrientationLockType enumDom_OrientationLockType:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_OrientationLockType(enumDom_OrientationLockType));
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.OrientationType enumDom_OrientationType:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_OrientationType(enumDom_OrientationType));
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.PermissionState enumDom_PermissionState:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_PermissionState(enumDom_PermissionState));

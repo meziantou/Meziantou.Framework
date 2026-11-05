@@ -447,6 +447,13 @@ public partial class Document
             geolocation.OnDocumentVisible();
         }
 
+        // https://w3c.github.io/screen-orientation/#handling-page-visibility-changes: a visible document reads the orientation
+        // of the screen, which may have changed while it was hidden
+        if (visible)
+        {
+            ScreenOrientationModel.RunChangeSteps(this, recursive: false);
+        }
+
         // The battery status that changed while the document was hidden is read again
         if (visible && RelevantWindow is { NavigatorOrNull.BatteryManagerOrNull: { } batteryManager } batteryWindow && ReferenceEquals(batteryWindow.Document, this))
         {

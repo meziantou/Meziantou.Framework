@@ -240,6 +240,12 @@ public sealed class WptTests
 
     public static TheoryData<string> DocumentPolicyTests => GetTests("document-policy");
 
+    public static TheoryData<string> ScreenOrientationTests => GetTests("screen-orientation");
+
+    public static TheoryData<string> VirtualKeyboardTests => GetTests("virtual-keyboard");
+
+    public static TheoryData<string> ViewportSegmentsTests => GetTests("viewport-segments");
+
     public static TheoryData<string> ClientHintsTests => GetTests("client-hints");
 
     public static TheoryData<string> UAClientHintsTests => GetTests("ua-client-hints");
@@ -1144,6 +1150,18 @@ public sealed class WptTests
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(DocumentPolicyTests))]
     public void DocumentPolicy(string test) => Run("document-policy", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(ScreenOrientationTests))]
+    public void ScreenOrientation(string test) => Run("screen-orientation", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(VirtualKeyboardTests))]
+    public void VirtualKeyboard(string test) => Run("virtual-keyboard", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(ViewportSegmentsTests))]
+    public void ViewportSegments(string test) => Run("viewport-segments", test);
 
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(ClientHintsTests))]

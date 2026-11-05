@@ -3149,10 +3149,7 @@
     "reftest": "PASS"
   },
   "css/css-ui/resize-iframe-3d-transform.tentative.html": {
-    "total": 1,
-    "failures": {
-      "resizing of iframe in 3D transform": "FAIL"
-    }
+    "total": 1
   },
   "css/css-ui/resize-interactive.html": {
     "total": 10

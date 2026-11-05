@@ -18,17 +18,7 @@
     "total": 478
   },
   "css/css-shapes/animation/shape-outside-shape-interpolation.html": {
-    "total": 546,
-    "failures": {
-      "CSS Animations: property <shape-outside> from [path(\"M 5 5 s 0 80 10 10 t 30 20\")] to [shape(from 15px 15px, smooth by 20px 0px with 10px 60px, smooth by 20px 30px)] at (0) should be [shape(from 5px 5px, smooth by 10px 10px with 0px 80px, smooth by 30px 20px)]": "FAIL",
-      "CSS Animations: property <shape-outside> from [path(\"M 5 5 s 0 80 10 10 t 30 20\")] to [shape(from 15px 15px, smooth by 20px 0px with 10px 60px, smooth by 20px 30px)] at (0.5) should be [shape(from 10px 10px, smooth by 15px 5px with 5px 70px, smooth by 25px 25px)]": "FAIL",
-      "CSS Transitions with transition: all: property <shape-outside> from [path(\"M 5 5 s 0 80 10 10 t 30 20\")] to [shape(from 15px 15px, smooth by 20px 0px with 10px 60px, smooth by 20px 30px)] at (0) should be [shape(from 5px 5px, smooth by 10px 10px with 0px 80px, smooth by 30px 20px)]": "FAIL",
-      "CSS Transitions with transition: all: property <shape-outside> from [path(\"M 5 5 s 0 80 10 10 t 30 20\")] to [shape(from 15px 15px, smooth by 20px 0px with 10px 60px, smooth by 20px 30px)] at (0.5) should be [shape(from 10px 10px, smooth by 15px 5px with 5px 70px, smooth by 25px 25px)]": "FAIL",
-      "CSS Transitions: property <shape-outside> from [path(\"M 5 5 s 0 80 10 10 t 30 20\")] to [shape(from 15px 15px, smooth by 20px 0px with 10px 60px, smooth by 20px 30px)] at (0) should be [shape(from 5px 5px, smooth by 10px 10px with 0px 80px, smooth by 30px 20px)]": "FAIL",
-      "CSS Transitions: property <shape-outside> from [path(\"M 5 5 s 0 80 10 10 t 30 20\")] to [shape(from 15px 15px, smooth by 20px 0px with 10px 60px, smooth by 20px 30px)] at (0.5) should be [shape(from 10px 10px, smooth by 15px 5px with 5px 70px, smooth by 25px 25px)]": "FAIL",
-      "Web Animations: property <shape-outside> from [path(\"M 5 5 s 0 80 10 10 t 30 20\")] to [shape(from 15px 15px, smooth by 20px 0px with 10px 60px, smooth by 20px 30px)] at (0) should be [shape(from 5px 5px, smooth by 10px 10px with 0px 80px, smooth by 30px 20px)]": "FAIL",
-      "Web Animations: property <shape-outside> from [path(\"M 5 5 s 0 80 10 10 t 30 20\")] to [shape(from 15px 15px, smooth by 20px 0px with 10px 60px, smooth by 20px 30px)] at (0.5) should be [shape(from 10px 10px, smooth by 15px 5px with 5px 70px, smooth by 25px 25px)]": "FAIL"
-    }
+    "total": 546
   },
   "css/css-shapes/basic-shape-circle-ellipse-serialization.html": {
     "total": 27

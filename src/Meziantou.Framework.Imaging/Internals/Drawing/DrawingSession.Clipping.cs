@@ -71,7 +71,9 @@ internal sealed partial class DrawingSession
     /// </param>
     private void PushClipFromEdges(FillRule fillRule, RectangleD shapeBounds, bool isInverted)
     {
-        shapeBounds = ToCanvasBounds(shapeBounds);
+        // (under a projective transformation, the bounds of a clip in front of the viewer are the ones of its image: they limit the
+        // image of the plane a filter is applied on, see BeginProjectedScope)
+        shapeBounds = _isProjective && !isInverted ? ToProjectedBounds(shapeBounds) : ToCanvasBounds(shapeBounds);
         GetClipBounds(out var left, out var top, out var right, out var bottom, out var parentMaskLevel);
         left = (int)Math.Max(left, Math.Floor(shapeBounds.Left));
         top = (int)Math.Max(top, Math.Floor(shapeBounds.Top));

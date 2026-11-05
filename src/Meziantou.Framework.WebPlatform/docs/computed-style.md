@@ -1455,8 +1455,8 @@ The computed values include the effects of the CSS animations, the CSS transitio
   quaternions, a rotation of more than half a turn being the equivalent rotation in the other direction, like the
   quaternion of its matrix) and `scale`, the shadow lists, the filter lists,
   `d` and `path()` (with the same reference box), a `path()` with a `shape()` (the path is converted to the equivalent
-  `shape()`, its relative commands being `by` commands: the computed `path()` of `clip-path` and `offset-path` keeps its
-  relative commands; the `cw` and `large` options of the arcs are set when their interpolated value is greater than 0),
+  `shape()`, its relative commands being `by` commands: the computed `path()` of `clip-path`, `shape-outside` and
+  `offset-path` keeps its relative commands, the resolved value of `shape-outside` has absolute commands; the `cw` and `large` options of the arcs are set when their interpolated value is greater than 0),
   `dynamic-range-limit` (by `dynamic-range-limit-mix()`), the basic shapes with the same function (the omitted offsets and radii of
   `inset()` and the rounding of `polygon()` are restored before, `CssValueNormalizer`; a `circle()` or an `ellipse()` with a
   keyword radius is discrete), `aspect-ratio` (by logarithm), the `corner-*-shape` properties (the superellipse parameters by their

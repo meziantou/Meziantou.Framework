@@ -31,6 +31,9 @@ internal sealed partial class DisplayListRasterizer
     /// <summary>The transform from the coordinates of the items to the pixels of the bitmap (the 2D part of a 3D transform).</summary>
     private DisplayMatrix _matrix = DisplayMatrix.Identity;
 
+    /// <summary>The number of 3D transforms the items are drawn under.</summary>
+    private int _transform3DDepth;
+
     /// <param name="backend">The backend: its options, its fonts and its images.</param>
     /// <param name="colorSpace">The color space of the pixels of the bitmap.</param>
     /// <param name="floatTarget">Whether solid paints retain floating-point components.</param>
@@ -234,7 +237,16 @@ internal sealed partial class DisplayListRasterizer
             var savedMatrix = _matrix;
             _matrix = _matrix.PreConcat(matrix with { Matrix3d = null });
             var start = _index;
-            canvas.Transform(PathConversions.ToTransform3D(m), ScopeStart, static (c, start) => start.Rewind().RunScope(c));
+            _transform3DDepth++;
+            try
+            {
+                canvas.Transform(PathConversions.ToTransform3D(m), ScopeStart, static (c, start) => start.Rewind().RunScope(c));
+            }
+            finally
+            {
+                _transform3DDepth--;
+            }
+
             EnsureConsumed(start);
             _matrix = savedMatrix;
             return true;
@@ -564,6 +576,51 @@ internal sealed partial class DisplayListRasterizer
             return;
         }
 
+        // Under a 3D transform, the filter is applied on an image of the plane of the element, the part of the plane the clip
+        // shows, which is unbounded near the horizon (its image would be too coarse to show anything): the clip is limited to
+        // the bounds of the drawings with the reach of the filters (WPT css/css-transforms/preserve3d-and-filter-with-perspective.html)
+        if (filter is not null && _transform3DDepth > 0 && item.Bounds is { } filteredBounds && item.Filters is { } displayFilters && GetFilterReach(displayFilters, filteredBounds) is { } filterRegion)
+        {
+            canvas.Clip(ToRectangle(filterRegion), (rasterizer: this, item, filter, opacity, composite, blend), static (c, state) => state.rasterizer.DrawFilteredLayer(c, state.item, state.filter, state.opacity, state.composite, state.blend));
+            return;
+        }
+
+        DrawFilteredLayer(canvas, item, filter, opacity, composite, blend);
+    }
+
+    /// <summary>
+    /// Returns the area that filters can draw in from the drawings in a rectangle: the rectangle with the reach of the blurs and
+    /// of the offsets of the shadows, within the regions of the SVG filters; null when it is not known.
+    /// </summary>
+    private static PhysicalRect? GetFilterReach(DisplayFilter[] filters, PhysicalRect bounds)
+    {
+        var rect = bounds;
+        foreach (var filter in filters)
+        {
+            switch (filter)
+            {
+                case BlurFilter blur:
+                    rect = rect.Expand(new Sides<double>(3 * Math.Abs(blur.DeviationY), 3 * Math.Abs(blur.DeviationX), 3 * Math.Abs(blur.DeviationY), 3 * Math.Abs(blur.DeviationX)));
+                    break;
+                case DropShadowFilter shadow:
+                    var reach = 3 * Math.Abs(shadow.Deviation);
+                    rect = rect.Union(rect.Translate(shadow.Offset).Expand(new Sides<double>(reach, reach, reach, reach)));
+                    break;
+                case FilterGraph graph:
+                    rect = graph.Region;
+                    break;
+                case ColorMatrixFilter or LuminanceToAlphaFilter:
+                    break;
+                default:
+                    return null;
+            }
+        }
+
+        return double.IsFinite(rect.Width) && double.IsFinite(rect.Height) && double.IsFinite(rect.X) && double.IsFinite(rect.Y) ? rect : null;
+    }
+
+    private void DrawFilteredLayer(D.DrawingCanvas canvas, SaveLayerItem item, D.Filter? filter, double opacity, D.CompositeMode composite, D.BlendMode blend)
+    {
         if (filter is not null && opacity >= 1 && composite == D.CompositeMode.SourceOver && blend == D.BlendMode.Normal)
         {
             // The filter draws its items on a layer of its own

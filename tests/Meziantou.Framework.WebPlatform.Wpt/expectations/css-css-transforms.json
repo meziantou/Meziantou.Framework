@@ -1183,7 +1183,7 @@
     "reftest": "PASS"
   },
   "css/css-transforms/preserve3d-and-filter-with-perspective.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-transforms/preserve3d-and-flattening-001.html": {
     "reftest": "PASS"

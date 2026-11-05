@@ -780,7 +780,7 @@
     "reftest": "FAIL"
   },
   "css/filter-effects/filter-in-3d-transformed-ancestor-child-near-eye-plane.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/filter-effects/filter-in-3d-transformed-ancestor.html": {
     "reftest": "PASS"

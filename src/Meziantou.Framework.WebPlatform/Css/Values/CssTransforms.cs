@@ -111,9 +111,12 @@ internal static class CssTransforms
         z /= length;
         // Like in the browsers, the angle is reduced modulo 360 first (the remainder is exact): the conversion of a large angle
         // to radians is not precise, e.g. an infinite angle is clamped to the largest float, a multiple of 360 (no rotation)
-        var alpha = (angle % 360) * Math.PI / 180;
-        var sc = Math.Sin(alpha / 2) * Math.Cos(alpha / 2);
-        var sq = Math.Sin(alpha / 2) * Math.Sin(alpha / 2);
+        // sc = sin(α/2) cos(α/2) = sin(α) / 2 and sq = sin²(α/2) = (1 - cos(α)) / 2, computed from the sine and the cosine of the
+        // angle, which are exact for the multiples of 30deg (a rotation of 60deg halves the lengths exactly, as in the browsers,
+        // whose results are single-precision: WPT css/css-ui/resize-iframe-3d-transform.tentative.html)
+        var (sin, cos) = SinCosDegrees(angle % 360);
+        var sc = sin / 2;
+        var sq = (1 - cos) / 2;
         return
         [
             1 - (2 * ((y * y) + (z * z)) * sq), 2 * ((x * y * sq) + (z * sc)), 2 * ((x * z * sq) - (y * sc)), 0,
@@ -121,6 +124,29 @@ internal static class CssTransforms
             2 * ((x * z * sq) + (y * sc)), 2 * ((y * z * sq) - (x * sc)), 1 - (2 * ((x * x) + (y * y)) * sq), 0,
             0, 0, 0, 1,
         ];
+    }
+
+    /// <summary>Returns the sine and the cosine of an angle in degrees, exact for the multiples of 30 degrees.</summary>
+    private static (double Sin, double Cos) SinCosDegrees(double angle)
+    {
+        var reduced = angle < 0 ? angle + 360 : angle;
+        if (reduced % 30 == 0)
+        {
+            var (sin, cos) = Math.SinCos(reduced * Math.PI / 180);
+            return (RoundToExact(sin), RoundToExact(cos));
+        }
+
+        return Math.SinCos(angle * Math.PI / 180);
+
+        // The sines and cosines of the multiples of 30 degrees that are exact in binary: 0 (not -0), ±1/2 and ±1
+        static double RoundToExact(double value)
+        {
+            var doubled = Math.Round(value * 2, MidpointRounding.ToEven);
+            if (Math.Abs((value * 2) - doubled) >= 1e-12)
+                return value;
+
+            return doubled == 0 ? 0 : doubled / 2;
+        }
     }
 
     private static CssCalcContext WithPercentageBasis(CssCalcContext context, double size) => new()

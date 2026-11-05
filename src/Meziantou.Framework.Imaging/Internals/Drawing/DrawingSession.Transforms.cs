@@ -238,6 +238,40 @@ internal sealed partial class DrawingSession
         return RectangleD.FromLTRB(minX, minY, maxX, maxY);
     }
 
+    /// <summary>
+    /// Gets a rectangle of the canvas that contains the image of a rectangle under the projective transformation: the
+    /// bounds of the images of its corners when they are all in front of the viewer (W is positive on the whole rectangle,
+    /// whose image is then the convex quadrilateral of theirs), or the largest rectangle.
+    /// </summary>
+    private RectangleD ToProjectedBounds(RectangleD bounds)
+    {
+        var minX = double.PositiveInfinity;
+        var minY = double.PositiveInfinity;
+        var maxX = double.NegativeInfinity;
+        var maxY = double.NegativeInfinity;
+        for (var corner = 0; corner < 4; corner++)
+        {
+            var x = (corner & 1) == 0 ? bounds.Left : bounds.Right;
+            var y = (corner & 2) == 0 ? bounds.Top : bounds.Bottom;
+            var w = _projection.TransformW(x, y);
+            if (!(w > 0))
+                return RectangleD.FromLTRB(-DrawingGuard.MaxCoordinate, -DrawingGuard.MaxCoordinate, DrawingGuard.MaxCoordinate, DrawingGuard.MaxCoordinate);
+
+            var px = _projection.TransformX(x, y) / w;
+            var py = _projection.TransformY(x, y) / w;
+            minX = Math.Min(minX, px);
+            minY = Math.Min(minY, py);
+            maxX = Math.Max(maxX, px);
+            maxY = Math.Max(maxY, py);
+        }
+
+        // Written so that a value that is not a number gives the largest rectangle; one pixel around it for the rounding
+        if (!(minX >= -DrawingGuard.MaxCoordinate && minY >= -DrawingGuard.MaxCoordinate && maxX <= DrawingGuard.MaxCoordinate && maxY <= DrawingGuard.MaxCoordinate))
+            return RectangleD.FromLTRB(-DrawingGuard.MaxCoordinate, -DrawingGuard.MaxCoordinate, DrawingGuard.MaxCoordinate, DrawingGuard.MaxCoordinate);
+
+        return RectangleD.FromLTRB(minX - 1, minY - 1, maxX + 1, maxY + 1);
+    }
+
     /// <summary>Gets a value indicating whether the geometry goes through a <see cref="ProjectiveSink"/>: under a projective transformation, or any transformation of an image of the plane.</summary>
     private bool UsesProjectiveGeometry => _isProjective || (_clipsGeometry && _hasTransform);
 

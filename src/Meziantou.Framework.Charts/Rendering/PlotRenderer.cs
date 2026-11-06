@@ -41,7 +41,7 @@ internal sealed class PlotRenderer
             var secondary = _marks.Where(mark => mark.Mark.UseSecondaryYScale).ToList();
             var primaryTraits = GetTraits(primary);
             var secondaryTraits = GetTraits(secondary);
-            _y = primary.Count is 0 && plot.YScale is null ? null : ScaleResolver.ResolvePosition(plot.YScale, Collect(primary, data => [data.Y, data.Y1, data.Y2, .. data.ExtraY]), primaryTraits.HasFlag(MarkTraits.BandY), primaryTraits.HasFlag(MarkTraits.ZeroY), primaryTraits.HasFlag(MarkTraits.ExactY));
+            _y = primary.Count is 0 && plot.YScale is null ? null : ScaleResolver.ResolvePosition(plot.YScale, Collect(primary, data => [data.Y, data.Y1, data.Y2, .. data.ExtraY]), primaryTraits.HasFlag(MarkTraits.BandY), primaryTraits.HasFlag(MarkTraits.ZeroY), primaryTraits.HasFlag(MarkTraits.ExactY), primary.Count is 0 ? 0 : primary.Max(mark => mark.Mark.GetYHeadroom()));
             _y2 = secondary.Count is 0 && plot.SecondaryYScale is null ? null : ScaleResolver.ResolvePosition(plot.SecondaryYScale, Collect(secondary, data => [data.Y, data.Y1, data.Y2, .. data.ExtraY]), secondaryTraits.HasFlag(MarkTraits.BandY), secondaryTraits.HasFlag(MarkTraits.ZeroY), secondaryTraits.HasFlag(MarkTraits.ExactY));
         }
 

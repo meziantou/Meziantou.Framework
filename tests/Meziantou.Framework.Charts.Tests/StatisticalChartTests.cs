@@ -306,6 +306,52 @@ public sealed class StatisticalChartTests
     }
 
     [Fact]
+    public void Ridgeline()
+    {
+        #region Charts_Ridgeline
+        string[] months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        var days = months
+            .SelectMany((month, index) => SampleData.Normal(90, mean: 12 - (9 * Math.Cos(index * Math.PI / 6)), deviation: 2.5 + (index % 3), seed: index)
+                .Select(temperature => (Month: month, Temperature: temperature)))
+            .ToArray();
+
+        var plot = new Plot { Title = "Daily temperatures by month", Height = 480 };
+        plot.Add(new RidgelineMark<(string Month, double Temperature)>(days, x: day => day.Temperature, y: day => day.Month) { FillOpacity = 0.85 });
+        plot.XAxis.Label = "Temperature (°C)";
+        #endregion
+
+        ChartAssert.Svg(plot, "Ridgeline");
+    }
+
+    [Fact]
+    public void RidgelineOptions()
+    {
+        var measurements = SampleData.Measurements.Append(new Measurement("D", double.NaN)).Append(new Measurement(null!, 3)).ToArray();
+        var plot = new Plot { Height = 260, Width = 400 };
+        plot.Add(new RidgelineMark<Measurement>(measurements, x: measurement => measurement.Value, y: measurement => measurement.Group)
+        {
+            Bandwidth = 4,
+            Samples = 30,
+            Cut = 1,
+            Overlap = 0.8,
+            Curve = Curve.Linear,
+            StrokeColor = ChartColor.Black,
+            StrokeWidth = 0.5,
+            Title = measurement => measurement.Group,
+        });
+        ChartAssert.Svg(plot);
+
+        // A y scale that is not ordinal draws nothing
+        var linear = new Plot { YScale = new LinearScale() };
+        linear.Add(new RidgelineMark<Measurement>(SampleData.Measurements, x: measurement => measurement.Value, y: measurement => measurement.Group));
+        Assert.DoesNotContain("<path", linear.ToSvg());
+
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => new RidgelineMark<int>([], x: i => i, y: i => i) { Samples = 1 });
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => new RidgelineMark<int>([], x: i => i, y: i => i) { Overlap = 0 });
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => new RidgelineMark<int>([], x: i => i, y: i => i) { Overlap = double.PositiveInfinity });
+    }
+
+    [Fact]
     public void TrendLine()
     {
         #region Charts_TrendLine

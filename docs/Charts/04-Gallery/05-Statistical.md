@@ -1,6 +1,6 @@
 ---
 title: Statistical charts
-description: Histograms, box plots, density plots, violin plots, trend lines, moving averages, heatmaps, waterfalls, funnels, candlesticks, bullet charts, calendar heatmaps, Marimekko charts and sparklines.
+description: Histograms, box plots, density plots, violin plots, ridgeline plots, trend lines, moving averages, heatmaps, waterfalls, funnels, candlesticks, bullet charts, calendar heatmaps, Marimekko charts and sparklines.
 ---
 
 ## Histogram
@@ -72,6 +72,29 @@ plot.Legend.Visible = false;
 <!-- endref -->
 
 ![Three violins with their quartiles and medians](../images/ViolinPlot.svg)
+
+## Ridgeline plot
+
+A [RidgelineMark\<T\>](cref:Meziantou.Framework.Charts.RidgelineMark{T}) draws the density of the x values of each
+category of y as an area that rises from the line of its category and overlaps the categories above it. The tallest
+area is [Overlap](cref:Meziantou.Framework.Charts.RidgelineMark{T}.Overlap) times the space between two categories, and
+the others are scaled with it, so their heights compare. The inferred y scale leaves room for it above the first category.
+
+<!-- ref:../../../tests/Meziantou.Framework.Charts.Tests/StatisticalChartTests.cs;region=Charts_Ridgeline;format=md-fenced-code-block;dedent=true -->
+```csharp
+string[] months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+var days = months
+    .SelectMany((month, index) => SampleData.Normal(90, mean: 12 - (9 * Math.Cos(index * Math.PI / 6)), deviation: 2.5 + (index % 3), seed: index)
+        .Select(temperature => (Month: month, Temperature: temperature)))
+    .ToArray();
+
+var plot = new Plot { Title = "Daily temperatures by month", Height = 480 };
+plot.Add(new RidgelineMark<(string Month, double Temperature)>(days, x: day => day.Temperature, y: day => day.Month) { FillOpacity = 0.85 });
+plot.XAxis.Label = "Temperature (°C)";
+```
+<!-- endref -->
+
+![Twelve overlapping densities of temperatures, one per month, shifting right in summer](../images/Ridgeline.svg)
 
 ## Trend line
 

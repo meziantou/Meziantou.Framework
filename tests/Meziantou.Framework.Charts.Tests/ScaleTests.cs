@@ -287,6 +287,19 @@ public sealed class ScaleTests
     }
 
     [Fact]
+    public void PointScale_Headroom()
+    {
+        // 1.5 steps before the first point and 0.25 after the last one: 100 = (2 + 1.5 + 0.25) steps
+        var scale = Assert.IsType<ResolvedOrdinalScale>(ScaleResolver.ResolvePosition(null, [ChannelValues.FromCategories(["a", "b", "c"])], band: false, zero: false, exact: false, headroom: 1.5));
+        scale.Configure(0, 100, 3);
+        Assert.False(scale.IsBand);
+        Assert.Equal(100 / 3.75, scale.Step, 9);
+        Assert.Equal(40, scale.MapCategory("a"), 9);
+        Assert.Equal(40 + (100 / 3.75), scale.MapCategory("b"), 9);
+        Assert.Equal(100 - (25 / 3.75), scale.MapCategory("c"), 9);
+    }
+
+    [Fact]
     public void ScaleProperties_ValidateTheirValues()
     {
         Assert.Throws<ArgumentOutOfRangeException>("value", () => new LogScale { Base = 1 });

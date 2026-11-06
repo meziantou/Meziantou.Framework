@@ -3,7 +3,7 @@ namespace Meziantou.Framework.Charts;
 /// <summary>Chooses the type and the domain of the scales of a plot from the values of its marks.</summary>
 internal static class ScaleResolver
 {
-    public static ResolvedScale? ResolvePosition(Scale? scale, IReadOnlyList<ChannelValues> channels, bool band, bool zero, bool exact)
+    public static ResolvedScale? ResolvePosition(Scale? scale, IReadOnlyList<ChannelValues> channels, bool band, bool zero, bool exact, double headroom = 0)
     {
         if (scale is null && channels.Count is 0)
             return null;
@@ -22,7 +22,16 @@ internal static class ScaleResolver
             return new ResolvedOrdinalScale(GetCategories(channels), isBand: true, 0.1, 0.1, 0.5, reverse: false);
 
         if (channels.Any(channel => channel.Kind is ChannelKind.Category))
+        {
+            if (headroom > 0)
+            {
+                // The outer padding and the alignment leave the headroom before the first point and a quarter of a step after the last
+                var padding = headroom + 0.25;
+                return new ResolvedOrdinalScale(GetCategories(channels), isBand: false, 1, padding / 2, headroom / padding, reverse: false);
+            }
+
             return new ResolvedOrdinalScale(GetCategories(channels), isBand: false, 1, 0.5, 0.5, reverse: false);
+        }
 
         return channels.Any(channel => channel.Kind is ChannelKind.Time)
             ? CreateContinuous(new TimeScale(), channels, zero: false, exact)

@@ -24,6 +24,7 @@ the marks are drawn in the order they are added:
 | [FunnelMark\<T\>](cref:Meziantou.Framework.Charts.FunnelMark{T}) | a funnel, a bar per stage |
 | [WaterfallMark\<T\>](cref:Meziantou.Framework.Charts.WaterfallMark{T}) | running totals as floating bars |
 | [ViolinMark\<T\>](cref:Meziantou.Framework.Charts.ViolinMark{T}) | a violin per category: the mirrored density of its values |
+| [RidgelineMark\<T\>](cref:Meziantou.Framework.Charts.RidgelineMark{T}) | a ridgeline plot: the density of the values of each category, as overlapping areas |
 | [PackMark\<T\>](cref:Meziantou.Framework.Charts.PackMark{T}), [TreemapMark\<T\>](cref:Meziantou.Framework.Charts.TreemapMark{T}), [PartitionMark\<T\>](cref:Meziantou.Framework.Charts.PartitionMark{T}) | a tree, as packed circles, a treemap, or a sunburst and an icicle |
 | [TreeMark\<T\>](cref:Meziantou.Framework.Charts.TreeMark{T}) | a tree as a node-link diagram: a tidy tree or a dendrogram |
 | [SankeyMark\<T\>](cref:Meziantou.Framework.Charts.SankeyMark{T}) | the flows between nodes, a row per link |

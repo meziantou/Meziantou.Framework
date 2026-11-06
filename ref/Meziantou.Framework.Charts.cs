@@ -737,6 +737,19 @@ namespace Meziantou.Framework.Charts
         public int Samples { get => throw null; set { } }
     }
 
+    public sealed class RidgelineMark<T> : Meziantou.Framework.Charts.Mark<T>
+    {
+        public double? Bandwidth { get => throw null; set { } }
+        public Meziantou.Framework.Charts.Curve Curve { get => throw null; set { } }
+        public double Cut { get => throw null; set { } }
+        public double FillOpacity { get => throw null; set { } }
+        public double Overlap { get => throw null; set { } }
+        public int Samples { get => throw null; set { } }
+        public System.Func<T, object?> X { get => throw null; }
+        public System.Func<T, object?> Y { get => throw null; }
+        public RidgelineMark(System.Collections.Generic.IEnumerable<T> data, System.Func<T, object?> x, System.Func<T, object?> y) { }
+    }
+
     public sealed class RuleXMark : Meziantou.Framework.Charts.RuleXMark<double>
     {
         public RuleXMark(params double[] values) { }

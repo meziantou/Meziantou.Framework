@@ -149,13 +149,28 @@ internal static class ContentRelevancy
     /// the rendering continues. <paramref name="proximityChanged"/> tells whether another proximity changed: it takes effect at
     /// the next layout (and the next rendering update fires its event).
     /// </returns>
-    public static bool UpdateContentRelevancy(LayoutEngine engine, List<ContainerBox> boxes, bool updateNonInitial, out bool proximityChanged)
+    public static bool UpdateContentRelevancy(LayoutEngine engine, List<ContainerBox> boxes, bool updateNonInitial, out bool proximityChanged) => UpdateContentRelevancy(engine, boxes, updateNonInitial, initialOnly: false, out proximityChanged);
+
+    /// <summary>
+    /// Determines the proximity to the viewport of the elements with <c>content-visibility: auto</c> of the last layout whose
+    /// proximity is not determined yet (the initial determinations of <see cref="UpdateContentRelevancy(LayoutEngine, List{ContainerBox}, bool, out bool)"/>),
+    /// for a painting outside of a rendering update (e.g. a screenshot taken before the first frame): the browsers determine
+    /// the initial proximities in the lifecycle that paints, so the elements close to the viewport are never painted skipped.
+    /// The proximities already determined are not changed. The layout must be up to date.
+    /// </summary>
+    /// <returns>Whether an element became relevant to the user: the layout must be computed again before the painting.</returns>
+    public static bool DetermineInitialProximities(LayoutEngine engine, List<ContainerBox> boxes) => UpdateContentRelevancy(engine, boxes, updateNonInitial: false, initialOnly: true, out _);
+
+    private static bool UpdateContentRelevancy(LayoutEngine engine, List<ContainerBox> boxes, bool updateNonInitial, bool initialOnly, out bool proximityChanged)
     {
         var hadInitialVisibleDetermination = false;
         proximityChanged = false;
         foreach (var box in boxes)
         {
             if (box.Element is not { } element || !ReferenceEquals(engine.BoxTree?.GetPrincipalBox(element), box))
+                continue;
+
+            if (initialOnly && GetState(element) is { Proximity: not ViewportProximity.NotDetermined })
                 continue;
 
             var state = GetOrCreateState(element);

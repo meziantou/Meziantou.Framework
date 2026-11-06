@@ -24,6 +24,7 @@ internal sealed class CascadeRuleCollector
     private readonly List<(CssFontFaceRule Rule, CascadeLayer Layer)> _fontFaceRules = [];
     private readonly List<(CssFontFeatureValuesRule Rule, CascadeLayer Layer)> _fontFeatureValuesRules = [];
     private readonly List<(CssFontPaletteValuesRule Rule, CascadeLayer Layer)> _fontPaletteValuesRules = [];
+    private readonly List<(CssColorProfileRule Rule, string? BaseUrl, CascadeLayer Layer)> _colorProfileRules = [];
     private readonly List<(CssKeyframesRule Rule, CascadeLayer Layer)> _keyframesRules = [];
     private readonly List<(CssViewTransitionRule Rule, CascadeLayer Layer)> _viewTransitionRules = [];
     private readonly List<(CssPositionTryRule Rule, CascadeLayer Layer)> _positionTryRules = [];
@@ -129,6 +130,12 @@ internal sealed class CascadeRuleCollector
     /// </summary>
     public List<CssFontPaletteValuesRule> FontPaletteValuesRules { get; } = [];
 
+    /// <summary>
+    /// The @color-profile rules that apply (available after <see cref="Complete"/>) by name, with the base URL of their
+    /// style sheet: the last rule of the strongest cascade layer wins (https://drafts.csswg.org/css-color-5/#at-profile).
+    /// </summary>
+    public Dictionary<string, (CssColorProfileRule Rule, string? BaseUrl)> ColorProfileRules { get; } = new(StringComparer.Ordinal);
+
     public void AddStyleSheet(CssStyleSheet sheet, string? baseUrl)
     {
         // The scoping root of the @scope rules without prelude is the parent of the owner node: the host when it is a shadow root
@@ -202,6 +209,11 @@ internal sealed class CascadeRuleCollector
         foreach (var (rule, _) in _fontPaletteValuesRules.OrderBy(entry => entry.Layer.Rank))
         {
             FontPaletteValuesRules.Add(rule);
+        }
+
+        foreach (var (rule, ruleBaseUrl, _) in _colorProfileRules.OrderBy(entry => entry.Layer.Rank))
+        {
+            ColorProfileRules[rule.Name] = (rule, ruleBaseUrl);
         }
 
         // The @keyframes rule in the strongest layer wins, then the last one (https://drafts.csswg.org/css-animations-1/#keyframes)
@@ -445,6 +457,10 @@ internal sealed class CascadeRuleCollector
 
                 case CssFontPaletteValuesRule fontPaletteValuesRule:
                     _fontPaletteValuesRules.Add((fontPaletteValuesRule, layer));
+                    break;
+
+                case CssColorProfileRule colorProfileRule:
+                    _colorProfileRules.Add((colorProfileRule, baseUrl, layer));
                     break;
 
                 case CssKeyframesRule keyframesRule:

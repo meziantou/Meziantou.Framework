@@ -103,6 +103,15 @@ public sealed class IncrementalLayoutTests : IDisposable
     }
 
     [Fact]
+    public void ManyInsertedRows_PatchTheBoxesOfTheTableBody()
+    {
+        // (the rows inserted by innerHTML are more than the changes recorded element by element)
+        var document = Parse("<table border=1 id=first><tr><td rowspan=3>a<td>b</table><table border=1><tbody id=b><tr><td rowspan=1500>c<td>d</table>");
+        AssertIncremental(document, () => Find(document, "#b").InnerHtml += string.Concat(Enumerable.Repeat("<tr><td>e", 1500)));
+        AssertIncremental(document, () => Find(document, "#b").InnerHtml = "<tr><td>f");
+    }
+
+    [Fact]
     public void DisplayChange_PatchesTheBoxesOfTheParent()
     {
         var document = Parse("<style>.none { display: none } .inline { display: inline }</style><div><p id=p>a</p><p>b</p></div>");

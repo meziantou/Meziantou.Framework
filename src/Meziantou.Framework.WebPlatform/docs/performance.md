@@ -111,6 +111,38 @@ invalidation of the styles by element, each of these changes took 380–450 ms o
 of a change are the indexing of the fragment tree after each pass (`LayoutEngine.IndexFragments`, a walk of all the
 fragments), the layout of the ancestors of the changed boxes, the recomputed styles and the patch of the box tree.
 
+## Large tables
+
+`TableBenchmarks` lays out a table of 10,000 rows whose first cell spans all the rows (the WPT test
+`html/semantics/tabular-data/processing-model-1/span-limits.html` inserts 65,533 and 65,534 rows in two such tables with
+`innerHTML`, then reads their geometry); `table <rows> <count>` lays it out in a loop, to profile it:
+
+```bash
+dotnet run --project benchmarks/Meziantou.Framework.WebPlatform.Benchmarks -c Release --framework net10.0 -- --filter '*TableBenchmarks*'
+dotnet artifacts/bin/Meziantou.Framework.WebPlatform.Benchmarks/release_net10.0/Meziantou.Framework.WebPlatform.Benchmarks.dll table 10000 5
+```
+
+The rows inserted by `innerHTML` were recorded one by one in the log of the document: past 1,000 changes, all the styles of
+the document were computed again, the box tree was built again, and the layout result cache was dropped (the other table of
+65,534 rows was laid out again). The nodes inserted in (or removed from) an element one after the other are now one change
+(see [computed-style.md](computed-style.md#invalidation)), and the inserted elements do not record a change of the box tree
+(their parent does): the table body is patched (see [layout.md](layout.md#incremental-update)). The allocations of the layout
+were also reduced: the box model of a style is the one of the last box model built when its computed values are the same
+strings, the lengths in px are parsed without the tokenizer, and the lambdas of the stack guards of `LayoutContext.LayoutBox`
+and of the box tree are in their own methods (the compiler allocated them by each call):
+
+| Scenario | Allocated before | after | Process CPU time before | after |
+|---|---:|---:|---:|---:|
+| `TableBenchmarks` (10,000 rows) | 114.1 MB | 75.7 MB | 481–507 ms | 434–452 ms |
+| The steps of `span-limits.html` (Release) | | | 11.4 s | 7.7–8.1 s |
+| The steps of `span-limits.html` (Debug) | | | 32.6–32.8 s | 21.7–22.0 s |
+| `ClassChange` | 0.5 MB | 0.3 MB | | |
+| `OffsetTopAfterEachWrite` (10 layouts) | 4.9 MB | 3.2 MB | | |
+
+(.NET 10, Apple M-series, 2026-11-06, a machine under heavy load, the two variants run alternately; the steps of
+`span-limits.html` are run without the test harness.) The rest of the cost is in the styles: each row and each cell compute
+about 57 computed values each (about a microsecond each, half of the time of the layout), so `span-limits.html` stays skipped.
+
 ## Regressions
 
 The `Benchmarks` workflow runs the benchmarks of the library for the base and the head of each pull request that changes

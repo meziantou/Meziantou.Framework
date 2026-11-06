@@ -352,7 +352,9 @@ without layout, `min-width: auto`), `SvgBoundingBox` (`getBBox()`) and `Animatio
 `BoxTree.TryPatch` (`BoxTreeBuilder.Incremental.cs`) updates the tree after a change instead of building it again: the
 style engine records the changes since the tree was built (`BoxTreeChanges`, `StyleEngine.BoxTreeChanges.cs`): the elements
 whose styles or pseudo-element styles were discarded by the [invalidation by element](computed-style.md#invalidation), and
-the elements whose attributes, children or texts changed (the log of the document). The boxes of each changed element and of
+the elements whose attributes, children or texts changed (the log of the document). The removed elements and the elements
+that had no style (the inserted ones) are not recorded: their boxes are built with the boxes of their parent, whose children
+changed (more than 1,000 recorded elements build the whole tree again). The boxes of each changed element and of
 its descendants are built again in a temporary parent and replace its previous principal box; the other boxes are kept,
 with the state the layout attached to them (see [Layout result cache](#layout-result-cache)). In a rebuilt subtree, the
 boxes of the elements that did not change (neither them nor a descendant) are kept too: the build appends a placeholder

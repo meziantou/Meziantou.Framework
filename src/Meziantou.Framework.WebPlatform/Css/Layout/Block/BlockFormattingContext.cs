@@ -1224,16 +1224,20 @@ internal sealed class BlockFormattingContext : FormattingContext
         return margins;
     }
 
+    // (a lambda that captures the parameters of a method is allocated by each call of the method: it is in its own method)
+    private static bool CollectChildrenStartMarginsOnNewStack(ContainerBox box, WritingDirection writingDirection, double contentInlineSize, BlockFormattingContextState blockFormattingContext, bool trimsStartMargins, bool trimsEndMargins, ref MarginStrut margins)
+    {
+        var marginsCopy = margins;
+        var result = StackGuard.RunOnNewStack(() => CollectChildrenStartMargins(box, writingDirection, contentInlineSize, blockFormattingContext, trimsStartMargins, trimsEndMargins, ref marginsCopy));
+        margins = marginsCopy;
+        return result;
+    }
+
     /// <summary>Adds the block-start margins of the first children of a box to <paramref name="margins"/>; returns whether all its children collapse through.</summary>
     private static bool CollectChildrenStartMargins(ContainerBox box, WritingDirection writingDirection, double contentInlineSize, BlockFormattingContextState blockFormattingContext, bool trimsStartMargins, bool trimsEndMargins, ref MarginStrut margins)
     {
         if (!StackGuard.HasSufficientStack)
-        {
-            var marginsCopy = margins;
-            var result = StackGuard.RunOnNewStack(() => CollectChildrenStartMargins(box, writingDirection, contentInlineSize, blockFormattingContext, trimsStartMargins, trimsEndMargins, ref marginsCopy));
-            margins = marginsCopy;
-            return result;
-        }
+            return CollectChildrenStartMarginsOnNewStack(box, writingDirection, contentInlineSize, blockFormattingContext, trimsStartMargins, trimsEndMargins, ref margins);
 
         var marginsBeforeChildren = margins;
         if (box.SkipsContents || GetKind(box) is not (FormattingContextKind.Block or FormattingContextKind.Inline))
@@ -1303,6 +1307,9 @@ internal sealed class BlockFormattingContext : FormattingContext
         return true;
     }
 
+    // (a lambda that captures the parameters of a method is allocated by each call of the method: it is in its own method)
+    private static bool HasLineContentOnNewStack(ContainerBox container) => StackGuard.RunOnNewStack(() => HasLineContent(container));
+
     /// <summary>
     /// Returns whether a block container whose children are inline may have a line box that is not empty (https://drafts.csswg.org/css2/#inline-formatting):
     /// a text that is not collapsible white space, a forced line break, an atomic inline, or an inline box with inline-axis
@@ -1311,7 +1318,7 @@ internal sealed class BlockFormattingContext : FormattingContext
     private static bool HasLineContent(ContainerBox container)
     {
         if (!StackGuard.HasSufficientStack)
-            return StackGuard.RunOnNewStack(() => HasLineContent(container));
+            return HasLineContentOnNewStack(container);
 
         foreach (var child in container.Children)
         {

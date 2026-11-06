@@ -1263,6 +1263,9 @@ internal static partial class CssValueComputer
     /// <summary>Evaluates a length, a percentage (of the basis) or a math function; returns null when the value is something else.</summary>
     private static double? EvaluateLength(string value, ComputationContext context, double percentageBasis)
     {
+        if (TryParseSimplePixels(value, out var pixels))
+            return pixels;
+
         var values = ValueMatcher.RemoveWhitespace(CssParser.ParseListOfComponentValues(value));
         if (values is not [var single])
             return null;
@@ -1634,7 +1637,7 @@ internal static partial class CssValueComputer
             "thin" => 1,
             "medium" => 3,
             "thick" => 5,
-            _ => EvaluateLength(value, new ComputationContext(style, hasColors: false, baseUrl: null), percentageBasis: 0),
+            _ => TryParseSimplePixels(value, out var simplePixels) ? simplePixels : EvaluateLength(value, new ComputationContext(style, hasColors: false, baseUrl: null), percentageBasis: 0),
         };
 
         if (width is not { } pixels)
@@ -2159,6 +2162,10 @@ internal static partial class CssValueComputer
     /// </summary>
     private static string ComputeZoom(ComputedStyle style, string value)
     {
+        // (the initial value, without parsing it)
+        if (value == "1")
+            return ZoomOne;
+
         var values = ValueMatcher.RemoveWhitespace(CssParser.ParseListOfComponentValues(value));
         double? number = values switch
         {
@@ -2175,6 +2182,9 @@ internal static partial class CssValueComputer
         zoom = double.IsNaN(zoom) ? 0 : Math.Max(zoom, 0);
         return SerializeNumber(zoom == 0 ? 1 : zoom);
     }
+
+    /// <summary>The computed value of <c>zoom: 1</c>.</summary>
+    private static readonly string ZoomOne = SerializeNumber(1);
 
     // ----------------------------------------------------------------------------------------------------------------
     // Colors (https://drafts.csswg.org/css-color-4/#resolving-color-values)
@@ -2836,6 +2846,27 @@ internal static partial class CssValueComputer
 
         Span<char> buffer = stackalloc char[32];
         return single.TryFormat(buffer, out var written, "R", CultureInfo.InvariantCulture) ? double.Parse(buffer[..written], CultureInfo.InvariantCulture) : value;
+    }
+
+    /// <summary>
+    /// Parses a length in px whose number is digits with an optional fraction (e.g. "1px" or "0.5px", the lengths of most
+    /// declarations), without parsing its component values: the number is the one of the dimension token of the tokenizer.
+    /// </summary>
+    private static bool TryParseSimplePixels(string value, out double pixels)
+    {
+        pixels = 0;
+        if (value.Length < 3 || !value.EndsWith("px", StringComparison.Ordinal))
+            return false;
+
+        var number = value.AsSpan(0, value.Length - 2);
+        var dot = number.IndexOf('.');
+        if (!IsDigits(dot < 0 ? number : number[..dot]) || (dot >= 0 && !IsDigits(number[(dot + 1)..])))
+            return false;
+
+        pixels = double.Parse(number, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture);
+        return true;
+
+        static bool IsDigits(ReadOnlySpan<char> span) => !span.IsEmpty && !span.ContainsAnyExceptInRange('0', '9');
     }
 
     /// <summary>Parses a computed length in px (e.g. "16px").</summary>

@@ -172,15 +172,30 @@ namespace Meziantou.Framework
 
     public static class EncodingExtensions
     {
-        public static System.Text.Encoding get_UTF8WithoutPreamble() => throw null;
+        extension(System.Text.Encoding)
+        {
+            public static System.Text.Encoding UTF8WithoutPreamble { get => throw null; }
+        }
     }
 
     public static class EnumExtensions
     {
-        public static TEnum Parse<TEnum>(System.ReadOnlySpan<char> value, bool ignoreCase) where TEnum : struct, System.Enum => throw null;
-        public static TEnum Parse<TEnum>(string value, bool ignoreCase) where TEnum : struct, System.Enum => throw null;
-        public static bool TryParse<TEnum>(System.ReadOnlySpan<char> value, bool ignoreCase, out TEnum result) where TEnum : struct, System.Enum => throw null;
-        public static bool TryParse<TEnum>([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? value, bool ignoreCase, out TEnum result) where TEnum : struct, System.Enum => throw null;
+        extension<TEnum>(TEnum) where TEnum : struct, System.Enum
+        {
+            public static TEnum Parse(System.ReadOnlySpan<char> value, bool ignoreCase) => throw null;
+        }
+        extension<TEnum>(TEnum) where TEnum : struct, System.Enum
+        {
+            public static TEnum Parse(string value, bool ignoreCase) => throw null;
+        }
+        extension<TEnum>(TEnum) where TEnum : struct, System.Enum
+        {
+            public static bool TryParse(System.ReadOnlySpan<char> value, bool ignoreCase, out TEnum result) => throw null;
+        }
+        extension<TEnum>(TEnum) where TEnum : struct, System.Enum
+        {
+            public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? value, bool ignoreCase, out TEnum result) => throw null;
+        }
     }
 
     public static class EnumerableExtensions
@@ -238,8 +253,14 @@ namespace Meziantou.Framework
 
     public static class EnvironmentExtensions
     {
-        public static string GetEnvironmentVariableOrDefault(string variableName, string defaultValue) => throw null;
-        public static string GetRequiredEnvironmentVariable(string variableName) => throw null;
+        extension(System.Environment)
+        {
+            public static string GetEnvironmentVariableOrDefault(string variableName, string defaultValue) => throw null;
+        }
+        extension(System.Environment)
+        {
+            public static string GetRequiredEnvironmentVariable(string variableName) => throw null;
+        }
     }
 
     public static class ExceptionExtensions

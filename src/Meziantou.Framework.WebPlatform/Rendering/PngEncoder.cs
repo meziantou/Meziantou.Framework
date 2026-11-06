@@ -8,7 +8,8 @@ namespace Meziantou.Framework.WebPlatform.Rendering;
 /// Encodes pixels as a PNG image (https://w3c.github.io/png/): the serialization of the bitmaps as <c>image/png</c>
 /// (<c>toDataURL()</c>, <c>toBlob()</c>, <c>convertToBlob()</c>), which works without a rendering backend. The image is a
 /// truecolor image with alpha, 8 or 16 bits per channel (or a truecolor image without alpha for the opaque bitmaps), whose rows are
-/// filtered with the Paeth or the Sub filter and compressed with zlib.
+/// filtered with the Paeth or the Sub filter and compressed with zlib. The pixels of a Display P3 bitmap are tagged with a
+/// <c>cICP</c> chunk (https://w3c.github.io/png/#cICP-chunk), the pixels without tag are sRGB.
 /// </summary>
 internal static class PngEncoder
 {
@@ -20,7 +21,8 @@ internal static class PngEncoder
     /// <param name="rgba">The pixels.</param>
     /// <param name="hasAlpha">Whether the alpha channel is kept (an opaque bitmap is encoded without it).</param>
     /// <param name="bitDepth">8, or 16 for samples stored in big-endian order.</param>
-    public static byte[] Encode(int width, int height, ReadOnlySpan<byte> rgba, bool hasAlpha = true, int bitDepth = 8)
+    /// <param name="colorSpace">The color space of the pixels.</param>
+    public static byte[] Encode(int width, int height, ReadOnlySpan<byte> rgba, bool hasAlpha = true, int bitDepth = 8, RenderingColorSpace colorSpace = RenderingColorSpace.Srgb)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(width, 1);
         ArgumentOutOfRangeException.ThrowIfLessThan(height, 1);
@@ -45,6 +47,13 @@ internal static class PngEncoder
         header[11] = 0;
         header[12] = 0;
         WriteChunk(output, "IHDR"u8, header);
+
+        // cICP (before IDAT): the primaries of SMPTE EG 432-1 (P3 with the D65 white point), the transfer function of sRGB
+        // (IEC 61966-2-1), RGB samples, full range (Rec. ITU-T H.273)
+        if (colorSpace == RenderingColorSpace.DisplayP3)
+        {
+            WriteChunk(output, "cICP"u8, [12, 13, 0, 1]);
+        }
 
         // IDAT: each row is preceded by its filter type (https://w3c.github.io/png/#9Filters)
         using (var compressed = new MemoryStream())

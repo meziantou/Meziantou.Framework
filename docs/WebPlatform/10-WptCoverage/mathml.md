@@ -11,16 +11,16 @@ description: "The results of the web-platform-tests of mathml, and why the tests
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 200 | 208 | 0 | 96% |
 | [Tentative](#tentative-tests) | 1 | 2 | 0 | 50% |
-| [Reftests](#reftests) | 269 | 282 | 1 | 96% |
-| **All** | **470** | **492** | **1** | **96%** |
+| [Reftests](#reftests) | 270 | 282 | 1 | 96% |
+| **All** | **471** | **492** | **1** | **96%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **BUG**: 1
-- **TEST BUG**: 13
-- **NOT IMPLEMENTED**: 7
+- **TEST BUG**: 14
+- **NOT IMPLEMENTED**: 5
 - **FLAKY**: 1
 
 ## Stable tests
@@ -455,9 +455,9 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`relations/css-styling/displaystyle-015.html`](https://wpt.fyi/results/mathml/relations/css-styling/displaystyle-015.html) | Pass | 1 / 1 |  |  |
 | [`relations/css-styling/dynamic-dir-1.html`](https://wpt.fyi/results/mathml/relations/css-styling/dynamic-dir-1.html) | Pass | 1 / 1 |  |  |
 | [`relations/css-styling/first-line-first-letter-pseudo-elements-001.html`](https://wpt.fyi/results/mathml/relations/css-styling/first-line-first-letter-pseudo-elements-001.html) | Pass | 1 / 1 |  |  |
-| [`relations/css-styling/first-line-first-letter-pseudo-elements-002.html`](https://wpt.fyi/results/mathml/relations/css-styling/first-line-first-letter-pseudo-elements-002.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the backgrounds and the borders of `::first-letter` (the first letter is a text run) |
+| [`relations/css-styling/first-line-first-letter-pseudo-elements-002.html`](https://wpt.fyi/results/mathml/relations/css-styling/first-line-first-letter-pseudo-elements-002.html) | Fail | 0 / 1 | TEST BUG | expects `::first-line` and `::first-letter` on a `div` with `display: inline math`, which computes to `inline` on an element that is not a MathML element (https://w3c.github.io/mathml-core/#new-display-math-value): an inline box has neither (they apply to block containers); Chromium 152 renders the same as the library (the items 1 and 2 are not green) |
 | [`relations/css-styling/first-line-first-letter-pseudo-elements-003.html`](https://wpt.fyi/results/mathml/relations/css-styling/first-line-first-letter-pseudo-elements-003.html) | Fail | 0 / 1 | TEST BUG | the test expects no red, but the `math` element is an atomic inline of the first line of the block: the background of the `::first-line` of the block is painted behind it, as in the browsers (the test fails in Chrome, Firefox and Safari) |
-| [`relations/css-styling/first-line-first-letter-pseudo-elements-004.html`](https://wpt.fyi/results/mathml/relations/css-styling/first-line-first-letter-pseudo-elements-004.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the backgrounds and the borders of `::first-letter` (the first letter is a text run) |
+| [`relations/css-styling/first-line-first-letter-pseudo-elements-004.html`](https://wpt.fyi/results/mathml/relations/css-styling/first-line-first-letter-pseudo-elements-004.html) | Pass | 1 / 1 |  |  |
 | [`relations/css-styling/floats/floating-inside-mathml-with-block-display.html`](https://wpt.fyi/results/mathml/relations/css-styling/floats/floating-inside-mathml-with-block-display.html) | Pass | 1 / 1 |  |  |
 | [`relations/css-styling/floats/floating-math.html`](https://wpt.fyi/results/mathml/relations/css-styling/floats/floating-math.html) | Pass | 1 / 1 |  |  |
 | [`relations/css-styling/legacy-scriptminsize-attribute.html`](https://wpt.fyi/results/mathml/relations/css-styling/legacy-scriptminsize-attribute.html) | Pass | 1 / 1 |  |  |

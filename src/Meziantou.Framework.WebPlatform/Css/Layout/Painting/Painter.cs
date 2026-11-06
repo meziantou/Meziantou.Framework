@@ -628,6 +628,31 @@ internal sealed partial class Painter
                     PaintAtomicOutlines(_group, item.Fragment);
                     break;
 
+                case PaintItemMarker.BeginFirstLineGroup:
+                {
+                    // The content of the line in a layer with the opacity of ::first-line: a group of the same stacking context,
+                    // whose clips are applied again in the layer
+                    var lineStyle = ((LineBoxFragment)item.Fragment).Style!;
+                    var baseSaveCount = _builder.SaveCount;
+                    _builder.SaveLayer(new SaveLayerItem(GetOpacity(lineStyle), BlendMode.Normal, Filters: null) { Source = lineStyle.Element });
+                    _group = new Group(_group.Fragment, _group.Origin, _group, baseSaveCount, _builder.SaveCount) { IsTransformed = _group.IsTransformed, Has3DTransform = _group.Has3DTransform };
+                    break;
+                }
+
+                case PaintItemMarker.EndFirstLineGroup:
+                {
+                    // (the outlines of the boxes of the line are painted with the ones of the stacking context)
+                    var lineGroup = _group;
+                    if (lineGroup.Outlines is { } outlines)
+                    {
+                        (lineGroup.Parent!.Outlines ??= []).AddRange(outlines);
+                    }
+
+                    _builder.RestoreTo(lineGroup.BaseSaveCount);
+                    _group = lineGroup.Parent!;
+                    break;
+                }
+
                 default:
                     // The band of a block split out of inline boxes (hit tested as the inline boxes): as in the browsers, the
                     // backgrounds of the inline boxes are not painted behind the block (css/CSS2/box-display/block-in-inline-003.xht)

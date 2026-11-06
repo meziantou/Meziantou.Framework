@@ -45,6 +45,13 @@ internal sealed partial class Painter
             return;
         }
 
+        // The symbols of the list markers (see MarkerSymbols)
+        if (fragment.Box.MarkerSymbol is not MarkerSymbol.None and var symbol)
+        {
+            PaintMarkerSymbol(fragment, offset, symbol);
+            return;
+        }
+
         // The images of the generated content and of the list markers (https://drafts.csswg.org/css-content-3/#content-property)
         if (fragment.Box.GeneratedImage is { } generated)
         {

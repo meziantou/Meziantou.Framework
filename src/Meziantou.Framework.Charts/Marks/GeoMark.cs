@@ -9,7 +9,7 @@ namespace Meziantou.Framework.Charts;
 /// <remarks>
 /// Without a fill, the polygons are light gray, a base map; a row whose fill value is missing is light gray too. The
 /// polygons are filled with the even-odd rule, so their holes stay empty whatever the order of their rings. The mark
-/// draws only in geographic coordinates.
+/// draws only in geographic coordinates. A <see cref="GeoGeometryCollection"/> draws each of its geometries.
 /// </remarks>
 public sealed class GeoMark<T> : Mark<T>
 {
@@ -149,22 +149,32 @@ public sealed class GeoMark<T> : Mark<T>
             }
         }
 
-        foreach (var polygon in geometry.Polygons)
+        var points = new List<GeoPosition>();
+        foreach (var simple in geometry.GetSimpleGeometries())
         {
-            foreach (var ring in polygon.Rings)
+            switch (simple)
             {
-                Add(RingCode, ring);
+                case GeoPolygon polygon:
+                    foreach (var ring in polygon.Rings)
+                    {
+                        Add(RingCode, ring);
+                    }
+
+                    break;
+
+                case GeoLineString lineString:
+                    Add(LineCode, lineString.Positions);
+                    break;
+
+                case GeoPoint point:
+                    points.Add(point.Position);
+                    break;
             }
         }
 
-        foreach (var line in geometry.Lines)
+        if (points.Count > 0)
         {
-            Add(LineCode, line);
-        }
-
-        if (geometry.Points.Count > 0)
-        {
-            Add(PointCode, geometry.Points);
+            Add(PointCode, points);
         }
 
         return [.. values];

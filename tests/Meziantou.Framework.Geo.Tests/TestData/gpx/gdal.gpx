@@ -1,0 +1,57 @@
+<?xml version="1.0"?>
+<gpx version="1.1" creator="GDAL 3.10.3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ogr="http://osgeo.org/gdal" xmlns="http://www.topografix.com/GPX/1/1" xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+<metadata>
+<bounds minlat="48.850000000000001" minlon="2.290000000000000" maxlat="48.890000000000001" maxlon="2.349900000000000"/>
+</metadata>
+<wpt lat="48.8584" lon="2.2945">
+  <time>2024-05-01T10:30:00Z</time>
+  <name>Eiffel Tower</name>
+  <desc>Paris, France</desc>
+  <sym>Flag, Blue</sym>
+  <extensions>
+    <ogr:population>3</ogr:population>
+  </extensions>
+</wpt>
+<wpt lat="48.8606" lon="2.3376">
+  <name>Louvre</name>
+  <cmt>Museum</cmt>
+  <extensions>
+  </extensions>
+</wpt>
+<rte>
+  <name>Walk</name>
+  <number>1</number>
+  <rtept lat="48.8584" lon="2.2945">
+    <ele>35.0</ele>
+  </rtept>
+  <rtept lat="48.8606" lon="2.3376">
+    <ele>40.0</ele>
+  </rtept>
+  <rtept lat="48.853" lon="2.3499">
+    <ele>36.0</ele>
+  </rtept>
+</rte>
+<trk>
+  <name>Run</name>
+  <type>running</type>
+  <trkseg>
+    <trkpt lat="48.85" lon="2.29">
+        <ele>30.0</ele>
+    </trkpt>
+    <trkpt lat="48.86" lon="2.3">
+        <ele>31.0</ele>
+    </trkpt>
+  </trkseg>
+  <trkseg>
+    <trkpt lat="48.87" lon="2.31">
+        <ele>32.0</ele>
+    </trkpt>
+    <trkpt lat="48.88" lon="2.32">
+        <ele>33.0</ele>
+    </trkpt>
+    <trkpt lat="48.89" lon="2.33">
+        <ele>34.0</ele>
+    </trkpt>
+  </trkseg>
+</trk>
+</gpx>

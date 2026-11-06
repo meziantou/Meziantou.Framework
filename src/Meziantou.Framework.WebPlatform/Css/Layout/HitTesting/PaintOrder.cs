@@ -77,6 +77,15 @@ internal enum PaintItemMarker : byte
     /// stay pending.
     /// </summary>
     AtomicOutlines,
+
+    /// <summary>
+    /// The content of a line whose <c>::first-line</c> has an <c>opacity</c> starts (the fragment is the line box): it is painted
+    /// as a group, composited with that opacity (the markers are only added for the painting).
+    /// </summary>
+    BeginFirstLineGroup,
+
+    /// <summary>The content of the line of <see cref="BeginFirstLineGroup"/> ends.</summary>
+    EndFirstLineGroup,
 }
 
 /// <summary>
@@ -1416,6 +1425,14 @@ internal static class PaintOrder
     {
         var truncation = markers ? LineTruncator.GetTruncation(line) : null;
 
+        // https://drafts.csswg.org/css-pseudo-4/#first-line-styling: the opacity of ::first-line applies to the content of the line
+        // as a group (as in Gecko)
+        var isGroup = markers && line.Style is { PseudoElement: "first-line" } groupStyle && groupStyle.GetComputedValue("opacity") is not ("1" or "100%" or "");
+        if (isGroup)
+        {
+            output.Add(new PaintItem(line) { Marker = PaintItemMarker.BeginFirstLineGroup });
+        }
+
         // The background of the ::first-line pseudo-element is painted behind the content of the line (the root inline box); the
         // hit testing hits the block container there, above the descendants with a negative z-index
         if (line.Style is { PseudoElement: "first-line" })
@@ -1427,6 +1444,16 @@ internal static class PaintOrder
         if (!markers)
             return;
 
+        PaintEllipses(line, output, truncation);
+        if (isGroup)
+        {
+            output.Add(new PaintItem(line) { Marker = PaintItemMarker.EndFirstLineGroup });
+        }
+    }
+
+    /// <summary>The ellipses of a line, after its content (see <see cref="PaintLine"/>).</summary>
+    private static void PaintEllipses(LineBoxFragment line, List<PaintItem> output, LineTruncation? truncation)
+    {
         if (truncation is { BlockEllipsis: { } truncatedBlockEllipsis, BlockEllipsisTruncation: { } blockEllipsisTruncation })
         {
             // The block ellipsis truncated by text-overflow as the content of the line

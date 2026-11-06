@@ -705,7 +705,7 @@ public sealed class StatisticalChartTests
     {
         #region Charts_Choropleth
         var path = Path.Combine(AppContext.BaseDirectory, "TestData", "countries-110m.geojson");
-        var countries = GeoJson.ParseFeatures(File.ReadAllText(path))
+        var countries = GeoJson.Parse(File.ReadAllText(path))
             .Where(country => country.Properties["continent"] is not "Antarctica")
             .ToList();
 
@@ -740,7 +740,7 @@ public sealed class StatisticalChartTests
     {
         #region Charts_MapPoints
         var path = Path.Combine(AppContext.BaseDirectory, "TestData", "countries-110m.geojson");
-        var countries = GeoJson.ParseFeatures(File.ReadAllText(path));
+        var countries = GeoJson.Parse(File.ReadAllText(path));
         City[] cities =
         [
             new("London", -0.13, 51.51, 9.0), new("Paris", 2.35, 48.86, 11.1), new("Madrid", -3.70, 40.42, 6.7),
@@ -791,7 +791,7 @@ public sealed class StatisticalChartTests
             "EqualEarth" => new EqualEarthProjection(),
             _ => new AlbersProjection(),
         };
-        IEnumerable<GeoFeature> countries = GeoJson.ParseFeatures(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "TestData", "countries-110m.geojson")));
+        IEnumerable<GeoFeature> countries = GeoJson.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "TestData", "countries-110m.geojson")));
         var plot = new Plot { Width = 480, Height = 300, Coordinates = new GeoCoordinates { Projection = projection, GraticuleStep = 30, Outline = true } };
         if (projection is AlbersProjection)
         {
@@ -811,10 +811,10 @@ public sealed class StatisticalChartTests
         var square = new GeoPolygon([[new(0, 0), new(10, 0), new(10, 10), new(0, 10), new(0, 0)], [new(3, 3), new(7, 3), new(7, 7), new(3, 7)]]);
         GeoFeature[] features =
         [
-            new(new GeoGeometry(polygons: [square]), new Dictionary<string, object?>(StringComparer.Ordinal) { ["value"] = 1.0, ["kind"] = "area" }, "square"),
-            new(new GeoGeometry(lines: [[new(-5, -5), new(15, 15)]]), new Dictionary<string, object?>(StringComparer.Ordinal) { ["value"] = 2.0, ["kind"] = "line" }),
-            new(new GeoGeometry(points: [new(-5, 12), new(14, -4)]), new Dictionary<string, object?>(StringComparer.Ordinal) { ["value"] = 3.0, ["kind"] = "point" }),
-            new(new GeoGeometry(polygons: [new GeoPolygon([[new(12, 0), new(16, 0), new(16, 4)]])])),
+            new(square, new Dictionary<string, object?>(StringComparer.Ordinal) { ["value"] = 1.0, ["kind"] = "area" }, "square"),
+            new(new GeoLineString([new(-5, -5), new(15, 15)]), new Dictionary<string, object?>(StringComparer.Ordinal) { ["value"] = 2.0, ["kind"] = "line" }),
+            new(new GeoMultiPoint([new(-5, 12), new(14, -4)]), new Dictionary<string, object?>(StringComparer.Ordinal) { ["value"] = 3.0, ["kind"] = "point" }),
+            new(new GeoPolygon([[new(12, 0), new(16, 0), new(16, 4)]])),
             new(geometry: null),
         ];
         var plot = new Plot

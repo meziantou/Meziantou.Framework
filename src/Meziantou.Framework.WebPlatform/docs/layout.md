@@ -162,8 +162,9 @@ decides when, see [Incremental update](#incremental-update)).
   The computed display is already blockified (root, floats, absolutely positioned boxes, flex and grid items).
 - The children are the flat tree children: the shadow tree of a host, the assigned nodes of a slot (or its fallback).
 - `display: list-item` generates a `::marker` first (its `content`, else `list-style-image` when it is a valid image, else
-  the marker string of `list-style-type`: a string, or the prefix of the counter style, the representation of the
-  `list-item` counter and the suffix of the counter style), then `::before`, the children and `::after` (generated when
+  the symbol of `disc`, `circle`, `square`, `disclosure-open` and `disclosure-closed`, else the marker string of
+  `list-style-type`: a string, or the prefix of the counter style, the representation of the `list-item` counter and the
+  suffix of the counter style), then `::before`, the children and `::after` (generated when
   their `content` is not `none`/`normal`). An image that cannot be loaded is not a valid image
   ([CSS Lists §3.1](https://drafts.csswg.org/css-lists-3/#image-marker)): the boxes are built again when its fetch fails
   (`CssImageFetching.IsInvalidImage`). A `::before` or `::after` pseudo-element that is a list item has a marker too: an
@@ -1946,8 +1947,10 @@ an atomic inline laid out while its parent collects its items rents another inst
   from `::first-line` (`Painter.GetDecorationStyle`: e.g. a `currentcolor` background or border; the widths and the styles
   of the borders are the ones of the box, and a `filter` applies to the box as a whole with the colors of its style). Only the
   inherited properties inherit from `::first-line`: an explicit `inherit` of another property (e.g. `background-color`)
-  takes the value of the non-pseudo parent (`ComputedStyle.GetInheritanceSource`). TODO: the
-  `text-transform` and the `opacity` of `::first-line`, its background
+  takes the value of the non-pseudo parent (`ComputedStyle.GetInheritanceSource`). The `opacity` of `::first-line` applies to
+  the content of the line as a group (as in Gecko): the paint order marks it (`PaintItemMarker.BeginFirstLineGroup`), and the
+  painter paints it in a layer with that opacity (a group of the same stacking context, whose clips are applied again in the
+  layer). TODO: the `text-transform` of `::first-line`, its background
   on the vertical lines, and the borders, paddings and margins of the inline boxes of the first line, which are resolved
   with the font size the boxes have on the other lines. `::first-letter` is a box of the box tree.
 - **Text of `display: contents` elements**: a text run has the style of its parent element, which is not the style of the
@@ -2017,7 +2020,12 @@ an atomic inline laid out while its parent collects its items rents another inst
   in the tree), which may overlap it. A marker placed next to a line of a positioned descendant block that does not
   establish a stacking context belongs to the inline content of the list item: it is painted under the positioned block
   (`PaintOrder.GetListItemPaintingMarker`), as in Blink and Gecko. The bullets of the predefined counter styles (`disc`, `circle`, `square`, the
-  disclosure triangles) are symbols: `letter-spacing` and `word-spacing` do not space them. The marker is not passed to a child that clips
+  disclosure triangles) are symbols, as in Blink and Gecko: a replaced box (`ContainerBox.MarkerSymbol`) with the geometry of
+  Blink (`MarkerSymbols`: from the ascent A of the font rounded to a whole pixel, a bullet of `(⌊2A/3⌋ + 1) / 2` pixels in a
+  box 2px wider, 1px from its start; a disclosure triangle of 0.66em on the baseline; the box is as tall as the line height,
+  with the baseline of the text), 8px plus ⌊2A/3⌋ minus its size before the content when it is outside, with margins of -1px
+  and 1em (0 and 0.4em for a disclosure triangle) when it is inside, painted as a filled ellipse, a 1px stroked ellipse, a
+  filled square or a triangle (`Painter.PaintMarkerSymbol`); `letter-spacing` and `word-spacing` do not apply to them. The marker is not passed to a child that clips
   its overflow, which would clip it. When no line box placed the marker, it is aligned with the first baseline of the
   in-flow children of the list item, if any (the baseline of a flex or grid container, of a table, of a block that
   establishes a formatting context, of a line box of a child that did not get the marker), as in the browsers; a descendant
@@ -3354,7 +3362,9 @@ with an element child has the default operator properties (its content is not "o
 `math` root are centered with a safe alignment (start-aligned when they are wider than the box).
 
 **Box tree.** The box tree builder (`FixupMathContainer`) keeps the children of the MathML boxes as they are (no anonymous
-block): the text of the non-token boxes is not rendered (dropped), their inline boxes are blockified (box display only), the
+block): the text of the non-token boxes is not rendered (dropped), their inline boxes are blockified (box display only; as in
+Blink, the cascade blockifies the computed `display` of the children of a `math` or `block math` box that are not MathML
+elements, also the HTML children of the token elements, whose `::first-line` and `::first-letter` then apply), the
 children of `mspace` are not rendered; the token elements are block containers (their contents are laid out by the inline
 or the block layout). `msqrt`, `mpadded` (with a math display) and `mtd` (as a table cell) wrap their children in an
 anonymous mrow box ([anonymous mrow boxes](https://w3c.github.io/mathml-core/#anonymous-mrow-boxes)). The cascade does not

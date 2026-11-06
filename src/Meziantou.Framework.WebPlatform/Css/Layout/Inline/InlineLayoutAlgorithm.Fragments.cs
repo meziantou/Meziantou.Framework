@@ -649,7 +649,7 @@ internal sealed partial class InlineLayoutAlgorithm
 
         if (HasRuby)
         {
-            PlaceRubyAnnotations(-lineTop);
+            PlaceRubyAnnotations(-lineTop, isFirstLine);
             for (var i = 0; i < nodes.Length; i++)
             {
                 ref var node = ref nodes[i];

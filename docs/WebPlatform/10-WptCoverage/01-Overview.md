@@ -50,8 +50,8 @@ The features of `REQUIRES`:
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 26,230 | 29,691 | 2,104 | 95% |
 | [Tentative](#tentative-tests) | 1,370 | 3,074 | 692 | 58% |
-| [Reftests](#reftests) | 27,929 | 29,220 | 170 | 96% |
-| **All** | **55,529** | **61,985** | **2,966** | **94%** |
+| [Reftests](#reftests) | 27,931 | 29,220 | 170 | 96% |
+| **All** | **55,531** | **61,985** | **2,966** | **94%** |
 
 ## Failure reasons
 
@@ -59,7 +59,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 178
 - **TEST BUG**: 1,034
-- **NOT IMPLEMENTED**: 4,274
+- **NOT IMPLEMENTED**: 4,272
 - **REQUIRES**: 762
   - `hardware`: 574
   - `layout`: 20
@@ -646,7 +646,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`css/css-properties-values-api`](css/css-properties-values-api.md#reftests) | 7 | 7 | 0 | 100% |
 | [`css/css-pseudo`](css/css-pseudo.md#reftests) | 256 | 275 | 0 | 93% |
 | [`css/css-rhythm`](css/css-rhythm.md#reftests) | 18 | 18 | 0 | 100% |
-| [`css/css-ruby`](css/css-ruby.md#reftests) | 121 | 143 | 0 | 85% |
+| [`css/css-ruby`](css/css-ruby.md#reftests) | 123 | 143 | 0 | 86% |
 | [`css/css-scroll-anchoring`](css/css-scroll-anchoring.md#reftests) | 4 | 4 | 0 | 100% |
 | [`css/css-scroll-snap`](css/css-scroll-snap.md#reftests) | 24 | 26 | 0 | 92% |
 | [`css/css-scrollbars`](css/css-scrollbars.md#reftests) | 31 | 31 | 0 | 100% |
@@ -725,4 +725,4 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`webgl`](webgl.md#reftests) | 0 | 2 | 0 | 0% |
 | [`webvtt`](webvtt.md#reftests) | 182 | 251 | 0 | 73% |
 | [`xml`](xml.md#reftests) | 0 | 3 | 3 | – |
-| **Total (130 sections)** | **27,929** | **29,220** | **170** | **96%** |
+| **Total (130 sections)** | **27,931** | **29,220** | **170** | **96%** |

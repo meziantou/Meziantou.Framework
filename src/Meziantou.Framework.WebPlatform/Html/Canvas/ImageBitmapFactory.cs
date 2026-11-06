@@ -141,14 +141,17 @@ internal static class ImageBitmapFactory
                 if (imageData.IsDetached)
                     throw InvalidState("The buffer of the image data is detached");
 
-                // The bitmaps are sRGB: the pixels of the other color spaces are converted
+                // The bitmaps are sRGB or Display P3, gamma-encoded: the pixels of the linear color spaces are converted
+                var (colorSpace, storedColorSpace) = imageData.ColorSpace is PredefinedColorSpace.DisplayP3 or PredefinedColorSpace.DisplayP3Linear
+                    ? (RenderingColorSpace.DisplayP3, PredefinedColorSpace.DisplayP3)
+                    : (RenderingColorSpace.Srgb, PredefinedColorSpace.Srgb);
                 var pixels = imageData.Data.ToArray();
                 if (imageData.PixelFormat == ImageDataPixelFormat.RgbaFloat16)
-                    CanvasRenderingContext2DBase.ConvertColorSpace(unsafe(System.Runtime.InteropServices.MemoryMarshal.Cast<byte, Half>(pixels.AsSpan())), imageData.ColorSpace, PredefinedColorSpace.Srgb);
+                    CanvasRenderingContext2DBase.ConvertColorSpace(unsafe(System.Runtime.InteropServices.MemoryMarshal.Cast<byte, Half>(pixels.AsSpan())), imageData.ColorSpace, storedColorSpace);
                 else
-                    CanvasRenderingContext2DBase.ConvertColorSpace(pixels, imageData.ColorSpace, PredefinedColorSpace.Srgb);
+                    CanvasRenderingContext2DBase.ConvertColorSpace(pixels, imageData.ColorSpace, storedColorSpace);
 
-                return new BitmapPixels((int)imageData.Width, (int)imageData.Height, pixels, pixelFormat: imageData.PixelFormat);
+                return new BitmapPixels((int)imageData.Width, (int)imageData.Height, pixels, pixelFormat: imageData.PixelFormat, colorSpace: colorSpace);
             }
 
             case Blob blob:
@@ -257,10 +260,11 @@ internal static class ImageBitmapFactory
 
     private static BitmapPixels Decode(RenderingImageDecoder decoder, ExifOrientation orientation, bool convertColors, bool originClean)
     {
+        // The pixels keep the gamut of the image (Display P3 for colors outside of sRGB)
         using var frame = decoder.DecodeFrame(0, orientation, convertColors) ?? throw InvalidState("The image cannot be decoded");
         var pixels = new byte[(long)frame.Width * frame.Height * (frame.PixelFormat == ImageDataPixelFormat.RgbaFloat16 ? 8 : 4)];
-        frame.ReadPixels(pixels, frame.PixelFormat);
-        return new BitmapPixels(frame.Width, frame.Height, pixels, originClean, frame.PixelFormat);
+        frame.ReadPixels(pixels, frame.PixelFormat, frame.ColorSpace);
+        return new BitmapPixels(frame.Width, frame.Height, pixels, originClean, frame.PixelFormat, frame.ColorSpace);
     }
 
     /// <summary>
@@ -353,7 +357,7 @@ internal static class ImageBitmapFactory
             output = ReducePrecisionByPremultiplication(output, input.PixelFormat);
         }
 
-        return new BitmapPixels((int)outputWidth, (int)outputHeight, output, input.IsOriginClean, input.PixelFormat);
+        return new BitmapPixels((int)outputWidth, (int)outputHeight, output, input.IsOriginClean, input.PixelFormat, input.ColorSpace);
     }
 
     private static byte[] FlipVertically(byte[] pixels, int width, int height, int bytesPerPixel = 4)

@@ -77,6 +77,33 @@ public sealed class MetadataTests
     }
 
     [Fact]
+    public void DisplayP3ProfileConvertsTheColorsOfCssColor4()
+    {
+        // https://www.w3.org/TR/css-color-4/#color-conversion-code: color(display-p3 1 0 0) is color(srgb 1.0930 -0.2267 -0.1501)
+        var profile = IccProfile.DisplayP3;
+        Assert.Equal(IccProfileColorSpace.Rgb, profile.ColorSpace);
+        Assert.Equal(IccProfileClass.Display, profile.ProfileClass);
+        Assert.Same(profile, IccProfile.DisplayP3);
+
+        var toSrgb = IccColorTransform.Create(profile, IccProfile.Srgb, new IccColorTransformOptions { ClipFloatingPointSamples = false });
+        float[] colors = [1, 0, 0, 0, 1, 0, 1, 1, 1];
+        var converted = new float[colors.Length];
+        toSrgb.Convert(colors, converted);
+        float[] expected = [1.0930f, -0.2267f, -0.1501f, -0.5116f, 1.0183f, -0.3107f, 1, 1, 1];
+        for (var i = 0; i < expected.Length; i++)
+        {
+            Assert.True(Math.Abs(expected[i] - converted[i]) < 0.002f, $"Component {i}: {converted[i]} instead of {expected[i]}");
+        }
+
+        // The red of sRGB is inside of the gamut of Display P3
+        var toDisplayP3 = IccColorTransform.Create(IccProfile.Srgb, profile);
+        byte[] red = [255, 0, 0];
+        var p3 = new byte[3];
+        toDisplayP3.Convert(red, p3);
+        Assert.Equal([234, 51, 35], p3);
+    }
+
+    [Fact]
     public void IccProfileExposesDeclaredHeaderFields()
     {
         // ICC.1:2022 section 7.2: version at offset 8 (major, then minor and bug fix nibbles), class at 12, intent at 64

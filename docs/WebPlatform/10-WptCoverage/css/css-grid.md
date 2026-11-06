@@ -11,15 +11,15 @@ description: "The results of the web-platform-tests of css/css-grid, and why the
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 730 | 731 | 0 | 99.8% |
 | [Tentative](#tentative-tests) | 32 | 36 | 0 | 89% |
-| [Reftests](#reftests) | 1,731 | 1,767 | 0 | 98% |
-| **All** | **2,493** | **2,534** | **0** | **98%** |
+| [Reftests](#reftests) | 1,732 | 1,767 | 0 | 98% |
+| **All** | **2,494** | **2,534** | **0** | **98%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **BUG**: 1
-- **TEST BUG**: 39
+- **TEST BUG**: 38
 - **TEST RUNNER**: 1
 
 ## Stable tests
@@ -1472,7 +1472,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`grid-lanes/alignment/column-grid-lanes-alignment-positioned-items-004.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/alignment/column-grid-lanes-alignment-positioned-items-004.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/alignment/column-grid-lanes-justify-self-001.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/alignment/column-grid-lanes-justify-self-001.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/alignment/column-grid-lanes-justify-self-002.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/alignment/column-grid-lanes-justify-self-002.html) | Pass | 1 / 1 |  |  |
-| [`grid-lanes/alignment/column-grid-lanes-justify-self-003.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/alignment/column-grid-lanes-justify-self-003.html) | Fail | 0 / 1 | TEST BUG | depends on the font of the buttons: the auto-placed items contribute to the sizes of all the `1fr` columns (https://drafts.csswg.org/css-grid-3/#track-sizing: "All items with an automatic grid position contribute (regardless of whether they are ultimately placed in that track)"), and the buttons of the library inherit the 15px monospace font of the page (the HTML rendering section does not set their font), so the columns are as wide as the widest button (77px with its item), where the columns of the regular grid of the reference are sized by their own item; with the 13.333px font of the buttons of the browsers, no minimum contribution exceeds the `1fr` size and the test matches the reference (verified with `button { font: 13.333px sans-serif }` in both files) |
+| [`grid-lanes/alignment/column-grid-lanes-justify-self-003.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/alignment/column-grid-lanes-justify-self-003.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/alignment/column-justify-items-001.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/alignment/column-justify-items-001.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/alignment/column-justify-items-center-001.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/alignment/column-justify-items-center-001.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/alignment/column-justify-items-end-justify-self-start-001.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/alignment/column-justify-items-end-justify-self-start-001.html) | Pass | 1 / 1 |  |  |

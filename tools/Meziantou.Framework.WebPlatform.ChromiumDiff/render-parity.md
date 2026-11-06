@@ -6,8 +6,8 @@ The fixtures of `render-corpus` exported by Playwright (Chromium 156.0.8078.4) a
 
 | Status | Count |
 |---|---|
-| Pass | 71 |
-| Known | 65 |
+| Pass | 74 |
+| Known | 62 |
 | Unsupported | 0 |
 | Unexpected | 0 |
 | Error | 0 |
@@ -16,9 +16,9 @@ The fixtures of `render-corpus` exported by Playwright (Chromium 156.0.8078.4) a
 
 | Scenario | Playwright options | Unsupported options | Pass | Known | Unsupported | Unexpected | Error |
 |---|---|---|---|---|---|---|---|
-| desktop | viewport 1280x720 |  | 13 | 2 | 0 | 0 | 0 |
-| desktop-dpr2 | Desktop Chrome HiDPI (deviceScaleFactor 2) |  | 6 | 3 | 0 | 0 | 0 |
-| omit-background | omitBackground: true |  | 7 | 3 | 0 | 0 | 0 |
+| desktop | viewport 1280x720 |  | 14 | 1 | 0 | 0 | 0 |
+| desktop-dpr2 | Desktop Chrome HiDPI (deviceScaleFactor 2) |  | 7 | 2 | 0 | 0 | 0 |
+| omit-background | omitBackground: true |  | 8 | 2 | 0 | 0 | 0 |
 | full-page | fullPage: true |  | 1 | 1 | 0 | 0 | 0 |
 | clip | clip: 10,20 300x200 |  | 3 | 0 | 0 | 0 | 0 |
 | clip-full-page | fullPage: true, clip: 0,600 400x400 (beyond the viewport) |  | 1 | 0 | 0 | 0 | 0 |
@@ -45,7 +45,7 @@ The fixtures of `render-corpus` exported by Playwright (Chromium 156.0.8078.4) a
 | Scenario | Fixture | Output | Status | Metrics | Notes |
 |---|---|---|---|---|---|
 | desktop | boxes.html | screenshot | Pass | 1280x720, SSIM 0.9998, 0.00% different, 0.00% alpha different, max 39 |  |
-| desktop | dark-scheme.html | screenshot | Known | 1280x720, SSIM 0.9944, 0.40% different, 0.00% alpha different, max 148 | form controls: Chromium gives them a font of 13.333px (font: -webkit-small-control), the library inherits the font of their parent (the user agent style sheet of the HTML Standard) |
+| desktop | dark-scheme.html | screenshot | Pass | 1280x720, SSIM 0.9997, 0.03% different, 0.00% alpha different, max 41 |  |
 | desktop | gradients.html | screenshot | Pass | 1280x720, SSIM 0.9984, 0.03% different, 0.00% alpha different, max 54 |  |
 | desktop | images.html | screenshot | Pass | 1280x720, SSIM 0.9991, 0.00% different, 0.00% alpha different, max 23 |  |
 | desktop | long-page.html | screenshot | Pass | 1280x720, SSIM 0.9972, 0.02% different, 0.00% alpha different, max 42 |  |
@@ -60,7 +60,7 @@ The fixtures of `render-corpus` exported by Playwright (Chromium 156.0.8078.4) a
 | desktop | text.html | screenshot | Known | 1280x720, SSIM 0.9923, 0.64% different, 0.00% alpha different, max 163 | text: Skia renders glyphs at other subpixel positions (and CoreText on macOS makes the stems of the glyphs a little wider), and Blink rounds the font metrics of the line with superscripts and subscripts to whole pixels |
 | desktop | transparent-body.html | screenshot | Pass | 1280x720, SSIM 0.9999, 0.00% different, 0.00% alpha different, max 24 |  |
 | desktop-dpr2 | boxes.html | screenshot | Pass | 2560x1440, SSIM 0.9999, 0.00% different, 0.00% alpha different, max 29 |  |
-| desktop-dpr2 | dark-scheme.html | screenshot | Known | 2560x1440, SSIM 0.9954, 0.43% different, 0.00% alpha different, max 229 | form controls: Chromium gives them a font of 13.333px (font: -webkit-small-control), the library inherits the font of their parent (the user agent style sheet of the HTML Standard) |
+| desktop-dpr2 | dark-scheme.html | screenshot | Pass | 2560x1440, SSIM 0.9994, 0.08% different, 0.00% alpha different, max 64 |  |
 | desktop-dpr2 | gradients.html | screenshot | Pass | 2560x1440, SSIM 0.9982, 0.02% different, 0.00% alpha different, max 54 |  |
 | desktop-dpr2 | images.html | screenshot | Known | 2560x1440, SSIM 0.9971, 0.28% different, 0.00% alpha different, max 74 | image resampling: Skia scales the images up with another filter than the library at a device pixel ratio of 2 |
 | desktop-dpr2 | media-features.html | screenshot | Pass | 2560x1440, SSIM 0.9985, 0.05% different, 0.00% alpha different, max 51 |  |
@@ -69,7 +69,7 @@ The fixtures of `render-corpus` exported by Playwright (Chromium 156.0.8078.4) a
 | desktop-dpr2 | text.html | screenshot | Known | 2560x1440, SSIM 0.9897, 1.02% different, 0.00% alpha different, max 245 | text: Skia renders glyphs at other subpixel positions (and CoreText on macOS makes the stems of the glyphs a little wider), and Blink rounds the font metrics of the line with superscripts and subscripts to whole pixels |
 | desktop-dpr2 | transparent-body.html | screenshot | Pass | 2560x1440, SSIM 0.9998, 0.02% different, 0.00% alpha different, max 42 |  |
 | omit-background | boxes.html | screenshot | Pass | 1280x720, SSIM 0.9998, 0.00% different, 0.06% alpha different, max 39 |  |
-| omit-background | dark-scheme.html | screenshot | Known | 1280x720, SSIM 0.9937, 0.47% different, 0.41% alpha different, max 224 | form controls: Chromium gives them a font of 13.333px (font: -webkit-small-control), the library inherits the font of their parent (the user agent style sheet of the HTML Standard) |
+| omit-background | dark-scheme.html | screenshot | Pass | 1280x720, SSIM 0.9997, 0.05% different, 0.16% alpha different, max 44 |  |
 | omit-background | gradients.html | screenshot | Known | 1280x720, SSIM 0.9984, 0.04% different, 0.29% alpha different, max 54 | image resampling: since Chromium 156, the edges of the scaled-up tiles of the semi-transparent background image of the multi-layer box have other alpha values |
 | omit-background | images.html | screenshot | Pass | 1280x720, SSIM 0.9991, 0.00% different, 0.00% alpha different, max 23 |  |
 | omit-background | long-page.html | screenshot | Pass | 1280x720, SSIM 0.9972, 0.02% different, 0.00% alpha different, max 42 |  |

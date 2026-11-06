@@ -9,16 +9,17 @@ description: "The results of the web-platform-tests of html/rendering, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 143 | 150 | 0 | 95% |
+| [Stable](#stable-tests) | 144 | 150 | 0 | 96% |
 | [Tentative](#tentative-tests) | 3 | 7 | 0 | 43% |
-| [Reftests](#reftests) | 321 | 330 | 0 | 97% |
+| [Reftests](#reftests) | 320 | 330 | 0 | 97% |
 | **All** | **467** | **487** | **0** | **96%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **TEST BUG**: 15
+- **BUG**: 1
+- **TEST BUG**: 14
 - **NOT IMPLEMENTED**: 3
 - **OUT OF SCOPE**: 2
 
@@ -161,7 +162,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`widgets/button-layout/flex.html`](https://wpt.fyi/results/html/rendering/widgets/button-layout/flex.html) | Pass | 5 / 5 |  |  |
 | [`widgets/button-layout/grid.html`](https://wpt.fyi/results/html/rendering/widgets/button-layout/grid.html) | Pass | 2 / 2 |  |  |
 | [`widgets/button-layout/shrink-wrap.html`](https://wpt.fyi/results/html/rendering/widgets/button-layout/shrink-wrap.html) | Pass | 24 / 24 |  |  |
-| [`widgets/field-sizing-input-number.html`](https://wpt.fyi/results/html/rendering/widgets/field-sizing-input-number.html) | Fail | 7 / 9 | TEST BUG | 2 subtests compare the width of a `field-sizing: content` number field holding the 24 characters `12345678901234567890.123` (188px) with the default width of a number field (224px, the 20 characters of a text field: 19 average character widths plus the maximum character width, https://html.spec.whatwg.org/multipage/rendering.html#converting-a-character-width-to-pixels): the default serif font of the runner has a maximum character width of 53px at 16px for an average one of 9px, so the default field is wider; the test assumes a font whose maximum character width is close to its average one, as the default fonts of the browsers |
+| [`widgets/field-sizing-input-number.html`](https://wpt.fyi/results/html/rendering/widgets/field-sizing-input-number.html) | Pass | 9 / 9 |  |  |
 | [`widgets/field-sizing-input-text.html`](https://wpt.fyi/results/html/rendering/widgets/field-sizing-input-text.html) | Pass | 54 / 54 |  |  |
 | [`widgets/field-sizing-select-contain-size.html`](https://wpt.fyi/results/html/rendering/widgets/field-sizing-select-contain-size.html) | Pass | 2 / 2 |  |  |
 | [`widgets/field-sizing-select.html`](https://wpt.fyi/results/html/rendering/widgets/field-sizing-select.html) | Pass | 5 / 5 |  |  |
@@ -185,9 +186,9 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`non-replaced-elements/flow-content-0/slot-element-tabbable.tentative.html`](https://wpt.fyi/results/html/rendering/non-replaced-elements/flow-content-0/slot-element-tabbable.tentative.html) | Fail | 1 / 2 | TEST BUG | tentative: the test expects a slot that generates no box (`display: contents`, its default style) with a `tabindex` to be a tab stop; it is one in no browser (wpt.fyi: the subtest fails in Chrome, Firefox and Safari with the same "slot is now focused expected <slot tabindex=\"1\"> but got null"), and the shadow-dom tests require the opposite (`shadow-dom/focus/focus-tabindex-order-shadow-zero.html`: the navigation "doesn't include slots"). Such a slot is focusable by script (`slot-element-focusable.tentative.html` passes), and is a tab stop when it generates a box |
 | [`non-replaced-elements/form-controls/placeholder-opacity-default.tentative.html`](https://wpt.fyi/results/html/rendering/non-replaced-elements/form-controls/placeholder-opacity-default.tentative.html) | Pass | 1 / 1 |  |  |
 | [`replaced-elements/the-textarea-element/textarea-defaults-to-zero-margin.tentative.html`](https://wpt.fyi/results/html/rendering/replaced-elements/the-textarea-element/textarea-defaults-to-zero-margin.tentative.html) | Pass | 1 / 1 |  |  |
-| [`widgets/baseline-alignment-and-overflow.tentative.html`](https://wpt.fyi/results/html/rendering/widgets/baseline-alignment-and-overflow.tentative.html) | Fail | 126 / 132 | TEST BUG | the color well (`<input type=color>`) is aligned by the block-end edge of its content box, as the `button` holding a block-level image of the reference (tentative, written to match Firefox, whatwg/html#5065), but the reference gets the 2px borders that the user agent style sheet of the HTML Standard gives the buttons, while it gives `input type=color` no border (Firefox draws a 2px border): the color well is 2px lower |
+| [`widgets/baseline-alignment-and-overflow.tentative.html`](https://wpt.fyi/results/html/rendering/widgets/baseline-alignment-and-overflow.tentative.html) | Fail | 125 / 132 | TEST BUG | the color well (`<input type=color>`) is aligned by the block-end edge of its content box, as the `button` holding a block-level image of the reference (tentative, written to match Firefox, whatwg/html#5065), but the reference gets the 2px borders that the user agent style sheet of the HTML Standard gives the buttons, while it gives `input type=color` no border (Firefox draws a 2px border): the color well is 2px lower; the subtest of the search field with `overflow: hidden; appearance: none`: the span is 1px higher than in the reference; a reduced case gives the same positions as Chromium for the text and search fields with the 2px borders and the paddings of the user agent style sheet of Chromium |
 | [`widgets/input-checkbox-switch.tentative.window.js`](https://wpt.fyi/results/html/rendering/widgets/input-checkbox-switch.tentative.window.js) | Fail | 3 / 4 | NOT IMPLEMENTED | the `switch` IDL attribute of `<input type=checkbox>` (https://github.com/whatwg/html/pull/9546, tentative, not in the HTML Standard yet): the content attribute is rendered (a track and a thumb), the `switch` IDL attribute is not implemented, so `input.switch = true` only sets an expando property: the checkbox of the last subtest is not a switch, and with `appearance: none` its display is the `inline-block` of the user agent style sheet (`input, button { display: inline-block }`), where the test expects `inline`; only Safari passes |
-| [`widgets/the-select-element/select-as-listbox-default-styles.tentative.html`](https://wpt.fyi/results/html/rendering/widgets/the-select-element/select-as-listbox-default-styles.tentative.html) | Fail | 182 / 184 | TEST BUG | 2 subtests of this tentative test: it expects `background-color: transparent` for a select element rendered as a list box, while the library gives the form controls with native appearance the `Field` system color, as the browsers do (the specification does not set it); and it expects `font-weight: 400` for an `optgroup` element, while the user agent style sheet of the HTML Standard has `optgroup { font-weight: bolder }` |
+| [`widgets/the-select-element/select-as-listbox-default-styles.tentative.html`](https://wpt.fyi/results/html/rendering/widgets/the-select-element/select-as-listbox-default-styles.tentative.html) | Fail | 159 / 184 | TEST BUG | this tentative test expects the user agent style sheet of the HTML Standard, which gives the select elements and the options no font, border, padding nor alignment; as Chromium and Firefox, the library gives the list boxes the font of the form controls (13.333px), a 1px solid border, `vertical-align: text-bottom`, and paddings to their options (`padding-block: 0 1px; padding-inline: 2px`), and the `Field` system color as background; and it expects `font-weight: 400` for an `optgroup` element, while the user agent style sheet of the HTML Standard has `optgroup { font-weight: bolder }` |
 
 ## Reftests
 
@@ -472,7 +473,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`widgets/button-layout/centering-004.html`](https://wpt.fyi/results/html/rendering/widgets/button-layout/centering-004.html) | Pass | 1 / 1 |  |  |
 | [`widgets/button-layout/display-none-or-contents.html`](https://wpt.fyi/results/html/rendering/widgets/button-layout/display-none-or-contents.html) | Pass | 1 / 1 |  |  |
 | [`widgets/button-layout/inline-level.html`](https://wpt.fyi/results/html/rendering/widgets/button-layout/inline-level.html) | Pass | 1 / 1 |  |  |
-| [`widgets/button-layout/input-type-button-clip.html`](https://wpt.fyi/results/html/rendering/widgets/button-layout/input-type-button-clip.html) | Pass | 1 / 1 |  |  |
+| [`widgets/button-layout/input-type-button-clip.html`](https://wpt.fyi/results/html/rendering/widgets/button-layout/input-type-button-clip.html) | Fail | 0 / 1 | BUG | 2 pixels of the ellipsis: the label of an `input` button is elided by the painter of the form controls, the one of the `button` of the reference by the inline layout, which place the ellipsis a fraction of a pixel apart at the 13.333px font of the controls |
 | [`widgets/button-layout/input-type-button-newline-2.html`](https://wpt.fyi/results/html/rendering/widgets/button-layout/input-type-button-newline-2.html) | Pass | 1 / 1 |  |  |
 | [`widgets/button-layout/input-type-button-newline.html`](https://wpt.fyi/results/html/rendering/widgets/button-layout/input-type-button-newline.html) | Pass | 1 / 1 |  |  |
 | [`widgets/button-layout/overflow-hidden-block-child-baseline.html`](https://wpt.fyi/results/html/rendering/widgets/button-layout/overflow-hidden-block-child-baseline.html) | Pass | 1 / 1 |  |  |

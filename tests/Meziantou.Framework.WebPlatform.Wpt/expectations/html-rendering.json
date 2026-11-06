@@ -1261,7 +1261,8 @@
       "<input type=\"color\" value=\"#000000\" style=\"overflow: scroll; appearance: auto;\">": "FAIL",
       "<input type=\"color\" value=\"#000000\" style=\"overflow: scroll; appearance: none;\">": "FAIL",
       "<input type=\"color\" value=\"#000000\" style=\"overflow: visible; appearance: auto;\">": "FAIL",
-      "<input type=\"color\" value=\"#000000\" style=\"overflow: visible; appearance: none;\">": "FAIL"
+      "<input type=\"color\" value=\"#000000\" style=\"overflow: visible; appearance: none;\">": "FAIL",
+      "<input type=\"search\" value=\"x\" style=\"overflow: hidden; appearance: none;\">": "FAIL"
     }
   },
   "html/rendering/widgets/button-layout/anonymous-button-content-box.html": {
@@ -1304,7 +1305,7 @@
     "reftest": "PASS"
   },
   "html/rendering/widgets/button-layout/input-type-button-clip.html": {
-    "reftest": "PASS"
+    "reftest": "FAIL"
   },
   "html/rendering/widgets/button-layout/input-type-button-newline-2.html": {
     "reftest": "PASS"
@@ -1331,11 +1332,7 @@
     "reftest": "PASS"
   },
   "html/rendering/widgets/field-sizing-input-number.html": {
-    "total": 9,
-    "failures": {
-      "number: Auto width and auto height with a long text": "FAIL",
-      "number: Explicit height and auto width": "FAIL"
-    }
+    "total": 9
   },
   "html/rendering/widgets/field-sizing-input-text-relayout.html": {
     "reftest": "PASS"
@@ -1499,8 +1496,31 @@
   "html/rendering/widgets/the-select-element/select-as-listbox-default-styles.tentative.html": {
     "total": 184,
     "failures": {
+      "<optgroup label=\"2\"><option>3 (in <select multiple=\"\">) - font-size": "FAIL",
       "<optgroup label=\"2\"><option>3 (in <select multiple=\"\">) - font-weight": "FAIL",
-      "<select multiple=\"\"><option>1 - background-color": "FAIL"
+      "<option>1 (in <select multiple=\"\">) - font-size": "FAIL",
+      "<option>1 (in <select multiple=\"\">) - padding-bottom": "FAIL",
+      "<option>1 (in <select multiple=\"\">) - padding-left": "FAIL",
+      "<option>1 (in <select multiple=\"\">) - padding-right": "FAIL",
+      "<option>3 (in <select multiple=\"\"><optgroup label=\"2\">) - font-size": "FAIL",
+      "<option>3 (in <select multiple=\"\"><optgroup label=\"2\">) - padding-bottom": "FAIL",
+      "<option>3 (in <select multiple=\"\"><optgroup label=\"2\">) - padding-left": "FAIL",
+      "<option>3 (in <select multiple=\"\"><optgroup label=\"2\">) - padding-right": "FAIL",
+      "<select multiple=\"\"><option>1 - background-color": "FAIL",
+      "<select multiple=\"\"><option>1 - border-bottom-color": "FAIL",
+      "<select multiple=\"\"><option>1 - border-bottom-style": "FAIL",
+      "<select multiple=\"\"><option>1 - border-bottom-width": "FAIL",
+      "<select multiple=\"\"><option>1 - border-left-color": "FAIL",
+      "<select multiple=\"\"><option>1 - border-left-style": "FAIL",
+      "<select multiple=\"\"><option>1 - border-left-width": "FAIL",
+      "<select multiple=\"\"><option>1 - border-right-color": "FAIL",
+      "<select multiple=\"\"><option>1 - border-right-style": "FAIL",
+      "<select multiple=\"\"><option>1 - border-right-width": "FAIL",
+      "<select multiple=\"\"><option>1 - border-top-color": "FAIL",
+      "<select multiple=\"\"><option>1 - border-top-style": "FAIL",
+      "<select multiple=\"\"><option>1 - border-top-width": "FAIL",
+      "<select multiple=\"\"><option>1 - font-size": "FAIL",
+      "<select multiple=\"\"><option>1 - vertical-align": "FAIL"
     }
   },
   "html/rendering/widgets/the-select-element/select-dir-invalidation.html": {

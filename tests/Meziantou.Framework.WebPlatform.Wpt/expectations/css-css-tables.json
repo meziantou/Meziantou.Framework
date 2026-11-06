@@ -323,6 +323,7 @@
   "css/css-tables/height-distribution/percentage-sizing-of-table-cell-children.html": {
     "total": 10,
     "failures": {
+      "Unresolvable percentage heights are resolved as auto in first pass (replaced elements)": "FAIL",
       "Unresolvable percentage widths are resolved as auto in first pass (replaced elements)": "FAIL"
     }
   },

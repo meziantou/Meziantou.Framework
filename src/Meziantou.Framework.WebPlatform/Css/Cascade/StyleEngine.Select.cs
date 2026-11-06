@@ -71,14 +71,14 @@ internal sealed partial class StyleEngine
     /// <summary>
     /// The rules of the rows of a list box with native appearance or primitive appearance, which the specification leaves to
     /// the user agent ("the height necessary to contain as many rows for items as given by the element's display size"): the
-    /// options are the rows, blocks of at least one line (the natural size of the list box is a line per row, see
-    /// <see cref="Layout.FormControlSizing"/>; the rows are as wide as the widest one and do not wrap, see
-    /// <see cref="Layout.FormControlContents"/>). A selected option is highlighted; as in Chrome, the highlight of the
-    /// options of a focused list box cannot be overridden by the author, and the options of a group have the weight of the
-    /// list box.
+    /// options are the rows, blocks of at least one line, with the minimum height (1.2em) and the paddings of Chromium (the
+    /// natural size of the list box is a row of that height per row, see <see cref="Layout.FormControlSizing"/>; the rows are
+    /// as wide as the widest one and do not wrap, see <see cref="Layout.FormControlContents"/>). A selected option is
+    /// highlighted; as in Chrome, the highlight of the options of a focused list box cannot be overridden by the author, and
+    /// the options of a group have the weight of the list box.
     /// </summary>
     private const string SelectListBoxNativeAppearanceStyleSheet = """
-        select option { min-block-size: 1lh; }
+        select option { min-block-size: max(1lh, 1.2em); padding-block: 0 1px; padding-inline: 2px; }
         select optgroup option { font-weight: normal; }
         select option:checked { background-color: light-dark(#cecece, #545454); }
         select:focus option:checked {

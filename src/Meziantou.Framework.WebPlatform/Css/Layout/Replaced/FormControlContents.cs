@@ -132,15 +132,17 @@ internal static class FormControlContents
 
     /// <summary>
     /// Whether a widget falls back to its primitive appearance (https://drafts.csswg.org/css-ui-4/#appearance-disabling-properties):
-    /// as in the browsers, when the author gives one of its backgrounds or borders a value other than the one of the user agent
-    /// style sheet (which only sets the background color: Field for the text controls, transparent for the other ones).
+    /// as in the browsers, when the author specifies one of its backgrounds or borders (the widgets with a native frame, the
+    /// progress bars and the meters, see <see cref="HasNativeFrame"/>), or gives one of them a value other than the one of the
+    /// user agent style sheet (the other widgets: no border, and a transparent background).
     /// </summary>
     public static bool IsDevolvedWidget(Element element, ComputedStyle style)
     {
-        // A progress bar, a meter, a text control and a select element fall back as soon as the author specifies one of the
-        // properties (as in the browsers, whatever its value: WPT css/css-ui/compute-kind-widget-generated): "in an author-level
-        // rule", so that a declaration that reverts the property to the user agent origin does not count, nor an animation or a
-        // transition: their computed values are not compared (WPT html/rendering/widgets/appearance/appearance-animation-002)
+        // A progress bar, a meter, a text control, a select element, a button and a color well fall back as soon as the author
+        // specifies one of the properties (as in the browsers, whatever its value: WPT css/css-ui/compute-kind-widget-generated):
+        // "in an author-level rule", so that a declaration that reverts the property to the user agent origin does not count,
+        // nor an animation or a transition: their computed values are not compared (WPT
+        // html/rendering/widgets/appearance/appearance-animation-002)
         if (element is HtmlProgressElement or HtmlMeterElement || HasNativeFrame(element))
         {
             if (!style.MayHaveCascadedValueStartingWith("background", "border"))
@@ -174,24 +176,31 @@ internal static class FormControlContents
     }
 
     /// <summary>
-    /// The background color of the native appearance of a widget, the one of the user agent style sheet: <c>Field</c> for the
-    /// text controls, transparent for the other ones.
+    /// The background color of the native appearance of a widget, the one of the user agent style sheet: <c>ButtonFace</c> for
+    /// the buttons and the color wells, <c>Field</c> for the text controls, transparent for the other ones.
     /// </summary>
     public static Rendering.DisplayColor GetNativeBackgroundColor(Element element, ComputedStyle style)
     {
-        var textControl = element is HtmlTextAreaElement or HtmlSelectElement or HtmlInputElement { InputType: not (InputType.Checkbox or InputType.Radio or InputType.Range or InputType.File or InputType.Image or InputType.Color) };
+        if (IsButton(element) || element is HtmlInputElement { InputType: InputType.Color })
+            return Rendering.DisplayColor.Parse(CssValueComputer.GetSystemColor(style, "buttonface")) ?? Rendering.DisplayColor.Transparent;
+
+        var textControl = element is HtmlTextAreaElement or HtmlSelectElement or HtmlInputElement { InputType: not (InputType.Checkbox or InputType.Radio or InputType.Range or InputType.File or InputType.Image) };
         return textControl ? Rendering.DisplayColor.Parse(CssValueComputer.GetSystemColor(style, "field")) ?? Rendering.DisplayColor.White : Rendering.DisplayColor.Transparent;
     }
 
+    /// <summary>Whether the element is a button: a <c>button</c> element, or an <c>input</c> element of type submit, reset or button.</summary>
+    private static bool IsButton(Element element) => element is HtmlButtonElement or HtmlInputElement { InputType: InputType.Submit or InputType.Reset or InputType.Button };
+
     /// <summary>
-    /// Whether the native appearance of a form control has a frame along the edges of its border box (see <c>Painter.PaintNativeFrame</c>):
-    /// a text field (also a date and time field), a <c>textarea</c> and a <c>select</c> element rendered as a drop-down box.
+    /// Whether the native appearance of a form control is a frame along the edges of its border box, over its background (see
+    /// <c>Painter.PaintNativeFrame</c>), as in Chromium: a text field (also a date and time field), a <c>textarea</c>, a
+    /// <c>select</c> element, a button and a color well. The borders of the user agent style sheet give the frame its color and
+    /// its space, their style and their width are not painted.
     /// </summary>
     public static bool HasNativeFrame(Element element) => element switch
     {
-        HtmlTextAreaElement => true,
-        HtmlInputElement input => FormControlSizing.IsTextField(input),
-        HtmlSelectElement select => StyleEngine.IsDropDownBox(select),
+        HtmlTextAreaElement or HtmlSelectElement or HtmlButtonElement => true,
+        HtmlInputElement input => FormControlSizing.IsTextField(input) || input.InputType is InputType.Submit or InputType.Reset or InputType.Button or InputType.Color,
         _ => false,
     };
 

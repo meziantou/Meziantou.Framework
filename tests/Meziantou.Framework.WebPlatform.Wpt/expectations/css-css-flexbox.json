@@ -1821,7 +1821,7 @@
     "reftest": "PASS"
   },
   "css/css-flexbox/flexbox-basic-textarea-vert-001.xhtml": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-flexbox/flexbox-basic-video-horiz-001.xhtml": {
     "reftest": "PASS"

@@ -16,6 +16,9 @@ internal sealed partial class Painter
     /// <summary>The color of the frames of the native controls (the borders of the checkboxes, the tracks).</summary>
     private static readonly DisplayColor ControlFrameColor = DisplayColor.FromRgb(0x76, 0x76, 0x76);
 
+    /// <summary>The color of the border of the swatch of a color well, as in Chromium.</summary>
+    private static readonly DisplayColor SwatchFrameColor = DisplayColor.FromRgb(0x77, 0x77, 0x77);
+
     /// <summary>The color of the checked state and of the values of the native controls (the used value of <c>accent-color: auto</c>).</summary>
     private static readonly DisplayColor ControlAccentColor = DisplayColor.FromRgb(0x00, 0x75, 0xFF);
 
@@ -66,10 +69,6 @@ internal sealed partial class Painter
         var element = fragment.Box.Element;
         var style = fragment.Box.Style;
         var native = FormControlContents.HasNativeAppearance(element!, style);
-        if (native && FormControlContents.HasNativeFrame(element!) && (element is not HtmlSelectElement || style.GetComputedValue("appearance") != "menulist-button"))
-        {
-            PaintNativeFrame(element!, GetSnappedBorderBox(fragment, offset), style.Layout.EffectiveZoom);
-        }
 
         // The value and the placeholder of a text control (a textarea or a text field, see TextControlLayout) are the lines of
         // its inner editor and of its ::placeholder box: their fragments are the children of the fragment of the control, painted
@@ -112,21 +111,77 @@ internal sealed partial class Painter
     }
 
     /// <summary>
-    /// Paints the native frame of a text field, of a <c>textarea</c> or of a drop-down box (see <see cref="FormControlContents.HasNativeFrame"/>):
-    /// a thin rounded frame along the edges of its border box, over its background (the user agent style sheet of the
-    /// specification gives the controls no border: the frame takes no space). A devolved widget has no frame, nor a drop-down
-    /// box with <c>appearance: menulist-button</c> (https://html.spec.whatwg.org/multipage/rendering.html#the-select-element-2:
-    /// "CSS properties such as 'color', 'background-color', and 'border' should not be disregarded", its borders are the ones of
-    /// CSS).
+    /// Returns whether the box of a fragment is painted with the native frame of a form control (see
+    /// <see cref="FormControlContents.HasNativeFrame"/>): a control with its native appearance, or a button pseudo-element with
+    /// its native appearance (the <c>::file-selector-button</c> of a file upload control, a <c>::scroll-button()</c>, which are
+    /// "styled identically to the button element"). A devolved widget has no frame, nor a drop-down box with
+    /// <c>appearance: menulist-button</c> (https://html.spec.whatwg.org/multipage/rendering.html#the-select-element-2: "CSS
+    /// properties such as 'color', 'background-color', and 'border' should not be disregarded", its borders are the ones of
+    /// CSS); on the other controls, <c>menulist-button</c> is an alias of <c>auto</c>
+    /// (https://drafts.csswg.org/css-ui-4/#appearance-switching).
     /// </summary>
-    private void PaintNativeFrame(Element element, PhysicalRect border, double zoom)
+    private static bool HasNativeFrame(BoxFragment fragment)
     {
+        if (fragment.Box is not { Element: { } element } box)
+            return false;
+
+        if (box.PseudoElement is not null)
+            return (box.PseudoElement == FormControlContents.FileSelectorButton || ScrollControls.IsScrollButton(box.PseudoElement)) && FormControlContents.HasNativePartAppearance(box.Style);
+
+        return FormControlContents.HasNativeFrame(element) && FormControlContents.HasNativeAppearance(element, box.Style)
+            && !(element is HtmlSelectElement select && StyleEngine.IsDropDownBox(select) && box.Style.GetComputedValue("appearance") == "menulist-button");
+    }
+
+    /// <summary>The shape of the native frame of a form control: its border box, with corners rounded by 2px.</summary>
+    private static RoundedRect GetNativeFrameShape(PhysicalRect border, double zoom)
+    {
+        var radius = Math.Min(2 * zoom, Math.Min(border.Width, border.Height) / 2);
+        return new RoundedRect(border, new BorderRadii((radius, radius), (radius, radius), (radius, radius), (radius, radius)));
+    }
+
+    /// <summary>
+    /// Paints the background of a form control with a native frame (see <see cref="HasNativeFrame(BoxFragment)"/>): its native
+    /// background color in the shape of the frame. The color of the user agent style sheet is kept when an animation or a
+    /// transition changes it (an author-level declaration devolves the widget, see <see cref="FormControlContents.IsDevolvedWidget"/>).
+    /// </summary>
+    private void PaintNativeBackground(BoxFragment fragment, ComputedStyle style, PhysicalRect border)
+    {
+        var box = fragment.Box;
+        var color = box.PseudoElement is null
+            ? FormControlContents.GetNativeBackgroundColor(box.Element!, box.Style)
+            : DisplayColor.Parse(CssValueComputer.GetSystemColor(box.Style, "buttonface")) ?? DisplayColor.Transparent;
+
+        // Printed without the backgrounds: a background is solid white (see ForcesWhiteBackground)
+        if (ForcesWhiteBackground(style))
+        {
+            color = DisplayColor.White;
+        }
+
+        if (!color.IsTransparent)
+        {
+            FillRoundedRect(GetNativeFrameShape(border, box.Style.Layout.EffectiveZoom), new DisplayPaint(color), box.Element);
+        }
+    }
+
+    /// <summary>
+    /// Paints the native frame of a form control (see <see cref="HasNativeFrame(BoxFragment)"/>), as in Chromium: a ring of 1px
+    /// along the edges of its border box, with corners rounded by 2px, over its background. Its color is the color of the top
+    /// border of the control (the one of the user agent style sheet: a control with an author-level border is devolved); the
+    /// border widths are the space of the frame, their styles are not painted.
+    /// </summary>
+    private void PaintNativeFrame(BoxFragment fragment, PhysicalRect border)
+    {
+        var style = fragment.Box.Style;
+        var zoom = style.Layout.EffectiveZoom;
         if (border.Width <= 2 * zoom || border.Height <= 2 * zoom)
             return;
 
-        var radius = 2 * zoom;
-        var frame = new RoundedRect(border, new BorderRadii((radius, radius), (radius, radius), (radius, radius), (radius, radius)));
-        _builder.Add(new DrawRingItem(frame, frame.Inset(Uniform(zoom)), new DisplayPaint(ControlFrameColor)) { Source = element });
+        var color = GetColor(GetDecorationStyle(fragment), "border-top-color");
+        if (color.IsTransparent)
+            return;
+
+        var frame = GetNativeFrameShape(border, zoom);
+        _builder.Add(new DrawRingItem(frame, frame.Inset(Uniform(zoom)), new DisplayPaint(color)) { Source = fragment.Box.Element });
     }
 
     /// <summary>
@@ -165,12 +220,14 @@ internal sealed partial class Painter
                         return;
 
                     case InputType.Color:
-                        if (native)
+                        // As in Chromium, the swatch is 4px from the top and the bottom of the content box and 2px from its sides,
+                        // with a border of 1px
+                        var swatch = content.Contract(new Sides<double>(4 * zoom, 2 * zoom, 4 * zoom, 2 * zoom));
+                        if (native && swatch.Width > 0 && swatch.Height > 0)
                         {
-                            var swatch = content.Contract(new Sides<double>(2 * zoom, 2 * zoom, 2 * zoom, 2 * zoom));
                             var color = DisplayColor.Parse(input.Value) ?? DisplayColor.Black;
                             _builder.Add(new DrawRectItem(swatch, new DisplayPaint(color)) { Source = input });
-                            BorderPainter.Paint(_builder, new RoundedRect(swatch, default), Uniform(zoom), new Sides<BorderStyle>(BorderStyle.Solid, BorderStyle.Solid, BorderStyle.Solid, BorderStyle.Solid), new Sides<DisplayColor>(ControlFrameColor, ControlFrameColor, ControlFrameColor, ControlFrameColor), input, _devicePixelRatio);
+                            BorderPainter.Paint(_builder, new RoundedRect(swatch, default), Uniform(zoom), new Sides<BorderStyle>(BorderStyle.Solid, BorderStyle.Solid, BorderStyle.Solid, BorderStyle.Solid), new Sides<DisplayColor>(SwatchFrameColor, SwatchFrameColor, SwatchFrameColor, SwatchFrameColor), input, _devicePixelRatio);
                         }
 
                         return;
@@ -209,7 +266,7 @@ internal sealed partial class Painter
                 }
 
             case HtmlSelectElement select:
-                PaintSelect(select, style, content, native, zoom);
+                PaintSelect(select, style, content, zoom);
                 return;
 
             case HtmlProgressElement progress:
@@ -383,7 +440,7 @@ internal sealed partial class Painter
     }
 
     /// <summary>Paints a select element rendered as a drop-down box: the label of its selected option and an arrow.</summary>
-    private void PaintSelect(HtmlSelectElement select, ComputedStyle style, PhysicalRect content, bool native, double zoom)
+    private void PaintSelect(HtmlSelectElement select, ComputedStyle style, PhysicalRect content, double zoom)
     {
         var options = select.GetListOfOptions();
         var color = GetColor(style, "color");
@@ -401,11 +458,14 @@ internal sealed partial class Painter
             }
         }
 
-        // The arrow (the "drop-down button") takes the end of the content box: with the native appearance, and also in the devolved
-        // state, whose appearance "is that of a drop-down box, including a "drop-down button"", as with appearance: menulist-button
+        // The label is in the internal paddings of the content box (see FormControlSizing.GetEmptyDropDownBoxSize). The arrow
+        // (the "drop-down button") takes the end of the content box: with the native appearance, and also in the devolved state,
+        // whose appearance "is that of a drop-down box, including a "drop-down button"", as with appearance: menulist-button
         // (https://html.spec.whatwg.org/multipage/rendering.html#the-select-element-2)
-        var arrowSize = native || (style.GetComputedValue("appearance") is not ("none" or "") && !StyleEngine.HasControlBaseAppearance(style)) ? Math.Min(content.Height, style.Layout.FontSize) : 0;
-        var textArea = content with { Width = Math.Max(0, content.Width - arrowSize) };
+        var (startPadding, endPadding) = FormControlSizing.GetDropDownBoxInlinePaddings(style);
+        var (start, end) = (startPadding * zoom, endPadding * zoom);
+        var arrowSize = endPadding > 0 ? Math.Min(content.Height, FormControlSizing.DropDownButtonSize * zoom) : 0;
+        var textArea = content with { X = content.X + start, Width = Math.Max(0, content.Width - start - end) };
         if (selected is not null)
         {
             // https://html.spec.whatwg.org/multipage/rendering.html#the-select-element-2: an option without base appearance
@@ -415,7 +475,7 @@ internal sealed partial class Painter
 
         if (arrowSize > 0)
         {
-            var center = new PhysicalOffset(content.Right - (arrowSize / 2), content.Y + (content.Height / 2));
+            var center = new PhysicalOffset(content.Right - zoom - (FormControlSizing.DropDownButtonSize * zoom / 2), content.Y + (content.Height / 2));
             var half = arrowSize * 0.25;
             var arrow = new DisplayPath();
             arrow.MoveTo(center.X - half, center.Y - (half / 2));

@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using Meziantou.Framework.WebPlatform.Css.Cascade;
+using Meziantou.Framework.WebPlatform.Dom;
 
 namespace Meziantou.Framework.WebPlatform.Css.Layout;
 
@@ -901,12 +902,16 @@ internal sealed partial class InlineLayoutAlgorithm
             // https://drafts.csswg.org/css-inline-3/#baseline-synthesis-box: a box without baseline in the inline axis of the
             // line gets them synthesized from its margin box: the alphabetic and ideographic-under baselines "are assumed to be at
             // its line-under margin edge", the central and math baselines "halfway between its line-under and line-over margin
-            // edges", the hanging baseline "at its line-over margin edge"
-            ascent = alignment switch
+            // edges", the hanging baseline "at its line-over margin edge". As in Chromium, a checkbox or a radio button with its
+            // native appearance (which has no baseline in a vertical writing mode, see FormControlBaseline.PaddingBoxEnd) gets
+            // them synthesized from its border box (its margins are the ones of Chromium: WPT
+            // css/css-writing-modes/forms/checkbox-appearance-native-vertical-lr-baseline.optional.html)
+            var (over, synthesisBoxSize) = IsNativeCheckboxOrRadio(box) ? (marginOver, size.Block) : (0, marginBoxSize);
+            ascent = over + alignment switch
             {
-                AlignmentBaseline.Central or AlignmentBaseline.Mathematical or AlignmentBaseline.Middle or AlignmentBaseline.BaselineMiddle => marginBoxSize / 2,
+                AlignmentBaseline.Central or AlignmentBaseline.Mathematical or AlignmentBaseline.Middle or AlignmentBaseline.BaselineMiddle => synthesisBoxSize / 2,
                 AlignmentBaseline.Hanging or AlignmentBaseline.TextTop => 0,
-                _ => marginBoxSize,
+                _ => synthesisBoxSize,
             };
         }
 
@@ -915,6 +920,11 @@ internal sealed partial class InlineLayoutAlgorithm
         node.Contributes = true;
         node.Baseline = -GetBaselineShift(style, alignment, node.Ascent, node.Descent, boxBaseline: 0, node.Metrics.LineHeight, parentMetrics, out node.LineRelative);
     }
+
+    /// <summary>Returns whether a box is the replaced box of a checkbox or of a radio button with its native appearance.</summary>
+    private static bool IsNativeCheckboxOrRadio(ContainerBox box)
+        => box is { Kind: ContainerBoxKind.Replaced, PseudoElement: null, Element: HtmlInputElement { InputType: InputType.Checkbox or InputType.Radio } input }
+            && !FormControlContents.IsSwitch(input) && FormControlContents.HasNativeAppearance(input, box.Style);
 
     /// <summary>Returns whether a box is a scroll container in its block axis (its <c>overflow</c> in that axis is <c>hidden</c>, <c>scroll</c> or <c>auto</c>).</summary>
     private static bool IsBlockAxisScrollContainer(LayoutStyle layout)

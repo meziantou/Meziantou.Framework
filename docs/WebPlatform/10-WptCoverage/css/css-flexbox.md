@@ -11,14 +11,14 @@ description: "The results of the web-platform-tests of css/css-flexbox, and why 
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 375 | 376 | 0 | 99.7% |
 | [Tentative](#tentative-tests) | 6 | 6 | 0 | 100% |
-| [Reftests](#reftests) | 1,018 | 1,023 | 0 | 99.5% |
-| **All** | **1,399** | **1,405** | **0** | **99.5%** |
+| [Reftests](#reftests) | 1,019 | 1,023 | 0 | 99.6% |
+| **All** | **1,400** | **1,405** | **0** | **99.6%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 3
+- **BUG**: 2
 - **TEST BUG**: 3
 
 ## Stable tests
@@ -855,7 +855,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`flexbox-basic-img-horiz-001.xhtml`](https://wpt.fyi/results/css/css-flexbox/flexbox-basic-img-horiz-001.xhtml) | Pass | 1 / 1 |  |  |
 | [`flexbox-basic-img-vert-001.xhtml`](https://wpt.fyi/results/css/css-flexbox/flexbox-basic-img-vert-001.xhtml) | Pass | 1 / 1 |  |  |
 | [`flexbox-basic-textarea-horiz-001.xhtml`](https://wpt.fyi/results/css/css-flexbox/flexbox-basic-textarea-horiz-001.xhtml) | Pass | 1 / 1 |  |  |
-| [`flexbox-basic-textarea-vert-001.xhtml`](https://wpt.fyi/results/css/css-flexbox/flexbox-basic-textarea-vert-001.xhtml) | Fail | 0 / 1 | BUG | the text controls inherit their font (the HTML Standard gives them none; the browsers use a monospace font of 13.33px for a `textarea`): the `textarea` elements of the test inherit `8px monospace` from their flex container, the ones of the reference the 16px font of the body, whose line overflows their height of 10px and displays a vertical scrollbar (the difference was not visible before the scrollbars were painted) |
+| [`flexbox-basic-textarea-vert-001.xhtml`](https://wpt.fyi/results/css/css-flexbox/flexbox-basic-textarea-vert-001.xhtml) | Pass | 1 / 1 |  |  |
 | [`flexbox-basic-video-horiz-001.xhtml`](https://wpt.fyi/results/css/css-flexbox/flexbox-basic-video-horiz-001.xhtml) | Pass | 1 / 1 |  |  |
 | [`flexbox-basic-video-vert-001.xhtml`](https://wpt.fyi/results/css/css-flexbox/flexbox-basic-video-vert-001.xhtml) | Pass | 1 / 1 |  |  |
 | [`flexbox-break-request-horiz-001a.html`](https://wpt.fyi/results/css/css-flexbox/flexbox-break-request-horiz-001a.html) | Pass | 1 / 1 |  |  |

@@ -130,15 +130,18 @@ public sealed class PaintingTests : IDisposable
     [Fact]
     public void FormControls_NativeFrame()
     {
-        // The text fields, the textarea elements and the drop-down boxes with the native appearance have a frame along their
-        // border box; a devolved widget (here an author border, even of the user agent value) and a drop-down box with
-        // appearance: menulist-button do not
-        var document = Parse("<input id=a style='width: 50px'><input id=b style='width: 50px; border-width: 0'><select id=c><option>x</select><select id=d style='appearance: menulist-button'><option>x</select>");
+        // As in Chromium, the text fields, the textarea elements, the select elements and the buttons with the native appearance
+        // have a frame along their border box (the borders of the user agent style sheet give it its space and its color); a
+        // devolved widget (here an author border, even of the user agent value) does not, and a drop-down box with
+        // appearance: menulist-button has the square border of CSS
+        var document = Parse("<style>input, select, button { font: inherit }</style><input id=a style='width: 50px'><input id=b style='width: 50px; border-width: 0'><select id=c><option>x</select><select id=d style='appearance: menulist-button'><option>x</select><button id=e>x</button>");
         var dump = Dump(document);
-        Assert.Contains("draw-ring (0, 0, 50x10) radii=2,2,2,2 - (1, 1, 48x8) radii=1,1,1,1 fill #767676  [input#a]", dump, StringComparison.Ordinal);
+        Assert.Contains("draw-ring (0, 0, 58x16) radii=2,2,2,2 - (1, 1, 56x14) radii=1,1,1,1 fill #767676  [input#a]", dump, StringComparison.Ordinal);
         Assert.DoesNotContain("fill #767676  [input#b]", dump, StringComparison.Ordinal);
         Assert.Contains("fill #767676  [select#c]", dump, StringComparison.Ordinal);
-        Assert.DoesNotContain("fill #767676  [select#d]", dump, StringComparison.Ordinal);
+        Assert.DoesNotContain("radii=2,2,2,2 - (145, 2, 30x12) radii=1,1,1,1 fill #767676  [select#d]", dump, StringComparison.Ordinal);
+        Assert.Contains("draw-ring (144, 1, 32x14) - (145, 2, 30x12) fill #767676  [select#d]", dump, StringComparison.Ordinal);
+        Assert.Contains("fill #767676  [button#e]", dump, StringComparison.Ordinal);
     }
 
     [Fact]

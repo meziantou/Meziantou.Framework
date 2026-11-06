@@ -251,11 +251,11 @@ internal static class PublicApiModelBuilder
             .OrderBy(static method => method.MetadataToken)
             .ToArray();
 
-        var extensionPropertyBlocks = BuildExtensionPropertyBlocks(methods, indentationLevel);
-        var extensionPropertyAccessors = extensionPropertyBlocks.SelectMany(static block => block.Accessors).ToHashSet();
+        var extensionBlocks = BuildExtensionBlocks(type, methods, indentationLevel);
+        var extensionImplementations = extensionBlocks.SelectMany(block => block.Implementations).ToHashSet();
         foreach (var method in methods)
         {
-            if (extensionPropertyAccessors.Contains(method))
+            if (extensionImplementations.Contains(method))
                 continue;
 
             var methodText = BuildMethod(method, indentationLevel, out var sortKey);
@@ -269,12 +269,13 @@ internal static class PublicApiModelBuilder
             sb.Append(text);
         }
 
-        foreach (var extensionPropertyBlock in extensionPropertyBlocks
-                     .OrderBy(static block => block.ReceiverType, StringComparer.Ordinal)
-                     .ThenBy(static block => block.PropertyName, StringComparer.Ordinal)
-                     .ThenBy(static block => block.Content, StringComparer.Ordinal))
+        // Each member is written in its own block, as the metadata reader does
+        foreach (var extensionBlock in extensionBlocks
+                     .OrderBy(block => block.ReceiverType, StringComparer.Ordinal)
+                     .ThenBy(block => block.SortKey, MemberSortKey.Comparer)
+                     .ThenBy(block => block.Content, StringComparer.Ordinal))
         {
-            sb.Append(extensionPropertyBlock.Content);
+            sb.Append(extensionBlock.Content);
         }
     }
 
@@ -840,11 +841,12 @@ internal static class PublicApiModelBuilder
         return GetInheritedMembers(declaringType).IsHiddenBy(InheritedMemberKind.Type, RemoveGenericArity(nestedType.Name), arity);
     }
 
-    // An override or an explicit interface implementation cannot have the new modifier
+    // An override or an explicit interface implementation cannot have the new modifier, and neither can the members of an extension block:
+    // they are not declared in a class hierarchy
     private static bool CanHideInheritedMember(MethodInfo method)
     {
         var isOverride = method.IsVirtual && (!method.Attributes.HasFlag(MethodAttributes.NewSlot) || IsCovariantOverride(method));
-        return !isOverride && !IsExplicitInterfaceImplementation(method);
+        return !isOverride && !IsExplicitInterfaceImplementation(method) && !IsExtensionGroupingType(method.DeclaringType);
     }
 
     // An override with a covariant return type has its own slot. The compiler marks it with PreserveBaseOverridesAttribute.
@@ -966,7 +968,7 @@ internal static class PublicApiModelBuilder
         return type.FullName ?? type.Name;
     }
 
-    private static ParameterDeclaration BuildParameterDeclaration(ParameterInfo parameter, bool isExtensionReceiver)
+    private static ParameterDeclaration BuildParameterDeclaration(ParameterInfo parameter, bool isExtensionReceiver, bool includeName = true)
     {
         var sb = new StringBuilder();
         var usesDefaultValueSyntax = UsesDefaultValueSyntax(parameter);
@@ -1001,8 +1003,11 @@ internal static class PublicApiModelBuilder
         var parameterNullability = new NullabilityInfoContext().Create(parameter);
         var parameterTypeText = FormatType(parameterType, parameterNullability, CreateTypeAnnotations(parameter));
         sb.Append(parameterTypeText);
-        sb.Append(' ');
-        sb.Append(EscapeIdentifier(parameter.Name ?? "value"));
+        if (includeName)
+        {
+            sb.Append(' ');
+            sb.Append(EscapeIdentifier(parameter.Name ?? "value"));
+        }
 
         if (usesDefaultValueSyntax)
         {
@@ -1132,136 +1137,205 @@ internal static class PublicApiModelBuilder
         return method.IsSpecialName && method.Name.StartsWith("op_", StringComparison.Ordinal);
     }
 
-    private static List<ExtensionPropertyBlockReflection> BuildExtensionPropertyBlocks(IReadOnlyList<MethodInfo> methods, int indentationLevel)
+    // C# 14 extension blocks. See PublicApiMetadataReader.Extensions.cs for how the compiler emits them.
+    // The members of a block are written in the block, and their implementation methods are not written: the compiler generates them.
+    // Instance methods are the exception: their implementation is a classic extension method, which declares the same API.
+    private static List<ExtensionBlockReflection> BuildExtensionBlocks(Type type, IReadOnlyList<MethodInfo> methods, int indentationLevel)
     {
-        var blocks = new Dictionary<(Type ReceiverType, string PropertyName), ExtensionPropertyBuilderReflection>();
-        foreach (var method in methods)
+        var result = new List<ExtensionBlockReflection>();
+        if (!(type.IsAbstract && type.IsSealed))
+            return result;
+
+        var usedImplementations = new HashSet<MethodInfo>();
+        foreach (var groupingType in type.GetNestedTypes(BindingFlags.Public | BindingFlags.NonPublic).Where(IsExternallyVisible).OrderBy(nestedType => nestedType.MetadataToken))
         {
-            if (!TryGetExtensionPropertyAccessorInfo(method, out var accessorType, out var propertyName))
+            if (!IsExtensionType(groupingType, "<G>$") || !groupingType.GetCustomAttributesData().Any(attribute => attribute.AttributeType.FullName == "System.Runtime.CompilerServices.ExtensionAttribute"))
                 continue;
 
-            var parameters = method.GetParameters();
-            var receiverParameter = parameters[0];
-            var receiverType = receiverParameter.ParameterType.IsByRef
-                ? receiverParameter.ParameterType.GetElementType()!
-                : receiverParameter.ParameterType;
-            var key = (receiverType, propertyName);
-            if (!blocks.TryGetValue(key, out var block))
+            foreach (var markerType in groupingType.GetNestedTypes(BindingFlags.Public | BindingFlags.NonPublic).Where(IsExternallyVisible).OrderBy(nestedType => nestedType.MetadataToken))
             {
-                block = new ExtensionPropertyBuilderReflection(receiverParameter, propertyName, Getter: null, Setter: null);
-            }
+                if (!IsExtensionType(markerType, "<M>$"))
+                    continue;
 
-            // The receiver is the one of the getter when there is one
-            if (accessorType == "get")
-            {
-                blocks[key] = block with { Getter = method, ReceiverParameter = receiverParameter };
-            }
-            else
-            {
-                blocks[key] = block with { Setter = method };
-            }
-        }
+                var receiverMethod = markerType.GetMethod("<Extension>$", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.DeclaredOnly);
+                if (receiverMethod?.GetParameters() is not [var receiver])
+                    continue;
 
-        var result = new List<ExtensionPropertyBlockReflection>();
-        foreach (var block in blocks.Values)
-        {
-            if (block.Getter is null && block.Setter is null)
-                continue;
+                // The members use the type parameters of the grouping type ($T0, $T1...). The ones of the marker type have the names written in source.
+                var blockTypeParameters = markerType.GetGenericArguments();
+                Type blockMembersType;
+                try
+                {
+                    blockMembersType = blockTypeParameters.Length == 0 ? groupingType : groupingType.MakeGenericType(blockTypeParameters);
+                }
+                catch (ArgumentException)
+                {
+                    continue;
+                }
 
-            var content = BuildExtensionPropertyBlock(block, indentationLevel, out var receiverTypeText);
-            var accessors = new List<MethodInfo>();
-            if (block.Getter is not null)
-            {
-                accessors.Add(block.Getter);
+                var header = BuildExtensionBlockHeader(receiver, blockTypeParameters);
+                var receiverType = receiver.ParameterType.IsByRef ? receiver.ParameterType.GetElementType()! : receiver.ParameterType;
+                var receiverTypeText = FormatType(receiverType, new NullabilityInfoContext().Create(receiver), CreateTypeAnnotations(receiver));
+                foreach (var member in GetExtensionBlockMembers(blockMembersType, markerType.Name))
+                {
+                    var accessors = member switch
+                    {
+                        MethodInfo method => [method],
+                        PropertyInfo extensionProperty => new[] { extensionProperty.GetMethod, extensionProperty.SetMethod }.OfType<MethodInfo>().ToArray(),
+                        _ => [],
+                    };
+
+                    var implementations = new List<MethodInfo>();
+                    foreach (var accessor in accessors)
+                    {
+                        var implementation = methods.FirstOrDefault(method => !usedImplementations.Contains(method) && IsExtensionImplementation(accessor, receiver, blockTypeParameters.Length, method));
+                        if (implementation is not null)
+                        {
+                            usedImplementations.Add(implementation);
+                            implementations.Add(implementation);
+                        }
+                    }
+
+                    if (member is MethodInfo { IsStatic: false, IsSpecialName: false } && implementations is [var classicExtensionMethod] && IsExtensionMethod(classicExtensionMethod))
+                        continue;
+
+                    var sb = new StringBuilder();
+                    AppendIndentedLine(sb, indentationLevel, header);
+                    AppendIndentedLine(sb, indentationLevel, "{");
+                    MemberSortKey sortKey;
+                    if (member is PropertyInfo property)
+                    {
+                        var indexParameters = GetIndexParameters(property);
+                        sortKey = new MemberSortKey(MemberSortKind.Property, property.Name, parameterCount: indexParameters.Length, signature: GetSignatureSortText(indexParameters));
+                        sb.Append(BuildProperty(property, indentationLevel + 1));
+                    }
+                    else
+                    {
+                        sb.Append(BuildMethod((MethodInfo)member, indentationLevel + 1, out sortKey));
+                    }
+
+                    AppendIndentedLine(sb, indentationLevel, "}");
+                    result.Add(new ExtensionBlockReflection(sb.ToString(), implementations, receiverTypeText, sortKey));
+                }
             }
-
-            if (block.Setter is not null)
-            {
-                accessors.Add(block.Setter);
-            }
-
-            result.Add(new ExtensionPropertyBlockReflection(content, accessors, receiverTypeText, block.PropertyName));
         }
 
         return result;
     }
 
-    private static bool TryGetExtensionPropertyAccessorInfo(MethodInfo method, out string accessorType, out string propertyName)
+    private static bool IsExtensionType(Type type, string namePrefix)
     {
-        accessorType = string.Empty;
-        propertyName = string.Empty;
-
-        var declaringType = method.DeclaringType;
-        if (declaringType is null || !(declaringType.IsAbstract && declaringType.IsSealed))
-            return false;
-
-        if (!method.IsStatic || method.IsSpecialName)
-            return false;
-
-        if (method.GetCustomAttributesData().Any(static attribute => attribute.AttributeType.FullName == "System.Runtime.CompilerServices.ExtensionAttribute"))
-            return false;
-
-        if (method.Name.StartsWith("get_", StringComparison.Ordinal))
-        {
-            if (method.GetParameters().Length < 1)
-                return false;
-
-            accessorType = "get";
-            propertyName = method.Name[4..];
-            return true;
-        }
-
-        if (method.Name.StartsWith("set_", StringComparison.Ordinal))
-        {
-            if (method.GetParameters().Length < 2)
-                return false;
-
-            accessorType = "set";
-            propertyName = method.Name[4..];
-            return true;
-        }
-
-        return false;
+        return type.IsSpecialName && type.Name.StartsWith(namePrefix, StringComparison.Ordinal);
     }
 
-    private static string BuildExtensionPropertyBlock(ExtensionPropertyBuilderReflection block, int indentationLevel, out string receiverTypeText)
+    private static bool IsExtensionGroupingType(Type? type)
     {
-        var sb = new StringBuilder();
-        var receiverParameter = block.ReceiverParameter;
-        var receiverNullability = new NullabilityInfoContext().Create(receiverParameter);
-        var receiverType = receiverParameter.ParameterType.IsByRef
-            ? receiverParameter.ParameterType.GetElementType()!
-            : receiverParameter.ParameterType;
-        receiverTypeText = FormatType(receiverType, receiverNullability, CreateTypeAnnotations(receiverParameter));
-        var receiverName = EscapeIdentifier(receiverParameter.Name ?? "value");
+        return type is not null && type.IsNested && IsExtensionType(type, "<G>$");
+    }
 
-        string propertyType;
-        if (block.Getter is not null)
-        {
-            propertyType = FormatReturnType(block.Getter.ReturnParameter);
-        }
-        else
-        {
-            var setterValueParameter = block.Setter!.GetParameters()[1];
-            propertyType = FormatType(setterValueParameter.ParameterType, new NullabilityInfoContext().Create(setterValueParameter), CreateTypeAnnotations(setterValueParameter));
-        }
+    private static IEnumerable<MemberInfo> GetExtensionBlockMembers(Type groupingType, string markerName)
+    {
+        const BindingFlags Flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
+        IEnumerable<MemberInfo> properties = groupingType.GetProperties(Flags).Where(IsExternallyVisible);
+        IEnumerable<MemberInfo> methods = groupingType.GetMethods(Flags).Where(IsExternallyVisible).Where(method => !method.IsSpecialName || IsOperatorMethod(method));
+        return properties.Concat(methods).Where(member => string.Equals(GetExtensionMarkerName(member), markerName, StringComparison.Ordinal));
+    }
 
-        var accessorDeclarations = new List<string>();
-        if (block.Getter is not null)
+    private static string? GetExtensionMarkerName(MemberInfo member)
+    {
+        foreach (var attribute in member.GetCustomAttributesData())
         {
-            accessorDeclarations.Add("get => throw null;");
+            if (attribute.AttributeType.FullName == "System.Runtime.CompilerServices.ExtensionMarkerAttribute" &&
+                attribute.ConstructorArguments is [{ Value: string name }])
+            {
+                return name;
+            }
         }
 
-        if (block.Setter is not null)
+        return null;
+    }
+
+    // extension<T>(Receiver receiver) where T : constraint
+    private static string BuildExtensionBlockHeader(ParameterInfo receiver, Type[] typeParameters)
+    {
+        var genericArguments = typeParameters.Length == 0 ? string.Empty : "<" + string.Join(", ", typeParameters.Select(typeParameter => EscapeIdentifier(typeParameter.Name))) + ">";
+        var receiverText = BuildParameterDeclaration(receiver, isExtensionReceiver: false, includeName: !string.IsNullOrEmpty(receiver.Name)).Text;
+        return $"extension{genericArguments}({receiverText}){FormatConstraintsInline(BuildConstraints(typeParameters, indentationLevel: 0))}";
+    }
+
+    // The compiler matches an implementation with its member by signature. The implementation takes the type parameters of the block followed by
+    // the ones of the member, and the receiver as its first parameter for instance members.
+    private static bool IsExtensionImplementation(MethodInfo member, ParameterInfo receiver, int blockTypeParameterCount, MethodInfo implementation)
+    {
+        if (!implementation.IsStatic || !string.Equals(implementation.Name, member.Name, StringComparison.Ordinal))
+            return false;
+
+        if (implementation.GetGenericArguments().Length != blockTypeParameterCount + member.GetGenericArguments().Length)
+            return false;
+
+        var memberParameters = member.GetParameters();
+        var implementationParameters = implementation.GetParameters();
+        var offset = member.IsStatic ? 0 : 1;
+        if (implementationParameters.Length != memberParameters.Length + offset)
+            return false;
+
+        if (offset == 1 && !IsSameParameterType(receiver, implementationParameters[0], blockTypeParameterCount))
+            return false;
+
+        for (var i = 0; i < memberParameters.Length; i++)
         {
-            accessorDeclarations.Add("set { }");
+            if (!IsSameParameterType(memberParameters[i], implementationParameters[i + offset], blockTypeParameterCount))
+                return false;
         }
 
-        AppendIndentedLine(sb, indentationLevel, $"extension({receiverTypeText} {receiverName})");
-        AppendIndentedLine(sb, indentationLevel, "{");
-        AppendIndentedLine(sb, indentationLevel + 1, $"public {propertyType} {EscapeIdentifier(block.PropertyName)} {{ {string.Join(' ', accessorDeclarations)} }}");
-        AppendIndentedLine(sb, indentationLevel, "}");
-        return sb.ToString();
+        return IsSameSignatureType(member.ReturnType, implementation.ReturnType, blockTypeParameterCount);
+    }
+
+    // in, ref readonly and ref are the same in signatures
+    private static bool IsSameParameterType(ParameterInfo x, ParameterInfo y, int blockTypeParameterCount)
+    {
+        return (x.IsOut && !x.IsIn) == (y.IsOut && !y.IsIn) && IsSameSignatureType(x.ParameterType, y.ParameterType, blockTypeParameterCount);
+    }
+
+    // A type parameter of the block is the type parameter of the implementation at the same position. A type parameter of the member follows them.
+    private static bool IsSameSignatureType(Type x, Type y, int blockTypeParameterCount)
+    {
+        if (x.IsGenericParameter || y.IsGenericParameter)
+        {
+            if (!x.IsGenericParameter || !y.IsGenericMethodParameter)
+                return false;
+
+            var position = x.IsGenericMethodParameter ? blockTypeParameterCount + x.GenericParameterPosition : x.GenericParameterPosition;
+            return y.GenericParameterPosition == position;
+        }
+
+        if (x.HasElementType || y.HasElementType)
+        {
+            return x.HasElementType && y.HasElementType &&
+                   x.IsByRef == y.IsByRef &&
+                   x.IsPointer == y.IsPointer &&
+                   x.IsSZArray == y.IsSZArray &&
+                   (!x.IsArray || (y.IsArray && x.GetArrayRank() == y.GetArrayRank())) &&
+                   IsSameSignatureType(x.GetElementType()!, y.GetElementType()!, blockTypeParameterCount);
+        }
+
+        if (x.IsFunctionPointer || y.IsFunctionPointer)
+        {
+            return x.IsFunctionPointer && y.IsFunctionPointer &&
+                   x.IsUnmanagedFunctionPointer == y.IsUnmanagedFunctionPointer &&
+                   IsSameSignatureType(x.GetFunctionPointerReturnType(), y.GetFunctionPointerReturnType(), blockTypeParameterCount) &&
+                   x.GetFunctionPointerParameterTypes().Length == y.GetFunctionPointerParameterTypes().Length &&
+                   x.GetFunctionPointerParameterTypes().Zip(y.GetFunctionPointerParameterTypes()).All(pair => IsSameSignatureType(pair.First, pair.Second, blockTypeParameterCount));
+        }
+
+        if (x.IsConstructedGenericType || y.IsConstructedGenericType)
+        {
+            return x.IsConstructedGenericType && y.IsConstructedGenericType &&
+                   x.GetGenericTypeDefinition() == y.GetGenericTypeDefinition() &&
+                   x.GenericTypeArguments.Zip(y.GenericTypeArguments).All(pair => IsSameSignatureType(pair.First, pair.Second, blockTypeParameterCount));
+        }
+
+        return x == y;
     }
 
     private static bool CanEmitOperator(MethodInfo method)
@@ -1405,7 +1479,9 @@ internal static class PublicApiModelBuilder
         if (!method.IsGenericMethodDefinition)
             return [];
 
-        return BuildConstraints(method.GetGenericArguments(), indentationLevel);
+        // Reflection does not substitute the type arguments of a constructed type in the constraints of the type parameters of its generic methods
+        // (e.g. the members of an extension block, read from the grouping type constructed with the type parameters of the block)
+        return BuildConstraints(method.GetGenericArguments(), indentationLevel, method.DeclaringType is { IsConstructedGenericType: true } declaringType ? declaringType.GenericTypeArguments : null);
     }
 
     // The constraints of an override or of an explicit implementation are inherited, and cannot be repeated.
@@ -1454,7 +1530,7 @@ internal static class PublicApiModelBuilder
         return false;
     }
 
-    private static List<string> BuildConstraints(IEnumerable<Type> genericArguments, int indentationLevel)
+    private static List<string> BuildConstraints(IEnumerable<Type> genericArguments, int indentationLevel, Type[]? declaringTypeArguments = null)
     {
         _ = indentationLevel;
         var constraints = new List<string>();
@@ -1485,7 +1561,7 @@ internal static class PublicApiModelBuilder
                 values.Add(isUnmanaged ? "unmanaged" : "struct");
             }
 
-            var constraintTypes = genericArgument.GetGenericParameterConstraints();
+            var constraintTypes = GetGenericParameterConstraints(genericArgument, declaringTypeArguments);
             var typeConstraints = new List<string>();
             var isFirstConstraintBaseType = false;
             for (var i = 0; i < constraintTypes.Length; i++)
@@ -1523,6 +1599,45 @@ internal static class PublicApiModelBuilder
         }
 
         return constraints;
+    }
+
+    private static Type[] GetGenericParameterConstraints(Type genericParameter, Type[]? declaringTypeArguments)
+    {
+        var constraints = genericParameter.GetGenericParameterConstraints();
+        if (declaringTypeArguments is null)
+            return constraints;
+
+        try
+        {
+            return [.. constraints.Select(constraint => SubstituteTypeArguments(constraint, declaringTypeArguments))];
+        }
+        catch (ArgumentException)
+        {
+            return constraints;
+        }
+    }
+
+    private static Type SubstituteTypeArguments(Type type, Type[] typeArguments)
+    {
+        if (type.IsGenericTypeParameter)
+            return typeArguments[type.GenericParameterPosition];
+
+        if (type.IsByRef)
+            return SubstituteTypeArguments(type.GetElementType()!, typeArguments).MakeByRefType();
+
+        if (type.IsPointer)
+            return SubstituteTypeArguments(type.GetElementType()!, typeArguments).MakePointerType();
+
+        if (type.IsSZArray)
+            return SubstituteTypeArguments(type.GetElementType()!, typeArguments).MakeArrayType();
+
+        if (type.IsArray)
+            return SubstituteTypeArguments(type.GetElementType()!, typeArguments).MakeArrayType(type.GetArrayRank());
+
+        if (type.IsConstructedGenericType)
+            return type.GetGenericTypeDefinition().MakeGenericType([.. type.GenericTypeArguments.Select(argument => SubstituteTypeArguments(argument, typeArguments))]);
+
+        return type;
     }
 
     private static string FormatConstraintsInline(IReadOnlyList<string> constraints)
@@ -2828,8 +2943,7 @@ internal static class PublicApiModelBuilder
 
     // SortText is the modifier (ref, in...) and the type of the parameter, as compared by MemberSortKey
     private sealed record ParameterDeclaration(string Text, bool RequiresNullableDirectives, string SortText);
-    private sealed record ExtensionPropertyBuilderReflection(ParameterInfo ReceiverParameter, string PropertyName, MethodInfo? Getter, MethodInfo? Setter);
 
-    // The blocks are sorted by the type of the receiver, then by the name of the property
-    private sealed record ExtensionPropertyBlockReflection(string Content, IReadOnlyList<MethodInfo> Accessors, string ReceiverType, string PropertyName);
+    // The blocks are sorted by the type of the receiver, then by the member
+    private sealed record ExtensionBlockReflection(string Content, IReadOnlyList<MethodInfo> Implementations, string ReceiverType, MemberSortKey SortKey);
 }

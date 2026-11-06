@@ -61,7 +61,10 @@ Assert.Contains("    None Meziantou.Framework.PublicApiGenerator.PublicApiReadOp
   not visible outside the assembly (such as a `private set`) are not exposed.
 - The signature of delegates, through [PublicApiType.DelegateInvokeMethod](cref:Meziantou.Framework.PublicApiGenerator.PublicApiType.DelegateInvokeMethod). The other members of delegates are not
   exposed.
-- C# 14 extension blocks, through the static methods the compiler generates for them (such as `get_Length(string)`).
+- C# 14 extension blocks: the static methods the compiler generates for them (such as `get_Length(string)`) are members
+  of the static class, and [PublicApiType.ExtensionBlocks](cref:Meziantou.Framework.PublicApiGenerator.PublicApiType.ExtensionBlocks) has the blocks as written in source, with their receiver,
+  type parameters and members. [PublicApiMethod.ExtensionImplementation](cref:Meziantou.Framework.PublicApiGenerator.PublicApiMethod.ExtensionImplementation) and
+  [ImplementedExtensionMember](cref:Meziantou.Framework.PublicApiGenerator.PublicApiMethod.ImplementedExtensionMember) link a member to the method that implements it.
 - All the custom attributes of each symbol, parameter, return value and generic parameter, including the ones that are
   not written in the API files (such as `EditorBrowsableAttribute` or `NullableAttribute`), with their decoded
   arguments.

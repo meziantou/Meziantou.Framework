@@ -194,12 +194,20 @@ internal sealed class CSharpCompilableFormatter
         writer.WriteLine();
         writer.Indentation++;
 
-        var extensionPropertyBlocks = GetExtensionPropertyBlocks(type);
-        var extensionPropertyAccessors = extensionPropertyBlocks.SelectMany(static block => block.Accessors).ToHashSet();
+        // The members of the C# 14 extension blocks are written in their blocks, and their implementation methods are not written: the compiler generates them.
+        // Instance methods are the exception: their implementation is a classic extension method, which declares the same API.
+        var extensionMembers = type.ExtensionBlocks
+            .SelectMany(block => block.Members.Where(member => !IsWrittenAsClassicExtensionMethod(member)).Select(member => (Block: block, Member: member)))
+            .ToList();
+        var extensionImplementations = extensionMembers
+            .SelectMany(item => GetAccessors(item.Member))
+            .Select(accessor => accessor.ExtensionImplementation)
+            .OfType<PublicApiMethod>()
+            .ToHashSet();
         var members = new List<(PublicApiMember Member, DeclarationWriter Writer)>();
         foreach (var member in type.Members)
         {
-            if (member is PublicApiMethod method && extensionPropertyAccessors.Contains(method))
+            if (member is PublicApiMethod method && extensionImplementations.Contains(method))
                 continue;
 
             var memberWriter = writer.CreateWriter();
@@ -222,9 +230,23 @@ internal sealed class CSharpCompilableFormatter
             writer.WriteLine();
         }
 
-        foreach (var block in extensionPropertyBlocks)
+        var extensionBlockWriters = new List<(PublicApiExtensionBlock Block, PublicApiMember Member, DeclarationWriter Writer)>();
+        foreach (var (block, member) in extensionMembers)
         {
-            WriteExtensionPropertyBlock(writer, block);
+            var blockWriter = writer.CreateWriter();
+            if (TryWriteExtensionBlock(blockWriter, type, block, member))
+            {
+                extensionBlockWriters.Add((block, member, blockWriter));
+            }
+        }
+
+        // Each member is written in its own block, so the output does not depend on how the members are grouped in source
+        foreach (var (_, _, blockWriter) in extensionBlockWriters
+                     .OrderBy(item => PublicApiOrdering.GetTypeSortText(item.Block.Receiver.Type), StringComparer.Ordinal)
+                     .ThenBy(item => item.Member.SortKey, MemberSortKey.Comparer)
+                     .ThenBy(item => item.Writer.GetText(), StringComparer.Ordinal))
+        {
+            writer.Write(blockWriter);
             writer.WriteLine();
         }
 
@@ -922,7 +944,8 @@ internal sealed class CSharpCompilableFormatter
         }
 
         var operatorToken = CSharpSyntaxFacts.GetOperatorToken(method.Name);
-        if (operatorToken is not null && !declaringType.IsStatic)
+        // A static class cannot declare operators, but its extension blocks can
+        if (operatorToken is not null && (!declaringType.IsStatic || method.ExtensionBlock is not null))
         {
             if (operatorToken is "implicit" or "explicit")
             {
@@ -1216,67 +1239,7 @@ internal sealed class CSharpCompilableFormatter
                 WriteOptionalParameterAttributes(writer, parameter);
             }
 
-            foreach (var attribute in GetAttributes(parameter.Attributes))
-            {
-                WriteAttribute(writer, attribute);
-                writer.Space();
-            }
-
-            if (parameter.IsThis)
-            {
-                writer.Keyword("this");
-                writer.Space();
-            }
-
-            var scoped = parameter.IsScoped;
-            switch (parameter.RefKind)
-            {
-                case PublicApiRefKind.None:
-                    if (parameter.IsParams || parameter.IsParamsCollection)
-                    {
-                        writer.Keyword("params");
-                        writer.Space();
-                    }
-                    else if (scoped)
-                    {
-                        writer.Keyword("scoped");
-                        writer.Space();
-                    }
-
-                    break;
-
-                case PublicApiRefKind.Out:
-                    writer.Keyword("out");
-                    writer.Space();
-                    break;
-
-                default:
-                    if (scoped)
-                    {
-                        writer.Keyword("scoped");
-                        writer.Space();
-                    }
-
-                    if (parameter.RefKind == PublicApiRefKind.In)
-                    {
-                        writer.Keyword("in");
-                        writer.Space();
-                    }
-                    else
-                    {
-                        writer.Keyword("ref");
-                        writer.Space();
-                        if (parameter.RefKind == PublicApiRefKind.RefReadOnly)
-                        {
-                            writer.Keyword("readonly");
-                            writer.Space();
-                        }
-                    }
-
-                    break;
-            }
-
-            WriteTypeReference(writer, parameter.Type, includeNullableAnnotations: true);
+            WriteParameterModifiersAndType(writer, parameter);
             writer.Space();
             writer.Write(PublicApiDeclarationSegmentKind.ParameterName, GetParameterName(parameter));
             if (usesDefaultValueSyntax[parameter.Ordinal])
@@ -1291,6 +1254,72 @@ internal sealed class CSharpCompilableFormatter
         }
 
         return result.MoveToImmutable();
+    }
+
+    // The attributes, the modifiers and the type of a parameter (e.g. "[Attribute] this scoped ref int")
+    private void WriteParameterModifiersAndType(DeclarationWriter writer, PublicApiParameter parameter)
+    {
+        foreach (var attribute in GetAttributes(parameter.Attributes))
+        {
+            WriteAttribute(writer, attribute);
+            writer.Space();
+        }
+
+        if (parameter.IsThis)
+        {
+            writer.Keyword("this");
+            writer.Space();
+        }
+
+        var scoped = parameter.IsScoped;
+        switch (parameter.RefKind)
+        {
+            case PublicApiRefKind.None:
+                if (parameter.IsParams || parameter.IsParamsCollection)
+                {
+                    writer.Keyword("params");
+                    writer.Space();
+                }
+                else if (scoped)
+                {
+                    writer.Keyword("scoped");
+                    writer.Space();
+                }
+
+                break;
+
+            case PublicApiRefKind.Out:
+                writer.Keyword("out");
+                writer.Space();
+                break;
+
+            default:
+                if (scoped)
+                {
+                    writer.Keyword("scoped");
+                    writer.Space();
+                }
+
+                if (parameter.RefKind == PublicApiRefKind.In)
+                {
+                    writer.Keyword("in");
+                    writer.Space();
+                }
+                else
+                {
+                    writer.Keyword("ref");
+                    writer.Space();
+                    if (parameter.RefKind == PublicApiRefKind.RefReadOnly)
+                    {
+                        writer.Keyword("readonly");
+                        writer.Space();
+                    }
+                }
+
+                break;
+        }
+
+        WriteTypeReference(writer, parameter.Type, includeNullableAnnotations: true);
     }
 
     // [Optional], followed by the attribute that stores the default value when the parameter has one
@@ -1902,128 +1931,50 @@ internal sealed class CSharpCompilableFormatter
                type.IsSystemType("Object");
     }
 
-    private static List<ExtensionPropertyBlock> GetExtensionPropertyBlocks(PublicApiType type)
+    private static bool IsWrittenAsClassicExtensionMethod(PublicApiMember member)
     {
-        // C# 14 extension properties are compiled to static get_/set_ methods whose first parameter is the receiver
-        if (!type.IsStatic)
-            return [];
-
-        var blocks = new Dictionary<(string ReceiverType, string PropertyName), ExtensionPropertyBlock>();
-        foreach (var member in type.Members)
-        {
-            if (member is not PublicApiMethod { IsStatic: true, MethodKind: PublicApiMethodKind.Ordinary, IsExtensionMethod: false } method)
-                continue;
-
-            bool isGetter;
-            if (method.Name.StartsWith("get_", StringComparison.Ordinal) && method.Parameters.Length >= 1)
-            {
-                isGetter = true;
-            }
-            else if (method.Name.StartsWith("set_", StringComparison.Ordinal) && method.Parameters.Length >= 2)
-            {
-                isGetter = false;
-            }
-            else
-            {
-                continue;
-            }
-
-            var key = (PublicApiOrdering.GetTypeSortText(method.Parameters[0].Type), method.Name[4..]);
-            if (!blocks.TryGetValue(key, out var block))
-            {
-                block = new ExtensionPropertyBlock(method.Parameters[0], key.Item2);
-                blocks.Add(key, block);
-            }
-
-            // The receiver and the type of the property are the ones of the getter when there is one
-            if (isGetter)
-            {
-                block.Getter = method;
-                block.Receiver = method.Parameters[0];
-                block.PropertyType = method.ReturnType;
-            }
-            else
-            {
-                block.Setter = method;
-                block.PropertyType ??= method.Parameters[1].Type;
-            }
-        }
-
-        return [.. blocks.OrderBy(static block => block.Key.ReceiverType, StringComparer.Ordinal).ThenBy(static block => block.Key.PropertyName, StringComparer.Ordinal).Select(static block => block.Value)];
+        return member is PublicApiMethod { IsStatic: false, MethodKind: PublicApiMethodKind.Ordinary, ExtensionImplementation.IsExtensionMethod: true };
     }
 
-    private static void WriteExtensionPropertyBlock(DeclarationWriter writer, ExtensionPropertyBlock block)
+    private static IEnumerable<PublicApiMethod> GetAccessors(PublicApiMember member)
     {
-        writer.Keyword("extension");
-        writer.Punctuation("(");
-        if (block.Receiver.RefKind != PublicApiRefKind.None)
+        return member switch
         {
-            writer.Keyword("ref");
+            PublicApiMethod method => [method],
+            PublicApiProperty property => new[] { property.GetMethod, property.SetMethod }.OfType<PublicApiMethod>(),
+            PublicApiEvent @event => new[] { @event.AddMethod, @event.RemoveMethod, @event.RaiseMethod }.OfType<PublicApiMethod>(),
+            _ => [],
+        };
+    }
+
+    // extension<T>(Receiver receiver) where T : constraint { member }
+    private bool TryWriteExtensionBlock(DeclarationWriter writer, PublicApiType type, PublicApiExtensionBlock block, PublicApiMember member)
+    {
+        var memberWriter = writer.CreateWriter();
+        if (!TryWriteTypeMember(memberWriter, type, member))
+            return false;
+
+        writer.Keyword("extension");
+        WriteGenericParameterNames(writer, block.GenericParameters);
+        writer.Punctuation("(");
+        WriteParameterModifiersAndType(writer, block.Receiver);
+        if (!string.IsNullOrEmpty(block.Receiver.Name))
+        {
             writer.Space();
+            writer.Write(PublicApiDeclarationSegmentKind.ParameterName, CSharpIdentifierHelper.EscapeIdentifier(block.Receiver.Name));
         }
 
-        WriteTypeReference(writer, block.Receiver.Type, includeNullableAnnotations: true);
-        writer.Space();
-        writer.Write(PublicApiDeclarationSegmentKind.ParameterName, block.Receiver.Name is null ? "value" : CSharpIdentifierHelper.EscapeIdentifier(block.Receiver.Name));
         writer.Punctuation(")");
+        WriteConstraints(writer, block.GenericParameters);
         writer.WriteLine();
         writer.Punctuation("{");
         writer.WriteLine();
         writer.Indentation++;
-        writer.Keyword("public");
-        writer.Space();
-        WriteTypeReference(writer, block.PropertyType!, includeNullableAnnotations: true);
-        writer.Space();
-        writer.Write(PublicApiDeclarationSegmentKind.Identifier, CSharpIdentifierHelper.EscapeIdentifier(block.PropertyName));
-        writer.Space();
-        writer.Punctuation("{");
-        if (block.Getter is not null)
-        {
-            writer.Space();
-            writer.Keyword("get");
-            WriteThrowNullBody(writer);
-        }
-
-        if (block.Setter is not null)
-        {
-            writer.Space();
-            writer.Keyword("set");
-            writer.Space();
-            writer.Punctuation("{");
-            writer.Space();
-            writer.Punctuation("}");
-        }
-
-        writer.Space();
-        writer.Punctuation("}");
-        writer.WriteLine();
+        writer.Write(memberWriter);
         writer.Indentation--;
+        writer.WriteLine();
         writer.Punctuation("}");
-    }
-
-    private sealed class ExtensionPropertyBlock(PublicApiParameter receiver, string propertyName)
-    {
-        public PublicApiParameter Receiver { get; set; } = receiver;
-
-        public string PropertyName { get; } = propertyName;
-
-        public PublicApiTypeReference? PropertyType { get; set; }
-
-        public PublicApiMethod? Getter { get; set; }
-
-        public PublicApiMethod? Setter { get; set; }
-
-        public IEnumerable<PublicApiMethod> Accessors
-        {
-            get
-            {
-                if (Getter is not null)
-                    yield return Getter;
-
-                if (Setter is not null)
-                    yield return Setter;
-            }
-        }
+        return true;
     }
 
     private sealed record ParameterText(DeclarationWriter Writer, bool RequiresNullableDirectives);

@@ -41,7 +41,7 @@ internal sealed partial class LayoutEngine
     /// that starts the first page of the segment (at the offset of the break from its block-start border edge), the size of
     /// the page area of that page, and the last page before it.
     /// </summary>
-    private sealed record PageSegmentStart(ContainerBox Anchor, double AnchorOffset, PhysicalSize PageAreaSize, PageSelection Previous)
+    private sealed record PageSegmentStart(ContainerBox Anchor, double AnchorOffset, PhysicalSize PageAreaSize, PageSelection Previous, InlineResume? Resume = null)
     {
         /// <summary>The fragments of the boxes fixed to the viewport, laid out in the initial containing block of the first segment (the page area of the first page).</summary>
         public required List<(BoxFragment Fragment, LogicalOffset Offset)>? FixedBoxes { get; init; }
@@ -141,9 +141,11 @@ internal sealed partial class LayoutEngine
             var outerFloatPushes = context.FloatPushes;
             var outerLanesBreaks = context.GridLanesBreaks;
             var outerRelayout = context.StripRelayout;
+            var outerResumes = context.InlineResumes;
             context.FloatPushes = floatPushes;
             context.GridLanesBreaks = lanesBreaks;
             context.StripRelayout = stripRelayout;
+            context.InlineResumes = segment?.Resume is { } resume ? new() { [segment.Anchor] = resume } : null;
             stripRelayout.BeginLayout();
             BoxFragment initialContainingBlock;
             try
@@ -156,6 +158,7 @@ internal sealed partial class LayoutEngine
                 context.FloatPushes = outerFloatPushes;
                 context.GridLanesBreaks = outerLanesBreaks;
                 context.StripRelayout = outerRelayout;
+                context.InlineResumes = outerResumes;
             }
 
             icbSize = initialContainingBlock.Size;
@@ -279,7 +282,7 @@ internal sealed partial class LayoutEngine
                     var placement = map.Map(position);
                     var breakIndex = placement.Index - baseIndex - 1;
                     if (PageBreakRules.IsAtStaticBlockPosition(box) && breakIndex >= 0 && breakIndex < breaks.Count && position >= breaks[breakIndex].Position - 0.01
-                        && FindBreakAnchor(children, stripSize, writingDirection, breaks[breakIndex].Position, parentTop: 0) is var (breakAnchor, _)
+                        && FindBreakAnchor(children, stripSize, writingDirection, breaks[breakIndex].Position, parentTop: 0) is var (breakAnchor, _, _)
                         && IsBeforeInTreeOrder(box.Box, breakAnchor) && map.GetOffsetIn(placement.Index - 1, position) is var previousOffset
                         && previousOffset <= sizes[Math.Clamp(breakIndex, 0, sizes.Count - 1)] + 0.01)
                     {
@@ -422,11 +425,11 @@ internal sealed partial class LayoutEngine
 
                 var areaSize = GetPageGeometry(geometries, selection).LayoutAreaSize;
                 if (contentIndex > 0 && contentIndex <= breaks.Count && Math.Abs(writingDirection.ToLogical(areaSize).Inline - icbLogical.Inline) > 0.01
-                    && FindBreakAnchor(children, stripSize, writingDirection, breaks[contentIndex - 1].Position, parentTop: 0) is var (anchor, anchorOffset))
+                    && FindBreakAnchor(children, stripSize, writingDirection, breaks[contentIndex - 1].Position, parentTop: 0) is var (anchor, anchorOffset, anchorResume))
                 {
                     // (a blank page before the page is inserted again by the next segment)
                     segmentEnd = i > 0 && !sequence[i - 1].HasContent ? i - 1 : i;
-                    next = new PageSegmentStart(anchor, anchorOffset, areaSize, sequence[segmentEnd - 1].Selection) { FixedBoxes = fixedPlacements };
+                    next = new PageSegmentStart(anchor, anchorOffset, areaSize, sequence[segmentEnd - 1].Selection, anchorResume) { FixedBoxes = fixedPlacements };
                     break;
                 }
 
@@ -558,9 +561,12 @@ internal sealed partial class LayoutEngine
     /// Returns the box that starts the content after a break of the strip, when the break is before an in-flow block-level box of
     /// the block flow of the root element (the box and its block containers are laid out the same way in a strip of another
     /// inline size), and the offset of the break from its block-start border edge (the margin preserved after a forced break);
-    /// else null (a break inside a line box, a flex container...).
+    /// or the block container of the block flow whose line boxes the break separates, the offset of its content box from its
+    /// block-start border edge and the position of its inline content where the line box after the break starts (its line
+    /// boxes are laid out from there in the strip of another inline size, see <see cref="InlineResume"/>); else null (a break
+    /// inside a line box, a flex container...).
     /// </summary>
-    private static (ContainerBox Box, double Offset)? FindBreakAnchor(ReadOnlySpan<Fragment> children, PhysicalSize parentSize, WritingDirection writingDirection, double position, double parentTop, BoxFragment? parent = null)
+    private static (ContainerBox Box, double Offset, InlineResume? Resume)? FindBreakAnchor(ReadOnlySpan<Fragment> children, PhysicalSize parentSize, WritingDirection writingDirection, double position, double parentTop, BoxFragment? parent = null)
     {
         const double Epsilon = 0.01;
         var inFlowCount = parent is null ? children.Length : Math.Min(parent.InFlowChildCount, children.Length);
@@ -573,11 +579,15 @@ internal sealed partial class LayoutEngine
             var (top, bottom, _) = FragmentationFlow.GetBlockRange(child, parentSize, writingDirection, parentTop);
             if (top >= position - Epsilon)
             {
+                // A line box after the break: the line boxes of its block container are laid out again from its start
+                if (child is LineBoxFragment { StartPosition: { } resume } && parent is not null && top - position <= Epsilon)
+                    return (parent.Box, writingDirection.ToLogical(parent.Border.Add(parent.Padding).Add(parent.Scrollbars)).BlockStart, resume);
+
                 // (the box after the break: at the break, or after its block-start margin preserved after a forced break)
                 if (child is not BoxFragment box || box.Box.IsInlineBox || box.Box.IsAtomicInline || top - position > Math.Max(0, writingDirection.ToLogical(box.Margin).BlockStart) + Epsilon)
                     return null;
 
-                return (box.Box, position - top);
+                return (box.Box, position - top, null);
             }
 
             if (bottom > position + Epsilon)
@@ -590,8 +600,9 @@ internal sealed partial class LayoutEngine
 
         return null;
 
+        // (a block container whose children are block-level, or whose line boxes may be laid out from a position of its content)
         static bool IsBlockFlowContainer(BoxFragment box, WritingDirection writingDirection)
-            => box.Box.Kind is ContainerBoxKind.Normal && !box.Box.ChildrenAreInline && box.Box.Display.Inside is DisplayInside.Flow or DisplayInside.FlowRoot
+            => box.Box.Kind is ContainerBoxKind.Normal && box.Box.Display.Inside is DisplayInside.Flow or DisplayInside.FlowRoot
                 && !box.Box.Style.Layout.IsMultiColumnContainer && box.WritingDirection.BlockStart == writingDirection.BlockStart
                 && !FragmentationFlow.IsMonolithic(box, writingDirection, scrollContainersAreMonolithic: false);
     }

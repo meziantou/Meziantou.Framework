@@ -89,7 +89,31 @@ internal static class GridLanesFragmentation
                     return false;
             }
 
-            var result = new GridLanesBreaks { Ends = [.. ends], NextBlockSize = blockSizes[^1], IsColumns = !flow.IsPaged };
+            // The ends of the items that grow once fragmented (their contents are pushed by their own breaks): the items are
+            // parallel flows (see ParallelStructureKind.GridLanes)
+            Dictionary<ContainerBox, double>? itemEnds = null;
+            if (flow.GetGroup(container) is { } group)
+            {
+                foreach (var item in group.Items)
+                {
+                    if (item is not { Box: { } itemBox, IsBoxDone: true, CanGrow: true, IsMonolithic: false })
+                        continue;
+
+                    var (index, offset) = (item.EndIndex, item.EndOffset);
+                    var region = index - first;
+                    if (region <= 0 || region >= ends.Count)
+                        continue;
+
+                    // (the start of the fragmentainer in the coordinates of the ends: the block-end edge of the previous one)
+                    var itemEnd = ends[region] - blockSizes[index] + offset + item.MarginEnd;
+                    if (itemEnd > item.End + item.MarginEnd - contentTop + Epsilon)
+                    {
+                        (itemEnds ??= [])[itemBox.Box] = itemEnd;
+                    }
+                }
+            }
+
+            var result = new GridLanesBreaks { Ends = [.. ends], NextBlockSize = blockSizes[^1], IsColumns = !flow.IsPaged, ItemEnds = itemEnds };
             if (previous is not null && previous.IsSameAs(result))
                 return false;
 

@@ -11,15 +11,15 @@ description: "The results of the web-platform-tests of css/css-multicol, and why
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 89 | 91 | 0 | 98% |
 | [Tentative](#tentative-tests) | 0 | 1 | 0 | 0% |
-| [Reftests](#reftests) | 462 | 467 | 0 | 99% |
-| **All** | **551** | **559** | **0** | **99%** |
+| [Reftests](#reftests) | 465 | 467 | 0 | 99.5% |
+| **All** | **554** | **559** | **0** | **99%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **BUG**: 3
-- **NOT IMPLEMENTED**: 5
+- **NOT IMPLEMENTED**: 2
 
 ## Stable tests
 
@@ -132,7 +132,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`abspos-autopos-contained-by-viewport-000.html`](https://wpt.fyi/results/css/css-multicol/abspos-autopos-contained-by-viewport-000.html) | Pass | 1 / 1 |  |  |
 | [`abspos-autopos-contained-by-viewport-001.html`](https://wpt.fyi/results/css/css-multicol/abspos-autopos-contained-by-viewport-001.html) | Pass | 1 / 1 |  |  |
 | [`abspos-containing-block-outside-spanner.html`](https://wpt.fyi/results/css/css-multicol/abspos-containing-block-outside-spanner.html) | Pass | 1 / 1 |  |  |
-| [`abspos-multicol-in-second-outer-clipped.html`](https://wpt.fyi/results/css/css-multicol/abspos-multicol-in-second-outer-clipped.html) | Fail | 0 / 1 | NOT IMPLEMENTED | an absolutely positioned multi-column container is monolithic in the columns of its containing block: only the in-flow nested multi-column containers are fragmented by the outer columns (its 300px of content overflow the first outer column) |
+| [`abspos-multicol-in-second-outer-clipped.html`](https://wpt.fyi/results/css/css-multicol/abspos-multicol-in-second-outer-clipped.html) | Pass | 1 / 1 |  |  |
 | [`always-balancing-before-column-span.html`](https://wpt.fyi/results/css/css-multicol/always-balancing-before-column-span.html) | Pass | 1 / 1 |  |  |
 | [`ancestor-toggle-spanner-001.html`](https://wpt.fyi/results/css/css-multicol/ancestor-toggle-spanner-001.html) | Pass | 1 / 1 |  |  |
 | [`ancestor-toggle-spanner-002.html`](https://wpt.fyi/results/css/css-multicol/ancestor-toggle-spanner-002.html) | Pass | 1 / 1 |  |  |
@@ -198,7 +198,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`column-height-026.html`](https://wpt.fyi/results/css/css-multicol/column-height-026.html) | Pass | 1 / 1 |  |  |
 | [`column-height-027.html`](https://wpt.fyi/results/css/css-multicol/column-height-027.html) | Pass | 1 / 1 |  |  |
 | [`column-height-028.html`](https://wpt.fyi/results/css/css-multicol/column-height-028.html) | Pass | 1 / 1 |  |  |
-| [`column-height-029.html`](https://wpt.fyi/results/css/css-multicol/column-height-029.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the column spanners in the rows of a fixed block size (`column-height`) of a nested multi-column container: the spanner is placed after the balanced content of its row, in the first outer column, where it is expected at the start of the next row, in the next outer column (the rows and their spanners are at fixed positions only in a container that is not nested) |
+| [`column-height-029.html`](https://wpt.fyi/results/css/css-multicol/column-height-029.html) | Pass | 1 / 1 |  |  |
 | [`column-height-030.html`](https://wpt.fyi/results/css/css-multicol/column-height-030.html) | Pass | 1 / 1 |  |  |
 | [`column-pseudo-background-color.html`](https://wpt.fyi/results/css/css-multicol/column-pseudo-background-color.html) | Pass | 1 / 1 |  |  |
 | [`column-rule-001.html`](https://wpt.fyi/results/css/css-multicol/column-rule-001.html) | Pass | 1 / 1 |  |  |
@@ -535,7 +535,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`nested-at-outer-boundary-as-fieldset.html`](https://wpt.fyi/results/css/css-multicol/nested-at-outer-boundary-as-fieldset.html) | Pass | 1 / 1 |  |  |
 | [`nested-at-outer-boundary-as-float.html`](https://wpt.fyi/results/css/css-multicol/nested-at-outer-boundary-as-float.html) | Pass | 1 / 1 |  |  |
 | [`nested-at-outer-boundary-as-legend.html`](https://wpt.fyi/results/css/css-multicol/nested-at-outer-boundary-as-legend.html) | Pass | 1 / 1 |  |  |
-| [`nested-floated-multicol-with-monolithic-child.html`](https://wpt.fyi/results/css/css-multicol/nested-floated-multicol-with-monolithic-child.html) | Fail | 0 / 1 | NOT IMPLEMENTED | a floated multi-column container is monolithic in the outer columns (only the in-flow nested multi-column containers are fragmented): it is 100px tall, as its monolithic content, where its fragment is expected to end with the outer column (90px), its content overflowing |
+| [`nested-floated-multicol-with-monolithic-child.html`](https://wpt.fyi/results/css/css-multicol/nested-floated-multicol-with-monolithic-child.html) | Pass | 1 / 1 |  |  |
 | [`nested-oofs-in-relative-multicol.html`](https://wpt.fyi/results/css/css-multicol/nested-oofs-in-relative-multicol.html) | Pass | 1 / 1 |  |  |
 | [`nested-past-fragmentation-line.html`](https://wpt.fyi/results/css/css-multicol/nested-past-fragmentation-line.html) | Pass | 1 / 1 |  |  |
 | [`nested-with-padding-and-spanner.html`](https://wpt.fyi/results/css/css-multicol/nested-with-padding-and-spanner.html) | Pass | 1 / 1 |  |  |

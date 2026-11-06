@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text;
 using System.Xml;
 using Meziantou.Framework.Fuzzing;
+using Meziantou.Framework.Geo;
 
 namespace Meziantou.Framework.Charts.Fuzz;
 
@@ -173,7 +174,7 @@ public static class ChartsFuzzTargets
         IReadOnlyList<GeoFeature> features;
         try
         {
-            features = GeoJson.ParseFeatures(json);
+            features = GeoJson.Parse(json);
         }
         catch (FormatException)
         {
@@ -200,7 +201,7 @@ public static class ChartsFuzzTargets
         if ((flags & 0x20) != 0 && !HasUnpairedSurrogate(json))
         {
             using var stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
-            var streamFeatures = GeoJson.ParseFeatures(stream);
+            var streamFeatures = GeoJson.Read(stream);
             var streamPlot = new Plot { Title = "Map", Coordinates = plot.Coordinates };
             streamPlot.Add(new GeoMark<GeoFeature>(streamFeatures, feature => feature.Geometry)
             {

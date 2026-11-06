@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Hashing;
 using System.Runtime.InteropServices;
 using Meziantou.Framework.Imaging;
@@ -16,7 +17,10 @@ namespace Meziantou.Framework.WebPlatform.Imaging;
 /// (https://html.spec.whatwg.org/multipage/images.html#img-decoding-process): PNG (including the animated PNG), JPEG, GIF,
 /// WebP, AVIF, JPEG XL, BMP and ICO/CUR. The format is sniffed; the other formats the codecs read (QOI, TGA, TIFF, Netpbm,
 /// ANI) are not decoded, as in the browsers. The colors are converted to sRGB (with the embedded color profile, or the CICP
-/// color description of an image without profile), and the EXIF orientation given by the core library is applied.
+/// color description of an image without profile), and the EXIF orientation given by the core library is applied. The colors
+/// of a still image whose profile has a gamut wider than sRGB, or of a CMYK image, are converted to Display P3 with 16 bits
+/// per component instead: they are converted to the color space of the bitmap they are drawn on (a Display P3 canvas keeps
+/// them, an sRGB bitmap clips them).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -70,9 +74,19 @@ internal sealed class ImagingImageDecoder : RenderingImageDecoder
     private static readonly PixelConversionOptions Conversion = new() { DiscardIncompatibleColorProfile = true };
     private static readonly ImageIdentifyOptions IdentifyOptions = new() { Configuration = Configuration };
     // The colors of a CMYK JPEG image are converted to sRGB with its CMYK profile (or a profile of the printing inks when it has
-    // none), as in the browsers: no pixel format holds inks
-    private static readonly ImageDecodeOptions DecodeOptions = new() { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversionOptions.Default };
-    private static readonly ImageReaderOptions ReaderOptions = new() { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversionOptions.Default };
+    // none), as in the browsers: no pixel format holds inks. As in the browsers, the black point is not compensated
+    private static readonly CmykConversionOptions CmykConversion = new() { Transform = new IccColorTransformOptions { BlackPointCompensation = false } };
+    private static readonly ImageDecodeOptions DecodeOptions = new() { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversion };
+    private static readonly ImageReaderOptions ReaderOptions = new() { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversion };
+
+    // The CMYK images decoded to Display P3: the gamut of the printing inks is wider than the one of sRGB (cyan)
+    private static readonly ImageDecodeOptions DisplayP3CmykDecodeOptions = new() { Configuration = Configuration, Conversion = Conversion, CmykConversion = new CmykConversionOptions { DestinationProfile = IccProfile.DisplayP3, Transform = CmykConversion.Transform } };
+
+    // The conversion that tells whether a profile has colors outside of the gamut of sRGB
+    private static readonly IccColorTransformOptions UnboundedConversion = new() { ClipFloatingPointSamples = false };
+
+    // The conversion of the colors of a Display P3 CICP color description to sRGB, without clipping
+    private static readonly Lazy<IccColorTransform> DisplayP3ToSrgb = new(() => IccColorTransform.Create(IccProfile.DisplayP3, IccProfile.Srgb, UnboundedConversion));
 
     // The high dynamic range samples (PQ, HLG) of a CICP color description are tone mapped to sRGB, as the browsers display
     // them on a screen of standard dynamic range
@@ -87,6 +101,7 @@ internal sealed class ImagingImageDecoder : RenderingImageDecoder
     // The durations of the frames of an animation in milliseconds, or null for a still image
     private readonly double[]? _durations;
     private readonly bool _isGrayscale;
+    private readonly bool _isCmyk;
     private readonly bool _hasWideSamples;
 
     // The encoded image: the bytes of the resource, or a copy without what the codec rejects (see NormalizePng and Repair)
@@ -94,9 +109,11 @@ internal sealed class ImagingImageDecoder : RenderingImageDecoder
     private bool _repaired;
     private bool _disposed;
 
-    // The embedded color profile and its conversion to sRGB (created the first time the colors are converted)
+    // The embedded color profile and its conversion to sRGB (created the first time the colors are converted), and its
+    // conversion to sRGB without clipping when its gamut is wider than the one of sRGB
     private IccProfile? _colorProfile;
     private IccColorTransform? _colorTransform;
+    private IccColorTransform? _extendedTransform;
 
     // The CICP color description of an image without color profile whose colors are not sRGB (e.g. a JPEG XL or AVIF image
     // in Display P3, or with PQ samples), or null, and the light levels that give the peak of its high dynamic range samples
@@ -119,6 +136,7 @@ internal sealed class ImagingImageDecoder : RenderingImageDecoder
         _durations = durations;
         _repetitionCount = repetitionCount;
         _isGrayscale = info.ColorModel is ImageColorModel.Grayscale or ImageColorModel.GrayscaleAlpha;
+        _isCmyk = info.ColorModel is ImageColorModel.Cmyk or ImageColorModel.Ycck;
         _hasWideSamples = info.BitsPerComponent > 8;
         _colorProfile = info.Metadata.IccProfile;
         _cicp = _colorProfile is null && info.Metadata.Cicp is { } cicp && !IsSrgb(cicp) ? cicp : null;
@@ -238,6 +256,22 @@ internal sealed class ImagingImageDecoder : RenderingImageDecoder
     /// <inheritdoc/>
     public override RenderingImage? DecodeFrame(int index, ExifOrientation orientation, bool convertToSrgb)
     {
+        var image = DecodeFrameCore(index, orientation, convertToSrgb);
+
+        // The colors of a still image outside of the gamut of sRGB are decoded again, without clipping, when a bitmap of a
+        // wider gamut or of half floats draws the image
+        if (image is not null && convertToSrgb && _frameCount == 1 && (_extendedTransform is not null || _isCmyk || IsDisplayP3(_cicp)))
+        {
+            var (data, width, height, isCmyk) = (_data, _width, _height, _isCmyk);
+            var transform = _isCmyk ? null : _extendedTransform ?? DisplayP3ToSrgb.Value;
+            image.SetWideGamutSource(() => DecodeWideGamutImage(data, width, height, isCmyk, transform, orientation), Dom.ImageDataPixelFormat.RgbaFloat16, isCmyk ? RenderingColorSpace.DisplayP3 : RenderingColorSpace.Srgb);
+        }
+
+        return image;
+    }
+
+    private ImagingRenderingImage? DecodeFrameCore(int index, ExifOrientation orientation, bool convertToSrgb)
+    {
         ObjectDisposedException.ThrowIf(_disposed, this);
         ArgumentOutOfRangeException.ThrowIfNegative(index);
         ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, FrameCount);
@@ -248,6 +282,7 @@ internal sealed class ImagingImageDecoder : RenderingImageDecoder
             // ignored: its colors are sRGB, unless its cICP chunk describes them (the codec only reports the embedded ICC
             // profile and the CICP color description, and never applies them)
             var transform = convertToSrgb ? GetColorTransform() : null;
+
             if (_format == ImageFormat.Png && _hasWideSamples && _frameCount == 1 && transform is null && (!convertToSrgb || _cicp is null))
             {
                 var image = DecodeWidePng();
@@ -436,6 +471,65 @@ internal sealed class ImagingImageDecoder : RenderingImageDecoder
     }
 
     /// <summary>
+    /// Decodes the colors of a still image outside of the gamut of sRGB (its profile is wider, its CICP color description is
+    /// Display P3 as in the PNG images of the Display P3 canvases, or it is a CMYK image), or returns null when it cannot be
+    /// decoded at once (it is incomplete, corrupted or needs too much memory): its colors are then the ones clipped to sRGB.
+    /// The colors of an RGB image are converted to sRGB half floats without clipping (in any gamut), the colors of a CMYK
+    /// image, whose profile has lookup tables, to Display P3 with 16 bits per component.
+    /// </summary>
+    private static ImagingRenderingImage? DecodeWideGamutImage(ReadOnlyMemory<byte> data, int width, int height, bool isCmyk, IccColorTransform? transform, ExifOrientation orientation)
+    {
+        Image? image = null;
+        try
+        {
+            var decoded = Image.Load<Rgba64>(data.Span, isCmyk ? DisplayP3CmykDecodeOptions : DecodeOptions);
+            image = decoded;
+            if (decoded.Width != width || decoded.Height != height)
+                return null;
+
+            var colorSpace = RenderingColorSpace.DisplayP3;
+            if (transform is not null)
+            {
+                var pixels = new Rgba64[width * height];
+                decoded.Frames[0].CopyPixelDataTo(pixels, 0);
+                var samples = new float[pixels.Length * 3];
+                for (var i = 0; i < pixels.Length; i++)
+                {
+                    samples[i * 3] = pixels[i].R / 65535f;
+                    samples[(i * 3) + 1] = pixels[i].G / 65535f;
+                    samples[(i * 3) + 2] = pixels[i].B / 65535f;
+                }
+
+                transform.Convert(samples, samples);
+
+                var halves = new RgbaHalf[pixels.Length];
+                for (var i = 0; i < pixels.Length; i++)
+                {
+                    halves[i] = new RgbaHalf((Half)samples[i * 3], (Half)samples[(i * 3) + 1], (Half)samples[(i * 3) + 2], (Half)(pixels[i].A / 65535f));
+                }
+
+                decoded.Dispose();
+                image = Image.ImportPixelBytes<RgbaHalf>(unsafe(MemoryMarshal.AsBytes(halves.AsSpan())), width, height, width * 8, Configuration);
+                colorSpace = RenderingColorSpace.Srgb;
+            }
+
+            image.Metadata.Orientation = (Meziantou.Framework.Imaging.Metadata.ExifOrientation)orientation;
+            image.AutoOrient();
+            var result = new ImagingRenderingImage(image, colorSpace);
+            image = null;
+            return result;
+        }
+        catch (Exception ex) when (ex is ImageException or OutOfMemoryException)
+        {
+            return null;
+        }
+        finally
+        {
+            image?.Dispose();
+        }
+    }
+
+    /// <summary>
     /// Decodes a still image without color profile whose samples have more than 8 bits, with its colors converted from its
     /// CICP color description to sRGB before the samples are reduced to 8 bits (the dark colors of PQ or HLG samples would
     /// lose their precision otherwise), or returns null when no row can be decoded, the image needs too much memory, or its
@@ -494,6 +588,12 @@ internal sealed class ImagingImageDecoder : RenderingImageDecoder
 
     /// <summary>The nearest sample of 8 bits of a sample of 16 bits.</summary>
     private static byte ToByte(ushort sample) => (byte)(((sample * 255u) + 32767u) / 65535u);
+
+    /// <summary>
+    /// Returns whether a CICP color description is the one of Display P3: the primaries of SMPTE EG 432-1 (P3 with the D65
+    /// white point) and the transfer function of sRGB.
+    /// </summary>
+    private static bool IsDisplayP3([NotNullWhen(true)] CicpColorDescription? cicp) => cicp is { ColorPrimaries: 12, TransferCharacteristics: 13 };
 
     /// <summary>
     /// Returns whether a CICP color description is the one of sRGB: the primaries of BT.709 and the transfer function of
@@ -698,6 +798,10 @@ internal sealed class ImagingImageDecoder : RenderingImageDecoder
                     // Most of the images that have a profile have the one of sRGB: their pixels are not converted
                     var transform = IccColorTransform.Create(profile, IccProfile.Srgb);
                     _colorTransform = ChangesColors(transform) ? transform : null;
+                    if (_colorTransform is not null && !_isGrayscale)
+                    {
+                        _extendedTransform = GetExtendedTransform(profile);
+                    }
                 }
                 catch (ImageException)
                 {
@@ -707,6 +811,34 @@ internal sealed class ImagingImageDecoder : RenderingImageDecoder
         }
 
         return _colorTransform;
+    }
+
+    /// <summary>
+    /// Returns the conversion of an RGB profile to sRGB without clipping when the profile has colors outside of the gamut of
+    /// sRGB (its primaries and secondaries, converted to sRGB, have a component outside of [0, 1] by more than half a level
+    /// of 8 bits), or null. The profiles whose conversion goes through a lookup table, which cannot be converted without
+    /// clipping, are clipped to sRGB.
+    /// </summary>
+    private static IccColorTransform? GetExtendedTransform(IccProfile profile)
+    {
+        const float Tolerance = 0.5f / 255;
+        try
+        {
+            var transform = IccColorTransform.Create(profile, IccProfile.Srgb, UnboundedConversion);
+            Span<float> colors = [1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 1];
+            transform.Convert(colors, colors);
+            foreach (var value in colors)
+            {
+                if (value is < -Tolerance or > 1 + Tolerance)
+                    return transform;
+            }
+
+            return null;
+        }
+        catch (ImageException)
+        {
+            return null;
+        }
     }
 
     /// <summary>

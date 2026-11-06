@@ -3530,6 +3530,7 @@ namespace Meziantou.Framework.Imaging.Metadata
         public Meziantou.Framework.Imaging.Metadata.CicpColorDescription? Cicp { get => throw null; }
         public Meziantou.Framework.Imaging.Metadata.IccProfileColorSpace ColorSpace { get => throw null; }
         public Meziantou.Framework.Imaging.Metadata.MetadataBlob Data { get => throw null; }
+        public static Meziantou.Framework.Imaging.Metadata.IccProfile DisplayP3 { get => throw null; }
         public Meziantou.Framework.Imaging.Metadata.IccProfileClass ProfileClass { get => throw null; }
         public Meziantou.Framework.Imaging.Metadata.IccRenderingIntent? RenderingIntent { get => throw null; }
         public static Meziantou.Framework.Imaging.Metadata.IccProfile Srgb { get => throw null; }

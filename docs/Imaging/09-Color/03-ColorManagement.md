@@ -62,7 +62,9 @@ public static void ConvertToSrgb(string inputPath, string outputPath)
   labels it.
 
 Convert to sRGB before saving to a format that cannot store a profile, or before showing an image where color
-management is not available: its colors then look right everywhere.
+management is not available: its colors then look right everywhere. [IccProfile.DisplayP3](cref:Meziantou.Framework.Imaging.Metadata.IccProfile.DisplayP3) is the wide-gamut color
+space of the screens of phones and computers: convert to it, with 16-bit pixels, to keep the colors of a wider profile
+that sRGB would clip.
 
 ## Convert an HDR image to a standard one
 

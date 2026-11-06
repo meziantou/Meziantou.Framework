@@ -3901,6 +3901,8 @@ the poster from the color space of the image to the color space of `profile`, th
   together with the `Linear` label is ambiguous and rejected.
 - After the conversion the profile describes the pixels: a color description that is not equivalent to sRGB, the
   content light level and the mastering display are removed with the colors they described.
+- `IccProfile.DisplayP3` is a built-in destination of a wider gamut than sRGB (the DCI-P3 primaries, the D65 white
+  point and the sRGB transfer function), built as `IccProfile.Srgb`.
 - The pixel format is kept, so the destination must be an RGB profile for color formats and a grayscale profile for
   `Gray8`/`Gray16`. Colors are converted at the storage precision (16-bit formats stay 16-bit); alpha is copied
   unchanged and the color of transparent pixels is converted like any other.

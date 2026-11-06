@@ -270,7 +270,8 @@ internal sealed partial class StyleEngine
         }
 
         input {
-          padding: 1px 2px;
+          padding-block: 1px;
+          padding-inline: 2px;
           border: 2px inset light-dark(#767676, #858585);
         }
 
@@ -282,7 +283,8 @@ internal sealed partial class StyleEngine
 
         input:is([type=date i], [type=datetime-local i], [type=month i], [type=week i], [type=time i]) {
           font-family: monospace;
-          padding: 0 0 0 1px;
+          padding-block: 0;
+          padding-inline: 1px 0;
         }
 
         input:is([type=hidden i], [type=image i], [type=file i], [type=checkbox i], [type=radio i], [type=range i]) {

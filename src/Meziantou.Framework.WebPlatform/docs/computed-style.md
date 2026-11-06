@@ -292,7 +292,7 @@ Firefox, the controls that do not have base appearance get the rules of `StyleEn
 rules of the user agent style sheet (`SelectRuleCondition.ControlNativeAppearance`, and `NativeAppearance` and
 `ListBoxNativeAppearance` for the `select` elements): the font of `font: -webkit-small-control` of Chromium (`13.333333px
 Arial`; `monospace` in the `textarea` elements and the date and time fields) instead of the inherited one, and the boxes of
-the user agent style sheet of Chromium (`html.css`): `padding: 1px 2px` and a `2px inset` border in the text fields, `2px`
+the user agent style sheet of Chromium (`html.css`): `padding-block: 1px; padding-inline: 2px` and a `2px inset` border in the text fields, `2px`
 and a `1px solid` border in the `textarea` elements, a `1px solid` border in the `select` elements (and
 `vertical-align: text-bottom` in the list boxes), the margins of the checkboxes (`3px 3px 3px 4px`), of the radio buttons
 (`3px 3px 0 5px`) and of the sliders (`2px`), the size, the padding and the border of the color wells (`50px` by `27px`,

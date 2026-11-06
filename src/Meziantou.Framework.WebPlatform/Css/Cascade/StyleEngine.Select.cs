@@ -78,7 +78,7 @@ internal sealed partial class StyleEngine
     /// the options of a group have the weight of the list box.
     /// </summary>
     private const string SelectListBoxNativeAppearanceStyleSheet = """
-        select option { min-block-size: max(1lh, 1.2em); padding: 0 2px 1px; }
+        select option { min-block-size: max(1lh, 1.2em); padding-block: 0 1px; padding-inline: 2px; }
         select optgroup option { font-weight: normal; }
         select option:checked { background-color: light-dark(#cecece, #545454); }
         select:focus option:checked {

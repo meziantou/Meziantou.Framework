@@ -116,7 +116,7 @@ internal sealed class ReplacedContent
             // The rows of a list box are boxes: the width of its labels is their max-content inline size
             if (FormControlContents.GetListBoxLabelsInlineSize(context, box) is { } labelsInlineSize)
             {
-                control = control with { InlineSize = (labelsInlineSize + ScrollContainers.GetScrollbarThickness(context, layout)) / zoom };
+                control = control with { InlineSize = (labelsInlineSize + FormControlSizing.GetListBoxScrollbarSpace(box.Style, ScrollContainers.GetScrollbarThickness(context, layout))) / zoom };
             }
 
             var (width, height) = horizontal ? (control.InlineSize, control.BlockSize) : (control.BlockSize, control.InlineSize);

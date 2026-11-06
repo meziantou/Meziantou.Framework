@@ -103,6 +103,12 @@ internal static class LineTruncator
         // The edges of the line box in the scrollport: the contents are translated by the scroll position
         var lineLeftSide = new WritingDirection(container.WritingDirection.WritingMode, Direction.Ltr).InlineStart;
         var scroll = owner.IsScrollContainer && owner.ScrollState is { } state ? state.Offset : PhysicalOffset.Zero;
+
+        // As in Chromium, the value of a text control that is scrolled in its inline axis is clipped, not elided (WPT
+        // html/rendering/widgets/input-text-overflow-ellipsis-scrolled.html,
+        // html/semantics/forms/the-textarea-element/textarea-text-overflow-ellipsis-scroll.html)
+        if (container.Box.IsTextControlInnerEditor && (lineLeftSide is PhysicalSide.Left ? scroll.X : scroll.Y) != 0)
+            return null;
         var lineSize = line.Size;
         var (leftEdge, rightEdge) = lineLeftSide switch
         {

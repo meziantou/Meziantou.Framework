@@ -863,7 +863,7 @@ the fragment. The contents of the box (the `foreignObject` boxes of an `svg`) ar
   of that advance and the rounded ascent; the advance of `0` for both when `x` is wider than 1.7 times `0`); `textarea`
   `ceil(cols×avg)` × `rows` lines; `select` the widest option/optgroup label (drop-down box: plus the internal paddings of
   Chromium, 4px before the label, 1px and a 15px drop-down button after it (none with `appearance: none`), 1px above and
-  below the line; list box: the max-content inline size of its rows, which are boxes with a padding of `0 2px 1px` and a
+  below the line; list box: the max-content inline size of its rows, which are boxes with a padding of 2px in the inline axis and 1px at the block end, and a
   minimum height of 1.2em, × display size rows, 4 for `multiple`); buttons the
   width of their label (the line feeds of the value of an `input` button break its label into lines, as in the browsers,
   whose user agent style sheets have `white-space: pre` for these controls: the block size is the one of the lines and the
@@ -5229,10 +5229,11 @@ something asks for the display list (`LayoutEngine.PaintCount` for the tests).
   disc at its inline-start side, at its inline-end side when checked; `indeterminate` does not apply), the radio buttons,
   the sliders, the color wells, the progress bars and the meters, and, as in Chromium, a thin rounded frame (1px, radius
   2px) along the border box of the text fields, the `textarea` and `select` elements, the buttons (also
-  `::file-selector-button`) and the color wells, over their native background in the same shape (`Painter.PaintNativeFrame`:
+  `::file-selector-button` and `::scroll-button()`) and the color wells, over their native background in the same shape (`Painter.PaintNativeFrame`:
   the borders that the user agent style sheet gives them, as Chromium, are the space of the frame and give it its color,
   their style is not painted; a drop-down box with `appearance: menulist-button` has no frame, its borders are the ones of
-  CSS, and keeps its arrow, as a devolved drop-down box does: "including a drop-down button")
+  CSS, and keeps its arrow, as a devolved drop-down box does: "including a drop-down button"; on the other controls,
+  `menulist-button` is an alias of `auto`)
   (`accent-color` replaces the accent color of the checkboxes, the radio buttons, the sliders and the progress bars; a
   transparent one is composed over `Canvas`). The text of a date and time field is clipped at the content edge in the
   inline axis and at the padding edge in the block axis. The value and the placeholder of the text fields and of the

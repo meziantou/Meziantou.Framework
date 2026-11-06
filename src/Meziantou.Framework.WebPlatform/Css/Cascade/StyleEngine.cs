@@ -2900,7 +2900,7 @@ internal sealed partial class StyleEngine
     /// (https://drafts.csswg.org/css-position-4/#backdrop), the default styles of the scroll navigation controls
     /// (https://drafts.csswg.org/css-overflow-5/#scroll-navigation: a ::scroll-marker has "a default style like the HTML a
     /// element", the ::scroll-button() pseudo-elements "are styled identically to the button element": the rules of the links
-    /// and of the buttons of this style sheet and of the HTML one), the global view transition user agent style sheet
+    /// and of the buttons of this style sheet and of the HTML one, and the font of the buttons of <see cref="NativeAppearanceStyleSheet"/>), the global view transition user agent style sheet
     /// (https://drafts.csswg.org/css-view-transitions-1/#ua-styles; its keyframes are in <see cref="ViewTransitionKeyframesStyleSheet"/>;
     /// the root element of a scoped view transition has the default name <c>root</c> too, "to allow it to be independently
     /// selected", and view transition scoping "for the duration of the transition"),
@@ -2944,6 +2944,7 @@ internal sealed partial class StyleEngine
         ::scroll-marker:active, ::column::scroll-marker:active { color: ActiveText; }
         ::scroll-marker:focus-visible, ::column::scroll-marker:focus-visible, ::scroll-button(*):focus-visible { outline: auto; }
         ::scroll-button(*) {
+          font: 13.333333px Arial;
           letter-spacing: initial;
           word-spacing: initial;
           line-height: initial;

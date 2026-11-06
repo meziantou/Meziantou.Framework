@@ -1758,16 +1758,16 @@
     "total": 18
   },
   "css/css-writing-modes/forms/button-appearance-native-horizontal.optional.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-writing-modes/forms/button-appearance-native-vertical.optional.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-writing-modes/forms/button-appearance-none-horizontal.optional.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-writing-modes/forms/button-appearance-none-vertical.optional.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-writing-modes/forms/checkbox-appearance-native-vertical-lr-baseline.optional.html": {
     "reftest": "PASS"
@@ -1983,10 +1983,18 @@
     "total": 5
   },
   "css/css-writing-modes/forms/select-multiple-scrolling.optional.html": {
-    "total": 5
+    "total": 5,
+    "failures": {
+      "select[multiple][style=\"writing-mode: sideways-rl\"] scrolls correctly": "FAIL",
+      "select[multiple][style=\"writing-mode: vertical-rl\"] scrolls correctly": "FAIL"
+    }
   },
   "css/css-writing-modes/forms/select-size-scrolling-and-sizing.optional.html": {
-    "total": 10
+    "total": 10,
+    "failures": {
+      "select[size][style=\"writing-mode: sideways-rl\"] scrolls correctly": "FAIL",
+      "select[size][style=\"writing-mode: vertical-rl\"] scrolls correctly": "FAIL"
+    }
   },
   "css/css-writing-modes/forms/text-input-baseline.html": {
     "total": 21

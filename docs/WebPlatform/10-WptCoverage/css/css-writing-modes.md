@@ -9,18 +9,18 @@ description: "The results of the web-platform-tests of css/css-writing-modes, an
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 82 | 85 | 0 | 96% |
+| [Stable](#stable-tests) | 80 | 85 | 0 | 94% |
 | [Tentative](#tentative-tests) | 1 | 1 | 0 | 100% |
-| [Reftests](#reftests) | 1,145 | 1,159 | 0 | 99% |
-| **All** | **1,228** | **1,245** | **0** | **99%** |
+| [Reftests](#reftests) | 1,149 | 1,159 | 0 | 99% |
+| **All** | **1,230** | **1,245** | **0** | **99%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 2
+- **BUG**: 4
 - **TEST BUG**: 10
-- **NOT IMPLEMENTED**: 5
+- **NOT IMPLEMENTED**: 1
 
 ## Stable tests
 
@@ -38,8 +38,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`forms/select-appearance-native-computed-style.html`](https://wpt.fyi/results/css/css-writing-modes/forms/select-appearance-native-computed-style.html) | Pass | 3 / 3 |  |  |
 | [`forms/select-multiple-keyboard-selection.optional.html`](https://wpt.fyi/results/css/css-writing-modes/forms/select-multiple-keyboard-selection.optional.html) | Pass | 5 / 5 |  |  |
 | [`forms/select-multiple-options-visual-order.html`](https://wpt.fyi/results/css/css-writing-modes/forms/select-multiple-options-visual-order.html) | Pass | 5 / 5 |  |  |
-| [`forms/select-multiple-scrolling.optional.html`](https://wpt.fyi/results/css/css-writing-modes/forms/select-multiple-scrolling.optional.html) | Pass | 5 / 5 |  |  |
-| [`forms/select-size-scrolling-and-sizing.optional.html`](https://wpt.fyi/results/css/css-writing-modes/forms/select-size-scrolling-and-sizing.optional.html) | Pass | 10 / 10 |  |  |
+| [`forms/select-multiple-scrolling.optional.html`](https://wpt.fyi/results/css/css-writing-modes/forms/select-multiple-scrolling.optional.html) | Fail | 3 / 5 | BUG | a rounding error of the order of 1e-14px: the layout of the library uses floating-point coordinates where the browsers use fixed-point units (1/64px), and the 13.333px font of the list box (10pt) gives rows whose heights are not exact binary fractions, so the scroll position of a list box in `vertical-rl` and `sideways-rl` is 1.4e-14 instead of 0 after a positive `scrollLeft` (the test compares it exactly) |
+| [`forms/select-size-scrolling-and-sizing.optional.html`](https://wpt.fyi/results/css/css-writing-modes/forms/select-size-scrolling-and-sizing.optional.html) | Fail | 8 / 10 | BUG | a rounding error of the order of 1e-14px: the layout of the library uses floating-point coordinates where the browsers use fixed-point units (1/64px), and the 13.333px font of the list box (10pt) gives rows whose heights are not exact binary fractions, so the scroll position of a list box in `vertical-rl` and `sideways-rl` is 1.4e-14 instead of 0 after a positive `scrollLeft` (the test compares it exactly) |
 | [`forms/text-input-baseline.html`](https://wpt.fyi/results/css/css-writing-modes/forms/text-input-baseline.html) | Pass | 21 / 21 |  |  |
 | [`forms/text-input-block-size.optional.html`](https://wpt.fyi/results/css/css-writing-modes/forms/text-input-block-size.optional.html) | Pass | 28 / 28 |  |  |
 | [`forms/text-input-scroll-on-blur.html`](https://wpt.fyi/results/css/css-writing-modes/forms/text-input-scroll-on-blur.html) | Fail | 0 / 10 | NOT IMPLEMENTED | `setSelectionRange()` on a focused text field does not scroll its value to reveal the caret (only the arrow keys, `Home` and `End` do), so `scrollLeft`/`scrollTop` is still 0 before the blur; the scroll back to the start of the value when the field loses the focus is not implemented either |
@@ -706,10 +706,10 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`float-vrl-008.xht`](https://wpt.fyi/results/css/css-writing-modes/float-vrl-008.xht) | Pass | 1 / 1 |  |  |
 | [`float-vrl-010.xht`](https://wpt.fyi/results/css/css-writing-modes/float-vrl-010.xht) | Pass | 1 / 1 |  |  |
 | [`float-vrl-012.xht`](https://wpt.fyi/results/css/css-writing-modes/float-vrl-012.xht) | Pass | 1 / 1 |  |  |
-| [`forms/button-appearance-native-horizontal.optional.html`](https://wpt.fyi/results/css/css-writing-modes/forms/button-appearance-native-horizontal.optional.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the buttons have no native appearance: they are painted with the borders and the background of the user agent style sheet with `appearance: auto` as with `appearance: none`, which the test expects to look different (an optional test) |
-| [`forms/button-appearance-native-vertical.optional.html`](https://wpt.fyi/results/css/css-writing-modes/forms/button-appearance-native-vertical.optional.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the buttons have no native appearance: they are painted with the borders and the background of the user agent style sheet with `appearance: auto` as with `appearance: none`, which the test expects to look different (an optional test) |
-| [`forms/button-appearance-none-horizontal.optional.html`](https://wpt.fyi/results/css/css-writing-modes/forms/button-appearance-none-horizontal.optional.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the buttons have no native appearance: they are painted with the borders and the background of the user agent style sheet with `appearance: auto` as with `appearance: none`, which the test expects to look different (an optional test) |
-| [`forms/button-appearance-none-vertical.optional.html`](https://wpt.fyi/results/css/css-writing-modes/forms/button-appearance-none-vertical.optional.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the buttons have no native appearance: they are painted with the borders and the background of the user agent style sheet with `appearance: auto` as with `appearance: none`, which the test expects to look different (an optional test) |
+| [`forms/button-appearance-native-horizontal.optional.html`](https://wpt.fyi/results/css/css-writing-modes/forms/button-appearance-native-horizontal.optional.html) | Pass | 1 / 1 |  |  |
+| [`forms/button-appearance-native-vertical.optional.html`](https://wpt.fyi/results/css/css-writing-modes/forms/button-appearance-native-vertical.optional.html) | Pass | 1 / 1 |  |  |
+| [`forms/button-appearance-none-horizontal.optional.html`](https://wpt.fyi/results/css/css-writing-modes/forms/button-appearance-none-horizontal.optional.html) | Pass | 1 / 1 |  |  |
+| [`forms/button-appearance-none-vertical.optional.html`](https://wpt.fyi/results/css/css-writing-modes/forms/button-appearance-none-vertical.optional.html) | Pass | 1 / 1 |  |  |
 | [`forms/checkbox-appearance-native-vertical-lr-baseline.optional.html`](https://wpt.fyi/results/css/css-writing-modes/forms/checkbox-appearance-native-vertical-lr-baseline.optional.html) | Pass | 1 / 1 |  |  |
 | [`forms/checkbox-appearance-native-vertical-rl-baseline.optional.html`](https://wpt.fyi/results/css/css-writing-modes/forms/checkbox-appearance-native-vertical-rl-baseline.optional.html) | Pass | 1 / 1 |  |  |
 | [`forms/color-input-appearance-native-horizontal.optional.html`](https://wpt.fyi/results/css/css-writing-modes/forms/color-input-appearance-native-horizontal.optional.html) | Pass | 1 / 1 |  |  |

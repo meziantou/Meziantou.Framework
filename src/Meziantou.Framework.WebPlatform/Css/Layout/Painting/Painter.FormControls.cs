@@ -112,10 +112,13 @@ internal sealed partial class Painter
 
     /// <summary>
     /// Returns whether the box of a fragment is painted with the native frame of a form control (see
-    /// <see cref="FormControlContents.HasNativeFrame"/>): a control with its native appearance, or the <c>::file-selector-button</c>
-    /// of a file upload control with its native appearance. A devolved widget has no frame, nor a drop-down box with
+    /// <see cref="FormControlContents.HasNativeFrame"/>): a control with its native appearance, or a button pseudo-element with
+    /// its native appearance (the <c>::file-selector-button</c> of a file upload control, a <c>::scroll-button()</c>, which are
+    /// "styled identically to the button element"). A devolved widget has no frame, nor a drop-down box with
     /// <c>appearance: menulist-button</c> (https://html.spec.whatwg.org/multipage/rendering.html#the-select-element-2: "CSS
-    /// properties such as 'color', 'background-color', and 'border' should not be disregarded", its borders are the ones of CSS).
+    /// properties such as 'color', 'background-color', and 'border' should not be disregarded", its borders are the ones of
+    /// CSS); on the other controls, <c>menulist-button</c> is an alias of <c>auto</c>
+    /// (https://drafts.csswg.org/css-ui-4/#appearance-switching).
     /// </summary>
     private static bool HasNativeFrame(BoxFragment fragment)
     {
@@ -123,10 +126,10 @@ internal sealed partial class Painter
             return false;
 
         if (box.PseudoElement is not null)
-            return box.PseudoElement == FormControlContents.FileSelectorButton && FormControlContents.HasNativePartAppearance(box.Style);
+            return (box.PseudoElement == FormControlContents.FileSelectorButton || ScrollControls.IsScrollButton(box.PseudoElement)) && FormControlContents.HasNativePartAppearance(box.Style);
 
-        return FormControlContents.HasNativeFrame(element) && (element is not HtmlSelectElement || box.Style.GetComputedValue("appearance") != "menulist-button")
-            && FormControlContents.HasNativeAppearance(element, box.Style);
+        return FormControlContents.HasNativeFrame(element) && FormControlContents.HasNativeAppearance(element, box.Style)
+            && !(element is HtmlSelectElement select && StyleEngine.IsDropDownBox(select) && box.Style.GetComputedValue("appearance") == "menulist-button");
     }
 
     /// <summary>The shape of the native frame of a form control: its border box, with corners rounded by 2px.</summary>

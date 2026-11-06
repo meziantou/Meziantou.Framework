@@ -325,7 +325,7 @@ internal static class FormControlSizing
             // "If the 'field-sizing' property on the element has a computed value of 'content', return the height necessary to
             // contain all rows for items" (none without item)
             var rows = fieldSizingContent ? displayedOptions : GetListBoxRows(select);
-            return new FormControlSize(labelsWidth + scrollbarThickness, rows * GetListBoxRowHeight(style), FormControlBaseline.FirstLine);
+            return new FormControlSize(labelsWidth + GetListBoxScrollbarSpace(style, scrollbarThickness), rows * GetListBoxRowHeight(style), FormControlBaseline.FirstLine);
         }
 
         // "If the 'field-sizing' property on the element has a computed value of 'content', the inline size of the intrinsic size
@@ -366,7 +366,18 @@ internal static class FormControlSizing
     /// <c>field-sizing: content</c>), in the coordinates of the element.
     /// </summary>
     internal static (double InlineSize, double BlockSize) GetEmptyListBoxSize(HtmlSelectElement select, ComputedStyle style, double scrollbarThickness)
-        => (scrollbarThickness, IsFieldSizingContent(style) ? 0 : GetListBoxRows(select) * GetListBoxRowHeight(style));
+        => (GetListBoxScrollbarSpace(style, scrollbarThickness), IsFieldSizingContent(style) ? 0 : GetListBoxRows(select) * GetListBoxRowHeight(style));
+
+    /// <summary>
+    /// Returns the inline space of the classic scrollbar of a list box in its natural size: as in Chromium, the list box reserves
+    /// the scrollbar of its block axis unless its overflow in that axis hides it (<c>hidden</c> or <c>clip</c>).
+    /// </summary>
+    internal static double GetListBoxScrollbarSpace(ComputedStyle style, double scrollbarThickness)
+    {
+        var layout = style.Layout;
+        var blockOverflow = layout.IsHorizontalWritingMode ? layout.OverflowY : layout.OverflowX;
+        return blockOverflow is OverflowKind.Hidden or OverflowKind.Clip ? 0 : scrollbarThickness;
+    }
 
     /// <summary>
     /// The height of a row of a list box with native appearance, in the coordinates of the element: as in Chromium, the

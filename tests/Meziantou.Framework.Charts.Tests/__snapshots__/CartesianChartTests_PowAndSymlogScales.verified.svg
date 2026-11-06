@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="250" viewBox="0 0 640 250" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="640" height="250" fill="#ffffff"/>
+<g class="grid">
+<line x1="38.35" y1="200.75" x2="630" y2="200.75" stroke="#e3e6ea"/>
+<line x1="38.35" y1="193.12" x2="630" y2="193.12" stroke="#e3e6ea"/>
+<line x1="38.35" y1="170.23" x2="630" y2="170.23" stroke="#e3e6ea"/>
+<line x1="38.35" y1="132.08" x2="630" y2="132.08" stroke="#e3e6ea"/>
+<line x1="38.35" y1="78.67" x2="630" y2="78.67" stroke="#e3e6ea"/>
+<line x1="38.35" y1="10" x2="630" y2="10" stroke="#e3e6ea"/>
+</g>
+<g class="marks">
+<g>
+<circle cx="38.35" cy="10" r="3.5" fill="#4269d0"/>
+<circle cx="45.03" cy="75.6" r="3.5" fill="#4269d0"/>
+<circle cx="52.49" cy="122.62" r="3.5" fill="#4269d0"/>
+<circle cx="60.94" cy="154.95" r="3.5" fill="#4269d0"/>
+<circle cx="70.67" cy="176.03" r="3.5" fill="#4269d0"/>
+<circle cx="82.15" cy="188.83" r="3.5" fill="#4269d0"/>
+<circle cx="96.14" cy="195.87" r="3.5" fill="#4269d0"/>
+<circle cx="114.06" cy="199.21" r="3.5" fill="#4269d0"/>
+<circle cx="139.02" cy="200.45" r="3.5" fill="#4269d0"/>
+<circle cx="180.47" cy="200.73" r="3.5" fill="#4269d0"/>
+<circle cx="334.17" cy="200.75" r="3.5" fill="#4269d0"/>
+<circle cx="487.88" cy="200.73" r="3.5" fill="#4269d0"/>
+<circle cx="529.33" cy="200.45" r="3.5" fill="#4269d0"/>
+<circle cx="554.29" cy="199.21" r="3.5" fill="#4269d0"/>
+<circle cx="572.21" cy="195.87" r="3.5" fill="#4269d0"/>
+<circle cx="586.2" cy="188.83" r="3.5" fill="#4269d0"/>
+<circle cx="597.68" cy="176.03" r="3.5" fill="#4269d0"/>
+<circle cx="607.41" cy="154.95" r="3.5" fill="#4269d0"/>
+<circle cx="615.86" cy="122.62" r="3.5" fill="#4269d0"/>
+<circle cx="623.32" cy="75.6" r="3.5" fill="#4269d0"/>
+<circle cx="630" cy="10" r="3.5" fill="#4269d0"/>
+</g>
+</g>
+<g class="axes">
+<line x1="33.35" y1="200.75" x2="38.35" y2="200.75" stroke="#8c959f"/>
+<text x="30.35" y="203.56" text-anchor="end" font-size="11" fill="#59636e">0</text>
+<line x1="33.35" y1="193.12" x2="38.35" y2="193.12" stroke="#8c959f"/>
+<line x1="33.35" y1="170.23" x2="38.35" y2="170.23" stroke="#8c959f"/>
+<text x="30.35" y="173.04" text-anchor="end" font-size="11" fill="#59636e">40</text>
+<line x1="33.35" y1="132.08" x2="38.35" y2="132.08" stroke="#8c959f"/>
+<text x="30.35" y="134.89" text-anchor="end" font-size="11" fill="#59636e">60</text>
+<line x1="33.35" y1="78.67" x2="38.35" y2="78.67" stroke="#8c959f"/>
+<text x="30.35" y="81.48" text-anchor="end" font-size="11" fill="#59636e">80</text>
+<line x1="33.35" y1="10" x2="38.35" y2="10" stroke="#8c959f"/>
+<text x="30.35" y="12.81" text-anchor="end" font-size="11" fill="#59636e">100</text>
+<line x1="38.35" y1="200.75" x2="38.35" y2="205.75" stroke="#8c959f"/>
+<text x="42.3" y="212.7" text-anchor="end" font-size="11" fill="#59636e" transform="rotate(-45 42.3 212.7)">-1,000</text>
+<line x1="52.49" y1="200.75" x2="52.49" y2="205.75" stroke="#8c959f"/>
+<line x1="70.67" y1="200.75" x2="70.67" y2="205.75" stroke="#8c959f"/>
+<text x="74.62" y="212.7" text-anchor="end" font-size="11" fill="#59636e" transform="rotate(-45 74.62 212.7)">-600</text>
+<line x1="96.14" y1="200.75" x2="96.14" y2="205.75" stroke="#8c959f"/>
+<line x1="139.02" y1="200.75" x2="139.02" y2="205.75" stroke="#8c959f"/>
+<text x="142.97" y="212.7" text-anchor="end" font-size="11" fill="#59636e" transform="rotate(-45 142.97 212.7)">-200</text>
+<line x1="334.17" y1="200.75" x2="334.17" y2="205.75" stroke="#8c959f"/>
+<line x1="529.33" y1="200.75" x2="529.33" y2="205.75" stroke="#8c959f"/>
+<text x="533.27" y="212.7" text-anchor="end" font-size="11" fill="#59636e" transform="rotate(-45 533.27 212.7)">200</text>
+<line x1="572.21" y1="200.75" x2="572.21" y2="205.75" stroke="#8c959f"/>
+<line x1="597.68" y1="200.75" x2="597.68" y2="205.75" stroke="#8c959f"/>
+<text x="601.63" y="212.7" text-anchor="end" font-size="11" fill="#59636e" transform="rotate(-45 601.63 212.7)">600</text>
+<line x1="615.86" y1="200.75" x2="615.86" y2="205.75" stroke="#8c959f"/>
+<line x1="630" y1="200.75" x2="630" y2="205.75" stroke="#8c959f"/>
+<text x="633.95" y="212.7" text-anchor="end" font-size="11" fill="#59636e" transform="rotate(-45 633.95 212.7)">1,000</text>
+<line x1="38.35" y1="200.75" x2="630" y2="200.75" stroke="#8c959f"/>
+</g>
+</svg>

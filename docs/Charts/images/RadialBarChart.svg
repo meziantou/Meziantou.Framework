@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="420" viewBox="0 0 420 420" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Sales by region</title>
+<rect width="420" height="420" fill="#ffffff"/>
+<g class="grid">
+<path d="M210,162.35 A59.05,59.05 0 1,1 150.95,221.4" fill="none" stroke="#e3e6ea"/>
+<path d="M210,131.54 A89.86,89.86 0 1,1 120.14,221.4" fill="none" stroke="#e3e6ea"/>
+<path d="M210,100.73 A120.67,120.67 0 1,1 89.33,221.4" fill="none" stroke="#e3e6ea"/>
+<path d="M210,69.92 A151.48,151.48 0 1,1 58.52,221.4" fill="none" stroke="#e3e6ea"/>
+<line x1="210" y1="179.29" x2="210" y2="52.98" stroke="#e3e6ea"/>
+<line x1="233.39" y1="186.39" x2="303.57" y2="81.36" stroke="#e3e6ea"/>
+<line x1="248.9" y1="205.29" x2="365.6" y2="156.95" stroke="#e3e6ea"/>
+<line x1="251.3" y1="229.61" x2="375.19" y2="254.26" stroke="#e3e6ea"/>
+<line x1="239.77" y1="251.17" x2="329.09" y2="340.49" stroke="#e3e6ea"/>
+<line x1="218.21" y1="262.7" x2="242.86" y2="386.59" stroke="#e3e6ea"/>
+<line x1="193.89" y1="260.3" x2="145.55" y2="377" stroke="#e3e6ea"/>
+<line x1="174.99" y1="244.79" x2="69.96" y2="314.97" stroke="#e3e6ea"/>
+<line x1="167.89" y1="221.4" x2="41.58" y2="221.4" stroke="#e3e6ea"/>
+</g>
+<g class="marks">
+<g>
+<path d="M210,148.48 A72.92,72.92 0 1,1 140.22,242.57 L166.76,234.52 A45.19,45.19 0 1,0 210,176.21 Z" fill="#4269d0"/>
+<path d="M210,117.67 A103.73,103.73 0 0,1 244.94,319.06 L235.6,292.95 A76,76 0 0,0 210,145.4 Z" fill="#efb118"/>
+<path d="M210,86.87 A134.53,134.53 0 0,1 216.6,355.77 L215.24,328.08 A106.81,106.81 0 0,0 210,114.59 Z" fill="#ff725c"/>
+<path d="M210,56.06 A165.34,165.34 0 1,1 44.66,221.4 L72.38,221.4 A137.62,137.62 0 1,0 210,83.78 Z" fill="#6cc5b0"/>
+</g>
+</g>
+<g class="axes">
+<text x="210" y="44.7" text-anchor="middle" font-size="11" fill="#59636e">0</text>
+<text x="306.91" y="74.95" font-size="11" fill="#59636e">20</text>
+<text x="371.15" y="155.51" font-size="11" fill="#59636e">40</text>
+<text x="381.07" y="259.23" font-size="11" fill="#59636e">60</text>
+<text x="333.34" y="351.15" font-size="11" fill="#59636e">80</text>
+<text x="244.03" y="400.27" font-size="11" fill="#59636e">100</text>
+<text x="143.25" y="390.06" text-anchor="end" font-size="11" fill="#59636e">120</text>
+<text x="64.97" y="323.94" text-anchor="end" font-size="11" fill="#59636e">140</text>
+<text x="35.58" y="224.21" text-anchor="end" font-size="11" fill="#59636e">160</text>
+<text x="214" y="165.16" font-size="11" fill="#59636e">North</text>
+<text x="214" y="134.35" font-size="11" fill="#59636e">South</text>
+<text x="214" y="103.54" font-size="11" fill="#59636e">East</text>
+<text x="214" y="72.73" font-size="11" fill="#59636e">West</text>
+</g>
+<text x="10" y="21.49" font-size="16" font-weight="bold" fill="#1f2328">Sales by region</text>
+</svg>

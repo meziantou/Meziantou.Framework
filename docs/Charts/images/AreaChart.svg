@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="400" viewBox="0 0 640 400" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Monthly temperature in Madrid</title>
+<rect width="640" height="400" fill="#ffffff"/>
+<g class="grid">
+<line x1="32.23" y1="369.83" x2="628.22" y2="369.83" stroke="#e3e6ea"/>
+<line x1="32.23" y1="313.65" x2="628.22" y2="313.65" stroke="#e3e6ea"/>
+<line x1="32.23" y1="257.48" x2="628.22" y2="257.48" stroke="#e3e6ea"/>
+<line x1="32.23" y1="201.31" x2="628.22" y2="201.31" stroke="#e3e6ea"/>
+<line x1="32.23" y1="145.14" x2="628.22" y2="145.14" stroke="#e3e6ea"/>
+<line x1="32.23" y1="88.97" x2="628.22" y2="88.97" stroke="#e3e6ea"/>
+<line x1="32.23" y1="32.8" x2="628.22" y2="32.8" stroke="#e3e6ea"/>
+</g>
+<g class="marks">
+<g>
+<path d="M32.23,81.11 C50.62,81.11 69,81.11 87.38,81.11 C104.58,81.11 121.78,97.67 138.98,110.32 C157.36,123.84 175.74,142.36 194.13,160.87 C211.92,178.79 229.71,201.37 247.5,219.29 C265.88,237.8 284.27,256.44 302.65,269.84 C320.44,282.81 338.23,299.05 356.02,299.05 C374.41,299.05 392.79,299.05 411.17,299.05 C429.56,299.05 447.94,283.48 466.33,269.84 C484.12,256.64 501.91,237.12 519.7,219.29 C538.08,200.86 556.47,179.3 574.85,160.87 C592.64,143.04 610.43,126.68 628.22,110.32 L628.22,369.83 C610.43,369.83 592.64,369.83 574.85,369.83 C556.47,369.83 538.08,369.83 519.7,369.83 C501.91,369.83 484.12,369.83 466.33,369.83 C447.94,369.83 429.56,369.83 411.17,369.83 C392.79,369.83 374.41,369.83 356.02,369.83 C338.23,369.83 320.44,369.83 302.65,369.83 C284.27,369.83 265.88,369.83 247.5,369.83 C229.71,369.83 211.92,369.83 194.13,369.83 C175.74,369.83 157.36,369.83 138.98,369.83 C121.78,369.83 104.58,369.83 87.38,369.83 C69,369.83 50.62,369.83 32.23,369.83 Z" fill="#4269d0" fill-opacity="0.302" stroke="#4269d0" stroke-width="1.5" stroke-linejoin="round"/>
+</g>
+</g>
+<g class="axes">
+<line x1="27.23" y1="369.83" x2="32.23" y2="369.83" stroke="#8c959f"/>
+<text x="24.23" y="372.64" text-anchor="end" font-size="11" fill="#59636e">0</text>
+<line x1="27.23" y1="313.65" x2="32.23" y2="313.65" stroke="#8c959f"/>
+<text x="24.23" y="316.46" text-anchor="end" font-size="11" fill="#59636e">5</text>
+<line x1="27.23" y1="257.48" x2="32.23" y2="257.48" stroke="#8c959f"/>
+<text x="24.23" y="260.29" text-anchor="end" font-size="11" fill="#59636e">10</text>
+<line x1="27.23" y1="201.31" x2="32.23" y2="201.31" stroke="#8c959f"/>
+<text x="24.23" y="204.12" text-anchor="end" font-size="11" fill="#59636e">15</text>
+<line x1="27.23" y1="145.14" x2="32.23" y2="145.14" stroke="#8c959f"/>
+<text x="24.23" y="147.95" text-anchor="end" font-size="11" fill="#59636e">20</text>
+<line x1="27.23" y1="88.97" x2="32.23" y2="88.97" stroke="#8c959f"/>
+<text x="24.23" y="91.78" text-anchor="end" font-size="11" fill="#59636e">25</text>
+<line x1="27.23" y1="32.8" x2="32.23" y2="32.8" stroke="#8c959f"/>
+<text x="24.23" y="35.61" text-anchor="end" font-size="11" fill="#59636e">30</text>
+<line x1="32.23" y1="369.83" x2="32.23" y2="374.83" stroke="#8c959f"/>
+<text x="32.23" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">2024</text>
+<line x1="87.38" y1="369.83" x2="87.38" y2="374.83" stroke="#8c959f"/>
+<text x="87.38" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Feb</text>
+<line x1="138.98" y1="369.83" x2="138.98" y2="374.83" stroke="#8c959f"/>
+<text x="138.98" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Mar</text>
+<line x1="194.13" y1="369.83" x2="194.13" y2="374.83" stroke="#8c959f"/>
+<text x="194.13" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Apr</text>
+<line x1="247.5" y1="369.83" x2="247.5" y2="374.83" stroke="#8c959f"/>
+<text x="247.5" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">May</text>
+<line x1="302.65" y1="369.83" x2="302.65" y2="374.83" stroke="#8c959f"/>
+<text x="302.65" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Jun</text>
+<line x1="356.02" y1="369.83" x2="356.02" y2="374.83" stroke="#8c959f"/>
+<text x="356.02" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Jul</text>
+<line x1="411.17" y1="369.83" x2="411.17" y2="374.83" stroke="#8c959f"/>
+<text x="411.17" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Aug</text>
+<line x1="466.33" y1="369.83" x2="466.33" y2="374.83" stroke="#8c959f"/>
+<text x="466.33" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Sep</text>
+<line x1="519.7" y1="369.83" x2="519.7" y2="374.83" stroke="#8c959f"/>
+<text x="519.7" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Oct</text>
+<line x1="574.85" y1="369.83" x2="574.85" y2="374.83" stroke="#8c959f"/>
+<text x="574.85" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Nov</text>
+<line x1="628.22" y1="369.83" x2="628.22" y2="374.83" stroke="#8c959f"/>
+<text x="628.22" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Dec</text>
+<line x1="32.23" y1="369.83" x2="628.22" y2="369.83" stroke="#8c959f"/>
+</g>
+<text x="10" y="21.49" font-size="16" font-weight="bold" fill="#1f2328">Monthly temperature in Madrid</text>
+</svg>

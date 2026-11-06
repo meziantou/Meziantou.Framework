@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="360" viewBox="0 0 360 360" role="img" font-family="Helvetica, Arial, sans-serif">
+<defs>
+<linearGradient id="chart-gradient0" gradientUnits="userSpaceOnUse" x1="10" y1="0" x2="250" y2="0">
+<stop offset="0" stop-color="#000004"/>
+<stop offset="0.0667" stop-color="#080423"/>
+<stop offset="0.1333" stop-color="#1f1047"/>
+<stop offset="0.2" stop-color="#3a1364"/>
+<stop offset="0.2667" stop-color="#55167c"/>
+<stop offset="0.3333" stop-color="#70207f"/>
+<stop offset="0.4" stop-color="#8b2980"/>
+<stop offset="0.4667" stop-color="#a7327c"/>
+<stop offset="0.5333" stop-color="#c14075"/>
+<stop offset="0.6" stop-color="#db536a"/>
+<stop offset="0.6667" stop-color="#ed6964"/>
+<stop offset="0.7333" stop-color="#f88162"/>
+<stop offset="0.8" stop-color="#fd9f70"/>
+<stop offset="0.8667" stop-color="#febe84"/>
+<stop offset="0.9333" stop-color="#fedea1"/>
+<stop offset="1" stop-color="#fcfdbf"/>
+</linearGradient>
+</defs>
+<rect width="360" height="360" fill="#1b1e23"/>
+<g class="marks">
+<g>
+<circle cx="180" cy="197.59" r="152.41" fill="#3a3f47" fill-opacity="0.4"><title>: 840</title></circle>
+<circle cx="134.88" cy="197.59" r="106.34" fill="#f17363" fill-opacity="0.2" stroke="#f17363" stroke-opacity="0.6"><title>src: 590</title></circle>
+<circle cx="83.3" cy="197.59" r="53.81" fill="#651d7e" fill-opacity="0.2" stroke="#651d7e" stroke-opacity="0.6"><title>src / core: 275</title></circle>
+<circle cx="59.52" cy="197.59" r="29.07" fill="#22114b"><title>src / core / parser.cs: 140</title></circle>
+<circle cx="112.85" cy="197.59" r="23.31" fill="#0c062a"><title>src / core / lexer.cs: 90</title></circle>
+<circle cx="90.9" cy="231.91" r="16.48" fill="#01010e"><title>src / core / ast.cs: 45</title></circle>
+<circle cx="189.17" cy="197.59" r="51.1" fill="#5e1a7d" fill-opacity="0.2" stroke="#5e1a7d" stroke-opacity="0.6"><title>src / app: 260</title></circle>
+<circle cx="166.8" cy="191.32" r="26.92" fill="#190e3f"><title>src / app / main.cs: 120</title></circle>
+<circle cx="216.64" cy="191.32" r="21.98" fill="#080423"><title>src / app / view.cs: 80</title></circle>
+<circle cx="196.12" cy="227.92" r="19.03" fill="#030217"><title>src / app / model.cs: 60</title></circle>
+<circle cx="138.3" cy="258.33" r="27.17" fill="#020114" fill-opacity="0.2" stroke="#020114" stroke-opacity="0.6"><title>src / util: 55</title></circle>
+<circle cx="125.54" cy="258.33" r="13.46" fill="#000006"><title>src / util / strings.cs: 30</title></circle>
+<circle cx="152.23" cy="258.33" r="12.29" fill="#000004"><title>src / util / math.cs: 25</title></circle>
+<circle cx="286.82" cy="197.59" r="44.64" fill="#2a1253" fill-opacity="0.2" stroke="#2a1253" stroke-opacity="0.6"><title>tests: 155</title></circle>
+<circle cx="265.79" cy="197.59" r="22.65" fill="#0a0527"><title>tests / core.tests.cs: 85</title></circle>
+<circle cx="309.95" cy="197.59" r="20.56" fill="#05031d"><title>tests / app.tests.cs: 70</title></circle>
+<circle cx="256.19" cy="272.34" r="35.19" fill="#0e072e" fill-opacity="0.2" stroke="#0e072e" stroke-opacity="0.6"><title>docs: 95</title></circle>
+<circle cx="240.17" cy="272.34" r="18.22" fill="#020114"><title>docs / guide.md: 55</title></circle>
+<circle cx="274.89" cy="272.34" r="15.54" fill="#00000b"><title>docs / readme.md: 40</title></circle>
+<text x="59.52" y="200.4" text-anchor="middle" font-size="11" fill="#ffffff">140</text>
+<text x="112.85" y="200.4" text-anchor="middle" font-size="11" fill="#ffffff">90</text>
+<text x="90.9" y="234.72" text-anchor="middle" font-size="11" fill="#ffffff">45</text>
+<text x="166.8" y="194.13" text-anchor="middle" font-size="11" fill="#ffffff">120</text>
+<text x="216.64" y="194.13" text-anchor="middle" font-size="11" fill="#ffffff">80</text>
+<text x="196.12" y="230.73" text-anchor="middle" font-size="11" fill="#ffffff">60</text>
+<text x="125.54" y="261.14" text-anchor="middle" font-size="11" fill="#ffffff">30</text>
+<text x="152.23" y="261.14" text-anchor="middle" font-size="11" fill="#ffffff">25</text>
+<text x="265.79" y="200.4" text-anchor="middle" font-size="11" fill="#ffffff">85</text>
+<text x="309.95" y="200.4" text-anchor="middle" font-size="11" fill="#ffffff">70</text>
+<text x="240.17" y="275.15" text-anchor="middle" font-size="11" fill="#ffffff">55</text>
+<text x="274.89" y="275.15" text-anchor="middle" font-size="11" fill="#ffffff">40</text>
+</g>
+</g>
+<g class="legend">
+<rect x="10" y="10" width="240" height="10" fill="url(#chart-gradient0)"/>
+<line x1="32.09" y1="20" x2="32.09" y2="23" stroke="#7d848e"/>
+<text x="32.09" y="30.9" text-anchor="middle" font-size="11" fill="#a7adb5">100</text>
+<line x1="61.53" y1="20" x2="61.53" y2="23" stroke="#7d848e"/>
+<text x="61.53" y="30.9" text-anchor="middle" font-size="11" fill="#a7adb5">200</text>
+<line x1="90.98" y1="20" x2="90.98" y2="23" stroke="#7d848e"/>
+<text x="90.98" y="30.9" text-anchor="middle" font-size="11" fill="#a7adb5">300</text>
+<line x1="120.43" y1="20" x2="120.43" y2="23" stroke="#7d848e"/>
+<text x="120.43" y="30.9" text-anchor="middle" font-size="11" fill="#a7adb5">400</text>
+<line x1="149.88" y1="20" x2="149.88" y2="23" stroke="#7d848e"/>
+<text x="149.88" y="30.9" text-anchor="middle" font-size="11" fill="#a7adb5">500</text>
+<line x1="179.33" y1="20" x2="179.33" y2="23" stroke="#7d848e"/>
+<text x="179.33" y="30.9" text-anchor="middle" font-size="11" fill="#a7adb5">600</text>
+<line x1="208.77" y1="20" x2="208.77" y2="23" stroke="#7d848e"/>
+<text x="208.77" y="30.9" text-anchor="middle" font-size="11" fill="#a7adb5">700</text>
+<line x1="238.22" y1="20" x2="238.22" y2="23" stroke="#7d848e"/>
+<text x="238.22" y="30.9" text-anchor="middle" font-size="11" fill="#a7adb5">800</text>
+</g>
+</svg>

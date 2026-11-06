@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="240" viewBox="0 0 640 240" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Results, in % of the year's goal</title>
+<rect width="640" height="240" fill="#ffffff"/>
+<g class="grid">
+<line x1="95.57" y1="32.8" x2="95.57" y2="209.83" stroke="#e3e6ea"/>
+<line x1="202.22" y1="32.8" x2="202.22" y2="209.83" stroke="#e3e6ea"/>
+<line x1="308.87" y1="32.8" x2="308.87" y2="209.83" stroke="#e3e6ea"/>
+<line x1="415.52" y1="32.8" x2="415.52" y2="209.83" stroke="#e3e6ea"/>
+<line x1="522.17" y1="32.8" x2="522.17" y2="209.83" stroke="#e3e6ea"/>
+<line x1="628.83" y1="32.8" x2="628.83" y2="209.83" stroke="#e3e6ea"/>
+</g>
+<g class="marks">
+<g>
+<rect x="95.57" y="37.12" width="533.26" height="38.86" fill="#eceef1"/>
+<rect x="95.57" y="80.29" width="533.26" height="38.86" fill="#eceef1"/>
+<rect x="95.57" y="123.47" width="533.26" height="38.86" fill="#eceef1"/>
+<rect x="95.57" y="166.65" width="533.26" height="38.86" fill="#eceef1"/>
+</g>
+<g>
+<rect x="95.57" y="37.12" width="373.28" height="38.86" fill="#d5d9de"/>
+<rect x="95.57" y="80.29" width="373.28" height="38.86" fill="#d5d9de"/>
+<rect x="95.57" y="123.47" width="373.28" height="38.86" fill="#d5d9de"/>
+<rect x="95.57" y="166.65" width="373.28" height="38.86" fill="#d5d9de"/>
+</g>
+<g>
+<rect x="95.57" y="49.75" width="437.27" height="13.6" fill="#2f3740"/>
+<rect x="95.57" y="92.92" width="341.28" height="13.6" fill="#2f3740"/>
+<rect x="95.57" y="136.1" width="485.26" height="13.6" fill="#2f3740"/>
+<rect x="95.57" y="179.28" width="255.96" height="13.6" fill="#2f3740"/>
+</g>
+<g>
+<line x1="575.5" y1="37.12" x2="575.5" y2="75.98" stroke="#e5484d" stroke-width="3"/>
+<line x1="415.52" y1="80.29" x2="415.52" y2="119.15" stroke="#e5484d" stroke-width="3"/>
+<line x1="548.84" y1="123.47" x2="548.84" y2="162.33" stroke="#e5484d" stroke-width="3"/>
+<line x1="495.51" y1="166.65" x2="495.51" y2="205.51" stroke="#e5484d" stroke-width="3"/>
+</g>
+</g>
+<g class="axes">
+<line x1="90.57" y1="56.55" x2="95.57" y2="56.55" stroke="#8c959f"/>
+<text x="87.57" y="59.36" text-anchor="end" font-size="11" fill="#59636e">Revenue</text>
+<line x1="90.57" y1="99.72" x2="95.57" y2="99.72" stroke="#8c959f"/>
+<text x="87.57" y="102.53" text-anchor="end" font-size="11" fill="#59636e">Profit</text>
+<line x1="90.57" y1="142.9" x2="95.57" y2="142.9" stroke="#8c959f"/>
+<text x="87.57" y="145.71" text-anchor="end" font-size="11" fill="#59636e">New customers</text>
+<line x1="90.57" y1="186.08" x2="95.57" y2="186.08" stroke="#8c959f"/>
+<text x="87.57" y="188.89" text-anchor="end" font-size="11" fill="#59636e">Satisfaction</text>
+<line x1="95.57" y1="209.83" x2="95.57" y2="214.83" stroke="#8c959f"/>
+<text x="95.57" y="225.72" text-anchor="middle" font-size="11" fill="#59636e">0</text>
+<line x1="202.22" y1="209.83" x2="202.22" y2="214.83" stroke="#8c959f"/>
+<text x="202.22" y="225.72" text-anchor="middle" font-size="11" fill="#59636e">20</text>
+<line x1="308.87" y1="209.83" x2="308.87" y2="214.83" stroke="#8c959f"/>
+<text x="308.87" y="225.72" text-anchor="middle" font-size="11" fill="#59636e">40</text>
+<line x1="415.52" y1="209.83" x2="415.52" y2="214.83" stroke="#8c959f"/>
+<text x="415.52" y="225.72" text-anchor="middle" font-size="11" fill="#59636e">60</text>
+<line x1="522.17" y1="209.83" x2="522.17" y2="214.83" stroke="#8c959f"/>
+<text x="522.17" y="225.72" text-anchor="middle" font-size="11" fill="#59636e">80</text>
+<line x1="628.83" y1="209.83" x2="628.83" y2="214.83" stroke="#8c959f"/>
+<text x="628.83" y="225.72" text-anchor="middle" font-size="11" fill="#59636e">100</text>
+<line x1="95.57" y1="209.83" x2="628.83" y2="209.83" stroke="#8c959f"/>
+</g>
+<text x="10" y="21.49" font-size="16" font-weight="bold" fill="#1f2328">Results, in % of the year's goal</text>
+</svg>

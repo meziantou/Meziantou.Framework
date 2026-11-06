@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="400" viewBox="0 0 640 400" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Fuel efficiency by weight</title>
+<rect width="640" height="400" fill="#ffffff"/>
+<g class="grid">
+<line x1="49.33" y1="352.73" x2="624.24" y2="352.73" stroke="#e3e6ea"/>
+<line x1="49.33" y1="293.36" x2="624.24" y2="293.36" stroke="#e3e6ea"/>
+<line x1="49.33" y1="234" x2="624.24" y2="234" stroke="#e3e6ea"/>
+<line x1="49.33" y1="174.63" x2="624.24" y2="174.63" stroke="#e3e6ea"/>
+<line x1="49.33" y1="115.27" x2="624.24" y2="115.27" stroke="#e3e6ea"/>
+<line x1="49.33" y1="55.9" x2="624.24" y2="55.9" stroke="#e3e6ea"/>
+<line x1="49.33" y1="55.9" x2="49.33" y2="352.73" stroke="#e3e6ea"/>
+<line x1="145.15" y1="55.9" x2="145.15" y2="352.73" stroke="#e3e6ea"/>
+<line x1="240.97" y1="55.9" x2="240.97" y2="352.73" stroke="#e3e6ea"/>
+<line x1="336.79" y1="55.9" x2="336.79" y2="352.73" stroke="#e3e6ea"/>
+<line x1="432.6" y1="55.9" x2="432.6" y2="352.73" stroke="#e3e6ea"/>
+<line x1="528.42" y1="55.9" x2="528.42" y2="352.73" stroke="#e3e6ea"/>
+<line x1="624.24" y1="55.9" x2="624.24" y2="352.73" stroke="#e3e6ea"/>
+</g>
+<g class="marks">
+<g>
+<circle cx="145.15" cy="91.52" r="3.5" fill="#4269d0"><title>Aster</title></circle>
+<circle cx="217.01" cy="139.01" r="3.5" fill="#4269d0"><title>Breeze</title></circle>
+<circle cx="336.79" cy="222.12" r="3.5" fill="#efb118"><title>Cobalt</title></circle>
+<circle cx="480.51" cy="305.23" r="3.5" fill="#efb118"><title>Dune</title></circle>
+<circle cx="97.24" cy="55.9" r="3.5" fill="#ff725c"><title>Ember</title></circle>
+<circle cx="264.92" cy="174.63" r="3.5" fill="#4269d0"><title>Fjord</title></circle>
+<circle cx="576.33" cy="352.73" r="3.5" fill="#efb118"><title>Granite</title></circle>
+<circle cx="169.1" cy="115.27" r="3.5" fill="#ff725c"><title>Harbor</title></circle>
+<circle cx="288.88" cy="198.38" r="3.5" fill="#ff725c"><title>Iris</title></circle>
+<circle cx="408.65" cy="269.61" r="3.5" fill="#efb118"><title>Juniper</title></circle>
+<circle cx="193.06" cy="127.14" r="3.5" fill="#4269d0"><title>Kestrel</title></circle>
+<circle cx="312.83" cy="234" r="3.5" fill="#ff725c"><title>Lumen</title></circle>
+</g>
+</g>
+<g class="axes">
+<line x1="44.33" y1="352.73" x2="49.33" y2="352.73" stroke="#8c959f"/>
+<text x="41.33" y="355.54" text-anchor="end" font-size="11" fill="#59636e">20</text>
+<line x1="44.33" y1="293.36" x2="49.33" y2="293.36" stroke="#8c959f"/>
+<text x="41.33" y="296.17" text-anchor="end" font-size="11" fill="#59636e">25</text>
+<line x1="44.33" y1="234" x2="49.33" y2="234" stroke="#8c959f"/>
+<text x="41.33" y="236.81" text-anchor="end" font-size="11" fill="#59636e">30</text>
+<line x1="44.33" y1="174.63" x2="49.33" y2="174.63" stroke="#8c959f"/>
+<text x="41.33" y="177.44" text-anchor="end" font-size="11" fill="#59636e">35</text>
+<line x1="44.33" y1="115.27" x2="49.33" y2="115.27" stroke="#8c959f"/>
+<text x="41.33" y="118.08" text-anchor="end" font-size="11" fill="#59636e">40</text>
+<line x1="44.33" y1="55.9" x2="49.33" y2="55.9" stroke="#8c959f"/>
+<text x="41.33" y="58.71" text-anchor="end" font-size="11" fill="#59636e">45</text>
+<text x="18.62" y="204.31" text-anchor="middle" font-size="12" fill="#1f2328" transform="rotate(-90 18.62 204.31)">Miles per gallon</text>
+<line x1="49.33" y1="352.73" x2="49.33" y2="357.73" stroke="#8c959f"/>
+<text x="49.33" y="368.62" text-anchor="middle" font-size="11" fill="#59636e">1,000</text>
+<line x1="145.15" y1="352.73" x2="145.15" y2="357.73" stroke="#8c959f"/>
+<text x="145.15" y="368.62" text-anchor="middle" font-size="11" fill="#59636e">1,200</text>
+<line x1="240.97" y1="352.73" x2="240.97" y2="357.73" stroke="#8c959f"/>
+<text x="240.97" y="368.62" text-anchor="middle" font-size="11" fill="#59636e">1,400</text>
+<line x1="336.79" y1="352.73" x2="336.79" y2="357.73" stroke="#8c959f"/>
+<text x="336.79" y="368.62" text-anchor="middle" font-size="11" fill="#59636e">1,600</text>
+<line x1="432.6" y1="352.73" x2="432.6" y2="357.73" stroke="#8c959f"/>
+<text x="432.6" y="368.62" text-anchor="middle" font-size="11" fill="#59636e">1,800</text>
+<line x1="528.42" y1="352.73" x2="528.42" y2="357.73" stroke="#8c959f"/>
+<text x="528.42" y="368.62" text-anchor="middle" font-size="11" fill="#59636e">2,000</text>
+<line x1="624.24" y1="352.73" x2="624.24" y2="357.73" stroke="#8c959f"/>
+<text x="624.24" y="368.62" text-anchor="middle" font-size="11" fill="#59636e">2,200</text>
+<line x1="49.33" y1="352.73" x2="624.24" y2="352.73" stroke="#8c959f"/>
+<text x="336.79" y="385.52" text-anchor="middle" font-size="12" fill="#1f2328">Weight (kg)</text>
+</g>
+<g class="legend">
+<rect x="10" y="33.35" width="10" height="10" rx="2" fill="#4269d0"/>
+<text x="25" y="41.42" font-size="12" fill="#1f2328">Europe</text>
+<rect x="77.69" y="33.35" width="10" height="10" rx="2" fill="#efb118"/>
+<text x="92.69" y="41.42" font-size="12" fill="#1f2328">USA</text>
+<rect x="131.36" y="33.35" width="10" height="10" rx="2" fill="#ff725c"/>
+<text x="146.36" y="41.42" font-size="12" fill="#1f2328">Japan</text>
+</g>
+<text x="10" y="21.49" font-size="16" font-weight="bold" fill="#1f2328">Fuel efficiency by weight</text>
+</svg>

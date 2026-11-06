@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="400" viewBox="0 0 640 400" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Months above 15 °C</title>
+<rect width="640" height="400" fill="#ffffff"/>
+<g class="grid">
+<line x1="32.23" y1="369.83" x2="628.22" y2="369.83" stroke="#e3e6ea"/>
+<line x1="32.23" y1="327.7" x2="628.22" y2="327.7" stroke="#e3e6ea"/>
+<line x1="32.23" y1="285.57" x2="628.22" y2="285.57" stroke="#e3e6ea"/>
+<line x1="32.23" y1="243.44" x2="628.22" y2="243.44" stroke="#e3e6ea"/>
+<line x1="32.23" y1="201.31" x2="628.22" y2="201.31" stroke="#e3e6ea"/>
+<line x1="32.23" y1="159.18" x2="628.22" y2="159.18" stroke="#e3e6ea"/>
+<line x1="32.23" y1="117.06" x2="628.22" y2="117.06" stroke="#e3e6ea"/>
+<line x1="32.23" y1="74.93" x2="628.22" y2="74.93" stroke="#e3e6ea"/>
+<line x1="32.23" y1="32.8" x2="628.22" y2="32.8" stroke="#e3e6ea"/>
+</g>
+<g class="marks">
+<g>
+<path d="M32.23,39.12 L87.38,39.12 L138.98,81.25 L194.13,157.08 L247.5,245.55 L302.65,321.38 L356.02,363.51 L411.17,363.51 L466.33,321.38 L519.7,245.55 L574.85,157.08 L628.22,81.25" fill="none" stroke="#4269d0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<g>
+<line x1="32.23" y1="138.12" x2="628.22" y2="138.12" stroke="#e5484d" stroke-dasharray="4 4"/>
+</g>
+<g>
+<line x1="356.02" y1="369.83" x2="356.02" y2="32.8" stroke="#8c959f"/>
+</g>
+</g>
+<g class="axes">
+<line x1="27.23" y1="369.83" x2="32.23" y2="369.83" stroke="#8c959f"/>
+<text x="24.23" y="372.64" text-anchor="end" font-size="11" fill="#59636e">4</text>
+<line x1="27.23" y1="327.7" x2="32.23" y2="327.7" stroke="#8c959f"/>
+<text x="24.23" y="330.51" text-anchor="end" font-size="11" fill="#59636e">6</text>
+<line x1="27.23" y1="285.57" x2="32.23" y2="285.57" stroke="#8c959f"/>
+<text x="24.23" y="288.38" text-anchor="end" font-size="11" fill="#59636e">8</text>
+<line x1="27.23" y1="243.44" x2="32.23" y2="243.44" stroke="#8c959f"/>
+<text x="24.23" y="246.25" text-anchor="end" font-size="11" fill="#59636e">10</text>
+<line x1="27.23" y1="201.31" x2="32.23" y2="201.31" stroke="#8c959f"/>
+<text x="24.23" y="204.12" text-anchor="end" font-size="11" fill="#59636e">12</text>
+<line x1="27.23" y1="159.18" x2="32.23" y2="159.18" stroke="#8c959f"/>
+<text x="24.23" y="161.99" text-anchor="end" font-size="11" fill="#59636e">14</text>
+<line x1="27.23" y1="117.06" x2="32.23" y2="117.06" stroke="#8c959f"/>
+<text x="24.23" y="119.87" text-anchor="end" font-size="11" fill="#59636e">16</text>
+<line x1="27.23" y1="74.93" x2="32.23" y2="74.93" stroke="#8c959f"/>
+<text x="24.23" y="77.74" text-anchor="end" font-size="11" fill="#59636e">18</text>
+<line x1="27.23" y1="32.8" x2="32.23" y2="32.8" stroke="#8c959f"/>
+<text x="24.23" y="35.61" text-anchor="end" font-size="11" fill="#59636e">20</text>
+<line x1="32.23" y1="369.83" x2="32.23" y2="374.83" stroke="#8c959f"/>
+<text x="32.23" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">2024</text>
+<line x1="87.38" y1="369.83" x2="87.38" y2="374.83" stroke="#8c959f"/>
+<text x="87.38" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Feb</text>
+<line x1="138.98" y1="369.83" x2="138.98" y2="374.83" stroke="#8c959f"/>
+<text x="138.98" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Mar</text>
+<line x1="194.13" y1="369.83" x2="194.13" y2="374.83" stroke="#8c959f"/>
+<text x="194.13" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Apr</text>
+<line x1="247.5" y1="369.83" x2="247.5" y2="374.83" stroke="#8c959f"/>
+<text x="247.5" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">May</text>
+<line x1="302.65" y1="369.83" x2="302.65" y2="374.83" stroke="#8c959f"/>
+<text x="302.65" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Jun</text>
+<line x1="356.02" y1="369.83" x2="356.02" y2="374.83" stroke="#8c959f"/>
+<text x="356.02" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Jul</text>
+<line x1="411.17" y1="369.83" x2="411.17" y2="374.83" stroke="#8c959f"/>
+<text x="411.17" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Aug</text>
+<line x1="466.33" y1="369.83" x2="466.33" y2="374.83" stroke="#8c959f"/>
+<text x="466.33" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Sep</text>
+<line x1="519.7" y1="369.83" x2="519.7" y2="374.83" stroke="#8c959f"/>
+<text x="519.7" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Oct</text>
+<line x1="574.85" y1="369.83" x2="574.85" y2="374.83" stroke="#8c959f"/>
+<text x="574.85" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Nov</text>
+<line x1="628.22" y1="369.83" x2="628.22" y2="374.83" stroke="#8c959f"/>
+<text x="628.22" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Dec</text>
+<line x1="32.23" y1="369.83" x2="628.22" y2="369.83" stroke="#8c959f"/>
+</g>
+<text x="10" y="21.49" font-size="16" font-weight="bold" fill="#1f2328">Months above 15 °C</text>
+</svg>

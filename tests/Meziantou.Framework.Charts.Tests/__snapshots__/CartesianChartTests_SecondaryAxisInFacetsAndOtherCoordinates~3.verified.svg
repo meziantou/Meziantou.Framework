@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="300" height="300" fill="#ffffff"/>
+<g class="grid">
+<path d="M150,127.9 L171.02,143.17 L162.99,167.88 L137.01,167.88 L128.98,143.17 Z" fill="none" stroke="#e3e6ea"/>
+<path d="M150,105.79 L192.05,136.34 L175.99,185.77 L124.01,185.77 L107.95,136.34 Z" fill="none" stroke="#e3e6ea"/>
+<path d="M150,83.69 L213.07,129.51 L188.98,203.65 L111.02,203.65 L86.93,129.51 Z" fill="none" stroke="#e3e6ea"/>
+<path d="M150,61.58 L234.09,122.68 L201.97,221.53 L98.03,221.53 L65.91,122.68 Z" fill="none" stroke="#e3e6ea"/>
+<line x1="150" y1="150" x2="150" y2="61.58" stroke="#e3e6ea"/>
+<line x1="150" y1="150" x2="234.09" y2="122.68" stroke="#e3e6ea"/>
+<line x1="150" y1="150" x2="201.97" y2="221.53" stroke="#e3e6ea"/>
+<line x1="150" y1="150" x2="98.03" y2="221.53" stroke="#e3e6ea"/>
+<line x1="150" y1="150" x2="65.91" y2="122.68" stroke="#e3e6ea"/>
+</g>
+<g class="marks">
+<g>
+<path d="M150,83.69 L160.51,146.58 L201.97,221.53 L124.01,185.77 L76.42,126.09 Z" fill="none" stroke="#4269d0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<g>
+<path d="M150,127.9 L223.58,126.09 L150,150 L98.03,221.53 L118.47,139.75 Z" fill="none" stroke="#ff6347" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+</g>
+<g class="axes">
+<text x="150" y="53.3" text-anchor="middle" font-size="11" fill="#59636e">Speed</text>
+<text x="239.8" y="122.06" font-size="11" fill="#59636e">Strength</text>
+<text x="205.5" y="233.31" font-size="11" fill="#59636e">Agility</text>
+<text x="94.5" y="233.31" text-anchor="end" font-size="11" fill="#59636e">Stamina</text>
+<text x="60.2" y="122.06" text-anchor="end" font-size="11" fill="#59636e">Skill</text>
+<text x="154" y="152.81" font-size="11" fill="#59636e">50</text>
+<text x="154" y="130.71" font-size="11" fill="#59636e">60</text>
+<text x="154" y="108.6" font-size="11" fill="#59636e">70</text>
+<text x="154" y="86.5" font-size="11" fill="#59636e">80</text>
+<text x="154" y="64.39" font-size="11" fill="#59636e">90</text>
+</g>
+</svg>

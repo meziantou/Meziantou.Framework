@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="400" viewBox="0 0 640 400" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Sales by year, stacked by region</title>
+<rect width="640" height="400" fill="#ffffff"/>
+<g class="grid">
+<line x1="38.35" y1="369.83" x2="625.77" y2="369.83" stroke="#e3e6ea"/>
+<line x1="38.35" y1="341.29" x2="625.77" y2="341.29" stroke="#e3e6ea"/>
+<line x1="38.35" y1="312.75" x2="625.77" y2="312.75" stroke="#e3e6ea"/>
+<line x1="38.35" y1="284.21" x2="625.77" y2="284.21" stroke="#e3e6ea"/>
+<line x1="38.35" y1="255.67" x2="625.77" y2="255.67" stroke="#e3e6ea"/>
+<line x1="38.35" y1="227.13" x2="625.77" y2="227.13" stroke="#e3e6ea"/>
+<line x1="38.35" y1="198.59" x2="625.77" y2="198.59" stroke="#e3e6ea"/>
+<line x1="38.35" y1="170.05" x2="625.77" y2="170.05" stroke="#e3e6ea"/>
+<line x1="38.35" y1="141.52" x2="625.77" y2="141.52" stroke="#e3e6ea"/>
+<line x1="38.35" y1="112.98" x2="625.77" y2="112.98" stroke="#e3e6ea"/>
+<line x1="38.35" y1="84.44" x2="625.77" y2="84.44" stroke="#e3e6ea"/>
+<line x1="38.35" y1="55.9" x2="625.77" y2="55.9" stroke="#e3e6ea"/>
+</g>
+<g class="marks">
+<g>
+<path d="M38.35,301.33 L332.06,292.77 L625.77,284.21 L625.77,369.83 L332.06,369.83 L38.35,369.83 Z" fill="#4269d0"/>
+<path d="M38.35,249.96 L332.06,229.99 L625.77,229.99 L625.77,284.21 L332.06,292.77 L38.35,301.33 Z" fill="#efb118"/>
+<path d="M38.35,215.72 L332.06,184.32 L625.77,170.05 L625.77,229.99 L332.06,229.99 L38.35,249.96 Z" fill="#ff725c"/>
+<path d="M38.35,135.81 L332.06,112.98 L625.77,78.73 L625.77,170.05 L332.06,184.32 L38.35,215.72 Z" fill="#6cc5b0"/>
+</g>
+</g>
+<g class="axes">
+<line x1="33.35" y1="369.83" x2="38.35" y2="369.83" stroke="#8c959f"/>
+<text x="30.35" y="372.64" text-anchor="end" font-size="11" fill="#59636e">0</text>
+<line x1="33.35" y1="341.29" x2="38.35" y2="341.29" stroke="#8c959f"/>
+<text x="30.35" y="344.1" text-anchor="end" font-size="11" fill="#59636e">50</text>
+<line x1="33.35" y1="312.75" x2="38.35" y2="312.75" stroke="#8c959f"/>
+<text x="30.35" y="315.56" text-anchor="end" font-size="11" fill="#59636e">100</text>
+<line x1="33.35" y1="284.21" x2="38.35" y2="284.21" stroke="#8c959f"/>
+<text x="30.35" y="287.02" text-anchor="end" font-size="11" fill="#59636e">150</text>
+<line x1="33.35" y1="255.67" x2="38.35" y2="255.67" stroke="#8c959f"/>
+<text x="30.35" y="258.48" text-anchor="end" font-size="11" fill="#59636e">200</text>
+<line x1="33.35" y1="227.13" x2="38.35" y2="227.13" stroke="#8c959f"/>
+<text x="30.35" y="229.94" text-anchor="end" font-size="11" fill="#59636e">250</text>
+<line x1="33.35" y1="198.59" x2="38.35" y2="198.59" stroke="#8c959f"/>
+<text x="30.35" y="201.4" text-anchor="end" font-size="11" fill="#59636e">300</text>
+<line x1="33.35" y1="170.05" x2="38.35" y2="170.05" stroke="#8c959f"/>
+<text x="30.35" y="172.87" text-anchor="end" font-size="11" fill="#59636e">350</text>
+<line x1="33.35" y1="141.52" x2="38.35" y2="141.52" stroke="#8c959f"/>
+<text x="30.35" y="144.33" text-anchor="end" font-size="11" fill="#59636e">400</text>
+<line x1="33.35" y1="112.98" x2="38.35" y2="112.98" stroke="#8c959f"/>
+<text x="30.35" y="115.79" text-anchor="end" font-size="11" fill="#59636e">450</text>
+<line x1="33.35" y1="84.44" x2="38.35" y2="84.44" stroke="#8c959f"/>
+<text x="30.35" y="87.25" text-anchor="end" font-size="11" fill="#59636e">500</text>
+<line x1="33.35" y1="55.9" x2="38.35" y2="55.9" stroke="#8c959f"/>
+<text x="30.35" y="58.71" text-anchor="end" font-size="11" fill="#59636e">550</text>
+<line x1="38.35" y1="369.83" x2="38.35" y2="374.83" stroke="#8c959f"/>
+<text x="38.35" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">2022</text>
+<line x1="332.06" y1="369.83" x2="332.06" y2="374.83" stroke="#8c959f"/>
+<text x="332.06" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">2023</text>
+<line x1="625.77" y1="369.83" x2="625.77" y2="374.83" stroke="#8c959f"/>
+<text x="625.77" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">2024</text>
+<line x1="38.35" y1="369.83" x2="625.77" y2="369.83" stroke="#8c959f"/>
+</g>
+<g class="legend">
+<rect x="10" y="33.35" width="10" height="10" rx="2" fill="#4269d0"/>
+<text x="25" y="41.42" font-size="12" fill="#1f2328">North</text>
+<rect x="68.82" y="33.35" width="10" height="10" rx="2" fill="#efb118"/>
+<text x="83.82" y="41.42" font-size="12" fill="#1f2328">South</text>
+<rect x="129.18" y="33.35" width="10" height="10" rx="2" fill="#ff725c"/>
+<text x="144.18" y="41.42" font-size="12" fill="#1f2328">East</text>
+<rect x="182.19" y="33.35" width="10" height="10" rx="2" fill="#6cc5b0"/>
+<text x="197.19" y="41.42" font-size="12" fill="#1f2328">West</text>
+</g>
+<text x="10" y="21.49" font-size="16" font-weight="bold" fill="#1f2328">Sales by year, stacked by region</text>
+</svg>

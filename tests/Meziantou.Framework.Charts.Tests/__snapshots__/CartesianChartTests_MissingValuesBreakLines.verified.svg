@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="400" viewBox="0 0 640 400" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Gaps</title>
+<rect width="640" height="400" fill="#ffffff"/>
+<g class="grid">
+<line x1="26.12" y1="369.83" x2="630" y2="369.83" stroke="#e3e6ea"/>
+<line x1="26.12" y1="313.65" x2="630" y2="313.65" stroke="#e3e6ea"/>
+<line x1="26.12" y1="257.48" x2="630" y2="257.48" stroke="#e3e6ea"/>
+<line x1="26.12" y1="201.31" x2="630" y2="201.31" stroke="#e3e6ea"/>
+<line x1="26.12" y1="145.14" x2="630" y2="145.14" stroke="#e3e6ea"/>
+<line x1="26.12" y1="88.97" x2="630" y2="88.97" stroke="#e3e6ea"/>
+<line x1="26.12" y1="32.8" x2="630" y2="32.8" stroke="#e3e6ea"/>
+</g>
+<g class="marks">
+<g>
+<path d="M26.12,313.65 L101.6,201.31 M252.57,145.14 L328.06,257.48 M554.51,88.97 L630,32.8" fill="none" stroke="#4269d0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="26.12" cy="313.65" r="2" fill="#4269d0"/>
+<circle cx="101.6" cy="201.31" r="2" fill="#4269d0"/>
+<circle cx="252.57" cy="145.14" r="2" fill="#4269d0"/>
+<circle cx="328.06" cy="257.48" r="2" fill="#4269d0"/>
+<circle cx="554.51" cy="88.97" r="2" fill="#4269d0"/>
+<circle cx="630" cy="32.8" r="2" fill="#4269d0"/>
+</g>
+<g>
+<path d="M26.12,313.65 L101.6,201.31 L101.6,369.83 L26.12,369.83 Z M252.57,145.14 L328.06,257.48 L328.06,369.83 L252.57,369.83 Z M554.51,88.97 L630,32.8 L630,369.83 L554.51,369.83 Z" fill="#4269d0" fill-opacity="0.2"/>
+</g>
+</g>
+<g class="axes">
+<line x1="21.12" y1="369.83" x2="26.12" y2="369.83" stroke="#8c959f"/>
+<text x="18.12" y="372.64" text-anchor="end" font-size="11" fill="#59636e">0</text>
+<line x1="21.12" y1="313.65" x2="26.12" y2="313.65" stroke="#8c959f"/>
+<text x="18.12" y="316.46" text-anchor="end" font-size="11" fill="#59636e">1</text>
+<line x1="21.12" y1="257.48" x2="26.12" y2="257.48" stroke="#8c959f"/>
+<text x="18.12" y="260.29" text-anchor="end" font-size="11" fill="#59636e">2</text>
+<line x1="21.12" y1="201.31" x2="26.12" y2="201.31" stroke="#8c959f"/>
+<text x="18.12" y="204.12" text-anchor="end" font-size="11" fill="#59636e">3</text>
+<line x1="21.12" y1="145.14" x2="26.12" y2="145.14" stroke="#8c959f"/>
+<text x="18.12" y="147.95" text-anchor="end" font-size="11" fill="#59636e">4</text>
+<line x1="21.12" y1="88.97" x2="26.12" y2="88.97" stroke="#8c959f"/>
+<text x="18.12" y="91.78" text-anchor="end" font-size="11" fill="#59636e">5</text>
+<line x1="21.12" y1="32.8" x2="26.12" y2="32.8" stroke="#8c959f"/>
+<text x="18.12" y="35.61" text-anchor="end" font-size="11" fill="#59636e">6</text>
+<line x1="26.12" y1="369.83" x2="26.12" y2="374.83" stroke="#8c959f"/>
+<text x="26.12" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">0</text>
+<line x1="101.6" y1="369.83" x2="101.6" y2="374.83" stroke="#8c959f"/>
+<text x="101.6" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">1</text>
+<line x1="177.09" y1="369.83" x2="177.09" y2="374.83" stroke="#8c959f"/>
+<text x="177.09" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">2</text>
+<line x1="252.57" y1="369.83" x2="252.57" y2="374.83" stroke="#8c959f"/>
+<text x="252.57" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">3</text>
+<line x1="328.06" y1="369.83" x2="328.06" y2="374.83" stroke="#8c959f"/>
+<text x="328.06" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">4</text>
+<line x1="403.54" y1="369.83" x2="403.54" y2="374.83" stroke="#8c959f"/>
+<text x="403.54" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">5</text>
+<line x1="479.03" y1="369.83" x2="479.03" y2="374.83" stroke="#8c959f"/>
+<text x="479.03" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">6</text>
+<line x1="554.51" y1="369.83" x2="554.51" y2="374.83" stroke="#8c959f"/>
+<text x="554.51" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">7</text>
+<line x1="630" y1="369.83" x2="630" y2="374.83" stroke="#8c959f"/>
+<text x="630" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">8</text>
+<line x1="26.12" y1="369.83" x2="630" y2="369.83" stroke="#8c959f"/>
+</g>
+<text x="10" y="21.49" font-size="16" font-weight="bold" fill="#1f2328">Gaps</text>
+</svg>

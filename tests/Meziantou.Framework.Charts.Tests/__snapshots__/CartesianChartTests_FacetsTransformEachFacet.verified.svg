@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="300" viewBox="0 0 640 300" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="640" height="300" fill="#ffffff"/>
+<g class="grid">
+<line x1="32.23" y1="269.83" x2="215.1" y2="269.83" stroke="#e3e6ea"/>
+<line x1="32.23" y1="221.28" x2="215.1" y2="221.28" stroke="#e3e6ea"/>
+<line x1="32.23" y1="172.74" x2="215.1" y2="172.74" stroke="#e3e6ea"/>
+<line x1="32.23" y1="124.19" x2="215.1" y2="124.19" stroke="#e3e6ea"/>
+<line x1="32.23" y1="75.65" x2="215.1" y2="75.65" stroke="#e3e6ea"/>
+<line x1="32.23" y1="27.1" x2="215.1" y2="27.1" stroke="#e3e6ea"/>
+<line x1="239.1" y1="269.83" x2="421.96" y2="269.83" stroke="#e3e6ea"/>
+<line x1="239.1" y1="221.28" x2="421.96" y2="221.28" stroke="#e3e6ea"/>
+<line x1="239.1" y1="172.74" x2="421.96" y2="172.74" stroke="#e3e6ea"/>
+<line x1="239.1" y1="124.19" x2="421.96" y2="124.19" stroke="#e3e6ea"/>
+<line x1="239.1" y1="75.65" x2="421.96" y2="75.65" stroke="#e3e6ea"/>
+<line x1="239.1" y1="27.1" x2="421.96" y2="27.1" stroke="#e3e6ea"/>
+<line x1="445.96" y1="269.83" x2="628.83" y2="269.83" stroke="#e3e6ea"/>
+<line x1="445.96" y1="221.28" x2="628.83" y2="221.28" stroke="#e3e6ea"/>
+<line x1="445.96" y1="172.74" x2="628.83" y2="172.74" stroke="#e3e6ea"/>
+<line x1="445.96" y1="124.19" x2="628.83" y2="124.19" stroke="#e3e6ea"/>
+<line x1="445.96" y1="75.65" x2="628.83" y2="75.65" stroke="#e3e6ea"/>
+<line x1="445.96" y1="27.1" x2="628.83" y2="27.1" stroke="#e3e6ea"/>
+</g>
+<g class="marks">
+<g class="facet">
+<g>
+<rect x="32.73" y="255.76" width="35.57" height="13.56" fill="#4269d0"><title>[0, 20): 3</title></rect>
+<rect x="69.3" y="148.96" width="35.57" height="120.36" fill="#4269d0"><title>[20, 40): 25</title></rect>
+<rect x="105.88" y="148.96" width="35.57" height="120.36" fill="#4269d0"><title>[40, 60): 25</title></rect>
+<rect x="142.45" y="250.91" width="35.57" height="18.42" fill="#4269d0"><title>[60, 80): 4</title></rect>
+<rect x="179.02" y="260.62" width="35.57" height="8.71" fill="#4269d0"><title>[80, 100]: 2</title></rect>
+</g>
+<g>
+<text x="123.66" y="31.53" text-anchor="middle" font-size="12" fill="#1f2328">group C</text>
+</g>
+</g>
+<g class="facet">
+<g>
+<rect x="239.1" y="269.83" width="36.57" height="0" fill="#4269d0"><title>[0, 20): 0</title></rect>
+<rect x="276.17" y="231.49" width="35.57" height="37.84" fill="#4269d0"><title>[20, 40): 8</title></rect>
+<rect x="312.74" y="66.44" width="35.57" height="202.89" fill="#4269d0"><title>[40, 60): 42</title></rect>
+<rect x="349.32" y="221.78" width="35.57" height="47.55" fill="#4269d0"><title>[60, 80): 10</title></rect>
+<rect x="385.39" y="269.83" width="36.57" height="0" fill="#4269d0"><title>[80, 100]: 0</title></rect>
+</g>
+<g>
+<text x="330.53" y="31.53" text-anchor="middle" font-size="12" fill="#1f2328">group A</text>
+</g>
+</g>
+<g class="facet">
+<g>
+<rect x="445.96" y="269.83" width="36.57" height="0" fill="#4269d0"><title>[0, 20): 0</title></rect>
+<rect x="483.03" y="265.47" width="35.57" height="3.85" fill="#4269d0"><title>[20, 40): 1</title></rect>
+<rect x="519.61" y="212.07" width="35.57" height="57.25" fill="#4269d0"><title>[40, 60): 12</title></rect>
+<rect x="556.18" y="37.31" width="35.57" height="232.02" fill="#4269d0"><title>[60, 80): 48</title></rect>
+<rect x="592.75" y="265.47" width="35.57" height="3.85" fill="#4269d0"><title>[80, 100]: 1</title></rect>
+</g>
+<g>
+<text x="537.39" y="31.53" text-anchor="middle" font-size="12" fill="#1f2328">group B</text>
+</g>
+</g>
+</g>
+<g class="axes">
+<line x1="27.23" y1="269.83" x2="32.23" y2="269.83" stroke="#8c959f"/>
+<text x="24.23" y="272.64" text-anchor="end" font-size="11" fill="#59636e">0</text>
+<line x1="27.23" y1="221.28" x2="32.23" y2="221.28" stroke="#8c959f"/>
+<text x="24.23" y="224.09" text-anchor="end" font-size="11" fill="#59636e">10</text>
+<line x1="27.23" y1="172.74" x2="32.23" y2="172.74" stroke="#8c959f"/>
+<text x="24.23" y="175.55" text-anchor="end" font-size="11" fill="#59636e">20</text>
+<line x1="27.23" y1="124.19" x2="32.23" y2="124.19" stroke="#8c959f"/>
+<text x="24.23" y="127" text-anchor="end" font-size="11" fill="#59636e">30</text>
+<line x1="27.23" y1="75.65" x2="32.23" y2="75.65" stroke="#8c959f"/>
+<text x="24.23" y="78.46" text-anchor="end" font-size="11" fill="#59636e">40</text>
+<line x1="27.23" y1="27.1" x2="32.23" y2="27.1" stroke="#8c959f"/>
+<text x="24.23" y="29.91" text-anchor="end" font-size="11" fill="#59636e">50</text>
+<line x1="32.23" y1="269.83" x2="32.23" y2="274.83" stroke="#8c959f"/>
+<text x="32.23" y="285.72" text-anchor="middle" font-size="11" fill="#59636e">0</text>
+<line x1="123.66" y1="269.83" x2="123.66" y2="274.83" stroke="#8c959f"/>
+<text x="123.66" y="285.72" text-anchor="middle" font-size="11" fill="#59636e">50</text>
+<line x1="215.1" y1="269.83" x2="215.1" y2="274.83" stroke="#8c959f"/>
+<text x="215.1" y="285.72" text-anchor="middle" font-size="11" fill="#59636e">100</text>
+<line x1="32.23" y1="269.83" x2="215.1" y2="269.83" stroke="#8c959f"/>
+<text x="123.66" y="18.62" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2328" class="facet-header">C</text>
+<line x1="239.1" y1="269.83" x2="239.1" y2="274.83" stroke="#8c959f"/>
+<text x="239.1" y="285.72" text-anchor="middle" font-size="11" fill="#59636e">0</text>
+<line x1="330.53" y1="269.83" x2="330.53" y2="274.83" stroke="#8c959f"/>
+<text x="330.53" y="285.72" text-anchor="middle" font-size="11" fill="#59636e">50</text>
+<line x1="421.96" y1="269.83" x2="421.96" y2="274.83" stroke="#8c959f"/>
+<text x="421.96" y="285.72" text-anchor="middle" font-size="11" fill="#59636e">100</text>
+<line x1="239.1" y1="269.83" x2="421.96" y2="269.83" stroke="#8c959f"/>
+<text x="330.53" y="18.62" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2328" class="facet-header">A</text>
+<line x1="445.96" y1="269.83" x2="445.96" y2="274.83" stroke="#8c959f"/>
+<text x="445.96" y="285.72" text-anchor="middle" font-size="11" fill="#59636e">0</text>
+<line x1="537.39" y1="269.83" x2="537.39" y2="274.83" stroke="#8c959f"/>
+<text x="537.39" y="285.72" text-anchor="middle" font-size="11" fill="#59636e">50</text>
+<line x1="628.83" y1="269.83" x2="628.83" y2="274.83" stroke="#8c959f"/>
+<text x="628.83" y="285.72" text-anchor="middle" font-size="11" fill="#59636e">100</text>
+<line x1="445.96" y1="269.83" x2="628.83" y2="269.83" stroke="#8c959f"/>
+<text x="537.39" y="18.62" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2328" class="facet-header">B</text>
+</g>
+</svg>

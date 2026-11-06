@@ -53,3 +53,12 @@ https://css-tricks.com/snippets/css/a-guide-to-flexbox/
 https://tailwindcss.com/
 https://picocss.com/
 https://bulma.io/
+# Modern CSS (custom properties, clamp(), container queries, :has(), nesting, oklch(), subgrid, cascade layers)
+https://moderncss.dev/
+https://every-layout.dev/
+https://utopia.fyi/
+https://nerdy.dev/
+https://open-props.style/
+https://web.dev/learn/css/grid
+https://www.joshwcomeau.com/css/interactive-guide-to-grid/
+https://ishadeed.com/article/css-has-guide/

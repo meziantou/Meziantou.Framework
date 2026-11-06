@@ -2,14 +2,17 @@ namespace Meziantou.Framework.Internals;
 
 /// <summary>
 /// Reads an icon set in the IconifyJSON format and resolves its aliases, following the <c>getIconData</c> function of @iconify/utils.
+/// The JSON document is given as a tree: objects are <see cref="Dictionary{TKey, TValue}"/> of <see cref="string"/> to <see cref="object"/>,
+/// arrays are <see cref="List{T}"/> of <see cref="object"/>, and values are <see cref="string"/>, <see cref="double"/>, <see cref="bool"/> or <see langword="null"/>.
+/// The library builds it with System.Text.Json, and the source generator, which cannot depend on System.Text.Json, with its own parser.
 /// </summary>
 internal static class IconifyIconSetReader
 {
     private const double DefaultSize = 16;
 
-    public static IconifyIconSetData Read(string json)
+    public static IconifyIconSetData Read(object? json)
     {
-        if (IconifyJsonParser.Parse(json) is not Dictionary<string, object?> root)
+        if (json is not Dictionary<string, object?> root)
             throw new FormatException("The icon set must be a JSON object.");
 
         if (!root.TryGetValue("prefix", out var prefixValue) || prefixValue is not string prefix || prefix.Length == 0)

@@ -26,7 +26,8 @@ if (iconSet.TryGetIcon("house", out var alias))
   [Iconify.LoadAsync](cref:Meziantou.Framework.Iconify.LoadAsync) reads it asynchronously.
   [Iconify.Parse](cref:Meziantou.Framework.Iconify.Parse) reads a string.
 - The file is in the [IconifyJSON](https://iconify.design/docs/types/iconify-json.html) format, like the files of the
-  `json` folder of the [iconify/icon-sets](https://github.com/iconify/icon-sets) repository.
+  `json` folder of the [iconify/icon-sets](https://github.com/iconify/icon-sets) repository. A file or a stream must be
+  encoded in UTF-8.
 - An invalid file throws a `FormatException`.
 
 ## Find icons

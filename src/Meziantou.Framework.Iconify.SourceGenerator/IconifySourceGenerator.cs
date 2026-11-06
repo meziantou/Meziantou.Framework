@@ -114,7 +114,7 @@ public sealed class IconifySourceGenerator : IIncrementalGenerator
         IconifyIconSetData data;
         try
         {
-            data = IconifyIconSetReader.Read(input.Content);
+            data = IconifyIconSetReader.Read(IconifyJsonParser.Parse(input.Content));
         }
         catch (FormatException ex)
         {

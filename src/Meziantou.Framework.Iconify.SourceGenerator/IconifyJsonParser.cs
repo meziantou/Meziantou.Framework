@@ -4,7 +4,7 @@ using System.Text;
 namespace Meziantou.Framework.Internals;
 
 /// <summary>
-/// Minimal JSON parser shared by the library and the source generator, which cannot depend on System.Text.Json.
+/// Minimal JSON parser of the source generator, which cannot depend on System.Text.Json. It builds the tree that <c>IconifyIconSetReader</c> reads.
 /// Objects are <see cref="Dictionary{TKey, TValue}"/> of <see cref="string"/> to <see cref="object"/>, arrays are <see cref="List{T}"/> of <see cref="object"/>,
 /// and values are <see cref="string"/>, <see cref="double"/>, <see cref="bool"/> or <see langword="null"/>.
 /// </summary>
@@ -267,7 +267,11 @@ internal sealed class IconifyJsonParser
         }
 
         var text = _text.Substring(start, _position - start);
-        return double.Parse(text, NumberStyles.Float, CultureInfo.InvariantCulture);
+        var value = double.Parse(text, NumberStyles.Float, CultureInfo.InvariantCulture);
+        if (double.IsInfinity(value))
+            throw CreateException("The number is out of range");
+
+        return value;
     }
 
     private bool ConsumeDigits()

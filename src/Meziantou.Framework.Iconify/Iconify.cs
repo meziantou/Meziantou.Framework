@@ -23,18 +23,18 @@ public static class Iconify
     public static IconifyIconSet Load(string path)
     {
         ArgumentNullException.ThrowIfNull(path);
-        return Parse(File.ReadAllText(path));
+        using var stream = File.OpenRead(path);
+        return Load(stream);
     }
 
     /// <summary>Loads an icon set in the IconifyJSON format from a stream.</summary>
-    /// <param name="stream">The stream that contains the JSON document. It is read to the end, but not closed.</param>
+    /// <param name="stream">The stream that contains the JSON document, encoded in UTF-8. It is read to the end, but not closed.</param>
     /// <returns>The icon set, with its aliases resolved.</returns>
     /// <exception cref="FormatException">The stream does not contain a valid icon set.</exception>
     public static IconifyIconSet Load(Stream stream)
     {
         ArgumentNullException.ThrowIfNull(stream);
-        using var reader = new StreamReader(stream, leaveOpen: true);
-        return Parse(reader.ReadToEnd());
+        return Create(IconifyJsonReader.Read(stream));
     }
 
     /// <summary>Loads an icon set in the IconifyJSON format from a file.</summary>
@@ -45,21 +45,22 @@ public static class Iconify
     public static async Task<IconifyIconSet> LoadAsync(string path, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(path);
-        var json = await File.ReadAllTextAsync(path, cancellationToken).ConfigureAwait(false);
-        return Parse(json);
+        var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 4096, useAsync: true);
+        await using (stream.ConfigureAwait(false))
+        {
+            return await LoadAsync(stream, cancellationToken).ConfigureAwait(false);
+        }
     }
 
     /// <summary>Loads an icon set in the IconifyJSON format from a stream.</summary>
-    /// <param name="stream">The stream that contains the JSON document. It is read to the end, but not closed.</param>
+    /// <param name="stream">The stream that contains the JSON document, encoded in UTF-8. It is read to the end, but not closed.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
     /// <returns>The icon set, with its aliases resolved.</returns>
     /// <exception cref="FormatException">The stream does not contain a valid icon set.</exception>
     public static async Task<IconifyIconSet> LoadAsync(Stream stream, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(stream);
-        using var reader = new StreamReader(stream, leaveOpen: true);
-        var json = await reader.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
-        return Parse(json);
+        return Create(await IconifyJsonReader.ReadAsync(stream, cancellationToken).ConfigureAwait(false));
     }
 
     /// <summary>Parses an icon set in the IconifyJSON format.</summary>
@@ -69,7 +70,11 @@ public static class Iconify
     public static IconifyIconSet Parse(string json)
     {
         ArgumentNullException.ThrowIfNull(json);
-        var data = IconifyIconSetReader.Read(json);
+        return Create(IconifyJsonReader.Read(json));
+    }
+
+    private static IconifyIconSet Create(IconifyIconSetData data)
+    {
         var icons = new IconifyIcon[data.Icons.Count];
         for (var i = 0; i < icons.Length; i++)
         {

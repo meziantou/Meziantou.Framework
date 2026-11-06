@@ -162,6 +162,34 @@ public sealed class IconifyIconSetTests
     }
 
     [Fact]
+    public void Parse_InvalidJson_KeepsTheJsonException()
+    {
+        var exception = Assert.Throws<FormatException>(() => Iconify.Parse("""{ "prefix": "a", """));
+        Assert.IsAssignableTo<JsonException>(exception.InnerException);
+        Assert.StartsWith("The icon set is not a valid JSON document: ", exception.Message);
+    }
+
+    [Fact]
+    public void Load_InvalidJson()
+    {
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes("""{ "prefix": "a", "icons": { """));
+        Assert.Throws<FormatException>(() => Iconify.Load(stream));
+    }
+
+    [Fact]
+    public async Task LoadAsync_InvalidJson()
+    {
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes("""[1,]"""));
+        await Assert.ThrowsAsync<FormatException>(() => Iconify.LoadAsync(stream, XunitCancellationToken));
+    }
+
+    [Fact]
+    public void Parse_NumberOutOfRange()
+    {
+        Assert.Throws<FormatException>(() => Iconify.Parse("""{ "prefix": "a", "width": 1e400, "icons": {} }"""));
+    }
+
+    [Fact]
     public void Icon_Constructor()
     {
         var icon = new IconifyIcon("p", "n", "<path/>", -1.5, 0, 10, 20);
@@ -309,6 +337,14 @@ public sealed class IconifyIconSetTests
     {
         Assert.Throws<FormatException>(() => IconifyJsonParser.Parse(json));
         Assert.ThrowsAny<JsonException>(() => JsonDocument.Parse(json).Dispose());
+    }
+
+    [Theory]
+    [InlineData("1e400")]
+    [InlineData("-1e400")]
+    public void Parser_RejectsNumbersOutOfRange(string json)
+    {
+        Assert.Throws<FormatException>(() => IconifyJsonParser.Parse(json));
     }
 
     [Fact]

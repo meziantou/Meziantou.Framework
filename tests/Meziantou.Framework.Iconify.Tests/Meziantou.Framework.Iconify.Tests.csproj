@@ -15,6 +15,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The parser of the source generator, whose internals are not visible to the tests -->
+    <Compile Include="../../src/Meziantou.Framework.Iconify.SourceGenerator/IconifyJsonParser.cs" Link="IconifyJsonParser.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Include="Fixtures/*.json" CopyToOutputDirectory="PreserveNewest" />
     <IconifyIconSet Include="Fixtures/test-icons.json" ClassName="TestIcons" />
   </ItemGroup>

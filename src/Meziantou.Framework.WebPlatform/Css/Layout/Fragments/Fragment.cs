@@ -1359,6 +1359,9 @@ internal sealed class LineBoxFragment : Fragment
     /// </summary>
     public ComputedStyle? Style { get; internal set; }
 
+    /// <summary>The position of the inline content of the block container where the line box starts (see <see cref="InlineResume"/>), or null.</summary>
+    public InlineResume? StartPosition { get; internal set; }
+
     /// <summary>Whether the bidi paragraph of the line is right-to-left (https://drafts.csswg.org/css-writing-modes-4/#text-direction): <c>direction</c>, or the content with <c>unicode-bidi: plaintext</c>.</summary>
     public bool IsRightToLeft { get; internal set; }
 

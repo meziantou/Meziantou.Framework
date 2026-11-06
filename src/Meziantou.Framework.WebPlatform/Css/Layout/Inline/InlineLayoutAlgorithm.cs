@@ -129,6 +129,19 @@ internal sealed partial class InlineLayoutAlgorithm
             var position = new LinePosition(0, 0);
             var items = _items.Count;
 
+            // The content of a page of another inline size that starts between two line boxes (see LayoutContext.InlineResumes): the
+            // line boxes start at that position, and none of them is the first line (no ::first-line, text-indent, outside marker)
+            var isResumed = false;
+            if (context.InlineResumes is { } resumes && resumes.TryGetValue(box, out var resume) && resume.ItemCount == items && resume.Item < items)
+            {
+                position = new LinePosition(resume.Item, resume.Position);
+                isResumed = true;
+                _firstLineRoot = null;
+                _outsideMarker = null;
+                marker = null;
+                trimStart = false;
+            }
+
             // https://drafts.csswg.org/css-overflow-4/#line-clamp: the lines after the clamp point are hidden, and the block container
             // ends at the clamp point (the state of the lines and of the block formatting context is restored at the end)
             var lineClamp = _blockFormattingContext.LineClamp;
@@ -141,7 +154,7 @@ internal sealed partial class InlineLayoutAlgorithm
                     _hidesLines = true;
                 }
 
-                var isFirstLine = lines.LineCount == 0;
+                var isFirstLine = lines.LineCount == 0 && !isResumed;
                 var indent = GetTextIndent(content, isFirstLine, lines.AfterForcedBreak);
                 _lineAfterForcedBreak = lines.AfterForcedBreak;
                 _lineAllowsHyphens = hyphenateLimitLines is not { } limit || hyphenatedLines < limit;
@@ -176,6 +189,7 @@ internal sealed partial class InlineLayoutAlgorithm
                 if (line.Fragment is { } lineFragment)
                 {
                     lineFragment.IsHiddenForPaint = clamped is not null;
+                    lineFragment.StartPosition = new InlineResume(position.Item, position.Position, items);
                 }
 
                 if (!line.IsEmpty)

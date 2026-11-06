@@ -359,6 +359,82 @@ public sealed class PagedMediaTests : IDisposable
     }
 
     [Fact]
+    public void Pages_ParagraphContinuedOnAPageOfAnotherInlineSizeIsLaidOutInIt()
+    {
+        // The first page is 200px wide (2 words of 90px per line: 29 lines after the border and the padding), the next ones 400px
+        // wide: the line boxes of the paragraph after the break start again from the first word that is not on the first page,
+        // in lines of 4 words (the 42 words left make 11 lines; the fragment has no block-start edges)
+        var words = string.Join(' ', Enumerable.Repeat("XXXXXXXXX", 100));
+        var document = Parse($$"""
+            <style>@page { size: 400px 300px; margin: 0 } @page :first { size: 200px 300px }</style>
+            <p id=p style='margin: 0; border-top: 5px solid; padding-top: 5px'>{{words}}</p>
+            <div id=after style='height: 10px'></div>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal(2, pages.Count);
+        Assert.Equal([(0, new PhysicalRect(0, 0, 200, 300)), (1, new PhysicalRect(0, 0, 400, 110))], GetPageRects(pages, document.GetElementById("p")!));
+        Assert.Equal([(1, new PhysicalRect(0, 110, 400, 10))], GetPageRects(pages, document.GetElementById("after")!));
+
+        // (no word is repeated or skipped at the break: the text fragments of the pages follow each other in the text)
+        var ranges = new List<(int Page, int Start, int End)>();
+        foreach (var page in pages)
+        {
+            CollectText(page.Content, page.Index);
+        }
+
+        Assert.Equal(58, ranges.Count(range => range.Page == 0));
+        Assert.Equal(42, ranges.Count(range => range.Page == 1));
+        for (var i = 0; i < ranges.Count; i++)
+        {
+            Assert.Equal(i * 10, ranges[i].Start);
+            Assert.Equal((i * 10) + 9, ranges[i].End);
+        }
+
+        void CollectText(Fragment fragment, int page)
+        {
+            if (fragment is TextFragment text)
+            {
+                // (one fragment per word: the spaces of the lines are collapsed or hang at their end)
+                foreach (var (start, end) in SplitWords(text))
+                {
+                    ranges.Add((page, start, end));
+                }
+            }
+
+            foreach (var child in fragment.ChildrenSpan)
+            {
+                CollectText(child, page);
+            }
+        }
+
+        static IEnumerable<(int Start, int End)> SplitWords(TextFragment text)
+        {
+            var data = text.Run.Data;
+            for (var start = text.Start; start < text.End;)
+            {
+                while (start < text.End && data[start] == ' ')
+                {
+                    start++;
+                }
+
+                var end = start;
+                while (end < text.End && data[end] != ' ')
+                {
+                    end++;
+                }
+
+                if (end > start)
+                {
+                    yield return (start, end);
+                }
+
+                start = end;
+            }
+        }
+    }
+
+    [Fact]
     public void Pages_TableHeaderAndFooterAreRepeated()
     {
         // https://drafts.csswg.org/css-tables-3/#repeated-headers: in the pages, the header and the footer groups are repeated

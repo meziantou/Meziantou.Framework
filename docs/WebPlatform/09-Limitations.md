@@ -16,7 +16,8 @@ fails.
 - **Layout.** The layout engine is internal: it runs when a web API reads the geometry, and its results are read through
   the web APIs only (CSSOM View, the computed styles, the observers; see [Layout and geometry](05-LoadingPages/05-LayoutAndGeometry.md)).
   It does not implement:
-  - the layout of the pages whose inline size differs from the first page;
+  - the layout of the content of a page whose inline size differs from the previous page when the page starts inside a
+    line box, a flex, grid or table container or a multi-column container: it keeps the inline size of the previous page;
   - the repetition of a hyphen at the start of the next line;
   - the spelling changes at a hyphenation break, except in Dutch, Hungarian and Pinyin;
   - the hyphenation dictionaries under copyleft licenses (cs, hu, hy, lv);

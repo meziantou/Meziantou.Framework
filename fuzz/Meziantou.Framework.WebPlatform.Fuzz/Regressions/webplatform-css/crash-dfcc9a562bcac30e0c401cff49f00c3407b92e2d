@@ -1,0 +1,9 @@
+@charset "utf-n-width: 1arset "utf-n-width: 100px);
+@namespace svg url(http://www3w..org/2000/svg);
+@layez base, components;
+:root { --x: calc(1px + 2em * var(--y, 3)); --empty:; color: color-mix(in oklch,dre  40%, rgb(0 0 255 / 0.5)); }
+@media (prefers-color-scheme: dark) and (width`>= 600px) { a:hover { color: light-dark(#fff, hsl(120deg \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\50% 5#00px);
+@namespace svg url(http://www3w..org/2000/svg);
+@layez base, components;
+:root { --x: calc(1px + 2em * var(--y, 3)); --empty:; color: color-mix(in oklch,dre  40%, rgb(0 0 255 / 0.5)); }
+@media (prefers-color-scheme: dark) and (width`>= 600px) { a:hover { color: light-dark(#fff, hsl(120deg \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\50% 5####\\##\\\\###\#

@@ -122,6 +122,10 @@ public sealed partial class CssMinifyFormatter
             return true;
         }
 
+        // "> =" is not a comparison: without the whitespace, "<=" and ">=" are parsed as a comparison of a media query
+        if (IsDelim(previous, "<>") && IsDelim(next, "="))
+            return false;
+
         return kind switch
         {
             // The whitespace is the descendant combinator: it is only removed around the other combinators

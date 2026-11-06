@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Files of the repository</title>
+<rect width="640" height="420" fill="#ffffff"/>
+<g class="marks">
+<g>
+<path d="M66.12,268.67 C148.61,268.67 148.61,165.79 231.11,165.79" fill="none" stroke="#8c959f" stroke-width="1.2"/>
+<path d="M231.11,165.79 C313.6,165.79 313.6,82.38 396.1,82.38" fill="none" stroke="#8c959f" stroke-width="1.2"/>
+<path d="M396.1,82.38 C478.59,82.38 478.59,60.13 561.09,60.13" fill="none" stroke="#8c959f" stroke-width="1.2"/>
+<path d="M396.1,82.38 C478.59,82.38 478.59,82.38 561.09,82.38" fill="none" stroke="#8c959f" stroke-width="1.2"/>
+<path d="M396.1,82.38 C478.59,82.38 478.59,104.62 561.09,104.62" fill="none" stroke="#8c959f" stroke-width="1.2"/>
+<path d="M231.11,165.79 C313.6,165.79 313.6,171.35 396.1,171.35" fill="none" stroke="#8c959f" stroke-width="1.2"/>
+<path d="M396.1,171.35 C478.59,171.35 478.59,149.11 561.09,149.11" fill="none" stroke="#8c959f" stroke-width="1.2"/>
+<path d="M396.1,171.35 C478.59,171.35 478.59,171.35 561.09,171.35" fill="none" stroke="#8c959f" stroke-width="1.2"/>
+<path d="M396.1,171.35 C478.59,171.35 478.59,193.6 561.09,193.6" fill="none" stroke="#8c959f" stroke-width="1.2"/>
+<path d="M231.11,165.79 C313.6,165.79 313.6,249.2 396.1,249.2" fill="none" stroke="#8c959f" stroke-width="1.2"/>
+<path d="M396.1,249.2 C478.59,249.2 478.59,238.08 561.09,238.08" fill="none" stroke="#8c959f" stroke-width="1.2"/>
+<path d="M396.1,249.2 C478.59,249.2 478.59,260.33 561.09,260.33" fill="none" stroke="#8c959f" stroke-width="1.2"/>
+<path d="M66.12,268.67 C148.61,268.67 148.61,304.81 231.11,304.81" fill="none" stroke="#8c959f" stroke-width="1.2"/>
+<path d="M231.11,304.81 C313.6,304.81 313.6,293.69 396.1,293.69" fill="none" stroke="#8c959f" stroke-width="1.2"/>
+<path d="M231.11,304.81 C313.6,304.81 313.6,315.94 396.1,315.94" fill="none" stroke="#8c959f" stroke-width="1.2"/>
+<path d="M66.12,268.67 C148.61,268.67 148.61,371.55 231.11,371.55" fill="none" stroke="#8c959f" stroke-width="1.2"/>
+<path d="M231.11,371.55 C313.6,371.55 313.6,360.42 396.1,360.42" fill="none" stroke="#8c959f" stroke-width="1.2"/>
+<path d="M231.11,371.55 C313.6,371.55 313.6,382.67 396.1,382.67" fill="none" stroke="#8c959f" stroke-width="1.2"/>
+<circle cx="66.12" cy="268.67" r="3.5" fill="#1f2328" stroke="#ffffff"><title>: 0</title></circle>
+<text x="58.62" y="271.48" text-anchor="end" font-size="11" fill="#1f2328">repository</text>
+<circle cx="231.11" cy="165.79" r="3.5" fill="#4269d0" stroke="#ffffff"><title>src: 0</title></circle>
+<text x="223.61" y="168.6" text-anchor="end" font-size="11" fill="#1f2328">src</text>
+<circle cx="396.1" cy="82.38" r="3.5" fill="#4269d0" stroke="#ffffff"><title>src / app: 0</title></circle>
+<text x="388.6" y="85.19" text-anchor="end" font-size="11" fill="#1f2328">app</text>
+<circle cx="561.09" cy="60.13" r="3.5" fill="#4269d0" stroke="#ffffff"><title>src / app / main.cs: 0</title></circle>
+<text x="568.59" y="62.94" font-size="11" fill="#1f2328">main.cs</text>
+<circle cx="561.09" cy="82.38" r="3.5" fill="#4269d0" stroke="#ffffff"><title>src / app / view.cs: 0</title></circle>
+<text x="568.59" y="85.19" font-size="11" fill="#1f2328">view.cs</text>
+<circle cx="561.09" cy="104.62" r="3.5" fill="#4269d0" stroke="#ffffff"><title>src / app / model.cs: 0</title></circle>
+<text x="568.59" y="107.43" font-size="11" fill="#1f2328">model.cs</text>
+<circle cx="396.1" cy="171.35" r="3.5" fill="#4269d0" stroke="#ffffff"><title>src / core: 0</title></circle>
+<text x="388.6" y="174.16" text-anchor="end" font-size="11" fill="#1f2328">core</text>
+<circle cx="561.09" cy="149.11" r="3.5" fill="#4269d0" stroke="#ffffff"><title>src / core / parser.cs: 0</title></circle>
+<text x="568.59" y="151.92" font-size="11" fill="#1f2328">parser.cs</text>
+<circle cx="561.09" cy="171.35" r="3.5" fill="#4269d0" stroke="#ffffff"><title>src / core / lexer.cs: 0</title></circle>
+<text x="568.59" y="174.16" font-size="11" fill="#1f2328">lexer.cs</text>
+<circle cx="561.09" cy="193.6" r="3.5" fill="#4269d0" stroke="#ffffff"><title>src / core / ast.cs: 0</title></circle>
+<text x="568.59" y="196.41" font-size="11" fill="#1f2328">ast.cs</text>
+<circle cx="396.1" cy="249.2" r="3.5" fill="#4269d0" stroke="#ffffff"><title>src / util: 0</title></circle>
+<text x="388.6" y="252.02" text-anchor="end" font-size="11" fill="#1f2328">util</text>
+<circle cx="561.09" cy="238.08" r="3.5" fill="#4269d0" stroke="#ffffff"><title>src / util / strings.cs: 0</title></circle>
+<text x="568.59" y="240.89" font-size="11" fill="#1f2328">strings.cs</text>
+<circle cx="561.09" cy="260.33" r="3.5" fill="#4269d0" stroke="#ffffff"><title>src / util / math.cs: 0</title></circle>
+<text x="568.59" y="263.14" font-size="11" fill="#1f2328">math.cs</text>
+<circle cx="231.11" cy="304.81" r="3.5" fill="#efb118" stroke="#ffffff"><title>tests: 0</title></circle>
+<text x="223.61" y="307.63" text-anchor="end" font-size="11" fill="#1f2328">tests</text>
+<circle cx="396.1" cy="293.69" r="3.5" fill="#efb118" stroke="#ffffff"><title>tests / app.tests.cs: 0</title></circle>
+<text x="403.6" y="296.5" font-size="11" fill="#1f2328">app.tests.cs</text>
+<circle cx="396.1" cy="315.94" r="3.5" fill="#efb118" stroke="#ffffff"><title>tests / core.tests.cs: 0</title></circle>
+<text x="403.6" y="318.75" font-size="11" fill="#1f2328">core.tests.cs</text>
+<circle cx="231.11" cy="371.55" r="3.5" fill="#ff725c" stroke="#ffffff"><title>docs: 0</title></circle>
+<text x="223.61" y="374.36" text-anchor="end" font-size="11" fill="#1f2328">docs</text>
+<circle cx="396.1" cy="360.42" r="3.5" fill="#ff725c" stroke="#ffffff"><title>docs / readme.md: 0</title></circle>
+<text x="403.6" y="363.24" font-size="11" fill="#1f2328">readme.md</text>
+<circle cx="396.1" cy="382.67" r="3.5" fill="#ff725c" stroke="#ffffff"><title>docs / guide.md: 0</title></circle>
+<text x="403.6" y="385.48" font-size="11" fill="#1f2328">guide.md</text>
+</g>
+</g>
+<text x="10" y="21.49" font-size="16" font-weight="bold" fill="#1f2328">Files of the repository</text>
+</svg>

@@ -681,7 +681,7 @@ public sealed partial class BrowsingContext
             if (targetIndex < 0 || targetIndex >= steps.Count)
                 return;
 
-            traversable.ApplyTraverseHistoryStep(steps[targetIndex], navigable => sourceNavigable is null || Sandboxing.IsAllowedToNavigate(sourceNavigable, navigable, sourceFlags, hasTransientActivation));
+            traversable.ApplyTraverseHistoryStep(steps[targetIndex], navigable => sourceNavigable is null || Sandboxing.IsAllowedToNavigate(sourceNavigable, navigable, sourceFlags, hasTransientActivation), sourceDocument: sourceDocument);
         }, flushSynchronousNavigations: false);
     }
 
@@ -787,7 +787,11 @@ public sealed partial class BrowsingContext
     /// <param name="isAllowedToNavigate">Whether the initiator of the traversal can navigate a navigable: the traversal is canceled when it would change a navigable it cannot navigate.</param>
     /// <param name="checkForCancelation">Whether the navigate event of the traversable is fired (it can cancel or intercept the traversal).</param>
     /// <param name="userInvolvement">The user navigation involvement.</param>
-    internal HistoryStepResult ApplyTraverseHistoryStep(int step, Func<BrowsingContext, bool>? isAllowedToNavigate = null, bool checkForCancelation = true, UserNavigationInvolvement userInvolvement = UserNavigationInvolvement.None)
+    /// <param name="sourceDocument">
+    /// The document that initiated the traversal (the source document of its source snapshot params), or null for the active
+    /// document of each navigable: the navigations that load the documents of the entries use its navigational prefetches.
+    /// </param>
+    internal HistoryStepResult ApplyTraverseHistoryStep(int step, Func<BrowsingContext, bool>? isAllowedToNavigate = null, bool checkForCancelation = true, UserNavigationInvolvement userInvolvement = UserNavigationInvolvement.None, Document? sourceDocument = null)
     {
         var targetStep = GetUsedStep(step);
         var changingNavigables = new List<(BrowsingContext Navigable, SessionHistoryEntry Entry)>();
@@ -907,6 +911,7 @@ public sealed partial class BrowsingContext
                         }
 
                         navigable._beforeUnloadFiredForEntry = targetEntry;
+                        navigable._traversalPrefetchSource = sourceDocument is null ? null : (targetEntry, sourceDocument);
                         try
                         {
                             navigable.Navigate(targetEntry.Url, navigable.Document, NavigationHistoryBehavior.Replace, targetEntry.DocumentState.SrcdocResource, postResource: targetEntry.DocumentState.PostResource, traversalEntry: targetEntry);

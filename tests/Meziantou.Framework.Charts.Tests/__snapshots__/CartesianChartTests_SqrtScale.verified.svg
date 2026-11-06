@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="250" viewBox="0 0 640 250" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="640" height="250" fill="#ffffff"/>
+<g class="grid">
+<line x1="32.23" y1="219.83" x2="630" y2="219.83" stroke="#e3e6ea"/>
+<line x1="32.23" y1="114.91" x2="630" y2="114.91" stroke="#e3e6ea"/>
+<line x1="32.23" y1="71.46" x2="630" y2="71.46" stroke="#e3e6ea"/>
+<line x1="32.23" y1="38.11" x2="630" y2="38.11" stroke="#e3e6ea"/>
+<line x1="32.23" y1="10" x2="630" y2="10" stroke="#e3e6ea"/>
+</g>
+<g class="marks">
+<g>
+<rect x="46.81" y="172.91" width="131.22" height="46.92" fill="#4269d0"/>
+<rect x="192.61" y="125.99" width="131.22" height="93.84" fill="#4269d0"/>
+<rect x="338.41" y="79.07" width="131.22" height="140.75" fill="#4269d0"/>
+<rect x="484.2" y="32.15" width="131.22" height="187.67" fill="#4269d0"/>
+</g>
+</g>
+<g class="axes">
+<line x1="27.23" y1="219.83" x2="32.23" y2="219.83" stroke="#8c959f"/>
+<text x="24.23" y="222.64" text-anchor="end" font-size="11" fill="#59636e">0</text>
+<line x1="27.23" y1="114.91" x2="32.23" y2="114.91" stroke="#8c959f"/>
+<text x="24.23" y="117.72" text-anchor="end" font-size="11" fill="#59636e">5</text>
+<line x1="27.23" y1="71.46" x2="32.23" y2="71.46" stroke="#8c959f"/>
+<text x="24.23" y="74.27" text-anchor="end" font-size="11" fill="#59636e">10</text>
+<line x1="27.23" y1="38.11" x2="32.23" y2="38.11" stroke="#8c959f"/>
+<text x="24.23" y="40.92" text-anchor="end" font-size="11" fill="#59636e">15</text>
+<line x1="27.23" y1="10" x2="32.23" y2="10" stroke="#8c959f"/>
+<text x="24.23" y="12.81" text-anchor="end" font-size="11" fill="#59636e">20</text>
+<line x1="112.42" y1="219.83" x2="112.42" y2="224.83" stroke="#8c959f"/>
+<text x="112.42" y="235.72" text-anchor="middle" font-size="11" fill="#59636e">a</text>
+<line x1="258.22" y1="219.83" x2="258.22" y2="224.83" stroke="#8c959f"/>
+<text x="258.22" y="235.72" text-anchor="middle" font-size="11" fill="#59636e">b</text>
+<line x1="404.01" y1="219.83" x2="404.01" y2="224.83" stroke="#8c959f"/>
+<text x="404.01" y="235.72" text-anchor="middle" font-size="11" fill="#59636e">c</text>
+<line x1="549.81" y1="219.83" x2="549.81" y2="224.83" stroke="#8c959f"/>
+<text x="549.81" y="235.72" text-anchor="middle" font-size="11" fill="#59636e">d</text>
+<line x1="32.23" y1="219.83" x2="630" y2="219.83" stroke="#8c959f"/>
+</g>
+</svg>

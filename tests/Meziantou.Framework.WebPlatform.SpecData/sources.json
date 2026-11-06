@@ -230,6 +230,7 @@
       "storage",
       "fs",
       "images",
+      "acid",
       "css/selectors",
       "css/cssom",
       "css/css-syntax",

@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="400" viewBox="0 0 640 400" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Revenue and growth</title>
+<rect width="640" height="400" fill="#ffffff"/>
+<g class="grid">
+<line x1="55.45" y1="369.83" x2="577.23" y2="369.83" stroke="#e3e6ea"/>
+<line x1="55.45" y1="338.43" x2="577.23" y2="338.43" stroke="#e3e6ea"/>
+<line x1="55.45" y1="307.04" x2="577.23" y2="307.04" stroke="#e3e6ea"/>
+<line x1="55.45" y1="275.65" x2="577.23" y2="275.65" stroke="#e3e6ea"/>
+<line x1="55.45" y1="244.26" x2="577.23" y2="244.26" stroke="#e3e6ea"/>
+<line x1="55.45" y1="212.86" x2="577.23" y2="212.86" stroke="#e3e6ea"/>
+<line x1="55.45" y1="181.47" x2="577.23" y2="181.47" stroke="#e3e6ea"/>
+<line x1="55.45" y1="150.08" x2="577.23" y2="150.08" stroke="#e3e6ea"/>
+<line x1="55.45" y1="118.69" x2="577.23" y2="118.69" stroke="#e3e6ea"/>
+<line x1="55.45" y1="87.29" x2="577.23" y2="87.29" stroke="#e3e6ea"/>
+<line x1="55.45" y1="55.9" x2="577.23" y2="55.9" stroke="#e3e6ea"/>
+</g>
+<g class="marks">
+<g>
+<rect x="68.17" y="181.47" width="114.54" height="188.36" fill="#4269d0"/>
+<rect x="195.44" y="134.38" width="114.54" height="235.44" fill="#4269d0"/>
+<rect x="322.7" y="150.08" width="114.54" height="219.75" fill="#4269d0"/>
+<rect x="449.96" y="71.6" width="114.54" height="298.23" fill="#4269d0"/>
+</g>
+<g>
+<path d="M125.44,281.93 L252.71,150.08 L379.97,350.99 L507.23,81.01" fill="none" stroke="#efb118" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="125.44" cy="281.93" r="4" fill="#efb118"/>
+<circle cx="252.71" cy="150.08" r="4" fill="#efb118"/>
+<circle cx="379.97" cy="350.99" r="4" fill="#efb118"/>
+<circle cx="507.23" cy="81.01" r="4" fill="#efb118"/>
+</g>
+</g>
+<g class="axes">
+<line x1="50.45" y1="369.83" x2="55.45" y2="369.83" stroke="#8c959f"/>
+<text x="47.45" y="372.64" text-anchor="end" font-size="11" fill="#59636e">0</text>
+<line x1="50.45" y1="338.43" x2="55.45" y2="338.43" stroke="#8c959f"/>
+<text x="47.45" y="341.24" text-anchor="end" font-size="11" fill="#59636e">20</text>
+<line x1="50.45" y1="307.04" x2="55.45" y2="307.04" stroke="#8c959f"/>
+<text x="47.45" y="309.85" text-anchor="end" font-size="11" fill="#59636e">40</text>
+<line x1="50.45" y1="275.65" x2="55.45" y2="275.65" stroke="#8c959f"/>
+<text x="47.45" y="278.46" text-anchor="end" font-size="11" fill="#59636e">60</text>
+<line x1="50.45" y1="244.26" x2="55.45" y2="244.26" stroke="#8c959f"/>
+<text x="47.45" y="247.07" text-anchor="end" font-size="11" fill="#59636e">80</text>
+<line x1="50.45" y1="212.86" x2="55.45" y2="212.86" stroke="#8c959f"/>
+<text x="47.45" y="215.67" text-anchor="end" font-size="11" fill="#59636e">100</text>
+<line x1="50.45" y1="181.47" x2="55.45" y2="181.47" stroke="#8c959f"/>
+<text x="47.45" y="184.28" text-anchor="end" font-size="11" fill="#59636e">120</text>
+<line x1="50.45" y1="150.08" x2="55.45" y2="150.08" stroke="#8c959f"/>
+<text x="47.45" y="152.89" text-anchor="end" font-size="11" fill="#59636e">140</text>
+<line x1="50.45" y1="118.69" x2="55.45" y2="118.69" stroke="#8c959f"/>
+<text x="47.45" y="121.5" text-anchor="end" font-size="11" fill="#59636e">160</text>
+<line x1="50.45" y1="87.29" x2="55.45" y2="87.29" stroke="#8c959f"/>
+<text x="47.45" y="90.1" text-anchor="end" font-size="11" fill="#59636e">180</text>
+<line x1="50.45" y1="55.9" x2="55.45" y2="55.9" stroke="#8c959f"/>
+<text x="47.45" y="58.71" text-anchor="end" font-size="11" fill="#59636e">200</text>
+<text x="18.62" y="212.86" text-anchor="middle" font-size="12" fill="#1f2328" transform="rotate(-90 18.62 212.86)">Revenue (k€)</text>
+<line x1="125.44" y1="369.83" x2="125.44" y2="374.83" stroke="#8c959f"/>
+<text x="125.44" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Q1</text>
+<line x1="252.71" y1="369.83" x2="252.71" y2="374.83" stroke="#8c959f"/>
+<text x="252.71" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Q2</text>
+<line x1="379.97" y1="369.83" x2="379.97" y2="374.83" stroke="#8c959f"/>
+<text x="379.97" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Q3</text>
+<line x1="507.23" y1="369.83" x2="507.23" y2="374.83" stroke="#8c959f"/>
+<text x="507.23" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Q4</text>
+<line x1="55.45" y1="369.83" x2="577.23" y2="369.83" stroke="#8c959f"/>
+<line x1="577.23" y1="369.83" x2="582.23" y2="369.83" stroke="#8c959f"/>
+<text x="585.23" y="372.64" font-size="11" fill="#59636e">-10%</text>
+<line x1="577.23" y1="338.43" x2="582.23" y2="338.43" stroke="#8c959f"/>
+<text x="585.23" y="341.24" font-size="11" fill="#59636e">-5%</text>
+<line x1="577.23" y1="307.04" x2="582.23" y2="307.04" stroke="#8c959f"/>
+<text x="585.23" y="309.85" font-size="11" fill="#59636e">0%</text>
+<line x1="577.23" y1="275.65" x2="582.23" y2="275.65" stroke="#8c959f"/>
+<text x="585.23" y="278.46" font-size="11" fill="#59636e">5%</text>
+<line x1="577.23" y1="244.26" x2="582.23" y2="244.26" stroke="#8c959f"/>
+<text x="585.23" y="247.07" font-size="11" fill="#59636e">10%</text>
+<line x1="577.23" y1="212.86" x2="582.23" y2="212.86" stroke="#8c959f"/>
+<text x="585.23" y="215.67" font-size="11" fill="#59636e">15%</text>
+<line x1="577.23" y1="181.47" x2="582.23" y2="181.47" stroke="#8c959f"/>
+<text x="585.23" y="184.28" font-size="11" fill="#59636e">20%</text>
+<line x1="577.23" y1="150.08" x2="582.23" y2="150.08" stroke="#8c959f"/>
+<text x="585.23" y="152.89" font-size="11" fill="#59636e">25%</text>
+<line x1="577.23" y1="118.69" x2="582.23" y2="118.69" stroke="#8c959f"/>
+<text x="585.23" y="121.5" font-size="11" fill="#59636e">30%</text>
+<line x1="577.23" y1="87.29" x2="582.23" y2="87.29" stroke="#8c959f"/>
+<text x="585.23" y="90.1" font-size="11" fill="#59636e">35%</text>
+<line x1="577.23" y1="55.9" x2="582.23" y2="55.9" stroke="#8c959f"/>
+<text x="585.23" y="58.71" font-size="11" fill="#59636e">40%</text>
+<text x="621.38" y="212.86" text-anchor="middle" font-size="12" fill="#1f2328" transform="rotate(90 621.38 212.86)">Growth</text>
+</g>
+<g class="legend">
+<rect x="10" y="33.35" width="10" height="10" rx="2" fill="#4269d0"/>
+<text x="25" y="41.42" font-size="12" fill="#1f2328">Revenue</text>
+<rect x="86.24" y="33.35" width="10" height="10" rx="2" fill="#efb118"/>
+<text x="101.24" y="41.42" font-size="12" fill="#1f2328">Growth</text>
+</g>
+<text x="10" y="21.49" font-size="16" font-weight="bold" fill="#1f2328">Revenue and growth</text>
+</svg>

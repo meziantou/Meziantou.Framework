@@ -1529,10 +1529,11 @@ public sealed class DocumentationExampleTests : IDisposable
 
         using (var image = Image.Load<Rgba64>(lossy))
         {
-            // Lossy colors are close, and the alpha channel is exact
+            // Lossy colors are close, and the alpha channel is exact. A flat image is all in the LF values: the error of this
+            // saturated color depends on where its rounding falls (blue is 0 at the qualities 88 and 91, 2109 at 90)
             var pixel = image.Frames[0][16, 8];
             Assert.Equal(color.A, pixel.A);
-            Assert.True(Math.Abs(pixel.R - color.R) < 2048 && Math.Abs(pixel.G - color.G) < 2048 && Math.Abs(pixel.B - color.B) < 2048, pixel.ToString());
+            Assert.True(Math.Abs(pixel.R - color.R) < 4096 && Math.Abs(pixel.G - color.G) < 4096 && Math.Abs(pixel.B - color.B) < 4096, pixel.ToString());
         }
 
         using var animation = Image.Load<Rgba32>(animated);

@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="440" height="440" viewBox="0 0 440 440" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Player skills</title>
+<rect width="440" height="440" fill="#ffffff"/>
+<g class="grid">
+<path d="M220,211.27 L250.13,233.16 L238.62,268.58 L201.38,268.58 L189.87,233.16 Z" fill="none" stroke="#e3e6ea"/>
+<path d="M220,179.58 L280.27,223.37 L257.25,294.22 L182.75,294.22 L159.73,223.37 Z" fill="none" stroke="#e3e6ea"/>
+<path d="M220,147.9 L310.4,213.58 L275.87,319.85 L164.13,319.85 L129.6,213.58 Z" fill="none" stroke="#e3e6ea"/>
+<path d="M220,116.21 L340.53,203.79 L294.49,345.48 L145.51,345.48 L99.47,203.79 Z" fill="none" stroke="#e3e6ea"/>
+<path d="M220,84.53 L370.67,194 L313.12,371.11 L126.88,371.11 L69.33,194 Z" fill="none" stroke="#e3e6ea"/>
+<line x1="220" y1="242.95" x2="220" y2="84.53" stroke="#e3e6ea"/>
+<line x1="220" y1="242.95" x2="370.67" y2="194" stroke="#e3e6ea"/>
+<line x1="220" y1="242.95" x2="313.12" y2="371.11" stroke="#e3e6ea"/>
+<line x1="220" y1="242.95" x2="126.88" y2="371.11" stroke="#e3e6ea"/>
+<line x1="220" y1="242.95" x2="69.33" y2="194" stroke="#e3e6ea"/>
+</g>
+<g class="marks">
+<g>
+<path d="M220,116.21 L302.87,216.03 L303.81,358.3 L154.82,332.67 L91.93,201.34 Z" fill="#4269d0" fill-opacity="0.251"/>
+<path d="M220,147.9 L348.07,201.34 L266.56,307.03 L136.19,358.3 L122.07,211.13 Z" fill="#efb118" fill-opacity="0.251"/>
+</g>
+<g>
+<path d="M220,116.21 L302.87,216.03 L303.81,358.3 L154.82,332.67 L91.93,201.34 Z" fill="none" stroke="#4269d0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="220" cy="116.21" r="3" fill="#4269d0"/>
+<circle cx="302.87" cy="216.03" r="3" fill="#4269d0"/>
+<circle cx="303.81" cy="358.3" r="3" fill="#4269d0"/>
+<circle cx="154.82" cy="332.67" r="3" fill="#4269d0"/>
+<circle cx="91.93" cy="201.34" r="3" fill="#4269d0"/>
+<path d="M220,147.9 L348.07,201.34 L266.56,307.03 L136.19,358.3 L122.07,211.13 Z" fill="none" stroke="#efb118" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="220" cy="147.9" r="3" fill="#efb118"/>
+<circle cx="348.07" cy="201.34" r="3" fill="#efb118"/>
+<circle cx="266.56" cy="307.03" r="3" fill="#efb118"/>
+<circle cx="136.19" cy="358.3" r="3" fill="#efb118"/>
+<circle cx="122.07" cy="211.13" r="3" fill="#efb118"/>
+</g>
+</g>
+<g class="axes">
+<text x="220" y="76.25" text-anchor="middle" font-size="11" fill="#59636e">Speed</text>
+<text x="376.37" y="193.38" font-size="11" fill="#59636e">Strength</text>
+<text x="316.64" y="382.89" font-size="11" fill="#59636e">Agility</text>
+<text x="123.36" y="382.89" text-anchor="end" font-size="11" fill="#59636e">Stamina</text>
+<text x="63.63" y="193.38" text-anchor="end" font-size="11" fill="#59636e">Skill</text>
+<text x="224" y="245.76" font-size="11" fill="#59636e">0</text>
+<text x="224" y="214.08" font-size="11" fill="#59636e">20</text>
+<text x="224" y="182.39" font-size="11" fill="#59636e">40</text>
+<text x="224" y="150.71" font-size="11" fill="#59636e">60</text>
+<text x="224" y="119.02" font-size="11" fill="#59636e">80</text>
+<text x="224" y="87.34" font-size="11" fill="#59636e">100</text>
+</g>
+<g class="legend">
+<rect x="10" y="33.35" width="10" height="10" rx="2" fill="#4269d0"/>
+<text x="25" y="41.42" font-size="12" fill="#1f2328">Ada</text>
+<rect x="60.35" y="33.35" width="10" height="10" rx="2" fill="#efb118"/>
+<text x="75.35" y="41.42" font-size="12" fill="#1f2328">Bob</text>
+</g>
+<text x="10" y="21.49" font-size="16" font-weight="bold" fill="#1f2328">Player skills</text>
+</svg>

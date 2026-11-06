@@ -360,7 +360,7 @@
     "reftest": "PASS"
   },
   "css/filter-effects/blur-text.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/filter-effects/clip-under-filter-001.html": {
     "reftest": "PASS"
@@ -630,7 +630,7 @@
     "reftest": "PASS"
   },
   "css/filter-effects/fedisplacementmap-non-uniform-transform-001.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/filter-effects/feflood-with-filter-reference.html": {
     "reftest": "PASS"

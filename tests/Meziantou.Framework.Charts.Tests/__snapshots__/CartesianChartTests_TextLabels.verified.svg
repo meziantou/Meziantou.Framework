@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="260" viewBox="0 0 640 260" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Bars with labels</title>
+<rect width="640" height="260" fill="#ffffff"/>
+<g class="grid">
+<line x1="38.35" y1="229.83" x2="630" y2="229.83" stroke="#e3e6ea"/>
+<line x1="38.35" y1="180.57" x2="630" y2="180.57" stroke="#e3e6ea"/>
+<line x1="38.35" y1="131.31" x2="630" y2="131.31" stroke="#e3e6ea"/>
+<line x1="38.35" y1="82.06" x2="630" y2="82.06" stroke="#e3e6ea"/>
+<line x1="38.35" y1="32.8" x2="630" y2="32.8" stroke="#e3e6ea"/>
+</g>
+<g class="marks">
+<g>
+<rect x="52.78" y="82.06" width="129.87" height="147.77" fill="#4269d0"/>
+<rect x="197.08" y="136.24" width="129.87" height="93.59" fill="#4269d0"/>
+<rect x="341.39" y="126.39" width="129.87" height="103.44" fill="#4269d0"/>
+<rect x="485.69" y="72.21" width="129.87" height="157.62" fill="#4269d0"/>
+</g>
+<g>
+<text x="117.72" y="77.12" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2328">150</text>
+<text x="262.02" y="131.3" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2328">95</text>
+<text x="406.33" y="121.45" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2328">105</text>
+<text x="550.63" y="67.27" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2328">160</text>
+</g>
+<g>
+<text x="334.17" y="141.53" text-anchor="middle" font-size="40" fill="#000000" fill-opacity="0.133" transform="rotate(-20 334.17 141.53)">draft</text>
+</g>
+<g>
+<text x="406.33" y="134.38" font-size="12" fill="#4269d0">east side</text>
+</g>
+</g>
+<g class="axes">
+<line x1="33.35" y1="229.83" x2="38.35" y2="229.83" stroke="#8c959f"/>
+<text x="30.35" y="232.64" text-anchor="end" font-size="11" fill="#59636e">0</text>
+<line x1="33.35" y1="180.57" x2="38.35" y2="180.57" stroke="#8c959f"/>
+<text x="30.35" y="183.38" text-anchor="end" font-size="11" fill="#59636e">50</text>
+<line x1="33.35" y1="131.31" x2="38.35" y2="131.31" stroke="#8c959f"/>
+<text x="30.35" y="134.12" text-anchor="end" font-size="11" fill="#59636e">100</text>
+<line x1="33.35" y1="82.06" x2="38.35" y2="82.06" stroke="#8c959f"/>
+<text x="30.35" y="84.87" text-anchor="end" font-size="11" fill="#59636e">150</text>
+<line x1="33.35" y1="32.8" x2="38.35" y2="32.8" stroke="#8c959f"/>
+<text x="30.35" y="35.61" text-anchor="end" font-size="11" fill="#59636e">200</text>
+<line x1="117.72" y1="229.83" x2="117.72" y2="234.83" stroke="#8c959f"/>
+<text x="117.72" y="245.72" text-anchor="middle" font-size="11" fill="#59636e">North</text>
+<line x1="262.02" y1="229.83" x2="262.02" y2="234.83" stroke="#8c959f"/>
+<text x="262.02" y="245.72" text-anchor="middle" font-size="11" fill="#59636e">South</text>
+<line x1="406.33" y1="229.83" x2="406.33" y2="234.83" stroke="#8c959f"/>
+<text x="406.33" y="245.72" text-anchor="middle" font-size="11" fill="#59636e">East</text>
+<line x1="550.63" y1="229.83" x2="550.63" y2="234.83" stroke="#8c959f"/>
+<text x="550.63" y="245.72" text-anchor="middle" font-size="11" fill="#59636e">West</text>
+<line x1="38.35" y1="229.83" x2="630" y2="229.83" stroke="#8c959f"/>
+</g>
+<text x="10" y="21.49" font-size="16" font-weight="bold" fill="#1f2328">Bars with labels</text>
+</svg>

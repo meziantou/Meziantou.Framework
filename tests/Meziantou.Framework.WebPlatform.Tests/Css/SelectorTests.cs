@@ -425,6 +425,20 @@ public sealed class SelectorTests
     }
 
     [Fact]
+    public void Checked_AttributeAddedAfterClick_DoesNotCheckTheRadio()
+    {
+        // click() makes the checkedness dirty, as in the browsers (Acid3 test 43): the checked attribute only sets the default
+        var document = Parse("<!DOCTYPE html><input id=a type=radio name=r><input id=b type=radio name=r>");
+        var a = (HtmlInputElement)document.GetElementById("a")!;
+        var b = (HtmlInputElement)document.GetElementById("b")!;
+        b.Click();
+        a.Checked = true;
+        b.SetAttribute("checked", "checked");
+        Assert.Equal(["a"], document.QuerySelectorAll(":checked").Select(n => ((Element)n).Id));
+        Assert.True(b.DefaultChecked);
+    }
+
+    [Fact]
     public void Disabled_OptionsOfADisabledSelect()
     {
         // An optgroup or option is disabled when its nearest ancestor select is disabled (by a fieldset too)

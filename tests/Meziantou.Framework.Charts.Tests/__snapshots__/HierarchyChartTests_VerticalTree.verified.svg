@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="300" viewBox="0 0 640 300" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="640" height="300" fill="#1b1e23"/>
+<g class="marks">
+<g>
+<path d="M345.41,52.28 C345.41,95.85 167.54,95.85 167.54,139.43" fill="none" stroke="#7d848e" stroke-width="1.2"/>
+<path d="M167.54,139.43 C167.54,183.01 116.73,183.01 116.73,226.58" fill="none" stroke="#7d848e" stroke-width="1.2"/>
+<path d="M167.54,139.43 C167.54,183.01 218.36,183.01 218.36,226.58" fill="none" stroke="#7d848e" stroke-width="1.2"/>
+<path d="M345.41,52.28 C345.41,95.85 421.64,95.85 421.64,139.43" fill="none" stroke="#7d848e" stroke-width="1.2"/>
+<path d="M421.64,139.43 C421.64,183.01 421.64,183.01 421.64,226.58" fill="none" stroke="#7d848e" stroke-width="1.2"/>
+<path d="M345.41,52.28 C345.41,95.85 523.28,95.85 523.28,139.43" fill="none" stroke="#7d848e" stroke-width="1.2"/>
+<circle cx="345.41" cy="52.28" r="5" fill="#e6e6e6" stroke="#1b1e23"><title>CEO: 0</title></circle>
+<text x="345.41" y="43.28" text-anchor="middle" font-size="11" fill="#e6e6e6">CEO</text>
+<circle cx="167.54" cy="139.43" r="5" fill="#efb118" stroke="#1b1e23"><title>CEO / CTO: 0</title></circle>
+<text x="167.54" y="130.43" text-anchor="middle" font-size="11" fill="#e6e6e6">CTO</text>
+<circle cx="116.73" cy="226.58" r="5" fill="#ff725c" stroke="#1b1e23"><title>CEO / CTO / Platform: 0</title></circle>
+<text x="113.91" y="235.58" font-size="11" fill="#e6e6e6" transform="rotate(90 113.91 235.58)">Platform</text>
+<circle cx="218.36" cy="226.58" r="5" fill="#ff725c" stroke="#1b1e23"><title>CEO / CTO / Data: 0</title></circle>
+<text x="215.55" y="235.58" font-size="11" fill="#e6e6e6" transform="rotate(90 215.55 235.58)">Data</text>
+<circle cx="421.64" cy="139.43" r="5" fill="#efb118" stroke="#1b1e23"><title>CEO / CFO: 0</title></circle>
+<text x="421.64" y="130.43" text-anchor="middle" font-size="11" fill="#e6e6e6">CFO</text>
+<circle cx="421.64" cy="226.58" r="5" fill="#ff725c" stroke="#1b1e23"><title>CEO / CFO / Accounting: 0</title></circle>
+<text x="418.83" y="235.58" font-size="11" fill="#e6e6e6" transform="rotate(90 418.83 235.58)">Accounting</text>
+<circle cx="523.28" cy="139.43" r="5" fill="#efb118" stroke="#1b1e23"><title>CEO / COO: 0</title></circle>
+<text x="520.46" y="148.43" font-size="11" fill="#e6e6e6" transform="rotate(90 520.46 148.43)">COO</text>
+</g>
+<g opacity="0.3">
+<path d="M349.04,35.1 C349.04,98.33 145.76,98.33 145.76,161.55" fill="none" stroke="#7d848e" stroke-width="1.2"/>
+<path d="M145.76,161.55 C145.76,224.78 102.21,224.78 102.21,288" fill="none" stroke="#7d848e" stroke-width="1.2"/>
+<path d="M145.76,161.55 C145.76,224.78 189.32,224.78 189.32,288" fill="none" stroke="#7d848e" stroke-width="1.2"/>
+<path d="M349.04,35.1 C349.04,98.33 363.56,98.33 363.56,161.55" fill="none" stroke="#7d848e" stroke-width="1.2"/>
+<path d="M363.56,161.55 C363.56,224.78 363.56,224.78 363.56,288" fill="none" stroke="#7d848e" stroke-width="1.2"/>
+<path d="M349.04,35.1 C349.04,161.55 537.79,161.55 537.79,288" fill="none" stroke="#7d848e" stroke-width="1.2"/>
+<circle cx="349.04" cy="35.1" r="2" fill="#e6e6e6" stroke="#1b1e23"><title>CEO: 0</title></circle>
+<circle cx="145.76" cy="161.55" r="2" fill="#6cc5b0" stroke="#1b1e23"><title>CEO / CTO: 0</title></circle>
+<circle cx="102.21" cy="288" r="2" fill="#6cc5b0" stroke="#1b1e23"><title>CEO / CTO / Platform: 0</title></circle>
+<circle cx="189.32" cy="288" r="2" fill="#6cc5b0" stroke="#1b1e23"><title>CEO / CTO / Data: 0</title></circle>
+<circle cx="363.56" cy="161.55" r="2" fill="#3ca951" stroke="#1b1e23"><title>CEO / CFO: 0</title></circle>
+<circle cx="363.56" cy="288" r="2" fill="#3ca951" stroke="#1b1e23"><title>CEO / CFO / Accounting: 0</title></circle>
+<circle cx="537.79" cy="288" r="2" fill="#ff8ab7" stroke="#1b1e23"><title>CEO / COO: 0</title></circle>
+</g>
+</g>
+<g class="legend">
+<rect x="10" y="10.55" width="10" height="10" rx="2" fill="#4269d0"/>
+<text x="25" y="18.62" font-size="12" fill="#e6e6e6">0</text>
+<rect x="45.67" y="10.55" width="10" height="10" rx="2" fill="#efb118"/>
+<text x="60.67" y="18.62" font-size="12" fill="#e6e6e6">1</text>
+<rect x="81.34" y="10.55" width="10" height="10" rx="2" fill="#ff725c"/>
+<text x="96.34" y="18.62" font-size="12" fill="#e6e6e6">2</text>
+<rect x="117.02" y="10.55" width="10" height="10" rx="2" fill="#6cc5b0"/>
+<text x="132.02" y="18.62" font-size="12" fill="#e6e6e6">CTO</text>
+<rect x="170.87" y="10.55" width="10" height="10" rx="2" fill="#3ca951"/>
+<text x="185.87" y="18.62" font-size="12" fill="#e6e6e6">CFO</text>
+<rect x="225.2" y="10.55" width="10" height="10" rx="2" fill="#ff8ab7"/>
+<text x="240.2" y="18.62" font-size="12" fill="#e6e6e6">COO</text>
+</g>
+</svg>

@@ -579,13 +579,12 @@ public sealed class ArrayBuiltinsTests
     [Fact]
     public void Join_Recursion()
     {
-        // An array that contains itself is joined as an empty string, as in the browsers
+        // An array that contains itself recurses until the call stack is exhausted: ECMA-262 has no cycle detection
         using var context = new BuiltinsTestContext();
         var array = context.Array(1);
         array.CreateDataPropertyOrThrow(new PropertyKey(1), array);
-        Assert.Equal("1,", CallArray(context, "join", array).AsString());
-        Assert.Equal("1,", CallArray(context, "toString", array).AsString());
-        Assert.Equal("1,1,", CallArray(context, "join", context.Array(1, context.Array(array))).AsString());
+        context.AssertThrows("RangeError", () => CallArray(context, "join", array));
+        context.AssertThrows("RangeError", () => CallArray(context, "toString", array));
     }
 
     [Fact]

@@ -789,6 +789,29 @@ public partial class SvgImageElement
             return;
         }
 
+        // As in Chrome, an image of the list of available images (https://html.spec.whatwg.org/multipage/images.html#list-of-available-images,
+        // e.g. an image loaded by an img element) is available at once; the load event is fired by a task
+        var corsState = HtmlImageElement.GetCorsSettingsState(GetAttributeValue("crossorigin"));
+        var key = new AvailableImageKey(url.Serialize(), corsState, corsState == 0 ? null : document.SerializeOrigin());
+        if (document.AvailableImages is { } availableImages && availableImages.TryGetValue(key, out var availableImage))
+        {
+            NaturalSize = availableImage.NaturalSize;
+            Image = availableImage.Image;
+            document.InvalidateLayout();
+            _documentWhoseLoadEventIsDelayed = document;
+            document.ImagesDelayingTheLoadEvent++;
+            document.QueueElementTask(() =>
+            {
+                if (generation != _fetchGeneration)
+                    return;
+
+                StopDelayingTheLoadEvent();
+                document.ProcessImageThatFinishedLoading(this, key.Url, availableImage.NaturalSize, availableImage.Image is null ? long.MaxValue : availableImage.ContentLength);
+                FireEvent(new Event("load"));
+            });
+            return;
+        }
+
         var request = SubresourceFetching.CreateRequest(document, url, RequestDestination.Image, cors: HasAttribute("crossorigin"), referrerPolicy: ReferrerPolicy, this, useCredentials: SubresourceFetching.UsesCredentials(this));
         if (!SubresourceFetching.Fetch(document, request, OnFetched))
             return;

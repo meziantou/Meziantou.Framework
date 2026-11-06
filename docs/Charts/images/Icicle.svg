@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="400" viewBox="0 0 640 400" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Size of the files</title>
+<rect width="640" height="400" fill="#ffffff"/>
+<g class="marks">
+<g>
+<rect x="10" y="32.8" width="155" height="357.2" fill="#4269d0" stroke="#ffffff"><title>: 840</title></rect>
+<text x="87.5" y="214.21" text-anchor="middle" font-size="11" fill="#ffffff">all</text>
+<rect x="165" y="32.8" width="155" height="250.89" fill="#4269d0" stroke="#ffffff"><title>src: 590</title></rect>
+<text x="242.5" y="161.06" text-anchor="middle" font-size="11" fill="#ffffff">src</text>
+<rect x="320" y="32.8" width="155" height="116.94" fill="#4269d0" fill-opacity="0.8" stroke="#ffffff"><title>src / core: 275</title></rect>
+<text x="397.5" y="94.08" text-anchor="middle" font-size="11" fill="#ffffff">core</text>
+<rect x="475" y="32.8" width="155" height="59.53" fill="#4269d0" fill-opacity="0.6" stroke="#ffffff"><title>src / core / parser.cs: 140</title></rect>
+<text x="552.5" y="65.38" text-anchor="middle" font-size="11" fill="#ffffff">parser.cs</text>
+<rect x="475" y="92.33" width="155" height="38.27" fill="#4269d0" fill-opacity="0.6" stroke="#ffffff"><title>src / core / lexer.cs: 90</title></rect>
+<text x="552.5" y="114.28" text-anchor="middle" font-size="11" fill="#ffffff">lexer.cs</text>
+<rect x="475" y="130.6" width="155" height="19.14" fill="#4269d0" fill-opacity="0.6" stroke="#ffffff"><title>src / core / ast.cs: 45</title></rect>
+<text x="552.5" y="142.98" text-anchor="middle" font-size="11" fill="#ffffff">ast.cs</text>
+<rect x="320" y="149.74" width="155" height="110.56" fill="#4269d0" fill-opacity="0.8" stroke="#ffffff"><title>src / app: 260</title></rect>
+<text x="397.5" y="207.83" text-anchor="middle" font-size="11" fill="#ffffff">app</text>
+<rect x="475" y="149.74" width="155" height="51.03" fill="#4269d0" fill-opacity="0.6" stroke="#ffffff"><title>src / app / main.cs: 120</title></rect>
+<text x="552.5" y="178.07" text-anchor="middle" font-size="11" fill="#ffffff">main.cs</text>
+<rect x="475" y="200.77" width="155" height="34.02" fill="#4269d0" fill-opacity="0.6" stroke="#ffffff"><title>src / app / view.cs: 80</title></rect>
+<text x="552.5" y="220.59" text-anchor="middle" font-size="11" fill="#ffffff">view.cs</text>
+<rect x="475" y="234.79" width="155" height="25.51" fill="#4269d0" fill-opacity="0.6" stroke="#ffffff"><title>src / app / model.cs: 60</title></rect>
+<text x="552.5" y="250.36" text-anchor="middle" font-size="11" fill="#ffffff">model.cs</text>
+<rect x="320" y="260.3" width="155" height="23.39" fill="#4269d0" fill-opacity="0.8" stroke="#ffffff"><title>src / util: 55</title></rect>
+<text x="397.5" y="274.81" text-anchor="middle" font-size="11" fill="#ffffff">util</text>
+<rect x="475" y="260.3" width="155" height="12.76" fill="#4269d0" fill-opacity="0.6" stroke="#ffffff"><title>src / util / strings.cs: 30</title></rect>
+<text x="552.5" y="269.49" text-anchor="middle" font-size="11" fill="#ffffff">strings.cs</text>
+<rect x="475" y="273.06" width="155" height="10.63" fill="#4269d0" fill-opacity="0.6" stroke="#ffffff"><title>src / util / math.cs: 25</title></rect>
+<text x="552.5" y="281.19" text-anchor="middle" font-size="11" fill="#ffffff">math.cs</text>
+<rect x="165" y="283.69" width="155" height="65.91" fill="#efb118" stroke="#ffffff"><title>tests: 155</title></rect>
+<text x="242.5" y="319.46" text-anchor="middle" font-size="11" fill="#1f2328">tests</text>
+<rect x="320" y="283.69" width="155" height="36.15" fill="#efb118" fill-opacity="0.8" stroke="#ffffff"><title>tests / core.tests.cs: 85</title></rect>
+<text x="397.5" y="304.57" text-anchor="middle" font-size="11" fill="#1f2328">core.tests.cs</text>
+<rect x="320" y="319.84" width="155" height="29.77" fill="#efb118" fill-opacity="0.8" stroke="#ffffff"><title>tests / app.tests.cs: 70</title></rect>
+<text x="397.5" y="337.53" text-anchor="middle" font-size="11" fill="#1f2328">app.tests.cs</text>
+<rect x="165" y="349.6" width="155" height="40.4" fill="#ff725c" stroke="#ffffff"><title>docs: 95</title></rect>
+<text x="242.5" y="372.61" text-anchor="middle" font-size="11" fill="#1f2328">docs</text>
+<rect x="320" y="349.6" width="155" height="23.39" fill="#ff725c" fill-opacity="0.8" stroke="#ffffff"><title>docs / guide.md: 55</title></rect>
+<text x="397.5" y="364.11" text-anchor="middle" font-size="11" fill="#1f2328">guide.md</text>
+<rect x="320" y="372.99" width="155" height="17.01" fill="#ff725c" fill-opacity="0.8" stroke="#ffffff"><title>docs / readme.md: 40</title></rect>
+<text x="397.5" y="384.31" text-anchor="middle" font-size="11" fill="#1f2328">readme.md</text>
+</g>
+</g>
+<text x="10" y="21.49" font-size="16" font-weight="bold" fill="#1f2328">Size of the files</text>
+</svg>

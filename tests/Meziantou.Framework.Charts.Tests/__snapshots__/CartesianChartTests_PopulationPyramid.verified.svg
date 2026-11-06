@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="280" viewBox="0 0 640 280" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Population by age, in millions</title>
+<rect width="640" height="280" fill="#ffffff"/>
+<g class="grid">
+<line x1="48.13" y1="55.9" x2="48.13" y2="249.83" stroke="#e3e6ea"/>
+<line x1="106.31" y1="55.9" x2="106.31" y2="249.83" stroke="#e3e6ea"/>
+<line x1="164.5" y1="55.9" x2="164.5" y2="249.83" stroke="#e3e6ea"/>
+<line x1="222.69" y1="55.9" x2="222.69" y2="249.83" stroke="#e3e6ea"/>
+<line x1="280.88" y1="55.9" x2="280.88" y2="249.83" stroke="#e3e6ea"/>
+<line x1="339.06" y1="55.9" x2="339.06" y2="249.83" stroke="#e3e6ea"/>
+<line x1="397.25" y1="55.9" x2="397.25" y2="249.83" stroke="#e3e6ea"/>
+<line x1="455.44" y1="55.9" x2="455.44" y2="249.83" stroke="#e3e6ea"/>
+<line x1="513.63" y1="55.9" x2="513.63" y2="249.83" stroke="#e3e6ea"/>
+<line x1="571.81" y1="55.9" x2="571.81" y2="249.83" stroke="#e3e6ea"/>
+<line x1="630" y1="55.9" x2="630" y2="249.83" stroke="#e3e6ea"/>
+</g>
+<g class="marks">
+<g>
+<rect x="292.51" y="59.7" width="46.55" height="34.22" fill="#4269d0"/>
+<rect x="339.06" y="59.7" width="78.55" height="34.22" fill="#efb118"/>
+<rect x="132.5" y="97.73" width="206.56" height="34.22" fill="#4269d0"/>
+<rect x="339.06" y="97.73" width="229.84" height="34.22" fill="#efb118"/>
+<rect x="94.68" y="135.75" width="244.39" height="34.22" fill="#4269d0"/>
+<rect x="339.06" y="135.75" width="250.21" height="34.22" fill="#efb118"/>
+<rect x="109.22" y="173.78" width="229.84" height="34.22" fill="#4269d0"/>
+<rect x="339.06" y="173.78" width="229.84" height="34.22" fill="#efb118"/>
+<rect x="106.31" y="211.8" width="232.75" height="34.22" fill="#4269d0"/>
+<rect x="339.06" y="211.8" width="221.11" height="34.22" fill="#efb118"/>
+</g>
+<g>
+<line x1="339.06" y1="55.9" x2="339.06" y2="249.83" stroke="#1f2328"/>
+</g>
+</g>
+<g class="axes">
+<line x1="43.13" y1="76.81" x2="48.13" y2="76.81" stroke="#8c959f"/>
+<text x="40.13" y="79.62" text-anchor="end" font-size="11" fill="#59636e">80+</text>
+<line x1="43.13" y1="114.84" x2="48.13" y2="114.84" stroke="#8c959f"/>
+<text x="40.13" y="117.65" text-anchor="end" font-size="11" fill="#59636e">60-79</text>
+<line x1="43.13" y1="152.86" x2="48.13" y2="152.86" stroke="#8c959f"/>
+<text x="40.13" y="155.67" text-anchor="end" font-size="11" fill="#59636e">40-59</text>
+<line x1="43.13" y1="190.89" x2="48.13" y2="190.89" stroke="#8c959f"/>
+<text x="40.13" y="193.7" text-anchor="end" font-size="11" fill="#59636e">20-39</text>
+<line x1="43.13" y1="228.91" x2="48.13" y2="228.91" stroke="#8c959f"/>
+<text x="40.13" y="231.72" text-anchor="end" font-size="11" fill="#59636e">0-19</text>
+<line x1="48.13" y1="249.83" x2="48.13" y2="254.83" stroke="#8c959f"/>
+<text x="48.13" y="265.72" text-anchor="middle" font-size="11" fill="#59636e">10</text>
+<line x1="106.31" y1="249.83" x2="106.31" y2="254.83" stroke="#8c959f"/>
+<text x="106.31" y="265.72" text-anchor="middle" font-size="11" fill="#59636e">8</text>
+<line x1="164.5" y1="249.83" x2="164.5" y2="254.83" stroke="#8c959f"/>
+<text x="164.5" y="265.72" text-anchor="middle" font-size="11" fill="#59636e">6</text>
+<line x1="222.69" y1="249.83" x2="222.69" y2="254.83" stroke="#8c959f"/>
+<text x="222.69" y="265.72" text-anchor="middle" font-size="11" fill="#59636e">4</text>
+<line x1="280.88" y1="249.83" x2="280.88" y2="254.83" stroke="#8c959f"/>
+<text x="280.88" y="265.72" text-anchor="middle" font-size="11" fill="#59636e">2</text>
+<line x1="339.06" y1="249.83" x2="339.06" y2="254.83" stroke="#8c959f"/>
+<text x="339.06" y="265.72" text-anchor="middle" font-size="11" fill="#59636e">0</text>
+<line x1="397.25" y1="249.83" x2="397.25" y2="254.83" stroke="#8c959f"/>
+<text x="397.25" y="265.72" text-anchor="middle" font-size="11" fill="#59636e">2</text>
+<line x1="455.44" y1="249.83" x2="455.44" y2="254.83" stroke="#8c959f"/>
+<text x="455.44" y="265.72" text-anchor="middle" font-size="11" fill="#59636e">4</text>
+<line x1="513.63" y1="249.83" x2="513.63" y2="254.83" stroke="#8c959f"/>
+<text x="513.63" y="265.72" text-anchor="middle" font-size="11" fill="#59636e">6</text>
+<line x1="571.81" y1="249.83" x2="571.81" y2="254.83" stroke="#8c959f"/>
+<text x="571.81" y="265.72" text-anchor="middle" font-size="11" fill="#59636e">8</text>
+<line x1="630" y1="249.83" x2="630" y2="254.83" stroke="#8c959f"/>
+<text x="630" y="265.72" text-anchor="middle" font-size="11" fill="#59636e">10</text>
+<line x1="48.13" y1="249.83" x2="630" y2="249.83" stroke="#8c959f"/>
+</g>
+<g class="legend">
+<rect x="10" y="33.35" width="10" height="10" rx="2" fill="#4269d0"/>
+<text x="25" y="41.42" font-size="12" fill="#1f2328">Men</text>
+<rect x="62.34" y="33.35" width="10" height="10" rx="2" fill="#efb118"/>
+<text x="77.34" y="41.42" font-size="12" fill="#1f2328">Women</text>
+</g>
+<text x="10" y="21.49" font-size="16" font-weight="bold" fill="#1f2328">Population by age, in millions</text>
+</svg>

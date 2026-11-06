@@ -273,10 +273,12 @@ internal sealed partial class EditingAlgorithms
         if (!replaceSpaces)
             return;
 
+        // As in the browsers, the white space next to an element that is not editable (contenteditable=false) starts or ends
+        // with a no-break space: it stays visible when the scripts change or remove the content of the element
         var replacementWhitespace = CanonicalSpaceSequence(
             length,
-            startOffset == 0 && FollowsLineBreak(startNode),
-            endOffset == NodeLength(endNode) && PrecedesLineBreak(endNode));
+            (startOffset == 0 && FollowsLineBreak(startNode)) || IsNonEditableUnit(ChildAt(startNode, startOffset - 1)),
+            (endOffset == NodeLength(endNode) && PrecedesLineBreak(endNode)) || IsNonEditableUnit(ChildAt(endNode, endOffset)));
         var replacementIndex = 0;
         while (ComparePoints(startNode, startOffset, endNode, endOffset) < 0)
         {
@@ -340,7 +342,7 @@ internal sealed partial class EditingAlgorithms
     /// <param name="canonicalizeWhitespace">False when the caller handles the white space around the deletion (see <see cref="DeleteSelectionAndRebalance"/>).</param>
     private void DeleteSelection(bool blockMerging = true, bool stripWrappers = true, bool forward = true, bool canonicalizeWhitespace = true)
     {
-        if (_activeRange is null)
+if (_activeRange is null)
             return;
 
         var range = _activeRange;
@@ -1225,12 +1227,20 @@ internal sealed partial class EditingAlgorithms
     /// <summary>
     /// The sequence of white space that contains the character at the offset when it contains a line feed that collapses
     /// (white-space is normal or nowrap): it is rendered as one space, which the deletion of one of its characters removes
-    /// whole, as in the browsers.
+    /// whole, as in the browsers. When white-space is pre-line, the line feed is preserved but the spaces and tabs around it
+    /// collapse: the deletion of the line feed or of one of these spaces removes the line feed with the spaces around it.
     /// </summary>
     private (int Start, int End)? GetCollapsibleWhiteSpaceRunWithLineFeed(Text text, int offset)
     {
         var data = text.Data;
-        if (offset < 0 || offset >= data.Length || data[offset] is not (' ' or '\t' or '\n') || GetWhiteSpace(text) is not ("normal" or "nowrap"))
+        if (offset < 0 || offset >= data.Length || data[offset] is not (' ' or '\t' or '\n'))
+            return null;
+
+        var whiteSpace = GetWhiteSpace(text);
+        if (whiteSpace is "pre-line")
+            return GetCollapsibleWhiteSpaceAroundPreservedLineFeed(data, offset);
+
+        if (whiteSpace is not ("normal" or "nowrap"))
             return null;
 
         var start = offset;
@@ -1246,6 +1256,59 @@ internal sealed partial class EditingAlgorithms
         }
 
         return data.AsSpan(start, end - start).Contains('\n') ? (start, end) : null;
+    }
+
+    /// <summary>
+    /// The line feed at the offset, or next to the spaces and tabs that contain the offset, with the spaces and tabs around
+    /// it (white-space is pre-line); <see langword="null"/> when the character is a space that is not next to a line feed.
+    /// </summary>
+    private static (int Start, int End)? GetCollapsibleWhiteSpaceAroundPreservedLineFeed(string data, int offset)
+    {
+        var lineFeed = -1;
+        if (data[offset] is '\n')
+        {
+            lineFeed = offset;
+        }
+        else
+        {
+            var before = offset;
+            while (before > 0 && data[before - 1] is ' ' or '\t')
+            {
+                before--;
+            }
+
+            var after = offset + 1;
+            while (after < data.Length && data[after] is ' ' or '\t')
+            {
+                after++;
+            }
+
+            if (before > 0 && data[before - 1] is '\n')
+            {
+                lineFeed = before - 1;
+            }
+            else if (after < data.Length && data[after] is '\n')
+            {
+                lineFeed = after;
+            }
+        }
+
+        if (lineFeed < 0)
+            return null;
+
+        var start = lineFeed;
+        while (start > 0 && data[start - 1] is ' ' or '\t')
+        {
+            start--;
+        }
+
+        var end = lineFeed + 1;
+        while (end < data.Length && data[end] is ' ' or '\t')
+        {
+            end++;
+        }
+
+        return (start, end);
     }
 
     /// <summary>Replaces a character of a Text node without moving the boundary points that are after it.</summary>
@@ -1324,9 +1387,13 @@ internal sealed partial class EditingAlgorithms
     private static bool IsNonEditableUnit(Node? node)
         => node is Element && !IsEditable(node) && !IsEditingHost(node) && IsEditableOrEditingHost(node.ParentNode);
 
+    /// <summary>A block that is not editable in an editable parent or editing host (e.g. <c>&lt;ul contenteditable=false&gt;</c>).</summary>
+    private bool IsNonEditableBlockUnit(Node node) => IsNonEditableUnit(node) && !IsInlineNode(node);
+
     /// <summary>
     /// Whether the node is an element that the deletion commands delete as a whole, as an img: as in the browsers, the
     /// replaced elements and the form controls (their contents are not editable text), and the elements that are not editable.
+    /// An object element without a data attribute represents its fallback content, which is editable text.
     /// </summary>
     private bool IsAtomicElement(Node? node)
     {
@@ -1339,7 +1406,10 @@ internal sealed partial class EditingAlgorithms
         if (!element.IsHtmlNamespace)
             return element.ParentNode is Element { IsHtmlNamespace: true };
 
-        return element.TagId is TagId.Img or TagId.Iframe or TagId.Embed or TagId.Object or TagId.Video or TagId.Audio or TagId.Canvas or TagId.Meter or TagId.Progress
+        if (element.TagId is TagId.Object)
+            return !string.IsNullOrEmpty(element.GetAttributeValue("data"));
+
+        return element.TagId is TagId.Img or TagId.Iframe or TagId.Embed or TagId.Video or TagId.Audio or TagId.Canvas or TagId.Meter or TagId.Progress
             or TagId.Input or TagId.Textarea or TagId.Select or TagId.Button;
     }
 
@@ -1723,6 +1793,14 @@ internal sealed partial class EditingAlgorithms
             return true;
         }
 
+        // As in the browsers, the line after an inline flex or grid container is joined to the last line of its last item
+        if (IsInlineNode(node) && IsFlexOrGridContainer(node) && ChildAt(node, offset - 1) is Element lastItem && IsBlockNode(lastItem) && IsEditable(lastItem))
+        {
+            SetRange(lastItem, NodeLength(lastItem), range.StartContainer, (int)range.StartOffset);
+            DeleteSelectionAndRebalance(forward: false);
+            return true;
+        }
+
         if (IsInlineNode(node))
             return true;
 
@@ -1894,18 +1972,44 @@ internal sealed partial class EditingAlgorithms
             return true;
         }
 
-        while (ChildAt(startNode, startOffset - 1) is { } child)
+        var removedNonEditableBlock = false;
+        while (true)
         {
+            if (ChildAt(startNode, startOffset - 1) is not { } child)
+            {
+                // After the removal of the blocks that are not editable, the previous line is before the emptied parent
+                if (!removedNonEditableBlock || !IsEditable(startNode) || startNode.ParentNode is null)
+                    break;
+
+                startOffset = NodeIndex(startNode);
+                startNode = startNode.ParentNode;
+                continue;
+            }
+
             // As in the browsers, an empty block, which has no line, is removed: the line before it is joined
             if ((IsEditable(child) && IsInvisible(child)) || (IsEmptyEditableBlock(child) && child.PreviousSibling is not null))
             {
                 startNode.RemoveChild(child);
                 startOffset--;
             }
+            else if (IsNonEditableBlockUnit(child))
+            {
+                // As in the browsers, a block that is not editable (e.g. a list or a list item) is deleted as a whole: the
+                // line before it is joined
+                if (ReferenceEquals(startNode, node) && offset >= startOffset)
+                {
+                    offset--;
+                }
+
+                startNode.RemoveChild(child);
+                startOffset--;
+                removedNonEditableBlock = true;
+            }
             else
             {
                 startNode = child;
                 startOffset = NodeLength(startNode);
+                removedNonEditableBlock = false;
             }
         }
 
@@ -2007,6 +2111,49 @@ internal sealed partial class EditingAlgorithms
         }
     }
 
+    /// <summary>
+    /// The node when it is an editable block (not a list item nor a table cell) whose children are invisible or collapsed
+    /// block props, in an editable block parent (not the editing host, where the content that follows the block is moved
+    /// into it, as the tests expect: <c>&lt;p&gt;{}&lt;br&gt;&lt;/p&gt;foo</c> gives <c>&lt;p&gt;foo&lt;/p&gt;</c>), and
+    /// followed by visible inline content of this parent; otherwise null.
+    /// </summary>
+    private Element? GetEmptyChildBlockBeforeInlineContent(Node node)
+    {
+        if (node is not Element block || !IsEditable(block) || IsInlineNode(block) || IsEditingHost(block) || !IsEditable(block.ParentNode) || IsInlineNode(block.ParentNode)
+            || IsHtmlElement(block, ListItemNames) || IsHtmlElement(block, TableSectionNames) || IsHtmlElement(block, "hr") || IsHtmlElement(block, "table") || IsAtomicElement(block))
+            return null;
+
+        if (!GetChildren(block).TrueForAll(child => IsInvisible(child) || IsCollapsedBlockProp(child)))
+            return null;
+
+        return GetNextVisibleSibling(block) is { } next && IsInlineNode(next) && IsEditable(next) ? block : null;
+    }
+
+    private bool IsFlexOrGridContainer(Node node) => node is Element element && GetDisplay(element) is var display && (display.IsFlexContainer || display.IsGridContainer);
+
+    /// <summary>Whether the node has a descendant that is rendered content (text that is not only white space, or an element deleted as a whole).</summary>
+    private bool HasRenderedContent(Node node)
+    {
+        for (var child = node.FirstChild; child is not null; child = child.NextSibling)
+        {
+            if ((child is Text && !IsWhitespaceNode(child)) || IsAtomicElement(child) || HasRenderedContent(child))
+                return true;
+        }
+
+        return false;
+    }
+
+    private Node? GetNextVisibleSibling(Node node)
+    {
+        var next = node.NextSibling;
+        while (next is not null && IsInvisible(next))
+        {
+            next = next.NextSibling;
+        }
+
+        return next;
+    }
+
     private static bool HasIndentationAncestor(Node node)
     {
         for (Node? ancestor = node; ancestor is not null; ancestor = ancestor.ParentNode)
@@ -2016,6 +2163,28 @@ internal sealed partial class EditingAlgorithms
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// Whether the boundary point is followed by at least one node of its editing host, all of which are invisible (the
+    /// text of a Text node that contains the point is visible content after it).
+    /// </summary>
+    private bool HasOnlyInvisibleNodesAfter(Node node, int offset)
+    {
+        if (GetEditingHostOf(node) is not { } host || (node is CharacterData && offset < NodeLength(node)))
+            return false;
+
+        var current = ChildAt(node, offset) ?? NextNodeDescendants(node);
+        if (current is null || !host.IsInclusiveAncestorOf(current))
+            return false;
+
+        for (; current is not null && host.IsInclusiveAncestorOf(current); current = NextNode(current))
+        {
+            if (!IsEditable(current) || IsVisible(current))
+                return false;
+        }
+
+        return true;
     }
 
     /// <summary>https://w3c.github.io/editing/docs/execCommand/#the-forwarddelete-command</summary>
@@ -2033,6 +2202,11 @@ internal sealed partial class EditingAlgorithms
         if (range.StartContainer is Text startText && range.StartOffset < startText.Length && IsCollapsedWhiteSpaceAtEditingHostEdge(startText, (int)range.StartOffset, (int)startText.Length, forward: true))
             return true;
 
+        // As in the browsers, a caret at the end of the content of the editing host has nothing to delete after it: the
+        // invisible nodes that follow it (e.g. the br that ends the last block, <p>abc[]<br></p>) are kept
+        if (HasOnlyInvisibleNodesAfter(range.StartContainer, (int)range.StartOffset))
+            return true;
+
         CanonicalizeWhitespace(range.StartContainer, (int)range.StartOffset, replaceSpaces: false);
         var node = range.StartContainer;
         var offset = (int)range.StartOffset;
@@ -2045,6 +2219,13 @@ internal sealed partial class EditingAlgorithms
             else if (ChildAt(node, offset) is { } invisibleChild && IsEditable(invisibleChild) && IsInvisible(invisibleChild))
             {
                 node.RemoveChild(invisibleChild);
+            }
+            else if (ChildAt(node, offset) is Text whiteSpaceText && IsEditable(whiteSpaceText) && IsWhitespaceNode(whiteSpaceText) && !PreservesWhiteSpace(whiteSpaceText.ParentNode)
+                && FindLineItem(whiteSpaceText, forward: true) == LineItem.Boundary)
+            {
+                // As in the browsers, the white space that collapses at the end of a block is not rendered: it is removed,
+                // and the next line is joined (<p>abc{} </p><p>def</p>)
+                node.RemoveChild(whiteSpaceText);
             }
             else if ((offset == NodeLength(node) && IsInlineNode(node)) || IsInvisible(node))
             {
@@ -2076,6 +2257,29 @@ internal sealed partial class EditingAlgorithms
             return true;
         }
 
+        // The specification moves the inline content that follows an empty child block into it. As in the browsers, the
+        // empty block is removed from its parent block: the caret is before the content (<div><div>{}<br></div>abc</div>
+        // gives <div>abc</div>)
+        if (GetEmptyChildBlockBeforeInlineContent(node) is { } emptyBlock)
+        {
+            var parent = emptyBlock.ParentNode!;
+            var index = NodeIndex(emptyBlock);
+            RemoveNode(emptyBlock);
+            CollapseTo(parent, index);
+            RebalanceWhiteSpaceAtCaret(acrossSiblings: false);
+            return true;
+        }
+
+        // As in the browsers, an empty flex or grid container that is followed by a block is removed (its items are not a
+        // line the next block can be joined to): the caret is at the start of the block
+        if (GetFlexOrGridItem(node) is { ParentNode: Element container } && IsEditable(container) && !HasRenderedContent(container)
+            && GetNextVisibleSibling(container) is { } blockAfterContainer && IsBlockNode(blockAfterContainer) && IsEditable(blockAfterContainer))
+        {
+            RemoveNode(container);
+            CollapseTo(blockAfterContainer, 0);
+            return true;
+        }
+
         if (node is Text text && offset != NodeLength(node))
         {
             // The next character, with the code unit of its surrogate pair and the combining marks that follow it
@@ -2097,6 +2301,24 @@ internal sealed partial class EditingAlgorithms
             }
 
             SetRange(node, offset, node, endOffset);
+            DeleteSelectionAndRebalance();
+            return true;
+        }
+
+        // An element that is deleted as a whole at the end of an inline element (foo<span>bar[]<span contenteditable=false>
+        // baz</span></span>) is deleted, as in the browsers
+        if (IsInlineNode(node) && ChildAt(node, offset) is { } atomicChild && IsAtomicElement(atomicChild) && IsEditableOrEditingHost(node))
+        {
+            SetRange(node, offset, node, offset + 1);
+            DeleteSelectionAndRebalance();
+            return true;
+        }
+
+        // As in the browsers, the first line of the first item of an inline flex or grid container is joined to the line
+        // before the container
+        if (IsInlineNode(node) && IsFlexOrGridContainer(node) && ChildAt(node, offset) is Element firstItem && IsBlockNode(firstItem) && IsEditable(firstItem))
+        {
+            SetRange(range.StartContainer, (int)range.StartOffset, firstItem, 0);
             DeleteSelectionAndRebalance();
             return true;
         }
@@ -2161,21 +2383,41 @@ internal sealed partial class EditingAlgorithms
             return true;
         }
 
-        while (ChildAt(endNode, end) is { } child)
+        var removedNonEditableBlock = false;
+        while (true)
         {
+            if (ChildAt(endNode, end) is not { } child)
+            {
+                // After the removal of the blocks that are not editable, the next line is after the emptied parent
+                if (!removedNonEditableBlock || !IsEditable(endNode) || endNode.ParentNode is null)
+                    break;
+
+                end = 1 + NodeIndex(endNode);
+                endNode = endNode.ParentNode;
+                continue;
+            }
+
             // As in the browsers, an empty block, which has no line, is removed: the line after it is joined
             if ((IsEditable(child) && IsInvisible(child)) || (IsEmptyEditableBlock(child) && child.NextSibling is not null))
             {
                 endNode.RemoveChild(child);
             }
+            else if (IsNonEditableBlockUnit(child))
+            {
+                // As in the browsers, a block that is not editable (e.g. a list or a list item) is deleted as a whole: the
+                // line after it is joined
+                endNode.RemoveChild(child);
+                removedNonEditableBlock = true;
+            }
             else
             {
                 endNode = child;
                 end = 0;
+                removedNonEditableBlock = false;
             }
         }
 
-        SetRange(node, offset, endNode, end);
+SetRange(node, offset, endNode, end);
         DeleteSelectionAndRebalance();
         return true;
     }

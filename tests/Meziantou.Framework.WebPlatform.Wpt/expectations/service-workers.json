@@ -432,8 +432,7 @@
   "service-workers/service-worker/fetch-canvas-tainting-video-with-range-request.https.html": {
     "total": 5,
     "failures": {
-      "range responses from single origin with both opaque and non-opaque responses": "FAIL",
-      "synth and same-origin fallback range responses": "FAIL"
+      "range responses from single origin with both opaque and non-opaque responses": "FAIL"
     }
   },
   "service-workers/service-worker/fetch-canvas-tainting-video.https.html": {

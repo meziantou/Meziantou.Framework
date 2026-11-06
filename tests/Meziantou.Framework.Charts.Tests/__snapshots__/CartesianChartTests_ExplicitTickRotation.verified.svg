@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="250" viewBox="0 0 640 250" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="640" height="250" fill="#ffffff"/>
+<g class="grid">
+<line x1="33.35" y1="201.26" x2="630" y2="201.26" stroke="#e3e6ea"/>
+<line x1="33.35" y1="173.93" x2="630" y2="173.93" stroke="#e3e6ea"/>
+<line x1="33.35" y1="146.61" x2="630" y2="146.61" stroke="#e3e6ea"/>
+<line x1="33.35" y1="119.29" x2="630" y2="119.29" stroke="#e3e6ea"/>
+<line x1="33.35" y1="91.97" x2="630" y2="91.97" stroke="#e3e6ea"/>
+<line x1="33.35" y1="64.64" x2="630" y2="64.64" stroke="#e3e6ea"/>
+<line x1="33.35" y1="37.32" x2="630" y2="37.32" stroke="#e3e6ea"/>
+<line x1="33.35" y1="10" x2="630" y2="10" stroke="#e3e6ea"/>
+</g>
+<g class="marks">
+<g>
+<rect x="47.9" y="16.83" width="130.97" height="184.43" fill="#4269d0"/>
+<rect x="193.43" y="50.98" width="130.97" height="150.27" fill="#4269d0"/>
+<rect x="338.95" y="91.97" width="130.97" height="109.29" fill="#4269d0"/>
+<rect x="484.48" y="30.49" width="130.97" height="170.77" fill="#4269d0"/>
+</g>
+</g>
+<g class="axes">
+<text x="30.35" y="204.07" text-anchor="end" font-size="11" fill="#59636e">0</text>
+<text x="30.35" y="176.75" text-anchor="end" font-size="11" fill="#59636e">20</text>
+<text x="30.35" y="149.42" text-anchor="end" font-size="11" fill="#59636e">40</text>
+<text x="30.35" y="122.1" text-anchor="end" font-size="11" fill="#59636e">60</text>
+<text x="30.35" y="94.78" text-anchor="end" font-size="11" fill="#59636e">80</text>
+<text x="30.35" y="67.46" text-anchor="end" font-size="11" fill="#59636e">100</text>
+<text x="30.35" y="40.13" text-anchor="end" font-size="11" fill="#59636e">120</text>
+<text x="30.35" y="12.81" text-anchor="end" font-size="11" fill="#59636e">140</text>
+<line x1="33.35" y1="10" x2="33.35" y2="201.26" stroke="#8c959f"/>
+<line x1="113.39" y1="201.26" x2="113.39" y2="206.26" stroke="#8c959f"/>
+<text x="117.34" y="213.21" text-anchor="end" font-size="11" fill="#59636e" transform="rotate(-90 117.34 213.21)">North</text>
+<line x1="258.91" y1="201.26" x2="258.91" y2="206.26" stroke="#8c959f"/>
+<text x="262.86" y="213.21" text-anchor="end" font-size="11" fill="#59636e" transform="rotate(-90 262.86 213.21)">South</text>
+<line x1="404.44" y1="201.26" x2="404.44" y2="206.26" stroke="#8c959f"/>
+<text x="408.39" y="213.21" text-anchor="end" font-size="11" fill="#59636e" transform="rotate(-90 408.39 213.21)">East</text>
+<line x1="549.96" y1="201.26" x2="549.96" y2="206.26" stroke="#8c959f"/>
+<text x="553.91" y="213.21" text-anchor="end" font-size="11" fill="#59636e" transform="rotate(-90 553.91 213.21)">West</text>
+<line x1="33.35" y1="201.26" x2="630" y2="201.26" stroke="#8c959f"/>
+</g>
+</svg>

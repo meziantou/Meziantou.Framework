@@ -97,8 +97,16 @@ internal static class ScrollIntoView
             var viewportOffset = engine.ViewportScrollState.Offset;
             var fixedToViewport = false;
             var fixedFollowsViewport = (Horizontal: false, Vertical: false);
+            var isInStuckBox = false;
             for (var fragment = includeSelf ? child : child.Parent; fragment is not null; child = fragment, fragment = fragment.Parent)
             {
+                // A sticky positioned ancestor of the target that is stuck (shifted) in its scrolling box does not move when this
+                // scrolling box scrolls (the target itself is scrolled to its unshifted position, see GetBounds)
+                if (!includeSelf && child != fragments[0] && child is BoxFragment { StickyOffset: var stickyOffset } && stickyOffset != PhysicalOffset.Zero)
+                {
+                    isInStuckBox = true;
+                }
+
                 includeSelf = false;
                 if (fragment.Parent is null && child is BoxFragment { Box.Style.Layout.Position: PositionKind.Fixed } fixedBox)
                 {
@@ -122,8 +130,10 @@ internal static class ScrollIntoView
                     borderRect = borderRect.Translate(state.Offset);
                 }
 
-                // The scrollport, in the coordinates of the document
-                var scrollport = GetScrollport(document, scrollContainer, state);
+                // The scrollport, in the coordinates of the document. Its scroll-padding is ignored when the target is in a stuck
+                // sticky positioned box: the target stays where it is stuck (as in Gecko: WPT css/cssom-view/scrollIntoView-stuck.tentative.html)
+                var scrollport = GetScrollport(document, scrollContainer, state, applyScrollPadding: !isInStuckBox);
+                isInStuckBox = false;
                 var associatedElement = state.GetAssociatedElement(document);
                 var delta = GetScrollDelta(rect, scrollport, state.WritingDirection, block, inline, ifNeeded ? borderRect : null);
                 if (isFixedInViewport)
@@ -214,7 +224,7 @@ internal static class ScrollIntoView
     }
 
     /// <summary>Returns the scrollport of a scrolling box in the coordinates of the document, reduced by its <c>scroll-padding</c>.</summary>
-    internal static PhysicalRect GetScrollport(Document document, BoxFragment scrollContainer, ScrollState state)
+    internal static PhysicalRect GetScrollport(Document document, BoxFragment scrollContainer, ScrollState state, bool applyScrollPadding = true)
     {
         var origin = scrollContainer.GetOffsetInRoot();
         if (state.IsViewport)
@@ -223,6 +233,9 @@ internal static class ScrollIntoView
         }
 
         var scrollport = state.Scrollport.Translate(origin);
+        if (!applyScrollPadding)
+            return scrollport;
+
         var associatedElement = state.GetAssociatedElement(document);
         if (associatedElement is not null && Cascade.ComputedStyleDeclarations.IsBeingRendered(associatedElement))
         {

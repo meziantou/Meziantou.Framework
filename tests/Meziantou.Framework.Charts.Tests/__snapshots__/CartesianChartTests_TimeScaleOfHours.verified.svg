@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="250" viewBox="0 0 640 250" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Hourly load</title>
+<rect width="640" height="250" fill="#ffffff"/>
+<g class="grid">
+<line x1="32.23" y1="219.83" x2="623.19" y2="219.83" stroke="#e3e6ea"/>
+<line x1="32.23" y1="188.65" x2="623.19" y2="188.65" stroke="#e3e6ea"/>
+<line x1="32.23" y1="157.48" x2="623.19" y2="157.48" stroke="#e3e6ea"/>
+<line x1="32.23" y1="126.31" x2="623.19" y2="126.31" stroke="#e3e6ea"/>
+<line x1="32.23" y1="95.14" x2="623.19" y2="95.14" stroke="#e3e6ea"/>
+<line x1="32.23" y1="63.97" x2="623.19" y2="63.97" stroke="#e3e6ea"/>
+<line x1="32.23" y1="32.8" x2="623.19" y2="32.8" stroke="#e3e6ea"/>
+</g>
+<g class="marks">
+<g>
+<path d="M32.23,126.31 L44.54,102.11 L56.86,79.56 L69.17,60.19 L81.48,45.33 L93.79,35.99 L106.1,32.8 L118.41,35.99 L130.72,45.33 L143.04,60.19 L155.35,79.56 L167.66,102.11 L179.97,126.31 L192.28,150.52 L204.59,173.07 L216.91,192.44 L229.22,207.3 L241.53,216.64 L253.84,219.83 L266.15,216.64 L278.46,207.3 L290.78,192.44 L303.09,173.07 L315.4,150.52 L327.71,126.31 L340.02,102.11 L352.33,79.56 L364.65,60.19 L376.96,45.33 L389.27,35.99 L401.58,32.8 L413.89,35.99 L426.2,45.33 L438.51,60.19 L450.83,79.56 L463.14,102.11 L475.45,126.31 L487.76,150.52 L500.07,173.07 L512.38,192.44 L524.7,207.3 L537.01,216.64 L549.32,219.83 L561.63,216.64 L573.94,207.3 L586.25,192.44 L598.57,173.07 L610.88,150.52 L623.19,126.31" fill="none" stroke="#4269d0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+</g>
+<g class="axes">
+<line x1="27.23" y1="219.83" x2="32.23" y2="219.83" stroke="#8c959f"/>
+<text x="24.23" y="222.64" text-anchor="end" font-size="11" fill="#59636e">20</text>
+<line x1="27.23" y1="188.65" x2="32.23" y2="188.65" stroke="#8c959f"/>
+<text x="24.23" y="191.46" text-anchor="end" font-size="11" fill="#59636e">30</text>
+<line x1="27.23" y1="157.48" x2="32.23" y2="157.48" stroke="#8c959f"/>
+<text x="24.23" y="160.29" text-anchor="end" font-size="11" fill="#59636e">40</text>
+<line x1="27.23" y1="126.31" x2="32.23" y2="126.31" stroke="#8c959f"/>
+<text x="24.23" y="129.12" text-anchor="end" font-size="11" fill="#59636e">50</text>
+<line x1="27.23" y1="95.14" x2="32.23" y2="95.14" stroke="#8c959f"/>
+<text x="24.23" y="97.95" text-anchor="end" font-size="11" fill="#59636e">60</text>
+<line x1="27.23" y1="63.97" x2="32.23" y2="63.97" stroke="#8c959f"/>
+<text x="24.23" y="66.78" text-anchor="end" font-size="11" fill="#59636e">70</text>
+<line x1="27.23" y1="32.8" x2="32.23" y2="32.8" stroke="#8c959f"/>
+<text x="24.23" y="35.61" text-anchor="end" font-size="11" fill="#59636e">80</text>
+<line x1="32.23" y1="219.83" x2="32.23" y2="224.83" stroke="#8c959f"/>
+<text x="32.23" y="235.72" text-anchor="middle" font-size="11" fill="#59636e">May 6</text>
+<line x1="106.1" y1="219.83" x2="106.1" y2="224.83" stroke="#8c959f"/>
+<text x="106.1" y="235.72" text-anchor="middle" font-size="11" fill="#59636e">06:00</text>
+<line x1="179.97" y1="219.83" x2="179.97" y2="224.83" stroke="#8c959f"/>
+<text x="179.97" y="235.72" text-anchor="middle" font-size="11" fill="#59636e">12:00</text>
+<line x1="253.84" y1="219.83" x2="253.84" y2="224.83" stroke="#8c959f"/>
+<text x="253.84" y="235.72" text-anchor="middle" font-size="11" fill="#59636e">18:00</text>
+<line x1="327.71" y1="219.83" x2="327.71" y2="224.83" stroke="#8c959f"/>
+<text x="327.71" y="235.72" text-anchor="middle" font-size="11" fill="#59636e">May 7</text>
+<line x1="401.58" y1="219.83" x2="401.58" y2="224.83" stroke="#8c959f"/>
+<text x="401.58" y="235.72" text-anchor="middle" font-size="11" fill="#59636e">06:00</text>
+<line x1="475.45" y1="219.83" x2="475.45" y2="224.83" stroke="#8c959f"/>
+<text x="475.45" y="235.72" text-anchor="middle" font-size="11" fill="#59636e">12:00</text>
+<line x1="549.32" y1="219.83" x2="549.32" y2="224.83" stroke="#8c959f"/>
+<text x="549.32" y="235.72" text-anchor="middle" font-size="11" fill="#59636e">18:00</text>
+<line x1="623.19" y1="219.83" x2="623.19" y2="224.83" stroke="#8c959f"/>
+<text x="623.19" y="235.72" text-anchor="middle" font-size="11" fill="#59636e">May 8</text>
+<line x1="32.23" y1="219.83" x2="623.19" y2="219.83" stroke="#8c959f"/>
+</g>
+<text x="10" y="21.49" font-size="16" font-weight="bold" fill="#1f2328">Hourly load</text>
+</svg>

@@ -78,6 +78,9 @@ internal sealed partial class TableLayoutAlgorithm
         public bool IsFixed;
         public double Percent;
         public bool IsBody;
+
+        /// <summary>Whether a row of the row group has a block size that is not 0 and is neither a length nor a percentage.</summary>
+        public bool HasGrowableRow;
     }
 
     /// <summary>
@@ -249,6 +252,11 @@ internal sealed partial class TableLayoutAlgorithm
             ref var sizing = ref sections[s];
             sizing.IsBody = section.Box is null || section.Box.Display.Internal == DisplayInternal.TableRowGroup;
             sizing.BlockSize = GetRowsBlockSize(rows, section.StartRow, section.RowCount);
+            for (var r = section.StartRow; r < section.StartRow + section.RowCount; r++)
+            {
+                sizing.HasGrowableRow |= rows[r].BlockSize > 0 && !rows[r].IsFixed && rows[r].Percent <= 0;
+            }
+
             var sectionRows = section.RowCount;
             visibleRows += sectionRows;
             if (sectionRows > 0)
@@ -1077,8 +1085,12 @@ internal sealed partial class TableLayoutAlgorithm
                 }
             }
 
+            // The auto row groups whose rows can grow (non-empty rows that are not constrained) grow in proportion to their sizes,
+            // whatever their kind (WPT css/css-tables/height-distribution/extra-height-given-to-all-row-groups-004.html), else the
+            // body groups first (WPT css/css-tables/tentative/table-height-redistribution.html)
             var remaining = distributable - percentGuess;
-            if (!Distribute(sections, remaining, static s => s.Percent <= 0 && !s.IsFixed)
+            if (!Distribute(sections, remaining, static s => s.Percent <= 0 && !s.IsFixed && s.HasGrowableRow, preferBody: false)
+                && !Distribute(sections, remaining, static s => s.Percent <= 0 && !s.IsFixed)
                 && !Distribute(sections, remaining, static s => s.Percent <= 0 && s.IsFixed))
             {
                 Distribute(sections, remaining, static s => s.Percent > 0);
@@ -1095,7 +1107,7 @@ internal sealed partial class TableLayoutAlgorithm
             }
         }
 
-        static bool Distribute(SectionSizing[] sections, double size, Func<SectionSizing, bool> predicate)
+        static bool Distribute(SectionSizing[] sections, double size, Func<SectionSizing, bool> predicate, bool preferBody = true)
         {
             var any = false;
             var anyBody = false;
@@ -1104,7 +1116,7 @@ internal sealed partial class TableLayoutAlgorithm
                 if (predicate(section))
                 {
                     any = true;
-                    anyBody |= section.IsBody;
+                    anyBody |= preferBody && section.IsBody;
                 }
             }
 

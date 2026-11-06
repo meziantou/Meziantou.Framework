@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text;
 using Meziantou.Framework.WebPlatform.Dom.FileApi;
 using Meziantou.Framework.WebPlatform.Encodings;
 using Meziantou.Framework.WebPlatform.Html;
@@ -1543,6 +1544,13 @@ public sealed partial class BrowsingContext : IDisposable
     private SessionHistoryEntry? _beforeUnloadFiredForEntry;
 
     /// <summary>
+    /// The document that initiated the traversal that loads the document of an entry, whose navigational prefetches the
+    /// navigation uses (https://html.spec.whatwg.org/multipage/nav-history-apis.html#delta-traverse: the document of the
+    /// <c>History</c> object, which may be the document of another navigable), or null for the active document.
+    /// </summary>
+    private (SessionHistoryEntry Entry, Document Document)? _traversalPrefetchSource;
+
+    /// <summary>
     /// https://html.spec.whatwg.org/multipage/browsing-the-web.html#checking-if-unloading-is-canceled: fires beforeunload at
     /// the active documents of the navigable and of its descendant navigables
     /// (https://html.spec.whatwg.org/multipage/browsing-the-web.html#fire-beforeunload). When a document that has sticky
@@ -2075,7 +2083,9 @@ public sealed partial class BrowsingContext : IDisposable
 
             // https://wicg.github.io/nav-speculation/prefetch.html#wait-for-a-matching-prefetch-record: the navigation uses the
             // response of a navigational prefetch of the source document, or waits for the one that is ongoing
-            if (TryUsePrefetchRecord(navigationId, url, sourceDocument, postResource, parameters, StartNavigationFetch, cancellation.Token))
+            var prefetchSourceDocument = traversalEntry is not null && _traversalPrefetchSource is { } traversalSource && ReferenceEquals(traversalSource.Entry, traversalEntry) ? traversalSource.Document : sourceDocument;
+            _traversalPrefetchSource = null;
+            if (TryUsePrefetchRecord(navigationId, url, prefetchSourceDocument, postResource, parameters, StartNavigationFetch, cancellation.Token))
                 return;
 
             // The response is processed by a task, even when the fetch completes synchronously: as with a network response,
@@ -2658,7 +2668,9 @@ public sealed partial class BrowsingContext : IDisposable
 
     /// <summary>
     /// Decodes an XML document (https://html.spec.whatwg.org/multipage/document-lifecycle.html#read-xml): the byte order mark,
-    /// then the charset parameter, then the encoding of the XML declaration, then UTF-8.
+    /// then the charset parameter, then the encoding of the XML declaration, then UTF-8. A byte sequence that is not valid in
+    /// the encoding is a fatal error (https://www.w3.org/TR/xml/#charencoding): the text ends at the error with U+FFFF, a
+    /// character that XML does not allow, so the parser reports a well-formedness error there (Acid3 test 70).
     /// </summary>
     private static string DecodeXml(ReadOnlySpan<byte> bytes, string? charset, out WebEncodingId encoding)
     {
@@ -2668,7 +2680,13 @@ public sealed partial class BrowsingContext : IDisposable
             encoding = XmlHttpRequest.GetXmlEncoding(bytes) ?? WebEncodingId.Utf8;
         }
 
-        return WebEncodingRegistry.CreateDecoder(encoding).DecodeToString(bytes[bomLength..]);
+        var builder = new StringBuilder(bytes.Length);
+        if (!WebEncodingRegistry.CreateDecoder(encoding, fatal: true).DecodeTo(bytes[bomLength..], builder, flush: true))
+        {
+            builder.Append('￿');
+        }
+
+        return builder.ToString();
     }
 
     private static string Decode(ReadOnlySpan<byte> bytes, string? charset, out WebEncodingId encoding)

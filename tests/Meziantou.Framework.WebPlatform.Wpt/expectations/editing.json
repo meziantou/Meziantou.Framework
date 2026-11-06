@@ -450,25 +450,13 @@
     }
   },
   "editing/other/editing-around-select-element.tentative.html?delete": {
-    "total": 37,
-    "failures": {
-      "execCommand(delete, false, \"\") in <optgroup contenteditable><option>{abc}</option><option>def</option></optgroup>: shouldn't delete <option>s nor optgroup": "FAIL",
-      "execCommand(delete, false, \"\") in <option contenteditable>{abc}</option>: shouldn't modify <option>": "FAIL"
-    }
+    "total": 37
   },
   "editing/other/editing-around-select-element.tentative.html?forwardDelete": {
-    "total": 37,
-    "failures": {
-      "execCommand(forwardDelete, false, \"\") in <optgroup contenteditable><option>{abc}</option><option>def</option></optgroup>: shouldn't delete <option>s nor optgroup": "FAIL",
-      "execCommand(forwardDelete, false, \"\") in <option contenteditable>{abc}</option>: shouldn't modify <option>": "FAIL"
-    }
+    "total": 37
   },
   "editing/other/editing-around-select-element.tentative.html?insertText": {
-    "total": 37,
-    "failures": {
-      "execCommand(insertText, false, \"XYZ\") in <optgroup contenteditable><option>{abc}</option><option>def</option></optgroup>: shouldn't delete <option>s nor optgroup": "FAIL",
-      "execCommand(insertText, false, \"XYZ\") in <option contenteditable>{abc}</option>: shouldn't modify <option>": "FAIL"
-    }
+    "total": 37
   },
   "editing/other/editing-div-outside-body.html?body": {
     "total": 11
@@ -2593,18 +2581,7 @@
     "total": 842,
     "failures": {
       "[[\"delete\",\"\"]] \" <span contenteditable=\\\"false\\\">A</span><div>[]&nbsp;; <span contenteditable=\\\"false\\\">B</span> ; <span contenteditable=\\\"false\\\">C</span></div> \" compare innerHTML": "FAIL",
-      "[[\"delete\",\"\"]] \"012<div style=display:inline-flex><span>[]abc</span><span>def</span></div>\" compare innerHTML": "FAIL",
-      "[[\"delete\",\"\"]] \"012<div style=display:inline-grid><span>[]abc</span><span>def</span></div>\" compare innerHTML": "FAIL",
-      "[[\"delete\",\"\"]] \"<div style=display:inline-flex><span>abc</span><span>def</span></div>[]ghi\" compare innerHTML": "FAIL",
-      "[[\"delete\",\"\"]] \"<div style=display:inline-grid><span>abc</span><span>def</span></div>[]ghi\" compare innerHTML": "FAIL",
-      "[[\"delete\",\"\"]] \"<div style=white-space:pre-line>foo\\n []bar</div>\" compare innerHTML": "FAIL",
-      "[[\"delete\",\"\"]] \"<div><font><table><td>a</table><br>{}<br><table><td>b</table></font></div>\" compare innerHTML": "FAIL",
-      "[[\"delete\",\"\"]] \"<object>abc</object>[]def\" compare innerHTML": "FAIL",
-      "[[\"delete\",\"\"]] \"<p>abc</p><ul contenteditable=\\\"false\\\"><li>def</li></ul><p>[]ghi</p>\" compare innerHTML": "FAIL",
-      "[[\"delete\",\"\"]] \"<p>abc</p><ul><li contenteditable=\\\"false\\\">def</li></ul><p>[]ghi</p>\" compare innerHTML": "FAIL",
-      "[[\"delete\",\"\"]] \"<p>abc</p><ul><li contenteditable=\\\"false\\\">def</li><li>[]ghi</li></ul>\" compare innerHTML": "FAIL",
-      "[[\"delete\",\"\"]] \"<ul><li>abc</li><li contenteditable=\\\"false\\\">def</li></ul><p>[]ghi</p>\" compare innerHTML": "FAIL",
-      "[[\"delete\",\"\"]] \"<ul><li>abc</li><li contenteditable=\\\"false\\\">def</li><li>[]ghi</li></ul>\" compare innerHTML": "FAIL"
+      "[[\"delete\",\"\"]] \"<div><font><table><td>a</table><br>{}<br><table><td>b</table></font></div>\" compare innerHTML": "FAIL"
     }
   },
   "editing/run/fontname.html?1-1000": {
@@ -2673,25 +2650,15 @@
     }
   },
   "editing/run/formatblock.html?1-1000": {
-    "total": 1000,
-    "failures": {
-      "[[\"defaultparagraphseparator\",\"div\"],[\"formatblock\",\"<div>\"]] \"<ol><li>[foobar]</ol>\" compare innerHTML": "FAIL",
-      "[[\"defaultparagraphseparator\",\"div\"],[\"formatblock\",\"<div>\"]] \"<ul><li>[foobar]</ul>\" compare innerHTML": "FAIL",
-      "[[\"defaultparagraphseparator\",\"p\"],[\"formatblock\",\"<div>\"]] \"<ol><li>[foobar]</ol>\" compare innerHTML": "FAIL",
-      "[[\"defaultparagraphseparator\",\"p\"],[\"formatblock\",\"<div>\"]] \"<ul><li>[foobar]</ul>\" compare innerHTML": "FAIL"
-    }
+    "total": 1000
   },
   "editing/run/formatblock.html?1001-2000": {
     "total": 1000,
     "failures": {
       "[[\"defaultparagraphseparator\",\"div\"],[\"formatblock\",\"<div>\"]] \"<quasit>[foobar]</quasit>\" queryCommandValue(\"defaultparagraphseparator\") before": "FAIL",
       "[[\"defaultparagraphseparator\",\"div\"],[\"formatblock\",\"<p>\"]] \"<dl><dt>[foo<dd>bar]</dl>\" queryCommandIndeterm(\"formatblock\") before": "FAIL",
-      "[[\"defaultparagraphseparator\",\"div\"],[\"formatblock\",\"<p>\"]] \"<ol><li>[foobar]</ol>\" compare innerHTML": "FAIL",
-      "[[\"defaultparagraphseparator\",\"div\"],[\"formatblock\",\"<p>\"]] \"<ul><li>[foobar]</ul>\" compare innerHTML": "FAIL",
       "[[\"defaultparagraphseparator\",\"p\"],[\"formatblock\",\"<div>\"]] \"<del>[foobar]</del>\" queryCommandValue(\"formatblock\") after": "FAIL",
-      "[[\"defaultparagraphseparator\",\"p\"],[\"formatblock\",\"<p>\"]] \"<dl><dt>[foo<dd>bar]</dl>\" queryCommandIndeterm(\"formatblock\") before": "FAIL",
-      "[[\"defaultparagraphseparator\",\"p\"],[\"formatblock\",\"<p>\"]] \"<ol><li>[foobar]</ol>\" compare innerHTML": "FAIL",
-      "[[\"defaultparagraphseparator\",\"p\"],[\"formatblock\",\"<p>\"]] \"<ul><li>[foobar]</ul>\" compare innerHTML": "FAIL"
+      "[[\"defaultparagraphseparator\",\"p\"],[\"formatblock\",\"<p>\"]] \"<dl><dt>[foo<dd>bar]</dl>\" queryCommandIndeterm(\"formatblock\") before": "FAIL"
     }
   },
   "editing/run/formatblock.html?2001-3000": {
@@ -2707,9 +2674,7 @@
   "editing/run/formatblock.html?3001-4000": {
     "total": 1000,
     "failures": {
-      "[[\"defaultparagraphseparator\",\"div\"],[\"formatblock\",\"<div>\"]] \"<ol><li>[foo]<li>bar</ol>\" compare innerHTML": "FAIL",
-      "[[\"defaultparagraphseparator\",\"div\"],[\"formatblock\",\"<h5>\"]] \"<p>[foobar]</p>\" queryCommandValue(\"formatblock\") after": "FAIL",
-      "[[\"defaultparagraphseparator\",\"p\"],[\"formatblock\",\"<div>\"]] \"<ol><li>[foo]<li>bar</ol>\" compare innerHTML": "FAIL"
+      "[[\"defaultparagraphseparator\",\"div\"],[\"formatblock\",\"<h5>\"]] \"<p>[foobar]</p>\" queryCommandValue(\"formatblock\") after": "FAIL"
     }
   },
   "editing/run/formatblock.html?4001-5000": {
@@ -2784,7 +2749,6 @@
     "failures": {
       "[[\"defaultparagraphseparator\",\"div\"],[\"forwarddelete\",\"\"]] \"<ol><li>foo[</ol><p>bar]<ol><li>baz</ol>\" queryCommandValue(\"defaultparagraphseparator\") before": "FAIL",
       "[[\"forwarddelete\",\"\"]] \"<div style=white-space:nowrap>[]f\\nbar</div>\" compare innerHTML": "FAIL",
-      "[[\"forwarddelete\",\"\"]] \"<div style=white-space:pre-line>foo[] \\nbar</div>\" compare innerHTML": "FAIL",
       "[[\"forwarddelete\",\"\"]] \"<ol><li><p>foo</ol><p>{}<br></p><ol><li>bar</ol>\" compare innerHTML": "FAIL",
       "[[\"forwarddelete\",\"\"]] \"<ol><li>foo</ol><p>[bar<ol><li>]baz</ol>\" compare innerHTML": "FAIL",
       "[[\"forwarddelete\",\"\"]] \"<ol><li>foo</ol><p>{}<br></p><ol><li>bar</ol>\" compare innerHTML": "FAIL",
@@ -2792,28 +2756,14 @@
       "[[\"forwarddelete\",\"\"]] \"<ol><li>foo[<li>]bar</ol>\" compare innerHTML": "FAIL",
       "[[\"forwarddelete\",\"\"]] \"<ol><ol><li>foo</ol><li>{}<br></li><ol><li>bar</ol></ol>\" compare innerHTML": "FAIL",
       "[[\"forwarddelete\",\"\"]] \"<ol><ol><li>foo</ol><li>{}<br><ol><li>bar</ol></ol>\" compare innerHTML": "FAIL",
-      "[[\"forwarddelete\",\"\"]] \"<p>abc[]</p><ul contenteditable=\\\"false\\\"><li>def</li></ul><p>ghi</p>\" compare innerHTML": "FAIL",
-      "[[\"forwarddelete\",\"\"]] \"<p>abc[]</p><ul><li contenteditable=\\\"false\\\">def</li></ul><p>ghi</p>\" compare innerHTML": "FAIL",
-      "[[\"forwarddelete\",\"\"]] \"<p>abc[]</p><ul><li contenteditable=\\\"false\\\">def</li><li>ghi</li></ul>\" compare innerHTML": "FAIL",
-      "[[\"forwarddelete\",\"\"]] \"<ul><li>abc[]</li><li contenteditable=\\\"false\\\">def</li></ul><p>ghi</p>\" compare innerHTML": "FAIL",
-      "[[\"forwarddelete\",\"\"]] \"<ul><li>abc[]</li><li contenteditable=\\\"false\\\">def</li><li>ghi</li></ul>\" compare innerHTML": "FAIL",
       "[[\"forwarddelete\",\"\"]] \"<ul><li>foo</ul><p>{}<br></p><ol><li>bar</ol>\" compare innerHTML": "FAIL",
-      "[[\"forwarddelete\",\"\"]] \"<ul><li>foo</ul><p>{}<br></p><ul><li>bar</ul>\" compare innerHTML": "FAIL",
-      "[[\"forwarddelete\",\"\"]] \"foo<span>bar[]<span contenteditable=false>baz</span></span>qux\" compare innerHTML": "FAIL"
+      "[[\"forwarddelete\",\"\"]] \"<ul><li>foo</ul><p>{}<br></p><ul><li>bar</ul>\" compare innerHTML": "FAIL"
     }
   },
   "editing/run/forwarddelete.html?7001-last": {
     "total": 491,
     "failures": {
-      "[[\"forwarddelete\",\"\"]] \"012[]<div style=display:inline-flex><span>abc</span><span>def</span></div>\" compare innerHTML": "FAIL",
-      "[[\"forwarddelete\",\"\"]] \"012[]<div style=display:inline-grid><span>abc</span><span>def</span></div>\" compare innerHTML": "FAIL",
-      "[[\"forwarddelete\",\"\"]] \"<div style=display:flex><span>{}<br></span></div><div>abc</div>\" compare innerHTML": "FAIL",
-      "[[\"forwarddelete\",\"\"]] \"<div style=display:grid><span>{}<br></span></div><div>abc</div>\" compare innerHTML": "FAIL",
-      "[[\"forwarddelete\",\"\"]] \"<div style=display:inline-flex><span>{}<br></span></div><div>abc</div>\" compare innerHTML": "FAIL",
-      "[[\"forwarddelete\",\"\"]] \"<div style=display:inline-grid><span>{}<br></span></div><div>abc</div>\" compare innerHTML": "FAIL",
-      "[[\"forwarddelete\",\"\"]] \"<div><font><table><td>a</table>{}<br><br><table><td>b</table></font></div>\" compare innerHTML": "FAIL",
-      "[[\"forwarddelete\",\"\"]] \"<p>abc{}<br> </p> <p><br></p>\" compare innerHTML": "FAIL",
-      "[[\"forwarddelete\",\"\"]] \"abc[]<object>def</object>\" compare innerHTML": "FAIL"
+      "[[\"forwarddelete\",\"\"]] \"<div><font><table><td>a</table>{}<br><br><table><td>b</table></font></div>\" compare innerHTML": "FAIL"
     }
   },
   "editing/run/hilitecolor.html": {
@@ -2883,10 +2833,6 @@
       "[[\"inserthtml\",\"<pre>abc</pre>\"]] \"<pre contenteditable=\\\"false\\\"><span contenteditable>[1234]</span></pre>\" compare innerHTML": "FAIL",
       "[[\"inserthtml\",\"<pre>abc</pre>\"]] \"<pre>12[]34</pre>\" compare innerHTML": "FAIL",
       "[[\"inserthtml\",\"<pre>abc</pre>\"]] \"<pre>1[23]4</pre>\" compare innerHTML": "FAIL",
-      "[[\"inserthtml\",\"X\"],[\"inserthtml\",\"Y\"]] \"<div style=white-space:pre-line>abc []\\n</div>\" compare innerHTML": "FAIL",
-      "[[\"inserthtml\",\"X\"]] \"<div style=white-space:pre-line>[]\\n</div>\" compare innerHTML": "FAIL",
-      "[[\"inserthtml\",\"X\"]] \"<div style=white-space:pre-line>abc []\\n</div>\" compare innerHTML": "FAIL",
-      "[[\"inserthtml\",\"X\"]] \"<div style=white-space:pre>[]\\n</div>\" compare innerHTML": "FAIL",
       "[[\"inserthtml\",\"abc\"]] \"<p><span><!--foo--><br><!--bar--></span>{}</p>\" compare innerHTML": "FAIL",
       "[[\"stylewithcss\",\"false\"],[\"inserthtml\",\"<span style=display:none></span>\"]] \"<p>[foo]</p>\" compare innerHTML": "FAIL",
       "[[\"stylewithcss\",\"true\"],[\"inserthtml\",\"<span style=display:none></span>\"]] \"<p>[foo]</p>\" compare innerHTML": "FAIL",
@@ -3044,8 +2990,6 @@
   "editing/run/inserttext.html?2001-last": {
     "total": 1009,
     "failures": {
-      "[[\"inserttext\",\"X\"],[\"inserttext\",\"Y\"]] \"<div style=white-space:pre-line>abc []\\n</div>\" compare innerHTML": "FAIL",
-      "[[\"inserttext\",\"X\"]] \"<div style=white-space:pre-line>abc []\\n</div>\" compare innerHTML": "FAIL",
       "[[\"inserttext\",\"a\"]] \"foo<a href=http://www.google.com><font color=black>[bar</font></a>baz]\" compare innerHTML": "FAIL",
       "[[\"inserttext\",\"a\"]] \"foo<a href=http://www.google.com><font color=blue>[bar</font></a>baz]\" compare innerHTML": "FAIL",
       "[[\"inserttext\",\"a\"]] \"foo<a href=http://www.google.com><font color=brown>[bar</font></a>baz]\" compare innerHTML": "FAIL",
@@ -3536,7 +3480,6 @@
       "[[\"forwarddelete\",\"\"],[\"inserttext\",\"d\"],[\"inserttext\",\"e\"]] \"<div>abc[<s></s><b><i>de]f</i></b>ghi</div>\" compare innerHTML": "FAIL",
       "[[\"forwarddelete\",\"\"],[\"inserttext\",\"d\"],[\"inserttext\",\"e\"]] \"<div>abc{<b><i>de]f</i></b>ghi</div>\" compare innerHTML": "FAIL",
       "[[\"forwarddelete\",\"\"],[\"inserttext\",\"d\"],[\"inserttext\",\"e\"]] \"<div>abc{<s></s><b><i>de]f</i></b>ghi</div>\" compare innerHTML": "FAIL",
-      "[[\"forwarddelete\",\"\"],[\"inserttext\",\"d\"]] \"<p>abc[]<br> </p> <p><br></p>\" compare innerHTML": "FAIL",
       "[[\"insertlinebreak\",\"\"],[\"inserttext\",\"c\"],[\"inserttext\",\"d\"],[\"inserttext\",\"e\"]] \"<div>ab[c<b><i>de]f</i></b>ghi</div>\" compare innerHTML": "FAIL",
       "[[\"insertlinebreak\",\"\"],[\"inserttext\",\"d\"],[\"inserttext\",\"e\"],[\"inserttext\",\"f\"]] \"<div>abc[<b><i><img src=\\\"/img/lion.svg\\\">def</i></b>]ghi</div>\" compare innerHTML": "FAIL",
       "[[\"insertlinebreak\",\"\"],[\"inserttext\",\"d\"],[\"inserttext\",\"e\"],[\"inserttext\",\"f\"]] \"<div>abc[<b><i><img src=\\\"/img/lion.svg\\\">def]</i></b>ghi</div>\" compare innerHTML": "FAIL",
@@ -3730,8 +3673,6 @@
     "failures": {
       "document.execCommand(\"forwarddelete\") when \"<div><div>a&nbsp;&nbsp;&nbsp;[]</div>&nbsp;&nbsp;&nbsp;b</div>\"": "FAIL",
       "document.execCommand(\"forwarddelete\") when \"<div><div>a[]</div>&nbsp;&nbsp;&nbsp;b</div>\"": "FAIL",
-      "document.execCommand(\"forwarddelete\") when \"<div><div>{}<br></div>&nbsp;&nbsp;&nbsp;</div>\"": "FAIL",
-      "document.execCommand(\"forwarddelete\") when \"<div><div>{}<br></div>&nbsp;&nbsp;&nbsp;b</div>\"": "FAIL",
       "document.execCommand(\"forwarddelete\") when \"<div>a&nbsp;&nbsp;&nbsp;[]<div>&nbsp;&nbsp;&nbsp;b</div></div>\"": "FAIL",
       "document.execCommand(\"forwarddelete\") when \"<div>a[]<div>&nbsp;&nbsp;&nbsp;b</div></div>\"": "FAIL"
     }
@@ -4031,9 +3972,6 @@
     "total": 4
   },
   "editing/whitespaces/keep-typed-collapsible-white-space-visible-after-muation.html": {
-    "total": 1,
-    "failures": {
-      "Even after mutation, the inserted white-space should be visible": "FAIL"
-    }
+    "total": 2
   }
 }

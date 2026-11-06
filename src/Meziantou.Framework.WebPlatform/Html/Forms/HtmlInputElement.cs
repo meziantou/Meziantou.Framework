@@ -1287,10 +1287,15 @@ public partial class HtmlInputElement : IEditableTextControl
 
     internal override bool HasLegacyPreActivationBehavior => _type is InputType.Checkbox or InputType.Radio;
 
-    /// <summary>https://html.spec.whatwg.org/multipage/input.html#the-input-element:legacy-pre-activation-behavior</summary>
+    /// <summary>
+    /// https://html.spec.whatwg.org/multipage/input.html#the-input-element:legacy-pre-activation-behavior: an activation (a
+    /// click, even from <c>click()</c>) is an interaction that changes the checkedness, so it sets the dirty checkedness flag, as
+    /// in the browsers: a <c>checked</c> attribute added later does not check the element again (Acid3 test 43).
+    /// </summary>
     internal override void LegacyPreActivationBehavior()
     {
         _preActivationType = _type;
+        _dirtyCheckedness = true;
         if (_type == InputType.Checkbox)
         {
             _preActivationCheckedness = _checkedness;

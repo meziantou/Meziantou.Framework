@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="300" height="300" fill="#ffffff"/>
+<g class="grid">
+<path d="M150,131.76 A18.24,18.24 0 0,1 150,168.24 A18.24,18.24 0 0,1 150,131.76 Z" fill="none" stroke="#e3e6ea"/>
+<path d="M150,98.59 A51.41,51.41 0 0,1 150,201.41 A51.41,51.41 0 0,1 150,98.59 Z" fill="none" stroke="#e3e6ea"/>
+<path d="M150,65.41 A84.59,84.59 0 0,1 150,234.59 A84.59,84.59 0 0,1 150,65.41 Z" fill="none" stroke="#e3e6ea"/>
+<path d="M150,32.24 A117.76,117.76 0 0,1 150,267.76 A117.76,117.76 0 0,1 150,32.24 Z" fill="none" stroke="#e3e6ea"/>
+</g>
+<g class="marks">
+<g>
+<path d="M150,116.83 A33.17,33.17 0 1,1 137.31,119.35 L148.73,146.94 A3.32,3.32 0 1,0 150,146.68 Z" fill="#4269d0"/>
+<path d="M150,83.66 A66.34,66.34 0 1,1 113.14,205.16 L129.73,180.34 A36.49,36.49 0 1,0 150,113.51 Z" fill="#4269d0"/>
+<path d="M150,50.49 A99.51,99.51 0 1,1 67.26,205.29 L92.08,188.7 A69.66,69.66 0 1,0 150,80.34 Z" fill="#4269d0"/>
+<path d="M150,17.32 A132.68,132.68 0 0,1 150,282.68 A132.68,132.68 0 0,1 150,17.32 Z M150,47.17 A102.83,102.83 0 0,0 150,252.83 A102.83,102.83 0 0,0 150,47.17 Z" fill="#4269d0"/>
+</g>
+</g>
+<g class="axes">
+<text x="154" y="134.57" font-size="11" fill="#59636e">North</text>
+<text x="154" y="101.4" font-size="11" fill="#59636e">South</text>
+<text x="154" y="68.23" font-size="11" fill="#59636e">East</text>
+<text x="154" y="35.05" font-size="11" fill="#59636e">West</text>
+</g>
+</svg>

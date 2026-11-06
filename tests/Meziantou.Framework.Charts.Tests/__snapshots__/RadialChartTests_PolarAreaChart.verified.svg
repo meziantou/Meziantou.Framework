@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Wind directions</title>
+<defs>
+<linearGradient id="chart-gradient0" gradientUnits="userSpaceOnUse" x1="10" y1="0" x2="250" y2="0">
+<stop offset="0" stop-color="#f2f7fd"/>
+<stop offset="0.0667" stop-color="#deebf9"/>
+<stop offset="0.1333" stop-color="#cbe0f5"/>
+<stop offset="0.2" stop-color="#b8d4f1"/>
+<stop offset="0.2667" stop-color="#a3c7ed"/>
+<stop offset="0.3333" stop-color="#8ab7e6"/>
+<stop offset="0.4" stop-color="#71a7e0"/>
+<stop offset="0.4667" stop-color="#5797d9"/>
+<stop offset="0.5333" stop-color="#4488d0"/>
+<stop offset="0.6" stop-color="#387ac3"/>
+<stop offset="0.6667" stop-color="#2c6cb6"/>
+<stop offset="0.7333" stop-color="#205ea9"/>
+<stop offset="0.8" stop-color="#195299"/>
+<stop offset="0.8667" stop-color="#144687"/>
+<stop offset="0.9333" stop-color="#103a77"/>
+<stop offset="1" stop-color="#0b2f66"/>
+</linearGradient>
+</defs>
+<rect width="400" height="400" fill="#ffffff"/>
+<g class="grid">
+<path d="M200,189.73 A39.25,39.25 0 0,1 200,268.24 A39.25,39.25 0 0,1 200,189.73 Z" fill="none" stroke="#e3e6ea"/>
+<path d="M200,150.48 A78.51,78.51 0 0,1 200,307.49 A78.51,78.51 0 0,1 200,150.48 Z" fill="none" stroke="#e3e6ea"/>
+<path d="M200,111.23 A117.76,117.76 0 0,1 200,346.75 A117.76,117.76 0 0,1 200,111.23 Z" fill="none" stroke="#e3e6ea"/>
+<path d="M200,71.97 A157.01,157.01 0 0,1 200,386 A157.01,157.01 0 0,1 200,71.97 Z" fill="none" stroke="#e3e6ea"/>
+</g>
+<g class="marks">
+<g>
+<path d="M200,134.78 A94.21,94.21 0 0,1 266.61,162.37 L200,228.99 Z" fill="#387ac3" stroke="#ffffff" stroke-linejoin="round"/>
+<text x="221.63" y="179.58" text-anchor="middle" font-size="11" fill="#ffffff">N</text>
+<path d="M238.86,190.13 A54.95,54.95 0 0,1 254.95,228.99 L200,228.99 Z" fill="#84b3e5" stroke="#ffffff" stroke-linejoin="round"/>
+<text x="230.46" y="219.18" text-anchor="middle" font-size="11" fill="#1f2328">NE</text>
+<path d="M239.25,228.99 A39.25,39.25 0 0,1 227.76,256.74 L200,228.99 Z" fill="#a9cbee" stroke="#ffffff" stroke-linejoin="round"/>
+<text x="221.76" y="240.81" text-anchor="middle" font-size="11" fill="#1f2328">E</text>
+<path d="M249.96,278.95 A70.66,70.66 0 0,1 200,299.64 L200,228.99 Z" fill="#5e9bdb" stroke="#ffffff" stroke-linejoin="round"/>
+<text x="216.22" y="270.96" text-anchor="middle" font-size="11" fill="#1f2328">SE</text>
+<path d="M200,338.9 A109.91,109.91 0 0,1 122.28,306.7 L200,228.99 Z" fill="#2665b0" stroke="#ffffff" stroke-linejoin="round"/>
+<text x="174.76" y="292.72" text-anchor="middle" font-size="11" fill="#ffffff">S</text>
+<path d="M88.98,340.01 A157.01,157.01 0 0,1 42.99,228.99 L200,228.99 Z" fill="#0b2f66" stroke="#ffffff" stroke-linejoin="round"/>
+<text x="112.96" y="267.85" text-anchor="middle" font-size="11" fill="#ffffff">SW</text>
+<path d="M66.54,228.99 A133.46,133.46 0 0,1 105.63,134.62 L200,228.99 Z" fill="#15498c" stroke="#ffffff" stroke-linejoin="round"/>
+<text x="126.02" y="201.15" text-anchor="middle" font-size="11" fill="#ffffff">W</text>
+<path d="M144.49,173.48 A78.51,78.51 0 0,1 200,150.48 L200,228.99 Z" fill="#4a8fd6" stroke="#ffffff" stroke-linejoin="round"/>
+<text x="181.97" y="188.28" text-anchor="middle" font-size="11" fill="#ffffff">NW</text>
+</g>
+</g>
+<g class="axes">
+<text x="204" y="231.8" font-size="11" fill="#59636e">0</text>
+<text x="204" y="192.54" font-size="11" fill="#59636e">5</text>
+<text x="204" y="153.29" font-size="11" fill="#59636e">10</text>
+<text x="204" y="114.04" font-size="11" fill="#59636e">15</text>
+<text x="204" y="74.79" font-size="11" fill="#59636e">20</text>
+</g>
+<g class="legend">
+<rect x="10" y="32.8" width="240" height="10" fill="url(#chart-gradient0)"/>
+<line x1="10" y1="42.8" x2="10" y2="45.8" stroke="#8c959f"/>
+<text x="10" y="53.7" font-size="11" fill="#59636e">0</text>
+<line x1="70" y1="42.8" x2="70" y2="45.8" stroke="#8c959f"/>
+<text x="70" y="53.7" text-anchor="middle" font-size="11" fill="#59636e">5</text>
+<line x1="130" y1="42.8" x2="130" y2="45.8" stroke="#8c959f"/>
+<text x="130" y="53.7" text-anchor="middle" font-size="11" fill="#59636e">10</text>
+<line x1="190" y1="42.8" x2="190" y2="45.8" stroke="#8c959f"/>
+<text x="190" y="53.7" text-anchor="middle" font-size="11" fill="#59636e">15</text>
+<line x1="250" y1="42.8" x2="250" y2="45.8" stroke="#8c959f"/>
+<text x="250" y="53.7" text-anchor="end" font-size="11" fill="#59636e">20</text>
+</g>
+<text x="10" y="21.49" font-size="16" font-weight="bold" fill="#1f2328">Wind directions</text>
+</svg>

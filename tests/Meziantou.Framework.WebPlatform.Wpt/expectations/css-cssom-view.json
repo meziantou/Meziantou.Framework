@@ -636,10 +636,7 @@
     "total": 4
   },
   "css/cssom-view/scrollIntoView-stuck.tentative.html": {
-    "total": 1,
-    "failures": {
-      "CSSOM View - scrollIntoView doesn't consider scroll-padding when target is stuck": "FAIL"
-    }
+    "total": 1
   },
   "css/cssom-view/scrollIntoView-svg-shape.html": {
     "total": 3

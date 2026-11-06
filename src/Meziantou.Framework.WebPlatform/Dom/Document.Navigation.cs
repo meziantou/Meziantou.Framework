@@ -820,7 +820,19 @@ public partial class Document
             var isContainerLoadEventFired = BrowsingContext is { OngoingNavigationId: 0, Container.NodeDocument.IsFullyActive: true };
             if (isContainerLoadEventFired)
             {
-                FireContainerLoadEvent();
+                // The specification fires the load event of the container once the document is completely loaded (after the
+                // pageshow event): a navigation of the navigable started by a listener of the event adds a new session history
+                // entry, while one started by a listener of pageshow replaces the current entry
+                CompletelyLoaded = true;
+                try
+                {
+                    FireContainerLoadEvent();
+                }
+                finally
+                {
+                    CompletelyLoaded = false;
+                }
+
                 if (BrowsingContext is null || !ReferenceEquals(RelevantWindow, window) || !PageShowing)
                     return;
             }

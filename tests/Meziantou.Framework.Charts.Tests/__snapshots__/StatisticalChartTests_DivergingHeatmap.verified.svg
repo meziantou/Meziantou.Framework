@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="300" viewBox="0 0 360 300" role="img" font-family="Helvetica, Arial, sans-serif">
+<defs>
+<linearGradient id="chart-gradient0" gradientUnits="userSpaceOnUse" x1="260" y1="0" x2="350" y2="0">
+<stop offset="0" stop-color="#6b0a22"/>
+<stop offset="0.0667" stop-color="#8e212d"/>
+<stop offset="0.1333" stop-color="#b13639"/>
+<stop offset="0.2" stop-color="#ce584d"/>
+<stop offset="0.2667" stop-color="#e2816a"/>
+<stop offset="0.3333" stop-color="#f3a888"/>
+<stop offset="0.4" stop-color="#f6c6b2"/>
+<stop offset="0.4667" stop-color="#f6e3db"/>
+<stop offset="0.5333" stop-color="#e2e9ed"/>
+<stop offset="0.6" stop-color="#bbd7e6"/>
+<stop offset="0.6667" stop-color="#94c5df"/>
+<stop offset="0.7333" stop-color="#70a8d0"/>
+<stop offset="0.8" stop-color="#4d8bc0"/>
+<stop offset="0.8667" stop-color="#306da5"/>
+<stop offset="0.9333" stop-color="#1c4e81"/>
+<stop offset="1" stop-color="#0a305e"/>
+</linearGradient>
+</defs>
+<rect width="360" height="300" fill="#ffffff"/>
+<g class="marks">
+<g>
+<rect x="35.06" y="16.09" width="36.51" height="43.85" rx="3" fill="#f5f2f0"/>
+<rect x="77.85" y="16.09" width="36.51" height="43.85" rx="3" fill="#f5bba2"/>
+<rect x="120.63" y="16.09" width="36.51" height="43.85" rx="3" fill="#dd7763"/>
+<rect x="163.42" y="16.09" width="36.51" height="43.85" rx="3" fill="#ad3438"/>
+<rect x="206.21" y="16.09" width="36.51" height="43.85" rx="3" fill="#6b0a22"/>
+<rect x="35.06" y="67.04" width="36.51" height="43.85" rx="3" fill="#add0e4"/>
+<rect x="77.85" y="67.04" width="36.51" height="43.85" rx="3" fill="#f5f2f0"/>
+<rect x="120.63" y="67.04" width="36.51" height="43.85" rx="3" fill="#f5bba2"/>
+<rect x="163.42" y="67.04" width="36.51" height="43.85" rx="3" fill="#dd7763"/>
+<rect x="206.21" y="67.04" width="36.51" height="43.85" rx="3" fill="#ad3438"/>
+<rect x="35.06" y="117.99" width="36.51" height="43.85" rx="3" fill="#67a1cc"/>
+<rect x="77.85" y="117.99" width="36.51" height="43.85" rx="3" fill="#add0e4"/>
+<rect x="120.63" y="117.99" width="36.51" height="43.85" rx="3" fill="#f5f2f0"/>
+<rect x="163.42" y="117.99" width="36.51" height="43.85" rx="3" fill="#f5bba2"/>
+<rect x="206.21" y="117.99" width="36.51" height="43.85" rx="3" fill="#dd7763"/>
+<rect x="35.06" y="168.93" width="36.51" height="43.85" rx="3" fill="#2d69a1"/>
+<rect x="77.85" y="168.93" width="36.51" height="43.85" rx="3" fill="#67a1cc"/>
+<rect x="120.63" y="168.93" width="36.51" height="43.85" rx="3" fill="#add0e4"/>
+<rect x="163.42" y="168.93" width="36.51" height="43.85" rx="3" fill="#f5f2f0"/>
+<rect x="206.21" y="168.93" width="36.51" height="43.85" rx="3" fill="#f5bba2"/>
+<rect x="35.06" y="219.88" width="36.51" height="43.85" rx="3" fill="#0a305e"/>
+<rect x="77.85" y="219.88" width="36.51" height="43.85" rx="3" fill="#2d69a1"/>
+<rect x="120.63" y="219.88" width="36.51" height="43.85" rx="3" fill="#67a1cc"/>
+<rect x="163.42" y="219.88" width="36.51" height="43.85" rx="3" fill="#add0e4"/>
+<rect x="206.21" y="219.88" width="36.51" height="43.85" rx="3" fill="#f5f2f0"/>
+</g>
+</g>
+<g class="axes">
+<line x1="24.78" y1="38.02" x2="29.78" y2="38.02" stroke="#8c959f"/>
+<text x="21.78" y="40.83" text-anchor="end" font-size="11" fill="#59636e">r0</text>
+<line x1="24.78" y1="88.97" x2="29.78" y2="88.97" stroke="#8c959f"/>
+<text x="21.78" y="91.78" text-anchor="end" font-size="11" fill="#59636e">r1</text>
+<line x1="24.78" y1="139.91" x2="29.78" y2="139.91" stroke="#8c959f"/>
+<text x="21.78" y="142.72" text-anchor="end" font-size="11" fill="#59636e">r2</text>
+<line x1="24.78" y1="190.86" x2="29.78" y2="190.86" stroke="#8c959f"/>
+<text x="21.78" y="193.67" text-anchor="end" font-size="11" fill="#59636e">r3</text>
+<line x1="24.78" y1="241.8" x2="29.78" y2="241.8" stroke="#8c959f"/>
+<text x="21.78" y="244.62" text-anchor="end" font-size="11" fill="#59636e">r4</text>
+<line x1="53.31" y1="269.83" x2="53.31" y2="274.83" stroke="#8c959f"/>
+<text x="53.31" y="285.72" text-anchor="middle" font-size="11" fill="#59636e">c0</text>
+<line x1="96.1" y1="269.83" x2="96.1" y2="274.83" stroke="#8c959f"/>
+<text x="96.1" y="285.72" text-anchor="middle" font-size="11" fill="#59636e">c1</text>
+<line x1="138.89" y1="269.83" x2="138.89" y2="274.83" stroke="#8c959f"/>
+<text x="138.89" y="285.72" text-anchor="middle" font-size="11" fill="#59636e">c2</text>
+<line x1="181.68" y1="269.83" x2="181.68" y2="274.83" stroke="#8c959f"/>
+<text x="181.68" y="285.72" text-anchor="middle" font-size="11" fill="#59636e">c3</text>
+<line x1="224.47" y1="269.83" x2="224.47" y2="274.83" stroke="#8c959f"/>
+<text x="224.47" y="285.72" text-anchor="middle" font-size="11" fill="#59636e">c4</text>
+<line x1="29.78" y1="269.83" x2="248" y2="269.83" stroke="#8c959f"/>
+</g>
+<g class="legend">
+<rect x="260" y="10" width="90" height="10" fill="url(#chart-gradient0)"/>
+<line x1="260" y1="20" x2="260" y2="23" stroke="#8c959f"/>
+<text x="260" y="30.9" font-size="11" fill="#59636e">-40</text>
+<line x1="282.5" y1="20" x2="282.5" y2="23" stroke="#8c959f"/>
+<line x1="305" y1="20" x2="305" y2="23" stroke="#8c959f"/>
+<text x="305" y="30.9" text-anchor="middle" font-size="11" fill="#59636e">0</text>
+<line x1="327.5" y1="20" x2="327.5" y2="23" stroke="#8c959f"/>
+<text x="327.5" y="30.9" text-anchor="middle" font-size="11" fill="#59636e">20</text>
+<line x1="350" y1="20" x2="350" y2="23" stroke="#8c959f"/>
+<text x="350" y="30.9" text-anchor="end" font-size="11" fill="#59636e">40</text>
+</g>
+</svg>

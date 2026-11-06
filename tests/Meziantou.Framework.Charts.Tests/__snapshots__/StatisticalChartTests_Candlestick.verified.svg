@@ -1,0 +1,150 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="400" viewBox="0 0 640 400" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Daily prices</title>
+<rect width="640" height="400" fill="#ffffff"/>
+<g class="grid">
+<line x1="38.35" y1="369.83" x2="630" y2="369.83" stroke="#e3e6ea"/>
+<line x1="38.35" y1="339.19" x2="630" y2="339.19" stroke="#e3e6ea"/>
+<line x1="38.35" y1="308.55" x2="630" y2="308.55" stroke="#e3e6ea"/>
+<line x1="38.35" y1="277.91" x2="630" y2="277.91" stroke="#e3e6ea"/>
+<line x1="38.35" y1="247.27" x2="630" y2="247.27" stroke="#e3e6ea"/>
+<line x1="38.35" y1="216.63" x2="630" y2="216.63" stroke="#e3e6ea"/>
+<line x1="38.35" y1="185.99" x2="630" y2="185.99" stroke="#e3e6ea"/>
+<line x1="38.35" y1="155.35" x2="630" y2="155.35" stroke="#e3e6ea"/>
+<line x1="38.35" y1="124.72" x2="630" y2="124.72" stroke="#e3e6ea"/>
+<line x1="38.35" y1="94.08" x2="630" y2="94.08" stroke="#e3e6ea"/>
+<line x1="38.35" y1="63.44" x2="630" y2="63.44" stroke="#e3e6ea"/>
+<line x1="38.35" y1="32.8" x2="630" y2="32.8" stroke="#e3e6ea"/>
+</g>
+<g class="marks">
+<g>
+<g>
+<line x1="53.14" y1="293.23" x2="53.14" y2="170.67" stroke="#3ca951"/>
+<rect x="44.26" y="247.27" width="17.75" height="0" fill="#3ca951" stroke="#3ca951"/>
+</g>
+<g>
+<line x1="82.72" y1="312.84" x2="82.72" y2="63.13" stroke="#3ca951"/>
+<rect x="73.85" y="125.64" width="17.75" height="121.64" fill="#3ca951" stroke="#3ca951"/>
+</g>
+<g>
+<line x1="112.3" y1="233.18" x2="112.3" y2="66.81" stroke="#e5484d"/>
+<rect x="103.43" y="125.64" width="17.75" height="31.25" fill="#e5484d" stroke="#e5484d"/>
+</g>
+<g>
+<line x1="141.89" y1="342.56" x2="141.89" y2="80.6" stroke="#e5484d"/>
+<rect x="133.01" y="156.89" width="17.75" height="113.36" fill="#e5484d" stroke="#e5484d"/>
+</g>
+<g>
+<line x1="171.47" y1="326.32" x2="171.47" y2="143.71" stroke="#3ca951"/>
+<rect x="162.59" y="209.58" width="17.75" height="60.66" fill="#3ca951" stroke="#3ca951"/>
+</g>
+<g>
+<line x1="201.05" y1="266.27" x2="201.05" y2="57.31" stroke="#3ca951"/>
+<rect x="192.18" y="111.85" width="17.75" height="97.74" fill="#3ca951" stroke="#3ca951"/>
+</g>
+<g>
+<line x1="230.63" y1="270.25" x2="230.63" y2="36.48" stroke="#e5484d"/>
+<rect x="221.76" y="111.85" width="17.75" height="85.79" fill="#e5484d" stroke="#e5484d"/>
+</g>
+<g>
+<line x1="260.22" y1="349.3" x2="260.22" y2="128.7" stroke="#e5484d"/>
+<rect x="251.34" y="197.64" width="17.75" height="75.68" fill="#e5484d" stroke="#e5484d"/>
+</g>
+<g>
+<line x1="289.8" y1="338.57" x2="289.8" y2="117.36" stroke="#3ca951"/>
+<rect x="280.93" y="167.92" width="17.75" height="105.4" fill="#3ca951" stroke="#3ca951"/>
+</g>
+<g>
+<line x1="319.38" y1="214.49" x2="319.38" y2="45.36" stroke="#3ca951"/>
+<rect x="310.51" y="119.2" width="17.75" height="48.72" fill="#3ca951" stroke="#3ca951"/>
+</g>
+<g>
+<line x1="348.97" y1="303.34" x2="348.97" y2="47.51" stroke="#e5484d"/>
+<rect x="340.09" y="119.2" width="17.75" height="117.96" fill="#e5484d" stroke="#e5484d"/>
+</g>
+<g>
+<line x1="378.55" y1="331.83" x2="378.55" y2="191.2" stroke="#e5484d"/>
+<rect x="369.67" y="237.16" width="17.75" height="18.38" fill="#e5484d" stroke="#e5484d"/>
+</g>
+<g>
+<line x1="408.13" y1="327.54" x2="408.13" y2="61.29" stroke="#3ca951"/>
+<rect x="399.26" y="132.99" width="17.75" height="122.55" fill="#3ca951" stroke="#3ca951"/>
+</g>
+<g>
+<line x1="437.71" y1="201.93" x2="437.71" y2="59.15" stroke="#e5484d"/>
+<rect x="428.84" y="132.99" width="17.75" height="13.17" fill="#e5484d" stroke="#e5484d"/>
+</g>
+<g>
+<line x1="467.3" y1="322.64" x2="467.3" y2="95.92" stroke="#e5484d"/>
+<rect x="458.42" y="146.16" width="17.75" height="119.18" fill="#e5484d" stroke="#e5484d"/>
+</g>
+<g>
+<line x1="496.88" y1="338.27" x2="496.88" y2="151.98" stroke="#3ca951"/>
+<rect x="488" y="221.23" width="17.75" height="44.12" fill="#3ca951" stroke="#3ca951"/>
+</g>
+<g>
+<line x1="526.46" y1="297.21" x2="526.46" y2="38.01" stroke="#3ca951"/>
+<rect x="517.59" y="113.38" width="17.75" height="107.85" fill="#3ca951" stroke="#3ca951"/>
+</g>
+<g>
+<line x1="556.04" y1="250.03" x2="556.04" y2="58.84" stroke="#e5484d"/>
+<rect x="547.17" y="113.38" width="17.75" height="71.69" fill="#e5484d" stroke="#e5484d"/>
+</g>
+<g>
+<line x1="585.63" y1="321.11" x2="585.63" y2="118.89" stroke="#e5484d"/>
+<rect x="576.75" y="185.07" width="17.75" height="89.16" fill="#e5484d" stroke="#e5484d"/>
+</g>
+<g>
+<line x1="615.21" y1="340.72" x2="615.21" y2="103.27" stroke="#3ca951"/>
+<rect x="606.33" y="179.56" width="17.75" height="94.67" fill="#3ca951" stroke="#3ca951"/>
+</g>
+</g>
+</g>
+<g class="axes">
+<line x1="33.35" y1="369.83" x2="38.35" y2="369.83" stroke="#8c959f"/>
+<text x="30.35" y="372.64" text-anchor="end" font-size="11" fill="#59636e">96</text>
+<line x1="33.35" y1="339.19" x2="38.35" y2="339.19" stroke="#8c959f"/>
+<text x="30.35" y="342" text-anchor="end" font-size="11" fill="#59636e">97</text>
+<line x1="33.35" y1="308.55" x2="38.35" y2="308.55" stroke="#8c959f"/>
+<text x="30.35" y="311.36" text-anchor="end" font-size="11" fill="#59636e">98</text>
+<line x1="33.35" y1="277.91" x2="38.35" y2="277.91" stroke="#8c959f"/>
+<text x="30.35" y="280.72" text-anchor="end" font-size="11" fill="#59636e">99</text>
+<line x1="33.35" y1="247.27" x2="38.35" y2="247.27" stroke="#8c959f"/>
+<text x="30.35" y="250.08" text-anchor="end" font-size="11" fill="#59636e">100</text>
+<line x1="33.35" y1="216.63" x2="38.35" y2="216.63" stroke="#8c959f"/>
+<text x="30.35" y="219.44" text-anchor="end" font-size="11" fill="#59636e">101</text>
+<line x1="33.35" y1="185.99" x2="38.35" y2="185.99" stroke="#8c959f"/>
+<text x="30.35" y="188.8" text-anchor="end" font-size="11" fill="#59636e">102</text>
+<line x1="33.35" y1="155.35" x2="38.35" y2="155.35" stroke="#8c959f"/>
+<text x="30.35" y="158.17" text-anchor="end" font-size="11" fill="#59636e">103</text>
+<line x1="33.35" y1="124.72" x2="38.35" y2="124.72" stroke="#8c959f"/>
+<text x="30.35" y="127.53" text-anchor="end" font-size="11" fill="#59636e">104</text>
+<line x1="33.35" y1="94.08" x2="38.35" y2="94.08" stroke="#8c959f"/>
+<text x="30.35" y="96.89" text-anchor="end" font-size="11" fill="#59636e">105</text>
+<line x1="33.35" y1="63.44" x2="38.35" y2="63.44" stroke="#8c959f"/>
+<text x="30.35" y="66.25" text-anchor="end" font-size="11" fill="#59636e">106</text>
+<line x1="33.35" y1="32.8" x2="38.35" y2="32.8" stroke="#8c959f"/>
+<text x="30.35" y="35.61" text-anchor="end" font-size="11" fill="#59636e">107</text>
+<line x1="53.14" y1="369.83" x2="53.14" y2="374.83" stroke="#8c959f"/>
+<text x="53.14" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Mar</text>
+<line x1="112.3" y1="369.83" x2="112.3" y2="374.83" stroke="#8c959f"/>
+<text x="112.3" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Mar 3</text>
+<line x1="171.47" y1="369.83" x2="171.47" y2="374.83" stroke="#8c959f"/>
+<text x="171.47" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Mar 5</text>
+<line x1="230.63" y1="369.83" x2="230.63" y2="374.83" stroke="#8c959f"/>
+<text x="230.63" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Mar 7</text>
+<line x1="289.8" y1="369.83" x2="289.8" y2="374.83" stroke="#8c959f"/>
+<text x="289.8" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Mar 9</text>
+<line x1="348.97" y1="369.83" x2="348.97" y2="374.83" stroke="#8c959f"/>
+<text x="348.97" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Mar 11</text>
+<line x1="408.13" y1="369.83" x2="408.13" y2="374.83" stroke="#8c959f"/>
+<text x="408.13" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Mar 13</text>
+<line x1="467.3" y1="369.83" x2="467.3" y2="374.83" stroke="#8c959f"/>
+<text x="467.3" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Mar 15</text>
+<line x1="526.46" y1="369.83" x2="526.46" y2="374.83" stroke="#8c959f"/>
+<text x="526.46" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Mar 17</text>
+<line x1="585.63" y1="369.83" x2="585.63" y2="374.83" stroke="#8c959f"/>
+<text x="585.63" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">Mar 19</text>
+<line x1="38.35" y1="369.83" x2="630" y2="369.83" stroke="#8c959f"/>
+</g>
+<text x="10" y="21.49" font-size="16" font-weight="bold" fill="#1f2328">Daily prices</text>
+</svg>

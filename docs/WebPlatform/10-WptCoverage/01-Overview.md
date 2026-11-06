@@ -48,10 +48,10 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 26,219 | 29,691 | 2,104 | 95% |
+| [Stable](#stable-tests) | 26,228 | 29,691 | 2,104 | 95% |
 | [Tentative](#tentative-tests) | 1,370 | 3,074 | 692 | 58% |
 | [Reftests](#reftests) | 27,933 | 29,220 | 170 | 96% |
-| **All** | **55,522** | **61,985** | **2,966** | **94%** |
+| **All** | **55,531** | **61,985** | **2,966** | **94%** |
 
 ## Failure reasons
 
@@ -59,11 +59,11 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 182
 - **TEST BUG**: 1,032
-- **NOT IMPLEMENTED**: 4,283
-- **REQUIRES**: 760
+- **NOT IMPLEMENTED**: 4,271
+- **REQUIRES**: 762
   - `hardware`: 574
   - `layout`: 20
-  - `media`: 18
+  - `media`: 20
   - `service-workers`: 1
   - `user-input`: 154
   - `workers`: 3
@@ -240,7 +240,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`html-aam`](html-aam.md) | 25 | 26 | 0 | 96% |
 | [`html-media-capture`](html-media-capture.md) | 0 | 2 | 2 | – |
 | [`html/browsers`](html/browsers.md) | 696 | 746 | 0 | 93% |
-| [`html/canvas`](html/canvas.md) | 3,079 | 3,165 | 0 | 97% |
+| [`html/canvas`](html/canvas.md) | 3,088 | 3,165 | 0 | 98% |
 | [`html/cross-origin-embedder-policy`](html/cross-origin-embedder-policy.md) | 56 | 73 | 0 | 77% |
 | [`html/cross-origin-opener-policy`](html/cross-origin-opener-policy.md) | 67 | 114 | 0 | 59% |
 | [`html/dom`](html/dom.md) | 212 | 216 | 0 | 98% |
@@ -419,7 +419,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 320 | 330 | 0 | 97% |
 | [`xml`](xml.md) | 0 | 12 | 12 | – |
-| **Total (343 sections)** | **26,219** | **29,691** | **2,104** | **95%** |
+| **Total (343 sections)** | **26,228** | **29,691** | **2,104** | **95%** |
 
 ## Tentative tests
 

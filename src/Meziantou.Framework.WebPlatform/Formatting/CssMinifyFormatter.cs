@@ -1,3 +1,4 @@
+using Meziantou.Framework.WebPlatform.Css.Cascade;
 using Meziantou.Framework.WebPlatform.Css.Om;
 using Meziantou.Framework.WebPlatform.Css.Values;
 
@@ -8,7 +9,9 @@ namespace Meziantou.Framework.WebPlatform.Formatting;
 /// of a block. The style sheet is not modified.
 /// </summary>
 /// <remarks>
-/// The values of the custom properties are written as is: they are token sequences whose text can be read by scripts.
+/// The values of the custom properties are written as is: they are token sequences whose text can be read by scripts. The
+/// values that contain a substitution function, such as <c>var()</c>, are kept as specified too: only their whitespace is
+/// removed, their numbers and colors are not shortened.
 /// </remarks>
 public sealed partial class CssMinifyFormatter : CssFormatter
 {
@@ -70,6 +73,11 @@ public sealed partial class CssMinifyFormatter : CssFormatter
             if (CssPropertyRegistry.IsCustomProperty(name))
             {
                 Output.Write(value);
+            }
+            else if (CssSubstitution.MayContainSubstitution(value))
+            {
+                // A value with var() is kept as specified: only its whitespace is removed, its numbers and colors are written as is
+                WriteCompacted(Output, value, CssTextKind.Value, shortenColors: false, removeLeadingZeros: false);
             }
             else
             {

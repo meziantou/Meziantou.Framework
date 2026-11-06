@@ -26,6 +26,15 @@ public abstract class Mark
     /// <summary>What the mark needs from the plot, once its rows are prepared.</summary>
     internal virtual MarkTraits GetTraits(MarkData data) => MarkTraits.None;
 
+    /// <summary>
+    /// The space the mark needs above the first category of an inferred point y scale, in steps between two categories:
+    /// ridgelines rise above their categories.
+    /// </summary>
+    internal virtual double GetYHeadroom() => 0;
+
+    /// <summary>The values the mark maps with a continuous color scale that are known only once the scales are laid out (the counts of hexagons).</summary>
+    internal virtual IEnumerable<double> GetLateColorValues(RenderContext context, MarkData data) => [];
+
     /// <summary>Evaluates the channels and applies the transform.</summary>
     internal abstract MarkData Prepare();
 

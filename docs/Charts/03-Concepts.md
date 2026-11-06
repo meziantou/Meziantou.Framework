@@ -18,15 +18,22 @@ the marks are drawn in the order they are added:
 | [RuleXMark\<T\>](cref:Meziantou.Framework.Charts.RuleXMark{T}), [RuleYMark\<T\>](cref:Meziantou.Framework.Charts.RuleYMark{T}) | vertical and horizontal lines |
 | [TickMark\<T\>](cref:Meziantou.Framework.Charts.TickMark{T}) | a short line per row, across a band |
 | [TextMark\<T\>](cref:Meziantou.Framework.Charts.TextMark{T}) | a text per row |
+| [AnnotationMark\<T\>](cref:Meziantou.Framework.Charts.AnnotationMark{T}) | a text per row, with an arrow pointing at a point |
 | [ArcMark\<T\>](cref:Meziantou.Framework.Charts.ArcMark{T}) | a slice per row: pies, donuts, polar areas |
 | [BoxMark\<T\>](cref:Meziantou.Framework.Charts.BoxMark{T}) | a box plot per category |
 | [CandlestickMark\<T\>](cref:Meziantou.Framework.Charts.CandlestickMark{T}) | a candlestick per row |
 | [FunnelMark\<T\>](cref:Meziantou.Framework.Charts.FunnelMark{T}) | a funnel, a bar per stage |
 | [WaterfallMark\<T\>](cref:Meziantou.Framework.Charts.WaterfallMark{T}) | running totals as floating bars |
 | [ViolinMark\<T\>](cref:Meziantou.Framework.Charts.ViolinMark{T}) | a violin per category: the mirrored density of its values |
+| [RidgelineMark\<T\>](cref:Meziantou.Framework.Charts.RidgelineMark{T}) | a ridgeline plot: the density of the values of each category, as overlapping areas |
+| [HexbinMark\<T\>](cref:Meziantou.Framework.Charts.HexbinMark{T}) | hexagons colored by the number of points in them |
+| [ContourMark\<T\>](cref:Meziantou.Framework.Charts.ContourMark{T}) | the contours of the density of points |
+| [ParallelCoordinatesMark\<T\>](cref:Meziantou.Framework.Charts.ParallelCoordinatesMark{T}) | parallel coordinates: an axis per dimension, each with its scale, and a line per row |
 | [PackMark\<T\>](cref:Meziantou.Framework.Charts.PackMark{T}), [TreemapMark\<T\>](cref:Meziantou.Framework.Charts.TreemapMark{T}), [PartitionMark\<T\>](cref:Meziantou.Framework.Charts.PartitionMark{T}) | a tree, as packed circles, a treemap, or a sunburst and an icicle |
 | [TreeMark\<T\>](cref:Meziantou.Framework.Charts.TreeMark{T}) | a tree as a node-link diagram: a tidy tree or a dendrogram |
 | [SankeyMark\<T\>](cref:Meziantou.Framework.Charts.SankeyMark{T}) | the flows between nodes, a row per link |
+| [ChordMark\<T\>](cref:Meziantou.Framework.Charts.ChordMark{T}) | the flows between nodes around a circle, a row per flow |
+| [NetworkMark\<T\>](cref:Meziantou.Framework.Charts.NetworkMark{T}) | a network graph, a row per link, with a force-directed layout |
 
 [RuleXMark](cref:Meziantou.Framework.Charts.RuleXMark) and [RuleYMark](cref:Meziantou.Framework.Charts.RuleYMark) take
 values directly: `new RuleYMark(0)` draws a line at zero.
@@ -121,11 +128,12 @@ the secondary y scale, whose axis is on the right in Cartesian coordinates: see 
 
 ## Axes, legends and margins
 
-The x and y scales get an axis, and the color scale gets a legend, unless the chart does not use them as measures
-(pies, hierarchies). [Plot.XAxis](cref:Meziantou.Framework.Charts.Plot.XAxis) and
+The x and y scales get an axis, and the color and size scales get a legend, unless the chart does not use them as
+measures (pies, hierarchies). [Plot.XAxis](cref:Meziantou.Framework.Charts.Plot.XAxis) and
 [Plot.YAxis](cref:Meziantou.Framework.Charts.Plot.YAxis) set the label, the grid, the rotation of the tick labels and
 the visibility of an axis; [Plot.Legend](cref:Meziantou.Framework.Charts.Plot.Legend) sets the title and the position
-of the legend. The margins are computed from the measured texts: when the tick labels of the horizontal axis overlap,
+of the legend, and [Plot.SizeLegend](cref:Meziantou.Framework.Charts.Plot.SizeLegend) the title and the values of the
+legend of the sizes, which is drawn next to it. The margins are computed from the measured texts: when the tick labels of the horizontal axis overlap,
 they are rotated by -45 degrees, and only some of them are drawn when they still overlap.
 [Plot.Margin](cref:Meziantou.Framework.Charts.Plot.Margin) sets the margins instead.
 

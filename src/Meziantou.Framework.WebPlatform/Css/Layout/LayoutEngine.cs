@@ -32,6 +32,15 @@ internal sealed partial class LayoutEngine
     private bool _updatedByRendering;
     private int _fragmentIndexVersion;
 
+    /// <summary>The version of the last index of the fragment tree that visited all the fragments (see <see cref="IndexFragments"/>).</summary>
+    private int _fullFragmentIndexVersion;
+
+    /// <summary>The root of the fragment tree of the last index (see <see cref="IndexFragments"/>), or null when it indexed the pages of a printing.</summary>
+    private BoxFragment? _indexedRoot;
+
+    private readonly Stack<Fragment> _fragmentIndexStack = new();
+    private readonly Stack<(Fragment Fragment, int NextChild)> _indexedFragmentsStack = new();
+
     /// <summary>
     /// The sizes of the content boxes of the size containers (see <see cref="LayoutContext.OnSizeContainerLaidOut"/>), kept from
     /// one pass to the next: the container queries use the size of the last layout of a container (see
@@ -303,7 +312,7 @@ internal sealed partial class LayoutEngine
                 LayoutCount++;
                 RemoveStaleContainerSizes(context.Pass);
                 RemoveStaleAnchoredFallbacks(context.Pass);
-                _stickyFragments = IndexFragments(context.Pass, out var scrollbarsChangedIntrinsicSizes);
+                _stickyFragments = IndexFragments(context.Pass, context.LayoutCacheHitCount > 0, out var scrollbarsChangedIntrinsicSizes);
 
                 // The scroll markers were collected again while their groups were laid out (the styles of the contents of a size
                 // container were computed again with its size, see BoxTreeBuilder.RebuildContents): the document is laid out
@@ -729,32 +738,51 @@ internal sealed partial class LayoutEngine
         return root;
     }
 
-    internal Fragment? GetFirstFragment(LayoutBox box) => box.FragmentIndexVersion == _fragmentIndexVersion ? box.FirstFragment : null;
+    internal Fragment? GetFirstFragment(LayoutBox box) => box.FragmentIndexVersion >= _fullFragmentIndexVersion ? box.FirstFragment : null;
 
     /// <summary>
     /// Links the fragments of each box (<see cref="LayoutBox.FirstFragment"/>, <see cref="Fragment.NextFragmentOfBox"/>), in the
     /// order of the fragment tree, associates the scroll containers with their scrolling boxes (see <see cref="ScrollState"/>),
     /// and returns the fragments of the sticky positioned boxes in that order (or null).
     /// </summary>
+    /// <remarks>
+    /// When the pass used the results of the previous passes (see <see cref="LayoutResultCache"/>), the index is incremental: the
+    /// subtrees of the fragments kept from the previous index are not visited again (the links of their boxes are kept), unless
+    /// they contain a fragment that each index collects (see <see cref="NeedsIndexing"/>); then the fragments of the previous
+    /// index that are not in the new tree are visited, and their boxes that have no fragment anymore lose their links. The links
+    /// of a box are valid when it was indexed after the last full index (see <see cref="GetFirstFragment"/>).
+    /// </remarks>
     /// <param name="pass">The layout pass that built the fragment tree.</param>
+    /// <param name="reusedFragments">Whether the pass used fragments of the previous passes.</param>
     /// <param name="scrollbarsChangedIntrinsicSizes">
     /// Whether the pass displayed scrollbars of a scroll container that it did not assume when it sized a box from the intrinsic
     /// sizes of that container (see <see cref="ContainerBox.ScrollbarGuttersPass"/>).
     /// </param>
-    private List<BoxFragment>? IndexFragments(int pass, out bool scrollbarsChangedIntrinsicSizes)
+    private List<BoxFragment>? IndexFragments(int pass, bool reusedFragments, out bool scrollbarsChangedIntrinsicSizes)
     {
         scrollbarsChangedIntrinsicSizes = false;
-        _fragmentIndexVersion++;
+        var version = ++_fragmentIndexVersion;
         _scrollStateContainers?.Clear();
         _initialScrollTargetBoxes?.Clear();
+        var previousRoot = _indexedRoot;
+        _indexedRoot = _pages is null ? _root : null;
         if (_root is null)
         {
+            _fullFragmentIndexVersion = version;
             DiscardScrollStates();
             return null;
         }
 
+        // (the fragments kept from the previous index are the ones it reached, with the version before this one)
+        var incremental = reusedFragments && previousRoot is not null && _pages is null;
+        if (!incremental)
+        {
+            _fullFragmentIndexVersion = version;
+        }
+
         List<BoxFragment>? sticky = null;
-        var stack = new Stack<Fragment>();
+        var stack = _fragmentIndexStack;
+        stack.Clear();
         if (_pages is { } pages)
         {
             // (the fragments of the pages of a document being printed, in the order of the pages)
@@ -771,12 +799,22 @@ internal sealed partial class LayoutEngine
 
         while (stack.TryPop(out var fragment))
         {
+            var previousVersion = fragment.IndexVersion;
+            fragment.IndexVersion = version;
             if (fragment.Box is { } box)
             {
-                fragment.NextFragmentOfBox = null;
-                if (box.FragmentIndexVersion != _fragmentIndexVersion)
+                // The subtree of a fragment kept from the previous index (the only fragment of its box: the fragments of the boxes it
+                // contains are in it, see LayoutResultCache) is indexed when nothing in it is collected by each index
+                if (incremental && previousVersion == version - 1 && fragment is BoxFragment && ReferenceEquals(box.FirstFragment, fragment) && ReferenceEquals(box.LastFragment, fragment)
+                    && box.FragmentIndexVersion >= _fullFragmentIndexVersion && !HasIndexedFragments(fragment))
                 {
-                    box.FragmentIndexVersion = _fragmentIndexVersion;
+                    continue;
+                }
+
+                fragment.NextFragmentOfBox = null;
+                if (box.FragmentIndexVersion != version)
+                {
+                    box.FragmentIndexVersion = version;
                     box.FirstFragment = fragment;
 
                     // The scroll-state query containers (https://drafts.csswg.org/css-conditional-5/#scroll-state-container)
@@ -833,8 +871,176 @@ internal sealed partial class LayoutEngine
             }
         }
 
+        if (incremental)
+        {
+            // The fragments of the previous index that are not in the new tree: their ancestors are not in it either (the subtree of
+            // a fragment does not change), and the boxes that were not indexed again have no fragment anymore
+            stack.Push(previousRoot!);
+            while (stack.TryPop(out var fragment))
+            {
+                if (fragment.Box is { } box && box.FragmentIndexVersion != version)
+                {
+                    box.FragmentIndexVersion = 0;
+                }
+
+                foreach (var child in fragment.ChildrenSpan)
+                {
+                    if (child.IndexVersion != version)
+                    {
+                        stack.Push(child);
+                    }
+                }
+            }
+
+            if (VerifyIncrementalLayout)
+            {
+                VerifyFragmentIndex(sticky);
+            }
+        }
+
         DiscardScrollStates();
         return sticky;
+    }
+
+    /// <summary>
+    /// Returns whether a fragment or one of its descendants is collected by each index of the fragment tree (see
+    /// <see cref="NeedsIndexing"/>): the result is kept in the fragments, whose subtrees do not change once they are laid out.
+    /// </summary>
+    private bool HasIndexedFragments(Fragment fragment)
+    {
+        if (fragment.HasIndexedFragments is { } known)
+            return known;
+
+        // (in post-order, without recursion: the fragment tree can be deep)
+        var stack = _indexedFragmentsStack;
+        stack.Clear();
+        stack.Push((fragment, 0));
+        while (stack.TryPop(out var item))
+        {
+            var (current, next) = item;
+            var children = current.ChildrenSpan;
+            while (next < children.Length && children[next].HasIndexedFragments is not null)
+            {
+                next++;
+            }
+
+            if (next < children.Length)
+            {
+                stack.Push((current, next + 1));
+                stack.Push((children[next], 0));
+                continue;
+            }
+
+            var result = NeedsIndexing(current);
+            foreach (var child in children)
+            {
+                result |= child.HasIndexedFragments is true;
+            }
+
+            current.HasIndexedFragments = result;
+        }
+
+        return fragment.HasIndexedFragments is true;
+    }
+
+    /// <summary>
+    /// Whether a fragment is collected by each index of the fragment tree (see <see cref="IndexFragments"/>): the sticky positioned
+    /// boxes, the scroll containers, the scroll-state query containers and the candidate initial scroll targets.
+    /// </summary>
+    private static bool NeedsIndexing(Fragment fragment)
+    {
+        if (fragment is not BoxFragment boxFragment)
+            return false;
+
+        if (boxFragment.IsScrollContainer)
+            return true;
+
+        var layout = boxFragment.Box.Style.Layout;
+        return layout.Position == PositionKind.Sticky || layout.IsScrollInitialTarget || (layout.ContainerType & ContainerType.ScrollState) != ContainerType.Normal;
+    }
+
+    /// <summary>
+    /// Indexes the fragment tree again without the previous index and throws when the links of the boxes or the collected
+    /// fragments differ from the ones of the incremental index (see <see cref="VerifyIncrementalLayout"/>).
+    /// </summary>
+    private void VerifyFragmentIndex(List<BoxFragment>? sticky)
+    {
+        var expected = new Dictionary<LayoutBox, List<Fragment>>(ReferenceEqualityComparer.Instance);
+        var expectedSticky = new List<BoxFragment>();
+        var expectedTargets = new List<ContainerBox>();
+        var expectedContainers = new List<BoxFragment>();
+        var stack = new Stack<Fragment>();
+        stack.Push(_root!);
+        while (stack.TryPop(out var fragment))
+        {
+            if (fragment.Box is { } box)
+            {
+                if (!expected.TryGetValue(box, out var fragments))
+                {
+                    expected.Add(box, fragments = []);
+                    if (fragment is BoxFragment { Box: { PseudoElement: null, Element: { } containerElement } } containerFragment
+                        && (box.Style.Layout.ContainerType & ContainerType.ScrollState) != ContainerType.Normal
+                        && ReferenceEquals(_boxTree!.GetPrincipalBox(containerElement), box))
+                    {
+                        expectedContainers.Add(containerFragment);
+                    }
+
+                    if (box is ContainerBox { Style.Layout.IsScrollInitialTarget: true } candidate)
+                    {
+                        expectedTargets.Add(candidate);
+                    }
+                }
+
+                fragments.Add(fragment);
+                if (fragment is BoxFragment { Box: { Kind: not ContainerBoxKind.TableGrid, Style.Layout.Position: PositionKind.Sticky } } boxFragment)
+                {
+                    expectedSticky.Add(boxFragment);
+                }
+            }
+
+            var children = fragment.ChildrenSpan;
+            for (var i = children.Length - 1; i >= 0; i--)
+            {
+                stack.Push(children[i]);
+            }
+        }
+
+        foreach (var (box, fragments) in expected)
+        {
+            var index = 0;
+            for (var fragment = GetFirstFragment(box); fragment is not null; fragment = fragment.NextFragmentOfBox)
+            {
+                if (index >= fragments.Count || !ReferenceEquals(fragments[index], fragment))
+                    throw new InvalidOperationException($"Incremental layout: the fragment {index} of {BoxTree.Dump(box).Split('\n')[0].Trim()} differs from the index of the fragment tree ({_document.Url})");
+
+                index++;
+            }
+
+            if (index != fragments.Count || !ReferenceEquals(box.LastFragment, fragments[^1]))
+                throw new InvalidOperationException($"Incremental layout: {BoxTree.Dump(box).Split('\n')[0].Trim()} has {index} indexed fragments instead of {fragments.Count} ({_document.Url})");
+        }
+
+        if (_boxTree?.Viewport is { } viewport)
+        {
+            var boxes = new Stack<LayoutBox>();
+            boxes.Push(viewport);
+            while (boxes.TryPop(out var box))
+            {
+                if (!expected.ContainsKey(box) && GetFirstFragment(box) is not null)
+                    throw new InvalidOperationException($"Incremental layout: {BoxTree.Dump(box).Split('\n')[0].Trim()} has indexed fragments that are not in the fragment tree ({_document.Url})");
+
+                if (box is ContainerBox container)
+                {
+                    foreach (var child in container.Children)
+                    {
+                        boxes.Push(child);
+                    }
+                }
+            }
+        }
+
+        if (!expectedSticky.SequenceEqual(sticky ?? []) || !expectedTargets.SequenceEqual(_initialScrollTargetBoxes ?? []) || !expectedContainers.SequenceEqual(_scrollStateContainers ?? []))
+            throw new InvalidOperationException($"Incremental layout: the sticky boxes, the initial scroll targets or the scroll-state containers differ from the index of the fragment tree ({_document.Url})");
     }
 
     /// <summary>The size of the content box of a size container (physical, zoomed px), whether its block size is known, and the pass that computed it.</summary>

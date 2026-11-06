@@ -1045,7 +1045,7 @@ internal sealed class LayoutStyle
     public bool MayHaveBoxEdges => _box is not null || _style.MayHaveCascadedValueStartingWith("margin", "padding", "border");
 
     /// <summary>The box model: sizes, margins, paddings, borders, aspect ratio (converted together on first access).</summary>
-    public BoxModelStyle Box => _box ??= Share(new BoxModelStyle(_style, EffectiveZoom));
+    public BoxModelStyle Box => _box ??= _style.Engine.LayoutStyleGroups.GetBoxModel(_style, EffectiveZoom);
 
     /// <summary>The insets and z-index of the positioned boxes.</summary>
     public InsetStyle Insets => _rare?.Insets ?? (Rare.Insets = Share(new InsetStyle(_style, EffectiveZoom)));

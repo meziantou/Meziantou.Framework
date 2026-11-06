@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="400" viewBox="0 0 640 400" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Power, weight and efficiency</title>
+<rect width="640" height="400" fill="#ffffff"/>
+<g class="grid">
+<line x1="32.23" y1="369.83" x2="549.01" y2="369.83" stroke="#e3e6ea"/>
+<line x1="32.23" y1="313.65" x2="549.01" y2="313.65" stroke="#e3e6ea"/>
+<line x1="32.23" y1="257.48" x2="549.01" y2="257.48" stroke="#e3e6ea"/>
+<line x1="32.23" y1="201.31" x2="549.01" y2="201.31" stroke="#e3e6ea"/>
+<line x1="32.23" y1="145.14" x2="549.01" y2="145.14" stroke="#e3e6ea"/>
+<line x1="32.23" y1="88.97" x2="549.01" y2="88.97" stroke="#e3e6ea"/>
+<line x1="32.23" y1="32.8" x2="549.01" y2="32.8" stroke="#e3e6ea"/>
+</g>
+<g class="marks">
+<g>
+<circle cx="505.95" cy="369.83" r="20" fill="#efb118" fill-opacity="0.702" stroke="#ffffff"/>
+<circle cx="419.82" cy="324.89" r="18.4" fill="#efb118" fill-opacity="0.702" stroke="#ffffff"/>
+<circle cx="355.22" cy="291.19" r="17.1" fill="#efb118" fill-opacity="0.702" stroke="#ffffff"/>
+<circle cx="269.09" cy="257.48" r="15.69" fill="#ff725c" fill-opacity="0.702" stroke="#ffffff"/>
+<circle cx="290.62" cy="246.25" r="15.19" fill="#efb118" fill-opacity="0.702" stroke="#ffffff"/>
+<circle cx="247.56" cy="223.78" r="14.68" fill="#ff725c" fill-opacity="0.702" stroke="#ffffff"/>
+<circle cx="226.02" cy="201.31" r="14.14" fill="#4269d0" fill-opacity="0.702" stroke="#ffffff"/>
+<circle cx="182.96" cy="167.61" r="13.01" fill="#4269d0" fill-opacity="0.702" stroke="#ffffff"/>
+<circle cx="161.43" cy="156.38" r="12.71" fill="#4269d0" fill-opacity="0.702" stroke="#ffffff"/>
+<circle cx="139.89" cy="145.14" r="12.09" fill="#ff725c" fill-opacity="0.702" stroke="#ffffff"/>
+<circle cx="118.36" cy="122.67" r="11.77" fill="#4269d0" fill-opacity="0.702" stroke="#ffffff"/>
+<circle cx="75.3" cy="88.97" r="10.74" fill="#ff725c" fill-opacity="0.702" stroke="#ffffff"/>
+</g>
+</g>
+<g class="axes">
+<line x1="27.23" y1="369.83" x2="32.23" y2="369.83" stroke="#8c959f"/>
+<text x="24.23" y="372.64" text-anchor="end" font-size="11" fill="#59636e">20</text>
+<line x1="27.23" y1="313.65" x2="32.23" y2="313.65" stroke="#8c959f"/>
+<text x="24.23" y="316.46" text-anchor="end" font-size="11" fill="#59636e">25</text>
+<line x1="27.23" y1="257.48" x2="32.23" y2="257.48" stroke="#8c959f"/>
+<text x="24.23" y="260.29" text-anchor="end" font-size="11" fill="#59636e">30</text>
+<line x1="27.23" y1="201.31" x2="32.23" y2="201.31" stroke="#8c959f"/>
+<text x="24.23" y="204.12" text-anchor="end" font-size="11" fill="#59636e">35</text>
+<line x1="27.23" y1="145.14" x2="32.23" y2="145.14" stroke="#8c959f"/>
+<text x="24.23" y="147.95" text-anchor="end" font-size="11" fill="#59636e">40</text>
+<line x1="27.23" y1="88.97" x2="32.23" y2="88.97" stroke="#8c959f"/>
+<text x="24.23" y="91.78" text-anchor="end" font-size="11" fill="#59636e">45</text>
+<line x1="27.23" y1="32.8" x2="32.23" y2="32.8" stroke="#8c959f"/>
+<text x="24.23" y="35.61" text-anchor="end" font-size="11" fill="#59636e">50</text>
+<line x1="32.23" y1="369.83" x2="32.23" y2="374.83" stroke="#8c959f"/>
+<text x="32.23" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">1,000</text>
+<line x1="118.36" y1="369.83" x2="118.36" y2="374.83" stroke="#8c959f"/>
+<text x="118.36" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">1,200</text>
+<line x1="204.49" y1="369.83" x2="204.49" y2="374.83" stroke="#8c959f"/>
+<text x="204.49" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">1,400</text>
+<line x1="290.62" y1="369.83" x2="290.62" y2="374.83" stroke="#8c959f"/>
+<text x="290.62" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">1,600</text>
+<line x1="376.75" y1="369.83" x2="376.75" y2="374.83" stroke="#8c959f"/>
+<text x="376.75" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">1,800</text>
+<line x1="462.88" y1="369.83" x2="462.88" y2="374.83" stroke="#8c959f"/>
+<text x="462.88" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">2,000</text>
+<line x1="549.01" y1="369.83" x2="549.01" y2="374.83" stroke="#8c959f"/>
+<text x="549.01" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">2,200</text>
+<line x1="32.23" y1="369.83" x2="549.01" y2="369.83" stroke="#8c959f"/>
+</g>
+<g class="legend">
+<text x="561.01" y="41.42" font-size="12" font-weight="bold" fill="#1f2328">Origin</text>
+<rect x="561.01" y="48.45" width="10" height="10" rx="2" fill="#4269d0"/>
+<text x="576.01" y="56.52" font-size="12" fill="#1f2328">Europe</text>
+<rect x="561.01" y="63.55" width="10" height="10" rx="2" fill="#efb118"/>
+<text x="576.01" y="71.62" font-size="12" fill="#1f2328">USA</text>
+<rect x="561.01" y="78.65" width="10" height="10" rx="2" fill="#ff725c"/>
+<text x="576.01" y="86.72" font-size="12" fill="#1f2328">Japan</text>
+</g>
+<g class="legend-size">
+<text x="561.01" y="109.82" font-size="12" font-weight="bold" fill="#1f2328">Horsepower</text>
+<circle cx="580.62" cy="141" r="19.61" fill="none" stroke="#8c959f"/>
+<path d="M580.62,121.39 L604.24,121.39 L606.24,121.39" fill="none" stroke="#8c959f" stroke-dasharray="2 2"/>
+<text x="610.24" y="124.2" font-size="11" fill="#59636e">250</text>
+<circle cx="580.62" cy="145.42" r="15.19" fill="none" stroke="#8c959f"/>
+<path d="M580.62,130.23 L604.24,130.23 L606.24,132.56" fill="none" stroke="#8c959f" stroke-dasharray="2 2"/>
+<text x="610.24" y="135.37" font-size="11" fill="#59636e">150</text>
+<circle cx="580.62" cy="148.21" r="12.4" fill="none" stroke="#8c959f"/>
+<path d="M580.62,135.8 L604.24,135.8 L606.24,143.74" fill="none" stroke="#8c959f" stroke-dasharray="2 2"/>
+<text x="610.24" y="146.55" font-size="11" fill="#59636e">100</text>
+</g>
+<text x="10" y="21.49" font-size="16" font-weight="bold" fill="#1f2328">Power, weight and efficiency</text>
+</svg>

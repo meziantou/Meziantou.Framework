@@ -50,4 +50,52 @@ internal static class KernelDensity
 
         return (x, density);
     }
+
+    /// <summary>
+    /// Evaluates the density of points with a product of Gaussian kernels on a square grid of <paramref name="size"/> points
+    /// per axis, from <paramref name="cut"/> bandwidths before the smallest value to as many after the largest. The value of
+    /// the point (i, j) is at <c>grid[j * size + i]</c>, at x = x0 + i stepX and y = y0 + j stepY.
+    /// </summary>
+    public static (double[] Grid, double X0, double StepX, double Y0, double StepY) Evaluate2D(double[] xs, double[] ys, double bandwidthX, double bandwidthY, int size, double cut = 3)
+    {
+        var x0 = xs.Min() - (cut * bandwidthX);
+        var y0 = ys.Min() - (cut * bandwidthY);
+        var stepX = (xs.Max() + (cut * bandwidthX) - x0) / (size - 1);
+        var stepY = (ys.Max() + (cut * bandwidthY) - y0) / (size - 1);
+        var kx = Kernels(xs, x0, stepX, bandwidthX, size);
+        var ky = Kernels(ys, y0, stepY, bandwidthY, size);
+        var scale = 1 / (xs.Length * 2 * Math.PI * bandwidthX * bandwidthY);
+        var grid = new double[size * size];
+        for (var j = 0; j < size; j++)
+        {
+            for (var i = 0; i < size; i++)
+            {
+                var sum = 0.0;
+                for (var k = 0; k < xs.Length; k++)
+                {
+                    sum += kx[(i * xs.Length) + k] * ky[(j * xs.Length) + k];
+                }
+
+                grid[(j * size) + i] = sum * scale;
+            }
+        }
+
+        return (grid, x0, stepX, y0, stepY);
+
+        static double[] Kernels(double[] values, double start, double step, double bandwidth, int size)
+        {
+            var result = new double[size * values.Length];
+            for (var i = 0; i < size; i++)
+            {
+                var position = start + (i * step);
+                for (var k = 0; k < values.Length; k++)
+                {
+                    var u = (position - values[k]) / bandwidth;
+                    result[(i * values.Length) + k] = Math.Exp(-0.5 * u * u);
+                }
+            }
+
+            return result;
+        }
+    }
 }

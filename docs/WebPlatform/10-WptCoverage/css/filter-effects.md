@@ -11,14 +11,14 @@ description: "The results of the web-platform-tests of css/filter-effects, and w
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 37 | 37 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
-| [Reftests](#reftests) | 384 | 394 | 0 | 97% |
-| **All** | **421** | **431** | **0** | **98%** |
+| [Reftests](#reftests) | 386 | 394 | 0 | 98% |
+| **All** | **423** | **431** | **0** | **98%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 4
+- **BUG**: 2
 - **TEST BUG**: 5
 - **NOT IMPLEMENTED**: 1
 
@@ -175,7 +175,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`blur-clip-border-radius.html`](https://wpt.fyi/results/css/filter-effects/blur-clip-border-radius.html) | Fail | 0 / 1 | TEST BUG | antialiasing only: the blurred element is clipped by the nested rounded clips (`overflow: clip`, `border-radius: 50%`) as expected, but 38 pixels of the curved edge of the gray mask that covers it differ (maximum difference 3; the fuzziness of the test, tuned for the antialiasing of the browsers, allows 30) |
 | [`blur-clip-stacking-context-001.html`](https://wpt.fyi/results/css/filter-effects/blur-clip-stacking-context-001.html) | Pass | 1 / 1 |  |  |
 | [`blur-clip-stacking-context-002.html`](https://wpt.fyi/results/css/filter-effects/blur-clip-stacking-context-002.html) | Pass | 1 / 1 |  |  |
-| [`blur-text.html`](https://wpt.fyi/results/css/filter-effects/blur-text.html) | Fail | 0 / 1 | BUG | the filter of the `data:` URL document is applied, but its filter region (the default -10%/120% of the bounding box of each fragment of the inline box) clips the blur between the lines, which `filter: blur(4px)` of the reference does not: 25,101 pixels differ by up to 18; fails in every browser |
+| [`blur-text.html`](https://wpt.fyi/results/css/filter-effects/blur-text.html) | Pass | 1 / 1 |  |  |
 | [`clip-under-filter-001.html`](https://wpt.fyi/results/css/filter-effects/clip-under-filter-001.html) | Pass | 1 / 1 |  |  |
 | [`clip-under-filter-002.html`](https://wpt.fyi/results/css/filter-effects/clip-under-filter-002.html) | Pass | 1 / 1 |  |  |
 | [`clip-under-filter-003.html`](https://wpt.fyi/results/css/filter-effects/clip-under-filter-003.html) | Pass | 1 / 1 |  |  |
@@ -263,7 +263,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`feconvolve-region-001.html`](https://wpt.fyi/results/css/filter-effects/feconvolve-region-001.html) | Pass | 1 / 1 |  |  |
 | [`feconvolve-region-002.html`](https://wpt.fyi/results/css/filter-effects/feconvolve-region-002.html) | Pass | 1 / 1 |  |  |
 | [`feconvolvematrix-order-removal.html`](https://wpt.fyi/results/css/filter-effects/feconvolvematrix-order-removal.html) | Pass | 1 / 1 |  |  |
-| [`fedisplacementmap-non-uniform-transform-001.html`](https://wpt.fyi/results/css/filter-effects/fedisplacementmap-non-uniform-transform-001.html) | Fail | 0 / 1 | BUG | the displaced rectangle is outside the clip of the `svg` element (its `overflow`), 200px away from what the clip shows: Imaging bounds the layer of the filter to four times the pixels of the clip (`DrawingSession.GetFilterExtension`), a 137px margin, so the source graphic is cut and only 38 of the 100 columns of the green square are displaced into view (the displacement itself is scaled per axis: the test passes with `overflow: visible`) |
+| [`fedisplacementmap-non-uniform-transform-001.html`](https://wpt.fyi/results/css/filter-effects/fedisplacementmap-non-uniform-transform-001.html) | Pass | 1 / 1 |  |  |
 | [`feflood-with-filter-reference.html`](https://wpt.fyi/results/css/filter-effects/feflood-with-filter-reference.html) | Pass | 1 / 1 |  |  |
 | [`feimage-element-ref-geometry.html`](https://wpt.fyi/results/css/filter-effects/feimage-element-ref-geometry.html) | Pass | 1 / 1 |  |  |
 | [`feimage-huge-subregion.html`](https://wpt.fyi/results/css/filter-effects/feimage-huge-subregion.html) | Pass | 1 / 1 |  |  |

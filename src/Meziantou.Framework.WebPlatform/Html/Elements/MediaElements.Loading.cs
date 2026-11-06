@@ -694,6 +694,13 @@ public partial class HtmlMediaElement
         /// <summary>Whether the resource is complete at the end of the body of the current response (else the next range is requested).</summary>
         public bool IsLastResponse { get; set; } = true;
 
+        /// <summary>
+        /// Whether the complete length of the resource is unknown (the <c>Content-Range</c> of the last partial response is
+        /// <c>bytes first-last/*</c>): the rest of the resource is requested until a response gives no new byte, and a
+        /// <c>416</c> response to that request ends the resource.
+        /// </summary>
+        public bool IsLengthUnknown { get; set; }
+
         public MediaPlayer? Player { get; set; }
 
         public long LastProgressTimestamp { get; set; }
@@ -731,6 +738,14 @@ public partial class HtmlMediaElement
         }
 
         _stallGeneration++;
+        if (resource is { StatusCode: 416 } && data.IsLengthUnknown && data.Length > 0)
+        {
+            // The resource of unknown length ends at the bytes received so far
+            data.IsLastResponse = true;
+            QueueMediaElementTask(() => OnResponseBodyReceived(generation, cancellation, data));
+            return;
+        }
+
         if (resource is null || !VerifyMediaResponse(resource, data, out var range))
         {
             // The media data cannot be fetched at all (a network error, an HTTP error), or the connection is interrupted
@@ -760,13 +775,15 @@ public partial class HtmlMediaElement
 
             var previousLength = data.Length;
             data.Write((int)first, bytes.Span);
-            data.IsLastResponse = total is null || last + 1 >= total || data.Length <= previousLength || bytes.Length == 0;
+            data.IsLengthUnknown = total is null;
+            data.IsLastResponse = (total is not null && last + 1 >= total) || data.Length <= previousLength || bytes.Length == 0;
         }
         else
         {
             // The entire resource
             data.Reset();
             data.Write(0, bytes.Span);
+            data.IsLengthUnknown = false;
             data.IsLastResponse = true;
         }
 
@@ -822,7 +839,7 @@ public partial class HtmlMediaElement
             return false;
 
         range = values;
-        var origin = resource.Url is null || UrlParser.Parse(resource.Url, baseUrl: null) is not { } url ? "rewritten" : OriginRecord.FromUrl(url).Serialize();
+        var origin = resource.Url is null || resource.HasRewrittenUrl || UrlParser.Parse(resource.Url, baseUrl: null) is not { } url ? "rewritten" : OriginRecord.FromUrl(url).Serialize();
         if (data.Origin is null || data.Origin == origin)
         {
             data.Origin = origin;

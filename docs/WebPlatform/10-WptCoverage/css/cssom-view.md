@@ -10,15 +10,15 @@ description: "The results of the web-platform-tests of css/cssom-view, and why t
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 216 | 231 | 0 | 94% |
-| [Tentative](#tentative-tests) | 2 | 4 | 0 | 50% |
+| [Tentative](#tentative-tests) | 3 | 4 | 0 | 75% |
 | [Reftests](#reftests) | 11 | 11 | 0 | 100% |
-| **All** | **229** | **246** | **0** | **93%** |
+| **All** | **230** | **246** | **0** | **93%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 2
+- **BUG**: 1
 - **TEST BUG**: 6
 - **NOT IMPLEMENTED**: 6
 - **REQUIRES**: 3
@@ -265,7 +265,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
 | [`devicePixelRatio-undisplayed-iframe.tentative.html`](https://wpt.fyi/results/css/cssom-view/devicePixelRatio-undisplayed-iframe.tentative.html) | Pass | 1 / 1 |  |  |
-| [`scrollIntoView-stuck.tentative.html`](https://wpt.fyi/results/css/cssom-view/scrollIntoView-stuck.tentative.html) | Fail | 0 / 1 | BUG | `scroll-padding` is applied when the target is a stuck sticky box (Chrome and Safari fail it too) |
+| [`scrollIntoView-stuck.tentative.html`](https://wpt.fyi/results/css/cssom-view/scrollIntoView-stuck.tentative.html) | Pass | 1 / 1 |  |  |
 | [`scrollWidthHeight-child-border-within-padding.tentative.html`](https://wpt.fyi/results/css/cssom-view/scrollWidthHeight-child-border-within-padding.tentative.html) | Pass | 5 / 5 |  |  |
 | [`subpixel-sizes-and-offsets.tentative.html`](https://wpt.fyi/results/css/cssom-view/subpixel-sizes-and-offsets.tentative.html) | Fail | 12 / 15 | TEST BUG | the remaining subtests (fractional `scrollTop`) fail in every browser |
 

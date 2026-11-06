@@ -1238,6 +1238,9 @@ public sealed class DocumentResource
     /// <summary>Gets or sets the URL of the response (e.g. after redirects). The default is the requested URL.</summary>
     public string? Url { get; init; }
 
+    /// <summary>Whether the fetch gave the response the URL of the request because it had none (e.g. a response created by a service worker).</summary>
+    internal bool HasRewrittenUrl { get; init; }
+
     /// <summary>
     /// Gets or sets the URLs of the redirects between the requested URL and <see cref="Url"/>, in order (the URL list of the
     /// response without its first and last URLs, https://fetch.spec.whatwg.org/#concept-response-url-list). A redirect to

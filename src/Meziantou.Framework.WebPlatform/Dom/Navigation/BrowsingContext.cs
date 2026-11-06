@@ -1543,6 +1543,13 @@ public sealed partial class BrowsingContext : IDisposable
     private SessionHistoryEntry? _beforeUnloadFiredForEntry;
 
     /// <summary>
+    /// The document that initiated the traversal that loads the document of an entry, whose navigational prefetches the
+    /// navigation uses (https://html.spec.whatwg.org/multipage/nav-history-apis.html#delta-traverse: the document of the
+    /// <c>History</c> object, which may be the document of another navigable), or null for the active document.
+    /// </summary>
+    private (SessionHistoryEntry Entry, Document Document)? _traversalPrefetchSource;
+
+    /// <summary>
     /// https://html.spec.whatwg.org/multipage/browsing-the-web.html#checking-if-unloading-is-canceled: fires beforeunload at
     /// the active documents of the navigable and of its descendant navigables
     /// (https://html.spec.whatwg.org/multipage/browsing-the-web.html#fire-beforeunload). When a document that has sticky
@@ -2075,7 +2082,9 @@ public sealed partial class BrowsingContext : IDisposable
 
             // https://wicg.github.io/nav-speculation/prefetch.html#wait-for-a-matching-prefetch-record: the navigation uses the
             // response of a navigational prefetch of the source document, or waits for the one that is ongoing
-            if (TryUsePrefetchRecord(navigationId, url, sourceDocument, postResource, parameters, StartNavigationFetch, cancellation.Token))
+            var prefetchSourceDocument = traversalEntry is not null && _traversalPrefetchSource is { } traversalSource && ReferenceEquals(traversalSource.Entry, traversalEntry) ? traversalSource.Document : sourceDocument;
+            _traversalPrefetchSource = null;
+            if (TryUsePrefetchRecord(navigationId, url, prefetchSourceDocument, postResource, parameters, StartNavigationFetch, cancellation.Token))
                 return;
 
             // The response is processed by a task, even when the fetch completes synchronously: as with a network response,

@@ -37,7 +37,8 @@ internal sealed partial class EditingAlgorithms
     public bool RunAction(string command, string value)
     {
         // The contents of a select element are not editable text: as in the browsers, the commands do nothing when a
-        // boundary point of the selection is in a select element (e.g. in an option)
+        // boundary point of the selection is in a select element (e.g. in an option), or in an option or an optgroup
+        // element outside of a select element (e.g. an editing host <option contenteditable>)
         if (_activeRange is { } activeRange && (IsInSelectElement(activeRange.StartContainer) || IsInSelectElement(activeRange.EndContainer)) && command is "delete" or "forwarddelete" or "inserttext")
             return false;
 
@@ -95,7 +96,7 @@ internal sealed partial class EditingAlgorithms
     {
         for (var current = node; current is not null; current = current.ParentNode)
         {
-            if (IsHtmlElement(current, "select"))
+            if (IsHtmlElement(current, "select") || IsHtmlElement(current, "option") || IsHtmlElement(current, "optgroup"))
                 return true;
         }
 
@@ -724,7 +725,7 @@ internal sealed partial class EditingAlgorithms
 
         var newRange = BlockExtend(ActiveRange);
         var nodeList = GetContainedNodes(newRange, static node => IsEditable(node)
-            && (IsSingleLineContainer(node) || IsAllowedChild(node, "p") || IsHtmlElement(node, DefinitionItemNames))
+            && (IsNonListSingleLineContainer(node) || IsAllowedChild(node, "p") || IsHtmlElement(node, DefinitionItemNames))
             && !AnyDescendant(node, IsProhibitedParagraphChild));
         var values = RecordValues(nodeList);
         foreach (var node in nodeList)
@@ -1155,6 +1156,12 @@ internal sealed partial class EditingAlgorithms
                     RemoveNode(child);
                 }
             }
+        }
+
+        if (range.StartContainer is Text insertionText)
+        {
+            var insertionOffset = PrepareTextInsertionPoint(insertionText, (int)range.StartOffset);
+            CollapseTo(insertionText, insertionOffset);
         }
 
         range.InsertNode(fragment);
@@ -1964,14 +1971,7 @@ internal sealed partial class EditingAlgorithms
         offset = (int)range.StartOffset;
         if (node is Text text)
         {
-            // As in the browsers, the line feed that only keeps an empty last line of a block rendered (white-space: pre,
-            // pre-wrap or pre-line) is replaced with the text, as the br of an empty line is
-            if (offset + 1 == text.Length && text.Data[offset] == '\n' && (offset == 0 ? FindLineItem(text, forward: false) != LineItem.Content : text.Data[offset - 1] == '\n')
-                && PreservesLineFeeds(GetWhiteSpace(text.ParentNode)) && FindLineItem(text, forward: true) == LineItem.Boundary)
-            {
-                text.DeleteData((uint)offset, 1);
-            }
-
+            offset = PrepareTextInsertionPoint(text, offset);
             text.InsertData((uint)offset, value);
             SetRange(node, offset, node, offset + value.Length);
         }
@@ -2007,5 +2007,51 @@ internal sealed partial class EditingAlgorithms
         }
 
         return true;
+    }
+
+    /// <summary>
+    /// Prepares the insertion of content at a point of a Text node, and returns the offset where the content is inserted.
+    /// </summary>
+    private int PrepareTextInsertionPoint(Text text, int offset)
+    {
+        // As in the browsers, the line feed that only keeps an empty last line of a block rendered (white-space: pre,
+        // pre-wrap or pre-line) is replaced with the content, as the br of an empty line is
+        if (offset + 1 == text.Length && text.Data[offset] == '\n' && (offset == 0 ? FindLineItem(text, forward: false) != LineItem.Content : text.Data[offset - 1] == '\n')
+            && PreservesLineFeeds(GetWhiteSpace(text.ParentNode)) && FindLineItem(text, forward: true) == LineItem.Boundary)
+        {
+            text.DeleteData((uint)offset, 1);
+        }
+
+        // As in the browsers, the content inserted after the spaces that collapse before a preserved line feed
+        // (white-space: pre-line) is inserted before them, so that they stay collapsed
+        return GetStartOfSpacesCollapsedBeforeLineFeed(text, offset);
+    }
+
+    /// <summary>
+    /// The start of the spaces and tabs before the offset when only spaces and tabs separate the offset from the next line
+    /// feed and white-space is pre-line (these spaces are not rendered); otherwise the offset.
+    /// </summary>
+    private int GetStartOfSpacesCollapsedBeforeLineFeed(Text text, int offset)
+    {
+        var data = text.Data;
+        if (offset == 0 || data[offset - 1] is not (' ' or '\t'))
+            return offset;
+
+        var end = offset;
+        while (end < data.Length && data[end] is ' ' or '\t')
+        {
+            end++;
+        }
+
+        if (end == data.Length || data[end] is not '\n' || GetWhiteSpace(text) is not "pre-line")
+            return offset;
+
+        var start = offset;
+        while (start > 0 && data[start - 1] is ' ' or '\t')
+        {
+            start--;
+        }
+
+        return start;
     }
 }

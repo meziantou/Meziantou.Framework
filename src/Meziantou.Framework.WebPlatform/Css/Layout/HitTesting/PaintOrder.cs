@@ -633,8 +633,10 @@ internal static class PaintOrder
 
     /// <summary>
     /// Whether the fragments of an inline box that establishes a stacking context are painted in one group: its effects are only
-    /// the ones that composite the group (the opacity, the blend mode, the isolation). The filters, the clip paths and the masks,
-    /// whose geometry is the one of a fragment, are applied to each fragment.
+    /// the ones that composite the group (the opacity, the blend mode, the isolation) and the filters
+    /// (https://drafts.fxtf.org/filter-effects/#FilterProperty: "all the elements descendants are rendered together as a group
+    /// with the filter effect applied to the group as a whole", whose bounding box is the one of all the fragments). The backdrop
+    /// filters, the clip paths and the masks, whose geometry is the one of a fragment, are applied to each fragment.
     /// </summary>
     internal static bool IsCompositedAsOneGroup(ContainerBox box)
     {
@@ -642,7 +644,7 @@ internal static class PaintOrder
             return false;
 
         var style = box.Style;
-        return !FilterEffects.HasFilter(style) && !FilterEffects.HasFilter(style, "backdrop-filter") && style.GetComputedValue("clip-path") is "none" or ""
+        return !FilterEffects.HasFilter(style, "backdrop-filter") && style.GetComputedValue("clip-path") is "none" or ""
             && style.GetComputedValue("mask-image") is "none" or "" && style.GetComputedValue("mask-border-source") is "none" or "";
     }
 

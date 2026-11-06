@@ -372,6 +372,7 @@ internal static class Fetching
         var internalResponse = response.Internal;
         if (internalResponse.UrlList.Count == 0)
         {
+            internalResponse.HasRewrittenUrl = true;
             internalResponse.UrlList = [.. request.UrlList];
             if (response.Type is not (FetchResponseType.Opaque or FetchResponseType.Error))
             {

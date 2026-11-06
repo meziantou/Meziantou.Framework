@@ -457,8 +457,11 @@ internal sealed partial class EditingAlgorithms
             RemoveExtraneousLineBreaksBefore(originalParent);
         }
 
-        var followsLineBreak = containsFirstChild && FollowsLineBreak(originalParent);
-        var precedesLineBreak = containsLastChild && PrecedesLineBreak(originalParent);
+        // The children of a flex or grid container are items, which are not in lines: the nodes moved in it need no line
+        // break to stay on their own line
+        var inFlexOrGridContainer = originalParent.ParentNode is Element grandparent && GetDisplay(grandparent) is var newParentDisplay && (newParentDisplay.IsFlexContainer || newParentDisplay.IsGridContainer);
+        var followsLineBreak = containsFirstChild && !inFlexOrGridContainer && FollowsLineBreak(originalParent);
+        var precedesLineBreak = containsLastChild && !inFlexOrGridContainer && PrecedesLineBreak(originalParent);
         if (!containsFirstChild && containsLastChild)
         {
             for (var i = nodeList.Count - 1; i >= 0; i--)

@@ -747,7 +747,7 @@ public sealed class Navigation : EventTarget
                 }
             }
 
-            var result = traversable.ApplyTraverseHistoryStep(targetStep, changingNavigable => Sandboxing.IsAllowedToNavigate(navigable, changingNavigable, document.ActiveSandboxingFlags, hasTransientActivation));
+            var result = traversable.ApplyTraverseHistoryStep(targetStep, changingNavigable => Sandboxing.IsAllowedToNavigate(navigable, changingNavigable, document.ActiveSandboxingFlags, hasTransientActivation), sourceDocument: document);
             if (result == HistoryStepResult.InitiatorDisallowed)
             {
                 document.QueueGlobalTask(() => RejectFinishedPromise(apiMethodTracker, CreateException("The traversal is not allowed", "SecurityError")));

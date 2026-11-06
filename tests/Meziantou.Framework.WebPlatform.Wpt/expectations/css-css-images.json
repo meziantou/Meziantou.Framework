@@ -477,7 +477,7 @@
     "reftest": "PASS"
   },
   "css/css-images/image-orientation/image-orientation-none-cross-origin-svg.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-images/image-orientation/image-orientation-none-cross-origin.html": {
     "reftest": "PASS"

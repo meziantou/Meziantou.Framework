@@ -238,7 +238,9 @@ styles builds it again. Which cached styles are discarded depends on the change:
   SVG elements and the changes of their children (the style elements of SVG, the elements referenced by the `use` elements),
   an id change when a selector uses `:target`, a change of a `style` attribute that declares a timeline, the other state changes (`IncrementElementStateVersion()`: the checkedness,
   the value and the validity of the form controls, the dialogs, the popovers...), the animations without target, and more
-  than 1,000 recorded changes (e.g. while the parser builds the document). The documents in quirks mode (rules of the user
+  than 1,000 recorded changes (e.g. while the parser builds the document). The nodes inserted in (or removed from) an element
+  one after the other are one recorded change (`StyleInvalidation.NextChildren`: the rows of a table body inserted by
+  `innerHTML`), and the elements affected by the changes of the children of an element are collected once per element. The documents in quirks mode (rules of the user
   agent depend on other elements), with shadow trees, an active view transition, SMIL animations, WebVTT cues or named
   scroll-driven timelines and `animation-timeline` declarations (the timelines are looked up in the styles of other elements),
   and the style engines with an environment override (the printing, the minifier) always invalidate all their styles.
@@ -517,7 +519,11 @@ like the imported style sheets (`DocumentRequest.Initiator` is null), when the d
   `accent-color: AccentColor` is the accent color of the parent and the `currentcolor` of `accent-color` in the `color` of
   the same element is the color of the parent, also for the colors of a canvas; `light-dark()`, `color-mix()` in the
   sRGB, linear sRGB, XYZ, Lab, LCH, Oklab and Oklch color spaces, `contrast-color()`, which is white or black, whichever has
-  the higher WCAG 2.1 contrast ratio); the resolved value of a color is its used value (`currentcolor` is resolved). The
+  the higher WCAG 2.1 contrast ratio, `color-layers()` of [CSS Color 6](https://drafts.csswg.org/css-color-6/#color-layers),
+  whose colors are composited with Source Over and its blend mode, the first color on top, as the layers of a background:
+  each color is CSS gamut mapped to sRGB, then they are composited in sRGB, as the specification does not give the color
+  space); the resolved value of a color is its used
+  value (`currentcolor` is resolved). The
   relative color syntax is kept as specified. `light-dark()` of images computes to the image of the used color scheme
   (`none` is `image(rgba(0, 0, 0, 0))`).
 - The color conversions follow the sample code of CSS Color 4, except the transfer function of `rec2020`: the piecewise

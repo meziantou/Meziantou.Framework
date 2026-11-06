@@ -228,6 +228,106 @@ public sealed class CartesianChartTests
     }
 
     [Fact]
+    public void SizeLegend()
+    {
+        #region Charts_SizeLegend
+        var plot = new Plot { Title = "Power, weight and efficiency" };
+        plot.Add(new DotMark<Car>(SampleData.Cars, x: car => car.Weight, y: car => car.Mpg)
+        {
+            Size = car => car.Horsepower,
+            Fill = car => car.Origin,
+            FillOpacity = 0.7,
+            StrokeColor = ChartColor.White,
+        });
+        plot.SizeScale = new SizeScale { MaxRadius = 20 };
+        plot.Legend.Position = LegendPosition.Right;
+        plot.Legend.Title = "Origin";
+        plot.SizeLegend.Title = "Horsepower";
+        plot.SizeLegend.Values = [100, 150, 250];
+        #endregion
+
+        ChartAssert.Svg(plot, "SizeLegend");
+    }
+
+    [Fact]
+    public void SizeLegendOptions()
+    {
+        // At the bottom, the size legend wraps under the color legend when the row is full; the labels of close values are pushed down
+        var plot = new Plot { Width = 200, Height = 300 };
+        plot.Add(new DotMark<Car>(SampleData.Cars, x: car => car.Weight, y: car => car.Mpg) { Size = car => car.Horsepower, Fill = car => car.Name });
+        plot.Legend.Position = LegendPosition.Bottom;
+        plot.SizeLegend.Values = [250, 240, 100];
+        ChartAssert.Svg(plot);
+
+        var hidden = new Plot();
+        hidden.Add(new DotMark<Car>(SampleData.Cars, x: car => car.Weight, y: car => car.Mpg) { Size = car => car.Horsepower });
+        hidden.SizeLegend.Visible = false;
+        Assert.DoesNotContain("legend-size", hidden.ToSvg());
+
+        // Without positive values, the legend is only its title
+        var empty = new Plot();
+        empty.Add(new DotMark<Car>(SampleData.Cars, x: car => car.Weight, y: car => car.Mpg) { Size = _ => 0 });
+        empty.SizeLegend.Title = "Nothing";
+        Assert.DoesNotContain("<circle", empty.ToSvg());
+    }
+
+    [Fact]
+    public void Annotations()
+    {
+        #region Charts_Annotations
+        var plot = new Plot { Title = "Monthly temperatures" };
+        plot.Add(new LineMark<Reading>(SampleData.Readings, x: reading => reading.Date, y: reading => reading.Temperature) { Stroke = reading => reading.City });
+        plot.Add(new AnnotationMark<Reading>(
+            SampleData.Readings.Where(reading => reading.City == "Madrid").MaxBy(reading => reading.Temperature) is { } hottest ? [hottest] : [],
+            x: reading => reading.Date,
+            y: reading => reading.Temperature,
+            text: reading => "Hottest month\n" + NumberFormats.Default(reading.Temperature) + " °C in Madrid")
+        {
+            DX = 60,
+            DY = -5,
+        });
+        plot.Add(new AnnotationMark<Reading>(
+            SampleData.Readings.Where(reading => reading.City == "Oslo").MinBy(reading => reading.Temperature) is { } coldest ? [coldest] : [],
+            x: reading => reading.Date,
+            y: reading => reading.Temperature,
+            text: reading => "Coldest: " + NumberFormats.Default(reading.Temperature) + " °C in Oslo")
+        {
+            DX = 50,
+            DY = -40,
+            Bend = -40,
+        });
+        #endregion
+
+        ChartAssert.Svg(plot, "Annotations");
+    }
+
+    [Fact]
+    public void AnnotationOptions()
+    {
+        (double X, double Y, string? Text)[] notes = [(2, 1.5, "left"), (2, 2.5, "middle"), (3, 3, "below"), (4, 4, null), (double.NaN, 1, "missing")];
+        var plot = new Plot { Width = 300, Height = 200, XScale = new LinearScale { Minimum = 0, Maximum = 5 } };
+        plot.Add(new AnnotationMark<(double X, double Y, string? Text)>(notes.Take(1), x: note => note.X, y: note => note.Y, text: note => note.Text) { DX = -30, DY = 0, HeadSize = 0, StrokeColor = ChartColor.Black, FillColor = "#e5484d" });
+        plot.Add(new AnnotationMark<(double X, double Y, string? Text)>(notes.Skip(1).Take(1), x: note => note.X, y: note => note.Y, text: note => note.Text) { DX = 0, DY = 0, FontSize = 14 });
+        plot.Add(new AnnotationMark<(double X, double Y, string? Text)>(notes.Skip(2), x: note => note.X, y: note => note.Y, text: note => note.Text)
+        {
+            DX = 0,
+            DY = 30,
+            Bend = -60,
+            Stroke = note => note.Text,
+            Fill = note => note.Text,
+            StrokeWidth = 2,
+            Title = note => note.Text,
+        });
+        ChartAssert.Svg(plot);
+
+        // The arrow starts where the line from the center of the text to the point leaves the box of the text
+        Assert.Equal((10.0, 5.0), AnnotationMark<int>.ClipToBox(20, 5, 0, 0, 10, 10));
+        Assert.Equal((5.0, 0.0), AnnotationMark<int>.ClipToBox(5, -20, 0, 0, 10, 10));
+        Assert.Equal((10.0, 10.0), AnnotationMark<int>.ClipToBox(15, 15, 0, 0, 10, 10));
+        Assert.Null(AnnotationMark<int>.ClipToBox(5, 5, 0, 0, 10, 10));
+    }
+
+    [Fact]
     public void ReferenceLines()
     {
         #region Charts_ReferenceLines

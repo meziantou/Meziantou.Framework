@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="300" height="300" fill="#ffffff"/>
+<g class="marks">
+<g>
+<path d="M150,58.1 A103.45,103.45 0 1,1 120.85,260.81 Q150,161.55 120.85,260.81 A103.45,103.45 0 0,1 47.6,176.27 Q150,161.55 150,58.1 Z" fill="#4269d0"><title>AB</title></path>
+<path d="M47.6,176.27 A103.45,103.45 0 0,1 150,58.1 Q150,161.55 150,58.1 Q150,161.55 47.6,176.27 Z" fill="#ff725c"><title>BC</title></path>
+<path d="M150,37.1 A124.45,124.45 0 1,1 114.94,280.96 L120.57,261.77 A104.45,104.45 0 1,0 150,57.1 Z" fill="#4269d0"><title>A: 12</title></path>
+<path d="M114.94,280.96 A124.45,124.45 0 0,1 150,37.1 L150,57.1 A104.45,104.45 0 0,0 120.57,261.77 Z" fill="#efb118"><title>B: 10</title></path>
+<path d="" fill="#ff725c"><title>C: 0</title></path>
+</g>
+</g>
+<g class="legend">
+<rect x="10" y="10.55" width="10" height="10" rx="2" fill="#4269d0"/>
+<text x="25" y="18.62" font-size="12" fill="#1f2328">B</text>
+<rect x="47" y="10.55" width="10" height="10" rx="2" fill="#efb118"/>
+<text x="62" y="18.62" font-size="12" fill="#1f2328">A</text>
+<rect x="84.01" y="10.55" width="10" height="10" rx="2" fill="#ff725c"/>
+<text x="99.01" y="18.62" font-size="12" fill="#1f2328">C</text>
+</g>
+</svg>

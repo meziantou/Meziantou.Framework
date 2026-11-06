@@ -242,14 +242,19 @@ Chromium rasterized (`pages`), with looser thresholds (the rasterizer does not p
 images as the library).
 
 The images (`chromium.png`, `library.png` and `diff.png`, the different pixels in red), the PDF, `report.html`,
-`report.md` and `report.json` are written in `artifacts/chromium-diff/render` (`--out`). `--summary` writes the summary in
-Markdown, without timings, so that it changes only with the results: `render-parity.md` is the committed summary, to
-update with the changes that change the results. A difference fails the comparison, except the accepted ones of
-`render-known-differences.json` (a fixture, a scenario or a prefix followed by `*`, an optional output and the reason; a
-rule that matches no result when everything is compared fails), and the unsupported results (`--no-fail` never fails):
+`report.md` and `report.json` are written in `artifacts/chromium-diff/render` (`--out`). With `--pages`, the reports
+also rank the pages of `pages.txt` by difference (their most different scenario; the errors first, then by the fraction
+of the pixels that differ), with their URLs, to find the largest remaining differences on real-world pages (their
+results are unexpected unless they pass: the pages are not committed, so they have no known differences). `--summary`
+writes the summary in Markdown, without timings, so that it changes only with the results: `render-parity.md` is the
+committed summary, to update with the changes that change the results. A difference fails the comparison, except the
+accepted ones of `render-known-differences.json` (a fixture, a scenario or a prefix followed by `*`, an optional output
+and the reason; a rule that matches no result when everything is compared fails), and the unsupported results
+(`--no-fail` never fails):
 
 ```bash
 dotnet run --project tools/Meziantou.Framework.WebPlatform.ChromiumDiff -c Release -- --render --summary tools/Meziantou.Framework.WebPlatform.ChromiumDiff/render-parity.md
 dotnet run --project tools/Meziantou.Framework.WebPlatform.ChromiumDiff -c Release -- --render --scenario iphone-13 --filter meta-viewport
 dotnet run --project tools/Meziantou.Framework.WebPlatform.ChromiumDiff -c Release -- --render --scenario pdf-background --rasterizer meziantou
+dotnet run --project tools/Meziantou.Framework.WebPlatform.ChromiumDiff -c Release -- --render --pages --scenario desktop --no-fail
 ```

@@ -36,52 +36,119 @@ internal sealed class LayoutStyleGroupTable
         _groups.Add(group);
         return group;
     }
+
+    // The computed values of the last box model built (see GetBoxModel): the consecutive elements often have the same values
+    // (e.g. the cells of a table), which are the strings shared by the styles of the engine (see ComputedValueTable)
+    private readonly string?[] _boxModelValues = new string?[BoxModelStyle.ValueCount];
+    private readonly string?[] _lastBoxModelValues = new string?[BoxModelStyle.ValueCount];
+    private double _lastBoxModelZoom = double.NaN;
+    private BoxModelStyle? _lastBoxModel;
+
+    /// <summary>
+    /// Returns the box model of a style, shared with the other styles (see <see cref="Share"/>): the one of the last box model
+    /// when the computed values it is built from are the same strings, without parsing them.
+    /// </summary>
+    public BoxModelStyle GetBoxModel(ComputedStyle style, double zoom)
+    {
+        // (the root element of a scoped view transition whose rendering is suppressed has the size of its old state)
+        if (style.PseudoElement is null && style.Element.NodeDocument.GetScopedViewTransition(style.Element) is { FrozenFrame: not null })
+            return Share(new BoxModelStyle(style, zoom));
+
+        var values = _boxModelValues;
+        BoxModelStyle.GetValues(style, values);
+        if (_lastBoxModel is { } last && zoom.Equals(_lastBoxModelZoom) && values.AsSpan().SequenceEqual(_lastBoxModelValues, ReferenceEqualityComparer.Instance))
+            return last;
+
+        var result = Share(new BoxModelStyle(values, zoom));
+        values.CopyTo(_lastBoxModelValues, 0);
+        _lastBoxModelZoom = zoom;
+        _lastBoxModel = result;
+        return result;
+    }
 }
 
 /// <summary>The box model (https://drafts.csswg.org/css-box-4/, https://drafts.csswg.org/css-sizing-3/): sizes, margins, paddings and borders.</summary>
 internal sealed record BoxModelStyle
 {
+    /// <summary>The number of computed values a box model is built from (see <see cref="GetValues"/>).</summary>
+    internal const int ValueCount = 26;
+
+    private const int BorderStyleIndex = 14;
+    private const int BorderWidthIndex = 18;
+
     internal BoxModelStyle(ComputedStyle style, double zoom)
+        : this(GetValues(style, new string?[ValueCount]), zoom)
     {
-        Width = Size.Parse(style.GetComputedValue("width"), zoom);
-        Height = Size.Parse(style.GetComputedValue("height"), zoom);
-        MinWidth = Size.Parse(style.GetComputedValue("min-width"), zoom);
-        MinHeight = Size.Parse(style.GetComputedValue("min-height"), zoom);
-        MaxWidth = Size.Parse(style.GetComputedValue("max-width"), zoom, SizeKind.None);
-        MaxHeight = Size.Parse(style.GetComputedValue("max-height"), zoom, SizeKind.None);
-        Margin = new(
-            LengthPercentageAuto.Parse(style.GetComputedValue("margin-top"), zoom),
-            LengthPercentageAuto.Parse(style.GetComputedValue("margin-right"), zoom),
-            LengthPercentageAuto.Parse(style.GetComputedValue("margin-bottom"), zoom),
-            LengthPercentageAuto.Parse(style.GetComputedValue("margin-left"), zoom));
-        Padding = new(
-            ParsePadding(style.GetComputedValue("padding-top"), zoom),
-            ParsePadding(style.GetComputedValue("padding-right"), zoom),
-            ParsePadding(style.GetComputedValue("padding-bottom"), zoom),
-            ParsePadding(style.GetComputedValue("padding-left"), zoom));
-        BorderStyle = new(
-            LayoutKeywords.ParseBorderStyle(style.GetComputedValue("border-top-style")),
-            LayoutKeywords.ParseBorderStyle(style.GetComputedValue("border-right-style")),
-            LayoutKeywords.ParseBorderStyle(style.GetComputedValue("border-bottom-style")),
-            LayoutKeywords.ParseBorderStyle(style.GetComputedValue("border-left-style")));
-
-        // https://drafts.csswg.org/css-backgrounds/#border-width: the used width is 0 when the style is none or hidden
-        BorderWidth = new(
-            BorderStyle.Top is Layout.BorderStyle.None or Layout.BorderStyle.Hidden ? 0 : ParseFixedLength(style.GetComputedValue("border-top-width"), zoom),
-            BorderStyle.Right is Layout.BorderStyle.None or Layout.BorderStyle.Hidden ? 0 : ParseFixedLength(style.GetComputedValue("border-right-width"), zoom),
-            BorderStyle.Bottom is Layout.BorderStyle.None or Layout.BorderStyle.Hidden ? 0 : ParseFixedLength(style.GetComputedValue("border-bottom-width"), zoom),
-            BorderStyle.Left is Layout.BorderStyle.None or Layout.BorderStyle.Hidden ? 0 : ParseFixedLength(style.GetComputedValue("border-left-width"), zoom));
-        AspectRatio = AspectRatio.Parse(style.GetComputedValue("aspect-ratio"));
-        ContainIntrinsicWidth = ContainIntrinsicSize.Parse(style.GetComputedValue("contain-intrinsic-width"), zoom);
-        ContainIntrinsicHeight = ContainIntrinsicSize.Parse(style.GetComputedValue("contain-intrinsic-height"), zoom);
-
         // The root element of a scoped view transition whose rendering is suppressed has the size of its old state (see LayoutStyle.Contain)
         if (style.PseudoElement is null && style.Element.NodeDocument.GetScopedViewTransition(style.Element) is { FrozenFrame: { } frozen })
         {
             ContainIntrinsicWidth = new ContainIntrinsicSize(IsAuto: false, frozen.ContentSize.Width);
             ContainIntrinsicHeight = new ContainIntrinsicSize(IsAuto: false, frozen.ContentSize.Height);
         }
-        InterpolateSize = style.GetComputedValue("interpolate-size") == "allow-keywords" ? InterpolateSize.AllowKeywords : InterpolateSize.NumericOnly;
+    }
+
+    /// <summary>Builds a box model from the computed values returned by <see cref="GetValues"/>.</summary>
+    internal BoxModelStyle(string?[] values, double zoom)
+    {
+        Width = Size.Parse(values[0]!, zoom);
+        Height = Size.Parse(values[1]!, zoom);
+        MinWidth = Size.Parse(values[2]!, zoom);
+        MinHeight = Size.Parse(values[3]!, zoom);
+        MaxWidth = Size.Parse(values[4]!, zoom, SizeKind.None);
+        MaxHeight = Size.Parse(values[5]!, zoom, SizeKind.None);
+        Margin = new(
+            LengthPercentageAuto.Parse(values[6]!, zoom),
+            LengthPercentageAuto.Parse(values[7]!, zoom),
+            LengthPercentageAuto.Parse(values[8]!, zoom),
+            LengthPercentageAuto.Parse(values[9]!, zoom));
+        Padding = new(
+            ParsePadding(values[10]!, zoom),
+            ParsePadding(values[11]!, zoom),
+            ParsePadding(values[12]!, zoom),
+            ParsePadding(values[13]!, zoom));
+        BorderStyle = new(
+            LayoutKeywords.ParseBorderStyle(values[BorderStyleIndex]!),
+            LayoutKeywords.ParseBorderStyle(values[BorderStyleIndex + 1]!),
+            LayoutKeywords.ParseBorderStyle(values[BorderStyleIndex + 2]!),
+            LayoutKeywords.ParseBorderStyle(values[BorderStyleIndex + 3]!));
+
+        // https://drafts.csswg.org/css-backgrounds/#border-width: the used width is 0 when the style is none or hidden (the
+        // width is not computed then, see GetValues)
+        BorderWidth = new(
+            values[BorderWidthIndex] is { } top ? ParseFixedLength(top, zoom) : 0,
+            values[BorderWidthIndex + 1] is { } right ? ParseFixedLength(right, zoom) : 0,
+            values[BorderWidthIndex + 2] is { } bottom ? ParseFixedLength(bottom, zoom) : 0,
+            values[BorderWidthIndex + 3] is { } left ? ParseFixedLength(left, zoom) : 0);
+        AspectRatio = AspectRatio.Parse(values[22]!);
+        ContainIntrinsicWidth = ContainIntrinsicSize.Parse(values[23]!, zoom);
+        ContainIntrinsicHeight = ContainIntrinsicSize.Parse(values[24]!, zoom);
+        InterpolateSize = values[25] == "allow-keywords" ? InterpolateSize.AllowKeywords : InterpolateSize.NumericOnly;
+    }
+
+    private static readonly string[] Properties =
+    [
+        "width", "height", "min-width", "min-height", "max-width", "max-height",
+        "margin-top", "margin-right", "margin-bottom", "margin-left",
+        "padding-top", "padding-right", "padding-bottom", "padding-left",
+        "border-top-style", "border-right-style", "border-bottom-style", "border-left-style",
+        "border-top-width", "border-right-width", "border-bottom-width", "border-left-width",
+        "aspect-ratio", "contain-intrinsic-width", "contain-intrinsic-height", "interpolate-size",
+    ];
+
+    /// <summary>
+    /// Returns the computed values a box model is built from, in <paramref name="values"/> (<see cref="ValueCount"/> values): the
+    /// width of a border whose style is none or hidden is null (it is not computed).
+    /// </summary>
+    internal static string?[] GetValues(ComputedStyle style, string?[] values)
+    {
+        for (var i = 0; i < ValueCount; i++)
+        {
+            values[i] = i is >= BorderWidthIndex and < BorderWidthIndex + 4 && LayoutKeywords.ParseBorderStyle(values[i - 4]!) is Layout.BorderStyle.None or Layout.BorderStyle.Hidden
+                ? null
+                : style.GetComputedValue(Properties[i]);
+        }
+
+        return values;
     }
 
     /// <summary>https://drafts.csswg.org/css-sizing-3/#preferred-size-properties</summary>

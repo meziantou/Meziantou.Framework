@@ -11,6 +11,19 @@ namespace Meziantou.Framework.Charts
         public Meziantou.Framework.Charts.TextMetrics Measure(string text, Meziantou.Framework.Charts.ChartFont font) => throw null;
     }
 
+    public sealed class AnnotationMark<T> : Meziantou.Framework.Charts.Mark<T>
+    {
+        public double Bend { get => throw null; set { } }
+        public double DX { get => throw null; set { } }
+        public double DY { get => throw null; set { } }
+        public double? FontSize { get => throw null; set { } }
+        public double HeadSize { get => throw null; set { } }
+        public System.Func<T, string?> Text { get => throw null; }
+        public System.Func<T, object?> X { get => throw null; }
+        public System.Func<T, object?> Y { get => throw null; }
+        public AnnotationMark(System.Collections.Generic.IEnumerable<T> data, System.Func<T, object?> x, System.Func<T, object?> y, System.Func<T, string?> text) { }
+    }
+
     public sealed class ArcMark<T> : Meziantou.Framework.Charts.Mark<T>
     {
         public System.Func<T, string?>? Label { get => throw null; set { } }
@@ -255,6 +268,18 @@ namespace Meziantou.Framework.Charts
         public static bool operator !=(Meziantou.Framework.Charts.ChartTheme? left, Meziantou.Framework.Charts.ChartTheme? right) => throw null;
     }
 
+    public sealed class ChordMark<T> : Meziantou.Framework.Charts.Mark<T>
+    {
+        public double ArcWidth { get => throw null; set { } }
+        public double LinkOpacity { get => throw null; set { } }
+        public double NodePadding { get => throw null; set { } }
+        public bool ShowLabels { get => throw null; set { } }
+        public System.Func<T, object?> Source { get => throw null; }
+        public System.Func<T, object?> Target { get => throw null; }
+        public System.Func<T, object?> Value { get => throw null; }
+        public ChordMark(System.Collections.Generic.IEnumerable<T> data, System.Func<T, object?> source, System.Func<T, object?> target, System.Func<T, object?> value) { }
+    }
+
     public sealed class ClusterLayout
     {
         public double Height { get => throw null; set { } }
@@ -294,6 +319,19 @@ namespace Meziantou.Framework.Charts
         public System.Func<double, string>? TickFormat { get => throw null; set { } }
         public System.Collections.Generic.IReadOnlyList<double>? Ticks { get => throw null; set { } }
         public bool? Zero { get => throw null; set { } }
+    }
+
+    public sealed class ContourMark<T> : Meziantou.Framework.Charts.Mark<T>
+    {
+        public double? BandwidthX { get => throw null; set { } }
+        public double? BandwidthY { get => throw null; set { } }
+        public double FillOpacity { get => throw null; set { } }
+        public bool Filled { get => throw null; set { } }
+        public int GridSize { get => throw null; set { } }
+        public int Thresholds { get => throw null; set { } }
+        public System.Func<T, object?> X { get => throw null; }
+        public System.Func<T, object?> Y { get => throw null; }
+        public ContourMark(System.Collections.Generic.IEnumerable<T> data, System.Func<T, object?> x, System.Func<T, object?> y) { }
     }
 
     public abstract class Coordinates
@@ -387,6 +425,14 @@ namespace Meziantou.Framework.Charts
     public sealed class GroupTransform : Meziantou.Framework.Charts.Transform
     {
         public Meziantou.Framework.Charts.GroupReducer Reducer { get => throw null; set { } }
+    }
+
+    public sealed class HexbinMark<T> : Meziantou.Framework.Charts.Mark<T>
+    {
+        public double Radius { get => throw null; set { } }
+        public System.Func<T, object?> X { get => throw null; }
+        public System.Func<T, object?> Y { get => throw null; }
+        public HexbinMark(System.Collections.Generic.IEnumerable<T> data, System.Func<T, object?> x, System.Func<T, object?> y) { }
     }
 
     public static class Hierarchy
@@ -548,6 +594,20 @@ namespace Meziantou.Framework.Charts
         public Meziantou.Framework.Charts.Transform? Transform { get => throw null; set { } }
     }
 
+    public sealed class NetworkMark<T> : Meziantou.Framework.Charts.Mark<T>
+    {
+        public double Charge { get => throw null; set { } }
+        public int Iterations { get => throw null; set { } }
+        public double LinkDistance { get => throw null; set { } }
+        public double LinkOpacity { get => throw null; set { } }
+        public System.Func<string, object?>? NodeFill { get => throw null; set { } }
+        public double NodeRadius { get => throw null; set { } }
+        public bool ShowLabels { get => throw null; set { } }
+        public System.Func<T, object?> Source { get => throw null; }
+        public System.Func<T, object?> Target { get => throw null; }
+        public NetworkMark(System.Collections.Generic.IEnumerable<T> data, System.Func<T, object?> source, System.Func<T, object?> target) { }
+    }
+
     public static class NumberFormats
     {
         public static string Default(double value) => throw null;
@@ -574,6 +634,21 @@ namespace Meziantou.Framework.Charts
     {
         public double Padding { get => throw null; set { } }
         public PackMark(Meziantou.Framework.Charts.HierarchyNode<T> root) { }
+    }
+
+    public sealed class ParallelCoordinatesMark<T> : Meziantou.Framework.Charts.Mark<T>
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Charts.ParallelDimension<T>> Dimensions { get => throw null; }
+        public double LineOpacity { get => throw null; set { } }
+        public ParallelCoordinatesMark(System.Collections.Generic.IEnumerable<T> data, System.Collections.Generic.IEnumerable<Meziantou.Framework.Charts.ParallelDimension<T>> dimensions) { }
+    }
+
+    public sealed class ParallelDimension<T>
+    {
+        public string Name { get => throw null; }
+        public Meziantou.Framework.Charts.Scale? Scale { get => throw null; set { } }
+        public System.Func<T, object?> Value { get => throw null; }
+        public ParallelDimension(string name, System.Func<T, object?> value) { }
     }
 
     public sealed class PartitionLayout
@@ -659,6 +734,7 @@ namespace Meziantou.Framework.Charts
         public System.Collections.Generic.IList<Meziantou.Framework.Charts.Mark> Marks { get => throw null; }
         public Meziantou.Framework.Charts.Axis SecondaryYAxis { get => throw null; }
         public Meziantou.Framework.Charts.Scale? SecondaryYScale { get => throw null; set { } }
+        public Meziantou.Framework.Charts.SizeLegend SizeLegend { get => throw null; }
         public Meziantou.Framework.Charts.SizeScale? SizeScale { get => throw null; set { } }
         public string? Subtitle { get => throw null; set { } }
         public Meziantou.Framework.Charts.ITextMeasurer? TextMeasurer { get => throw null; set { } }
@@ -735,6 +811,19 @@ namespace Meziantou.Framework.Charts
     {
         public int Degree { get => throw null; set { } }
         public int Samples { get => throw null; set { } }
+    }
+
+    public sealed class RidgelineMark<T> : Meziantou.Framework.Charts.Mark<T>
+    {
+        public double? Bandwidth { get => throw null; set { } }
+        public Meziantou.Framework.Charts.Curve Curve { get => throw null; set { } }
+        public double Cut { get => throw null; set { } }
+        public double FillOpacity { get => throw null; set { } }
+        public double Overlap { get => throw null; set { } }
+        public int Samples { get => throw null; set { } }
+        public System.Func<T, object?> X { get => throw null; }
+        public System.Func<T, object?> Y { get => throw null; }
+        public RidgelineMark(System.Collections.Generic.IEnumerable<T> data, System.Func<T, object?> x, System.Func<T, object?> y) { }
     }
 
     public sealed class RuleXMark : Meziantou.Framework.Charts.RuleXMark<double>
@@ -948,6 +1037,13 @@ namespace Meziantou.Framework.Charts
         public double? Minimum { get => throw null; set { } }
         public Meziantou.Framework.Charts.ColorScheme Scheme { get => throw null; set { } }
         public System.Func<double, string>? TickFormat { get => throw null; set { } }
+    }
+
+    public sealed class SizeLegend
+    {
+        public string? Title { get => throw null; set { } }
+        public System.Collections.Generic.IReadOnlyList<double>? Values { get => throw null; set { } }
+        public bool? Visible { get => throw null; set { } }
     }
 
     public sealed class SizeScale

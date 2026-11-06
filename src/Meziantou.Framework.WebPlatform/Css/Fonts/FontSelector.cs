@@ -356,9 +356,35 @@ internal sealed class FontSelector
             fallbacks.Add(CreateInstalledEntry(fallback, description)!);
         }
 
-        // Then the fallback fonts installed by the host, for the characters of their ranges
+        // Then the fallback fonts installed by the host, for the characters of their ranges, and the fonts of the machine
         AddHostFallbacks(fallbacks, description);
+        if (_document.InstalledFonts is { HasSystemFallback: true })
+        {
+            fallbacks.Add(new FontFallbackList.SystemFallbackEntry(description));
+        }
+
         return new FontFallbackList(this, description, [.. families], [.. fallbacks]);
+    }
+
+    /// <summary>The fonts of the families of the system font fallback, by family and description (null when the family is not installed).</summary>
+    private readonly Dictionary<(string Family, FontDescription Description), MatchedFont?> _systemFallbackFonts = [];
+
+    /// <summary>
+    /// Returns the font of the system font fallback for a character (see <see cref="InstalledFontCollection.FindSystemFallbackFamily"/>):
+    /// the face of its family selected by the font matching for the description, when it has a glyph for the character.
+    /// </summary>
+    internal MatchedFont? FindSystemFallbackFont(int codePoint, FontDescription description)
+    {
+        if (_document.InstalledFonts?.FindSystemFallbackFamily(codePoint) is not { } family)
+            return null;
+
+        if (!_systemFallbackFonts.TryGetValue((family, description), out var font))
+        {
+            font = CreateInstalledEntry(family, description)?.Font;
+            _systemFallbackFonts[(family, description)] = font;
+        }
+
+        return font is not null && font.HasGlyph(codePoint) ? font : null;
     }
 
     /// <summary>Adds the fonts of the installed font fallback that the host installed (<see cref="InstalledFontCollection.AddFallback"/>).</summary>

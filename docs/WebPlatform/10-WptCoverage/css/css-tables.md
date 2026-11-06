@@ -9,16 +9,16 @@ description: "The results of the web-platform-tests of css/css-tables, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 107 | 113 | 0 | 95% |
-| [Tentative](#tentative-tests) | 25 | 26 | 0 | 96% |
+| [Stable](#stable-tests) | 108 | 113 | 0 | 96% |
+| [Tentative](#tentative-tests) | 26 | 26 | 0 | 100% |
 | [Reftests](#reftests) | 170 | 173 | 0 | 98% |
-| **All** | **302** | **312** | **0** | **97%** |
+| **All** | **304** | **312** | **0** | **97%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 6
+- **BUG**: 4
 - **TEST BUG**: 2
 - **NOT IMPLEMENTED**: 2
 
@@ -63,13 +63,13 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`height-distribution/computing-row-measure-0.html`](https://wpt.fyi/results/css/css-tables/height-distribution/computing-row-measure-0.html) | Pass | 4 / 4 |  |  |
 | [`height-distribution/computing-row-measure-1.html`](https://wpt.fyi/results/css/css-tables/height-distribution/computing-row-measure-1.html) | Pass | 4 / 4 |  |  |
 | [`height-distribution/extra-height-given-to-all-row-groups-003.html`](https://wpt.fyi/results/css/css-tables/height-distribution/extra-height-given-to-all-row-groups-003.html) | Pass | 1 / 1 |  |  |
-| [`height-distribution/extra-height-given-to-all-row-groups-004.html`](https://wpt.fyi/results/css/css-tables/height-distribution/extra-height-given-to-all-row-groups-004.html) | Fail | 0 / 1 | BUG | the height of the table goes to the body row group before the header group, as in Chromium (the test expects it to be shared) |
+| [`height-distribution/extra-height-given-to-all-row-groups-004.html`](https://wpt.fyi/results/css/css-tables/height-distribution/extra-height-given-to-all-row-groups-004.html) | Pass | 1 / 1 |  |  |
 | [`height-distribution/percentage-sizing-of-table-cell-children.html`](https://wpt.fyi/results/css/css-tables/height-distribution/percentage-sizing-of-table-cell-children.html) | Fail | 9 / 10 | TEST BUG | expects the percentage width of a form control in a zero-width table to resolve as `auto` in the measure of the columns (fails in every browser) |
 | [`html-to-css-mapping-1.html`](https://wpt.fyi/results/css/css-tables/html-to-css-mapping-1.html) | Pass | 4 / 4 |  |  |
 | [`html-to-css-mapping-2.html`](https://wpt.fyi/results/css/css-tables/html-to-css-mapping-2.html) | Fail | 13 / 25 | BUG | the borders given by the `border`, `frame` and `rules` attributes of a table (the presentational hints of HTML) differ from the mapping of CSS Tables 3 that the test expects (no browser matches it) |
 | [`html5-table-formatting-1.html`](https://wpt.fyi/results/css/css-tables/html5-table-formatting-1.html) | Fail | 5 / 6 | BUG | a table without slot is sized with its rows, as in Chromium (CSS Tables 3 lays out an empty table with its width and height only; WPT css/css-tables/tentative/table-height-redistribution.html expects the height of the row of a table without column) |
 | [`html5-table-formatting-2.html`](https://wpt.fyi/results/css/css-tables/html5-table-formatting-2.html) | Pass | 12 / 12 |  |  |
-| [`html5-table-formatting-3.html`](https://wpt.fyi/results/css/css-tables/html5-table-formatting-3.html) | Fail | 5 / 8 | BUG | the explicit columns (and rows) where no cell originates are merged, as in Chromium (CSS Tables 3 only merges the implicit tracks) |
+| [`html5-table-formatting-3.html`](https://wpt.fyi/results/css/css-tables/html5-table-formatting-3.html) | Fail | 7 / 8 | BUG | a cell that spans two empty explicit rows gives its block size to the last one, as in Chromium (WPT css/css-tables/tentative/table-height-redistribution.html expects it), where the test expects it shared |
 | [`html5-table-formatting-fixed-layout-1.html`](https://wpt.fyi/results/css/css-tables/html5-table-formatting-fixed-layout-1.html) | Pass | 2 / 2 |  |  |
 | [`inheritance.html`](https://wpt.fyi/results/css/css-tables/inheritance.html) | Pass | 10 / 10 |  |  |
 | [`no-overflow-with-table-cell-margins.html`](https://wpt.fyi/results/css/css-tables/no-overflow-with-table-cell-margins.html) | Pass | 1 / 1 |  |  |
@@ -163,7 +163,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`tentative/table-minmax.html`](https://wpt.fyi/results/css/css-tables/tentative/table-minmax.html) | Pass | 16 / 16 |  |  |
 | [`tentative/table-quirks.html`](https://wpt.fyi/results/css/css-tables/tentative/table-quirks.html) | Pass | 7 / 7 |  |  |
 | [`tentative/table-rows-with-zero-columns.html`](https://wpt.fyi/results/css/css-tables/tentative/table-rows-with-zero-columns.html) | Pass | 12 / 12 |  |  |
-| [`tentative/table-width-redistribution-fixed-padding.html`](https://wpt.fyi/results/css/css-tables/tentative/table-width-redistribution-fixed-padding.html) | Fail | 13 / 15 | BUG | in fixed mode, the percentage columns of `content-box` cells with paddings get their excess width in another proportion than Chromium (1 or 2px off) |
+| [`tentative/table-width-redistribution-fixed-padding.html`](https://wpt.fyi/results/css/css-tables/tentative/table-width-redistribution-fixed-padding.html) | Pass | 15 / 15 |  |  |
 | [`tentative/table-width-redistribution-fixed.html`](https://wpt.fyi/results/css/css-tables/tentative/table-width-redistribution-fixed.html) | Pass | 26 / 26 |  |  |
 | [`tentative/table-width-redistribution.html`](https://wpt.fyi/results/css/css-tables/tentative/table-width-redistribution.html) | Pass | 22 / 22 |  |  |
 | [`tentative/tbody-height-redistribution.html`](https://wpt.fyi/results/css/css-tables/tentative/tbody-height-redistribution.html) | Pass | 12 / 12 |  |  |

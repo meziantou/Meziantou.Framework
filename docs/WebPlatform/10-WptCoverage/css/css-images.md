@@ -11,14 +11,14 @@ description: "The results of the web-platform-tests of css/css-images, and why t
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 44 | 45 | 0 | 98% |
 | Tentative | 0 | 0 | 0 | – |
-| [Reftests](#reftests) | 466 | 476 | 0 | 98% |
-| **All** | **510** | **521** | **0** | **98%** |
+| [Reftests](#reftests) | 467 | 476 | 0 | 98% |
+| **All** | **511** | **521** | **0** | **98%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 2
+- **BUG**: 1
 - **TEST BUG**: 6
 - **NOT IMPLEMENTED**: 2
 - **TEST RUNNER**: 1
@@ -223,7 +223,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`image-orientation/image-orientation-none-cross-origin-canvas-css-image-value.sub.html`](https://wpt.fyi/results/css/css-images/image-orientation/image-orientation-none-cross-origin-canvas-css-image-value.sub.html) | Pass | 1 / 1 |  |  |
 | [`image-orientation/image-orientation-none-cross-origin-canvas-pattern.html`](https://wpt.fyi/results/css/css-images/image-orientation/image-orientation-none-cross-origin-canvas-pattern.html) | Pass | 1 / 1 |  |  |
 | [`image-orientation/image-orientation-none-cross-origin-canvas.html`](https://wpt.fyi/results/css/css-images/image-orientation/image-orientation-none-cross-origin-canvas.html) | Pass | 1 / 1 |  |  |
-| [`image-orientation/image-orientation-none-cross-origin-svg.html`](https://wpt.fyi/results/css/css-images/image-orientation/image-orientation-none-cross-origin-svg.html) | Fail | 0 / 1 | BUG | seven of the eight canvases match; `drawImage()` of the cross-origin SVG `image` element whose `href` was just set draws the previous (same-origin) image, not rotated because of `image-orientation: none`: the SVG `image` elements do not use the list of available images, so the new image, already loaded by an `img` element, is only available after a task (the `img` element next to it is updated synchronously); only Chrome passes |
+| [`image-orientation/image-orientation-none-cross-origin-svg.html`](https://wpt.fyi/results/css/css-images/image-orientation/image-orientation-none-cross-origin-svg.html) | Pass | 1 / 1 |  |  |
 | [`image-orientation/image-orientation-none-cross-origin.html`](https://wpt.fyi/results/css/css-images/image-orientation/image-orientation-none-cross-origin.html) | Pass | 1 / 1 |  |  |
 | [`image-orientation/image-orientation-none-image-document.html`](https://wpt.fyi/results/css/css-images/image-orientation/image-orientation-none-image-document.html) | Pass | 1 / 1 |  |  |
 | [`image-orientation/image-orientation-none.html`](https://wpt.fyi/results/css/css-images/image-orientation/image-orientation-none.html) | Pass | 1 / 1 |  |  |

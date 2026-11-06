@@ -9,16 +9,16 @@ description: "The results of the web-platform-tests of speculation-rules, and wh
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 131 | 185 | 1 | 71% |
+| [Stable](#stable-tests) | 132 | 185 | 1 | 72% |
 | [Tentative](#tentative-tests) | 6 | 26 | 0 | 23% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **137** | **211** | **1** | **65%** |
+| **All** | **138** | **211** | **1** | **66%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 9
+- **BUG**: 8
 - **TEST BUG**: 7
 - **NOT IMPLEMENTED**: 55
 - **TEST RUNNER**: 28
@@ -69,7 +69,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`prefetch/prefetch-inflight-success.https.html`](https://wpt.fyi/results/speculation-rules/prefetch/prefetch-inflight-success.https.html) | Pass | 1 / 1 |  |  |
 | [`prefetch/prefetch-single.https.html`](https://wpt.fyi/results/speculation-rules/prefetch/prefetch-single.https.html) | Pass | 4 / 4 |  |  |
 | [`prefetch/prefetch-status.https.html`](https://wpt.fyi/results/speculation-rules/prefetch/prefetch-status.https.html) | Pass | 5 / 5 |  |  |
-| [`prefetch/prefetch-traverse-reload.sub.html`](https://wpt.fyi/results/speculation-rules/prefetch/prefetch-traverse-reload.sub.html) | Fail | 2 / 3 | BUG | a traversal of the top-level navigable started by the `history` object of another document (`iframe.contentWindow.history.go(-1)`) uses the prefetch records of the document of the traversed navigable: the traversals do not keep the document that started them. The traversal and the reload started by the document itself use its prefetch (2 of 3 subtests pass) |
+| [`prefetch/prefetch-traverse-reload.sub.html`](https://wpt.fyi/results/speculation-rules/prefetch/prefetch-traverse-reload.sub.html) | Pass | 3 / 3 |  |  |
 | [`prefetch/prefetch-uses-cache.sub.https.html`](https://wpt.fyi/results/speculation-rules/prefetch/prefetch-uses-cache.sub.https.html) | Fail | 1 / 2 | NOT IMPLEMENTED | the navigation timing entry ignores the cache state of the response: a navigation served by the HTTP cache has an empty `deliveryType` instead of `cache` |
 | [`prefetch/redirect-middle-of-prefetch.https.html`](https://wpt.fyi/results/speculation-rules/prefetch/redirect-middle-of-prefetch.https.html) | Pass | 6 / 6 |  |  |
 | [`prefetch/redirect-to-prefetch-url.https.html`](https://wpt.fyi/results/speculation-rules/prefetch/redirect-to-prefetch-url.https.html) | Pass | 6 / 6 |  |  |

@@ -1425,6 +1425,9 @@ internal sealed class SvgTextLayout
                 }
             }
 
+            // https://svgwg.org/svg2-draft/text.html#TextPathElementSideAttribute: "right" places the text on the path reversed (its
+            // subpaths in the reverse order, each one in the opposite direction); startOffset is measured along the reversed path
+            var isReversed = textPath.GetAnimatedAttributeValue("side")?.Trim() == "right";
             var isClosed = path.IsClosed;
             for (var i = start; i < end; i++)
             {
@@ -1450,7 +1453,12 @@ internal sealed class SvgTextLayout
                     continue;
                 }
 
-                var (point, tangent) = path.GetPointAndTangentAtLength(middle);
+                var (point, tangent) = path.GetPointAndTangentAtLength(isReversed ? totalLength - middle : middle);
+                if (isReversed)
+                {
+                    tangent *= -1;
+                }
+
                 var normal = isVertical ? new SvgPoint(tangent.Y, -tangent.X) : new SvgPoint(-tangent.Y, tangent.X);
                 character.Position = point - (tangent * half) + (normal * across);
                 character.Progression = character.IsRightToLeft ? tangent * -1 : tangent;

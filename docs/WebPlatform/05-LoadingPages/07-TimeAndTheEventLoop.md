@@ -90,7 +90,9 @@ step when a callback starts another timer.
 
 The animation frames are timers of the event loop, at a fixed rate. Each one runs the steps of a rendering update: the
 animations and their events, the `requestAnimationFrame()` callbacks, the styles, the resize and intersection observers.
-A screenshot or a geometry API does not wait for them: the layout is computed when it is read.
+A screenshot or a geometry API does not wait for them: the layout is computed when it is read. A screenshot also finds the
+elements with `content-visibility: auto` that are close to the viewport before it paints, so they are painted with their
+contents even before the first animation frame; the `contentvisibilityautostatechange` events are fired by the next tasks.
 
 ## Freeze and discard the page
 

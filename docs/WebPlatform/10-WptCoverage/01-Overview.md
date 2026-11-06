@@ -50,8 +50,8 @@ The features of `REQUIRES`:
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 26,230 | 29,691 | 2,104 | 95% |
 | [Tentative](#tentative-tests) | 1,370 | 3,074 | 692 | 58% |
-| [Reftests](#reftests) | 27,937 | 29,220 | 170 | 96% |
-| **All** | **55,537** | **61,985** | **2,966** | **94%** |
+| [Reftests](#reftests) | 27,938 | 29,220 | 170 | 96% |
+| **All** | **55,538** | **61,985** | **2,966** | **94%** |
 
 ## Failure reasons
 
@@ -59,7 +59,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 178
 - **TEST BUG**: 1,034
-- **NOT IMPLEMENTED**: 4,266
+- **NOT IMPLEMENTED**: 4,265
 - **REQUIRES**: 762
   - `hardware`: 574
   - `layout`: 20
@@ -612,7 +612,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`css/css-box`](css/css-box.md#reftests) | 42 | 72 | 0 | 58% |
 | [`css/css-break`](css/css-break.md#reftests) | 1,131 | 1,145 | 0 | 99% |
 | [`css/css-cascade`](css/css-cascade.md#reftests) | 50 | 50 | 0 | 100% |
-| [`css/css-color`](css/css-color.md#reftests) | 303 | 308 | 1 | 99% |
+| [`css/css-color`](css/css-color.md#reftests) | 304 | 308 | 1 | 99% |
 | [`css/css-color-adjust`](css/css-color-adjust.md#reftests) | 25 | 25 | 0 | 100% |
 | [`css/css-conditional`](css/css-conditional.md#reftests) | 172 | 173 | 0 | 99% |
 | [`css/css-contain`](css/css-contain.md#reftests) | 431 | 432 | 0 | 99.7% |
@@ -725,4 +725,4 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`webgl`](webgl.md#reftests) | 0 | 2 | 0 | 0% |
 | [`webvtt`](webvtt.md#reftests) | 182 | 251 | 0 | 73% |
 | [`xml`](xml.md#reftests) | 0 | 3 | 3 | – |
-| **Total (130 sections)** | **27,937** | **29,220** | **170** | **96%** |
+| **Total (130 sections)** | **27,938** | **29,220** | **170** | **96%** |

@@ -176,6 +176,34 @@ public sealed class InstalledFontCollectionTests : IDisposable
     }
 
     [Fact]
+    public void SystemFonts_FallbackForTheCharactersOfNoOtherFont()
+    {
+        // The fonts of the machine are the installed font fallback of the characters that neither the families of the list nor
+        // the bundled fonts have (ShapingTest has three Arabic letters): the bundled fonts keep the other characters
+        var regular = ReadResource("ShapingTest.ttf");
+        var face = FontFile.Load(regular)!.Faces[0];
+        using var directory = new TemporaryDirectory();
+        directory.Write("arabic.ttf", regular);
+        var fonts = InstalledFontCollection.FromSystemFonts(SystemFontCollection.Create([directory.Path]));
+        Assert.True(fonts.HasSystemFallback);
+        Assert.Equal(face.FamilyName, fonts.FindSystemFallbackFamily(0x0627));
+        Assert.Null(fonts.FindSystemFallbackFamily(0x4E00));
+
+        var document = Load("<span id=a>a</span>", fonts);
+        var list = document.GetStyleEngine().GetStyle(document.GetElementById("a")!).Fonts;
+        Assert.Equal(face.FamilyName, list.FindFontForCharacter(0x0627)?.Font.FamilyName);
+        Assert.Equal("Tinos", list.FindFontForCharacter('a')?.Font.FamilyName);
+        Assert.Null(list.FindFontForCharacter(0x4E00));
+
+        // The fonts that the host installs are not searched for the characters of no other font
+        var installed = new InstalledFontCollection();
+        Assert.True(installed.Add(regular));
+        Assert.False(installed.HasSystemFallback);
+        document = Load("<span id=a>a</span>", installed);
+        Assert.Null(document.GetStyleEngine().GetStyle(document.GetElementById("a")!).Fonts.FindFontForCharacter(0x0627));
+    }
+
+    [Fact]
     public void SystemFonts_LocalFaceOfACollection()
     {
         // local() names the second face of a collection: the font face uses that face, not the first face of the file

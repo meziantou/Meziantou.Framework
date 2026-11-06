@@ -5630,8 +5630,15 @@ and `fvar` tables. `InstalledFontCollection.System` wraps it, and is used when t
   as `FromFont` once the font is loaded); only the selected face is loaded, from its file, and the faces of a file share
   the loaded file. A face whose file can no longer be loaded (removed or changed since the scan) makes its family missing;
 - the bundled fonts keep their names and the generic families (`serif`, `sans-serif`, `monospace`, `math`): only the
-  families the bundled fonts do not have come from the machine, and the default font does not change. The fonts of the
-  machine add no installed font fallback.
+  families the bundled fonts do not have come from the machine, and the default font does not change;
+- the fonts of the machine are the last part of the installed font fallback (`FontFallbackList.SystemFallbackEntry`, after
+  the bundled fonts and the fallback fonts of the host): a character that no other font has is drawn with the family of
+  `InstalledFontCollection.FindSystemFallbackFamily`, matched with the font properties: the first of a list of families
+  that browsers use for the emoji and the scripts on macOS, Windows and Linux that has the character, else the first font
+  of the index that has it (from the character map of the index, `SystemFontDescriptor.Covers`, without loading the font),
+  cached per character. The last resort font of macOS (`.LastResort`, whose glyphs picture the missing characters) and the
+  fonts that cannot be loaded (Apple Color Emoji, larger than the limit of the font reader) are skipped. The fonts that a
+  host installs (`InstalledFonts`) are not searched this way.
 
 ### CSS Font Loading
 

@@ -766,7 +766,11 @@ public sealed class DocumentRequest
         Url = url;
     }
 
-    /// <summary>Gets the absolute URL of the document, serialized as specified by the WHATWG URL Standard.</summary>
+    /// <summary>
+    /// Gets the absolute URL of the document, serialized as specified by the WHATWG URL Standard. It keeps the fragment of the
+    /// referenced URL (e.g. <c>https://example.com/icons.svg#home</c> for <c>&lt;use href="icons.svg#home"&gt;</c>), which an
+    /// HTTP request does not send: remove it to look up a resource by URL.
+    /// </summary>
     public string Url { get; }
 
     /// <summary>

@@ -24,7 +24,12 @@
   {
     "fixture": "dark-scheme.html",
     "scenario": "*",
-    "reason": "form controls: Chromium gives them a font of 13.333px (font: -webkit-small-control), the library inherits the font of their parent (the user agent style sheet of the HTML Standard)"
+    "reason": "text: Skia renders heavier glyphs (the gamma and the contrast of its glyph masks) at other subpixel positions"
+  },
+  {
+    "fixture": "gradients.html",
+    "scenario": "omit-background",
+    "reason": "image resampling: since Chromium 156, the edges of the scaled-up tiles of the semi-transparent background image of the multi-layer box have other alpha values"
   },
   {
     "fixture": "images.html",

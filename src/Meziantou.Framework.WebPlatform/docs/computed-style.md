@@ -285,6 +285,21 @@ the options of a group, the background of the selected options; see
   select element with base appearance (the rule `input, select, button, textarea { text-shadow: initial }` has no
   condition), `cursor: default`, and the dimmed label of a disabled `optgroup`.
 
+### Form controls without base appearance
+
+The user agent style sheet of HTML gives the form controls no font, paddings, borders nor margins. As in Chromium and
+Firefox, the controls that do not have base appearance get the rules of `StyleEngine.NativeAppearanceStyleSheet`, conditional
+rules of the user agent style sheet (`SelectRuleCondition.ControlNativeAppearance`, and `NativeAppearance` and
+`ListBoxNativeAppearance` for the `select` elements): the font of `font: -webkit-small-control` of Chromium (`13.333333px
+Arial`; `monospace` in the `textarea` elements and the date and time fields) instead of the inherited one, and the boxes of
+the user agent style sheet of Chromium (`html.css`): `padding: 1px 2px` and a `2px inset` border in the text fields, `2px`
+and a `1px solid` border in the `textarea` elements, a `1px solid` border in the `select` elements (and
+`vertical-align: text-bottom` in the list boxes), the margins of the checkboxes (`3px 3px 3px 4px`), of the radio buttons
+(`3px 3px 0 5px`) and of the sliders (`2px`), the size, the padding and the border of the color wells (`50px` by `27px`,
+`1px 2px`, `1px solid ButtonBorder`), and `appearance: auto` on `::file-selector-button`. The borders are the space of the
+native frame of the controls (see [layout.md](layout.md)), whose color is the one of the border: `light-dark(#767676,
+#858585)`, or `ButtonBorder` for the buttons and the color wells.
+
 ### Form controls with base appearance
 
 The other form controls opt into the [basic appearance](https://drafts.csswg.org/css-forms-1/#appearance) with

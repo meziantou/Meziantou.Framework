@@ -108,5 +108,12 @@ The painting follows the order of CSS: backgrounds, borders, shadows, text, imag
 clipping, blend modes, the scrollbars and the caret. The positions of the boxes and of the text are snapped to the device
 pixels as in Chromium. See [Limitations](../09-Limitations.md) for what is not painted.
 
+The form controls look and measure as in Chromium. They use the font of the browsers (13.333px Arial, monospace in the
+`textarea` elements and the date and time fields), not the font of their parent, and they get the paddings, the borders
+and the margins of Chromium. The text fields, the `textarea` and `select` elements, the buttons and the color wells are
+drawn with a thin rounded frame in the color of their border. A control whose background or border is set by the page
+is drawn with plain CSS instead, as in the browsers. With `appearance: base`, the controls inherit the font of their
+parent.
+
 A document that is not the active document of a browsing context, such as a document parsed by [HtmlDocumentParser](cref:Meziantou.Framework.WebPlatform.HtmlDocumentParser),
 cannot be painted: load it with [BrowsingContext.Navigate](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContext.Navigate).

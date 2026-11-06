@@ -253,9 +253,79 @@ internal sealed partial class StyleEngine
         progress::slider-fill { background-color: #008000; }
         """;
 
+    /// <summary>
+    /// The fonts, paddings, borders and margins that Chromium and Firefox give the form controls that do not have base
+    /// appearance, which the user agent style sheet of HTML leaves to the user agent: the font of <c>font: -webkit-small-control</c>
+    /// in Chromium and <c>font: -moz-field</c> in Firefox (13.333px, Arial in Chromium on every platform, monospace in the
+    /// multiline text controls and the date and time fields), and the boxes of the user agent style sheet of Chromium
+    /// (<c>html.css</c>), which Firefox shares for the text fields, the checkboxes, the radio buttons and the sliders. The
+    /// borders of the text controls, of the select elements, of the buttons and of the color wells are the frame of their
+    /// native appearance (see <c>Painter.PaintNativeFrame</c>): its color is the one of the border, its other properties are
+    /// ignored, as in the browsers. The rules of the buttons are in the supplemental style sheet (they also apply to the
+    /// <c>::file-selector-button</c> pseudo-element).
+    /// </summary>
+    private const string NativeAppearanceStyleSheet = """
+        input, textarea, button {
+          font: 13.333333px Arial;
+        }
+
+        input {
+          padding: 1px 2px;
+          border: 2px inset light-dark(#767676, #858585);
+        }
+
+        textarea {
+          font-family: monospace;
+          padding: 2px;
+          border: 1px solid light-dark(#767676, #858585);
+        }
+
+        input:is([type=date i], [type=datetime-local i], [type=month i], [type=week i], [type=time i]) {
+          font-family: monospace;
+          padding: 0 0 0 1px;
+        }
+
+        input:is([type=hidden i], [type=image i], [type=file i], [type=checkbox i], [type=radio i], [type=range i]) {
+          padding: initial;
+          border: initial;
+        }
+
+        input[type=checkbox i] { margin: 3px 3px 3px 4px; }
+        input[type=radio i] { margin: 3px 3px 0 5px; }
+        input[type=range i] { margin: 2px; }
+
+        ::file-selector-button { appearance: auto; }
+
+        input[type=color i] {
+          inline-size: 50px;
+          block-size: 27px;
+          padding: 1px 2px;
+          border: 1px solid ButtonBorder;
+        }
+        """;
+
+    /// <summary>
+    /// The rules of the select elements that do not have base appearance, as in Chromium (see <see cref="NativeAppearanceStyleSheet"/>):
+    /// the font of the controls, a border (the frame of their native appearance), and the list boxes are aligned by the bottom
+    /// of their text (also in Firefox).
+    /// </summary>
+    private const string SelectNativeAppearanceStyleSheet = """
+        select {
+          font: 13.333333px Arial;
+          border: 1px solid light-dark(#767676, #858585);
+        }
+        """;
+
+    private const string SelectListBoxNativeAppearanceAlignmentStyleSheet = "select { vertical-align: text-bottom; }";
+
     private static void AddControlRules(CascadeRuleCollector collector)
     {
+        collector.SelectCondition = SelectRuleCondition.NativeAppearance;
+        collector.AddRules(ParseUserAgentStyleSheet(SelectNativeAppearanceStyleSheet), baseUrl: null);
+        collector.SelectCondition = SelectRuleCondition.ListBoxNativeAppearance;
+        collector.AddRules(ParseUserAgentStyleSheet(SelectListBoxNativeAppearanceAlignmentStyleSheet), baseUrl: null);
         collector.SelectCondition = SelectRuleCondition.ControlNativeAppearance;
+        collector.AddRules(ParseUserAgentStyleSheet(NativeAppearanceStyleSheet), baseUrl: null);
         collector.AddRules(ParseUserAgentStyleSheet(PrimitiveAppearanceStyleSheet), baseUrl: null);
         collector.SelectCondition = SelectRuleCondition.ControlBaseAppearance;
         collector.AddRules(ParseUserAgentStyleSheet(BaseAppearanceStyleSheet), baseUrl: null);

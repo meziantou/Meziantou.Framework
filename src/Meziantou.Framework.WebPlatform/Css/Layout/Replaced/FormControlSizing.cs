@@ -268,7 +268,7 @@ internal static class FormControlSizing
         // axis only when overflow forces it (the lines wrap)
         var (average, _) = GetCharacterWidths(style);
         var (inlineScrollbar, blockScrollbar) = GetTextAreaScrollbarSpace(style, scrollbarThickness);
-        return new FormControlSize((textArea.Cols * average) + inlineScrollbar, (textArea.Rows * lineHeight) + blockScrollbar, FormControlBaseline.FirstLine);
+        return new FormControlSize(CeilingToPixel(textArea.Cols * average) + inlineScrollbar, (textArea.Rows * lineHeight) + blockScrollbar, FormControlBaseline.FirstLine);
     }
 
     /// <summary>
@@ -289,7 +289,6 @@ internal static class FormControlSizing
     /// <summary>https://html.spec.whatwg.org/multipage/rendering.html#the-select-element-2</summary>
     private static FormControlSize GetSelectSize(HtmlSelectElement select, ComputedStyle style, bool fieldSizingContent, double scrollbarThickness)
     {
-        var lineHeight = GetLineHeight(style);
         var options = select.GetListOfOptions();
         var isListBox = select.IsMultiple || select.DisplaySize > 1;
 
@@ -326,7 +325,7 @@ internal static class FormControlSizing
             // "If the 'field-sizing' property on the element has a computed value of 'content', return the height necessary to
             // contain all rows for items" (none without item)
             var rows = fieldSizingContent ? displayedOptions : GetListBoxRows(select);
-            return new FormControlSize(labelsWidth + scrollbarThickness, rows * lineHeight, FormControlBaseline.FirstLine);
+            return new FormControlSize(labelsWidth + scrollbarThickness, rows * GetListBoxRowHeight(style), FormControlBaseline.FirstLine);
         }
 
         // "If the 'field-sizing' property on the element has a computed value of 'content', the inline size of the intrinsic size
@@ -336,19 +335,44 @@ internal static class FormControlSizing
             labelsWidth = selected is null ? 0 : style.MeasureText(GetRenderedText(select, style, selected.GetLabel(includeAltText: true)));
         }
 
-        // The drop-down box has an arrow button after the label (1em, as the picker button of the date and time fields)
-        return new FormControlSize(labelsWidth + style.FontSize, lineHeight, FormControlBaseline.CenteredLine);
+        var (empty, emptyBlock) = GetEmptyDropDownBoxSize(style);
+        return new FormControlSize(labelsWidth + empty, emptyBlock, FormControlBaseline.CenteredLine);
     }
 
-    /// <summary>The natural size of a drop-down box without label (see <see cref="GetSelectSize"/>): its arrow button and one line, in the coordinates of the element.</summary>
-    internal static (double InlineSize, double BlockSize) GetEmptyDropDownBoxSize(ComputedStyle style) => (style.FontSize, GetLineHeight(style));
+    /// <summary>
+    /// The natural size of a drop-down box without label (see <see cref="GetSelectSize"/>), in the coordinates of the element:
+    /// its internal paddings around one line, as in Chromium: 4px before the label, the drop-down button after it (15px and a
+    /// gap of 1px), and 1px above and below the line. The native appearance and the devolved state have them
+    /// (https://html.spec.whatwg.org/multipage/rendering.html#the-select-element-2: "including a "drop-down button""), but not
+    /// the primitive appearance (<c>appearance: none</c>).
+    /// </summary>
+    internal static (double InlineSize, double BlockSize) GetEmptyDropDownBoxSize(ComputedStyle style)
+    {
+        var (start, end) = GetDropDownBoxInlinePaddings(style);
+        return (start + end, GetLineHeight(style) + (HasDropDownBoxInternalPaddings(style) ? 2 : 0));
+    }
+
+    /// <summary>The inline size of the drop-down button of a drop-down box (see <see cref="GetEmptyDropDownBoxSize"/>).</summary>
+    internal const double DropDownButtonSize = 15;
+
+    /// <summary>Returns the internal paddings of a drop-down box before and after its label, the one after the label holding the drop-down button (see <see cref="GetEmptyDropDownBoxSize"/>).</summary>
+    internal static (double Start, double End) GetDropDownBoxInlinePaddings(ComputedStyle style)
+        => HasDropDownBoxInternalPaddings(style) ? (4, 1 + DropDownButtonSize) : (0, 0);
+
+    private static bool HasDropDownBoxInternalPaddings(ComputedStyle style) => style.GetComputedValue("appearance") is not ("none" or "");
 
     /// <summary>
     /// The natural size of a list box without option (see <see cref="GetSelectSize"/>): its scrollbar and its rows (none with
     /// <c>field-sizing: content</c>), in the coordinates of the element.
     /// </summary>
     internal static (double InlineSize, double BlockSize) GetEmptyListBoxSize(HtmlSelectElement select, ComputedStyle style, double scrollbarThickness)
-        => (scrollbarThickness, IsFieldSizingContent(style) ? 0 : GetListBoxRows(select) * GetLineHeight(style));
+        => (scrollbarThickness, IsFieldSizingContent(style) ? 0 : GetListBoxRows(select) * GetListBoxRowHeight(style));
+
+    /// <summary>
+    /// The height of a row of a list box with native appearance, in the coordinates of the element: as in Chromium, the
+    /// options have a minimum height of 1.2em and a padding of 1px below their line (see <c>StyleEngine.SelectListBoxNativeAppearanceStyleSheet</c>).
+    /// </summary>
+    private static double GetListBoxRowHeight(ComputedStyle style) => Math.Max(GetLineHeight(style), 1.2 * style.FontSize) + 1;
 
     /// <summary>The number of rows of a list box: its display size, 4 by default (https://html.spec.whatwg.org/multipage/rendering.html#the-select-element-2).</summary>
     private static long GetListBoxRows(HtmlSelectElement select) => select.DisplaySize > 0 ? select.DisplaySize : 4;
@@ -365,32 +389,41 @@ internal static class FormControlSizing
     /// <summary>
     /// https://html.spec.whatwg.org/multipage/rendering.html#converting-a-character-width-to-pixels: "(size-1)×avg + max, where
     /// size is the character width to convert, avg is the average character width of the primary font for the element [...]
-    /// and max is the maximum character width of that same font".
+    /// and max is the maximum character width of that same font". As in Chromium, this is size×avg plus the difference between
+    /// max and avg when max is wider, rounded up to a whole pixel.
     /// </summary>
     private static double ConvertCharacterWidthToPixels(ComputedStyle style, long size)
     {
         var (average, maximum) = GetCharacterWidths(style);
-        return ((size - 1) * average) + maximum;
+        return CeilingToPixel((size * average) + Math.Max(0, maximum - average));
     }
 
     /// <summary>
-    /// Returns the average character width of the primary font (<c>OS/2.xAvgCharWidth</c>, else the advance of the digit
-    /// zero) and its maximum character width (the width of the bounding box of the glyphs, at least the average width). As in
-    /// Chrome, the widths of the OS/2 table are rounded to integers.
+    /// Returns the average character width of the primary font and its maximum character width, as Chromium computes them on
+    /// macOS (the widths of the OS/2 table differ between the platforms, and some fonts have wrong ones): the advance of the
+    /// glyph <c>x</c> (the x-height without that glyph), rounded when its fraction is at least 0.5, and the larger of that
+    /// advance and the rounded ascent. A font whose <c>x</c> is wider than 1.7 times its <c>0</c> (the fonts that give it the
+    /// width of a full-width character) has the advance of <c>0</c> as its average and maximum widths.
     /// </summary>
     private static (double Average, double Maximum) GetCharacterWidths(ComputedStyle style)
     {
         var metrics = style.PrimaryFontMetrics;
-        var font = style.Fonts.PrimaryFont.Font;
-        if (font.AverageCharWidth <= 0)
+        var primary = style.Fonts.PrimaryFont;
+        var instance = primary.GetVariationInstance(metrics.EmSize);
+        var x = primary.Font.GetGlyphId('x');
+        var width = x != 0 ? primary.Font.GetAdvanceWidth(x, instance) * metrics.Scale : metrics.XHeight;
+        var zero = primary.Font.GetGlyphId('0');
+        if (width <= 0 || (zero != 0 && width > 1.7 * primary.Font.GetAdvanceWidth(zero, instance) * metrics.Scale))
         {
-            var zero = style.MeasureText("0");
-            return (zero, zero);
+            var zeroWidth = style.MeasureText("0");
+            return (zeroWidth, zeroWidth);
         }
 
-        var average = Math.Round(font.AverageCharWidth * metrics.Scale, MidpointRounding.AwayFromZero);
-        return (average, Math.Max(average, Math.Round(font.MaxCharWidth * metrics.Scale, MidpointRounding.AwayFromZero)));
+        return (Math.Max(width, Math.Round(width, MidpointRounding.AwayFromZero)), Math.Max(width, Math.Round(metrics.Ascent, MidpointRounding.AwayFromZero)));
     }
+
+    /// <summary>Rounds a size up to a whole pixel, ignoring the error of the floating-point operations that computed it.</summary>
+    private static double CeilingToPixel(double value) => Math.Ceiling(value - 1e-7);
 
     /// <summary>
     /// The height of the line of a single-line text field (zoomed): its used line height, at least the normal line height (as in

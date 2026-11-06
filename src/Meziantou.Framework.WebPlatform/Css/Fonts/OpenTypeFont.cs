@@ -147,12 +147,6 @@ internal sealed partial class OpenTypeFont
     /// <summary>The version of the OS/2 table.</summary>
     public ushort OS2Version => (ushort)Face.Os2Version;
 
-    /// <summary>The average advance width of the glyphs (<c>OS/2.xAvgCharWidth</c>, 0 when there is no OS/2 table), in font units.</summary>
-    public short AverageCharWidth => (short)Face.AverageCharWidth;
-
-    /// <summary>The width of the bounding box of all the glyphs (<c>head.xMax - head.xMin</c>), in font units.</summary>
-    public int MaxCharWidth => Face.XMax - Face.XMin;
-
     /// <summary>The weight class of the font (<c>OS/2.usWeightClass</c>, 400 when there is no OS/2 table).</summary>
     public ushort WeightClass => Face.HasOs2 ? (ushort)Face.Weight : (ushort)400;
 

@@ -475,6 +475,60 @@ public sealed class CartesianChartTests
     }
 
     [Fact]
+    public void SecondaryAxis()
+    {
+        #region Charts_SecondaryAxis
+        Share[] revenue = [new("Q1", 120), new("Q2", 150), new("Q3", 140), new("Q4", 190)];
+        Share[] growth = [new("Q1", 0.04), new("Q2", 0.25), new("Q3", -0.07), new("Q4", 0.36)];
+
+        var plot = new Plot
+        {
+            Title = "Revenue and growth",
+            SecondaryYScale = new LinearScale { TickFormat = NumberFormats.Percent() },
+        };
+        plot.Add(new BarMark<Share>(revenue, x: quarter => quarter.Name, y: quarter => quarter.Value) { Fill = _ => "Revenue" });
+        plot.Add(new LineMark<Share>(growth, x: quarter => quarter.Name, y: quarter => quarter.Value)
+        {
+            UseSecondaryYScale = true,
+            Stroke = _ => "Growth",
+            StrokeWidth = 2.5,
+            MarkerRadius = 4,
+        });
+        plot.YAxis.Label = "Revenue (k€)";
+        plot.SecondaryYAxis.Label = "Growth";
+        #endregion
+
+        ChartAssert.Svg(plot, "SecondaryAxis");
+    }
+
+    [Fact]
+    public void SecondaryAxisInFacetsAndOtherCoordinates()
+    {
+        var faceted = new Plot { Height = 300 };
+        faceted.Add(new BarMark<Sale>(SampleData.Sales, x: sale => sale.Region, y: sale => sale.Amount) { FacetX = sale => sale.Year });
+        faceted.Add(new LineMark<Sale>(SampleData.Sales, x: sale => sale.Region, y: sale => sale.Amount / 1000) { FacetX = sale => sale.Year, UseSecondaryYScale = true, StrokeColor = "#e5484d" });
+        faceted.SecondaryYAxis.Grid = true;
+        faceted.SecondaryYAxis.Line = true;
+        faceted.SecondaryYAxis.Label = "Thousands";
+        ChartAssert.Svg(faceted);
+
+        // Transposed and polar coordinates map the secondary scale, without an axis
+        var transposed = new Plot { Height = 200, Coordinates = new CartesianCoordinates { Transposed = true } };
+        transposed.Add(new DotMark<Sale>(SampleData.Sales, x: sale => sale.Region, y: sale => sale.Amount * sale.Amount) { UseSecondaryYScale = true });
+        transposed.Add(new DotMark<Sale>(SampleData.Sales, x: sale => sale.Region, y: sale => sale.Amount) { FillColor = "tomato" });
+        ChartAssert.Svg(transposed, documentationImage: null, memberName: nameof(SecondaryAxisInFacetsAndOtherCoordinates) + "_Transposed");
+
+        var polar = new Plot { Width = 300, Height = 300, Coordinates = new PolarCoordinates(), XScale = new PointScale() };
+        polar.Add(new LineMark<Score>(SampleData.Scores.Where(score => score.Player == "Ada"), x: score => score.Skill, y: score => score.Value) { Closed = true });
+        polar.Add(new LineMark<Score>(SampleData.Scores.Where(score => score.Player == "Bob"), x: score => score.Skill, y: score => score.Value / 10) { Closed = true, UseSecondaryYScale = true, StrokeColor = "tomato" });
+        ChartAssert.Svg(polar, documentationImage: null, memberName: nameof(SecondaryAxisInFacetsAndOtherCoordinates) + "_Polar");
+
+        var radialBars = new Plot { Width = 300, Height = 300, Coordinates = new PolarCoordinates { Transposed = true } };
+        radialBars.Add(new BarMark<Sale>(SampleData.Sales.Where(sale => sale.Year == 2024), x: sale => sale.Region, y: sale => sale.Amount) { UseSecondaryYScale = true });
+        ChartAssert.Svg(radialBars, documentationImage: null, memberName: nameof(SecondaryAxisInFacetsAndOtherCoordinates) + "_RadialBars");
+    }
+
+    [Fact]
     public void Symbols()
     {
         var symbols = Enum.GetValues<DotSymbol>();

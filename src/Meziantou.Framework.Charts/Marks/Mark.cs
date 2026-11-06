@@ -16,6 +16,13 @@ public abstract class Mark
     /// <summary>Gets or sets the opacity of the mark, from 0 to 1. The default is 1.</summary>
     public double Opacity { get; set; } = 1;
 
+    /// <summary>
+    /// Gets or sets a value that indicates whether the y channels of the mark use the secondary y scale of the plot
+    /// (<see cref="Plot.SecondaryYScale"/>), whose axis is on the right, instead of the y scale. Use it to draw two
+    /// measures of different units in one chart, such as amounts and a growth rate.
+    /// </summary>
+    public bool UseSecondaryYScale { get; set; }
+
     /// <summary>What the mark needs from the plot, once its rows are prepared.</summary>
     internal virtual MarkTraits GetTraits(MarkData data) => MarkTraits.None;
 

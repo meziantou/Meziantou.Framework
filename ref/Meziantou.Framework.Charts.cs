@@ -502,6 +502,7 @@ namespace Meziantou.Framework.Charts
     {
         public string? CssClass { get => throw null; set { } }
         public double Opacity { get => throw null; set { } }
+        public bool UseSecondaryYScale { get => throw null; set { } }
     }
 
     public abstract class Mark<T> : Meziantou.Framework.Charts.Mark
@@ -627,6 +628,8 @@ namespace Meziantou.Framework.Charts
         public Meziantou.Framework.Charts.Legend Legend { get => throw null; }
         public Meziantou.Framework.Charts.ChartMargin? Margin { get => throw null; set { } }
         public System.Collections.Generic.IList<Meziantou.Framework.Charts.Mark> Marks { get => throw null; }
+        public Meziantou.Framework.Charts.Axis SecondaryYAxis { get => throw null; }
+        public Meziantou.Framework.Charts.Scale? SecondaryYScale { get => throw null; set { } }
         public Meziantou.Framework.Charts.SizeScale? SizeScale { get => throw null; set { } }
         public string? Subtitle { get => throw null; set { } }
         public Meziantou.Framework.Charts.ITextMeasurer? TextMeasurer { get => throw null; set { } }

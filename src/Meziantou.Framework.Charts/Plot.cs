@@ -50,6 +50,13 @@ public sealed class Plot
     /// <summary>Gets or sets the y scale, or <see langword="null"/> to infer it from the marks.</summary>
     public Scale? YScale { get; set; }
 
+    /// <summary>
+    /// Gets or sets the secondary y scale, used by the marks that set <see cref="Mark.UseSecondaryYScale"/>, or
+    /// <see langword="null"/> to infer it from them. In Cartesian coordinates, its axis is on the right of the chart; in
+    /// transposed and polar coordinates, it has no axis.
+    /// </summary>
+    public Scale? SecondaryYScale { get; set; }
+
     /// <summary>Gets or sets the color scale, or <see langword="null"/> to infer it from the marks.</summary>
     public ColorScale? ColorScale { get; set; }
 
@@ -64,6 +71,9 @@ public sealed class Plot
 
     /// <summary>Gets the options of the axis of the y scale.</summary>
     public Axis YAxis { get; } = new();
+
+    /// <summary>Gets the options of the axis of the secondary y scale. It has no grid lines by default.</summary>
+    public Axis SecondaryYAxis { get; } = new();
 
     /// <summary>Gets the options of the legend of the color scale.</summary>
     public Legend Legend { get; } = new();

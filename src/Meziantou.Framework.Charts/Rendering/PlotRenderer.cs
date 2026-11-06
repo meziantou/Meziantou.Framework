@@ -14,6 +14,7 @@ internal sealed class PlotRenderer
     private readonly MarkTraits _traits;
     private readonly ResolvedScale? _x;
     private readonly ResolvedScale? _y;
+    private readonly ResolvedScale? _y2;
     private readonly ResolvedColorScale? _color;
     private readonly ResolvedSizeScale? _size;
     private readonly Coordinates _coordinates;
@@ -36,7 +37,12 @@ internal sealed class PlotRenderer
         if (!frameOnly)
         {
             _x = ScaleResolver.ResolvePosition(plot.XScale, Collect(data => [data.X, data.X1, data.X2, .. data.ExtraX]), _traits.HasFlag(MarkTraits.BandX), _traits.HasFlag(MarkTraits.ZeroX), _traits.HasFlag(MarkTraits.ExactX));
-            _y = ScaleResolver.ResolvePosition(plot.YScale, Collect(data => [data.Y, data.Y1, data.Y2, .. data.ExtraY]), _traits.HasFlag(MarkTraits.BandY), _traits.HasFlag(MarkTraits.ZeroY), _traits.HasFlag(MarkTraits.ExactY));
+            var primary = _marks.Where(mark => !mark.Mark.UseSecondaryYScale).ToList();
+            var secondary = _marks.Where(mark => mark.Mark.UseSecondaryYScale).ToList();
+            var primaryTraits = GetTraits(primary);
+            var secondaryTraits = GetTraits(secondary);
+            _y = primary.Count is 0 && plot.YScale is null ? null : ScaleResolver.ResolvePosition(plot.YScale, Collect(primary, data => [data.Y, data.Y1, data.Y2, .. data.ExtraY]), primaryTraits.HasFlag(MarkTraits.BandY), primaryTraits.HasFlag(MarkTraits.ZeroY), primaryTraits.HasFlag(MarkTraits.ExactY));
+            _y2 = secondary.Count is 0 && plot.SecondaryYScale is null ? null : ScaleResolver.ResolvePosition(plot.SecondaryYScale, Collect(secondary, data => [data.Y, data.Y1, data.Y2, .. data.ExtraY]), secondaryTraits.HasFlag(MarkTraits.BandY), secondaryTraits.HasFlag(MarkTraits.ZeroY), secondaryTraits.HasFlag(MarkTraits.ExactY));
         }
 
         _color = ScaleResolver.ResolveColor(plot.ColorScale, Collect(data => [data.Fill, data.Stroke, .. data.ExtraColor]), _theme);
@@ -109,7 +115,6 @@ internal sealed class PlotRenderer
         // The scales are mapped to the frame of a chart of the grid before the chart is drawn
         void RenderCell(FacetCell cell, CoordinateSystem system, ChartRectangle frame)
         {
-            var context = new RenderContext(_theme, _measurer, _x, _y, _color, _size, system, frame);
             var target = marks;
             if (facets.IsFaceted)
             {
@@ -122,6 +127,7 @@ internal sealed class PlotRenderer
 
             foreach (var (mark, data) in _marks)
             {
+                var context = new RenderContext(_theme, _measurer, _x, mark.UseSecondaryYScale ? _y2 : _y, _color, _size, system, frame);
                 var group = new SceneGroup { CssClass = mark.CssClass, Opacity = mark.Opacity };
                 mark.Render(context, data.ForFacet(cell.XKey, cell.YKey), group);
                 target.Add(group);
@@ -184,6 +190,10 @@ internal sealed class PlotRenderer
         var gapY = gapX;
         var headerHeight = facets.HasHeaders ? _measurer.Measure("Xg", HeaderFont).Height + 6 : 0;
         var rowLabelWidth = facets.HasRowLabels ? _measurer.Measure("Xg", HeaderFont).Height + 6 : 0;
+        var secondary = transposed ? null : _y2;
+        var secondaryAxis = _plot.SecondaryYAxis;
+        var secondaryVisible = secondary is not null && (secondaryAxis.Visible ?? true);
+        var secondaryWidth = 0.0;
 
         var verticalWidth = 0.0;
         var horizontalHeight = 0.0;
@@ -195,11 +205,22 @@ internal sealed class PlotRenderer
         {
             gridArea = _plot.Margin is { } margin
                 ? FromMargin(margin)
-                : new ChartRectangle(area.X + verticalWidth + extraLeft, area.Y, Math.Max(1, area.Width - verticalWidth - extraLeft - extraRight - rowLabelWidth), Math.Max(1, area.Height - horizontalHeight));
+                : new ChartRectangle(area.X + verticalWidth + extraLeft, area.Y, Math.Max(1, area.Width - verticalWidth - extraLeft - extraRight - rowLabelWidth - secondaryWidth), Math.Max(1, area.Height - horizontalHeight));
 
             var frame = GetCellFrame(gridArea, facets, facets.Cells[0], gapX, gapY, headerHeight);
             Configure(vertical, frame.Bottom, frame.Y, frame.Height / 40);
             Configure(horizontal, frame.X, frame.Right, frame.Width / 80);
+            ConfigureSecondary(frame, transposed);
+            secondaryWidth = 0;
+            if (secondaryVisible)
+            {
+                var labels = MeasureVerticalLabels(secondary!);
+                secondaryWidth = (labels.Count is 0 ? 0 : labels.Max(label => label.Metrics.Width)) + secondaryAxis.TickSize + TickLabelGap + 2;
+                if (secondaryAxis.Label is { Length: > 0 } label)
+                {
+                    secondaryWidth += _measurer.Measure(label, LabelFont).Height + AxisLabelGap;
+                }
+            }
 
             verticalWidth = 0;
             if (verticalVisible)
@@ -243,8 +264,8 @@ internal sealed class PlotRenderer
                     var rightExtent = 0.0;
                     if (horizontalLayout.Rotation == 0)
                     {
-                        var requiredRight = _plot.Width - 2 - rowLabelWidth - (last.Metrics.Width / 2) - (last.Position - frame.Right);
-                        extraRight = Math.Max(0, area.Right - rowLabelWidth - requiredRight);
+                        var requiredRight = _plot.Width - 2 - rowLabelWidth - secondaryWidth - (last.Metrics.Width / 2) - (last.Position - frame.Right);
+                        extraRight = Math.Max(0, area.Right - rowLabelWidth - secondaryWidth - requiredRight);
                         rightExtent = (last.Metrics.Width / 2) - (frame.Right - last.Position);
                     }
 
@@ -264,6 +285,7 @@ internal sealed class PlotRenderer
             var frame = GetCellFrame(gridArea, facets, cell, gapX, gapY, headerHeight);
             Configure(vertical, frame.Bottom, frame.Y, frame.Height / 40);
             Configure(horizontal, frame.X, frame.Right, frame.Width / 80);
+            ConfigureSecondary(frame, transposed);
             if (verticalVisible)
             {
                 RenderVerticalAxis(vertical!, verticalAxis, MeasureVerticalLabels(vertical!), frame, grid, axes, isYScale: !transposed, drawLabels: cell.IsLeft, titleArea: single ? frame : null);
@@ -275,7 +297,12 @@ internal sealed class PlotRenderer
                 RenderHorizontalAxis(horizontal!, horizontalAxis, horizontalLayout, frame, grid, axes, isYScale: transposed, drawLabels: cell.IsBottom, titleArea: single ? frame : null);
             }
 
-            RenderFacetLabels(facets, cell, frame, axes);
+            if (secondaryVisible)
+            {
+                RenderSecondaryAxis(secondary!, secondaryAxis, frame, grid, axes, drawLabels: cell.IsRight, titleArea: single ? frame : null, secondaryWidth);
+            }
+
+            RenderFacetLabels(facets, cell, frame, axes, secondaryVisible && cell.IsRight ? secondaryWidth : 0);
             renderCell(cell, cartesian, frame);
         }
 
@@ -292,6 +319,79 @@ internal sealed class PlotRenderer
             {
                 RenderHorizontalTitle(horizontalAxis, horizontalLayout!, titleArea, axes);
             }
+
+            if (secondaryVisible)
+            {
+                RenderSecondaryTitle(secondaryAxis, titleArea, axes, secondaryWidth);
+            }
+        }
+    }
+
+    // The secondary scale has the range of the y scale: vertical in Cartesian coordinates, horizontal when transposed
+    private void ConfigureSecondary(ChartRectangle frame, bool transposed)
+    {
+        if (transposed)
+        {
+            Configure(_y2, frame.X, frame.Right, frame.Width / 80);
+        }
+        else
+        {
+            Configure(_y2, frame.Bottom, frame.Y, frame.Height / 40);
+        }
+    }
+
+    private void RenderSecondaryAxis(ResolvedScale scale, Axis axis, ChartRectangle frame, SceneGroup grid, SceneGroup axes, bool drawLabels, ChartRectangle? titleArea, double axisWidth)
+    {
+        var showGrid = axis.Grid ?? false;
+        var lastLabel = double.NaN;
+        foreach (var label in MeasureVerticalLabels(scale))
+        {
+            if (showGrid)
+            {
+                grid.Add(new SceneLine(frame.X, label.Position, frame.Right, label.Position) { Stroke = _theme.GridColor });
+            }
+
+            if (!drawLabels)
+                continue;
+
+            if (axis.TickSize > 0)
+            {
+                axes.Add(new SceneLine(frame.Right, label.Position, frame.Right + axis.TickSize, label.Position) { Stroke = _theme.AxisColor });
+            }
+
+            if (!double.IsNaN(lastLabel) && Math.Abs(label.Position - lastLabel) < label.Metrics.Height)
+                continue;
+
+            lastLabel = label.Position;
+            axes.Add(new SceneText(frame.Right + axis.TickSize + TickLabelGap, label.Position + ((label.Metrics.Ascent - label.Metrics.Descent) / 2), label.Text, TickFont, _theme.MutedForeground)
+            {
+                MeasuredWidth = label.Metrics.Width,
+            });
+        }
+
+        if (axis.Line ?? false)
+        {
+            axes.Add(new SceneLine(frame.Right, frame.Y, frame.Right, frame.Bottom) { Stroke = _theme.AxisColor });
+        }
+
+        if (titleArea is { } area)
+        {
+            RenderSecondaryTitle(axis, area, axes, axisWidth);
+        }
+    }
+
+    private void RenderSecondaryTitle(Axis axis, ChartRectangle area, SceneGroup axes, double axisWidth)
+    {
+        if (axis.Label is { Length: > 0 } text)
+        {
+            // Rotated by 90 degrees, at the right edge of the space of the axis: the top of the glyphs faces right
+            var metrics = _measurer.Measure(text, LabelFont);
+            axes.Add(new SceneText(area.Right + axisWidth - metrics.Height + metrics.Descent, area.CenterY, text, LabelFont, _theme.Foreground)
+            {
+                Anchor = SceneTextAnchor.Middle,
+                Rotation = 90,
+                MeasuredWidth = metrics.Width,
+            });
         }
     }
 
@@ -307,7 +407,7 @@ internal sealed class PlotRenderer
         return new ChartRectangle(x, y, width, height);
     }
 
-    private void RenderFacetLabels(FacetGrid facets, FacetCell cell, ChartRectangle frame, SceneGroup axes)
+    private void RenderFacetLabels(FacetGrid facets, FacetCell cell, ChartRectangle frame, SceneGroup axes, double rightOffset = 0)
     {
         var font = HeaderFont;
         if (cell.HasHeader && cell.XKey is { } header)
@@ -321,7 +421,7 @@ internal sealed class PlotRenderer
         {
             var text = TextFitting.Truncate(_measurer, rowLabel, font, frame.Height) ?? TextFitting.Ellipsis;
             var metrics = _measurer.Measure(text, font);
-            axes.Add(new SceneText(frame.Right + 6, frame.CenterY, text, font, _theme.Foreground) { Anchor = SceneTextAnchor.Middle, Rotation = 90, MeasuredWidth = metrics.Width, CssClass = "facet-header" });
+            axes.Add(new SceneText(frame.Right + rightOffset + 6, frame.CenterY, text, font, _theme.Foreground) { Anchor = SceneTextAnchor.Middle, Rotation = 90, MeasuredWidth = metrics.Width, CssClass = "facet-header" });
         }
     }
 
@@ -543,6 +643,14 @@ internal sealed class PlotRenderer
         var centerX = area.CenterX - (radius * (minX + maxX) / 2);
         var centerY = area.CenterY - (radius * (minY + maxY) / 2);
         radial?.Configure(innerFraction * radius, radius, Math.Max(2, (int)Math.Round(radius / 30, MidpointRounding.AwayFromZero)));
+        if (transposed)
+        {
+            _y2?.Configure(startAngle, endAngle, Math.Max(2, (int)Math.Round((endAngle - startAngle) / (Math.PI / 6), MidpointRounding.AwayFromZero)), periodic);
+        }
+        else
+        {
+            _y2?.Configure(innerFraction * radius, radius, Math.Max(2, (int)Math.Round(radius / 30, MidpointRounding.AwayFromZero)));
+        }
         return new PolarSystem(transposed, centerX, centerY, innerFraction * radius, radius, startAngle, endAngle);
     }
 
@@ -634,10 +742,12 @@ internal sealed class PlotRenderer
         }
     }
 
-    private List<ChannelValues> Collect(Func<MarkData, ChannelValues?[]> selector)
+    private List<ChannelValues> Collect(Func<MarkData, ChannelValues?[]> selector) => Collect(_marks, selector);
+
+    private static List<ChannelValues> Collect(List<(Mark Mark, MarkData Data)> marks, Func<MarkData, ChannelValues?[]> selector)
     {
         var result = new List<ChannelValues>();
-        foreach (var (_, data) in _marks)
+        foreach (var (_, data) in marks)
         {
             foreach (var channel in selector(data))
             {
@@ -650,4 +760,6 @@ internal sealed class PlotRenderer
 
         return result;
     }
+
+    private static MarkTraits GetTraits(List<(Mark Mark, MarkData Data)> marks) => marks.Aggregate(MarkTraits.None, (traits, mark) => traits | mark.Mark.GetTraits(mark.Data));
 }

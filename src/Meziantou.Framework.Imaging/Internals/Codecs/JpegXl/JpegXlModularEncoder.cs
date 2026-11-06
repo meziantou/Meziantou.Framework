@@ -41,6 +41,37 @@ internal static class JpegXlModularEncoder
 
     private static JpegXlHybridUintConfig SampleConfig => new(TokenSplitExponent, 1, 0);
 
+    // The trees of the small sub-bitstreams: the limits of the lossless encoder at its effort 3. The settings of its higher
+    // efforts made the LF image of photographs 1 to 3 % smaller for 5 to 30 times the learning time, and a lower split
+    // cost made it larger: the tree and the distributions of a small image cost more than its contexts save
+    private const int LearnedTreeMaxLeaves = 32;
+    private const int LearnedTreeMaxBuckets = 16;
+    private const double LearnedTreeSplitCost = 48;
+    private const int LearnedTreeMaxClusters = 32;
+    private const int FirstReferenceProperty = 16;
+    private const int PropertiesPerReference = 4;
+
+    /// <summary>
+    /// The trees of the LF image of a VarDCT frame (the quantized LF value of every block: Y, then X, then B): the
+    /// neighbors and the gradients, and the values and the gradient residuals of the previous channels, with the gradient
+    /// and the left predictors (the others were almost never chosen), from 4,096 samples per channel at most.
+    /// </summary>
+    public static LearnedTreeSettings LfImageTree { get; } = new([6, 7, 9, 10, 11, 12, 16, 17, 18, 19, 20, 21, 22, 23], [GradientPredictor, 1], 4096);
+
+    /// <summary>
+    /// The trees of the LF image from <see cref="WeightedPredictorEffort"/>: those of <see cref="LfImageTree"/>, with the
+    /// weighted predictor and its error as a property, which made the LF image of photographs 0.7 % smaller for 4 % of the
+    /// time of an encoding.
+    /// </summary>
+    public static LearnedTreeSettings LfImageTreeWithWeightedPredictor { get; } = new([.. LfImageTree.Properties, JpegXlMaTree.WeightedProperty], [.. LfImageTree.Predictors, WeightedPredictor], LfImageTree.SamplesPerChannel);
+
+    /// <summary>
+    /// The trees of the block metadata of a VarDCT frame (the chroma from luma factors of the tiles, the block list and the
+    /// sharpness): the row and the column, which tell the transforms (first row of the block list) from the quantization
+    /// factors (second row), and the neighbors; from every sample, since the block list has two rows.
+    /// </summary>
+    public static LearnedTreeSettings BlockMetadataTree { get; } = new([2, 3, 4, 5, 7, 8, 9, 10, 14], [GradientPredictor, 0, 1], 0);
+
     /// <summary>Writes the channels of a rectangle of the image.</summary>
     /// <param name="writer">The writer.</param>
     /// <param name="image">The channels: the color channels (one or three), then the alpha channel when there is one. The samples of three color channels are replaced with their transform.</param>
@@ -102,6 +133,93 @@ internal static class JpegXlModularEncoder
         // The squeeze transform, without step: the default ones
         writer.WriteBits(2, 2);
         writer.WriteU32(0, 0, 0, 1, 4, 9, 6, 41, 8);
+    }
+
+    /// <summary>
+    /// Writes a small sub-bitstream that holds its own learned tree and has no transform: the tree of each channel is
+    /// learned from its samples (<see cref="JpegXlTreeLearner"/>), and the decisions on the channel lead to these trees;
+    /// the contexts are clustered (<see cref="JpegXlModularEntropyCode"/>), and the samples are written with prefix codes
+    /// or with the ANS coder, whichever is smaller.
+    /// </summary>
+    /// <param name="writer">The writer.</param>
+    /// <param name="image">The channels, none of them empty. The residuals of all of them are kept: the image is meant to be small.</param>
+    /// <param name="streamIndex">The index of the sub-bitstream, a property of the samples.</param>
+    /// <param name="settings">What the trees are learned with.</param>
+    /// <param name="scope">The scope of the working memory.</param>
+    /// <param name="cancellationToken">The token checked between channels.</param>
+    public static void EncodeWithLearnedTree(LsbBitWriter writer, JpegXlModularImage image, int streamIndex, LearnedTreeSettings settings, AllocationScope scope, CancellationToken cancellationToken)
+    {
+        var channels = image.Channels;
+        var learner = new JpegXlTreeLearner.LearnerSettings(LearnedTreeMaxLeaves, LearnedTreeMaxBuckets, LearnedTreeSplitCost, SplitPredictors: 1);
+        var trees = new JpegXlTreeLearner.TreeNode[channels.Count];
+        long sampleCount = 0;
+        var largest = 0;
+        for (var c = 0; c < channels.Count; c++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var channel = channels[c];
+            var length = channel.Samples.Length;
+            sampleCount += length;
+            largest = Math.Max(largest, length);
+            if (channel.Samples.IndexOfAnyExcept(channel.Samples[0]) < 0)
+            {
+                // A constant channel (the sharpness of the blocks) costs nothing to the gradient predictor but its first sample
+                trees[c] = JpegXlTreeLearner.TreeNode.CreateLeaf(GradientPredictor);
+                continue;
+            }
+
+            // The properties of the previous channels are only offered to a channel that has them
+            var references = 0;
+            for (var i = c - 1; i >= 0; i--)
+            {
+                var other = channels[i];
+                if (other.Width == channel.Width && other.Height == channel.Height && other.HorizontalShift == channel.HorizontalShift && other.VerticalShift == channel.VerticalShift)
+                {
+                    references++;
+                }
+            }
+
+            int[] properties = [.. settings.Properties.Where(property => property < FirstReferenceProperty + (PropertiesPerReference * references))];
+            var rowStep = settings.SamplesPerChannel == 0 ? 1 : (int)Math.Max(1, ((long)length + settings.SamplesPerChannel - 1) / settings.SamplesPerChannel);
+            using var set = new JpegXlTreeLearner.SampleSet(properties, settings.Predictors, length, scope);
+            JpegXlTreeCoder.Sample(image, c, streamIndex, set, rowStep, rowPhase: 0, scope);
+            set.Scale = (double)length / set.Count;
+            trees[c] = JpegXlTreeLearner.Learn(set, learner, scope, out _, cancellationToken);
+        }
+
+        var tree = JpegXlTreeCoder.Flatten(JpegXlTreeCoder.ChainChannels(trees), out var leafCount);
+
+        // The contexts and the residuals of every sample, counted, then written with the code built from the counts
+        using var values = Av1PooledArray<ulong>.Rent(scope, sampleCount, clear: false);
+        using (var work = Av1PooledArray<JpegXlMaTreeNode>.Rent(scope, tree.Length, clear: false))
+        using (var pending = Av1PooledArray<int>.Rent(scope, tree.Length, clear: false))
+        using (var residuals = Av1PooledArray<uint>.Rent(scope, largest, clear: false))
+        using (var tableBuffer = Av1PooledArray<ulong>.Rent(scope, JpegXlMaTreeTable.BufferLength, clear: false))
+        {
+            var offset = 0;
+            for (var c = 0; c < channels.Count; c++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var length = channels[c].Samples.Length;
+                JpegXlTreeCoder.Collect(image, c, streamIndex, tree, values.Span.Slice(offset, length), work.Span, pending.Span, residuals.Span, tableBuffer.Span, scope);
+                offset += length;
+            }
+        }
+
+        using var code = new JpegXlModularEntropyCode(leafCount, Math.Min(leafCount, LearnedTreeMaxClusters), searchConfigs: false, useLz77: false, scope);
+        using (var counter = code.CreateCounter())
+        {
+            counter.AddRange(values.Span);
+            code.AddCounts(counter);
+        }
+
+        code.Build();
+        WriteHeader(writer);
+        JpegXlTreeCoder.WriteTree(writer, tree, scope);
+        code.WriteDescription(writer);
+        using var stream = new JpegXlEntropyCodeBuilder.StreamBuffer(scope);
+        code.AddRange(stream, values.Span);
+        code.WriteStream(stream, writer);
     }
 
     /// <summary>Writes the start of a sub-bitstream that holds its own tree and has no transform.</summary>
@@ -628,4 +746,10 @@ internal static class JpegXlModularEncoder
             }
         }
     }
+
+    /// <summary>What the trees of <see cref="EncodeWithLearnedTree"/> are learned with.</summary>
+    /// <param name="Properties">The properties the decisions test; those of the previous channels (from 16) are only offered to a channel that has them.</param>
+    /// <param name="Predictors">The predictors of the leaves.</param>
+    /// <param name="SamplesPerChannel">The largest number of samples a tree is learned from (rows are skipped evenly beyond it), or 0 for every sample.</param>
+    internal sealed record LearnedTreeSettings(int[] Properties, int[] Predictors, int SamplesPerChannel);
 }

@@ -34,8 +34,9 @@ internal sealed class JpegXlOutputColor
     private readonly float _gamma;
     private readonly float _intensityTarget;
     private readonly float _hlgExponent;
+    private readonly IccInverseCurve[]? _iccCurves;
 
-    private JpegXlOutputColor(JpegXlImageHeader header)
+    private JpegXlOutputColor(JpegXlImageHeader header, JpegXlIccOutput? iccOutput)
     {
         var encoding = header.ColorEncoding;
         IsGray = encoding.IsGray;
@@ -49,6 +50,14 @@ internal sealed class JpegXlOutputColor
 
         Span<double> matrix = stackalloc double[9];
         ComputeMatrix(header, matrix, _luminances);
+        if (iccOutput is not null)
+        {
+            _iccCurves = iccOutput.Curves;
+            if (!IsGray)
+            {
+                ConvertToProfile(iccOutput, matrix);
+            }
+        }
 
         if (IsGray)
         {
@@ -158,8 +167,13 @@ internal sealed class JpegXlOutputColor
     public bool IsGray { get; }
 
     /// <summary>Creates the conversion of an image stored in XYB.</summary>
+    /// <param name="header">The image header.</param>
+    /// <param name="iccOutput">
+    /// The color space of the ICC profile of the image when the samples are rendered to it, or <see langword="null"/> for the
+    /// color encoding of the image (sRGB for an image described by an sRGB profile).
+    /// </param>
     /// <exception cref="UnsupportedImageFeatureException">The color encoding of the image cannot be produced.</exception>
-    public static JpegXlOutputColor Create(JpegXlImageHeader header)
+    public static JpegXlOutputColor Create(JpegXlImageHeader header, JpegXlIccOutput? iccOutput = null)
     {
         ArgumentNullException.ThrowIfNull(header);
         var encoding = header.ColorEncoding;
@@ -169,13 +183,26 @@ internal sealed class JpegXlOutputColor
         if (encoding.IsGray && !encoding.WantIcc && encoding.WhitePoint != JpegXlColorEncoding.WhitePointD65)
             throw JpegXlFormat.Unsupported("The JPEG XL image is a grayscale image stored in the XYB color space with a white point other than D65.", "XYB grayscale with a white point other than D65");
 
-        return new JpegXlOutputColor(header);
+        return new JpegXlOutputColor(header, iccOutput);
     }
 
     /// <summary>Converts rows of XYB samples in place: the samples of the three channels, or the gray samples in the first one.</summary>
     public void Apply(Span<float> x, Span<float> y, Span<float> b)
     {
         XybToLinear(x, y, b, _matrix, _biasRoot, _bias);
+        if (_iccCurves is { } curves)
+        {
+            // The linear samples are those of the profile: its tone curves are inverted
+            ApplyInverseCurve(x, curves[0]);
+            if (!IsGray)
+            {
+                ApplyInverseCurve(y, curves[1]);
+                ApplyInverseCurve(b, curves[2]);
+            }
+
+            return;
+        }
+
         if (_transfer == JpegXlColorEncoding.TransferLinear)
             return;
 
@@ -196,6 +223,36 @@ internal sealed class JpegXlOutputColor
         {
             Encode(y);
             Encode(b);
+        }
+    }
+
+    /// <summary>
+    /// Replaces a matrix that produces linear sRGB samples with the one that produces the linear samples of a profile: sRGB
+    /// to CIEXYZ adapted to the illuminant of the connection space with the linear Bradford transform, then the inverse of
+    /// the colorants of the profile.
+    /// </summary>
+    private static void ConvertToProfile(JpegXlIccOutput iccOutput, Span<double> matrix)
+    {
+        Span<double> srgbToXyz = stackalloc double[9];
+        Span<double> adaptation = stackalloc double[9];
+        Span<double> srgbToConnectionSpace = stackalloc double[9];
+        Span<double> srgbToDevice = stackalloc double[9];
+        Span<double> combined = stackalloc double[9];
+        ReadOnlySpan<double> d50 = [IccColorimetry.D50X, IccColorimetry.D50Y, IccColorimetry.D50Z];
+        if (!ChromaticityMath.TryGetRgbToXyz(SrgbPrimaries, 0.3127, 0.3290, srgbToXyz) || !ChromaticityMath.TryGetBradfordAdaptation(0.3127, 0.3290, d50, adaptation))
+            throw new InvalidOperationException("The sRGB color space is not valid.");
+
+        ChromaticityMath.Multiply(adaptation, srgbToXyz, srgbToConnectionSpace);
+        ChromaticityMath.Multiply(iccOutput.DeviceFromConnectionSpace, srgbToConnectionSpace, srgbToDevice);
+        ChromaticityMath.Multiply(srgbToDevice, matrix, combined);
+        combined.CopyTo(matrix);
+    }
+
+    private static void ApplyInverseCurve(Span<float> samples, IccInverseCurve curve)
+    {
+        for (var i = 0; i < samples.Length; i++)
+        {
+            samples[i] = (float)curve.Evaluate(samples[i]);
         }
     }
 

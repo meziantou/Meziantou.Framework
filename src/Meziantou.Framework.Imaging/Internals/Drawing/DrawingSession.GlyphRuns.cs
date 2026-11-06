@@ -24,6 +24,9 @@ internal sealed partial class DrawingSession
 {
     private GlyphMaskRenderer? _glyphMasks;
 
+    /// <summary>The corrected coverages of a row of a glyph mask (see <see cref="PaintMask"/>).</summary>
+    private uint[]? _correctedCoverage;
+
     public void FillGlyphs(Brush brush, Font font, double size, ReadOnlySpan<PositionedGlyph> glyphs, GlyphRunOptions? options)
     {
         ArgumentNullException.ThrowIfNull(brush);
@@ -96,6 +99,7 @@ internal sealed partial class DrawingSession
         DrawingColor color = default;
         PaintEvaluator? evaluator = null;
         var isPaintable = false;
+        uint[]? correction = null;
         foreach (ref readonly var positioned in glyphs)
         {
             var glyph = positioned.Glyph;
@@ -112,6 +116,7 @@ internal sealed partial class DrawingSession
                 {
                     isPaintable = PrepareBrush(brush, out color, out evaluator);
                     isBrushPrepared = true;
+                    correction = options.CorrectsCoverage ? GlyphCoverageCorrection.GetTable(options.Contrast, options.Gamma) : null;
                 }
 
                 if (isPaintable && !_isPreparing)
@@ -119,11 +124,11 @@ internal sealed partial class DrawingSession
                     if (mask is null)
                     {
                         var renderer = _glyphMasks!;
-                        PaintMask(color, evaluator, brush, pixelX + renderer.Left, pixelY + renderer.Top, renderer.Width, renderer.Height, renderer.Coverage);
+                        PaintMask(color, evaluator, brush, pixelX + renderer.Left, pixelY + renderer.Top, renderer.Width, renderer.Height, renderer.Coverage, correction);
                     }
                     else
                     {
-                        PaintMask(color, evaluator, brush, pixelX + mask.Left, pixelY + mask.Top, mask.Width, mask.Height, mask.Coverage);
+                        PaintMask(color, evaluator, brush, pixelX + mask.Left, pixelY + mask.Top, mask.Width, mask.Height, mask.Coverage, correction);
                     }
                 }
 
@@ -188,8 +193,11 @@ internal sealed partial class DrawingSession
         static double Snap(double value, int positions) => Math.Floor((value * positions) + 0.5) / positions;
     }
 
-    /// <summary>Paints the coverages of a mask at a position of the canvas: row by row, through the clip and the opacity.</summary>
-    private void PaintMask(DrawingColor color, PaintEvaluator? evaluator, Brush brush, int left, int top, int width, int height, ReadOnlySpan<uint> coverage)
+    /// <summary>
+    /// Paints the coverages of a mask at a position of the canvas: row by row, corrected by the table of <paramref name="correction"/>
+    /// when it is not null (see <see cref="GlyphCoverageCorrection"/>), through the clip and the opacity.
+    /// </summary>
+    private void PaintMask(DrawingColor color, PaintEvaluator? evaluator, Brush brush, int left, int top, int width, int height, ReadOnlySpan<uint> coverage, uint[]? correction)
     {
         evaluator?.Begin();
         try
@@ -217,7 +225,20 @@ internal sealed partial class DrawingSession
 
                 if (start < end)
                 {
-                    PaintSpan(color, evaluator, brush.CompositeMode, brush.BlendMode, CoverageRasterizer.FullCoverage, y, left + start, values[start..end], brush.Opacity);
+                    var span = values[start..end];
+                    if (correction is not null)
+                    {
+                        if (_correctedCoverage is null || _correctedCoverage.Length < span.Length)
+                        {
+                            _correctedCoverage = new uint[Math.Max(span.Length, width)];
+                        }
+
+                        var corrected = _correctedCoverage.AsSpan(0, span.Length);
+                        GlyphCoverageCorrection.Apply(correction, span, corrected);
+                        span = corrected;
+                    }
+
+                    PaintSpan(color, evaluator, brush.CompositeMode, brush.BlendMode, CoverageRasterizer.FullCoverage, y, left + start, span, brush.Opacity);
                 }
             }
         }

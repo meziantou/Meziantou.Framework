@@ -55,6 +55,9 @@ internal sealed record RenderResult(string Scenario, string Fixture, string Outp
 {
     /// <summary>Gets the accepted difference that explains the result, when its status is <see cref="RenderStatus.Known"/>.</summary>
     public RenderKnownDifference? KnownDifference { get; init; }
+
+    /// <summary>Gets the URL of the page of pages.txt that is compared, or null for a fixture.</summary>
+    public string? Url { get; init; }
 }
 
 /// <summary>
@@ -137,7 +140,7 @@ internal static class RenderComparison
 
                 foreach (var result in inputResults)
                 {
-                    var classified = Classify(result, GetThresholds(scenario, result.Output));
+                    var classified = Classify(result, GetThresholds(scenario, result.Output)) with { Url = input.Page?.Url };
                     results.Add(classified);
                     Console.WriteLine($"{classified.Status.ToString().ToUpperInvariant(),-11} {scenario.Name} {input.Name} [{classified.Output}] {classified.Metrics?.Describe()}{(classified.Message is null ? "" : " " + classified.Message)}{(classified.Unsupported.Count > 0 ? " (unsupported: " + string.Join(", ", classified.Unsupported) + ")" : "")}");
                 }

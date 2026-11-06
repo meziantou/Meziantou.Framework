@@ -684,4 +684,160 @@ public sealed class StatisticalChartTests
         plot.Add(new LineMark<Sale>(SampleData.Sales.Where(sale => sale.Region == "North"), x: sale => sale.Year, y: sale => sale.Amount) { Transform = new CumulativeTransform(), MarkerRadius = 3 });
         ChartAssert.Svg(plot);
     }
+
+    [Fact]
+    public void Choropleth()
+    {
+        #region Charts_Choropleth
+        var path = Path.Combine(AppContext.BaseDirectory, "TestData", "countries-110m.geojson");
+        var countries = GeoJson.ParseFeatures(File.ReadAllText(path))
+            .Where(country => country.Properties["continent"] is not "Antarctica")
+            .ToList();
+
+        var plot = new Plot
+        {
+            Title = "GDP per person",
+            Subtitle = "Natural Earth, 2019 estimates",
+            Height = 380,
+            Coordinates = new GeoCoordinates { Projection = new EqualEarthProjection(), Outline = true },
+
+            // The fill is the logarithm of the GDP per person: one step of the scale per factor of 10, labeled in
+            // dollars rounded to the hundreds
+            ColorScale = new SequentialColorScale
+            {
+                Minimum = 3,
+                Maximum = 5,
+                TickFormat = value => "$" + NumberFormats.Si(Math.Round(Math.Pow(10, value) / 100, MidpointRounding.AwayFromZero) * 100),
+            },
+        };
+        plot.Add(new GeoMark<GeoFeature>(countries, country => country.Geometry)
+        {
+            Fill = country => Math.Log10((double)country.Properties["gdp_md"]! * 1_000_000 / (double)country.Properties["pop_est"]!),
+            Title = country => (string?)country.Properties["name"],
+        });
+        #endregion
+
+        ChartAssert.Svg(plot, "Choropleth");
+    }
+
+    [Fact]
+    public void MapPoints()
+    {
+        #region Charts_MapPoints
+        var path = Path.Combine(AppContext.BaseDirectory, "TestData", "countries-110m.geojson");
+        var countries = GeoJson.ParseFeatures(File.ReadAllText(path));
+        City[] cities =
+        [
+            new("London", -0.13, 51.51, 9.0), new("Paris", 2.35, 48.86, 11.1), new("Madrid", -3.70, 40.42, 6.7),
+            new("Berlin", 13.40, 52.52, 3.7), new("Rome", 12.50, 41.90, 4.3), new("Warsaw", 21.01, 52.23, 1.8),
+            new("Stockholm", 18.07, 59.33, 1.7), new("Athens", 23.73, 37.98, 3.2), new("Lisbon", -9.14, 38.72, 2.9),
+            new("Vienna", 16.37, 48.21, 2.0), new("Kyiv", 30.52, 50.45, 3.0), new("Bucharest", 26.10, 44.43, 1.8),
+        ];
+
+        var plot = new Plot
+        {
+            Title = "Capitals of Europe",
+            Height = 440,
+            Clip = true,
+            Coordinates = new GeoCoordinates
+            {
+                Projection = new MercatorProjection(),
+                Extent = new GeoBounds(West: -12, South: 35, East: 34, North: 62),
+                GraticuleStep = 10,
+            },
+        };
+        plot.SizeLegend.Title = "Population (millions)";
+        plot.Add(new GeoMark<GeoFeature>(countries, country => country.Geometry));
+
+        // On a map, x is the longitude and y the latitude
+        plot.Add(new DotMark<City>(cities, x: city => city.Longitude, y: city => city.Latitude)
+        {
+            Size = city => city.Population,
+            FillColor = "#e5484d",
+            FillOpacity = 0.8,
+        });
+        plot.Add(new TextMark<City>(cities, text: city => city.Name, x: city => city.Longitude, y: city => city.Latitude) { OffsetY = -12 });
+        #endregion
+
+        ChartAssert.Svg(plot, "MapPoints");
+    }
+
+    [Theory]
+    [InlineData("Equirectangular")]
+    [InlineData("Mercator")]
+    [InlineData("EqualEarth")]
+    [InlineData("Albers")]
+    public void MapProjections(string name)
+    {
+        GeoProjection projection = name switch
+        {
+            "Equirectangular" => new EquirectangularProjection(),
+            "Mercator" => new MercatorProjection(),
+            "EqualEarth" => new EqualEarthProjection(),
+            _ => new AlbersProjection(),
+        };
+        IEnumerable<GeoFeature> countries = GeoJson.ParseFeatures(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "TestData", "countries-110m.geojson")));
+        var plot = new Plot { Width = 480, Height = 300, Coordinates = new GeoCoordinates { Projection = projection, GraticuleStep = 30, Outline = true } };
+        if (projection is AlbersProjection)
+        {
+            // A regional projection: the map of North America, without the regions that span the opposite meridian
+            countries = countries.Where(country => country.Properties["continent"] is "North America");
+            plot.Coordinates = new GeoCoordinates { Projection = projection, GraticuleStep = 10, Extent = new GeoBounds(-125, 24, -66, 50) };
+            plot.Clip = true;
+        }
+
+        plot.Add(new GeoMark<GeoFeature>(countries, country => country.Geometry) { Fill = country => country.Properties["continent"] });
+        ChartAssert.Svg(plot.ToSvg(), documentationImage: null, memberName: nameof(MapProjections) + "_" + name);
+    }
+
+    [Fact]
+    public void GeoMarkOptions()
+    {
+        var square = new GeoPolygon([[new(0, 0), new(10, 0), new(10, 10), new(0, 10), new(0, 0)], [new(3, 3), new(7, 3), new(7, 7), new(3, 7)]]);
+        GeoFeature[] features =
+        [
+            new(new GeoGeometry(polygons: [square]), new Dictionary<string, object?>(StringComparer.Ordinal) { ["value"] = 1.0, ["kind"] = "area" }, "square"),
+            new(new GeoGeometry(lines: [[new(-5, -5), new(15, 15)]]), new Dictionary<string, object?>(StringComparer.Ordinal) { ["value"] = 2.0, ["kind"] = "line" }),
+            new(new GeoGeometry(points: [new(-5, 12), new(14, -4)]), new Dictionary<string, object?>(StringComparer.Ordinal) { ["value"] = 3.0, ["kind"] = "point" }),
+            new(new GeoGeometry(polygons: [new GeoPolygon([[new(12, 0), new(16, 0), new(16, 4)]])])),
+            new(geometry: null),
+        ];
+        var plot = new Plot
+        {
+            Width = 320,
+            Height = 300,
+            Margin = new ChartMargin(20),
+            Coordinates = new GeoCoordinates { Projection = new AlbersProjection { Parallel1 = 0, Parallel2 = 20, CentralMeridian = 5 }, GraticuleStep = 5 },
+        };
+        plot.Add(new RectMark<int>([0]) { X1 = _ => 20, X2 = _ => 25, Y1 = _ => 0, Y2 = _ => 5, FillColor = "#ffd33d" });
+        plot.Add(new GeoMark<GeoFeature>(features, feature => feature.Geometry)
+        {
+            Fill = feature => feature.Properties.GetValueOrDefault("value"),
+            Stroke = feature => feature.Properties.GetValueOrDefault("kind"),
+            StrokeWidth = 2,
+            PointRadius = 5,
+            Title = feature => feature.Id,
+        });
+        ChartAssert.Svg(plot);
+
+        // Constant colors, and facets
+        var faceted = new Plot { Width = 400, Height = 200 };
+        faceted.Add(new GeoMark<GeoFeature>(features, feature => feature.Geometry)
+        {
+            FillColor = "#3ca951",
+            StrokeColor = "#1f2328",
+            FacetX = feature => feature.Properties.GetValueOrDefault("kind") ?? "other",
+        });
+        Assert.Contains("class=\"facet\"", faceted.ToSvg());
+
+        // A map without positions shows the whole world; a geo mark draws nothing in Cartesian coordinates
+        var world = new Plot { Coordinates = new GeoCoordinates { GraticuleStep = 90 } };
+        Assert.Contains("graticule", world.ToSvg());
+        var cartesian = new Plot { Coordinates = new CartesianCoordinates() };
+        cartesian.Add(new GeoMark<GeoFeature>(features, feature => feature.Geometry));
+        Assert.DoesNotContain("<path", cartesian.ToSvg());
+
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => new GeoCoordinates { GraticuleStep = 0 });
+        Assert.Throws<ArgumentNullException>("value", () => new GeoCoordinates { Projection = null! });
+    }
 }

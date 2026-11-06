@@ -32,9 +32,15 @@ internal sealed class PlotRenderer
             _traits |= mark.GetTraits(data);
         }
 
-        _coordinates = plot.Coordinates ?? (_traits.HasFlag(MarkTraits.PreferPolar) ? new PolarCoordinates() : new CartesianCoordinates());
+        _coordinates = plot.Coordinates ?? (_traits.HasFlag(MarkTraits.PreferGeo) ? new GeoCoordinates() : _traits.HasFlag(MarkTraits.PreferPolar) ? new PolarCoordinates() : new CartesianCoordinates());
         var frameOnly = _marks.Count > 0 && _marks.All(mark => mark.Mark.GetTraits(mark.Data).HasFlag(MarkTraits.Frame));
-        if (!frameOnly)
+        if (_coordinates is GeoCoordinates)
+        {
+            // On a map, x and y are longitudes and latitudes: the scales give them unchanged to the projection
+            _x = new ResolvedContinuousScale(ContinuousTransformKind.Linear, ChannelKind.Number, -180, 180, options: null, parameter: 0, nice: false);
+            _y = new ResolvedContinuousScale(ContinuousTransformKind.Linear, ChannelKind.Number, -90, 90, options: null, parameter: 0, nice: false);
+        }
+        else if (!frameOnly)
         {
             _x = ScaleResolver.ResolvePosition(plot.XScale, Collect(data => [data.X, data.X1, data.X2, .. data.ExtraX]), _traits.HasFlag(MarkTraits.BandX), _traits.HasFlag(MarkTraits.ZeroX), _traits.HasFlag(MarkTraits.ExactX));
             var primary = _marks.Where(mark => !mark.Mark.UseSecondaryYScale).ToList();
@@ -204,7 +210,11 @@ internal sealed class PlotRenderer
             }
         }
 
-        if (_coordinates is PolarCoordinates polar)
+        if (_coordinates is GeoCoordinates geo)
+        {
+            LayoutGeoCells(geo, area, facets, grid, axes, RenderCell);
+        }
+        else if (_coordinates is PolarCoordinates polar)
         {
             LayoutPolarCells(polar, area, facets, grid, axes, RenderCell);
         }
@@ -675,6 +685,103 @@ internal sealed class PlotRenderer
             RenderPolarAxes(system, grid, axes);
             RenderFacetLabels(facets, cell, frame, axes);
             renderCell(cell, system, frame);
+        }
+    }
+
+    private void LayoutGeoCells(GeoCoordinates geo, ChartRectangle area, FacetGrid facets, SceneGroup grid, SceneGroup axes, Action<FacetCell, CoordinateSystem, ChartRectangle> renderCell)
+    {
+        // The map fits the extent, else the shapes and the positions of the marks (and the outline of the globe when it
+        // is drawn), else the whole world
+        var projection = geo.Projection;
+        var positions = geo.Extent is { } extent
+            ? GeoSystem.SampleBox(projection, extent.West, extent.South, extent.East, extent.North)
+            : [.. _marks.SelectMany(mark => mark.Mark.GetGeoPositions(mark.Data))];
+        if (geo.Extent is null && geo.Outline)
+        {
+            positions.AddRange(SampleWorld(projection));
+        }
+
+        var bounds = GeoSystem.GetProjectedBounds(projection, positions);
+        if (double.IsNaN(bounds.MinX))
+        {
+            positions = SampleWorld(projection);
+            bounds = GeoSystem.GetProjectedBounds(projection, positions);
+        }
+
+        var region = (West: positions.Min(position => position.Longitude), South: positions.Min(position => position.Latitude), East: positions.Max(position => position.Longitude), North: positions.Max(position => position.Latitude));
+        _x!.Configure(-180, 180, 2);
+        _y!.Configure(-90, 90, 2);
+        if (!facets.IsFaceted)
+        {
+            var frame = _plot.Margin is { } margin ? FromMargin(margin) : area;
+            var system = GeoSystem.Fit(projection, bounds, frame);
+            RenderGeoGrid(geo, system, frame, region, grid);
+            renderCell(facets.Cells[0], system, frame);
+            return;
+        }
+
+        var headerHeight = facets.HasHeaders ? _measurer.Measure("Xg", HeaderFont).Height + 6 : 0;
+        var rowLabelWidth = facets.HasRowLabels ? _measurer.Measure("Xg", HeaderFont).Height + 6 : 0;
+        var gridArea = new ChartRectangle(area.X, area.Y, Math.Max(1, area.Width - rowLabelWidth), area.Height);
+        foreach (var cell in facets.Cells)
+        {
+            var frame = GetCellFrame(gridArea, facets, cell, _plot.Facets.Gap, _plot.Facets.Gap, headerHeight);
+            var system = GeoSystem.Fit(projection, bounds, frame);
+            RenderGeoGrid(geo, system, frame, region, grid);
+            RenderFacetLabels(facets, cell, frame, axes);
+            renderCell(cell, system, frame);
+        }
+    }
+
+    // The edge of the map of the whole world
+    private static List<GeoPosition> SampleWorld(GeoProjection projection) => GeoSystem.SampleBox(projection, projection.CenterLongitude - 180, -projection.MaxLatitude, projection.CenterLongitude + 180, projection.MaxLatitude);
+
+    /// <summary>Draws the graticule around a region (with a margin of one step) and the outline of the globe, clipped to the frame.</summary>
+    private void RenderGeoGrid(GeoCoordinates geo, GeoSystem system, ChartRectangle frame, (double West, double South, double East, double North) region, SceneGroup grid)
+    {
+        var projection = geo.Projection;
+        var group = new SceneGroup { CssClass = "graticule", Clip = frame };
+        if (geo.GraticuleStep is { } step)
+        {
+            var minLongitude = projection.CenterLongitude - 180;
+            var maxLongitude = projection.CenterLongitude + 180;
+            var maxLatitude = projection.MaxLatitude;
+            var west = Math.Max(minLongitude, (Math.Floor(region.West / step) - 1) * step);
+            var east = Math.Min(maxLongitude, (Math.Ceiling(region.East / step) + 1) * step);
+            var south = Math.Max(-maxLatitude, (Math.Floor(region.South / step) - 1) * step);
+            var north = Math.Min(maxLatitude, (Math.Ceiling(region.North / step) + 1) * step);
+            var builder = new PathBuilder();
+            for (var longitude = Math.Ceiling(west / step) * step; longitude <= east + 1e-9; longitude += step)
+            {
+                var line = new List<GeoPosition>();
+                GeoSystem.AddSegment(projection, line, longitude, south, longitude, north);
+                system.AddPolyline(builder, line, close: false);
+            }
+
+            for (var latitude = Math.Ceiling(south / step) * step; latitude <= north + 1e-9; latitude += step)
+            {
+                if (Math.Abs(latitude) >= 90)
+                    continue;
+
+                var line = new List<GeoPosition>();
+                GeoSystem.AddSegment(projection, line, west, latitude, east, latitude);
+                system.AddPolyline(builder, line, close: false);
+            }
+
+            if (!builder.IsEmpty)
+            {
+                group.Add(new ScenePath(builder.Build()) { Stroke = _theme.GridColor, StrokeWidth = 0.5 });
+            }
+        }
+
+        if (geo.Outline)
+        {
+            group.Add(new ScenePath(system.Polyline(SampleWorld(projection), close: true)) { Stroke = _theme.AxisColor, LineJoin = SceneLineJoin.Round });
+        }
+
+        if (group.Children.Count > 0)
+        {
+            grid.Add(group);
         }
     }
 

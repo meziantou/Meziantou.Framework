@@ -16,6 +16,7 @@ internal static class RenderReport
         {
             r.Scenario,
             r.Fixture,
+            r.Url,
             r.Output,
             Status = r.Status.ToString(),
             r.Metrics,
@@ -61,6 +62,21 @@ internal static class RenderReport
             html.Append("</ul>");
         }
 
+        var ranked = RankPages(results);
+        if (ranked.Count > 0)
+        {
+            html.Append("<h2 id=\"pages\">Real-world pages, by difference</h2><p>The pages of pages.txt, the most different first (the errors, then by the fraction of the pixels that differ), with the most different scenario of each page.</p>");
+            html.Append("<table><tr><th>#</th><th>Page</th><th>Scenario</th><th>Status</th><th>Metrics</th></tr>");
+            for (var i = 0; i < ranked.Count; i++)
+            {
+                var result = ranked[i];
+                var anchor = result.Scenario + "-" + Path.GetFileNameWithoutExtension(result.Fixture);
+                html.Append(CultureInfo.InvariantCulture, $"<tr class=\"{result.Status}\" data-status=\"{result.Status}\"><td>{i + 1}</td><td><a href=\"#{Encode(anchor)}\">{Encode(result.Url!)}</a><br>{Encode(result.Fixture)}</td><td>{Encode(result.Scenario)}</td><td>{result.Status}</td><td>{Encode(result.Metrics?.Describe() ?? result.Message ?? "")}</td></tr>");
+            }
+
+            html.Append("</table>");
+        }
+
         foreach (var scenario in scenarios)
         {
             var scenarioResults = results.Where(r => r.Scenario == scenario.Name).ToList();
@@ -71,7 +87,9 @@ internal static class RenderReport
             html.Append("<table><tr><th>Fixture</th><th>Output</th><th>Status</th><th>Metrics</th><th>Images</th></tr>");
             foreach (var result in scenarioResults)
             {
-                html.Append(CultureInfo.InvariantCulture, $"<tr class=\"{result.Status}\" data-status=\"{result.Status}\"><td>{Encode(result.Fixture)}</td><td>{Encode(result.Output)}</td><td>{result.Status}");
+                var id = result.Url is null ? "" : $" id=\"{Encode(result.Scenario + "-" + Path.GetFileNameWithoutExtension(result.Fixture))}\"";
+                var fixture = result.Url is null ? Encode(result.Fixture) : $"{Encode(result.Fixture)}<br><a href=\"{Encode(result.Url)}\">{Encode(result.Url)}</a>";
+                html.Append(CultureInfo.InvariantCulture, $"<tr{id} class=\"{result.Status}\" data-status=\"{result.Status}\"><td>{fixture}</td><td>{Encode(result.Output)}</td><td>{result.Status}");
                 if (result.Unsupported.Count > 0)
                     html.Append(CultureInfo.InvariantCulture, $"<br>unsupported: {Encode(string.Join(", ", result.Unsupported))}");
 
@@ -152,8 +170,34 @@ internal static class RenderReport
             }
         }
 
+        var ranked = RankPages(results);
+        if (ranked.Count > 0)
+        {
+            md.Append("\n## Real-world pages, by difference\n\nThe pages of pages.txt (`--pages`), the most different first: the errors, then by the fraction of the pixels that differ (the most different scenario of each page).\n\n| # | Page | Scenario | Status | Metrics |\n|---|---|---|---|---|\n");
+            for (var i = 0; i < ranked.Count; i++)
+            {
+                var result = ranked[i];
+                md.Append(CultureInfo.InvariantCulture, $"| {i + 1} | {Escape(result.Url!)} ({result.Fixture}) | {result.Scenario} | {result.Status} | {Escape(result.Metrics?.Describe() ?? result.Message ?? "")} |\n");
+            }
+        }
+
         return md.ToString();
     }
+
+    /// <summary>
+    /// Ranks the pages of pages.txt to find the largest differences: the most different result of each page (its scenarios
+    /// differ little), the errors first, then by the fraction of the pixels that differ, then by SSIM.
+    /// </summary>
+    private static List<RenderResult> RankPages(IReadOnlyList<RenderResult> results)
+        => [.. Rank(results.Where(r => r.Url is not null).GroupBy(r => r.Url, StringComparer.Ordinal).Select(g => Rank(g).First()))];
+
+    private static IOrderedEnumerable<RenderResult> Rank(IEnumerable<RenderResult> results)
+        => results
+            .OrderByDescending(r => r.Status is RenderStatus.Error)
+            .ThenByDescending(r => r.Metrics?.DifferentPixels ?? 0)
+            .ThenBy(r => r.Metrics?.Ssim ?? 0)
+            .ThenBy(r => r.Url, StringComparer.Ordinal)
+            .ThenBy(r => r.Scenario, StringComparer.Ordinal);
 
     private static string Escape(string value) => value.Replace("|", "\\|", StringComparison.Ordinal).ReplaceLineEndings(" ");
 

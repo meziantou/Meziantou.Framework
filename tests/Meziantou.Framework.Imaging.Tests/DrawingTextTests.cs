@@ -1129,6 +1129,43 @@ public sealed class DrawingTextTests
     }
 
     [Fact]
+    public void AGlyphRunCorrectsTheCoverageOfItsMasksAsSkia()
+    {
+        // A at (3.25, 15) covers 3/4 of the pixels of its left column (x = 5) and all the pixels from x = 6 to 16
+        PositionedGlyph[] run = [new(FontSamples.BoxA, new PointD(3.25, 15))];
+        var black = new SolidBrush(new Rgba32(0, 0, 0));
+        int[] Draw(Brush text, Brush background, GlyphRunOptions? options) => Render(PixelFormat.Gray8, 40, 20, canvas =>
+        {
+            canvas.FillRectangle(background, new RectangleD(0, 0, 40, 20));
+            canvas.FillGlyphs(text, Boxes, 16, run, options);
+        });
+
+        var plain = Draw(black, White, options: null);
+        Assert.Equal(plain, Draw(black, White, new GlyphRunOptions { Contrast = 0, Gamma = 1 }));
+
+        // The contrast raises a partial coverage c to c + c (1 - c): 3/4 becomes 15/16; the uncovered and the covered pixels do
+        // not change
+        var corrected = Draw(black, White, new GlyphRunOptions { Contrast = 1 });
+        var column = (10 * 40) + 5;
+        Assert.InRange(plain[column], 62, 66);
+        Assert.InRange(corrected[column], 14, 18);
+        Assert.Equal(plain[column + 1], corrected[column + 1]);
+        Assert.Equal(plain[column - 1], corrected[column - 1]);
+
+        // Whatever the color of the text: a white text on black is raised too
+        Assert.InRange(Draw(White, black, new GlyphRunOptions { Contrast = 1 })[column], 237, 241);
+
+        // A gamma above 1 makes a black text lighter, below 1 darker
+        Assert.InRange(Draw(black, White, new GlyphRunOptions { Gamma = 2 })[column], plain[column] + 1, 255);
+        Assert.InRange(Draw(black, White, new GlyphRunOptions { Gamma = 0.5 })[column], 0, plain[column] - 1);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => new GlyphRunOptions { Contrast = 1.5 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new GlyphRunOptions { Contrast = double.NaN });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new GlyphRunOptions { Gamma = 0 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new GlyphRunOptions { Gamma = double.PositiveInfinity });
+    }
+
+    [Fact]
     public void AGlyphRunDrawsWhatATextOfItsGlyphsDraws()
     {
         // Under a transformation that turns, a glyph is a shape: the one of the text. A text at (3, 2) has its

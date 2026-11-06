@@ -116,7 +116,7 @@
     "reftest": "PASS"
   },
   "css/css-ruby/pseudo-first-line.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-ruby/rb-display-001.html": {
     "reftest": "PASS"
@@ -185,7 +185,7 @@
     "reftest": "PASS"
   },
   "css/css-ruby/ruby-bidi-002.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-ruby/ruby-bidi-003.html": {
     "reftest": "FAIL"

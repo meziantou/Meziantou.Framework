@@ -11,13 +11,14 @@ description: "The results of the web-platform-tests of html/semantics, and why t
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 2,106 | 2,192 | 31 | 97% |
 | [Tentative](#tentative-tests) | 65 | 203 | 32 | 38% |
-| [Reftests](#reftests) | 327 | 431 | 66 | 90% |
-| **All** | **2,498** | **2,826** | **129** | **93%** |
+| [Reftests](#reftests) | 326 | 431 | 66 | 89% |
+| **All** | **2,497** | **2,826** | **129** | **93%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
+- **BUG**: 1
 - **TEST BUG**: 56
 - **NOT IMPLEMENTED**: 266
 - **REQUIRES**: 2
@@ -2596,7 +2597,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`forms/the-select-element/customizable-select/select-appearance-writing-mode-vertical-lr.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/select-appearance-writing-mode-vertical-lr.html) | Pass | 1 / 1 |  |  |
 | [`forms/the-select-element/customizable-select/select-appearance-writing-mode-vertical-rl.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/select-appearance-writing-mode-vertical-rl.html) | Pass | 1 / 1 |  |  |
 | [`forms/the-select-element/customizable-select/select-appearance-wrong-picker-argument.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/select-appearance-wrong-picker-argument.html) | Pass | 1 / 1 |  |  |
-| [`forms/the-select-element/customizable-select/select-base-appearance-ordering.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/select-base-appearance-ordering.html) | Pass | 1 / 1 |  |  |
+| [`forms/the-select-element/customizable-select/select-base-appearance-ordering.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/select-base-appearance-ordering.html) | Fail | 0 / 1 | BUG | 1 pixel differs by 1 level, where an antialiased edge of a glyph touches the border of the picker: the glyphs of the test and of the reference are a fraction of a pixel apart, and the coverage correction of the glyph masks (the contrast and the gamma of Skia) turns a coverage difference too small to change the pixel into one level |
 | [`forms/the-select-element/customizable-select/select-base-appearance-writing-modes.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/select-base-appearance-writing-modes.html) | Pass | 1 / 1 |  |  |
 | [`forms/the-select-element/customizable-select/select-base-overflow.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/select-base-overflow.html) | Pass | 1 / 1 |  |  |
 | [`forms/the-select-element/customizable-select/select-button-text-and-icon-clipping.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/select-button-text-and-icon-clipping.html) | Fail | 0 / 1 | TEST BUG | the select elements have the `min-block-size: calc-size(auto, max(size, 24px, 1lh))` of the user agent style sheet of the base appearance, so they are 24px tall; the `span` elements of the reference have no minimum size and are 20px tall (fails in every browser) |

@@ -50,8 +50,8 @@ The features of `REQUIRES`:
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 26,230 | 29,691 | 2,104 | 95% |
 | [Tentative](#tentative-tests) | 1,370 | 3,074 | 692 | 58% |
-| [Reftests](#reftests) | 27,941 | 29,220 | 170 | 96% |
-| **All** | **55,541** | **61,985** | **2,966** | **94%** |
+| [Reftests](#reftests) | 27,944 | 29,220 | 170 | 96% |
+| **All** | **55,544** | **61,985** | **2,966** | **94%** |
 
 ## Failure reasons
 
@@ -59,7 +59,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 170
 - **TEST BUG**: 1,034
-- **NOT IMPLEMENTED**: 4,270
+- **NOT IMPLEMENTED**: 4,267
 - **REQUIRES**: 762
   - `hardware`: 574
   - `layout`: 20
@@ -607,7 +607,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`css/css-align`](css/css-align.md#reftests) | 62 | 64 | 0 | 97% |
 | [`css/css-anchor-position`](css/css-anchor-position.md#reftests) | 236 | 241 | 0 | 98% |
 | [`css/css-animations`](css/css-animations.md#reftests) | 36 | 36 | 0 | 100% |
-| [`css/css-backgrounds`](css/css-backgrounds.md#reftests) | 707 | 719 | 1 | 98% |
+| [`css/css-backgrounds`](css/css-backgrounds.md#reftests) | 708 | 719 | 1 | 99% |
 | [`css/css-borders`](css/css-borders.md#reftests) | 102 | 114 | 0 | 89% |
 | [`css/css-box`](css/css-box.md#reftests) | 42 | 72 | 0 | 58% |
 | [`css/css-break`](css/css-break.md#reftests) | 1,139 | 1,145 | 0 | 99% |
@@ -646,7 +646,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`css/css-properties-values-api`](css/css-properties-values-api.md#reftests) | 7 | 7 | 0 | 100% |
 | [`css/css-pseudo`](css/css-pseudo.md#reftests) | 256 | 275 | 0 | 93% |
 | [`css/css-rhythm`](css/css-rhythm.md#reftests) | 18 | 18 | 0 | 100% |
-| [`css/css-ruby`](css/css-ruby.md#reftests) | 121 | 143 | 0 | 85% |
+| [`css/css-ruby`](css/css-ruby.md#reftests) | 123 | 143 | 0 | 86% |
 | [`css/css-scroll-anchoring`](css/css-scroll-anchoring.md#reftests) | 4 | 4 | 0 | 100% |
 | [`css/css-scroll-snap`](css/css-scroll-snap.md#reftests) | 24 | 26 | 0 | 92% |
 | [`css/css-scrollbars`](css/css-scrollbars.md#reftests) | 31 | 31 | 0 | 100% |
@@ -700,12 +700,12 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`html/obsolete`](html/obsolete.md#reftests) | 2 | 2 | 0 | 100% |
 | [`html/rendering`](html/rendering.md#reftests) | 321 | 330 | 0 | 97% |
 | [`html/select`](html/select.md#reftests) | 1 | 1 | 0 | 100% |
-| [`html/semantics`](html/semantics.md#reftests) | 327 | 431 | 66 | 90% |
+| [`html/semantics`](html/semantics.md#reftests) | 326 | 431 | 66 | 89% |
 | [`html/syntax`](html/syntax.md#reftests) | 22 | 22 | 0 | 100% |
 | [`html/the-xhtml-syntax`](html/the-xhtml-syntax.md#reftests) | 2 | 2 | 0 | 100% |
 | [`infrastructure`](infrastructure.md#reftests) | 0 | 61 | 61 | – |
 | [`intersection-observer`](intersection-observer.md#reftests) | 1 | 1 | 0 | 100% |
-| [`jpegxl`](jpegxl.md#reftests) | 33 | 51 | 0 | 65% |
+| [`jpegxl`](jpegxl.md#reftests) | 34 | 51 | 0 | 67% |
 | [`mathml`](mathml.md#reftests) | 269 | 282 | 1 | 96% |
 | [`page-lifecycle`](page-lifecycle.md#reftests) | 1 | 1 | 0 | 100% |
 | [`permissions-policy`](permissions-policy.md#reftests) | 0 | 1 | 0 | 0% |
@@ -725,4 +725,4 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`webgl`](webgl.md#reftests) | 0 | 2 | 0 | 0% |
 | [`webvtt`](webvtt.md#reftests) | 182 | 251 | 0 | 73% |
 | [`xml`](xml.md#reftests) | 0 | 3 | 3 | – |
-| **Total (130 sections)** | **27,941** | **29,220** | **170** | **96%** |
+| **Total (130 sections)** | **27,944** | **29,220** | **170** | **96%** |

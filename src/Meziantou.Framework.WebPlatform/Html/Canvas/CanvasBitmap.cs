@@ -163,8 +163,8 @@ internal sealed class CanvasBitmap
     }
 
     /// <summary>
-    /// Returns a copy of the pixels (RGBA, not premultiplied, sRGB: the pixels of a Display P3 bitmap are converted) and the
-    /// origin-clean flag (e.g. for <c>createImageBitmap()</c> and the serialization).
+    /// Returns a copy of the pixels (RGBA, not premultiplied, in the color space of the bitmap) and the origin-clean flag
+    /// (e.g. for <c>createImageBitmap()</c> and the serialization).
     /// </summary>
     public BitmapPixels GetPixels()
     {
@@ -173,15 +173,8 @@ internal sealed class CanvasBitmap
         if (Width > 0 && Height > 0)
         {
             ReadPixels(0, 0, Width, Height, pixels, pixelFormat);
-            if (Options.ColorSpace == RenderingColorSpace.DisplayP3)
-            {
-                if (pixelFormat == ImageDataPixelFormat.RgbaFloat16)
-                    CanvasRenderingContext2DBase.ConvertColorSpace(unsafe(System.Runtime.InteropServices.MemoryMarshal.Cast<byte, Half>(pixels.AsSpan())), PredefinedColorSpace.DisplayP3, PredefinedColorSpace.Srgb);
-                else
-                    CanvasRenderingContext2DBase.ConvertColorSpace(pixels, PredefinedColorSpace.DisplayP3, PredefinedColorSpace.Srgb);
-            }
         }
 
-        return new BitmapPixels(Width, Height, pixels, IsOriginClean, pixelFormat);
+        return new BitmapPixels(Width, Height, pixels, IsOriginClean, pixelFormat, Options.ColorSpace);
     }
 }

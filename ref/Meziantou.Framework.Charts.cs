@@ -671,6 +671,7 @@ namespace Meziantou.Framework.Charts
         public System.Collections.Generic.IList<Meziantou.Framework.Charts.Mark> Marks { get => throw null; }
         public Meziantou.Framework.Charts.Axis SecondaryYAxis { get => throw null; }
         public Meziantou.Framework.Charts.Scale? SecondaryYScale { get => throw null; set { } }
+        public Meziantou.Framework.Charts.SizeLegend SizeLegend { get => throw null; }
         public Meziantou.Framework.Charts.SizeScale? SizeScale { get => throw null; set { } }
         public string? Subtitle { get => throw null; set { } }
         public Meziantou.Framework.Charts.ITextMeasurer? TextMeasurer { get => throw null; set { } }
@@ -973,6 +974,13 @@ namespace Meziantou.Framework.Charts
         public double? Minimum { get => throw null; set { } }
         public Meziantou.Framework.Charts.ColorScheme Scheme { get => throw null; set { } }
         public System.Func<double, string>? TickFormat { get => throw null; set { } }
+    }
+
+    public sealed class SizeLegend
+    {
+        public string? Title { get => throw null; set { } }
+        public System.Collections.Generic.IReadOnlyList<double>? Values { get => throw null; set { } }
+        public bool? Visible { get => throw null; set { } }
     }
 
     public sealed class SizeScale

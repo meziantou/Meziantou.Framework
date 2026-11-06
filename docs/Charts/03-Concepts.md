@@ -123,11 +123,12 @@ the secondary y scale, whose axis is on the right in Cartesian coordinates: see 
 
 ## Axes, legends and margins
 
-The x and y scales get an axis, and the color scale gets a legend, unless the chart does not use them as measures
-(pies, hierarchies). [Plot.XAxis](cref:Meziantou.Framework.Charts.Plot.XAxis) and
+The x and y scales get an axis, and the color and size scales get a legend, unless the chart does not use them as
+measures (pies, hierarchies). [Plot.XAxis](cref:Meziantou.Framework.Charts.Plot.XAxis) and
 [Plot.YAxis](cref:Meziantou.Framework.Charts.Plot.YAxis) set the label, the grid, the rotation of the tick labels and
 the visibility of an axis; [Plot.Legend](cref:Meziantou.Framework.Charts.Plot.Legend) sets the title and the position
-of the legend. The margins are computed from the measured texts: when the tick labels of the horizontal axis overlap,
+of the legend, and [Plot.SizeLegend](cref:Meziantou.Framework.Charts.Plot.SizeLegend) the title and the values of the
+legend of the sizes, which is drawn next to it. The margins are computed from the measured texts: when the tick labels of the horizontal axis overlap,
 they are rotated by -45 degrees, and only some of them are drawn when they still overlap.
 [Plot.Margin](cref:Meziantou.Framework.Charts.Plot.Margin) sets the margins instead.
 

@@ -228,6 +228,50 @@ public sealed class CartesianChartTests
     }
 
     [Fact]
+    public void SizeLegend()
+    {
+        #region Charts_SizeLegend
+        var plot = new Plot { Title = "Power, weight and efficiency" };
+        plot.Add(new DotMark<Car>(SampleData.Cars, x: car => car.Weight, y: car => car.Mpg)
+        {
+            Size = car => car.Horsepower,
+            Fill = car => car.Origin,
+            FillOpacity = 0.7,
+            StrokeColor = ChartColor.White,
+        });
+        plot.SizeScale = new SizeScale { MaxRadius = 20 };
+        plot.Legend.Position = LegendPosition.Right;
+        plot.Legend.Title = "Origin";
+        plot.SizeLegend.Title = "Horsepower";
+        plot.SizeLegend.Values = [100, 150, 250];
+        #endregion
+
+        ChartAssert.Svg(plot, "SizeLegend");
+    }
+
+    [Fact]
+    public void SizeLegendOptions()
+    {
+        // At the bottom, the size legend wraps under the color legend when the row is full; the labels of close values are pushed down
+        var plot = new Plot { Width = 200, Height = 300 };
+        plot.Add(new DotMark<Car>(SampleData.Cars, x: car => car.Weight, y: car => car.Mpg) { Size = car => car.Horsepower, Fill = car => car.Name });
+        plot.Legend.Position = LegendPosition.Bottom;
+        plot.SizeLegend.Values = [250, 240, 100];
+        ChartAssert.Svg(plot);
+
+        var hidden = new Plot();
+        hidden.Add(new DotMark<Car>(SampleData.Cars, x: car => car.Weight, y: car => car.Mpg) { Size = car => car.Horsepower });
+        hidden.SizeLegend.Visible = false;
+        Assert.DoesNotContain("legend-size", hidden.ToSvg());
+
+        // Without positive values, the legend is only its title
+        var empty = new Plot();
+        empty.Add(new DotMark<Car>(SampleData.Cars, x: car => car.Weight, y: car => car.Mpg) { Size = _ => 0 });
+        empty.SizeLegend.Title = "Nothing";
+        Assert.DoesNotContain("<circle", empty.ToSvg());
+    }
+
+    [Fact]
     public void ReferenceLines()
     {
         #region Charts_ReferenceLines

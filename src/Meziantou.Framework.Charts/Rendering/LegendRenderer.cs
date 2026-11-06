@@ -1,7 +1,7 @@
 namespace Meziantou.Framework.Charts;
 
 /// <summary>Measures and draws the legend of a color scale: swatches for categories, a ramp for numbers.</summary>
-internal sealed class LegendRenderer
+internal sealed class LegendRenderer : ILegendBlock
 {
     private const double SwatchSize = 10;
     private const double SwatchGap = 5;

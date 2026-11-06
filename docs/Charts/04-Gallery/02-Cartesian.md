@@ -1,6 +1,6 @@
 ---
 title: Cartesian charts
-description: Bar charts (grouped, stacked, normalized, horizontal), lines, steps, areas, streamgraphs, scatter plots, bubbles, reference lines, lollipops, dumbbells, combo charts, two y axes, population pyramids, slope charts, error bars and Gantt charts.
+description: Bar charts (grouped, stacked, normalized, horizontal), lines, steps, areas, streamgraphs, scatter plots, bubbles and their size legends, reference lines, lollipops, dumbbells, combo charts, two y axes, population pyramids, slope charts, error bars and Gantt charts.
 ---
 
 ## Bar chart
@@ -219,7 +219,8 @@ plot.XAxis.Grid = true;
 
 ## Bubble chart
 
-The [Size](cref:Meziantou.Framework.Charts.DotMark{T}.Size) channel goes through the size scale: the area of a dot is proportional to its value.
+The [Size](cref:Meziantou.Framework.Charts.DotMark{T}.Size) channel goes through the size scale: the area of a dot is
+proportional to its value. A legend of nested circles explains the sizes, next to the legend of the colors.
 
 <!-- ref:../../../tests/Meziantou.Framework.Charts.Tests/CartesianChartTests.cs;region=Charts_BubbleChart;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -236,6 +237,33 @@ plot.SizeScale = new SizeScale { MaxRadius = 20 };
 <!-- endref -->
 
 ![Bubbles whose areas are proportional to the power of the cars](../images/BubbleChart.svg)
+
+## Size legend
+
+[Plot.SizeLegend](cref:Meziantou.Framework.Charts.Plot.SizeLegend) sets the title of the legend of the sizes, its values
+(up to three round values of the domain by default) and its visibility. It follows the
+[Position](cref:Meziantou.Framework.Charts.Legend.Position) of the legend of the colors: on the right, the two legends
+are stacked; above or under the chart, they are side by side.
+
+<!-- ref:../../../tests/Meziantou.Framework.Charts.Tests/CartesianChartTests.cs;region=Charts_SizeLegend;format=md-fenced-code-block;dedent=true -->
+```csharp
+var plot = new Plot { Title = "Power, weight and efficiency" };
+plot.Add(new DotMark<Car>(SampleData.Cars, x: car => car.Weight, y: car => car.Mpg)
+{
+    Size = car => car.Horsepower,
+    Fill = car => car.Origin,
+    FillOpacity = 0.7,
+    StrokeColor = ChartColor.White,
+});
+plot.SizeScale = new SizeScale { MaxRadius = 20 };
+plot.Legend.Position = LegendPosition.Right;
+plot.Legend.Title = "Origin";
+plot.SizeLegend.Title = "Horsepower";
+plot.SizeLegend.Values = [100, 150, 250];
+```
+<!-- endref -->
+
+![A bubble chart with the legends of the origins and of the horsepower on its right](../images/SizeLegend.svg)
 
 ## Secondary axis
 

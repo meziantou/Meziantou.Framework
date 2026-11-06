@@ -80,29 +80,77 @@ internal sealed class PlotRenderer
             top += 6;
         }
 
-        // The legend takes its space before the plot area
-        LegendRenderer? legend = null;
-        var legendPosition = (X: 0.0, Y: 0.0);
+        // The legends take their space before the plot area: side by side above or under it, stacked on its right
+        var legends = new List<ILegendBlock>();
         if (_color is not null && (_plot.Legend.Visible ?? LegendRenderer.IsVisibleByDefault(_color)))
         {
-            legend = new LegendRenderer(_color, _plot.Legend.Title, _theme, _measurer);
-            switch (_plot.Legend.Position)
+            legends.Add(new LegendRenderer(_color, _plot.Legend.Title, _theme, _measurer));
+        }
+
+        if (_size is not null && (_plot.SizeLegend.Visible ?? true))
+        {
+            legends.Add(new SizeLegendRenderer(_size, _plot.SizeLegend.Values, _plot.SizeLegend.Title, _theme, _measurer));
+        }
+
+        var legendPositions = new List<(ILegendBlock Legend, double X, double Y)>();
+        if (legends.Count > 0)
+        {
+            if (_plot.Legend.Position is LegendPosition.Right)
             {
-                case LegendPosition.Right:
-                    legend.Measure(Math.Max(60, Math.Min(180, width / 4)), vertical: true);
-                    legendPosition = (width - Padding - legend.Width, top);
-                    right += legend.Width + 12;
-                    break;
-                case LegendPosition.Bottom:
-                    legend.Measure(width - (2 * Padding), vertical: false);
-                    legendPosition = (Padding, height - Padding - legend.Height);
-                    bottom += legend.Height + 10;
-                    break;
-                default:
-                    legend.Measure(width - (2 * Padding), vertical: false);
-                    legendPosition = (Padding, top);
-                    top += legend.Height + 12;
-                    break;
+                var maxWidth = Math.Max(60, Math.Min(180, width / 4));
+                var legendsWidth = 0.0;
+                foreach (var legend in legends)
+                {
+                    legend.Measure(maxWidth, vertical: true);
+                    legendsWidth = Math.Max(legendsWidth, legend.Width);
+                }
+
+                var y = top;
+                foreach (var legend in legends)
+                {
+                    legendPositions.Add((legend, width - Padding - legendsWidth, y));
+                    y += legend.Height + 12;
+                }
+
+                right += legendsWidth + 12;
+            }
+            else
+            {
+                // In rows that wrap, the legends of a row aligned on their tops
+                var maxWidth = width - (2 * Padding);
+                var x = 0.0;
+                var y = 0.0;
+                var rowHeight = 0.0;
+                foreach (var legend in legends)
+                {
+                    legend.Measure(maxWidth, vertical: false);
+                    if (x > 0 && x + legend.Width > maxWidth)
+                    {
+                        x = 0;
+                        y += rowHeight + 12;
+                        rowHeight = 0;
+                    }
+
+                    legendPositions.Add((legend, Padding + x, y));
+                    x += legend.Width + 24;
+                    rowHeight = Math.Max(rowHeight, legend.Height);
+                }
+
+                var legendsHeight = y + rowHeight;
+                var offset = _plot.Legend.Position is LegendPosition.Bottom ? height - Padding - legendsHeight : top;
+                for (var i = 0; i < legendPositions.Count; i++)
+                {
+                    legendPositions[i] = legendPositions[i] with { Y = legendPositions[i].Y + offset };
+                }
+
+                if (_plot.Legend.Position is LegendPosition.Bottom)
+                {
+                    bottom += legendsHeight + 10;
+                }
+                else
+                {
+                    top += legendsHeight + 12;
+                }
             }
         }
 
@@ -154,7 +202,10 @@ internal sealed class PlotRenderer
             _scene.Root.Add(axes);
         }
 
-        legend?.Render(_scene.Root, legendPosition.X, legendPosition.Y);
+        foreach (var (legend, x, y) in legendPositions)
+        {
+            legend.Render(_scene.Root, x, y);
+        }
         foreach (var title in titles)
         {
             _scene.Root.Add(title);

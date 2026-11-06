@@ -300,6 +300,19 @@ public sealed class ScaleTests
     }
 
     [Fact]
+    public void SizeLegend_Values()
+    {
+        // d3's ticks of [0, max] for a count of 3, without zero, the largest first, at most three
+        Assert.Equal([200, 100], SizeLegendRenderer.GetValues(260, values: null));
+        Assert.Equal([6, 4, 2], SizeLegendRenderer.GetValues(7, values: null));
+        Assert.Equal([1, 0.5], SizeLegendRenderer.GetValues(1, values: null));
+        Assert.Equal([0.4, 0.2], SizeLegendRenderer.GetValues(0.5, values: null));
+        Assert.Empty(SizeLegendRenderer.GetValues(0, values: null));
+        Assert.Empty(SizeLegendRenderer.GetValues(double.NaN, values: null));
+        Assert.Equal([10, 5], SizeLegendRenderer.GetValues(100, values: [5, -1, 5, 10, double.PositiveInfinity]));
+    }
+
+    [Fact]
     public void ScaleProperties_ValidateTheirValues()
     {
         Assert.Throws<ArgumentOutOfRangeException>("value", () => new LogScale { Base = 1 });

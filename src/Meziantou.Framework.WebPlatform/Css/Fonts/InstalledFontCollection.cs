@@ -15,6 +15,8 @@ internal sealed class InstalledFont
     private readonly Lazy<OpenTypeFont?> _font;
     private readonly Lazy<FontSelectionCapabilities> _capabilities;
 
+    private readonly SystemFontDescriptor? _descriptor;
+
     internal InstalledFont(OpenTypeFont font)
     {
         _font = new Lazy<OpenTypeFont?>(font);
@@ -26,6 +28,7 @@ internal sealed class InstalledFont
     /// <summary>A face of a font installed on the machine: its capabilities come from the system font index, its file is read when the face is used.</summary>
     internal InstalledFont(SystemFontDescriptor descriptor, Lazy<FontFile?> file)
     {
+        _descriptor = descriptor;
         _font = new Lazy<OpenTypeFont?>(() => file.Value is { } loaded && descriptor.FaceIndex < loaded.Faces.Count ? loaded.Faces[descriptor.FaceIndex] : null, LazyThreadSafetyMode.ExecutionAndPublication);
         _capabilities = new Lazy<FontSelectionCapabilities>(FontSelectionCapabilities.FromSystemFont(descriptor));
         FullName = descriptor.FullName ?? "";
@@ -46,6 +49,18 @@ internal sealed class InstalledFont
 
     /// <summary>The styles of the font (its weight, width and style, or the ranges of its variation axes), for the font matching.</summary>
     public FontSelectionCapabilities Capabilities => _capabilities.Value;
+
+    /// <summary>
+    /// Whether the font has a glyph for a character: a font installed on the machine answers from the character map of the
+    /// system font index, without loading its file.
+    /// </summary>
+    public bool Covers(int codePoint)
+    {
+        if (_descriptor is not null)
+            return Rune.IsValid(codePoint) && _descriptor.Covers(new Rune(codePoint));
+
+        return Font?.HasGlyph(codePoint) == true;
+    }
 
     /// <inheritdoc />
     public override string ToString() => FullName;
@@ -78,6 +93,26 @@ internal sealed class InstalledFontCollection
     private readonly List<InstalledFont> _fonts = [];
     private readonly List<FallbackFont> _fallbacks = [];
 
+    /// <summary>The families of the installed fonts, in the order of the fonts, for the system font fallback (see <see cref="FindSystemFallbackFamily"/>).</summary>
+    private readonly List<(string Family, InstalledFont Font)> _fallbackCandidates = [];
+
+    /// <summary>The family of the system font fallback of each character searched, or null when no installed font has the character.</summary>
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<int, string?> _systemFallbackFamilies = new();
+
+    /// <summary>
+    /// The families searched first by the system font fallback (see <see cref="FindSystemFallbackFamily"/>), the ones the
+    /// browsers use on macOS, Windows and Linux for the emoji and the scripts that the bundled fonts do not have. The other
+    /// installed fonts are searched after them.
+    /// </summary>
+    private static readonly string[] PreferredFallbackFamilies =
+    [
+        "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji",
+        "PingFang SC", "Hiragino Sans", "Apple SD Gothic Neo", "Microsoft YaHei", "Yu Gothic", "Malgun Gothic", "Noto Sans CJK SC",
+        "Geeza Pro", "Kohinoor Devanagari", "Thonburi", "Arial Hebrew", "Segoe UI", "Nirmala UI", "Leelawadee UI",
+        "Noto Sans", "Noto Sans Arabic", "Noto Sans Devanagari", "Noto Sans Thai", "Noto Sans Hebrew", "DejaVu Sans",
+        "Arial Unicode MS", "Apple Symbols", "Segoe UI Symbol",
+    ];
+
     /// <summary>A font of the installed font fallback: it is only used for the characters of its ranges.</summary>
     internal readonly record struct FallbackFont(InstalledFont Font, UnicodeRangeSet Ranges);
 
@@ -92,6 +127,39 @@ internal sealed class InstalledFontCollection
 
     /// <summary>The fonts of the installed font fallback, in the order they are searched.</summary>
     public IReadOnlyList<FallbackFont> Fallbacks => _fallbacks;
+
+    /// <summary>
+    /// Whether the installed font fallback searches all the fonts of the collection for the characters that no other font
+    /// has (see <see cref="FindSystemFallbackFamily"/>): the collection of the fonts of the machine.
+    /// </summary>
+    public bool HasSystemFallback { get; private set; }
+
+    /// <summary>
+    /// Returns the family of the system font fallback for a character (https://drafts.csswg.org/css-fonts-4/#installed-font-fallback),
+    /// or null: the first of <see cref="PreferredFallbackFamilies"/> that has a glyph for it, else the family of the first
+    /// installed font that has one (the last resort font of macOS, whose glyphs are pictures of missing characters, and the
+    /// fonts that cannot be loaded, such as the color emoji font of macOS, larger than the limit of the font reader, are
+    /// skipped). The result of each character is cached: the collection is shared by the documents.
+    /// </summary>
+    public string? FindSystemFallbackFamily(int codePoint) => _systemFallbackFamilies.GetOrAdd(codePoint, static (codePoint, collection) => collection.FindSystemFallbackFamilyCore(codePoint), this);
+
+    private string? FindSystemFallbackFamilyCore(int codePoint)
+    {
+        // (a font whose file cannot be loaded, e.g. larger than the limit of the font reader, is skipped)
+        foreach (var family in PreferredFallbackFamilies)
+        {
+            if (_families.TryGetValue(family, out var fonts) && fonts.Exists(font => font.Covers(codePoint) && font.Font is not null))
+                return family;
+        }
+
+        foreach (var (family, font) in _fallbackCandidates)
+        {
+            if (font.Covers(codePoint) && font.Font is not null)
+                return family;
+        }
+
+        return null;
+    }
 
     /// <summary>
     /// Installs the faces of a font file (OpenType, TrueType, a collection, WOFF or WOFF2). A face belongs to the families of
@@ -130,9 +198,15 @@ internal sealed class InstalledFontCollection
                 files.Add(path, file);
             }
 
-            collection.AddFont(new InstalledFont(descriptor, file), descriptor.FamilyNames);
+            var font = new InstalledFont(descriptor, file);
+            collection.AddFont(font, descriptor.FamilyNames);
+            if (!descriptor.FamilyName.TrimStart('.').Equals("LastResort", StringComparison.OrdinalIgnoreCase))
+            {
+                collection._fallbackCandidates.Add((descriptor.FamilyName, font));
+            }
         }
 
+        collection.HasSystemFallback = true;
         return collection;
     }
 

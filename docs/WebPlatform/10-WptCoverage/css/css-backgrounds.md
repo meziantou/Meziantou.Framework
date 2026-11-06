@@ -11,14 +11,14 @@ description: "The results of the web-platform-tests of css/css-backgrounds, and 
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 130 | 132 | 0 | 98% |
 | Tentative | 0 | 0 | 0 | – |
-| [Reftests](#reftests) | 707 | 719 | 1 | 98% |
-| **All** | **837** | **851** | **1** | **98%** |
+| [Reftests](#reftests) | 708 | 719 | 1 | 99% |
+| **All** | **838** | **851** | **1** | **99%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 7
+- **BUG**: 6
 - **TEST BUG**: 6
 - **FLAKY**: 1
 
@@ -302,7 +302,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`background-clip/clip-text-stacking-context-child-002.html`](https://wpt.fyi/results/css/css-backgrounds/background-clip/clip-text-stacking-context-child-002.html) | Pass | 1 / 1 |  |  |
 | [`background-clip/clip-text-stacking-context-child.html`](https://wpt.fyi/results/css/css-backgrounds/background-clip/clip-text-stacking-context-child.html) | Pass | 1 / 1 |  |  |
 | [`background-clip/clip-text-text-align.html`](https://wpt.fyi/results/css/css-backgrounds/background-clip/clip-text-text-align.html) | Pass | 1 / 1 |  |  |
-| [`background-clip/clip-text-text-decorations.html`](https://wpt.fyi/results/css/css-backgrounds/background-clip/clip-text-text-decorations.html) | Fail | 0 / 1 | BUG | `background-clip: text` with text decorations: 12 pixels of the edges of the glyphs painted through the mask differ by one level from the reference painted in a color (rounding of the mask layer) |
+| [`background-clip/clip-text-text-decorations.html`](https://wpt.fyi/results/css/css-backgrounds/background-clip/clip-text-text-decorations.html) | Pass | 1 / 1 |  |  |
 | [`background-clip/clip-text-text-emphasis.html`](https://wpt.fyi/results/css/css-backgrounds/background-clip/clip-text-text-emphasis.html) | Pass | 1 / 1 |  |  |
 | [`background-clip/clip-text-transform.html`](https://wpt.fyi/results/css/css-backgrounds/background-clip/clip-text-transform.html) | Disabled | – | FLAKY | reftest whose result depends on the platform: the glyphs are antialiased by the font engine of the platform (CoreText, FreeType, DirectWrite), so it passes on Linux and fails on macOS or the reverse |
 | [`background-clip_padding-box.html`](https://wpt.fyi/results/css/css-backgrounds/background-clip_padding-box.html) | Pass | 1 / 1 |  |  |

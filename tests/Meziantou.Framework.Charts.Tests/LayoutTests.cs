@@ -132,6 +132,68 @@ public sealed class LayoutTests
     }
 
     [Fact]
+    public void Tree_TwoChildren()
+    {
+        // Siblings 1 apart, half a separation on each side: 0.25 and 0.75, the root centered over them
+        var root = Hierarchy.FromPaths(["a", "b"], path => path);
+        var points = new TreeLayout().Layout(root).ToDictionary(point => point.Node.Name);
+        Assert.Equal((0.5, 0.0), (points[string.Empty].X, points[string.Empty].Y));
+        Assert.Equal((0.25, 1.0), (points["a"].X, points["a"].Y));
+        Assert.Equal((0.75, 1.0), (points["b"].X, points["b"].Y));
+    }
+
+    [Fact]
+    public void Tree_IsTidy()
+    {
+        #region Charts_TreeLayout
+        var root = Hierarchy.FromPaths(["a/1", "a/2", "a/3", "b", "c/1/x", "c/1/y", "c/2"], path => path);
+        var points = new TreeLayout { Width = 600, Height = 300 }.Layout(root);
+        #endregion
+
+        var byNode = points.ToDictionary(point => point.Node);
+        Assert.Equal(300, points.Max(point => point.Y));
+        Assert.All(points, point => point.X is >= 0 and <= 600);
+        foreach (var point in points)
+        {
+            // A parent is centered over its first and last children
+            if (!point.Node.IsLeaf)
+            {
+                Assert.Equal((byNode[point.Node.Children[0]].X + byNode[point.Node.Children[^1]].X) / 2, point.X, 1e-9);
+            }
+        }
+
+        // The nodes of a depth are in order, at least one separation apart
+        var unit = byNode[root.Children[0].Children[1]].X - byNode[root.Children[0].Children[0]].X;
+        foreach (var depth in points.GroupBy(point => point.Node.Depth))
+        {
+            var row = depth.ToList();
+            for (var i = 1; i < row.Count; i++)
+            {
+                Assert.True(row[i].X - row[i - 1].X >= unit - 1e-9);
+            }
+        }
+
+        Assert.Equal((0.5, 0.0), (new TreeLayout().Layout(Hierarchy.FromPaths(Array.Empty<string>(), path => path))[0].X, 0.0));
+    }
+
+    [Fact]
+    public void Cluster_LeavesAtTheSameDepth()
+    {
+        // Leaves a1, a2 (siblings, 1 apart) and b (a cousin, 2 apart): 0, 1, 3; one separation of padding on each end
+        var root = Hierarchy.FromPaths(["a/a1", "a/a2", "b"], path => path);
+        var points = new ClusterLayout().Layout(root).ToDictionary(point => point.Node.Name);
+        Assert.Equal(0.2, points["a1"].X, 1e-12);
+        Assert.Equal(0.4, points["a2"].X, 1e-12);
+        Assert.Equal(0.8, points["b"].X, 1e-12);
+        Assert.Equal(0.3, points["a"].X, 1e-12);
+        Assert.Equal(0.55, points[string.Empty].X, 1e-12);
+        Assert.Equal([0.0, 0.5, 1, 1, 1], new[] { string.Empty, "a", "a1", "a2", "b" }.Select(name => points[name].Y).ToArray());
+
+        var single = new ClusterLayout { Width = 10, Height = 20 }.Layout(Hierarchy.FromTree("only", _ => null));
+        Assert.Equal((5.0, 0.0), (single[0].X, single[0].Y)); // As d3: a single node is at depth 0
+    }
+
+    [Fact]
     public void Random_IsTheLcgOfD3()
     {
         var random = CirclePacking.CreateRandom();

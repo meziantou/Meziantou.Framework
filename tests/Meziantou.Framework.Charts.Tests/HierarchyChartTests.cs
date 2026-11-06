@@ -110,6 +110,42 @@ public sealed class HierarchyChartTests
     }
 
     [Fact]
+    public void TreeDiagram()
+    {
+        #region Charts_TreeDiagram
+        var root = Hierarchy.FromPaths(SampleData.Files, file => file.Path);
+        var plot = new Plot { Title = "Files of the repository", Height = 420, Coordinates = new CartesianCoordinates { Transposed = true } };
+        plot.Add(new TreeMark<FileEntry?>(root) { Label = node => node.Depth is 0 ? "repository" : node.Name });
+        plot.Legend.Visible = false;
+        #endregion
+
+        ChartAssert.Svg(plot, "TreeDiagram");
+    }
+
+    [Fact]
+    public void RadialDendrogram()
+    {
+        #region Charts_RadialDendrogram
+        var root = Hierarchy.FromPaths(SampleData.Files, file => file.Path);
+        var plot = new Plot { Title = "Files of the repository", Width = 520, Height = 520, Coordinates = new PolarCoordinates() };
+        plot.Add(new TreeMark<FileEntry?>(root) { Layout = TreeLayoutKind.Cluster });
+        plot.Legend.Visible = false;
+        #endregion
+
+        ChartAssert.Svg(plot, "RadialDendrogram");
+    }
+
+    [Fact]
+    public void VerticalTree()
+    {
+        var root = Hierarchy.FromTree(new Department("CEO", 1, [new("CTO", 1, [new("Platform", 1, []), new("Data", 1, [])]), new("CFO", 1, [new("Accounting", 1, [])]), new("COO", 1, [])]), department => department.Teams, department => department.Name);
+        var plot = new Plot { Height = 300, Theme = ChartTheme.Dark };
+        plot.Add(new TreeMark<Department>(root) { NodeRadius = 5, Fill = node => node.Depth });
+        plot.Add(new TreeMark<Department>(root) { Layout = TreeLayoutKind.Cluster, Label = _ => null, NodeRadius = 2, Opacity = 0.3 });
+        ChartAssert.Svg(plot);
+    }
+
+    [Fact]
     public void PackWithCustomLabelsAndColors()
     {
         var root = Hierarchy.FromPaths(SampleData.Files, file => file.Path, value: file => file.Size).SortByValue();

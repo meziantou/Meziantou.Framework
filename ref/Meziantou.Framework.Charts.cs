@@ -255,6 +255,13 @@ namespace Meziantou.Framework.Charts
         public static bool operator !=(Meziantou.Framework.Charts.ChartTheme? left, Meziantou.Framework.Charts.ChartTheme? right) => throw null;
     }
 
+    public sealed class ClusterLayout
+    {
+        public double Height { get => throw null; set { } }
+        public double Width { get => throw null; set { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Charts.HierarchyPoint<T>> Layout<T>(Meziantou.Framework.Charts.HierarchyNode<T> root) => throw null;
+    }
+
     public abstract class ColorScale
     {
     }
@@ -433,6 +440,21 @@ namespace Meziantou.Framework.Charts
         public Meziantou.Framework.Charts.HierarchyNode<T> SortByValue() => throw null;
         public Meziantou.Framework.Charts.HierarchyNode<T> Sum(System.Func<T, double> value) => throw null;
         public override string ToString() => throw null;
+    }
+
+    public sealed class HierarchyPoint<T> : System.IEquatable<Meziantou.Framework.Charts.HierarchyPoint<T>>
+    {
+        public Meziantou.Framework.Charts.HierarchyNode<T> Node { get => throw null; init { } }
+        public double X { get => throw null; init { } }
+        public double Y { get => throw null; init { } }
+        public HierarchyPoint(Meziantou.Framework.Charts.HierarchyNode<T> Node, double X, double Y) { }
+        public void Deconstruct(out Meziantou.Framework.Charts.HierarchyNode<T> Node, out double X, out double Y) => throw null;
+        public bool Equals(Meziantou.Framework.Charts.HierarchyPoint<T>? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Charts.HierarchyPoint<T>? left, Meziantou.Framework.Charts.HierarchyPoint<T>? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Charts.HierarchyPoint<T>? left, Meziantou.Framework.Charts.HierarchyPoint<T>? right) => throw null;
     }
 
     public sealed class HierarchyRectangle<T> : System.IEquatable<Meziantou.Framework.Charts.HierarchyRectangle<T>>
@@ -1034,6 +1056,26 @@ namespace Meziantou.Framework.Charts
 
     public abstract class Transform
     {
+    }
+
+    public sealed class TreeLayout
+    {
+        public double Height { get => throw null; set { } }
+        public double Width { get => throw null; set { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Charts.HierarchyPoint<T>> Layout<T>(Meziantou.Framework.Charts.HierarchyNode<T> root) => throw null;
+    }
+
+    public enum TreeLayoutKind
+    {
+        Tidy = 0,
+        Cluster = 1,
+    }
+
+    public sealed class TreeMark<T> : Meziantou.Framework.Charts.HierarchyMark<T>
+    {
+        public Meziantou.Framework.Charts.TreeLayoutKind Layout { get => throw null; set { } }
+        public double NodeRadius { get => throw null; set { } }
+        public TreeMark(Meziantou.Framework.Charts.HierarchyNode<T> root) { }
     }
 
     public sealed class TreemapLayout

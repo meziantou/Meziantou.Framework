@@ -104,6 +104,10 @@ A screenshot paints the current state of the page: the layout is computed when i
 animations are painted at the time of the clock of the event loop. Take it from the thread of the event loop, after the
 resources are loaded ([RunUntilIdleAsync()](cref:Meziantou.Framework.WebPlatform.Dom.DomEventLoop.RunUntilIdleAsync)): an image that is not loaded yet is not drawn.
 
+The elements with `content-visibility: auto` that are close to the viewport are painted with their contents, also in a
+screenshot taken before the first animation frame of the page: as in a browser, the screenshot finds them before it
+paints. The ones far from the viewport stay skipped until the page is scrolled to them and a rendering update runs.
+
 The painting follows the order of CSS: backgrounds, borders, shadows, text, images, SVG, transforms, filters, masks,
 clipping, blend modes, the scrollbars and the caret. The positions of the boxes and of the text are snapped to the device
 pixels as in Chromium. See [Limitations](../09-Limitations.md) for what is not painted.

@@ -58,7 +58,9 @@ Assert.Equal(iPhone13.UserAgent, document.DefaultView.Navigator.UserAgent);
 <!-- endref -->
 
 On a mobile device, the `<meta name="viewport">` element of the page sets the width of the layout viewport and the scale
-of the page, as in the mobile emulation of Chromium. There is no pinch zoom.
+of the page, as in the mobile emulation of Chromium. The scale is `initial-scale`, or the scale that fits the contents in
+the device, clamped by `minimum-scale` and `maximum-scale`. With `user-scalable=no`, the page is not scaled down to fit wide
+contents. There is no pinch zoom.
 
 ## Emulate the preferences of the user
 

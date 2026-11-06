@@ -199,6 +199,18 @@ internal static class MobileViewport
         var width = description?.Width?.Resolve(deviceWidth, deviceHeight);
         if (description?.InitialScale is { } initialScale)
         {
+            // The initial scale is clamped by the minimum and maximum scales of the element before it extends the width
+            // (https://drafts.csswg.org/css-viewport/#constrain-the-viewport)
+            if (description.MinimumScale is { } minimumScale)
+            {
+                initialScale = Math.Max(initialScale, minimumScale);
+            }
+
+            if (description.MaximumScale is { } maximumScale)
+            {
+                initialScale = Math.Min(initialScale, Math.Max(maximumScale, description.MinimumScale ?? 0));
+            }
+
             var extendToZoom = deviceWidth / initialScale;
             width = width is { } specified ? Math.Max(specified, extendToZoom) : extendToZoom;
         }
@@ -211,23 +223,20 @@ internal static class MobileViewport
     /// <summary>
     /// Returns the initial scale of the page: the initial scale of the viewport meta element, else the scale that fits the
     /// width of the contents (at least the layout viewport) in the width of the device; clamped by the minimum scale (the
-    /// scale that fits the contents by default) and the maximum scale (5 by default), and by both when the page is not
-    /// scalable.
+    /// scale that fits the contents by default) and the maximum scale (5 by default). A page that is not scalable
+    /// (<c>user-scalable=no</c>) is not scaled down to fit contents wider than its layout viewport, and its initial scale is
+    /// still clamped by its minimum and maximum scales, as in the browsers (https://github.com/w3c/csswg-drafts/issues/5016,
+    /// https://webcompat.com/issues/52856).
     /// </summary>
     public static double GetInitialScale(ViewportDescription? description, double deviceWidth, double layoutWidth, double contentsWidth)
     {
         if (deviceWidth <= 0 || layoutWidth <= 0)
             return 1;
 
-        var fit = deviceWidth / Math.Max(layoutWidth, contentsWidth);
+        var fit = description?.UserScalable == false ? deviceWidth / layoutWidth : deviceWidth / Math.Max(layoutWidth, contentsWidth);
         var minimum = description?.MinimumScale ?? fit;
         var maximum = Math.Max(minimum, description?.MaximumScale ?? DefaultMaximumScale);
         var scale = description?.InitialScale ?? fit;
-        if (description?.UserScalable == false && description.InitialScale is { } fixedScale)
-        {
-            minimum = maximum = fixedScale;
-        }
-
         return Math.Clamp(Math.Clamp(scale, minimum, maximum), MinimumZoom, MaximumZoom);
     }
 }

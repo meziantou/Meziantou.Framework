@@ -571,6 +571,11 @@ public sealed class CssomViewTests : IDisposable
     [InlineData("<meta name=viewport content='width = 500 ; maximum-scale = 0.5, unknown=1'>", 500, 851.2820512820513, 0.78)]
     [InlineData("<meta name=viewport content='width=device-width, initial-scale=3, user-scalable=no'>", 390, 664, 3)]
     [InlineData("<meta name=viewport content='width=device-width'><meta name=viewport content='width=800'>", 800, 1362.051282051282, 0.4875)]
+    [InlineData("<meta name=viewport content='width=device-width, initial-scale=10, maximum-scale=2'>", 390, 664, 2)]
+    [InlineData("<meta name=viewport content='width=device-width, initial-scale=1, minimum-scale=2'>", 390, 664, 2)]
+    [InlineData("<meta name=viewport content='initial-scale=4, maximum-scale=2'>", 195, 332, 2)]
+    [InlineData("<meta name=viewport content='width=device-width, user-scalable=no, initial-scale=device-width, maximum-scale=1'>", 390, 664, 1)]
+    [InlineData("<meta name=viewport content='width=device-width, user-scalable=no, initial-scale=0.25, minimum-scale=1'>", 390, 664, 1)]
     public void IsMobile_TheViewportMetaSetsTheLayoutViewport(string meta, double width, double height, double scale)
     {
         // A 390x664 mobile viewport: the layout viewport and the scale of the page are set by the last viewport meta element (980px wide
@@ -589,6 +594,15 @@ public sealed class CssomViewTests : IDisposable
         var window = Load("<!DOCTYPE html><meta name=viewport content='width=device-width'><style>body { margin: 0 }</style><div style='width: 780px; height: 10px'></div>", new ViewportOptions { Width = 390, Height = 664, IsMobile = true }).DefaultView!;
         Assert.Equal(390, window.InnerWidth);
         Assert.Equal(0.5, window.VisualViewport!.Scale, 1e-9);
+    }
+
+    [Fact]
+    public void IsMobile_NotScalablePageDoesNotFitTheContents()
+    {
+        // A page that is not scalable is not scaled down to fit contents wider than its layout viewport
+        var window = Load("<!DOCTYPE html><meta name=viewport content='width=device-width, user-scalable=no'><style>body { margin: 0 }</style><div style='width: 10000px; height: 10px'></div>", new ViewportOptions { Width = 390, Height = 664, IsMobile = true }).DefaultView!;
+        Assert.Equal(390, window.InnerWidth);
+        Assert.Equal(1, window.VisualViewport!.Scale, 1e-9);
     }
 
     [Fact]

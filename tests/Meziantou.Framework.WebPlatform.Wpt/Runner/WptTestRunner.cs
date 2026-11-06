@@ -339,15 +339,27 @@ internal sealed partial class WptTestRunner
     /// tests and their references) are loaded in forced colors mode, with the system colors of the light color scheme as the
     /// forced colors palette. That is the configuration of the virtual test suite of Chromium that runs the directory
     /// (<c>--force-high-contrast</c>, which keeps the default system colors in the tests): the tests expect its colors (e.g. a
-    /// yellow <c>Mark</c>). The other pages have the default viewport. As in the browsers, the scrolls of the user are animated
-    /// (the tests of the scroll events and of the snapping interrupt them and wait for their end).
+    /// yellow <c>Mark</c>). The pages of the <c>css/css-device-adapt</c> directory are loaded in a mobile viewport: the
+    /// viewport meta element only applies on a mobile device, as in the browsers (the desktop browsers ignore it). The other
+    /// pages have the default viewport. As in the browsers, the scrolls of the user are animated (the tests of the scroll
+    /// events and of the snapping interrupt them and wait for their end).
     /// </summary>
     private static ViewportOptions GetViewport(WptTest test)
-        => test.RelativePath.StartsWith("forced-colors-mode/", StringComparison.Ordinal) ? ForcedColorsViewport : DefaultViewport;
+    {
+        if (test.RelativePath.StartsWith("forced-colors-mode/", StringComparison.Ordinal))
+            return ForcedColorsViewport;
+
+        if (test.RelativePath.StartsWith("css/css-device-adapt/", StringComparison.Ordinal))
+            return MobileViewport;
+
+        return DefaultViewport;
+    }
 
     private static readonly ViewportOptions DefaultViewport = new() { SmoothUserScrolling = true };
 
     private static readonly ViewportOptions ForcedColorsViewport = DefaultViewport with { ForcedColors = true };
+
+    private static readonly ViewportOptions MobileViewport = DefaultViewport with { IsMobile = true };
 
     private static string GetXmlContentType(string path) => Path.GetExtension(path) switch
     {

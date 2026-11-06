@@ -48,10 +48,10 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 26,228 | 29,691 | 2,104 | 95% |
+| [Stable](#stable-tests) | 26,228 | 29,691 | 2,105 | 95% |
 | [Tentative](#tentative-tests) | 1,370 | 3,074 | 692 | 58% |
 | [Reftests](#reftests) | 27,957 | 29,220 | 170 | 96% |
-| **All** | **55,555** | **61,985** | **2,966** | **94%** |
+| **All** | **55,555** | **61,985** | **2,967** | **94%** |
 
 ## Failure reasons
 
@@ -59,7 +59,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 174
 - **TEST BUG**: 1,034
-- **NOT IMPLEMENTED**: 4,253
+- **NOT IMPLEMENTED**: 4,252
 - **REQUIRES**: 762
   - `hardware`: 574
   - `layout`: 20
@@ -69,7 +69,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
   - `workers`: 3
 - **TEST RUNNER**: 313
 - **OUT OF SCOPE**: 205
-- **FLAKY**: 16
+- **FLAKY**: 17
 - **PERFORMANCE**: 7
 
 ## Stable tests
@@ -352,7 +352,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`selection`](selection.md) | 83 | 91 | 0 | 91% |
 | [`serial`](serial.md) | 0 | 10 | 10 | – |
 | [`server-timing`](server-timing.md) | 9 | 9 | 0 | 100% |
-| [`service-workers`](service-workers.md) | 248 | 283 | 4 | 89% |
+| [`service-workers`](service-workers.md) | 248 | 283 | 5 | 89% |
 | [`shadow-dom`](shadow-dom.md) | 218 | 254 | 0 | 86% |
 | [`shape-detection`](shape-detection.md) | 0 | 25 | 0 | 0% |
 | [`soft-navigation-heuristics`](soft-navigation-heuristics.md) | 1 | 1 | 0 | 100% |
@@ -419,7 +419,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 320 | 330 | 0 | 97% |
 | [`xml`](xml.md) | 0 | 12 | 12 | – |
-| **Total (343 sections)** | **26,228** | **29,691** | **2,104** | **95%** |
+| **Total (343 sections)** | **26,228** | **29,691** | **2,105** | **95%** |
 
 ## Tentative tests
 

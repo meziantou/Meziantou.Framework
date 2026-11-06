@@ -49,6 +49,9 @@ internal sealed class RenderContext
 
     public double MapY(ChannelValues? values, int index) => values is null || Y is null ? double.NaN : Y.Map(values, index);
 
+    /// <summary>Maps a number with a continuous y scale, or NaN.</summary>
+    public double MapYNumber(double value) => Y is ResolvedContinuousScale scale ? scale.MapNumber(value) : double.NaN;
+
     /// <summary>The full extent of the x scale, from the start of its range to its end.</summary>
     public (double Start, double End) XExtent => X is null ? GetFrameExtent(isX: true) : (X.RangeStart, X.RangeEnd);
 

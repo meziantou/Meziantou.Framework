@@ -258,6 +258,54 @@ public sealed class StatisticalChartTests
     }
 
     [Fact]
+    public void DensityPlot()
+    {
+        #region Charts_DensityPlot
+        var plot = new Plot { Title = "Distribution by group" };
+        plot.Add(new AreaMark<Measurement>(SampleData.Measurements, x: measurement => measurement.Value, y: _ => null)
+        {
+            Fill = measurement => measurement.Group,
+            FillOpacity = 0.35,
+            Curve = Curve.MonotoneX,
+            Transform = new DensityTransform(),
+        });
+        plot.YAxis.Label = "Density";
+        #endregion
+
+        ChartAssert.Svg(plot, "DensityPlot");
+    }
+
+    [Fact]
+    public void ViolinPlot()
+    {
+        #region Charts_ViolinPlot
+        var plot = new Plot { Title = "Distribution by group" };
+        plot.Add(new ViolinMark<Measurement>(SampleData.Measurements, x: measurement => measurement.Group, y: measurement => measurement.Value)
+        {
+            Fill = measurement => measurement.Group,
+        });
+        plot.Legend.Visible = false;
+        #endregion
+
+        ChartAssert.Svg(plot, "ViolinPlot");
+    }
+
+    [Fact]
+    public void ViolinOptions()
+    {
+        var measurements = SampleData.Measurements.Append(new Measurement("D", 50)).ToArray();
+        var plot = new Plot { Height = 260, Coordinates = new CartesianCoordinates { Transposed = true } };
+        plot.Add(new ViolinMark<Measurement>(measurements, x: measurement => measurement.Group, y: measurement => measurement.Value) { ShowBox = false, Bandwidth = 4, Samples = 20, ViolinWidth = 0.6, StrokeColor = ChartColor.Black });
+        ChartAssert.Svg(plot);
+
+        var lines = new Plot { Height = 220 };
+        lines.Add(new LineMark<Measurement>(measurements, x: measurement => measurement.Value, y: _ => null) { Transform = new DensityTransform { Bandwidth = 5, Samples = 40, Cut = 0 }, Stroke = measurement => measurement.Group });
+        ChartAssert.Svg(lines, documentationImage: null, memberName: nameof(ViolinOptions) + "_DensityLines");
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => new DensityTransform { Samples = 1 });
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => new ViolinMark<int>([], x: i => i, y: i => i) { Samples = 1 });
+    }
+
+    [Fact]
     public void GroupedAndCumulativeTransforms()
     {
         var plot = new Plot { Height = 260 };

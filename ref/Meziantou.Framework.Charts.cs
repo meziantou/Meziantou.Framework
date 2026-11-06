@@ -308,6 +308,13 @@ namespace Meziantou.Framework.Charts
         CatmullRom = 5,
     }
 
+    public sealed class DensityTransform : Meziantou.Framework.Charts.Transform
+    {
+        public double? Bandwidth { get => throw null; set { } }
+        public double Cut { get => throw null; set { } }
+        public int Samples { get => throw null; set { } }
+    }
+
     public sealed class DivergingColorScale : Meziantou.Framework.Charts.ColorScale
     {
         public double? Maximum { get => throw null; set { } }
@@ -1017,6 +1024,17 @@ namespace Meziantou.Framework.Charts
         Slice = 2,
         Dice = 3,
         SliceDice = 4,
+    }
+
+    public sealed class ViolinMark<T> : Meziantou.Framework.Charts.Mark<T>
+    {
+        public double? Bandwidth { get => throw null; set { } }
+        public int Samples { get => throw null; set { } }
+        public bool ShowBox { get => throw null; set { } }
+        public double ViolinWidth { get => throw null; set { } }
+        public System.Func<T, object?> X { get => throw null; }
+        public System.Func<T, object?> Y { get => throw null; }
+        public ViolinMark(System.Collections.Generic.IEnumerable<T> data, System.Func<T, object?> x, System.Func<T, object?> y) { }
     }
 
     public sealed class WaterfallMark<T> : Meziantou.Framework.Charts.Mark<T>

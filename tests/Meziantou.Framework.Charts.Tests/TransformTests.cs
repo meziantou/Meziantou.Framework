@@ -134,6 +134,53 @@ public sealed class TransformTests
     }
 
     [Fact]
+    public void KernelDensity_Gaussian()
+    {
+        // A single value: the density of the standard normal distribution
+        Assert.Equal(1 / Math.Sqrt(2 * Math.PI), KernelDensity.Estimate([0], 1, 0), 1e-12);
+        Assert.Equal(Math.Exp(-0.5) / Math.Sqrt(2 * Math.PI), KernelDensity.Estimate([0], 1, 1), 1e-12);
+        Assert.Equal(Math.Exp(-0.5) / Math.Sqrt(2 * Math.PI) / 2, KernelDensity.Estimate([0], 2, 2), 1e-12);
+
+        // The average of the kernels of two values
+        Assert.Equal((1 + Math.Exp(-2)) / (2 * Math.Sqrt(2 * Math.PI)), KernelDensity.Estimate([0, 2], 1, 0), 1e-12);
+
+        var (x, density) = KernelDensity.Evaluate([0], 1, -1, 1, 3);
+        Assert.Equal([-1, 0, 1], x);
+        Assert.Equal(density[0], density[2], 1e-12);
+        Assert.HasCount(2, KernelDensity.Evaluate([0], 1, 0, 1, 1).X);
+    }
+
+    [Fact]
+    public void KernelDensity_Silverman()
+    {
+        // σ = 1.2910 (sample standard deviation), IQR / 1.34 = 1.1194: 0.9 × 1.1194 × 4^(-1/5)
+        double[] values = [1, 2, 3, 4];
+        Assert.Equal(0.9 * (1.5 / 1.34) * Math.Pow(4, -0.2), KernelDensity.SilvermanBandwidth(values), 1e-12);
+        Assert.Equal(0.9 * 0.5 * Math.Pow(2, -0.2), KernelDensity.SilvermanBandwidth([5, 5]), 1e-12);
+        Assert.Equal(0.9, KernelDensity.SilvermanBandwidth([0]), 1e-12);
+        Assert.Equal(1, KernelDensity.SilvermanBandwidth([]));
+
+        // With a zero interquartile range, the standard deviation
+        double[] spiky = [0, 0, 0, 0, 0, 0, 10];
+        var deviation = Math.Sqrt(spiky.Sum(value => Math.Pow(value - spiky.Average(), 2)) / 6);
+        Assert.Equal(0.9 * deviation * Math.Pow(7, -0.2), KernelDensity.SilvermanBandwidth(spiky), 1e-12);
+    }
+
+    [Fact]
+    public void Density_PerSeries()
+    {
+        var data = new MarkData(4) { X = ChannelValues.FromNumbers([0, 1, 10, double.NaN]), Fill = ChannelValues.FromCategories(["a", "a", "b", "c"]) };
+        var result = new DensityTransform { Bandwidth = 1, Samples = 5, Cut = 2 }.Apply(data);
+        Assert.Equal(10, result.Count);
+        Assert.Equal([-2, -0.75, 0.5, 1.75, 3], result.X!.Numbers[..5]);
+        Assert.Equal(["a", "a", "a", "a", "a", "b", "b", "b", "b", "b"], result.Fill!.Categories);
+        Assert.Equal(KernelDensity.Estimate([0, 1], 1, 0.5), result.Y!.Numbers[2], 1e-12);
+
+        var categories = new MarkData(1) { X = ChannelValues.FromCategories(["a"]) };
+        Assert.Same(categories, new DensityTransform().Apply(categories));
+    }
+
+    [Fact]
     public void Quantile_R7()
     {
         double[] values = [1, 2, 3, 4];

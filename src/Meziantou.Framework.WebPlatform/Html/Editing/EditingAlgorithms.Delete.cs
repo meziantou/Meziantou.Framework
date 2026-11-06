@@ -2193,6 +2193,13 @@ internal sealed partial class EditingAlgorithms
             {
                 node.RemoveChild(invisibleChild);
             }
+            else if (ChildAt(node, offset) is Text whiteSpaceText && IsEditable(whiteSpaceText) && IsWhitespaceNode(whiteSpaceText) && !PreservesWhiteSpace(whiteSpaceText.ParentNode)
+                && FindLineItem(whiteSpaceText, forward: true) == LineItem.Boundary)
+            {
+                // As in the browsers, the white space that collapses at the end of a block is not rendered: it is removed,
+                // and the next line is joined (<p>abc{} </p><p>def</p>)
+                node.RemoveChild(whiteSpaceText);
+            }
             else if ((offset == NodeLength(node) && IsInlineNode(node)) || IsInvisible(node))
             {
                 if (node.ParentNode is null)
@@ -2364,7 +2371,7 @@ internal sealed partial class EditingAlgorithms
             }
         }
 
-        SetRange(node, offset, endNode, end);
+SetRange(node, offset, endNode, end);
         DeleteSelectionAndRebalance();
         return true;
     }

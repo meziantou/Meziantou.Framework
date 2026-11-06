@@ -334,4 +334,9 @@ public sealed class EditingDeletionTests : IDisposable
     [Fact]
     public void ForwardDeleteInEmptyChildBlockRemovesIt()
         => Assert.Equal("<div>abc</div>", Run("<div><div>[]<br></div>abc</div>", "forwardDelete"));
+
+    // As in the browsers, forward delete skips the white space that collapses at the end of a block: the next line is joined
+    [Fact]
+    public void ForwardDeleteSkipsCollapsedWhiteSpaceAtTheEndOfABlock()
+        => Assert.Equal("<p>abc</p>", Run("<p>abc[]<br> </p> <p><br></p>", "forwardDelete"));
 }

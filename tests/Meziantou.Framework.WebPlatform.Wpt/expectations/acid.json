@@ -1,0 +1,11 @@
+{
+  "acid/acid2/reftest.html": {
+    "reftest": "PASS"
+  },
+  "acid/acid3/numbered-tests.html": {
+    "total": 100
+  },
+  "acid/acid3/test.html": {
+    "reftest": "PASS"
+  }
+}

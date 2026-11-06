@@ -48,10 +48,10 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 26,220 | 29,691 | 2,105 | 95% |
+| [Stable](#stable-tests) | 26,221 | 29,691 | 2,104 | 95% |
 | [Tentative](#tentative-tests) | 1,370 | 3,074 | 692 | 58% |
-| [Reftests](#reftests) | 27,926 | 29,220 | 172 | 96% |
-| **All** | **55,516** | **61,985** | **2,969** | **94%** |
+| [Reftests](#reftests) | 27,928 | 29,220 | 170 | 96% |
+| **All** | **55,519** | **61,985** | **2,966** | **94%** |
 
 ## Failure reasons
 
@@ -60,9 +60,9 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 - **BUG**: 178
 - **TEST BUG**: 1,034
 - **NOT IMPLEMENTED**: 4,287
-- **REQUIRES**: 763
+- **REQUIRES**: 760
   - `hardware`: 574
-  - `layout`: 23
+  - `layout`: 20
   - `media`: 18
   - `service-workers`: 1
   - `user-input`: 154
@@ -79,7 +79,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`accelerometer`](accelerometer.md) | 9 | 12 | 0 | 75% |
 | [`accessibility`](accessibility.md) | 1 | 1 | 0 | 100% |
 | [`accname`](accname.md) | 17 | 17 | 0 | 100% |
-| [`acid`](acid.md) | 0 | 1 | 1 | – |
+| [`acid`](acid.md) | 1 | 1 | 0 | 100% |
 | [`ai`](ai.md) | 0 | 11 | 11 | – |
 | [`ambient-light`](ambient-light.md) | 10 | 10 | 0 | 100% |
 | [`animation-worklet`](animation-worklet.md) | 15 | 23 | 0 | 65% |
@@ -419,7 +419,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 320 | 330 | 0 | 97% |
 | [`xml`](xml.md) | 0 | 12 | 12 | – |
-| **Total (343 sections)** | **26,220** | **29,691** | **2,105** | **95%** |
+| **Total (343 sections)** | **26,221** | **29,691** | **2,104** | **95%** |
 
 ## Tentative tests
 
@@ -595,7 +595,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 | Section | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [`acid`](acid.md#reftests) | 0 | 2 | 2 | – |
+| [`acid`](acid.md#reftests) | 2 | 2 | 0 | 100% |
 | [`animation-worklet`](animation-worklet.md#reftests) | 10 | 15 | 0 | 67% |
 | [`apng`](apng.md#reftests) | 1 | 1 | 0 | 100% |
 | [`avif`](avif.md#reftests) | 2 | 2 | 0 | 100% |
@@ -725,4 +725,4 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`webgl`](webgl.md#reftests) | 0 | 2 | 0 | 0% |
 | [`webvtt`](webvtt.md#reftests) | 182 | 251 | 0 | 73% |
 | [`xml`](xml.md#reftests) | 0 | 3 | 3 | – |
-| **Total (130 sections)** | **27,926** | **29,220** | **172** | **96%** |
+| **Total (130 sections)** | **27,928** | **29,220** | **170** | **96%** |

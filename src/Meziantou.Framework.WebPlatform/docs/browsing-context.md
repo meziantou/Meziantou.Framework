@@ -490,8 +490,10 @@ sealed class MyPlayer(MediaResource resource) : MediaPlayer(resource.TimeProvide
   `RequestDestination.Video`, the CORS mode of the `crossorigin` attribute, the content security policy `media-src`, the
   mixed content upgrade). As in the browsers, the request has a `Range: bytes=0-` header: a `206` response that contains
   a part of the resource is completed with other range requests
-  ([verify a media response](https://html.spec.whatwg.org/multipage/media.html#verify-a-media-response)), and an HTTP
-  error fails the load. A response that arrives over time (`DocumentResource.RemainingContentBytes`) is given to the
+  ([verify a media response](https://html.spec.whatwg.org/multipage/media.html#verify-a-media-response); a response
+  created by a service worker has the "rewritten" origin), and an HTTP error fails the load. When the complete length of
+  a partial response is unknown (`Content-Range: bytes 0-1/*`), the rest is requested until a response gives no new byte
+  or is a `416` response. A response that arrives over time (`DocumentResource.RemainingContentBytes`) is given to the
   backend as its chunks arrive: `CreatePlayer()` is called until the metadata can be read, then the player receives the
   rest (`MediaPlayer.OnDataReceived()`); `progress` is fired at most every 350ms, `stalled` after 3 seconds without
   data, and the load fails with `MEDIA_ERR_NETWORK` when the connection is interrupted after the metadata.
@@ -2105,6 +2107,8 @@ the `load` event of the window of its document, before its `pageshow` event; the
 and fires the `load` event of the container from another task (which is still what happens while the browsing context
 navigates away from the document: the container gets the `load` event of the new document only). A `load` event
 listener that removes the container unloads the document (`pagehide`, `unload`); its `pageshow` event is then not fired.
+The document is completely loaded when the `load` event of the container is fired, as specified: a navigation that a
+listener of the event starts adds a new session history entry instead of replacing the current one.
 
 When an `iframe` (or a `frame`) is removed, the documents of its browsing context and of the descendants are unloaded
 before the element is removed, as the browsers do (the specification destroys them without unloading them): the event

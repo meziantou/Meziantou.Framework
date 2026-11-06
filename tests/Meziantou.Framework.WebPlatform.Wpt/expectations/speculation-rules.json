@@ -490,10 +490,7 @@
     "total": 1
   },
   "speculation-rules/prefetch/prefetch-traverse-reload.sub.html": {
-    "total": 3,
-    "failures": {
-      "History's Document is used for traversal navigations": "FAIL"
-    }
+    "total": 3
   },
   "speculation-rules/prefetch/prefetch-uses-cache.sub.https.html?cross-site": {
     "total": 1

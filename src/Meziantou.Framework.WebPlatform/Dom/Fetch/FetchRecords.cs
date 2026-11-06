@@ -382,6 +382,13 @@ internal sealed class FetchResponse
 
     public List<UrlRecord> UrlList { get; set; } = [];
 
+    /// <summary>
+    /// Whether the URL list of the internal response was empty when main fetch set it to the URL list of the request
+    /// (https://fetch.spec.whatwg.org/#main-fetch, step 16), e.g. a response created by a service worker: its URL is null for
+    /// the verification of a media response (its origin is "rewritten", https://html.spec.whatwg.org/multipage/media.html#verify-a-media-response).
+    /// </summary>
+    public bool HasRewrittenUrl { get; set; }
+
     public int Status { get; set; } = 200;
 
     public string StatusMessage { get; set; } = "";
@@ -538,11 +545,11 @@ internal sealed class FetchResponse
         if (internalResponse._bodyResource is { } resource)
         {
             return resource.Content is { } content
-                ? new DocumentResource(content) { StatusCode = internalResponse.Status, StatusText = statusText, Headers = headers, Url = url, RedirectUrls = redirectUrls, ResponseType = Type }
-                : new DocumentResource(resource.ContentBytes!.Value) { StatusCode = internalResponse.Status, StatusText = statusText, Headers = headers, Url = url, RedirectUrls = redirectUrls, RemainingContentBytes = resource.RemainingContentBytes, ResponseType = Type };
+                ? new DocumentResource(content) { StatusCode = internalResponse.Status, StatusText = statusText, Headers = headers, Url = url, RedirectUrls = redirectUrls, ResponseType = Type, HasRewrittenUrl = internalResponse.HasRewrittenUrl }
+                : new DocumentResource(resource.ContentBytes!.Value) { StatusCode = internalResponse.Status, StatusText = statusText, Headers = headers, Url = url, RedirectUrls = redirectUrls, RemainingContentBytes = resource.RemainingContentBytes, ResponseType = Type, HasRewrittenUrl = internalResponse.HasRewrittenUrl };
         }
 
-        return new DocumentResource(internalResponse._body ?? []) { StatusCode = internalResponse.Status, StatusText = statusText, Headers = headers, Url = url, RedirectUrls = redirectUrls, ResponseType = Type };
+        return new DocumentResource(internalResponse._body ?? []) { StatusCode = internalResponse.Status, StatusText = statusText, Headers = headers, Url = url, RedirectUrls = redirectUrls, ResponseType = Type, HasRewrittenUrl = internalResponse.HasRewrittenUrl };
     }
 
     /// <summary>https://fetch.spec.whatwg.org/#concept-response-clone: a copy of the response and of its internal response (the body is not copied: it is not modified).</summary>

@@ -342,7 +342,7 @@ internal sealed partial class EditingAlgorithms
     /// <param name="canonicalizeWhitespace">False when the caller handles the white space around the deletion (see <see cref="DeleteSelectionAndRebalance"/>).</param>
     private void DeleteSelection(bool blockMerging = true, bool stripWrappers = true, bool forward = true, bool canonicalizeWhitespace = true)
     {
-        if (_activeRange is null)
+if (_activeRange is null)
             return;
 
         var range = _activeRange;
@@ -1793,6 +1793,14 @@ internal sealed partial class EditingAlgorithms
             return true;
         }
 
+        // As in the browsers, the line after an inline flex or grid container is joined to the last line of its last item
+        if (IsInlineNode(node) && IsFlexOrGridContainer(node) && ChildAt(node, offset - 1) is Element lastItem && IsBlockNode(lastItem) && IsEditable(lastItem))
+        {
+            SetRange(lastItem, NodeLength(lastItem), range.StartContainer, (int)range.StartOffset);
+            DeleteSelectionAndRebalance(forward: false);
+            return true;
+        }
+
         if (IsInlineNode(node))
             return true;
 
@@ -2121,6 +2129,8 @@ internal sealed partial class EditingAlgorithms
         return GetNextVisibleSibling(block) is { } next && IsInlineNode(next) && IsEditable(next) ? block : null;
     }
 
+    private bool IsFlexOrGridContainer(Node node) => node is Element element && GetDisplay(element) is var display && (display.IsFlexContainer || display.IsGridContainer);
+
     /// <summary>Whether the node has a descendant that is rendered content (text that is not only white space, or an element deleted as a whole).</summary>
     private bool HasRenderedContent(Node node)
     {
@@ -2300,6 +2310,15 @@ internal sealed partial class EditingAlgorithms
         if (IsInlineNode(node) && ChildAt(node, offset) is { } atomicChild && IsAtomicElement(atomicChild) && IsEditableOrEditingHost(node))
         {
             SetRange(node, offset, node, offset + 1);
+            DeleteSelectionAndRebalance();
+            return true;
+        }
+
+        // As in the browsers, the first line of the first item of an inline flex or grid container is joined to the line
+        // before the container
+        if (IsInlineNode(node) && IsFlexOrGridContainer(node) && ChildAt(node, offset) is Element firstItem && IsBlockNode(firstItem) && IsEditable(firstItem))
+        {
+            SetRange(range.StartContainer, (int)range.StartOffset, firstItem, 0);
             DeleteSelectionAndRebalance();
             return true;
         }

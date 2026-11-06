@@ -339,4 +339,10 @@ public sealed class EditingDeletionTests : IDisposable
     [Fact]
     public void ForwardDeleteSkipsCollapsedWhiteSpaceAtTheEndOfABlock()
         => Assert.Equal("<p>abc</p>", Run("<p>abc[]<br> </p> <p><br></p>", "forwardDelete"));
+
+    // As in the browsers, the first line of the first item of an inline flex container is joined to the line before it,
+    // without a line break: the items of the container are not in lines
+    [Fact]
+    public void ForwardDeleteBeforeInlineFlexContainerJoinsItsFirstItem()
+        => Assert.Equal("012abc<div style=\"display:inline-flex\"><span>def</span></div>", Run("012[]<div style=\"display:inline-flex\"><span>abc</span><span>def</span></div>", "forwardDelete"));
 }

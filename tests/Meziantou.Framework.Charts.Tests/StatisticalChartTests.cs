@@ -442,6 +442,53 @@ public sealed class StatisticalChartTests
     }
 
     [Fact]
+    public void ParallelCoordinates()
+    {
+        #region Charts_ParallelCoordinates
+        var plot = new Plot { Title = "Cars on four dimensions" };
+        plot.Add(new ParallelCoordinatesMark<Car>(SampleData.Cars,
+        [
+            new("Weight (kg)", car => car.Weight),
+            new("Horsepower", car => car.Horsepower),
+            new("MPG", car => car.Mpg),
+            new("Origin", car => car.Origin),
+        ])
+        {
+            Stroke = car => car.Origin,
+        });
+        #endregion
+
+        ChartAssert.Svg(plot, "ParallelCoordinates");
+    }
+
+    [Fact]
+    public void ParallelCoordinatesOptions()
+    {
+        // A scale per axis: a reversed axis and a log axis; a missing value breaks the line
+        Car[] cars = [.. SampleData.Cars.Take(4), new("Gap", double.NaN, 30, 120, "Europe")];
+        var plot = new Plot { Width = 360, Height = 240 };
+        plot.Add(new ParallelCoordinatesMark<Car>(cars,
+        [
+            new("Weight", car => car.Weight),
+            new("MPG", car => car.Mpg) { Scale = new LinearScale { Reverse = true } },
+            new("Power", car => car.Horsepower) { Scale = new LogScale() },
+        ])
+        {
+            LineOpacity = 1,
+            StrokeColor = "#e5484d",
+            StrokeWidth = 1,
+            Title = car => car.Name,
+        });
+        ChartAssert.Svg(plot);
+
+        var single = new Plot { Width = 200, Height = 200 };
+        single.Add(new ParallelCoordinatesMark<Car>(cars, [new("Weight", car => car.Weight)]));
+        Assert.Contains("Weight", single.ToSvg());
+        Assert.Throws<ArgumentException>("dimensions", () => new ParallelCoordinatesMark<Car>(cars, []));
+        Assert.Throws<ArgumentNullException>("name", () => new ParallelDimension<Car>(null!, car => car.Weight));
+    }
+
+    [Fact]
     public void TrendLine()
     {
         #region Charts_TrendLine

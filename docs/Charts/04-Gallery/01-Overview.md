@@ -11,8 +11,8 @@ pages of the gallery show an example of each:
 - [Radial charts](03-Radial.md): pies, donuts, polar areas, radial bars, radar charts and gauges.
 - [Hierarchical charts](04-Hierarchical.md): packed circles, treemaps, sunbursts, icicles, tree diagrams and dendrograms.
 - [Statistical charts](05-Statistical.md): histograms, box plots, density plots, violin plots, ridgeline plots, hexbin
-  plots, density contours, trend lines, moving averages, heatmaps, waterfalls, funnels, candlesticks, bullet charts,
-  calendar heatmaps, Marimekko charts and sparklines.
+  plots, density contours, parallel coordinates, trend lines, moving averages, heatmaps, waterfalls, funnels,
+  candlesticks, bullet charts, calendar heatmaps, Marimekko charts and sparklines.
 - [Small multiples](06-SmallMultiples.md): grids of charts that share their scales, one per facet.
 - [Flows](07-Flows.md): Sankey diagrams and chord diagrams.
 - [Networks](08-Networks.md): network graphs with a force-directed layout.

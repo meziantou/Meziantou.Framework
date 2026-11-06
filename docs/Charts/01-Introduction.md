@@ -24,8 +24,8 @@ The library covers:
 - Flows: Sankey diagrams and chord diagrams.
 - Networks: network graphs with a force-directed layout.
 - Statistical charts: histograms, box plots, density plots, violin plots, ridgeline plots, hexbin plots, density
-  contours, trend lines, moving averages, heatmaps, waterfalls, funnels, candlesticks, bullet charts, calendar heatmaps,
-  Marimekko charts and sparklines.
+  contours, parallel coordinates, trend lines, moving averages, heatmaps, waterfalls, funnels, candlesticks, bullet
+  charts, calendar heatmaps, Marimekko charts and sparklines.
 - Small multiples: grids of charts that share their scales, and charts with two y axes.
 
 The output is deterministic: the same plot gives the same SVG on every machine, so you can compare charts in snapshot

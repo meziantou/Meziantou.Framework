@@ -623,6 +623,21 @@ namespace Meziantou.Framework.Charts
         public PackMark(Meziantou.Framework.Charts.HierarchyNode<T> root) { }
     }
 
+    public sealed class ParallelCoordinatesMark<T> : Meziantou.Framework.Charts.Mark<T>
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Charts.ParallelDimension<T>> Dimensions { get => throw null; }
+        public double LineOpacity { get => throw null; set { } }
+        public ParallelCoordinatesMark(System.Collections.Generic.IEnumerable<T> data, System.Collections.Generic.IEnumerable<Meziantou.Framework.Charts.ParallelDimension<T>> dimensions) { }
+    }
+
+    public sealed class ParallelDimension<T>
+    {
+        public string Name { get => throw null; }
+        public Meziantou.Framework.Charts.Scale? Scale { get => throw null; set { } }
+        public System.Func<T, object?> Value { get => throw null; }
+        public ParallelDimension(string name, System.Func<T, object?> value) { }
+    }
+
     public sealed class PartitionLayout
     {
         public double Height { get => throw null; set { } }

@@ -1,6 +1,6 @@
 ---
 title: Statistical charts
-description: Histograms, box plots, density plots, violin plots, ridgeline plots, hexbin plots, density contours, trend lines, moving averages, heatmaps, waterfalls, funnels, candlesticks, bullet charts, calendar heatmaps, Marimekko charts and sparklines.
+description: Histograms, box plots, density plots, violin plots, ridgeline plots, hexbin plots, density contours, parallel coordinates, trend lines, moving averages, heatmaps, waterfalls, funnels, candlesticks, bullet charts, calendar heatmaps, Marimekko charts and sparklines.
 ---
 
 ## Histogram
@@ -138,6 +138,31 @@ plot.Legend.Title = "Density";
 <!-- endref -->
 
 ![Nested filled contours around two clusters of points](../images/Contour.svg)
+
+## Parallel coordinates
+
+A [ParallelCoordinatesMark\<T\>](cref:Meziantou.Framework.Charts.ParallelCoordinatesMark{T}) draws a vertical axis per
+[ParallelDimension\<T\>](cref:Meziantou.Framework.Charts.ParallelDimension{T}), each with its own scale, and a line per
+row through its values. A dimension infers its scale from its values (linear for numbers, points for categories) unless
+it sets [Scale](cref:Meziantou.Framework.Charts.ParallelDimension{T}.Scale), to reverse an axis or use a log scale.
+
+<!-- ref:../../../tests/Meziantou.Framework.Charts.Tests/StatisticalChartTests.cs;region=Charts_ParallelCoordinates;format=md-fenced-code-block;dedent=true -->
+```csharp
+var plot = new Plot { Title = "Cars on four dimensions" };
+plot.Add(new ParallelCoordinatesMark<Car>(SampleData.Cars,
+[
+    new("Weight (kg)", car => car.Weight),
+    new("Horsepower", car => car.Horsepower),
+    new("MPG", car => car.Mpg),
+    new("Origin", car => car.Origin),
+])
+{
+    Stroke = car => car.Origin,
+});
+```
+<!-- endref -->
+
+![Four axes, weight, horsepower, MPG and origin, with a line per car colored by its origin](../images/ParallelCoordinates.svg)
 
 ## Trend line
 

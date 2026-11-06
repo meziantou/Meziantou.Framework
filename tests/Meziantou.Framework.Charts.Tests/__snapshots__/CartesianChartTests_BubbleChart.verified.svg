@@ -3,44 +3,41 @@
 <rect width="640" height="400" fill="#ffffff"/>
 <g class="grid">
 <line x1="32.23" y1="369.83" x2="624.24" y2="369.83" stroke="#e3e6ea"/>
-<line x1="32.23" y1="317.5" x2="624.24" y2="317.5" stroke="#e3e6ea"/>
-<line x1="32.23" y1="265.18" x2="624.24" y2="265.18" stroke="#e3e6ea"/>
-<line x1="32.23" y1="212.86" x2="624.24" y2="212.86" stroke="#e3e6ea"/>
-<line x1="32.23" y1="160.54" x2="624.24" y2="160.54" stroke="#e3e6ea"/>
-<line x1="32.23" y1="108.22" x2="624.24" y2="108.22" stroke="#e3e6ea"/>
-<line x1="32.23" y1="55.9" x2="624.24" y2="55.9" stroke="#e3e6ea"/>
+<line x1="32.23" y1="312.85" x2="624.24" y2="312.85" stroke="#e3e6ea"/>
+<line x1="32.23" y1="255.88" x2="624.24" y2="255.88" stroke="#e3e6ea"/>
+<line x1="32.23" y1="198.91" x2="624.24" y2="198.91" stroke="#e3e6ea"/>
+<line x1="32.23" y1="141.94" x2="624.24" y2="141.94" stroke="#e3e6ea"/>
+<line x1="32.23" y1="84.97" x2="624.24" y2="84.97" stroke="#e3e6ea"/>
 </g>
 <g class="marks">
 <g>
 <circle cx="574.91" cy="369.83" r="20" fill="#efb118" fill-opacity="0.702" stroke="#ffffff"/>
-<circle cx="476.24" cy="327.97" r="18.4" fill="#efb118" fill-opacity="0.702" stroke="#ffffff"/>
-<circle cx="402.24" cy="296.58" r="17.1" fill="#efb118" fill-opacity="0.702" stroke="#ffffff"/>
-<circle cx="303.57" cy="265.18" r="15.69" fill="#ff725c" fill-opacity="0.702" stroke="#ffffff"/>
-<circle cx="328.24" cy="254.72" r="15.19" fill="#efb118" fill-opacity="0.702" stroke="#ffffff"/>
-<circle cx="278.9" cy="233.79" r="14.68" fill="#ff725c" fill-opacity="0.702" stroke="#ffffff"/>
-<circle cx="254.23" cy="212.86" r="14.14" fill="#4269d0" fill-opacity="0.702" stroke="#ffffff"/>
-<circle cx="204.9" cy="181.47" r="13.01" fill="#4269d0" fill-opacity="0.702" stroke="#ffffff"/>
-<circle cx="180.23" cy="171.01" r="12.71" fill="#4269d0" fill-opacity="0.702" stroke="#ffffff"/>
-<circle cx="155.57" cy="160.54" r="12.09" fill="#ff725c" fill-opacity="0.702" stroke="#ffffff"/>
-<circle cx="130.9" cy="139.61" r="11.77" fill="#4269d0" fill-opacity="0.702" stroke="#ffffff"/>
-<circle cx="81.57" cy="108.22" r="10.74" fill="#ff725c" fill-opacity="0.702" stroke="#ffffff"/>
+<circle cx="476.24" cy="324.25" r="18.4" fill="#efb118" fill-opacity="0.702" stroke="#ffffff"/>
+<circle cx="402.24" cy="290.07" r="17.1" fill="#efb118" fill-opacity="0.702" stroke="#ffffff"/>
+<circle cx="303.57" cy="255.88" r="15.69" fill="#ff725c" fill-opacity="0.702" stroke="#ffffff"/>
+<circle cx="328.24" cy="244.49" r="15.19" fill="#efb118" fill-opacity="0.702" stroke="#ffffff"/>
+<circle cx="278.9" cy="221.7" r="14.68" fill="#ff725c" fill-opacity="0.702" stroke="#ffffff"/>
+<circle cx="254.23" cy="198.91" r="14.14" fill="#4269d0" fill-opacity="0.702" stroke="#ffffff"/>
+<circle cx="204.9" cy="164.73" r="13.01" fill="#4269d0" fill-opacity="0.702" stroke="#ffffff"/>
+<circle cx="180.23" cy="153.34" r="12.71" fill="#4269d0" fill-opacity="0.702" stroke="#ffffff"/>
+<circle cx="155.57" cy="141.94" r="12.09" fill="#ff725c" fill-opacity="0.702" stroke="#ffffff"/>
+<circle cx="130.9" cy="119.15" r="11.77" fill="#4269d0" fill-opacity="0.702" stroke="#ffffff"/>
+<circle cx="81.57" cy="84.97" r="10.74" fill="#ff725c" fill-opacity="0.702" stroke="#ffffff"/>
 </g>
 </g>
 <g class="axes">
 <line x1="27.23" y1="369.83" x2="32.23" y2="369.83" stroke="#8c959f"/>
 <text x="24.23" y="372.64" text-anchor="end" font-size="11" fill="#59636e">20</text>
-<line x1="27.23" y1="317.5" x2="32.23" y2="317.5" stroke="#8c959f"/>
-<text x="24.23" y="320.31" text-anchor="end" font-size="11" fill="#59636e">25</text>
-<line x1="27.23" y1="265.18" x2="32.23" y2="265.18" stroke="#8c959f"/>
-<text x="24.23" y="267.99" text-anchor="end" font-size="11" fill="#59636e">30</text>
-<line x1="27.23" y1="212.86" x2="32.23" y2="212.86" stroke="#8c959f"/>
-<text x="24.23" y="215.67" text-anchor="end" font-size="11" fill="#59636e">35</text>
-<line x1="27.23" y1="160.54" x2="32.23" y2="160.54" stroke="#8c959f"/>
-<text x="24.23" y="163.35" text-anchor="end" font-size="11" fill="#59636e">40</text>
-<line x1="27.23" y1="108.22" x2="32.23" y2="108.22" stroke="#8c959f"/>
-<text x="24.23" y="111.03" text-anchor="end" font-size="11" fill="#59636e">45</text>
-<line x1="27.23" y1="55.9" x2="32.23" y2="55.9" stroke="#8c959f"/>
-<text x="24.23" y="58.71" text-anchor="end" font-size="11" fill="#59636e">50</text>
+<line x1="27.23" y1="312.85" x2="32.23" y2="312.85" stroke="#8c959f"/>
+<text x="24.23" y="315.66" text-anchor="end" font-size="11" fill="#59636e">25</text>
+<line x1="27.23" y1="255.88" x2="32.23" y2="255.88" stroke="#8c959f"/>
+<text x="24.23" y="258.69" text-anchor="end" font-size="11" fill="#59636e">30</text>
+<line x1="27.23" y1="198.91" x2="32.23" y2="198.91" stroke="#8c959f"/>
+<text x="24.23" y="201.72" text-anchor="end" font-size="11" fill="#59636e">35</text>
+<line x1="27.23" y1="141.94" x2="32.23" y2="141.94" stroke="#8c959f"/>
+<text x="24.23" y="144.75" text-anchor="end" font-size="11" fill="#59636e">40</text>
+<line x1="27.23" y1="84.97" x2="32.23" y2="84.97" stroke="#8c959f"/>
+<text x="24.23" y="87.78" text-anchor="end" font-size="11" fill="#59636e">45</text>
 <line x1="32.23" y1="369.83" x2="32.23" y2="374.83" stroke="#8c959f"/>
 <text x="32.23" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">1,000</text>
 <line x1="130.9" y1="369.83" x2="130.9" y2="374.83" stroke="#8c959f"/>
@@ -64,6 +61,14 @@
 <text x="92.69" y="41.42" font-size="12" fill="#1f2328">USA</text>
 <rect x="131.36" y="33.35" width="10" height="10" rx="2" fill="#ff725c"/>
 <text x="146.36" y="41.42" font-size="12" fill="#1f2328">Japan</text>
+</g>
+<g class="legend-size">
+<circle cx="220.35" cy="55.43" r="17.54" fill="none" stroke="#8c959f"/>
+<path d="M220.35,37.89 L241.89,37.89 L243.89,37.89" fill="none" stroke="#8c959f" stroke-dasharray="2 2"/>
+<text x="247.89" y="40.7" font-size="11" fill="#59636e">200</text>
+<circle cx="220.35" cy="60.57" r="12.4" fill="none" stroke="#8c959f"/>
+<path d="M220.35,48.16 L241.89,48.16 L243.89,49.06" fill="none" stroke="#8c959f" stroke-dasharray="2 2"/>
+<text x="247.89" y="51.87" font-size="11" fill="#59636e">100</text>
 </g>
 <text x="10" y="21.49" font-size="16" font-weight="bold" fill="#1f2328">Power, weight and efficiency</text>
 </svg>

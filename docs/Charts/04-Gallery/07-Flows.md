@@ -1,6 +1,6 @@
 ---
 title: Flows
-description: Sankey diagrams of the flows between nodes, with the layout of d3-sankey.
+description: Sankey diagrams and chord diagrams of the flows between nodes, with the layouts of d3-sankey and d3-chord.
 ---
 
 ## Sankey diagram
@@ -30,3 +30,26 @@ plot.Add(new SankeyMark<Flow>(flows, source: flow => flow.Source, target: flow =
 
 ![Energy sources flowing through electricity, heating and transport to their uses and losses](../images/Sankey.svg)
 
+## Chord diagram
+
+A [ChordMark\<T\>](cref:Meziantou.Framework.Charts.ChordMark{T}) draws a row per flow, like a Sankey diagram, but
+around a circle: each node is an arc as long as the total of the flows that leave it, and each pair of nodes is joined
+by a ribbon whose two ends are as wide as the flows in each direction. A ribbon takes the color of the node of its
+larger flow. Unlike a Sankey diagram, the flows may form cycles, and a node may flow to itself.
+
+<!-- ref:../../../tests/Meziantou.Framework.Charts.Tests/StatisticalChartTests.cs;region=Charts_Chord;format=md-fenced-code-block;dedent=true -->
+```csharp
+Flow[] commutes =
+[
+    new("Downtown", "Harbor", 120), new("Harbor", "Downtown", 90), new("Downtown", "Hills", 40), new("Hills", "Downtown", 150),
+    new("Downtown", "University", 70), new("University", "Downtown", 60), new("Harbor", "Hills", 30), new("Hills", "Harbor", 45),
+    new("University", "Hills", 25), new("Hills", "University", 80), new("Airport", "Downtown", 55), new("Downtown", "Airport", 35),
+    new("Airport", "Harbor", 20), new("University", "University", 30),
+];
+
+var plot = new Plot { Title = "Daily commutes between districts", Height = 460 };
+plot.Add(new ChordMark<Flow>(commutes, source: flow => flow.Source, target: flow => flow.Target, value: flow => flow.Value));
+```
+<!-- endref -->
+
+![Five districts around a circle, joined by ribbons as wide as the commutes between them](../images/Chord.svg)

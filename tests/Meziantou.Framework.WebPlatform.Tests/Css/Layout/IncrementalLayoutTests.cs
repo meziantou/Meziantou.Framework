@@ -103,6 +103,15 @@ public sealed class IncrementalLayoutTests : IDisposable
     }
 
     [Fact]
+    public void ManyInsertedRows_PatchTheBoxesOfTheTableBody()
+    {
+        // (the rows inserted by innerHTML are more than the changes recorded element by element)
+        var document = Parse("<table border=1 id=first><tr><td rowspan=3>a<td>b</table><table border=1><tbody id=b><tr><td rowspan=1500>c<td>d</table>");
+        AssertIncremental(document, () => Find(document, "#b").InnerHtml += string.Concat(Enumerable.Repeat("<tr><td>e", 1500)));
+        AssertIncremental(document, () => Find(document, "#b").InnerHtml = "<tr><td>f");
+    }
+
+    [Fact]
     public void DisplayChange_PatchesTheBoxesOfTheParent()
     {
         var document = Parse("<style>.none { display: none } .inline { display: inline }</style><div><p id=p>a</p><p>b</p></div>");
@@ -261,6 +270,46 @@ public sealed class IncrementalLayoutTests : IDisposable
         AssertIncremental(document, () => Find(document, "#s").ClassList.Add("bg"), patched: null);
         AssertIncremental(document, () => Find(document, "#t").ClassList.Add("bg"), patched: null);
         AssertLayoutReused(document, () => Find(document, "#p").ClassList.Add("bg"));
+    }
+
+    [Fact]
+    public void FragmentIndex_KeepsTheFragmentsOfTheBoxesThatWereNotLaidOutAgain()
+    {
+        var document = Parse("""
+            <style>.w { width: 100px } .scroll { overflow: auto; height: 50px } .sticky { position: sticky; top: 0 } .hidden { content-visibility: hidden }</style>
+            <p id=p>a</p><div id=kept style="display: flow-root"><span id=span>an inline box split over several lines by the width of its block container</span></div>
+            <div class=scroll id=scroll><div class=sticky id=sticky>s</div><div style='height: 200px'>tall</div></div><div id=parent><p id=child>c</p></div>
+            """);
+        var previous = LayoutEngine.VerifyIncrementalLayout;
+        LayoutEngine.VerifyIncrementalLayout = true;
+        try
+        {
+            var engine = document.GetLayoutEngine();
+            Find(document, "#kept").ClassList.Add("w");
+            var span = engine.GetFragments(Find(document, "#span"));
+            Assert.True(span.Count > 1);
+
+            // The fragments of the boxes that were not laid out again are the same, and the sticky box is still collected
+            var hits = engine.LayoutCacheHitCount;
+            Find(document, "#p").ClassList.Add("w");
+            Assert.Equal(span, engine.GetFragments(Find(document, "#span")));
+            Assert.True(engine.LayoutCacheHitCount > hits);
+            Assert.Single(engine.GetFragments(Find(document, "#sticky")));
+            Assert.Single(engine.GetFragments(Find(document, "#scroll")));
+
+            // A box that is not laid out anymore loses its fragments
+            var child = engine.BoxTree!.GetPrincipalBox(Find(document, "#child"))!;
+            Assert.NotNull(engine.GetFirstFragment(child));
+            Find(document, "#parent").ClassList.Add("hidden");
+            engine.EnsureLayout();
+            child = engine.BoxTree.GetPrincipalBox(Find(document, "#child"))!;
+            Assert.Null(engine.GetFirstFragment(child));
+            Assert.Equal(span.Count, engine.GetFragments(Find(document, "#span")).Count);
+        }
+        finally
+        {
+            LayoutEngine.VerifyIncrementalLayout = previous;
+        }
     }
 
 #pragma warning disable CA5394 // Random is not used for security

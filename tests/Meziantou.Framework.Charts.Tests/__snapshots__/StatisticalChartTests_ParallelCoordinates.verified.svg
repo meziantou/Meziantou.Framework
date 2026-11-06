@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="400" viewBox="0 0 640 400" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Cars on four dimensions</title>
+<rect width="640" height="400" fill="#ffffff"/>
+<g class="marks">
+<g>
+<g class="lines">
+<path d="M44.52,353.92 L233.79,338.43 L423.06,157.64 L612.33,126.65" fill="none" stroke="#4269d0" stroke-opacity="0.702" stroke-width="1.5" stroke-linejoin="round"/>
+<path d="M44.52,307.43 L233.79,307.43 L423.06,198.97 L612.33,126.65" fill="none" stroke="#4269d0" stroke-opacity="0.702" stroke-width="1.5" stroke-linejoin="round"/>
+<path d="M44.52,229.96 L233.79,245.45 L423.06,271.28 L612.33,229.96" fill="none" stroke="#efb118" stroke-opacity="0.702" stroke-width="1.5" stroke-linejoin="round"/>
+<path d="M44.52,136.98 L233.79,136.98 L423.06,343.59 L612.33,229.96" fill="none" stroke="#efb118" stroke-opacity="0.702" stroke-width="1.5" stroke-linejoin="round"/>
+<path d="M44.52,384.91 L233.79,361.67 L423.06,126.65 L612.33,333.26" fill="none" stroke="#ff725c" stroke-opacity="0.702" stroke-width="1.5" stroke-linejoin="round"/>
+<path d="M44.52,276.44 L233.79,276.44 L423.06,229.96 L612.33,126.65" fill="none" stroke="#4269d0" stroke-opacity="0.702" stroke-width="1.5" stroke-linejoin="round"/>
+<path d="M44.52,75 L233.79,75 L423.06,384.91 L612.33,229.96" fill="none" stroke="#efb118" stroke-opacity="0.702" stroke-width="1.5" stroke-linejoin="round"/>
+<path d="M44.52,338.43 L233.79,330.68 L423.06,178.3 L612.33,333.26" fill="none" stroke="#ff725c" stroke-opacity="0.702" stroke-width="1.5" stroke-linejoin="round"/>
+<path d="M44.52,260.95 L233.79,260.95 L423.06,250.62 L612.33,333.26" fill="none" stroke="#ff725c" stroke-opacity="0.702" stroke-width="1.5" stroke-linejoin="round"/>
+<path d="M44.52,183.47 L233.79,183.47 L423.06,312.6 L612.33,229.96" fill="none" stroke="#efb118" stroke-opacity="0.702" stroke-width="1.5" stroke-linejoin="round"/>
+<path d="M44.52,322.93 L233.79,315.18 L423.06,188.63 L612.33,126.65" fill="none" stroke="#4269d0" stroke-opacity="0.702" stroke-width="1.5" stroke-linejoin="round"/>
+<path d="M44.52,245.45 L233.79,229.96 L423.06,281.61 L612.33,333.26" fill="none" stroke="#ff725c" stroke-opacity="0.702" stroke-width="1.5" stroke-linejoin="round"/>
+</g>
+<g class="axes">
+<line x1="44.52" y1="75" x2="44.52" y2="384.91" stroke="#8c959f"/>
+<line x1="40.52" y1="384.91" x2="44.52" y2="384.91" stroke="#8c959f"/>
+<text x="37.52" y="387.72" text-anchor="end" font-size="11" fill="#59636e">1,100</text>
+<line x1="40.52" y1="353.92" x2="44.52" y2="353.92" stroke="#8c959f"/>
+<text x="37.52" y="356.73" text-anchor="end" font-size="11" fill="#59636e">1,200</text>
+<line x1="40.52" y1="322.93" x2="44.52" y2="322.93" stroke="#8c959f"/>
+<text x="37.52" y="325.74" text-anchor="end" font-size="11" fill="#59636e">1,300</text>
+<line x1="40.52" y1="291.94" x2="44.52" y2="291.94" stroke="#8c959f"/>
+<text x="37.52" y="294.75" text-anchor="end" font-size="11" fill="#59636e">1,400</text>
+<line x1="40.52" y1="260.95" x2="44.52" y2="260.95" stroke="#8c959f"/>
+<text x="37.52" y="263.76" text-anchor="end" font-size="11" fill="#59636e">1,500</text>
+<line x1="40.52" y1="229.96" x2="44.52" y2="229.96" stroke="#8c959f"/>
+<text x="37.52" y="232.77" text-anchor="end" font-size="11" fill="#59636e">1,600</text>
+<line x1="40.52" y1="198.97" x2="44.52" y2="198.97" stroke="#8c959f"/>
+<text x="37.52" y="201.78" text-anchor="end" font-size="11" fill="#59636e">1,700</text>
+<line x1="40.52" y1="167.97" x2="44.52" y2="167.97" stroke="#8c959f"/>
+<text x="37.52" y="170.78" text-anchor="end" font-size="11" fill="#59636e">1,800</text>
+<line x1="40.52" y1="136.98" x2="44.52" y2="136.98" stroke="#8c959f"/>
+<text x="37.52" y="139.79" text-anchor="end" font-size="11" fill="#59636e">1,900</text>
+<line x1="40.52" y1="105.99" x2="44.52" y2="105.99" stroke="#8c959f"/>
+<text x="37.52" y="108.8" text-anchor="end" font-size="11" fill="#59636e">2,000</text>
+<line x1="40.52" y1="75" x2="44.52" y2="75" stroke="#8c959f"/>
+<text x="37.52" y="77.81" text-anchor="end" font-size="11" fill="#59636e">2,100</text>
+<text x="44.52" y="64.52" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2328">Weight (kg)</text>
+<line x1="233.79" y1="75" x2="233.79" y2="384.91" stroke="#8c959f"/>
+<line x1="229.79" y1="384.91" x2="233.79" y2="384.91" stroke="#8c959f"/>
+<text x="226.79" y="387.72" text-anchor="end" font-size="11" fill="#59636e">60</text>
+<line x1="229.79" y1="353.92" x2="233.79" y2="353.92" stroke="#8c959f"/>
+<text x="226.79" y="356.73" text-anchor="end" font-size="11" fill="#59636e">80</text>
+<line x1="229.79" y1="322.93" x2="233.79" y2="322.93" stroke="#8c959f"/>
+<text x="226.79" y="325.74" text-anchor="end" font-size="11" fill="#59636e">100</text>
+<line x1="229.79" y1="291.94" x2="233.79" y2="291.94" stroke="#8c959f"/>
+<text x="226.79" y="294.75" text-anchor="end" font-size="11" fill="#59636e">120</text>
+<line x1="229.79" y1="260.95" x2="233.79" y2="260.95" stroke="#8c959f"/>
+<text x="226.79" y="263.76" text-anchor="end" font-size="11" fill="#59636e">140</text>
+<line x1="229.79" y1="229.96" x2="233.79" y2="229.96" stroke="#8c959f"/>
+<text x="226.79" y="232.77" text-anchor="end" font-size="11" fill="#59636e">160</text>
+<line x1="229.79" y1="198.97" x2="233.79" y2="198.97" stroke="#8c959f"/>
+<text x="226.79" y="201.78" text-anchor="end" font-size="11" fill="#59636e">180</text>
+<line x1="229.79" y1="167.97" x2="233.79" y2="167.97" stroke="#8c959f"/>
+<text x="226.79" y="170.78" text-anchor="end" font-size="11" fill="#59636e">200</text>
+<line x1="229.79" y1="136.98" x2="233.79" y2="136.98" stroke="#8c959f"/>
+<text x="226.79" y="139.79" text-anchor="end" font-size="11" fill="#59636e">220</text>
+<line x1="229.79" y1="105.99" x2="233.79" y2="105.99" stroke="#8c959f"/>
+<text x="226.79" y="108.8" text-anchor="end" font-size="11" fill="#59636e">240</text>
+<line x1="229.79" y1="75" x2="233.79" y2="75" stroke="#8c959f"/>
+<text x="226.79" y="77.81" text-anchor="end" font-size="11" fill="#59636e">260</text>
+<text x="233.79" y="64.52" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2328">Horsepower</text>
+<line x1="423.06" y1="75" x2="423.06" y2="384.91" stroke="#8c959f"/>
+<line x1="419.06" y1="384.91" x2="423.06" y2="384.91" stroke="#8c959f"/>
+<text x="416.06" y="387.72" text-anchor="end" font-size="11" fill="#59636e">20</text>
+<line x1="419.06" y1="333.26" x2="423.06" y2="333.26" stroke="#8c959f"/>
+<text x="416.06" y="336.07" text-anchor="end" font-size="11" fill="#59636e">25</text>
+<line x1="419.06" y1="281.61" x2="423.06" y2="281.61" stroke="#8c959f"/>
+<text x="416.06" y="284.42" text-anchor="end" font-size="11" fill="#59636e">30</text>
+<line x1="419.06" y1="229.96" x2="423.06" y2="229.96" stroke="#8c959f"/>
+<text x="416.06" y="232.77" text-anchor="end" font-size="11" fill="#59636e">35</text>
+<line x1="419.06" y1="178.3" x2="423.06" y2="178.3" stroke="#8c959f"/>
+<text x="416.06" y="181.11" text-anchor="end" font-size="11" fill="#59636e">40</text>
+<line x1="419.06" y1="126.65" x2="423.06" y2="126.65" stroke="#8c959f"/>
+<text x="416.06" y="129.46" text-anchor="end" font-size="11" fill="#59636e">45</text>
+<line x1="419.06" y1="75" x2="423.06" y2="75" stroke="#8c959f"/>
+<text x="416.06" y="77.81" text-anchor="end" font-size="11" fill="#59636e">50</text>
+<text x="423.06" y="64.52" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2328">MPG</text>
+<line x1="612.33" y1="75" x2="612.33" y2="384.91" stroke="#8c959f"/>
+<line x1="608.33" y1="126.65" x2="612.33" y2="126.65" stroke="#8c959f"/>
+<text x="605.33" y="129.46" text-anchor="end" font-size="11" fill="#59636e">Europe</text>
+<line x1="608.33" y1="229.96" x2="612.33" y2="229.96" stroke="#8c959f"/>
+<text x="605.33" y="232.77" text-anchor="end" font-size="11" fill="#59636e">USA</text>
+<line x1="608.33" y1="333.26" x2="612.33" y2="333.26" stroke="#8c959f"/>
+<text x="605.33" y="336.07" text-anchor="end" font-size="11" fill="#59636e">Japan</text>
+<text x="612.33" y="64.52" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2328">Origin</text>
+</g>
+</g>
+</g>
+<g class="legend">
+<rect x="10" y="33.35" width="10" height="10" rx="2" fill="#4269d0"/>
+<text x="25" y="41.42" font-size="12" fill="#1f2328">Europe</text>
+<rect x="77.69" y="33.35" width="10" height="10" rx="2" fill="#efb118"/>
+<text x="92.69" y="41.42" font-size="12" fill="#1f2328">USA</text>
+<rect x="131.36" y="33.35" width="10" height="10" rx="2" fill="#ff725c"/>
+<text x="146.36" y="41.42" font-size="12" fill="#1f2328">Japan</text>
+</g>
+<text x="10" y="21.49" font-size="16" font-weight="bold" fill="#1f2328">Cars on four dimensions</text>
+</svg>

@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="240" viewBox="0 0 300 240" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="300" height="240" fill="#ffffff"/>
+<g class="marks">
+<g>
+<line x1="233.1" y1="123.98" x2="66.9" y2="167.36" stroke="#4269d0" stroke-width="3"><title>ab</title></line>
+<line x1="66.9" y1="167.36" x2="123.25" y2="40.1" stroke="#efb118" stroke-width="3"><title>bc</title></line>
+<line x1="123.25" y1="40.1" x2="233.1" y2="123.98" stroke="#ff725c" stroke-width="3"><title>ca</title></line>
+<line x1="123.25" y1="40.1" x2="174.57" y2="223" stroke="#ff725c" stroke-width="3"><title>cd</title></line>
+<line x1="174.57" y1="223" x2="174.57" y2="223" stroke="#6cc5b0" stroke-width="3"><title>dd</title></line>
+<circle cx="233.1" cy="123.98" r="5" fill="#e5484d" stroke="#ffffff" stroke-width="1.5"><title>a</title></circle>
+<circle cx="66.9" cy="167.36" r="5" fill="#e5484d" stroke="#ffffff" stroke-width="1.5"><title>b</title></circle>
+<circle cx="123.25" cy="40.1" r="5" fill="#e5484d" stroke="#ffffff" stroke-width="1.5"><title>c</title></circle>
+<circle cx="174.57" cy="223" r="5" fill="#e5484d" stroke="#ffffff" stroke-width="1.5"><title>d</title></circle>
+</g>
+</g>
+<g class="legend">
+<rect x="10" y="10.55" width="10" height="10" rx="2" fill="#4269d0"/>
+<text x="25" y="18.62" font-size="12" fill="#1f2328">a</text>
+<rect x="45.67" y="10.55" width="10" height="10" rx="2" fill="#efb118"/>
+<text x="60.67" y="18.62" font-size="12" fill="#1f2328">b</text>
+<rect x="81.34" y="10.55" width="10" height="10" rx="2" fill="#ff725c"/>
+<text x="96.34" y="18.62" font-size="12" fill="#1f2328">c</text>
+<rect x="116.34" y="10.55" width="10" height="10" rx="2" fill="#6cc5b0"/>
+<text x="131.34" y="18.62" font-size="12" fill="#1f2328">d</text>
+</g>
+</svg>

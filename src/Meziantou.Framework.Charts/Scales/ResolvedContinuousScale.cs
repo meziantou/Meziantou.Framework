@@ -44,8 +44,12 @@ internal sealed class ResolvedContinuousScale : ResolvedScale
     {
         get
         {
-            var zero = Transform is ContinuousTransformKind.Log ? Math.Min(DomainStart, DomainEnd) : Math.Clamp(0, Math.Min(DomainStart, DomainEnd), Math.Max(DomainStart, DomainEnd));
-            return MapNumber(zero);
+            var min = Math.Min(DomainStart, DomainEnd);
+            var zero = Transform is ContinuousTransformKind.Log ? min : Math.Clamp(0, min, Math.Max(DomainStart, DomainEnd));
+            var position = MapNumber(zero);
+
+            // 0 maps to infinity on a power scale with a negative exponent
+            return double.IsNaN(position) ? MapNumber(min) : position;
         }
     }
 
@@ -56,8 +60,10 @@ internal sealed class ResolvedContinuousScale : ResolvedScale
         if (double.IsNaN(value))
             return double.NaN;
 
+        // A value whose transform is infinite (0 on a power scale with a negative exponent, a huge value raised to a
+        // power) has no position, as a value the transform does not accept
         var t = Apply(value);
-        if (double.IsNaN(t))
+        if (!double.IsFinite(t))
             return double.NaN;
 
         var ratio = _t1 == _t0 ? 0.5 : (t - _t0) / (_t1 - _t0);
@@ -67,7 +73,8 @@ internal sealed class ResolvedContinuousScale : ResolvedScale
         }
 
         var (start, end) = _reverse ? (RangeEnd, RangeStart) : (RangeStart, RangeEnd);
-        return start + (ratio * (end - start));
+        var position = start + (ratio * (end - start));
+        return double.IsFinite(position) ? position : double.NaN;
     }
 
     public override IReadOnlyList<Tick> GetTicks()

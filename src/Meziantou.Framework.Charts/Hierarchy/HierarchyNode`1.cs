@@ -73,7 +73,7 @@ public sealed class HierarchyNode<T>
     }
 
     /// <summary>Sets the value of every node under this node to its own value plus the values of its descendants.</summary>
-    /// <param name="value">The own value of a node. NaN and negative values count as zero.</param>
+    /// <param name="value">The own value of a node. NaN, infinite and negative values count as zero, and a sum larger than <see cref="double.MaxValue"/> is <see cref="double.MaxValue"/>.</param>
     /// <returns>The node, to chain calls.</returns>
     public HierarchyNode<T> Sum(Func<T, double> value)
     {
@@ -85,12 +85,20 @@ public sealed class HierarchyNode<T>
     {
         foreach (var node in Descendants().Reverse())
         {
-            var own = value(node);
-            node.Value = (double.IsNaN(own) || own < 0 ? 0 : own) + node._children.Sum(child => child.Value);
+            var total = GetOwnValue(value(node));
+            foreach (var child in node._children)
+            {
+                total += child.Value;
+            }
+
+            // The terms are finite and positive, so the sum is only infinite when it overflows
+            node.Value = Math.Min(total, double.MaxValue);
         }
 
         return this;
     }
+
+    internal static double GetOwnValue(double value) => double.IsFinite(value) && value > 0 ? value : 0;
 
     /// <summary>Sets the value of every node under this node to its number of leaves (1 for a leaf).</summary>
     /// <returns>The node, to chain calls.</returns>

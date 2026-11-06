@@ -426,6 +426,11 @@ public sealed class LayoutTests
         var nested = CirclePacking.Enclose([new PackCircle(0, 0, 5), new PackCircle(1, 0, 1)], CirclePacking.CreateRandom());
         Assert.Equal((0.0, 0.0, 5.0), (nested.X, nested.Y, nested.Radius));
         Assert.Equal(0, CirclePacking.Enclose([], CirclePacking.CreateRandom()).Radius);
+
+        // The fallback when rounding errors leave no basis: centered on the bounding box
+        var bounds = CirclePacking.EncloseBounds([new PackCircle(0, 0, 1), new PackCircle(10, 0, 1), new PackCircle(5, 8, 1)]);
+        Assert.Equal((5.0, 4.0), (bounds.X, bounds.Y));
+        Assert.Equal(Math.Sqrt(41) + 1, bounds.Radius, 1e-9);
     }
 
     [Fact]
@@ -482,6 +487,77 @@ public sealed class LayoutTests
         var root = Hierarchy.FromPaths(["a"], path => path);
         var circles = new PackLayout { Width = 100, Height = 50 }.Layout(root);
         Assert.All(circles, circle => Assert.Equal(0, circle.Radius));
+    }
+
+    [Fact]
+    public void Pack_SiblingsOfVeryDifferentSizes()
+    {
+        // The enclosing circle of a tiny, an empty and a huge circle could not be computed
+        var root = Hierarchy.FromPaths([("a/c", 1e-300), ("b", 0), ("c", 1e12)], row => row.Item1, row => row.Item2);
+        var circles = new PackLayout { Width = 100, Height = 100 }.Layout(root);
+        var byNode = circles.ToDictionary(circle => circle.Node);
+        Assert.All(circles, circle => Assert.True(double.IsFinite(circle.X) && double.IsFinite(circle.Y) && double.IsFinite(circle.Radius), circle.Node.ToString()));
+        Assert.Equal(50, byNode[root].Radius, 1e-9);
+        foreach (var circle in circles)
+        {
+            if (circle.Node.Parent is { } parent)
+            {
+                Assert.True(Distance(circle, byNode[parent]) + circle.Radius <= byNode[parent].Radius + 1e-6, $"{circle.Node} is outside of {parent}");
+            }
+        }
+    }
+
+    [Fact]
+    public void PackSiblings_HugeCircles()
+    {
+        // With a tolerance below the precision of their coordinates, the front chain restarted forever
+        PackCircle[] circles = [new(0, 0, 6.3), new(0, 0, 0), new(0, 0, 1e15), new(0, 0, 1e15)];
+        var radius = CirclePacking.PackSiblings(circles, CirclePacking.CreateRandom());
+        Assert.True(radius >= 2e15 && radius < 2.1e15, radius.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        Assert.True(Distance(circles[2], circles[3]) >= 2e15 * (1 - 1e-9));
+    }
+
+    [Fact]
+    public void Sum_InfiniteAndHugeValues()
+    {
+        var root = Hierarchy.FromPaths([("a", double.PositiveInfinity), ("b/x", 1e308), ("b/y", 1e308), ("c", 1), ("d", double.NaN), ("e", -1)], row => row.Item1, row => row.Item2);
+        var byPath = root.Descendants().ToDictionary(node => node.Path);
+        Assert.Equal(0, byPath["/a"].Value);
+        Assert.Equal(double.MaxValue, byPath["/b"].Value);
+        Assert.Equal(double.MaxValue, root.Value);
+        Assert.Equal(0, byPath["/d"].Value);
+        Assert.Equal(0, byPath["/e"].Value);
+        Assert.Equal(double.MaxValue, Hierarchy.FromPaths([("f", 1e308), ("f", 1e308)], row => row.Item1, row => row.Item2).Value);
+        Assert.Equal(1, Hierarchy.FromTree(1.0, item => item is 1 ? [double.PositiveInfinity, double.NegativeInfinity] : null, value: item => item).Value);
+
+        foreach (var tiling in Enum.GetValues<TreemapTiling>())
+        {
+            AssertHugeValueLayout(new TreemapLayout { Width = 100, Height = 100, Tiling = tiling }.Layout(root), root);
+        }
+
+        AssertHugeValueLayout(new PartitionLayout { Width = 100, Height = 100 }.Layout(root), root);
+
+        var circles = new PackLayout { Width = 100, Height = 100 }.Layout(root);
+        Assert.All(circles, circle => Assert.True(double.IsFinite(circle.X) && double.IsFinite(circle.Y) && double.IsFinite(circle.Radius), circle.Node.ToString()));
+        var x = circles.Single(circle => circle.Node.Path is "/b/x");
+        var y = circles.Single(circle => circle.Node.Path is "/b/y");
+        Assert.Equal(x.Radius, y.Radius, 1e-9);
+        Assert.True(x.Radius > 10);
+
+        static void AssertHugeValueLayout<T>(IReadOnlyList<HierarchyRectangle<T>> rectangles, HierarchyNode<T> root)
+        {
+            Assert.All(rectangles, rectangle => Assert.True(double.IsFinite(rectangle.X0) && double.IsFinite(rectangle.Y0) && double.IsFinite(rectangle.X1) && double.IsFinite(rectangle.Y1), rectangle.Node.ToString()));
+            Assert.All(rectangles, rectangle => Assert.True(rectangle.X0 >= -1e-9 && rectangle.X1 <= 100 + 1e-9 && rectangle.Y0 >= -1e-9 && rectangle.Y1 <= 100 + 1e-9, rectangle.Node.ToString()));
+
+            // The two huge leaves share the space of their parent, which takes all of the space of the root
+            var b = rectangles.Single(rectangle => rectangle.Node.Path is "/b");
+            var x = rectangles.Single(rectangle => rectangle.Node.Path is "/b/x");
+            var y = rectangles.Single(rectangle => rectangle.Node.Path is "/b/y");
+            var rootRectangle = rectangles.Single(rectangle => rectangle.Node == root);
+            Assert.Equal(rootRectangle.Width, b.Width, 1e-6);
+            Assert.Equal(x.Width * x.Height, y.Width * y.Height, 1e-6);
+            Assert.Equal(b.Width * b.Height, (x.Width * x.Height) + (y.Width * y.Height), 1e-6);
+        }
     }
 
     [Fact]
@@ -606,6 +682,9 @@ public sealed class LayoutTests
         Assert.False(ChartColor.TryParse("#12", out _));
         Assert.False(ChartColor.TryParse("#12g", out _));
         Assert.False(ChartColor.TryParse("#12345g", out _));
+        Assert.False(ChartColor.TryParse("#FFF\0\0\0\0\0", out _));
+        Assert.False(ChartColor.TryParse("#123456\0\0", out _));
+        Assert.False(ChartColor.TryParse("#+12345", out _));
         Assert.False(ChartColor.TryParse("not-a-color", out _));
         Assert.Throws<FormatException>(() => ChartColor.Parse("nope"));
         Assert.Throws<ArgumentNullException>("value", () => ChartColor.Parse(null!));

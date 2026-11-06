@@ -82,17 +82,44 @@ public sealed class TreemapLayout
     private List<(HierarchyNode<T> Node, Box Box)> Tile<T>(HierarchyNode<T> node, Box box)
     {
         var children = node.Children;
-        var values = children.Select(child => child.Value).ToArray();
+        var (values, total) = GetChildValues(node);
         var boxes = Tiling switch
         {
-            TreemapTiling.Slice => Slice(values, node.Value, box),
-            TreemapTiling.Dice => Dice(values, node.Value, box),
-            TreemapTiling.SliceDice => (node.Depth & 1) is 1 ? Slice(values, node.Value, box) : Dice(values, node.Value, box),
-            TreemapTiling.Binary => Binary(values, node.Value, box),
-            _ => Squarify(values, node.Value, box, Ratio),
+            TreemapTiling.Slice => Slice(values, total, box),
+            TreemapTiling.Dice => Dice(values, total, box),
+            TreemapTiling.SliceDice => (node.Depth & 1) is 1 ? Slice(values, total, box) : Dice(values, total, box),
+            TreemapTiling.Binary => Binary(values, total, box),
+            _ => Squarify(values, total, box, Ratio),
         };
 
         return [.. children.Zip(boxes)];
+    }
+
+    /// <summary>
+    /// The values of the children of a node and the value of the node, scaled by a power of two so that the value of
+    /// the node is about 1: the tiling adds and multiplies values, which would overflow for huge ones.
+    /// </summary>
+    internal static (double[] Values, double Total) GetChildValues<T>(HierarchyNode<T> node)
+    {
+        var values = node.Children.Select(child => child.Value).ToArray();
+        var total = node.Value;
+        if (total <= 0)
+            return (values, total);
+
+        var exponent = -Math.ILogB(total);
+        for (var i = 0; i < values.Length; i++)
+        {
+            values[i] = Math.ScaleB(values[i], exponent);
+        }
+
+        total = Math.ScaleB(total, exponent);
+        if (node.Value is double.MaxValue)
+        {
+            // The sum of the children overflowed, so the value of the node is less than the sum of the values of its children
+            total = Math.Max(total, values.Sum());
+        }
+
+        return (values, total);
     }
 
     internal static Box[] Dice(IReadOnlyList<double> values, double total, Box box)

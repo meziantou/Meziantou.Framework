@@ -538,7 +538,7 @@ public static class ChartsFuzzTargets
     {
         const string Paths = "Files\nsrc/app/main.cs,120\nsrc/app/util.cs,40\nsrc/lib/a.cs,60\ndocs/readme.md,10\ndocs/,5\ntests/t.cs,0\n";
         const string Ids = "Org\nceo,10,\ncto,5,ceo\ncfo,4,ceo\ndev,3,cto\nops,2,cto\nacc,1,cfo\n";
-        const string Specials = "Specials\na/b,NaN\na/c,0.001\nb,-1\nc/d/e/f/g,1e12\n\u00E9/\uD800,1\n<&>/\",2\n";
+        const string Specials = "Specials\na/b,NaN\na/c,Infinity\na/c,1e-300\nb,-1\nc/d/e/f/g,1e308\nc/d/e/f/h,1e308\n\u00E9/\uD800,1\n<&>/\",2\n";
         for (var selector = 0; selector < 4; selector++)
         {
             yield return FuzzSeed.FromText("paths-" + selector.ToString(CultureInfo.InvariantCulture), [(byte)selector, 0, 0], Paths);

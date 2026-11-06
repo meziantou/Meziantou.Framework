@@ -121,15 +121,17 @@ public readonly record struct ChartColor(byte R, byte G, byte B, byte A = 255)
 
             case 6 or 8:
                 {
-                    if (!uint.TryParse(text, NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out var number))
-                        return false;
-
-                    if (text.Length == 6)
+                    // Not uint.TryParse: it accepts trailing NUL characters
+                    Span<byte> channels = [0, 0, 0, 255];
+                    for (var i = 0; i < text.Length; i += 2)
                     {
-                        number = (number << 8) | 0xFF;
+                        if (!TryParseHexDigit(text[i], out var high) || !TryParseHexDigit(text[i + 1], out var low))
+                            return false;
+
+                        channels[i / 2] = (byte)((high << 4) | low);
                     }
 
-                    color = new ChartColor((byte)(number >> 24), (byte)(number >> 16), (byte)(number >> 8), (byte)number);
+                    color = new ChartColor(channels[0], channels[1], channels[2], channels[3]);
                     return true;
                 }
 

@@ -199,6 +199,11 @@ internal sealed class BoxTree
             builder.Append(' ').Append(image);
         }
 
+        if (container.MarkerSymbol != MarkerSymbol.None)
+        {
+            builder.Append(" symbol=").Append(container.MarkerSymbol);
+        }
+
         builder.Append('\n');
         foreach (var child in container.Children)
         {

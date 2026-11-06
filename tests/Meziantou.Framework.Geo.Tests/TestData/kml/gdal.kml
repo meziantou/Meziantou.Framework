@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document id="root_doc">
+<Schema name="places" id="places">
+	<SimpleField name="population" type="int"></SimpleField>
+	<SimpleField name="capital" type="int"></SimpleField>
+</Schema>
+<Folder><name>places</name>
+  <Placemark id="places.1">
+	<name>Paris</name>
+	<description>&lt;b&gt;Capital&lt;/b&gt; &amp; largest city</description>
+	<ExtendedData><SchemaData schemaUrl="#places">
+		<SimpleData name="population">2102650</SimpleData>
+		<SimpleData name="capital">1</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>2.3522,48.8566,35</coordinates></Point>
+  </Placemark>
+  <Placemark id="places.2">
+	<name>Seine</name>
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+	<ExtendedData><SchemaData schemaUrl="#places">
+		<SimpleData name="capital">0</SimpleData>
+	</SchemaData></ExtendedData>
+      <LineString><coordinates>2.2,48.8 2.35,48.85 2.5,48.83</coordinates></LineString>
+  </Placemark>
+  <Placemark id="places.3">
+	<name>Park</name>
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+	<ExtendedData><SchemaData schemaUrl="#places">
+		<SimpleData name="population">0</SimpleData>
+	</SchemaData></ExtendedData>
+      <Polygon><outerBoundaryIs><LinearRing><coordinates>2,48 3,48 3,49 2,49 2,48</coordinates></LinearRing></outerBoundaryIs><innerBoundaryIs><LinearRing><coordinates>2.4,48.4 2.6,48.4 2.6,48.6 2.4,48.4</coordinates></LinearRing></innerBoundaryIs></Polygon>
+  </Placemark>
+  <Placemark id="places.4">
+	<name>Stops</name>
+      <MultiGeometry><Point><coordinates>1,2</coordinates></Point><Point><coordinates>3,4</coordinates></Point></MultiGeometry>
+  </Placemark>
+  <Placemark id="places.5">
+	<name>Roads</name>
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+      <MultiGeometry><LineString><coordinates>0,0 1,1</coordinates></LineString><LineString><coordinates>2,2 3,3</coordinates></LineString></MultiGeometry>
+  </Placemark>
+  <Placemark id="places.6">
+	<name>Islands</name>
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+      <MultiGeometry><Polygon><outerBoundaryIs><LinearRing><coordinates>0,0 1,0 1,1 0,0</coordinates></LinearRing></outerBoundaryIs></Polygon><Polygon><outerBoundaryIs><LinearRing><coordinates>5,5 6,5 6,6 5,5</coordinates></LinearRing></outerBoundaryIs></Polygon></MultiGeometry>
+  </Placemark>
+  <Placemark id="places.7">
+	<name>Mixed</name>
+      <MultiGeometry><Point><coordinates>9,9</coordinates></Point><LineString><coordinates>0,0 1,0</coordinates></LineString></MultiGeometry>
+  </Placemark>
+  <Placemark id="places.8">
+	<name>Nowhere</name>
+  </Placemark>
+</Folder>
+</Document></kml>

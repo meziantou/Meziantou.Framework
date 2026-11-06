@@ -20,6 +20,13 @@
   <ItemGroup>
     <!-- The AFM metrics of Helvetica, and the shaper of FontFaceTextMeasurer; brings Meziantou.Framework.Unicode -->
     <ProjectReference Include="../Meziantou.Framework.Fonts/Meziantou.Framework.Fonts.csproj" />
+
+    <!-- The features, geometries and projections of the maps -->
+    <ProjectReference Include="../Meziantou.Framework.Geo/Meziantou.Framework.Geo.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Meziantou.Framework.Geo" />
   </ItemGroup>
 
   <ItemGroup>

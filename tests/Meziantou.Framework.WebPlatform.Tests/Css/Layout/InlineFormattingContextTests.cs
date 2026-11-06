@@ -779,11 +779,12 @@ public sealed class InlineFormattingContextTests : IDisposable
             </ul>
             """);
         var engine = document.GetLayoutEngine();
-        Assert.Equal(new PhysicalRect(20, 0, 20, 10), Assert.Single(engine.GetFragments(document.GetElementById("a")!, "marker")).GetRectInRoot());
-        Assert.Equal(new PhysicalRect(20, 15, 20, 10), Assert.Single(engine.GetFragments(document.GetElementById("b")!, "marker")).GetRectInRoot());
+        // As in Blink, the bullet (Ahem: ascent 8px) is a symbol of 5px, 8px before the content
+        Assert.Equal(new PhysicalRect(27, 0, 5, 10), Assert.Single(engine.GetFragments(document.GetElementById("a")!, "marker")).GetRectInRoot());
+        Assert.Equal(new PhysicalRect(27, 15, 5, 10), Assert.Single(engine.GetFragments(document.GetElementById("b")!, "marker")).GetRectInRoot());
 
         // A list item without line box is as tall as its marker
-        Assert.Equal(new PhysicalRect(20, 25, 20, 10), Assert.Single(engine.GetFragments(document.GetElementById("c")!, "marker")).GetRectInRoot());
+        Assert.Equal(new PhysicalRect(27, 25, 5, 10), Assert.Single(engine.GetFragments(document.GetElementById("c")!, "marker")).GetRectInRoot());
         Assert.Equal(10, GetRect(document, "c").Height);
     }
 
@@ -792,7 +793,7 @@ public sealed class InlineFormattingContextTests : IDisposable
     {
         var document = Parse("<ul dir=rtl style='margin: 0; padding-right: 40px; width: 100px'><li id=a>item</li></ul>");
         var marker = Assert.Single(document.GetLayoutEngine().GetFragments(document.GetElementById("a")!, "marker"));
-        Assert.Equal(new PhysicalRect(100, 0, 20, 10), marker.GetRectInRoot());
+        Assert.Equal(new PhysicalRect(108, 0, 5, 10), marker.GetRectInRoot());
     }
 
     [Theory]
@@ -849,20 +850,21 @@ public sealed class InlineFormattingContextTests : IDisposable
             </ul>
             """);
         var engine = document.GetLayoutEngine();
-        Assert.Equal(new PhysicalRect(20, 40, 20, 10), Assert.Single(engine.GetFragments(document.GetElementById("a")!, "marker")).GetRectInRoot());
-        Assert.Equal(new PhysicalRect(23, 70, 20, 10), Assert.Single(engine.GetFragments(document.GetElementById("b")!, "marker")).GetRectInRoot());
+        Assert.Equal(new PhysicalRect(27, 40, 5, 10), Assert.Single(engine.GetFragments(document.GetElementById("a")!, "marker")).GetRectInRoot());
+        Assert.Equal(new PhysicalRect(30, 70, 5, 10), Assert.Single(engine.GetFragments(document.GetElementById("b")!, "marker")).GetRectInRoot());
 
         // The marker is not a descendant of a box that clips its overflow
         var marker = Assert.Single(engine.GetFragments(document.GetElementById("c")!, "marker"));
-        Assert.Equal(new PhysicalRect(20, 85, 20, 10), marker.GetRectInRoot());
+        Assert.Equal(new PhysicalRect(27, 85, 5, 10), marker.GetRectInRoot());
         Assert.DoesNotContain(marker, Assert.Single(engine.GetFragments(document.GetElementById("clip")!)).Children);
     }
 
     [Fact]
     public void InsideMarker_IsAnInlineBox()
     {
+        // As in Blink, the bullet (Ahem: ascent 8px) is a symbol of 5px, with margins of -1px and 1em
         var document = Parse("<ul style='margin: 0; padding: 0; list-style-position: inside'><li id=a>item</li></ul>");
-        Assert.Equal(new PhysicalRect(20, 0, 40, 10), GetTextFragments(document, "a")[0].GetRectInRoot());
+        Assert.Equal(new PhysicalRect(14, 0, 40, 10), GetTextFragments(document, "a")[0].GetRectInRoot());
     }
 
     [Fact]
@@ -1065,6 +1067,7 @@ public sealed class InlineFormattingContextTests : IDisposable
     public void OutsideMarker_IsBesideTheFloatThatShortensItsLine()
     {
         // WPT css/CSS2/lists/list-style-applies-to-017.html: the markers are next to the line boxes, which start after the float
+        // (8px before them, as in Blink)
         var document = Parse("""
             <div style='float: left; width: 96px; height: 96px'></div>
             <div id=a style='display: list-item; list-style: square'>text</div>
@@ -1072,8 +1075,8 @@ public sealed class InlineFormattingContextTests : IDisposable
             """);
         var first = GetFragments(document, "a")[0].Children.OfType<BoxFragment>().Single(f => f.Box.IsOutsideMarker);
         var second = GetFragments(document, "b")[0].Children.OfType<BoxFragment>().Single(f => f.Box.IsOutsideMarker);
-        Assert.Equal(96, first.Offset.X + first.Size.Width, 3);
-        Assert.Equal(96, second.Offset.X + second.Size.Width, 3);
+        Assert.Equal(88, first.Offset.X + first.Size.Width, 3);
+        Assert.Equal(88, second.Offset.X + second.Size.Width, 3);
     }
 
     [Fact]

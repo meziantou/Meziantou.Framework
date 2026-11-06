@@ -162,8 +162,9 @@ decides when, see [Incremental update](#incremental-update)).
   The computed display is already blockified (root, floats, absolutely positioned boxes, flex and grid items).
 - The children are the flat tree children: the shadow tree of a host, the assigned nodes of a slot (or its fallback).
 - `display: list-item` generates a `::marker` first (its `content`, else `list-style-image` when it is a valid image, else
-  the marker string of `list-style-type`: a string, or the prefix of the counter style, the representation of the
-  `list-item` counter and the suffix of the counter style), then `::before`, the children and `::after` (generated when
+  the symbol of `disc`, `circle`, `square`, `disclosure-open` and `disclosure-closed`, else the marker string of
+  `list-style-type`: a string, or the prefix of the counter style, the representation of the `list-item` counter and the
+  suffix of the counter style), then `::before`, the children and `::after` (generated when
   their `content` is not `none`/`normal`). An image that cannot be loaded is not a valid image
   ([CSS Lists §3.1](https://drafts.csswg.org/css-lists-3/#image-marker)): the boxes are built again when its fetch fails
   (`CssImageFetching.IsInvalidImage`). A `::before` or `::after` pseudo-element that is a list item has a marker too: an
@@ -2022,7 +2023,12 @@ an atomic inline laid out while its parent collects its items rents another inst
   in the tree), which may overlap it. A marker placed next to a line of a positioned descendant block that does not
   establish a stacking context belongs to the inline content of the list item: it is painted under the positioned block
   (`PaintOrder.GetListItemPaintingMarker`), as in Blink and Gecko. The bullets of the predefined counter styles (`disc`, `circle`, `square`, the
-  disclosure triangles) are symbols: `letter-spacing` and `word-spacing` do not space them. The marker is not passed to a child that clips
+  disclosure triangles) are symbols, as in Blink and Gecko: a replaced box (`ContainerBox.MarkerSymbol`) with the geometry of
+  Blink (`MarkerSymbols`: from the ascent A of the font rounded to a whole pixel, a bullet of `(⌊2A/3⌋ + 1) / 2` pixels in a
+  box 2px wider, 1px from its start; a disclosure triangle of 0.66em on the baseline; the box is as tall as the line height,
+  with the baseline of the text), 8px plus ⌊2A/3⌋ minus its size before the content when it is outside, with margins of -1px
+  and 1em (0 and 0.4em for a disclosure triangle) when it is inside, painted as a filled ellipse, a 1px stroked ellipse, a
+  filled square or a triangle (`Painter.PaintMarkerSymbol`); `letter-spacing` and `word-spacing` do not apply to them. The marker is not passed to a child that clips
   its overflow, which would clip it. When no line box placed the marker, it is aligned with the first baseline of the
   in-flow children of the list item, if any (the baseline of a flex or grid container, of a table, of a block that
   establishes a formatting context, of a line box of a child that did not get the marker), as in the browsers; a descendant

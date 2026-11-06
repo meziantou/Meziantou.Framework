@@ -119,6 +119,9 @@ drawn with a thin rounded frame in the color of their border. A control whose ba
 is drawn with plain CSS instead, as in the browsers. With `appearance: base`, the controls inherit the font of their
 parent.
 
+The bullets of the lists (`disc`, `circle`, `square`) and the triangles of the `summary` elements are drawn as shapes, with
+the sizes and the positions of Chromium, not with the glyphs of a font.
+
 The text is antialiased with a contrast and a gamma like the ones Chromium (Skia) applies to its glyphs: the text has about
 the weight it has in Chromium. The glyphs are not hinted.
 

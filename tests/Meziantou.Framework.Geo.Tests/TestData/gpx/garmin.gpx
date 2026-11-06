@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx creator="Garmin Connect" version="1.1"
+  xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd http://www.garmin.com/xmlschemas/GpxExtensions/v3 http://www.garmin.com/xmlschemas/GpxExtensionsv3.xsd http://www.garmin.com/xmlschemas/TrackPointExtension/v1 http://www.garmin.com/xmlschemas/TrackPointExtensionv1.xsd"
+  xmlns:ns3="http://www.garmin.com/xmlschemas/TrackPointExtension/v1"
+  xmlns="http://www.topografix.com/GPX/1/1"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ns2="http://www.garmin.com/xmlschemas/GpxExtensions/v3">
+  <metadata>
+    <name>Morning Ride</name>
+    <link href="connect.garmin.com">
+      <text>Garmin Connect</text>
+    </link>
+    <time>2024-06-15T06:12:03.000Z</time>
+  </metadata>
+  <wpt lat="45.1885" lon="5.7245">
+    <ele>212.4</ele>
+    <time>2024-06-15T06:12:03.000Z</time>
+    <name>Start</name>
+    <sym>Flag, Green</sym>
+    <type>user</type>
+    <extensions>
+      <ns2:WaypointExtension>
+        <ns2:DisplayMode>SymbolAndName</ns2:DisplayMode>
+      </ns2:WaypointExtension>
+    </extensions>
+  </wpt>
+  <trk>
+    <name>Morning Ride</name>
+    <type>cycling</type>
+    <extensions>
+      <ns2:TrackExtension>
+        <ns2:DisplayColor>Red</ns2:DisplayColor>
+      </ns2:TrackExtension>
+    </extensions>
+    <trkseg>
+      <trkpt lat="45.18850000016391277313232421875" lon="5.72449999954551458358764648437">
+        <ele>212.39999389648438</ele>
+        <time>2024-06-15T06:12:03.000Z</time>
+        <extensions>
+          <ns3:TrackPointExtension>
+            <ns3:atemp>18.0</ns3:atemp>
+            <ns3:hr>92</ns3:hr>
+            <ns3:cad>71</ns3:cad>
+          </ns3:TrackPointExtension>
+        </extensions>
+      </trkpt>
+      <trkpt lat="45.18911666609346866607666015625" lon="5.7257333397865295410156250">
+        <ele>213.1999969482422</ele>
+        <time>2024-06-15T06:12:08.000Z</time>
+        <extensions>
+          <ns3:TrackPointExtension>
+            <ns3:atemp>18.0</ns3:atemp>
+            <ns3:hr>101</ns3:hr>
+            <ns3:cad>80</ns3:cad>
+          </ns3:TrackPointExtension>
+        </extensions>
+      </trkpt>
+      <trkpt lat="45.1898" lon="5.7269">
+        <ele>214.0</ele>
+        <time>2024-06-15T06:12:13.000Z</time>
+      </trkpt>
+    </trkseg>
+    <trkseg>
+      <trkpt lat="45.1925" lon="5.7311">
+        <ele>220.6</ele>
+        <time>2024-06-15T06:20:41.000Z</time>
+      </trkpt>
+      <trkpt lat="45.1931" lon="5.7322">
+        <ele>221.8</ele>
+        <time>2024-06-15T06:20:46.000Z</time>
+      </trkpt>
+    </trkseg>
+  </trk>
+</gpx>

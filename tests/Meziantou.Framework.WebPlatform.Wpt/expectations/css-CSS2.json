@@ -6165,7 +6165,7 @@
     "reftest": "PASS"
   },
   "css/CSS2/generated-content/content-counter-004.xht": {
-    "reftest": "PASS"
+    "reftest": "FAIL"
   },
   "css/CSS2/generated-content/content-counter-005.xht": {
     "reftest": "PASS"

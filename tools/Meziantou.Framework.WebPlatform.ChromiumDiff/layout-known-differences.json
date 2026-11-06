@@ -4,10 +4,6 @@
     "reason": "date and time fields: Chromium lays their value out as fields with their own paddings and a picker icon, in the format of its locale; the library measures the format of the browsers and a picker button of 1em"
   },
   {
-    "selector": "summary",
-    "reason": "font fallback: the disclosure triangles of the markers of the summary elements (U+25B8, U+25BE) are not in the injected font"
-  },
-  {
     "selector": "wbr",
     "reason": "Chromium and WebKit give the wbr elements no box (getBoundingClientRect() returns an empty rectangle at the origin); Firefox and the library give them a box of zero width on the line"
   }

@@ -81,7 +81,7 @@ internal sealed class GeoSystem : CoordinateSystem
     /// <summary>Adds the positions of a meridian or a parallel segment, from its start to its end, with intermediate points where the projection curves it.</summary>
     public static void AddSegment(GeoProjection projection, List<GeoPosition> positions, double longitude1, double latitude1, double longitude2, double latitude2)
     {
-        var straight = longitude1 == longitude2 ? projection.StraightMeridians : latitude1 == latitude2 && projection.StraightParallels;
+        var straight = longitude1 == longitude2 ? projection.HasStraightMeridians : latitude1 == latitude2 && projection.HasStraightParallels;
         var steps = straight ? 1 : Math.Max(1, (int)Math.Ceiling(Math.Max(Math.Abs(longitude2 - longitude1), Math.Abs(latitude2 - latitude1)) / Precision));
         for (var i = positions.Count > 0 && positions[^1] == new GeoPosition(longitude1, latitude1) ? 1 : 0; i <= steps; i++)
         {

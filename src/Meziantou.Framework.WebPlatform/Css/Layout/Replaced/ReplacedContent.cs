@@ -102,6 +102,12 @@ internal sealed class ReplacedContent
                 defaultSize = new PhysicalSize(layout.FontSize, layout.FontSize);
             }
         }
+        else if (box.MarkerSymbol != MarkerSymbol.None)
+        {
+            // The symbol of a list marker (see MarkerSymbols), sized in the axes of its line
+            var (inlineSize, blockSize, _) = MarkerSymbols.GetSize(box.Style, box.MarkerSymbol);
+            natural = layout.IsHorizontalWritingMode ? new ImageNaturalSize(inlineSize, blockSize, null) : new ImageNaturalSize(blockSize, inlineSize, null);
+        }
         else if (box.Element is not { } element)
         {
             natural = default;

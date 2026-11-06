@@ -11,8 +11,8 @@ description: "The results of the web-platform-tests of css/css-ruby, and why the
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 20 | 20 | 0 | 100% |
 | [Tentative](#tentative-tests) | 0 | 1 | 0 | 0% |
-| [Reftests](#reftests) | 121 | 143 | 0 | 85% |
-| **All** | **141** | **164** | **0** | **86%** |
+| [Reftests](#reftests) | 123 | 143 | 0 | 86% |
+| **All** | **143** | **164** | **0** | **87%** |
 
 ## Failure reasons
 
@@ -20,7 +20,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 7
 - **TEST BUG**: 3
-- **NOT IMPLEMENTED**: 9
+- **NOT IMPLEMENTED**: 7
 - **TEST RUNNER**: 4
 
 ## Stable tests
@@ -79,7 +79,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`intra-base-white-space-001.html`](https://wpt.fyi/results/css/css-ruby/intra-base-white-space-001.html) | Pass | 1 / 1 |  |  |
 | [`nested-ruby-pairing-001.html`](https://wpt.fyi/results/css/css-ruby/nested-ruby-pairing-001.html) | Fail | 0 / 1 | BUG | a ruby nested in a ruby base is 2px wider than the equivalent ruby with two annotation levels: the slots of the inner ruby columns are not widened by the annotation of the outer ruby |
 | [`pseudo-first-letter.html`](https://wpt.fyi/results/css/css-ruby/pseudo-first-letter.html) | Pass | 1 / 1 |  |  |
-| [`pseudo-first-line.html`](https://wpt.fyi/results/css/css-ruby/pseudo-first-line.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the painting of the `color` of `::first-line`, and `ruby-position` in `::first-line` |
+| [`pseudo-first-line.html`](https://wpt.fyi/results/css/css-ruby/pseudo-first-line.html) | Pass | 1 / 1 |  |  |
 | [`rb-display-001.html`](https://wpt.fyi/results/css/css-ruby/rb-display-001.html) | Pass | 1 / 1 |  |  |
 | [`rbc-rtc-basic-001.html`](https://wpt.fyi/results/css/css-ruby/rbc-rtc-basic-001.html) | Fail | 0 / 1 | BUG | the column of an annotation without base (the second annotation of a ruby with one base) does not overhang the text after the ruby, where the column of the reference, whose base is a no-break space, overhangs the white space that follows it by 7.5px (`ruby-overhang: auto`): the next two rubies are 7.5px to the right (passes in Firefox only) |
 | [`root-block-ruby.xhtml`](https://wpt.fyi/results/css/css-ruby/root-block-ruby.xhtml) | Pass | 1 / 1 |  |  |
@@ -101,7 +101,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`ruby-base-container-float.html`](https://wpt.fyi/results/css/css-ruby/ruby-base-container-float.html) | Pass | 1 / 1 |  |  |
 | [`ruby-base-different-size.html`](https://wpt.fyi/results/css/css-ruby/ruby-base-different-size.html) | Pass | 1 / 1 |  |  |
 | [`ruby-bidi-001.html`](https://wpt.fyi/results/css/css-ruby/ruby-bidi-001.html) | Pass | 1 / 1 |  |  |
-| [`ruby-bidi-002.html`](https://wpt.fyi/results/css/css-ruby/ruby-bidi-002.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the order of the ruby segments and of the bases and annotations by the `direction` of their containers (https://drafts.csswg.org/css-ruby-1/#bidi) |
+| [`ruby-bidi-002.html`](https://wpt.fyi/results/css/css-ruby/ruby-bidi-002.html) | Pass | 1 / 1 |  |  |
 | [`ruby-bidi-003.html`](https://wpt.fyi/results/css/css-ruby/ruby-bidi-003.html) | Fail | 0 / 1 | BUG | the annotation container of the test (text in the `rt`) is as tall as the content area of its text, the one of the reference (an inlinified `div`, an inline-block with `line-height: 1`) as tall as its margin box: the annotation is 4px taller in the test and its base 2px lower; the Hebrew characters have no glyph in the fonts of the runner |
 | [`ruby-bidi-004.html`](https://wpt.fyi/results/css/css-ruby/ruby-bidi-004.html) | Pass | 1 / 1 |  |  |
 | [`ruby-box-generation-001.html`](https://wpt.fyi/results/css/css-ruby/ruby-box-generation-001.html) | Pass | 1 / 1 |  |  |
@@ -131,7 +131,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`ruby-intrinsic-isize-001.html`](https://wpt.fyi/results/css/css-ruby/ruby-intrinsic-isize-001.html) | Pass | 1 / 1 |  |  |
 | [`ruby-intrinsic-isize-002.html`](https://wpt.fyi/results/css/css-ruby/ruby-intrinsic-isize-002.html) | Fail | 0 / 1 | BUG | the texts of the bases are shaped separately: no kerning between them, unlike the single text of the reference |
 | [`ruby-intrinsic-isize-003.html`](https://wpt.fyi/results/css/css-ruby/ruby-intrinsic-isize-003.html) | Fail | 0 / 1 | BUG | a glyph of the bases next to the margins, borders and paddings of the ruby container is a fraction of a pixel off |
-| [`ruby-justification-001.html`](https://wpt.fyi/results/css/css-ruby/ruby-justification-001.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the expansion of the ruby columns by the justification of their line (`text-align: justify`): they are not expanded |
+| [`ruby-justification-001.html`](https://wpt.fyi/results/css/css-ruby/ruby-justification-001.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the expansion of the ruby columns by the justification of their line (`text-align: justify`): they are not expanded, and the annotation (an inline-block of 100px in an `rtc`) spans the two bases, which are centered in its column; the reference has no annotation and the bases at the start of the line. Chromium 152 matches the reference because it lays out `rtc` as an inline box (it does not implement `ruby-text-container`): the extra space of the justified line goes to the space before it |
 | [`ruby-justification-002.html`](https://wpt.fyi/results/css/css-ruby/ruby-justification-002.html) | Pass | 1 / 1 |  |  |
 | [`ruby-lang-specific-style-001.html`](https://wpt.fyi/results/css/css-ruby/ruby-lang-specific-style-001.html) | Pass | 1 / 1 |  |  |
 | [`ruby-layout-internal-boxes.html`](https://wpt.fyi/results/css/css-ruby/ruby-layout-internal-boxes.html) | Pass | 1 / 1 |  |  |

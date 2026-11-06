@@ -604,33 +604,24 @@ internal sealed class JpegXlLosslessFrameEncoder
         JpegXlTreeLearner.TreeNode root;
         if (_palette is null)
         {
-            root = Chain(channelTrees, 0);
+            root = JpegXlTreeCoder.ChainChannels(channelTrees);
         }
         else
         {
             var paletteLeaf = JpegXlTreeLearner.TreeNode.CreateLeaf(ChoosePalettePredictor());
             if (IsSingleGroup)
             {
-                root = Chain([paletteLeaf, .. channelTrees], 0);
+                root = JpegXlTreeCoder.ChainChannels([paletteLeaf, .. channelTrees]);
             }
             else
             {
                 // The sub-bitstream 0 is the global data, which only holds the palette
                 const int StreamProperty = 1;
-                root = JpegXlTreeLearner.TreeNode.CreateDecision(StreamProperty, 0, Chain(channelTrees, 0), paletteLeaf);
+                root = JpegXlTreeLearner.TreeNode.CreateDecision(StreamProperty, 0, JpegXlTreeCoder.ChainChannels(channelTrees), paletteLeaf);
             }
         }
 
         _tree = JpegXlTreeCoder.Flatten(root, out _leafCount);
-
-        static JpegXlTreeLearner.TreeNode Chain(JpegXlTreeLearner.TreeNode[] trees, int index)
-        {
-            const int ChannelProperty = 0;
-            if (index == trees.Length - 1)
-                return trees[index];
-
-            return JpegXlTreeLearner.TreeNode.CreateDecision(ChannelProperty, index, Chain(trees, index + 1), trees[index]);
-        }
     }
 
     /// <summary>Learns the tree of each channel of the groups from at most <paramref name="samplesPerChannel"/> samples of rows of every group.</summary>

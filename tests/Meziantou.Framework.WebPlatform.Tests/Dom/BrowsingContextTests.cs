@@ -2070,7 +2070,7 @@ public sealed class BrowsingContextTests
         #region WebPlatform_UseInMemoryLoader
         var loader = new InMemoryLoader(new Dictionary<string, (string Content, string ContentType)>(StringComparer.Ordinal)
         {
-            ["https://example.com/"] = ("<link rel=stylesheet href=site.css><h1>Home</h1><iframe src=/frame.html></iframe>", "text/html"),
+            ["https://example.com/"] = ("<link rel=stylesheet href=site.css><h1>Home</h1><iframe src=/frame.html#intro></iframe>", "text/html"),
             ["https://example.com/site.css"] = ("h1 { color: green }", "text/css"),
             ["https://example.com/frame.html"] = ("<p>Inside the frame</p>", "text/html"),
         });
@@ -2087,12 +2087,14 @@ public sealed class BrowsingContextTests
     }
 
     #region WebPlatform_InMemoryLoader
-    /// <summary>Serves the documents and the resources from memory, by absolute URL.</summary>
+    /// <summary>Serves the documents and the resources from memory, by absolute URL without fragment.</summary>
     private sealed class InMemoryLoader(IReadOnlyDictionary<string, (string Content, string ContentType)> files) : DocumentLoader
     {
         public override ValueTask<DocumentResource?> LoadAsync(DocumentRequest request, CancellationToken cancellationToken)
         {
-            if (!files.TryGetValue(request.Url, out var file))
+            // The URL keeps its fragment (e.g. "frame.html#intro", "icons.svg#home"), which is not sent over HTTP
+            var url = request.Url.Split('#', 2)[0];
+            if (!files.TryGetValue(url, out var file))
                 return ValueTask.FromResult<DocumentResource?>(new DocumentResource("Not found") { StatusCode = 404 });
 
             return ValueTask.FromResult<DocumentResource?>(new DocumentResource(file.Content)

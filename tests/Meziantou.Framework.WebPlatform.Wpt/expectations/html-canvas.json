@@ -3974,45 +3974,7 @@
     "total": 25
   },
   "html/canvas/element/manual/wide-gamut-canvas/canvas-display-p3-drawImage-ImageBitmap-Blob.html": {
-    "total": 208,
-    "failures": {
-      "Adobe-RGB-FF0000CC.png, Context display-p3, ImageData display-p3, cropSource=false": "FAIL",
-      "Adobe-RGB-FF0000CC.png, Context display-p3, ImageData display-p3, cropSource=true": "FAIL",
-      "Adobe-RGB-FF0000CC.png, Context display-p3, ImageData srgb, cropSource=false": "FAIL",
-      "Adobe-RGB-FF0000CC.png, Context display-p3, ImageData srgb, cropSource=true": "FAIL",
-      "Adobe-RGB-FF0000FF.png, Context display-p3, ImageData display-p3, cropSource=false": "FAIL",
-      "Adobe-RGB-FF0000FF.png, Context display-p3, ImageData display-p3, cropSource=true": "FAIL",
-      "Adobe-RGB-FF0000FF.png, Context display-p3, ImageData srgb, cropSource=false": "FAIL",
-      "Adobe-RGB-FF0000FF.png, Context display-p3, ImageData srgb, cropSource=true": "FAIL",
-      "Adobe-RGB-FFFF00000000CCCC.png, Context display-p3, ImageData display-p3, cropSource=false": "FAIL",
-      "Adobe-RGB-FFFF00000000CCCC.png, Context display-p3, ImageData display-p3, cropSource=true": "FAIL",
-      "Adobe-RGB-FFFF00000000CCCC.png, Context display-p3, ImageData srgb, cropSource=false": "FAIL",
-      "Adobe-RGB-FFFF00000000CCCC.png, Context display-p3, ImageData srgb, cropSource=true": "FAIL",
-      "Adobe-RGB-FFFF00000000FFFF.png, Context display-p3, ImageData display-p3, cropSource=false": "FAIL",
-      "Adobe-RGB-FFFF00000000FFFF.png, Context display-p3, ImageData display-p3, cropSource=true": "FAIL",
-      "Adobe-RGB-FFFF00000000FFFF.png, Context display-p3, ImageData srgb, cropSource=false": "FAIL",
-      "Adobe-RGB-FFFF00000000FFFF.png, Context display-p3, ImageData srgb, cropSource=true": "FAIL",
-      "Display-P3-BB0000CC.png, Context display-p3, ImageData display-p3, cropSource=false": "FAIL",
-      "Display-P3-BB0000CC.png, Context display-p3, ImageData display-p3, cropSource=true": "FAIL",
-      "Display-P3-BB0000FF.png, Context display-p3, ImageData display-p3, cropSource=false": "FAIL",
-      "Display-P3-BB0000FF.png, Context display-p3, ImageData display-p3, cropSource=true": "FAIL",
-      "Display-P3-BBBC00000000CCCC.png, Context display-p3, ImageData display-p3, cropSource=false": "FAIL",
-      "Display-P3-BBBC00000000CCCC.png, Context display-p3, ImageData display-p3, cropSource=true": "FAIL",
-      "Display-P3-BBBC00000000FFFF.png, Context display-p3, ImageData display-p3, cropSource=false": "FAIL",
-      "Display-P3-BBBC00000000FFFF.png, Context display-p3, ImageData display-p3, cropSource=true": "FAIL",
-      "Display-P3-FF0000CC.png, Context display-p3, ImageData display-p3, cropSource=false": "FAIL",
-      "Display-P3-FF0000CC.png, Context display-p3, ImageData display-p3, cropSource=true": "FAIL",
-      "Display-P3-FF0000FF.png, Context display-p3, ImageData display-p3, cropSource=false": "FAIL",
-      "Display-P3-FF0000FF.png, Context display-p3, ImageData display-p3, cropSource=true": "FAIL",
-      "Display-P3-FFFF00000000CCCC.png, Context display-p3, ImageData display-p3, cropSource=false": "FAIL",
-      "Display-P3-FFFF00000000CCCC.png, Context display-p3, ImageData display-p3, cropSource=true": "FAIL",
-      "Display-P3-FFFF00000000FFFF.png, Context display-p3, ImageData display-p3, cropSource=false": "FAIL",
-      "Display-P3-FFFF00000000FFFF.png, Context display-p3, ImageData display-p3, cropSource=true": "FAIL",
-      "Generic-CMYK-BE000000.jpg, Context display-p3, ImageData display-p3, cropSource=false": "FAIL",
-      "Generic-CMYK-BE000000.jpg, Context display-p3, ImageData display-p3, cropSource=true": "FAIL",
-      "Generic-CMYK-FF000000.jpg, Context display-p3, ImageData display-p3, cropSource=false": "FAIL",
-      "Generic-CMYK-FF000000.jpg, Context display-p3, ImageData display-p3, cropSource=true": "FAIL"
-    }
+    "total": 208
   },
   "html/canvas/element/manual/wide-gamut-canvas/canvas-display-p3-drawImage-ImageBitmap-ImageBitmap.html": {
     "total": 208
@@ -4024,86 +3986,10 @@
     "total": 16
   },
   "html/canvas/element/manual/wide-gamut-canvas/canvas-display-p3-drawImage-ImageBitmap-cloned.html": {
-    "total": 208,
-    "failures": {
-      "Adobe-RGB-FF0000CC.png, Context display-p3, ImageData display-p3, cropSource=false": "FAIL",
-      "Adobe-RGB-FF0000CC.png, Context display-p3, ImageData display-p3, cropSource=true": "FAIL",
-      "Adobe-RGB-FF0000CC.png, Context display-p3, ImageData srgb, cropSource=false": "FAIL",
-      "Adobe-RGB-FF0000CC.png, Context display-p3, ImageData srgb, cropSource=true": "FAIL",
-      "Adobe-RGB-FF0000FF.png, Context display-p3, ImageData display-p3, cropSource=false": "FAIL",
-      "Adobe-RGB-FF0000FF.png, Context display-p3, ImageData display-p3, cropSource=true": "FAIL",
-      "Adobe-RGB-FF0000FF.png, Context display-p3, ImageData srgb, cropSource=false": "FAIL",
-      "Adobe-RGB-FF0000FF.png, Context display-p3, ImageData srgb, cropSource=true": "FAIL",
-      "Adobe-RGB-FFFF00000000CCCC.png, Context display-p3, ImageData display-p3, cropSource=false": "FAIL",
-      "Adobe-RGB-FFFF00000000CCCC.png, Context display-p3, ImageData display-p3, cropSource=true": "FAIL",
-      "Adobe-RGB-FFFF00000000CCCC.png, Context display-p3, ImageData srgb, cropSource=false": "FAIL",
-      "Adobe-RGB-FFFF00000000CCCC.png, Context display-p3, ImageData srgb, cropSource=true": "FAIL",
-      "Adobe-RGB-FFFF00000000FFFF.png, Context display-p3, ImageData display-p3, cropSource=false": "FAIL",
-      "Adobe-RGB-FFFF00000000FFFF.png, Context display-p3, ImageData display-p3, cropSource=true": "FAIL",
-      "Adobe-RGB-FFFF00000000FFFF.png, Context display-p3, ImageData srgb, cropSource=false": "FAIL",
-      "Adobe-RGB-FFFF00000000FFFF.png, Context display-p3, ImageData srgb, cropSource=true": "FAIL",
-      "Display-P3-BB0000CC.png, Context display-p3, ImageData display-p3, cropSource=false": "FAIL",
-      "Display-P3-BB0000CC.png, Context display-p3, ImageData display-p3, cropSource=true": "FAIL",
-      "Display-P3-BB0000FF.png, Context display-p3, ImageData display-p3, cropSource=false": "FAIL",
-      "Display-P3-BB0000FF.png, Context display-p3, ImageData display-p3, cropSource=true": "FAIL",
-      "Display-P3-BBBC00000000CCCC.png, Context display-p3, ImageData display-p3, cropSource=false": "FAIL",
-      "Display-P3-BBBC00000000CCCC.png, Context display-p3, ImageData display-p3, cropSource=true": "FAIL",
-      "Display-P3-BBBC00000000FFFF.png, Context display-p3, ImageData display-p3, cropSource=false": "FAIL",
-      "Display-P3-BBBC00000000FFFF.png, Context display-p3, ImageData display-p3, cropSource=true": "FAIL",
-      "Display-P3-FF0000CC.png, Context display-p3, ImageData display-p3, cropSource=false": "FAIL",
-      "Display-P3-FF0000CC.png, Context display-p3, ImageData display-p3, cropSource=true": "FAIL",
-      "Display-P3-FF0000FF.png, Context display-p3, ImageData display-p3, cropSource=false": "FAIL",
-      "Display-P3-FF0000FF.png, Context display-p3, ImageData display-p3, cropSource=true": "FAIL",
-      "Display-P3-FFFF00000000CCCC.png, Context display-p3, ImageData display-p3, cropSource=false": "FAIL",
-      "Display-P3-FFFF00000000CCCC.png, Context display-p3, ImageData display-p3, cropSource=true": "FAIL",
-      "Display-P3-FFFF00000000FFFF.png, Context display-p3, ImageData display-p3, cropSource=false": "FAIL",
-      "Display-P3-FFFF00000000FFFF.png, Context display-p3, ImageData display-p3, cropSource=true": "FAIL",
-      "Generic-CMYK-BE000000.jpg, Context display-p3, ImageData display-p3, cropSource=false": "FAIL",
-      "Generic-CMYK-BE000000.jpg, Context display-p3, ImageData display-p3, cropSource=true": "FAIL",
-      "Generic-CMYK-FF000000.jpg, Context display-p3, ImageData display-p3, cropSource=false": "FAIL",
-      "Generic-CMYK-FF000000.jpg, Context display-p3, ImageData display-p3, cropSource=true": "FAIL"
-    }
+    "total": 208
   },
   "html/canvas/element/manual/wide-gamut-canvas/canvas-display-p3-drawImage-ImageBitmap-image.html": {
-    "total": 208,
-    "failures": {
-      "Adobe-RGB-FF0000CC.png, Context display-p3, ImageData display-p3, cropSource=false": "FAIL",
-      "Adobe-RGB-FF0000CC.png, Context display-p3, ImageData display-p3, cropSource=true": "FAIL",
-      "Adobe-RGB-FF0000CC.png, Context display-p3, ImageData srgb, cropSource=false": "FAIL",
-      "Adobe-RGB-FF0000CC.png, Context display-p3, ImageData srgb, cropSource=true": "FAIL",
-      "Adobe-RGB-FF0000FF.png, Context display-p3, ImageData display-p3, cropSource=false": "FAIL",
-      "Adobe-RGB-FF0000FF.png, Context display-p3, ImageData display-p3, cropSource=true": "FAIL",
-      "Adobe-RGB-FF0000FF.png, Context display-p3, ImageData srgb, cropSource=false": "FAIL",
-      "Adobe-RGB-FF0000FF.png, Context display-p3, ImageData srgb, cropSource=true": "FAIL",
-      "Adobe-RGB-FFFF00000000CCCC.png, Context display-p3, ImageData display-p3, cropSource=false": "FAIL",
-      "Adobe-RGB-FFFF00000000CCCC.png, Context display-p3, ImageData display-p3, cropSource=true": "FAIL",
-      "Adobe-RGB-FFFF00000000CCCC.png, Context display-p3, ImageData srgb, cropSource=false": "FAIL",
-      "Adobe-RGB-FFFF00000000CCCC.png, Context display-p3, ImageData srgb, cropSource=true": "FAIL",
-      "Adobe-RGB-FFFF00000000FFFF.png, Context display-p3, ImageData display-p3, cropSource=false": "FAIL",
-      "Adobe-RGB-FFFF00000000FFFF.png, Context display-p3, ImageData display-p3, cropSource=true": "FAIL",
-      "Adobe-RGB-FFFF00000000FFFF.png, Context display-p3, ImageData srgb, cropSource=false": "FAIL",
-      "Adobe-RGB-FFFF00000000FFFF.png, Context display-p3, ImageData srgb, cropSource=true": "FAIL",
-      "Display-P3-BB0000CC.png, Context display-p3, ImageData display-p3, cropSource=false": "FAIL",
-      "Display-P3-BB0000CC.png, Context display-p3, ImageData display-p3, cropSource=true": "FAIL",
-      "Display-P3-BB0000FF.png, Context display-p3, ImageData display-p3, cropSource=false": "FAIL",
-      "Display-P3-BB0000FF.png, Context display-p3, ImageData display-p3, cropSource=true": "FAIL",
-      "Display-P3-BBBC00000000CCCC.png, Context display-p3, ImageData display-p3, cropSource=false": "FAIL",
-      "Display-P3-BBBC00000000CCCC.png, Context display-p3, ImageData display-p3, cropSource=true": "FAIL",
-      "Display-P3-BBBC00000000FFFF.png, Context display-p3, ImageData display-p3, cropSource=false": "FAIL",
-      "Display-P3-BBBC00000000FFFF.png, Context display-p3, ImageData display-p3, cropSource=true": "FAIL",
-      "Display-P3-FF0000CC.png, Context display-p3, ImageData display-p3, cropSource=false": "FAIL",
-      "Display-P3-FF0000CC.png, Context display-p3, ImageData display-p3, cropSource=true": "FAIL",
-      "Display-P3-FF0000FF.png, Context display-p3, ImageData display-p3, cropSource=false": "FAIL",
-      "Display-P3-FF0000FF.png, Context display-p3, ImageData display-p3, cropSource=true": "FAIL",
-      "Display-P3-FFFF00000000CCCC.png, Context display-p3, ImageData display-p3, cropSource=false": "FAIL",
-      "Display-P3-FFFF00000000CCCC.png, Context display-p3, ImageData display-p3, cropSource=true": "FAIL",
-      "Display-P3-FFFF00000000FFFF.png, Context display-p3, ImageData display-p3, cropSource=false": "FAIL",
-      "Display-P3-FFFF00000000FFFF.png, Context display-p3, ImageData display-p3, cropSource=true": "FAIL",
-      "Generic-CMYK-BE000000.jpg, Context display-p3, ImageData display-p3, cropSource=false": "FAIL",
-      "Generic-CMYK-BE000000.jpg, Context display-p3, ImageData display-p3, cropSource=true": "FAIL",
-      "Generic-CMYK-FF000000.jpg, Context display-p3, ImageData display-p3, cropSource=false": "FAIL",
-      "Generic-CMYK-FF000000.jpg, Context display-p3, ImageData display-p3, cropSource=true": "FAIL"
-    }
+    "total": 208
   },
   "html/canvas/element/manual/wide-gamut-canvas/canvas-display-p3-drawImage-ImageBitmap-video.html": {
     "total": 32,
@@ -4182,22 +4068,6 @@
   "html/canvas/element/manual/wide-gamut-canvas/canvas-display-p3-drawImage.https.html": {
     "total": 240,
     "failures": {
-      "Adobe-RGB-FF0000CC.png, Context display-p3, ImageData display-p3, scaleImage=false": "FAIL",
-      "Adobe-RGB-FF0000CC.png, Context display-p3, ImageData display-p3, scaleImage=true": "FAIL",
-      "Adobe-RGB-FF0000CC.png, Context display-p3, ImageData srgb, scaleImage=false": "FAIL",
-      "Adobe-RGB-FF0000CC.png, Context display-p3, ImageData srgb, scaleImage=true": "FAIL",
-      "Adobe-RGB-FF0000FF.png, Context display-p3, ImageData display-p3, scaleImage=false": "FAIL",
-      "Adobe-RGB-FF0000FF.png, Context display-p3, ImageData display-p3, scaleImage=true": "FAIL",
-      "Adobe-RGB-FF0000FF.png, Context display-p3, ImageData srgb, scaleImage=false": "FAIL",
-      "Adobe-RGB-FF0000FF.png, Context display-p3, ImageData srgb, scaleImage=true": "FAIL",
-      "Adobe-RGB-FFFF00000000CCCC.png, Context display-p3, ImageData display-p3, scaleImage=false": "FAIL",
-      "Adobe-RGB-FFFF00000000CCCC.png, Context display-p3, ImageData display-p3, scaleImage=true": "FAIL",
-      "Adobe-RGB-FFFF00000000CCCC.png, Context display-p3, ImageData srgb, scaleImage=false": "FAIL",
-      "Adobe-RGB-FFFF00000000CCCC.png, Context display-p3, ImageData srgb, scaleImage=true": "FAIL",
-      "Adobe-RGB-FFFF00000000FFFF.png, Context display-p3, ImageData display-p3, scaleImage=false": "FAIL",
-      "Adobe-RGB-FFFF00000000FFFF.png, Context display-p3, ImageData display-p3, scaleImage=true": "FAIL",
-      "Adobe-RGB-FFFF00000000FFFF.png, Context display-p3, ImageData srgb, scaleImage=false": "FAIL",
-      "Adobe-RGB-FFFF00000000FFFF.png, Context display-p3, ImageData srgb, scaleImage=true": "FAIL",
       "Display-P3-0.7333-0-0.svg, Context display-p3, ImageData display-p3, scaleImage=false": "FAIL",
       "Display-P3-0.7333-0-0.svg, Context display-p3, ImageData display-p3, scaleImage=true": "FAIL",
       "Display-P3-0.7333-0-0.svg, Context display-p3, ImageData srgb, scaleImage=false": "FAIL",
@@ -4213,54 +4083,14 @@
       "Display-P3-1-0-0.svg, Context srgb, ImageData display-p3, scaleImage=false": "FAIL",
       "Display-P3-1-0-0.svg, Context srgb, ImageData display-p3, scaleImage=true": "FAIL",
       "Display-P3-1-0-0.svg, Context srgb, ImageData srgb, scaleImage=false": "FAIL",
-      "Display-P3-1-0-0.svg, Context srgb, ImageData srgb, scaleImage=true": "FAIL",
-      "Display-P3-BB0000CC.png, Context display-p3, ImageData display-p3, scaleImage=false": "FAIL",
-      "Display-P3-BB0000CC.png, Context display-p3, ImageData display-p3, scaleImage=true": "FAIL",
-      "Display-P3-BB0000FF.png, Context display-p3, ImageData display-p3, scaleImage=false": "FAIL",
-      "Display-P3-BB0000FF.png, Context display-p3, ImageData display-p3, scaleImage=true": "FAIL",
-      "Display-P3-BBBC00000000CCCC.png, Context display-p3, ImageData display-p3, scaleImage=false": "FAIL",
-      "Display-P3-BBBC00000000CCCC.png, Context display-p3, ImageData display-p3, scaleImage=true": "FAIL",
-      "Display-P3-BBBC00000000FFFF.png, Context display-p3, ImageData display-p3, scaleImage=false": "FAIL",
-      "Display-P3-BBBC00000000FFFF.png, Context display-p3, ImageData display-p3, scaleImage=true": "FAIL",
-      "Display-P3-FF0000CC.png, Context display-p3, ImageData display-p3, scaleImage=false": "FAIL",
-      "Display-P3-FF0000CC.png, Context display-p3, ImageData display-p3, scaleImage=true": "FAIL",
-      "Display-P3-FF0000FF.png, Context display-p3, ImageData display-p3, scaleImage=false": "FAIL",
-      "Display-P3-FF0000FF.png, Context display-p3, ImageData display-p3, scaleImage=true": "FAIL",
-      "Display-P3-FFFF00000000CCCC.png, Context display-p3, ImageData display-p3, scaleImage=false": "FAIL",
-      "Display-P3-FFFF00000000CCCC.png, Context display-p3, ImageData display-p3, scaleImage=true": "FAIL",
-      "Display-P3-FFFF00000000FFFF.png, Context display-p3, ImageData display-p3, scaleImage=false": "FAIL",
-      "Display-P3-FFFF00000000FFFF.png, Context display-p3, ImageData display-p3, scaleImage=true": "FAIL",
-      "Generic-CMYK-BE000000.jpg, Context display-p3, ImageData display-p3, scaleImage=false": "FAIL",
-      "Generic-CMYK-BE000000.jpg, Context display-p3, ImageData display-p3, scaleImage=true": "FAIL",
-      "Generic-CMYK-FF000000.jpg, Context display-p3, ImageData display-p3, scaleImage=false": "FAIL",
-      "Generic-CMYK-FF000000.jpg, Context display-p3, ImageData display-p3, scaleImage=true": "FAIL"
+      "Display-P3-1-0-0.svg, Context srgb, ImageData srgb, scaleImage=true": "FAIL"
     }
   },
   "html/canvas/element/manual/wide-gamut-canvas/canvas-display-p3-pattern-canvas.html": {
     "total": 8
   },
   "html/canvas/element/manual/wide-gamut-canvas/canvas-display-p3-pattern-image.html": {
-    "total": 104,
-    "failures": {
-      "Adobe-RGB-FF0000CC.png, Context display-p3, ImageData display-p3": "FAIL",
-      "Adobe-RGB-FF0000CC.png, Context display-p3, ImageData srgb": "FAIL",
-      "Adobe-RGB-FF0000FF.png, Context display-p3, ImageData display-p3": "FAIL",
-      "Adobe-RGB-FF0000FF.png, Context display-p3, ImageData srgb": "FAIL",
-      "Adobe-RGB-FFFF00000000CCCC.png, Context display-p3, ImageData display-p3": "FAIL",
-      "Adobe-RGB-FFFF00000000CCCC.png, Context display-p3, ImageData srgb": "FAIL",
-      "Adobe-RGB-FFFF00000000FFFF.png, Context display-p3, ImageData display-p3": "FAIL",
-      "Adobe-RGB-FFFF00000000FFFF.png, Context display-p3, ImageData srgb": "FAIL",
-      "Display-P3-BB0000CC.png, Context display-p3, ImageData display-p3": "FAIL",
-      "Display-P3-BB0000FF.png, Context display-p3, ImageData display-p3": "FAIL",
-      "Display-P3-BBBC00000000CCCC.png, Context display-p3, ImageData display-p3": "FAIL",
-      "Display-P3-BBBC00000000FFFF.png, Context display-p3, ImageData display-p3": "FAIL",
-      "Display-P3-FF0000CC.png, Context display-p3, ImageData display-p3": "FAIL",
-      "Display-P3-FF0000FF.png, Context display-p3, ImageData display-p3": "FAIL",
-      "Display-P3-FFFF00000000CCCC.png, Context display-p3, ImageData display-p3": "FAIL",
-      "Display-P3-FFFF00000000FFFF.png, Context display-p3, ImageData display-p3": "FAIL",
-      "Generic-CMYK-BE000000.jpg, Context display-p3, ImageData display-p3": "FAIL",
-      "Generic-CMYK-FF000000.jpg, Context display-p3, ImageData display-p3": "FAIL"
-    }
+    "total": 104
   },
   "html/canvas/element/manual/wide-gamut-canvas/encode-hdr.html": {
     "total": 18,
@@ -4967,10 +4797,7 @@
     "total": 1
   },
   "html/canvas/element/pixel-manipulation/2d.imageData.createImageBitmap.p3.rgba.unorm8.html": {
-    "total": 1,
-    "failures": {
-      "Verify round-trip of 8-bit P3 data ImageData through ImageBitmap": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/element/pixel-manipulation/2d.imageData.createImageBitmap.srgb.rgba.float16.html": {
     "total": 1
@@ -6102,11 +5929,7 @@
     "total": 1
   },
   "html/canvas/element/wide-gamut-canvas/2d.color.space.toBlob.convert.html": {
-    "total": 4,
-    "failures": {
-      "Test toBlob color space preservation and conversion from a display-p3 canvas": "FAIL",
-      "Test toBlob color space preservation and conversion from a display-p3-linear canvas": "FAIL"
-    }
+    "total": 4
   },
   "html/canvas/element/wide-gamut-canvas/2d.color.space.toBlob.toDataURL.jpeg.linear.float.html": {
     "total": 4
@@ -6115,11 +5938,7 @@
     "total": 4
   },
   "html/canvas/element/wide-gamut-canvas/2d.color.space.toDataURL.convert.html": {
-    "total": 4,
-    "failures": {
-      "Test toDataURL color space preservation and conversion from a display-p3 canvas": "FAIL",
-      "Test toDataURL color space preservation and conversion from a display-p3-linear canvas": "FAIL"
-    }
+    "total": 4
   },
   "html/canvas/historical.any.js": {
     "total": 1
@@ -11563,16 +11382,10 @@
     "total": 1
   },
   "html/canvas/offscreen/pixel-manipulation/2d.imageData.createImageBitmap.p3.rgba.unorm8.html": {
-    "total": 1,
-    "failures": {
-      "Verify round-trip of 8-bit P3 data ImageData through ImageBitmap": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/pixel-manipulation/2d.imageData.createImageBitmap.p3.rgba.unorm8.worker.js": {
-    "total": 1,
-    "failures": {
-      "Verify round-trip of 8-bit P3 data ImageData through ImageBitmap": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/pixel-manipulation/2d.imageData.createImageBitmap.srgb.rgba.float16.html": {
     "total": 1

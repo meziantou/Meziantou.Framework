@@ -57,25 +57,25 @@ public sealed class ImagingRenderingBackend : RenderingBackend
     internal override RenderingImageDecoder? CreateImageDecoder(ReadOnlyMemory<byte> data, string? mimeType) => ImagingImageDecoder.Create(data);
 
     /// <inheritdoc/>
-    internal override RenderingImage? CreateImage(int width, int height, ReadOnlySpan<byte> pixels, ImageDataPixelFormat pixelFormat = ImageDataPixelFormat.RgbaUnorm8)
+    internal override RenderingImage? CreateImage(int width, int height, ReadOnlySpan<byte> pixels, ImageDataPixelFormat pixelFormat = ImageDataPixelFormat.RgbaUnorm8, RenderingColorSpace colorSpace = RenderingColorSpace.Srgb)
     {
         var bytesPerPixel = pixelFormat == ImageDataPixelFormat.RgbaFloat16 ? 8 : 4;
         if (width < 1 || height < 1 || pixels.Length < (long)width * height * bytesPerPixel)
             return null;
 
         if (pixelFormat == ImageDataPixelFormat.RgbaFloat16)
-            return new ImagingRenderingImage(Meziantou.Framework.Imaging.Image.ImportPixelBytes<Meziantou.Framework.Imaging.RgbaHalf>(pixels[..(width * height * 8)], width, height, width * 8), RenderingColorSpace.Srgb);
+            return new ImagingRenderingImage(Meziantou.Framework.Imaging.Image.ImportPixelBytes<Meziantou.Framework.Imaging.RgbaHalf>(pixels[..(width * height * 8)], width, height, width * 8), colorSpace);
 
-        return new ImagingRenderingImage(width, height, pixels[..(width * height * 4)]);
+        return new ImagingRenderingImage(Meziantou.Framework.Imaging.Image.ImportPixelBytes<Meziantou.Framework.Imaging.Rgba32>(pixels[..(width * height * 4)], width, height, width * 4), colorSpace);
     }
 
     /// <inheritdoc/>
-    internal override byte[]? EncodeImage(int width, int height, ReadOnlySpan<byte> pixels, string mimeType, double? quality)
+    internal override byte[]? EncodeImage(int width, int height, ReadOnlySpan<byte> pixels, string mimeType, double? quality, RenderingColorSpace colorSpace = RenderingColorSpace.Srgb)
     {
         if (width < 1 || height < 1 || pixels.Length < (long)width * height * 4)
             return null;
 
-        return ImagingImageEncoder.Encode(width, height, pixels[..(width * height * 4)], mimeType, quality);
+        return ImagingImageEncoder.Encode(width, height, pixels[..(width * height * 4)], mimeType, quality, colorSpace);
     }
 
     /// <summary>Draws a display list over the pixels of a frame (the coordinates of the display list are the pixels of the frame).</summary>

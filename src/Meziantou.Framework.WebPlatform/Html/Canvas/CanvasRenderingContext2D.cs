@@ -110,7 +110,7 @@ internal static class CanvasContexts
         var mimeType = InfraAscii.ToAsciiLowercase(type ?? "image/png");
         if (mimeType is "image/jpeg" or "image/webp" && backend is not null)
         {
-            if (backend.EncodeImage(pixels.Width, pixels.Height, pixels.Rgba, mimeType, quality is >= 0 and <= 1 ? quality : null) is { } encoded)
+            if (backend.EncodeImage(pixels.Width, pixels.Height, pixels.Rgba, mimeType, quality is >= 0 and <= 1 ? quality : null, pixels.ColorSpace) is { } encoded)
                 return (encoded, mimeType);
         }
 
@@ -125,10 +125,10 @@ internal static class CanvasContexts
                 System.Buffers.Binary.BinaryPrimitives.WriteUInt16BigEndian(rgba16.AsSpan(i * 2), sample);
             }
 
-            return (PngEncoder.Encode(pixels.Width, pixels.Height, rgba16, bitDepth: 16), "image/png");
+            return (PngEncoder.Encode(pixels.Width, pixels.Height, rgba16, bitDepth: 16, colorSpace: pixels.ColorSpace), "image/png");
         }
 
-        return (PngEncoder.Encode(pixels.Width, pixels.Height, pixels.Rgba), "image/png");
+        return (PngEncoder.Encode(pixels.Width, pixels.Height, pixels.Rgba, colorSpace: pixels.ColorSpace), "image/png");
     }
 
     /// <summary>Returns a <c>data:</c> URL of an image file (https://html.spec.whatwg.org/multipage/canvas.html#dom-canvas-todataurl).</summary>

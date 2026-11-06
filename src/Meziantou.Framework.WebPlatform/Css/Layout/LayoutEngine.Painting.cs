@@ -35,6 +35,8 @@ internal sealed partial class LayoutEngine
         if (EnsureLayout() is null)
             return GetEmptyCanvasDisplayList();
 
+        DetermineInitialContentRelevancy();
+
         // The painting reads the styles and the fragments of the layout it paints: a change of a version (e.g. the version of
         // the style sheets of the document) in the middle of the painting would start a new generation of styles, and the parts of the
         // painting that read the fragments of an element (e.g. the content of a foreignObject element) would lay the document
@@ -89,6 +91,7 @@ internal sealed partial class LayoutEngine
         if (EnsureLayout() is null)
             return GetEmptyCanvasDisplayList(transparentCanvas ? DisplayColor.Transparent : GetCanvasBaseColor());
 
+        DetermineInitialContentRelevancy();
         using var suspension = _document.GetStyleEngine().SuspendUpdates();
         if (EnsureLayout() is not { } root)
             return GetEmptyCanvasDisplayList(transparentCanvas ? DisplayColor.Transparent : GetCanvasBaseColor());

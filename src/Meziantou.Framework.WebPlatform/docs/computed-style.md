@@ -238,7 +238,9 @@ styles builds it again. Which cached styles are discarded depends on the change:
   SVG elements and the changes of their children (the style elements of SVG, the elements referenced by the `use` elements),
   an id change when a selector uses `:target`, a change of a `style` attribute that declares a timeline, the other state changes (`IncrementElementStateVersion()`: the checkedness,
   the value and the validity of the form controls, the dialogs, the popovers...), the animations without target, and more
-  than 1,000 recorded changes (e.g. while the parser builds the document). The documents in quirks mode (rules of the user
+  than 1,000 recorded changes (e.g. while the parser builds the document). The nodes inserted in (or removed from) an element
+  one after the other are one recorded change (`StyleInvalidation.NextChildren`: the rows of a table body inserted by
+  `innerHTML`), and the elements affected by the changes of the children of an element are collected once per element. The documents in quirks mode (rules of the user
   agent depend on other elements), with shadow trees, an active view transition, SMIL animations, WebVTT cues or named
   scroll-driven timelines and `animation-timeline` declarations (the timelines are looked up in the styles of other elements),
   and the style engines with an environment override (the printing, the minifier) always invalidate all their styles.

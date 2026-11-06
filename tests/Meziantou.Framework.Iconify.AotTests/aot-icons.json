@@ -1,0 +1,12 @@
+{
+  "prefix": "aot",
+  "width": 24,
+  "height": 24,
+  "icons": {
+    "used": { "body": "<path d=\"M1 1h22v22H1z\" id=\"used-icon\"/>" },
+    "unused": { "body": "<path d=\"M2 2h20v20H2z\" id=\"never-referenced-icon\"/>" }
+  },
+  "aliases": {
+    "used-rotated": { "parent": "used", "rotate": 1 }
+  }
+}

@@ -1,0 +1,4 @@
+title: Iconify
+description: Use the icons of Iconify icon sets as strongly-typed properties generated at build time, or load icon sets at run time.
+packageIds:
+- Meziantou.Framework.Iconify

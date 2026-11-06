@@ -47,6 +47,7 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.Http.Recording\Meziantou.Framework.Http.Recording.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Http.ServerSideRequestForgery\Meziantou.Framework.Http.ServerSideRequestForgery.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.HttpArchive\Meziantou.Framework.HttpArchive.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Iconify\Meziantou.Framework.Iconify.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Imaging\Meziantou.Framework.Imaging.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Imaging.Barcodes\Meziantou.Framework.Imaging.Barcodes.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.JavaScriptEngine\Meziantou.Framework.JavaScriptEngine.csproj" />
@@ -129,6 +130,7 @@
     <TrimmerRootAssembly Include="Meziantou.Framework.Http.Recording" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Http.ServerSideRequestForgery" />
     <TrimmerRootAssembly Include="Meziantou.Framework.HttpArchive" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.Iconify" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Imaging" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Imaging.Barcodes" />
     <TrimmerRootAssembly Include="Meziantou.Framework.JavaScriptEngine" />

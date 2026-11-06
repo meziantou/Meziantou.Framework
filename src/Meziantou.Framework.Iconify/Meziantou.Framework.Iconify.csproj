@@ -1,0 +1,23 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IsTrimmable>true</IsTrimmable>
+    <Version>1.0.0</Version>
+    <DisableDocumentationWarnings>false</DisableDocumentationWarnings>
+    <Description>Strongly-typed access to Iconify icons (Material Design Icons, Lucide, Tabler, Fluent, and 200+ other icon sets), generated at build time from the IconifyJSON files, and a loader for icon sets at run time. Trimmable and NativeAOT ready.</Description>
+    <PackageTags>iconify, icons, svg, icon-set, source-generator, nativeaot</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.Iconify.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Meziantou.Framework.Iconify.SourceGenerator/Meziantou.Framework.Iconify.SourceGenerator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" SetTargetFramework="TargetFramework=netstandard2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="$(OutputPath)/../../Meziantou.Framework.Iconify.SourceGenerator/$(Configuration.ToLowerInvariant())_netstandard2.0/Meziantou.Framework.Iconify.SourceGenerator.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    <None Include="Meziantou.Framework.Iconify.targets" Pack="true" PackagePath="buildTransitive/Meziantou.Framework.Iconify.targets" />
+  </ItemGroup>
+</Project>

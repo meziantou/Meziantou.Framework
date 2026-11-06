@@ -1,0 +1,19 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!-- The examples of src/Meziantou.Framework.Iconify/readme.md and docs/Iconify. The build downloads the mdi icon set from the iconify/icon-sets repository. -->
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <OutputType>Exe</OutputType>
+    <NoWarn>$(NoWarn);CA1303;CA1515</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Meziantou.Framework.Iconify/Meziantou.Framework.Iconify.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.Iconify.SourceGenerator/Meziantou.Framework.Iconify.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" SetTargetFramework="TargetFramework=netstandard2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <IconifyIconSet Include="mdi" Version="2.2.553" Icons="home;account-circle*" />
+  </ItemGroup>
+
+  <Import Project="../../src/Meziantou.Framework.Iconify/Meziantou.Framework.Iconify.targets" />
+</Project>

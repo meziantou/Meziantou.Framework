@@ -61,6 +61,10 @@ A null result is a network error, as is an exception thrown by the loader. [Docu
 of the document that makes it (null when your application navigates), its [Referrer](cref:Meziantou.Framework.WebPlatform.Dom.DocumentRequest.Referrer), and the [BrowsingContext](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContext) it is
 for.
 
+The URL keeps the fragment of the reference: `<use href="icons.svg#home">` requests `https://example.com/icons.svg#home`,
+and `<iframe src="frame.html#intro">` requests `https://example.com/frame.html#intro`. An HTTP request does not send it, so
+remove it when you look up a resource by URL.
+
 ## Serve pages from memory or from the disk
 
 A loader can return anything: the files of a folder, the pages of a cache, or test pages. Return a [DocumentResource](cref:Meziantou.Framework.WebPlatform.Dom.DocumentResource)
@@ -68,12 +72,14 @@ with the content, the status code and the headers:
 
 <!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/Dom/BrowsingContextTests.cs;region=WebPlatform_InMemoryLoader;format=md-fenced-code-block;dedent=true -->
 ```csharp
-/// <summary>Serves the documents and the resources from memory, by absolute URL.</summary>
+/// <summary>Serves the documents and the resources from memory, by absolute URL without fragment.</summary>
 private sealed class InMemoryLoader(IReadOnlyDictionary<string, (string Content, string ContentType)> files) : DocumentLoader
 {
     public override ValueTask<DocumentResource?> LoadAsync(DocumentRequest request, CancellationToken cancellationToken)
     {
-        if (!files.TryGetValue(request.Url, out var file))
+        // The URL keeps its fragment (e.g. "frame.html#intro", "icons.svg#home"), which is not sent over HTTP
+        var url = request.Url.Split('#', 2)[0];
+        if (!files.TryGetValue(url, out var file))
             return ValueTask.FromResult<DocumentResource?>(new DocumentResource("Not found") { StatusCode = 404 });
 
         return ValueTask.FromResult<DocumentResource?>(new DocumentResource(file.Content)
@@ -89,7 +95,7 @@ private sealed class InMemoryLoader(IReadOnlyDictionary<string, (string Content,
 ```csharp
 var loader = new InMemoryLoader(new Dictionary<string, (string Content, string ContentType)>(StringComparer.Ordinal)
 {
-    ["https://example.com/"] = ("<link rel=stylesheet href=site.css><h1>Home</h1><iframe src=/frame.html></iframe>", "text/html"),
+    ["https://example.com/"] = ("<link rel=stylesheet href=site.css><h1>Home</h1><iframe src=/frame.html#intro></iframe>", "text/html"),
     ["https://example.com/site.css"] = ("h1 { color: green }", "text/css"),
     ["https://example.com/frame.html"] = ("<p>Inside the frame</p>", "text/html"),
 });

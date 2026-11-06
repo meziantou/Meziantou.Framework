@@ -1,6 +1,6 @@
 ---
 title: Cartesian charts
-description: Bar charts (grouped, stacked, normalized, horizontal), lines, steps, areas, streamgraphs, scatter plots, bubbles, reference lines, lollipops and dumbbells.
+description: Bar charts (grouped, stacked, normalized, horizontal), lines, steps, areas, streamgraphs, scatter plots, bubbles, reference lines, lollipops, dumbbells, combo charts, population pyramids, slope charts, error bars and Gantt charts.
 ---
 
 ## Bar chart
@@ -286,3 +286,160 @@ plot.Add(new DotMark<Sale>(end, x: sale => sale.Region, y: sale => sale.Amount) 
 
 ![Pairs of dots joined by a line for each region](../images/DumbbellChart.svg)
 
+## Combo chart
+
+Marks of different kinds share the scales of the plot: a line over bars puts its points in the middle of the bands. A constant category in a color channel names each layer in the legend.
+
+<!-- ref:../../../tests/Meziantou.Framework.Charts.Tests/CartesianChartTests.cs;region=Charts_ComboChart;format=md-fenced-code-block;dedent=true -->
+```csharp
+var plot = new Plot { Title = "Sales in 2024, compared with 2023" };
+plot.Add(new BarMark<Sale>(SampleData.Sales.Where(sale => sale.Year == 2024), x: sale => sale.Region, y: sale => sale.Amount)
+{
+    Fill = _ => "2024",
+});
+plot.Add(new LineMark<Sale>(SampleData.Sales.Where(sale => sale.Year == 2023), x: sale => sale.Region, y: sale => sale.Amount)
+{
+    Stroke = _ => "2023",
+    MarkerRadius = 4,
+    StrokeWidth = 2,
+});
+```
+<!-- endref -->
+
+![Bars of 2024 with a line of 2023 over them](../images/ComboChart.svg)
+
+## Population pyramid
+
+Transposed bars with negative values for one side. The tick format shows the absolute values.
+
+<!-- ref:../../../tests/Meziantou.Framework.Charts.Tests/Samples/AgeGroup.cs;region=Charts_AgeGroupRecord;format=md-fenced-code-block;dedent=true -->
+```csharp
+public sealed record AgeGroup(string Age, string Sex, double Population);
+```
+<!-- endref -->
+
+<!-- ref:../../../tests/Meziantou.Framework.Charts.Tests/CartesianChartTests.cs;region=Charts_PopulationPyramid;format=md-fenced-code-block;dedent=true -->
+```csharp
+string[] ages = ["80+", "60-79", "40-59", "20-39", "0-19"];
+double[] men = [1.6, 7.1, 8.4, 7.9, 8.0];
+double[] women = [2.7, 7.9, 8.6, 7.9, 7.6];
+var groups = ages.SelectMany((age, i) => new[] { new AgeGroup(age, "Men", men[i]), new AgeGroup(age, "Women", women[i]) });
+
+var plot = new Plot
+{
+    Title = "Population by age, in millions",
+    Height = 280,
+    Coordinates = new CartesianCoordinates { Transposed = true },
+    YScale = new LinearScale { TickFormat = value => Math.Abs(value).ToString(CultureInfo.InvariantCulture) },
+};
+
+// The bars of the men go to the left: their values are negative
+plot.Add(new BarMark<AgeGroup>(groups, x: group => group.Age, y: group => group.Sex == "Men" ? -group.Population : group.Population)
+{
+    Fill = group => group.Sex,
+});
+plot.Add(new RuleYMark(0));
+```
+<!-- endref -->
+
+![Bars of men to the left and of women to the right, for five age groups](../images/PopulationPyramid.svg)
+
+## Slope chart
+
+Lines over two categories of a point scale, labeled at their end with a [TextMark\<T\>](cref:Meziantou.Framework.Charts.TextMark{T}).
+
+<!-- ref:../../../tests/Meziantou.Framework.Charts.Tests/CartesianChartTests.cs;region=Charts_SlopeChart;format=md-fenced-code-block;dedent=true -->
+```csharp
+var sales = SampleData.Sales.Where(sale => sale.Year is 2022 or 2024).ToArray();
+var plot = new Plot { Title = "From 2022 to 2024", Width = 360, Height = 380, XScale = new PointScale { Padding = 0.3 } };
+plot.Add(new LineMark<Sale>(sales, x: sale => sale.Year.ToString(CultureInfo.InvariantCulture), y: sale => sale.Amount)
+{
+    Stroke = sale => sale.Region,
+    MarkerRadius = 4,
+});
+plot.Add(new TextMark<Sale>(sales.Where(sale => sale.Year == 2024), text: sale => sale.Region, x: sale => "2024", y: sale => sale.Amount)
+{
+    Anchor = SceneTextAnchor.Start,
+    OffsetX = 8,
+    Fill = sale => sale.Region,
+});
+plot.Legend.Visible = false;
+```
+<!-- endref -->
+
+![Four lines from 2022 to 2024 labeled by region](../images/SlopeChart.svg)
+
+## Error bars
+
+A rule from Y1 to Y2 at each category, and a dot at the mean.
+
+<!-- ref:../../../tests/Meziantou.Framework.Charts.Tests/Samples/GroupSummary.cs;region=Charts_GroupSummaryRecord;format=md-fenced-code-block;dedent=true -->
+```csharp
+public sealed record GroupSummary(string Group, double Mean, double Deviation);
+```
+<!-- endref -->
+
+<!-- ref:../../../tests/Meziantou.Framework.Charts.Tests/CartesianChartTests.cs;region=Charts_ErrorBars;format=md-fenced-code-block;dedent=true -->
+```csharp
+var summaries = SampleData.Measurements
+    .GroupBy(measurement => measurement.Group)
+    .Select(group =>
+    {
+        var mean = group.Average(measurement => measurement.Value);
+        var deviation = Math.Sqrt(group.Average(measurement => Math.Pow(measurement.Value - mean, 2)));
+        return new GroupSummary(group.Key, mean, deviation);
+    })
+    .ToArray();
+
+var plot = new Plot { Title = "Mean and standard deviation", Height = 300 };
+plot.Add(new RuleXMark<GroupSummary>(summaries, x: summary => summary.Group)
+{
+    Y1 = summary => summary.Mean - summary.Deviation,
+    Y2 = summary => summary.Mean + summary.Deviation,
+    StrokeWidth = 2,
+});
+plot.Add(new DotMark<GroupSummary>(summaries, x: summary => summary.Group, y: summary => summary.Mean) { Radius = 5 });
+```
+<!-- endref -->
+
+![Dots at the means of three groups with vertical bars of one standard deviation](../images/ErrorBars.svg)
+
+## Gantt chart
+
+A [RectMark\<T\>](cref:Meziantou.Framework.Charts.RectMark{T}) from the start to the end of each task (X1 and X2, on a time scale), in the band of its name (Y).
+
+<!-- ref:../../../tests/Meziantou.Framework.Charts.Tests/Samples/GanttTask.cs;region=Charts_GanttTaskRecord;format=md-fenced-code-block;dedent=true -->
+```csharp
+public sealed record GanttTask(string Name, string Team, DateOnly Start, DateOnly End);
+```
+<!-- endref -->
+
+<!-- ref:../../../tests/Meziantou.Framework.Charts.Tests/CartesianChartTests.cs;region=Charts_GanttChart;format=md-fenced-code-block;dedent=true -->
+```csharp
+GanttTask[] tasks =
+[
+    new("Specification", "Product", new(2024, 1, 8), new(2024, 1, 26)),
+    new("Design", "Design", new(2024, 1, 22), new(2024, 2, 16)),
+    new("Backend", "Engineering", new(2024, 2, 5), new(2024, 3, 22)),
+    new("Frontend", "Engineering", new(2024, 2, 19), new(2024, 4, 5)),
+    new("Testing", "Quality", new(2024, 3, 18), new(2024, 4, 19)),
+    new("Release", "Product", new(2024, 4, 15), new(2024, 4, 26)),
+];
+
+var plot = new Plot { Title = "Project plan", Height = 300 };
+plot.Add(new RectMark<GanttTask>(tasks)
+{
+    X1 = task => task.Start,
+    X2 = task => task.End,
+    Y = task => task.Name,
+    Fill = task => task.Team,
+    Inset = 4,
+    CornerRadius = 3,
+    Title = task => $"{task.Name}: {task.Start:MMM d} - {task.End:MMM d}",
+});
+plot.Add(new RuleXMark<DateOnly>([new DateOnly(2024, 3, 1)], x: today => today) { StrokeColor = "#e5484d", StrokeDashArray = [4, 3] });
+plot.XAxis.Grid = true;
+```
+<!-- endref -->
+
+![Bars of six tasks on a time axis, colored by team, with a dashed line for today](../images/GanttChart.svg)

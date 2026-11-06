@@ -19,6 +19,45 @@ public sealed class PlotTests
     }
 
     [Fact]
+    public void BarWidth_IsAFractionOfTheBand()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => new BarMark<int>([], x: i => i, y: i => i) { BarWidth = 1.5 });
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => new BarMark<int>([], x: i => i, y: i => i) { BarWidth = double.NaN });
+
+        var plot = new Plot();
+        plot.Add(new BarMark<int>([1, 2], x: i => i, y: i => i) { BarWidth = 0.5 });
+        var full = new Plot();
+        full.Add(new BarMark<int>([1, 2], x: i => i, y: i => i));
+        var narrow = GetMarkShapes<SceneRectangle>(plot)[0];
+        var wide = GetMarkShapes<SceneRectangle>(full)[0];
+        Assert.Equal(wide.Width / 2, narrow.Width, 1e-9);
+        Assert.Equal(wide.X + (wide.Width / 4), narrow.X, 1e-9);
+    }
+
+    [Fact]
+    public void Rules_SpanTheBandOfACategory()
+    {
+        var plot = new Plot();
+        plot.Add(new RectMark<string>(["a", "b"]) { Y = name => name, X1 = _ => 0, X2 = _ => 10, Inset = 0 });
+        plot.Add(new RuleXMark<string>(["a"], x: _ => 5) { Y = name => name });
+        var band = GetMarkShapes<SceneRectangle>(plot)[0];
+        var rule = GetMarkShapes<SceneLine>(plot)[0];
+
+        // A vertical line at 5, from the top to the bottom of the band of "a"
+        Assert.Equal(rule.X1, rule.X2);
+        Assert.Equal(band.X + (band.Width / 2), rule.X1, 1e-9);
+        Assert.Equal(band.Y, Math.Min(rule.Y1, rule.Y2), 1e-9);
+        Assert.Equal(band.Y + band.Height, Math.Max(rule.Y1, rule.Y2), 1e-9);
+    }
+
+    private static List<T> GetMarkShapes<T>(Plot plot)
+        where T : SceneElement
+    {
+        var marks = plot.CreateScene().Root.Children.OfType<SceneGroup>().Single(group => group.CssClass == "marks");
+        return [.. marks.Children.OfType<SceneGroup>().SelectMany(group => group.Children).OfType<T>()];
+    }
+
+    [Fact]
     public void Plot_AddReturnsThePlotAndKeepsTheOrder()
     {
         var first = new RuleYMark(1);

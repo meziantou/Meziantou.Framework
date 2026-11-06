@@ -1,7 +1,7 @@
 namespace Meziantou.Framework.Charts;
 
 /// <summary>
-/// Stacks the y values of the rows that share an x value, one series above the other. The series of a row is given by
+/// Stacks the y values of the rows that share an x value (or an <c>X1</c> value, for rectangles), one series above the other. The series of a row is given by
 /// the <c>Series</c> channel of the mark, else its <c>Fill</c> or <c>Stroke</c> channel. Bars become stacked bars and
 /// areas become stacked areas.
 /// </summary>
@@ -15,10 +15,9 @@ public sealed class StackTransform : Transform
 
     internal override MarkData Apply(MarkData data)
     {
-        if (data.Y is not { IsContinuous: true } y || data.X is null)
+        if (data.Y is not { IsContinuous: true } y || (data.X ?? data.X1) is not { } x)
             return data;
 
-        var x = data.X;
         var seriesKey = data.SeriesKey;
         var series = MarkData.GroupBy(data.Count, seriesKey);
         var values = y.Numbers;

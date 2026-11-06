@@ -1,6 +1,6 @@
 ---
 title: Statistical charts
-description: Histograms, box plots, heatmaps, waterfalls, funnels, candlesticks and sparklines.
+description: Histograms, box plots, heatmaps, waterfalls, funnels, candlesticks, bullet charts, calendar heatmaps, Marimekko charts and sparklines.
 ---
 
 ## Histogram
@@ -114,6 +114,101 @@ plot.Add(new CandlestickMark<Candle>(
 <!-- endref -->
 
 ![Daily candlesticks in green and red](../images/Candlestick.svg)
+
+## Bullet chart
+
+Bars of the qualitative ranges, a narrower bar of the value ([BarWidth](cref:Meziantou.Framework.Charts.BarMark{T}.BarWidth)), and a rule at the target across the band of its category ([X](cref:Meziantou.Framework.Charts.RuleYMark{T}.X)).
+
+<!-- ref:../../../tests/Meziantou.Framework.Charts.Tests/Samples/Kpi.cs;region=Charts_KpiRecord;format=md-fenced-code-block;dedent=true -->
+```csharp
+public sealed record Kpi(string Name, double Value, double Target);
+```
+<!-- endref -->
+
+<!-- ref:../../../tests/Meziantou.Framework.Charts.Tests/StatisticalChartTests.cs;region=Charts_BulletChart;format=md-fenced-code-block;dedent=true -->
+```csharp
+Kpi[] kpis = [new("Revenue", 82, 90), new("Profit", 64, 60), new("New customers", 91, 85), new("Satisfaction", 48, 75)];
+var plot = new Plot
+{
+    Title = "Results, in % of the year's goal",
+    Height = 240,
+    Coordinates = new CartesianCoordinates { Transposed = true },
+    YScale = new LinearScale { Minimum = 0, Maximum = 100 },
+};
+
+// The qualitative ranges, the value as a narrower bar, and the target as a line across the band
+plot.Add(new BarMark<Kpi>(kpis, x: kpi => kpi.Name, y: _ => 100) { FillColor = "#eceef1" });
+plot.Add(new BarMark<Kpi>(kpis, x: kpi => kpi.Name, y: _ => 70) { FillColor = "#d5d9de" });
+plot.Add(new BarMark<Kpi>(kpis, x: kpi => kpi.Name, y: kpi => kpi.Value) { BarWidth = 0.35, FillColor = "#2f3740" });
+plot.Add(new RuleYMark<Kpi>(kpis, y: kpi => kpi.Target) { X = kpi => kpi.Name, StrokeWidth = 3, StrokeColor = "#e5484d" });
+```
+<!-- endref -->
+
+![Four horizontal bullets with dark value bars and red target lines](../images/BulletChart.svg)
+
+## Calendar heatmap
+
+A rect mark with the week on x and the day on y. The band scale of y sets the order of the days.
+
+<!-- ref:../../../tests/Meziantou.Framework.Charts.Tests/StatisticalChartTests.cs;region=Charts_CalendarHeatmap;format=md-fenced-code-block;dedent=true -->
+```csharp
+string[] dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+var start = new DateOnly(2024, 1, 1); // a Monday
+var days = Enumerable.Range(0, 91).Select(start.AddDays).ToArray();
+
+var plot = new Plot { Title = "Commits per day", Height = 220 };
+plot.Add(new RectMark<DateOnly>(days)
+{
+    X = day => "W" + ((day.DayNumber - start.DayNumber) / 7 + 1).ToString(CultureInfo.InvariantCulture),
+    Y = day => dayNames[((int)day.DayOfWeek + 6) % 7],
+    Fill = day => day.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday ? day.Day % 3 : (day.DayNumber * 7 % 11) + 2,
+    Inset = 2,
+    CornerRadius = 2,
+    Title = day => day.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+});
+plot.YScale = new BandScale { Domain = dayNames };
+plot.ColorScale = new SequentialColorScale { Scheme = ColorScheme.Greens };
+```
+<!-- endref -->
+
+![A grid of thirteen weeks by seven days, darker on busy days](../images/CalendarHeatmap.svg)
+
+## Marimekko chart
+
+Rectangles whose X1 and X2 are the cumulative shares of the regions, stacked by a [StackTransform](cref:Meziantou.Framework.Charts.StackTransform), which groups rectangles by their X1.
+
+<!-- ref:../../../tests/Meziantou.Framework.Charts.Tests/StatisticalChartTests.cs;region=Charts_MarimekkoChart;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The width of a region is its share of the total; its height is split by year
+var totals = SampleData.Sales.GroupBy(sale => sale.Region).ToDictionary(group => group.Key, group => group.Sum(sale => sale.Amount));
+var grandTotal = totals.Values.Sum();
+var starts = new Dictionary<string, double>();
+var cursor = 0.0;
+foreach (var (region, total) in totals)
+{
+    starts[region] = cursor;
+    cursor += total / grandTotal;
+}
+
+var plot = new Plot
+{
+    Title = "Sales by region and year",
+    XScale = new LinearScale { TickFormat = NumberFormats.Percent() },
+    YScale = new LinearScale { TickFormat = NumberFormats.Percent() },
+};
+plot.Add(new RectMark<Sale>(SampleData.Sales)
+{
+    X1 = sale => starts[sale.Region],
+    X2 = sale => starts[sale.Region] + (totals[sale.Region] / grandTotal),
+    Y = sale => sale.Amount,
+    Fill = sale => sale.Year.ToString(CultureInfo.InvariantCulture),
+    Transform = new StackTransform { Offset = StackOffset.Expand },
+    Text = sale => sale.Region,
+});
+```
+<!-- endref -->
+
+![Columns whose widths are the shares of the regions, split by year](../images/MarimekkoChart.svg)
 
 ## Sparkline
 

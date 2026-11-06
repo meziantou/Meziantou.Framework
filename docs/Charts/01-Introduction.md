@@ -17,10 +17,12 @@ This approach is called the grammar of graphics; Vega-Lite and Observable Plot u
 The library covers:
 
 - Cartesian charts: bars (grouped, stacked, normalized, horizontal), lines, steps, areas, streamgraphs, scatter plots,
-  bubbles, reference lines, lollipops and dumbbells.
+  bubbles, reference lines, lollipops, dumbbells, combo charts, population pyramids, slope charts, error bars and Gantt
+  charts.
 - Radial charts: pies, donuts, polar areas, radial bars, radar charts and gauges.
 - Hierarchical charts: packed circles, treemaps, sunbursts and icicles.
-- Statistical charts: histograms, box plots, heatmaps, waterfalls, funnels, candlesticks and sparklines.
+- Statistical charts: histograms, box plots, heatmaps, waterfalls, funnels, candlesticks, bullet charts, calendar heatmaps,
+  Marimekko charts and sparklines.
 
 The output is deterministic: the same plot gives the same SVG on every machine, so you can compare charts in snapshot
 tests. Texts are measured with the metrics of Helvetica that the library embeds, so no font has to be installed.

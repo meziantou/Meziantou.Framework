@@ -51,6 +51,7 @@ namespace Meziantou.Framework.Charts
 
     public sealed class BarMark<T> : Meziantou.Framework.Charts.Mark<T>
     {
+        public double BarWidth { get => throw null; set { } }
         public double CornerRadius { get => throw null; set { } }
         public System.Func<T, object?>? Group { get => throw null; set { } }
         public double GroupPadding { get => throw null; set { } }
@@ -682,6 +683,7 @@ namespace Meziantou.Framework.Charts
     {
         public System.Collections.Generic.IReadOnlyList<double>? StrokeDashArray { get => throw null; set { } }
         public System.Func<T, object?> X { get => throw null; }
+        public System.Func<T, object?>? Y { get => throw null; set { } }
         public System.Func<T, object?>? Y1 { get => throw null; set { } }
         public System.Func<T, object?>? Y2 { get => throw null; set { } }
         public RuleXMark(System.Collections.Generic.IEnumerable<T> data, System.Func<T, object?> x) { }
@@ -695,6 +697,7 @@ namespace Meziantou.Framework.Charts
     public class RuleYMark<T> : Meziantou.Framework.Charts.Mark<T>
     {
         public System.Collections.Generic.IReadOnlyList<double>? StrokeDashArray { get => throw null; set { } }
+        public System.Func<T, object?>? X { get => throw null; set { } }
         public System.Func<T, object?>? X1 { get => throw null; set { } }
         public System.Func<T, object?>? X2 { get => throw null; set { } }
         public System.Func<T, object?> Y { get => throw null; }

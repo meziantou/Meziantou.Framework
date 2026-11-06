@@ -8,6 +8,8 @@ namespace Meziantou.Framework.Charts;
 /// <typeparam name="T">The type of the rows.</typeparam>
 public sealed class BarMark<T> : Mark<T>
 {
+    private double _barWidth = 1;
+
     /// <summary>Initializes a new instance of the <see cref="BarMark{T}"/> class.</summary>
     /// <param name="data">The rows.</param>
     /// <param name="x">The channel of the category of the bar.</param>
@@ -35,6 +37,20 @@ public sealed class BarMark<T> : Mark<T>
 
     /// <summary>Gets or sets the radius of the corners of the bars. The default is 0.</summary>
     public double CornerRadius { get; set; }
+
+    /// <summary>Gets or sets the width of a bar, as a fraction of its band (or of its share of the band, for grouped bars), centered in it. The default is 1. A narrower bar can sit in a wider one, as in bullet charts.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not between 0 and 1.</exception>
+    public double BarWidth
+    {
+        get => _barWidth;
+        set
+        {
+            if (!(value is >= 0 and <= 1))
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The width must be between 0 and 1.");
+
+            _barWidth = value;
+        }
+    }
 
     /// <summary>Gets or sets the space between the bars of a group, as a fraction of their width. The default is 0.05.</summary>
     public double GroupPadding { get; set; } = 0.05;
@@ -80,6 +96,9 @@ public sealed class BarMark<T> : Mark<T>
                 start += step * groups.IndexOf(category) + (step * GroupPadding / 2);
                 width = step * (1 - GroupPadding);
             }
+
+            start += width * (1 - BarWidth) / 2;
+            width *= BarWidth;
 
             double y1;
             double y2;

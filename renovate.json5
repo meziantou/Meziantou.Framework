@@ -62,6 +62,7 @@
         "src/Meziantou.Framework.FixedStringBuilder.Generator/Meziantou.Framework.FixedStringBuilder.Generator.csproj",
         "src/Meziantou.Framework.FullPath.Analyzer/Meziantou.Framework.FullPath.Analyzer.csproj",
         "src/Meziantou.Framework.FullPath.CodeFix/Meziantou.Framework.FullPath.CodeFix.csproj",
+        "src/Meziantou.Framework.Iconify.SourceGenerator/Meziantou.Framework.Iconify.SourceGenerator.csproj",
         "src/Meziantou.Framework.ResxSourceGenerator/Meziantou.Framework.ResxSourceGenerator.csproj",
         "src/Meziantou.Framework.Roslyn/Meziantou.Framework.Roslyn.csproj",
         "src/Meziantou.Framework.SnapshotTesting.Roslyn/Meziantou.Framework.SnapshotTesting.Roslyn.csproj",

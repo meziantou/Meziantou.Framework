@@ -1,0 +1,29 @@
+<Project Sdk="Meziantou.NET.Sdk.Test">
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <!-- The namespace Meziantou.Framework.Iconify would clash with the Meziantou.Framework.Iconify class -->
+    <RootNamespace>Meziantou.Framework.IconifyTests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.9.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Meziantou.Framework.Iconify/Meziantou.Framework.Iconify.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.Iconify.SourceGenerator/Meziantou.Framework.Iconify.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true" SetTargetFramework="TargetFramework=netstandard2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The parser of the source generator, whose internals are not visible to the tests -->
+    <Compile Include="../../src/Meziantou.Framework.Iconify.SourceGenerator/IconifyJsonParser.cs" Link="IconifyJsonParser.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Fixtures/*.json" CopyToOutputDirectory="PreserveNewest" />
+    <IconifyIconSet Include="Fixtures/test-icons.json" ClassName="TestIcons" />
+  </ItemGroup>
+
+  <!-- Use the targets shipped in the package, so the MSBuild logic is also tested -->
+  <Import Project="../../src/Meziantou.Framework.Iconify/Meziantou.Framework.Iconify.targets" />
+</Project>

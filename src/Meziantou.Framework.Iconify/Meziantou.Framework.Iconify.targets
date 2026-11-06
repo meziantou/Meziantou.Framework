@@ -1,0 +1,75 @@
+<Project>
+  <!--
+    Each IconifyIconSet item declares an icon set to generate:
+      <IconifyIconSet Include="mdi" />                    downloads json/mdi.json from the iconify/icon-sets repository
+      <IconifyIconSet Include="mdi" Version="<git ref>" /> downloads the file of a tag, a branch or a commit
+      <IconifyIconSet Include="icons/custom.json" />      uses a local file (an Include that ends with .json)
+    Optional metadata: ClassName (name of the generated property) and Icons (names to generate, separated by ';', '*' is a wildcard).
+  -->
+  <PropertyGroup>
+    <IconifyIconSetsBaseUrl Condition="'$(IconifyIconSetsBaseUrl)' == ''">https://raw.githubusercontent.com/iconify/icon-sets</IconifyIconSetsBaseUrl>
+    <IconifyIconSetsDefaultVersion Condition="'$(IconifyIconSetsDefaultVersion)' == ''">master</IconifyIconSetsDefaultVersion>
+    <IconifyCacheDirectory Condition="'$(IconifyCacheDirectory)' == ''">$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(BaseIntermediateOutputPath)', 'iconify'))</IconifyCacheDirectory>
+    <IconifyCacheDirectory>$([MSBuild]::EnsureTrailingSlash('$(IconifyCacheDirectory)'))</IconifyCacheDirectory>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <CompilerVisibleProperty Include="IconifyVisibility" />
+    <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="IconifyIconSet" />
+    <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="IconifyClassName" />
+    <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="IconifyIcons" />
+  </ItemGroup>
+
+  <Target Name="IconifyResolveIconSets"
+          BeforeTargets="GenerateMSBuildEditorConfigFileShouldRun;CoreCompile"
+          Condition="'@(IconifyIconSet)' != ''">
+    <ItemGroup>
+      <_IconifyLocalIconSet Include="@(IconifyIconSet)" Condition="'%(IconifyIconSet.Extension)' == '.json'" />
+      <_IconifyRemoteIconSet Include="@(IconifyIconSet)" Exclude="@(_IconifyLocalIconSet)" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <_IconifyRemoteIconSet>
+        <_IconifyVersion Condition="'%(_IconifyRemoteIconSet.Version)' == ''">$(IconifyIconSetsDefaultVersion)</_IconifyVersion>
+        <_IconifyVersion Condition="'%(_IconifyRemoteIconSet.Version)' != ''">%(_IconifyRemoteIconSet.Version)</_IconifyVersion>
+      </_IconifyRemoteIconSet>
+      <_IconifyRemoteIconSet>
+        <_IconifyUrl>$(IconifyIconSetsBaseUrl)/%(_IconifyRemoteIconSet._IconifyVersion)/json/%(_IconifyRemoteIconSet.Identity).json</_IconifyUrl>
+        <_IconifyDirectory>$(IconifyCacheDirectory)%(_IconifyRemoteIconSet._IconifyVersion)/</_IconifyDirectory>
+      </_IconifyRemoteIconSet>
+      <_IconifyRemoteIconSet>
+        <_IconifyPath>%(_IconifyRemoteIconSet._IconifyDirectory)%(_IconifyRemoteIconSet.Identity).json</_IconifyPath>
+      </_IconifyRemoteIconSet>
+    </ItemGroup>
+
+    <!-- A cached file is never downloaded again. Pin the Version metadata for reproducible builds.
+         The builds of the target frameworks of a project share the cache, so each one downloads to its own temporary file,
+         and moves it once it is complete: an interrupted download is not mistaken for a cached file. -->
+    <PropertyGroup>
+      <_IconifyDownloadId>$([System.Guid]::NewGuid().ToString('N'))</_IconifyDownloadId>
+    </PropertyGroup>
+
+    <DownloadFile SourceUrl="%(_IconifyRemoteIconSet._IconifyUrl)"
+                  DestinationFolder="%(_IconifyRemoteIconSet._IconifyDirectory)"
+                  DestinationFileName="%(_IconifyRemoteIconSet.Identity).json.$(_IconifyDownloadId).download"
+                  Retries="3"
+                  Condition="'%(_IconifyRemoteIconSet.Identity)' != '' AND !Exists('%(_IconifyRemoteIconSet._IconifyPath)')" />
+
+    <Move SourceFiles="%(_IconifyRemoteIconSet._IconifyPath).$(_IconifyDownloadId).download"
+          DestinationFiles="%(_IconifyRemoteIconSet._IconifyPath)"
+          Condition="'%(_IconifyRemoteIconSet.Identity)' != '' AND Exists('%(_IconifyRemoteIconSet._IconifyPath).$(_IconifyDownloadId).download')" />
+
+    <ItemGroup>
+      <AdditionalFiles Include="@(_IconifyLocalIconSet->'%(FullPath)')">
+        <IconifyIconSet>true</IconifyIconSet>
+        <IconifyClassName>%(_IconifyLocalIconSet.ClassName)</IconifyClassName>
+        <IconifyIcons>%(_IconifyLocalIconSet.Icons)</IconifyIcons>
+      </AdditionalFiles>
+      <AdditionalFiles Include="@(_IconifyRemoteIconSet->'%(_IconifyPath)')">
+        <IconifyIconSet>true</IconifyIconSet>
+        <IconifyClassName>%(_IconifyRemoteIconSet.ClassName)</IconifyClassName>
+        <IconifyIcons>%(_IconifyRemoteIconSet.Icons)</IconifyIcons>
+      </AdditionalFiles>
+    </ItemGroup>
+  </Target>
+</Project>

@@ -22,9 +22,11 @@ public sealed class CssMinifyFormatterTests
     // Colors and numbers
     [InlineData("a { color: #ff0000; background-color: rgb(18, 52, 86); border-color: rgba(0, 0, 0, 0.5) }", "a{color:#f00;background-color:#123456;border-color:rgba(0,0,0,.5)}")]
     [InlineData("a { transition: opacity 0.5s, color -0.25s; opacity: 0.5 }", "a{transition:opacity .5s,color 0s -.25s;opacity:.5}")]
+    [InlineData("a { width: calc(0.5px + var(--x)); color: rgb(255, 0, 0, var(--a)); background: rgb(255, 0, 0) var(--x) }", "a{width:calc(0.5px + var(--x));color:rgb(255,0,0,var(--a));background:rgb(255,0,0) var(--x)}")]
     // At-rules
     [InlineData("@media screen and (min-width: 100px), print { a { color: red } }", "@media screen and (min-width:100px),print{a{color:red}}")]
     [InlineData("@media (400px <= width <= 700px) { a { color: red } }", "@media (400px<=width<=700px){a{color:red}}")]
+    [InlineData("@media (width > =600px) { a { color: red } }", "@media (width> =600px){a{color:red}}")]
     [InlineData("@import url(a.css) screen; @layer a, b;", "@import url(\"a.css\") screen;@layer a,b;")]
     [InlineData("@keyframes k { from { opacity: 0 } 50%, to { opacity: 1 } }", "@keyframes k{0%{opacity:0}50%,100%{opacity:1}}")]
     [InlineData("@page :first { margin: 1in; @top-left { } }", "@page :first{margin:1in;@top-left{}}")]

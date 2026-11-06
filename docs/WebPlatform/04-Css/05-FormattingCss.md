@@ -60,7 +60,9 @@ true by default:
 | [ShortenColors](cref:Meziantou.Framework.WebPlatform.Formatting.CssMinifyFormatter.ShortenColors) | Writes the opaque colors in hexadecimal (`#f00`) |
 | [RemoveLeadingZeros](cref:Meziantou.Framework.WebPlatform.Formatting.CssMinifyFormatter.RemoveLeadingZeros) | Writes `0.5s` as `.5s` |
 
-The values of the custom properties are written as they are.
+The values of the custom properties are written as they are. The values that contain a substitution function, such as
+`var()`, are kept as specified: their whitespace is removed, but their numbers and colors are not shortened
+(`calc(0.5px + var(--x))` stays `calc(0.5px + var(--x))`).
 
 ## Indent
 

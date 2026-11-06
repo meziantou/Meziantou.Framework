@@ -164,9 +164,10 @@ top-level document ([CSS Viewport](https://drafts.csswg.org/css-viewport/)) sets
 block, the viewport units, the width media queries and `innerWidth` follow it, while the screen (`device-width`) stays the
 viewport of the options. Its width is the `width` of the meta element (`device-width` or a length; at least the width of
 the device divided by `initial-scale`), the width of the device divided by `initial-scale`, or 980px without both; its height
-keeps the aspect ratio of the device unless `height` is set. The page is scaled by `initial-scale`, or to fit the width of its
-contents in the width of the device, within `minimum-scale` and `maximum-scale` (5 by default): `visualViewport.scale` is
-the scale and the screenshots show the visual viewport (the viewport of the device) at the device pixel ratio multiplied by
+keeps the aspect ratio of the device unless `height` is set (`initial-scale` is first clamped by `minimum-scale` and
+`maximum-scale`). The page is scaled by `initial-scale`, or to fit the width of its contents in the width of the device, within
+`minimum-scale` and `maximum-scale` (5 by default). A page with `user-scalable=no` is still clamped by them, and it is not
+scaled down to fit contents wider than its layout viewport, as in the browsers: `visualViewport.scale` is the scale and the screenshots show the visual viewport (the viewport of the device) at the device pixel ratio multiplied by
 the scale. The text autosizing of Chromium (which enlarges the text of the pages that are scaled down) is not implemented,
 and there is no pinch zoom: the visual viewport is at the origin of the layout viewport.
 

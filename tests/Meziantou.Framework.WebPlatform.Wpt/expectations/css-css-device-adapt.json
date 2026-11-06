@@ -1,0 +1,23 @@
+{
+  "css/css-device-adapt/documentElement-clientWidth-on-minimum-scale-size.tentative.html": {
+    "total": 1
+  },
+  "css/css-device-adapt/viewport-clamp-initial-scale-to-max.tentative.html": {
+    "total": 1
+  },
+  "css/css-device-adapt/viewport-clamp-initial-scale-to-min.tentative.html": {
+    "total": 1
+  },
+  "css/css-device-adapt/viewport-should-not-affect-devicePixelRatio.html": {
+    "total": 1
+  },
+  "css/css-device-adapt/viewport-user-scalable-no-clamp-to-max.tentative.html": {
+    "total": 1
+  },
+  "css/css-device-adapt/viewport-user-scalable-no-clamp-to-min.tentative.html": {
+    "total": 1
+  },
+  "css/css-device-adapt/viewport-user-scalable-no-wide-content.tentative.html": {
+    "total": 1
+  }
+}

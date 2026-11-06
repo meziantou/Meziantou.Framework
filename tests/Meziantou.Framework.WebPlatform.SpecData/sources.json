@@ -402,6 +402,7 @@
       "css/mediaqueries",
       "css/css-env",
       "css/css-viewport",
+      "css/css-device-adapt",
       "viewport",
       "visual-viewport",
       "css/css-typed-om",

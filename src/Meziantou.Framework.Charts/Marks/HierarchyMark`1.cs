@@ -25,6 +25,12 @@ public abstract class HierarchyMark<T> : Mark
     /// <summary>Gets or sets the tooltip of a node, or <see langword="null"/> for its path and its value.</summary>
     public Func<HierarchyNode<T>, string?>? Title { get; set; }
 
+    /// <summary>
+    /// Gets or sets the <c>data-*</c> attributes of the shape of a node in the SVG output, or <see langword="null"/> for
+    /// none. See <see cref="Mark{T}.DataAttributes"/> for the names and the values.
+    /// </summary>
+    public Func<HierarchyNode<T>, IEnumerable<KeyValuePair<string, object?>>?>? DataAttributes { get; set; }
+
     internal override MarkTraits GetTraits(MarkData data) => MarkTraits.Frame | MarkTraits.HideXAxis | MarkTraits.HideYAxis;
 
     internal sealed override MarkData Prepare()
@@ -35,6 +41,7 @@ public abstract class HierarchyMark<T> : Mark
             State = nodes,
             Text = [.. nodes.Select(node => Label is null ? node.Name : Label(node))],
             Titles = [.. nodes.Select(node => Title is null ? GetDefaultTitle(node) : Title(node))],
+            DataAttributes = DataAttributes is null ? null : [.. nodes.Select(node => DataAttributeValues.Evaluate(DataAttributes(node)))],
         };
 
         if (Fill is not null || FillColor is null)
@@ -65,6 +72,7 @@ public abstract class HierarchyMark<T> : Mark
         where T2 : SceneElement
     {
         element.Tooltip = data.Titles?[index];
+        DataAttributeValues.Apply(element, data.DataAttributes, index);
         return element;
     }
 

@@ -53,6 +53,9 @@ internal sealed class MarkData
 
     public string?[]? Titles { get; set; }
 
+    /// <summary>The <c>data-*</c> attributes of each row, validated and formatted.</summary>
+    public KeyValuePair<string, string>[]?[]? DataAttributes { get; set; }
+
     /// <summary>Values the x scale must include, besides the rows (box plot outliers...).</summary>
     public List<ChannelValues> ExtraX { get; } = [];
 
@@ -82,6 +85,7 @@ internal sealed class MarkData
             Group = Group?.Select(indices),
             Text = Select(Text, indices),
             Titles = Select(Titles, indices),
+            DataAttributes = Select(DataAttributes, indices),
             FacetX = FacetX?.Select(indices),
             FacetY = FacetY?.Select(indices),
             Sets = Sets is null ? null : [.. indices.Select(index => Sets[index])],
@@ -134,8 +138,9 @@ internal sealed class MarkData
             Group = ConcatChannel(parts, part => part.Group),
             FacetX = ConcatChannel(parts, part => part.FacetX),
             FacetY = ConcatChannel(parts, part => part.FacetY),
-            Text = ConcatStrings(parts, part => part.Text),
-            Titles = ConcatStrings(parts, part => part.Titles),
+            Text = ConcatArrays(parts, part => part.Text),
+            Titles = ConcatArrays(parts, part => part.Titles),
+            DataAttributes = ConcatArrays(parts, part => part.DataAttributes),
             Sets = parts.Any(part => part.Sets is not null) ? [.. parts.SelectMany(part => part.Sets ?? new IReadOnlyList<double>[part.Count])] : null,
         };
 
@@ -182,12 +187,13 @@ internal sealed class MarkData
         return ChannelValues.FromCategories([.. categories]);
     }
 
-    private static string?[]? ConcatStrings(IReadOnlyList<MarkData> parts, Func<MarkData, string?[]?> selector)
+    private static TValue?[]? ConcatArrays<TValue>(IReadOnlyList<MarkData> parts, Func<MarkData, TValue?[]?> selector)
+        where TValue : class
     {
         if (parts.All(part => selector(part) is null))
             return null;
 
-        return [.. parts.SelectMany(part => selector(part) ?? new string?[part.Count])];
+        return [.. parts.SelectMany(part => selector(part) ?? new TValue?[part.Count])];
     }
 
     /// <summary>Returns the rows grouped by a key, each group in the order of its rows, the groups in the order their first row appears.</summary>
@@ -217,12 +223,13 @@ internal sealed class MarkData
         return groups;
     }
 
-    private static string?[]? Select(string?[]? values, IReadOnlyList<int> indices)
+    private static TValue?[]? Select<TValue>(TValue?[]? values, IReadOnlyList<int> indices)
+        where TValue : class
     {
         if (values is null)
             return null;
 
-        var result = new string?[indices.Count];
+        var result = new TValue?[indices.Count];
         for (var i = 0; i < result.Length; i++)
         {
             result[i] = values[indices[i]];

@@ -669,6 +669,21 @@ public sealed class StatisticalChartTests
     }
 
     [Fact]
+    public void Sankey_DataAttributesOnTheLinks()
+    {
+        Flow[] flows = [new("A", "B", 2), new("A", "C", 1), new("B", "C", 1)];
+        var plot = new Plot();
+        plot.Add(new SankeyMark<Flow>(flows, source: flow => flow.Source, target: flow => flow.Target, value: flow => flow.Value)
+        {
+            DataAttributes = flow => [new("source", flow.Source), new("target", flow.Target)],
+        });
+
+        var items = ChartAssert.DataAttributes(plot.ToSvg());
+        Assert.All(items, item => item.Element is "path");
+        Assert.Equal(["source=A;target=B", "source=A;target=C", "source=B;target=C"], items.Select(item => item.Attributes).Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
     public void SankeyRejectsCycles()
     {
         var plot = new Plot();

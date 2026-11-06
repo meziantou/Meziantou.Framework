@@ -11,8 +11,8 @@ description: "The results of the web-platform-tests of css/css-color, and why th
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 67 | 69 | 0 | 97% |
 | Tentative | 0 | 0 | 0 | – |
-| [Reftests](#reftests) | 302 | 308 | 1 | 98% |
-| **All** | **369** | **377** | **1** | **98%** |
+| [Reftests](#reftests) | 303 | 308 | 1 | 99% |
+| **All** | **370** | **377** | **1** | **98%** |
 
 ## Failure reasons
 
@@ -20,7 +20,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 1
 - **TEST BUG**: 4
-- **NOT IMPLEMENTED**: 2
+- **NOT IMPLEMENTED**: 1
 - **FLAKY**: 1
 
 ## Stable tests
@@ -127,7 +127,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`color-001.html`](https://wpt.fyi/results/css/css-color/color-001.html) | Pass | 1 / 1 |  |  |
 | [`color-002.html`](https://wpt.fyi/results/css/css-color/color-002.html) | Pass | 1 / 1 |  |  |
 | [`color-003.html`](https://wpt.fyi/results/css/css-color/color-003.html) | Pass | 1 / 1 |  |  |
-| [`color-layers-no-blend-mode.html`](https://wpt.fyi/results/css/css-color/color-layers-no-blend-mode.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the resolution of `color-layers()` (css-color-6): the function is parsed and kept as is in the computed value, and the painter does not paint it (the backgrounds are transparent); fails in every browser |
+| [`color-layers-no-blend-mode.html`](https://wpt.fyi/results/css/css-color/color-layers-no-blend-mode.html) | Pass | 1 / 1 |  |  |
 | [`color-mix-basic-001.html`](https://wpt.fyi/results/css/css-color/color-mix-basic-001.html) | Pass | 1 / 1 |  |  |
 | [`color-mix-currentcolor-001.html`](https://wpt.fyi/results/css/css-color/color-mix-currentcolor-001.html) | Pass | 1 / 1 |  |  |
 | [`color-mix-currentcolor-002.html`](https://wpt.fyi/results/css/css-color/color-mix-currentcolor-002.html) | Pass | 1 / 1 |  |  |

@@ -167,6 +167,9 @@ internal sealed class LayoutContext
     /// <summary>The generation a cache computed now is valid for (see <see cref="IsCacheOfPreviousPassValid"/>): -1 when the computation prevented the caching (it is valid for the pass only).</summary>
     internal int GetCacheGeneration(int preventionCountBefore) => UsesLayoutCache && preventionCountBefore == LayoutCachingPreventionCount ? Engine.LayoutCacheGeneration : -1;
 
+    // (a lambda that captures the parameters of a method is allocated by each call of the method: it is in its own method)
+    private BoxFragment LayoutBoxOnNewStack(ContainerBox box, ConstraintSpace space) => StackGuard.RunOnNewStack(() => LayoutBox(box, space));
+
     /// <summary>Lays out a box with the layout algorithm of its formatting context (see <see cref="FormattingContext.For"/>).</summary>
     public BoxFragment LayoutBox(ContainerBox box, in ConstraintSpace space)
     {
@@ -180,10 +183,7 @@ internal sealed class LayoutContext
 
         // A deeply nested box is laid out on a new stack (each level of the recursion of the formatting contexts uses ~20 KB)
         if (!StackGuard.HasSufficientStack)
-        {
-            var spaceCopy = space;
-            return StackGuard.RunOnNewStack(() => LayoutBox(box, spaceCopy));
-        }
+            return LayoutBoxOnNewStack(box, space);
 
         var cacheState = LayoutResultCache.BeginLayout(this, box, space);
         var fragment = FormattingContext.For(box).Layout(this, box, space);

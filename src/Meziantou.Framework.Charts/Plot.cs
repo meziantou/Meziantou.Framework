@@ -78,6 +78,9 @@ public sealed class Plot
     /// <summary>Gets the options of the legend of the color scale.</summary>
     public Legend Legend { get; } = new();
 
+    /// <summary>Gets the options of the legend of the size scale, drawn next to the legend of the color scale.</summary>
+    public SizeLegend SizeLegend { get; } = new();
+
     /// <summary>Gets the options of the grid of small charts, when marks have facets (<see cref="Mark{T}.FacetX"/>, <see cref="Mark{T}.FacetY"/>).</summary>
     public FacetOptions Facets { get; } = new();
 

@@ -82,7 +82,46 @@ public sealed class GlyphRunOptions
     /// </summary>
     public GlyphCache? Cache { get; init; }
 
+    /// <summary>
+    /// Gets how much the coverage of the antialiased glyphs is raised before it is blended, from 0 (the default: the coverage
+    /// of the outline) to 1, as the contrast of the glyph masks of Skia (<c>SK_GAMMA_CONTRAST</c>) for a dark text: a partially
+    /// covered pixel gets <c>c + contrast × c × (1 - c)</c>, which makes the text heavier, whatever its color.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not between 0 and 1.</exception>
+    public double Contrast
+    {
+        get;
+        init
+        {
+            if (!(value is >= 0 and <= 1))
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The contrast must be between 0 and 1.");
+
+            field = value;
+        }
+    }
+
+    /// <summary>
+    /// Gets the gamma of the correction of the coverage of the antialiased glyphs, after the <see cref="Contrast"/>, as the
+    /// glyph masks of Skia (<c>SK_GAMMA_EXPONENT</c>) for a dark text: a coverage c becomes <c>1 - (1 - c)^(1 / gamma)</c>,
+    /// lighter above 1 and heavier below 1. Defaults to 1 (no correction).
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not between 0.25 and 4.</exception>
+    public double Gamma
+    {
+        get;
+        init
+        {
+            if (!(value is >= 0.25 and <= 4))
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The gamma must be between 0.25 and 4.");
+
+            field = value;
+        }
+    } = 1;
+
     internal static GlyphRunOptions Default { get; } = new();
+
+    /// <summary>Gets whether the coverage of the masks of the glyphs is corrected (<see cref="Contrast"/>, <see cref="Gamma"/>).</summary>
+    internal bool CorrectsCoverage => Contrast != 0 || Gamma != 1;
 
     /// <summary>Gets the width of the stroke of a synthetic bold for a size, or 0.</summary>
     internal double GetBoldWidth(double size) => (Synthesis & FontSynthesis.Bold) == FontSynthesis.None ? 0 : BoldWidth ?? (size * GlyphRun.BoldWidth);

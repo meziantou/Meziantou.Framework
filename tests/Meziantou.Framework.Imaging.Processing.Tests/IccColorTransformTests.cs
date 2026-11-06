@@ -131,6 +131,56 @@ public sealed class IccColorTransformTests
     }
 
     [Fact]
+    public void AMatrixBasedProfileConvertsFromTheConnectionSpaceWithItsInverseColorantsAndCurves()
+    {
+        var model = IccProfileModel.Create(DisplayP3, "test");
+        Span<double> matrix = stackalloc double[9];
+        Assert.True(model.TryGetMatrixShaperFromConnectionSpace(matrix, out var curves));
+        Assert.HasCount(3, curves);
+
+        // Each colorant converts back to a unit device value (the colorants are stored as s15Fixed16 numbers)
+        var colorants = IccTestProfiles.DisplayP3Colorants;
+        for (var column = 0; column < 3; column++)
+        {
+            for (var row = 0; row < 3; row++)
+            {
+                var value = (matrix[row * 3] * colorants[column][0]) + (matrix[(row * 3) + 1] * colorants[column][1]) + (matrix[(row * 3) + 2] * colorants[column][2]);
+                Assert.True(Math.Abs(value - (row == column ? 1 : 0)) < 1e-4, $"row {row}, column {column}: {value}");
+            }
+        }
+
+        // The sRGB curve, inverted: the linear light of 0.5 is 0.21404
+        foreach (var curve in curves)
+        {
+            Assert.True(Math.Abs(curve.Evaluate(0.2140411) - 0.5) < 1e-5);
+        }
+    }
+
+    [Fact]
+    public void AMonochromeProfileConvertsTheLuminanceWithItsInverseCurve()
+    {
+        Span<double> matrix = stackalloc double[9];
+        Assert.True(IccProfileModel.Create(GrayGamma, "test").TryGetMatrixShaperFromConnectionSpace(matrix, out var curves));
+        Assert.Equal([1, 0, 0, 0, 1, 0, 0, 0, 1], matrix.ToArray());
+        var curve = Assert.Single(curves);
+        Assert.True(Math.Abs(curve.Evaluate(Math.Pow(0.5, 2.19921875)) - 0.5) < 1e-9);
+    }
+
+    [Fact]
+    public void AProfileThatConvertsWithLookupTablesHasNoMatrixShaperConversion()
+    {
+        Span<double> matrix = stackalloc double[9];
+
+        // Lookup tables take precedence over the colorants and curves of the same profile (ICC.1:2022 section 8.10.2)
+        Assert.False(IccProfileModel.Create(IccTestProfiles.MatrixWithLookupTables(), "test").TryGetMatrixShaperFromConnectionSpace(matrix, out _));
+        Assert.False(IccProfileModel.Create(IccTestProfiles.RgbXyzLut16(), "test").TryGetMatrixShaperFromConnectionSpace(matrix, out _));
+
+        // A monochrome profile with CIELAB as connection space, and a profile without curves
+        Assert.False(IccProfileModel.Create(IccTestProfiles.GrayPaper(), "test").TryGetMatrixShaperFromConnectionSpace(matrix, out _));
+        Assert.False(IccProfileModel.Create(IccTestProfiles.RgbLabLut8(), "test").TryGetMatrixShaperFromConnectionSpace(matrix, out _));
+    }
+
+    [Fact]
     public void AProfileIsNotWrittenForChromaticitiesThatDefineNoColorSpace()
     {
         double[] srgb = [0.64, 0.33, 0.30, 0.60, 0.15, 0.06];

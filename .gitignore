@@ -308,5 +308,7 @@ artifacts/
 /tests/Meziantou.Framework.JavaScriptEngine.External/
 # The PDF corpora are fetched by eng/pdf/fetch-tests.cs at the revisions pinned in tests/Meziantou.Framework.Pdf.Corpus/corpus.json
 /tests/Meziantou.Framework.Pdf.External/
+# The JPEG XL conformance corpus, downloaded by the Imaging interop tests at the commit pinned in tests/Meziantou.Framework.Imaging.InteropTests/JpegXlConformance/corpus.json
+/tests/Meziantou.Framework.Imaging.External/
 # The marker of an update of the WPT expectations that is running or was interrupted (see src/Meziantou.Framework.WebPlatform/docs/web-platform-tests.md)
 /tests/Meziantou.Framework.WebPlatform.Wpt/expectations/.incomplete-update-*

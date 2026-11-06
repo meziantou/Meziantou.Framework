@@ -1,3 +1,5 @@
+using System.Runtime.Intrinsics;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
@@ -76,11 +78,12 @@ internal static class JpegXlTreeLearner
         using var rowStorage = Av1PooledArray<byte>.Rent(scope, (long)count * stride, clear: false);
         var rows = rowStorage.Span[..(count * stride)];
         var thresholds = new int[propertyCount][];
-        var valueCounts = new int[1 << 16];
-        var lookup = new byte[1 << 16];
+        // Neither is cleared: each property only reads the part it writes
+        using var valueCounts = Av1PooledArray<int>.Rent(scope, 1 << 16, clear: false);
+        using var lookup = Av1PooledArray<byte>.Rent(scope, 1 << 16, clear: false);
         for (var p = 0; p < propertyCount; p++)
         {
-            thresholds[p] = Quantize(samples.GetProperty(p), settings.MaxBuckets, valueCounts, lookup, rows[p..], stride);
+            thresholds[p] = Quantize(samples.GetProperty(p), settings.MaxBuckets, valueCounts.Span, lookup.Span, rows[p..], stride);
         }
 
         for (var k = 0; k < predictorCount; k++)
@@ -176,10 +179,20 @@ internal static class JpegXlTreeLearner
     /// when values lie on both sides of them, and a range holds the values above its lower bound up to its upper bound.
     /// </summary>
     /// <returns>The bounds; the range of each value is written to <paramref name="destination"/>, every <paramref name="stride"/> bytes.</returns>
-    private static int[] Quantize(ReadOnlySpan<short> values, int maxBuckets, int[] counts, byte[] lookup, Span<byte> destination, int stride)
+    private static int[] Quantize(ReadOnlySpan<short> values, int maxBuckets, Span<int> counts, Span<byte> lookup, Span<byte> destination, int stride)
     {
-        // A count of each value, then the bounds at regular ranks
-        Array.Clear(counts);
+        // A count of each value, then the bounds at regular ranks. The loops cover the values that occur, not the whole range
+        // of a short: a small channel (the LF image of a lossy frame) has fewer samples than the range has values, and the
+        // counts outside that part are never read
+        var min = (int)values[0];
+        var max = min;
+        foreach (var value in values)
+        {
+            min = Math.Min(min, value);
+            max = Math.Max(max, value);
+        }
+
+        counts.Slice(min + 32768, max - min + 1).Clear();
         foreach (var value in values)
         {
             counts[value + 32768]++;
@@ -191,7 +204,7 @@ internal static class JpegXlTreeLearner
         long cumulative = 0;
         var smallest = int.MaxValue;
         var largest = int.MinValue;
-        for (var i = 0; i < counts.Length; i++)
+        for (var i = min + 32768; i <= max + 32768; i++)
         {
             if (counts[i] == 0)
                 continue;
@@ -248,7 +261,7 @@ internal static class JpegXlTreeLearner
 
         // The range of each value: the number of bounds below it
         var range = 0;
-        for (var i = 0; i < lookup.Length; i++)
+        for (var i = min + 32768; i <= max + 32768; i++)
         {
             while (range < thresholds.Length && thresholds[range] < i - 32768)
             {
@@ -536,35 +549,60 @@ internal static class JpegXlTreeLearner
             var bucketCounts = _bucketCounts;
             var low = _low.AsSpan();
             var high = _high.AsSpan();
-            low.Fill(int.MaxValue);
-            high.Fill(-1);
             var propertyLength = MaxBuckets * rowLength;
-            Span<int> offsets = stackalloc int[selected.Length];
-            for (var i = start; i < end; i++)
+            if (selected.Length == 1)
             {
-                var row = rows.Slice(i * stride, stride);
-                for (var j = 0; j < selected.Length; j++)
+                // One predictor, the most common case: one count per property and sample
+                var tokenColumn = propertyCount + selected[0];
+                for (var i = start; i < end; i++)
                 {
-                    offsets[j] = (j * TokenCount) + row[propertyCount + selected[j]];
-                }
-
-                for (var p = 0; p < propertyCount; p++)
-                {
-                    var b = (int)row[p];
-                    low[p] = Math.Min(low[p], b);
-                    high[p] = Math.Max(high[p], b);
-                    bucketCounts[(p * MaxBuckets) + b]++;
-                    var bucketRow = (p * propertyLength) + (b * rowLength);
-                    for (var j = 0; j < offsets.Length; j++)
+                    var row = rows.Slice(i * stride, stride);
+                    var token = row[tokenColumn];
+                    for (var p = 0; p < propertyCount; p++)
                     {
-                        counts[bucketRow + offsets[j]]++;
+                        var b = (int)row[p];
+                        bucketCounts[(p * MaxBuckets) + b]++;
+                        counts[(p * propertyLength) + (b * rowLength) + token]++;
+                    }
+                }
+            }
+            else
+            {
+                Span<int> offsets = stackalloc int[selected.Length];
+                for (var i = start; i < end; i++)
+                {
+                    var row = rows.Slice(i * stride, stride);
+                    for (var j = 0; j < selected.Length; j++)
+                    {
+                        offsets[j] = (j * TokenCount) + row[propertyCount + selected[j]];
+                    }
+
+                    for (var p = 0; p < propertyCount; p++)
+                    {
+                        var b = (int)row[p];
+                        bucketCounts[(p * MaxBuckets) + b]++;
+                        var bucketRow = (p * propertyLength) + (b * rowLength);
+                        for (var j = 0; j < offsets.Length; j++)
+                        {
+                            counts[bucketRow + offsets[j]]++;
+                        }
                     }
                 }
             }
 
-            var bestGain = 0.0;
+            // The ranges of the leaf on each property: the first and the last one that holds a sample
             for (var p = 0; p < propertyCount; p++)
             {
+                var propertyBuckets = bucketCounts.AsSpan(p * MaxBuckets, MaxBuckets);
+                low[p] = propertyBuckets.IndexOfAnyExcept(0);
+                high[p] = propertyBuckets.LastIndexOfAnyExcept(0);
+            }
+
+            var bestGain = 0.0;
+            long rangeArea = 0;
+            for (var p = 0; p < propertyCount; p++)
+            {
+                rangeArea += (long)(high[p] - low[p] + 1) * rowLength;
                 if (low[p] < high[p])
                 {
                     var (gain, bucket) = Sweep(counts.AsSpan(p * propertyLength, propertyLength), bucketCounts.AsSpan(p * MaxBuckets, MaxBuckets), low[p], high[p], n, leafCost, selected, present, presentCounts);
@@ -575,12 +613,37 @@ internal static class JpegXlTreeLearner
                         candidate.Bucket = bucket;
                     }
                 }
-
-                counts.AsSpan((p * propertyLength) + (low[p] * rowLength), (high[p] - low[p] + 1) * rowLength).Clear();
-                bucketCounts.AsSpan((p * MaxBuckets) + low[p], high[p] - low[p] + 1).Clear();
             }
 
             candidate.Gain = bestGain;
+
+            // The counts go back to zero: the ranges of the leaf are cleared, or, when the leaf has fewer samples than they
+            // have counts (the small leaves at the bottom of a tree), the counts of its samples
+            if ((long)n * propertyCount * selected.Length < rangeArea)
+            {
+                for (var i = start; i < end; i++)
+                {
+                    var row = rows.Slice(i * stride, stride);
+                    for (var p = 0; p < propertyCount; p++)
+                    {
+                        var b = (int)row[p];
+                        bucketCounts[(p * MaxBuckets) + b] = 0;
+                        var bucketRow = (p * propertyLength) + (b * rowLength);
+                        for (var j = 0; j < selected.Length; j++)
+                        {
+                            counts[bucketRow + (j * TokenCount) + row[propertyCount + selected[j]]] = 0;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                for (var p = 0; p < propertyCount; p++)
+                {
+                    counts.AsSpan((p * propertyLength) + (low[p] * rowLength), (high[p] - low[p] + 1) * rowLength).Clear();
+                    bucketCounts.AsSpan((p * MaxBuckets) + low[p], high[p] - low[p] + 1).Clear();
+                }
+            }
         }
 
         /// <summary>
@@ -629,14 +692,30 @@ internal static class JpegXlTreeLearner
                     var leftRaw = _leftRaw[j];
                     var rightRaw = _rightRaw[j];
                     var totalRow = selected[j] * TokenCount;
-                    for (var i = 0; i < presentCounts[j]; i++)
-                    {
-                        var t = present[(j * TokenCount) + i];
-                        var index = (j * TokenCount) + t;
-                        var c = counts[row + index];
-                        if (c == 0)
-                            continue;
 
+                    // The tokens of the range, in increasing order: a range holds a few of the tokens of the leaf
+                    var tokenCounts = counts.Slice(row + (j * TokenCount), TokenCount);
+                    var mask = GetNonZeroMask(tokenCounts, out var highMask);
+                    while (true)
+                    {
+                        int t;
+                        if (mask != 0)
+                        {
+                            t = System.Numerics.BitOperations.TrailingZeroCount(mask);
+                            mask &= mask - 1;
+                        }
+                        else if (highMask != 0)
+                        {
+                            t = 64 + System.Numerics.BitOperations.TrailingZeroCount(highMask);
+                            highMask &= highMask - 1;
+                        }
+                        else
+                        {
+                            break;
+                        }
+
+                        var index = (j * TokenCount) + t;
+                        var c = tokenCounts[t];
                         var before = left[index];
                         var after = before + c;
                         leftSum += CountLog(after) - CountLog(before);
@@ -676,6 +755,46 @@ internal static class JpegXlTreeLearner
             }
 
             return (bestGain, bestBucket);
+        }
+
+        /// <summary>The tokens whose count is not zero, as bits: the first 64 tokens, then the others in <paramref name="highMask"/>.</summary>
+        private static ulong GetNonZeroMask(ReadOnlySpan<int> tokenCounts, out ulong highMask)
+        {
+            ulong mask = 0;
+            highMask = 0;
+            if (Vector128.IsHardwareAccelerated)
+            {
+                for (var t = 0; t < 64; t += Vector128<int>.Count)
+                {
+                    var zero = Vector128.Equals(Vector128.Create(tokenCounts.Slice(t, Vector128<int>.Count)), Vector128<int>.Zero);
+                    mask |= (ulong)(~zero.ExtractMostSignificantBits() & 0xF) << t;
+                }
+
+                for (var t = 64; t < TokenCount; t += Vector128<int>.Count)
+                {
+                    var zero = Vector128.Equals(Vector128.Create(tokenCounts.Slice(t, Vector128<int>.Count)), Vector128<int>.Zero);
+                    highMask |= (ulong)(~zero.ExtractMostSignificantBits() & 0xF) << (t - 64);
+                }
+
+                return mask;
+            }
+
+            for (var t = 0; t < TokenCount; t++)
+            {
+                if (tokenCounts[t] == 0)
+                    continue;
+
+                if (t < 64)
+                {
+                    mask |= 1UL << t;
+                }
+                else
+                {
+                    highMask |= 1UL << (t - 64);
+                }
+            }
+
+            return mask;
         }
     }
 }

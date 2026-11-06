@@ -168,6 +168,9 @@ internal sealed partial class InlineLayoutAlgorithm
         /// <summary>Whether the annotation is over the bases (else under), from <c>ruby-position</c>.</summary>
         public bool IsOver;
 
+        /// <summary>Whether the annotation is over the bases on the first formatted line, from the <c>ruby-position</c> its boxes inherit from <c>::first-line</c>.</summary>
+        public bool IsOverOnFirstLine;
+
         /// <summary>Whether the annotation is hidden (https://drafts.csswg.org/css-ruby-1/#hiding): its content is not laid out.</summary>
         public bool IsHidden;
         public int StartItem;
@@ -179,6 +182,9 @@ internal sealed partial class InlineLayoutAlgorithm
     private readonly record struct RubyLevel(ContainerBox? Container, int First, int Count)
     {
         public bool IsOver { get; init; }
+
+        /// <summary>Whether the level is over the bases on the first formatted line (see <see cref="RubyAnnotationInfo.IsOverOnFirstLine"/>).</summary>
+        public bool IsOverOnFirstLine { get; init; }
 
         /// <summary>Whether the level is a single annotation spanning all the bases of the segment.</summary>
         public bool IsSpanning { get; init; }
@@ -374,25 +380,39 @@ internal sealed partial class InlineLayoutAlgorithm
         // The position of an anonymous level is the one of its ruby container (the one of the annotations does not apply).
         // "If a ruby annotation container contains only a single, anonymous ruby annotation, then that ruby annotation is paired
         // with (i.e. spans across) all of the ruby bases in its ruby segment"
+        // (on the first formatted line, the boxes inherit ruby-position from ::first-line, https://drafts.csswg.org/css-pseudo-4/#first-line-inheritance)
         var hasSpanning = false;
         bool? previousIsOver = null;
+        bool? previousIsOverOnFirstLine = null;
+        var firstLineRoot = FindFirstLineRoot(_block);
         for (var l = levelStart; l < _rubyScratchLevels.Count; l++)
         {
             var level = _rubyScratchLevels[l];
-            var position = (level.Container ?? ruby).Style.Layout.Text.RubyPosition;
-            var isOver = position switch
+            var positionBox = level.Container ?? ruby;
+            var isOver = IsOverSide(positionBox.Style.Layout.Text.RubyPosition, previousIsOver);
+            var isOverOnFirstLine = isOver;
+            if (firstLineRoot is not null)
             {
-                RubyPosition.Under => false,
-                RubyPosition.AlternateOver => previousIsOver is not { } previous || !previous,
-                RubyPosition.AlternateUnder => previousIsOver is { } previous && !previous,
-                _ => true,
-            };
+                var outerRoot = _firstLineRoot;
+                _firstLineRoot = firstLineRoot;
+                isOverOnFirstLine = IsOverSide(GetFirstLineStyle(positionBox).Layout.Text.RubyPosition, previousIsOverOnFirstLine);
+                _firstLineRoot = outerRoot;
+            }
 
             previousIsOver = isOver;
+            previousIsOverOnFirstLine = isOverOnFirstLine;
             var isSpanning = level.Container is not null && level.Count == 1 && _rubyScratchBoxes[level.First] is ContainerBox { IsAnonymous: true } && baseCount > 1;
-            _rubyScratchLevels[l] = level with { IsOver = isOver, IsSpanning = isSpanning };
+            _rubyScratchLevels[l] = level with { IsOver = isOver, IsOverOnFirstLine = isOverOnFirstLine, IsSpanning = isSpanning };
             hasSpanning |= isSpanning;
         }
+
+        static bool IsOverSide(RubyPosition position, bool? previousIsOver) => position switch
+        {
+            RubyPosition.Under => false,
+            RubyPosition.AlternateOver => previousIsOver is not { } previous || !previous,
+            RubyPosition.AlternateUnder => previousIsOver is { } previous && !previous,
+            _ => true,
+        };
 
         // The pairs (https://drafts.csswg.org/css-ruby-1/#pairing): the other annotations are paired with the bases in order, the
         // excess ones with anonymous empty bases. As in Gecko, the intra-level white space (inter-base and inter-annotation white
@@ -438,7 +458,7 @@ internal sealed partial class InlineLayoutAlgorithm
                 var level = _rubyScratchLevels[l];
                 if (level.IsSpanning)
                 {
-                    AddRubyAnnotation((ContainerBox)_rubyScratchBoxes[level.First], firstColumn + c, firstBase, firstBase + totalBases - 1, l - levelStart, level.IsOver);
+                    AddRubyAnnotation((ContainerBox)_rubyScratchBoxes[level.First], firstColumn + c, firstBase, firstBase + totalBases - 1, l - levelStart, level.IsOver, level.IsOverOnFirstLine);
                     continue;
                 }
 
@@ -447,7 +467,7 @@ internal sealed partial class InlineLayoutAlgorithm
                     var annotationRow = _rubyScratchSlots[slotStart + (j * (levelCount + 1)) + 1 + (l - levelStart)];
                     if (annotationRow >= 0)
                     {
-                        AddRubyAnnotation((ContainerBox)_rubyScratchBoxes[annotationRow], firstColumn + c, firstBase + j, firstBase + j, l - levelStart, level.IsOver);
+                        AddRubyAnnotation((ContainerBox)_rubyScratchBoxes[annotationRow], firstColumn + c, firstBase + j, firstBase + j, l - levelStart, level.IsOver, level.IsOverOnFirstLine);
                     }
                 }
             }
@@ -462,6 +482,17 @@ internal sealed partial class InlineLayoutAlgorithm
         // them) and its annotations
         var row = rowStart;
         var parent = baseContainer ?? ruby;
+
+        // (a base container is a bidi isolate, https://drafts.csswg.org/css-ruby-1/#bidi: its columns are ordered by its direction;
+        // it has no inline box of its own, only its bidi controls)
+        var baseContainerBidi = baseContainer is null ? UnicodeBidi.Normal : GetUnicodeBidi(baseContainer);
+        if (baseContainerBidi != UnicodeBidi.Normal)
+        {
+            _needsBidi = true;
+            AddControl(baseContainer!, BidiControls.GetInlineStart(baseContainerBidi, baseContainer!.Style.Layout.Direction == Direction.Rtl));
+            _openBidiBoxes.Add(baseContainer);
+        }
+
         for (var c = 0; c < columnCount; c++)
         {
             var columnIndex = firstColumn + c;
@@ -507,6 +538,11 @@ internal sealed partial class InlineLayoutAlgorithm
 
         // The white space at the end of the base row (not removed by the fixup in a base container)
         CollectRubyRowWhiteSpace(parent, row, rowEnd);
+        if (baseContainerBidi != UnicodeBidi.Normal)
+        {
+            AddControl(baseContainer!, BidiControls.GetInlineEnd(baseContainerBidi));
+            _openBidiBoxes.RemoveAt(_openBidiBoxes.Count - 1);
+        }
     }
 
     /// <summary>
@@ -616,7 +652,7 @@ internal sealed partial class InlineLayoutAlgorithm
     /// (https://drafts.csswg.org/css-ruby-1/#autohide): when its <c>visibility</c> is <c>collapse</c>, or when its text content is
     /// the text content of its base ("prior to white space collapsing and text transformation", the elements ignored).
     /// </summary>
-    private void AddRubyAnnotation(ContainerBox annotation, int column, int firstBase, int lastBase, int level, bool isOver)
+    private void AddRubyAnnotation(ContainerBox annotation, int column, int firstBase, int lastBase, int level, bool isOver, bool isOverOnFirstLine)
     {
         var isHidden = false;
         if (firstBase == lastBase && !annotation.IsRubyWhiteSpace)
@@ -634,6 +670,7 @@ internal sealed partial class InlineLayoutAlgorithm
             LastBase = lastBase,
             Level = level,
             IsOver = isOver,
+            IsOverOnFirstLine = isOverOnFirstLine,
             IsHidden = isHidden,
         });
     }
@@ -1746,7 +1783,7 @@ internal sealed partial class InlineLayoutAlgorithm
     /// (see <see cref="GetRubyBaseExtent"/>), the next levels outward. <see cref="LineNode.Baseline"/> of the annotation boxes is set (from the
     /// top of the line box); the other nodes are already placed.
     /// </summary>
-    private void PlaceRubyAnnotations(double rootBaseline)
+    private void PlaceRubyAnnotations(double rootBaseline, bool isFirstLine)
     {
         var nodes = CollectionsMarshal.AsSpan(_nodes);
         _rubyRootNodes.Clear();
@@ -1787,7 +1824,7 @@ internal sealed partial class InlineLayoutAlgorithm
                         continue;
 
                     found = true;
-                    isOver = info.IsOver;
+                    isOver = isFirstLine ? info.IsOverOnFirstLine : info.IsOver;
                     height = Math.Max(height, node.GroupBottom - node.GroupTop);
                 }
 
@@ -1978,8 +2015,9 @@ internal sealed partial class InlineLayoutAlgorithm
             if (node.IsRubyAnnotation)
             {
                 var info = _rubyAnnotations[~_rubyBoxes[node.Box!]];
-                hasOver |= info.IsOver;
-                hasUnder |= !info.IsOver;
+                var isOver = isFirstLine ? info.IsOverOnFirstLine : info.IsOver;
+                hasOver |= isOver;
+                hasUnder |= !isOver;
                 contentOver = Math.Min(contentOver, node.Baseline + node.GroupTop);
                 contentUnder = Math.Max(contentUnder, node.Baseline + node.GroupBottom);
                 continue;

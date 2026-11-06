@@ -3832,6 +3832,8 @@ namespace Meziantou.Framework.Imaging.Typography
     {
         public double? BoldWidth { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Typography.GlyphCache? Cache { get => throw null; init { } }
+        public double Contrast { get => throw null; init { } }
+        public double Gamma { get => throw null; init { } }
         public double? ObliqueShear { get => throw null; init { } }
         public int Palette { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Typography.FontSynthesis Synthesis { get => throw null; init { } }

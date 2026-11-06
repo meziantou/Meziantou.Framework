@@ -1,3 +1,6 @@
+using System.Text;
+using System.Text.Json;
+
 namespace Meziantou.Framework.Charts.Tests;
 
 public sealed class LayoutTests
@@ -684,4 +687,212 @@ public sealed class LayoutTests
     private static double Distance(PackCircle a, PackCircle b) => Math.Sqrt(((a.X - b.X) * (a.X - b.X)) + ((a.Y - b.Y) * (a.Y - b.Y)));
 
     private static double Distance<T>(HierarchyCircle<T> a, HierarchyCircle<T> b) => Math.Sqrt(((a.X - b.X) * (a.X - b.X)) + ((a.Y - b.Y) * (a.Y - b.Y)));
+
+    [Fact]
+    public void Projection_Equirectangular()
+    {
+        var projection = new EquirectangularProjection();
+        Assert.Equal((Math.PI, Math.PI / 2), projection.Project(180, 90));
+        Assert.Equal((-Math.PI / 4, -Math.PI / 6), projection.Project(-45, -30));
+    }
+
+    [Fact]
+    public void Projection_Mercator()
+    {
+        // y = asinh(tan(latitude)); the latitudes are limited to atan(sinh(π)), where y is π, as x is at 180°
+        var projection = new MercatorProjection();
+        Assert.Equal(0, projection.Project(0, 0).Y, 1e-15);
+        var (x, y) = projection.Project(90, 45);
+        Assert.Equal(Math.PI / 2, x, 1e-12);
+        Assert.Equal(0.881373587019543, y, 1e-12);
+        Assert.Equal(Math.PI, projection.Project(0, 89).Y, 1e-9);
+        Assert.Equal(-Math.PI, projection.Project(0, -90).Y, 1e-9);
+
+        // Conformal: the scale along the meridians is the scale along the parallels, 1 / cos(latitude)
+        Assert.Equal(1 / Math.Cos(Math.PI / 3), Derivative(projection, 10, 60, alongLongitude: false).Length, 1e-6);
+        Assert.Equal(1 / Math.Cos(Math.PI / 3), Derivative(projection, 10, 60, alongLongitude: true).Length / Math.Cos(Math.PI / 3), 1e-6);
+    }
+
+    [Fact]
+    public void Projection_EqualEarth()
+    {
+        // At the equator, θ = 0 and x = λ / (M A1); at the poles, sin θ = M = √3/2, so θ = π/3 and y = θ (A1 + A2 θ² + θ⁶ (A3 + A4 θ²))
+        var projection = new EqualEarthProjection();
+        const double M = 0.8660254037844386;
+        Assert.Equal(Math.PI / (M * 1.340264), projection.Project(180, 0).X, 1e-12);
+        var theta = Math.PI / 3;
+        var pole = theta * (1.340264 - (0.081106 * theta * theta) + (Math.Pow(theta, 6) * (0.000893 + (0.003796 * theta * theta))));
+        Assert.Equal(1.3173627, pole, 1e-7);
+        Assert.Equal(pole, projection.Project(0, 90).Y, 1e-12);
+        Assert.Equal(-pole, projection.Project(0, -90).Y, 1e-12);
+        AssertEqualArea(projection);
+    }
+
+    [Fact]
+    public void Projection_Albers()
+    {
+        var projection = new AlbersProjection { Parallel1 = 0, Parallel2 = 60, CentralMeridian = 0 };
+        Assert.Equal((0.0, 0.0), projection.Project(0, 0));
+
+        // n = sin(60°) / 2, C = 1, ρ0 = 1 / n; at 30°: ρ = √(1 - 2n sin(30°)) / n
+        var n = Math.Sqrt(3) / 4;
+        Assert.Equal((1 / n) - (Math.Sqrt(1 - n) / n), projection.Project(0, 30).Y, 1e-12);
+        AssertEqualArea(projection);
+
+        // No distortion along the standard parallels: the length of a degree of longitude is cos(latitude)
+        Assert.Equal(1, Derivative(projection, 20, 0, alongLongitude: true).Length, 1e-6);
+        Assert.Equal(0.5, Derivative(projection, 20, 60, alongLongitude: true).Length, 1e-6);
+
+        // The longitudes are measured from the central meridian
+        var centered = new AlbersProjection { Parallel1 = 0, Parallel2 = 60, CentralMeridian = 100 };
+        Assert.Equal(projection.Project(-170, 20).X, centered.Project(-70, 20).X, 1e-12);
+        Assert.Equal(projection.Project(170, 20).X, centered.Project(-90, 20).X, 1e-12);
+        Assert.Equal(projection.Project(10, 20).X, centered.Project(110, 20).X, 1e-12);
+
+        // Parallels symmetric around the equator: the cylindrical equal-area projection
+        var cylindrical = new AlbersProjection { Parallel1 = -30, Parallel2 = 30, CentralMeridian = 0 };
+        var (x, y) = cylindrical.Project(90, 30);
+        Assert.Equal(Math.PI / 2 * Math.Cos(Math.PI / 6), x, 1e-12);
+        Assert.Equal(0.5 / Math.Cos(Math.PI / 6), y, 1e-12);
+    }
+
+    [Fact]
+    public void GeoSystem_Fit()
+    {
+        // The bounds are scaled to fit the frame and centered in it, as d3's fitExtent
+        var system = GeoSystem.Fit(new EquirectangularProjection(), (-1, -0.5, 1, 0.5), new ChartRectangle(10, 20, 200, 100));
+        Assert.Equal((110.0, 70.0), system.Project(0, 0));
+        var (x, y) = system.Project(180 / Math.PI, 90 / Math.PI);
+        Assert.Equal(210, x, 1e-9);
+        Assert.Equal(20, y, 1e-9);
+
+        // A line fits its length; a point shows a region of 10 degrees around it
+        var line = GeoSystem.Fit(new EquirectangularProjection(), (0, 0, 2, 0), new ChartRectangle(0, 0, 100, 50));
+        Assert.Equal(100, line.Project(2 * 180 / Math.PI, 0).X, 1e-9);
+        var point = GeoSystem.Fit(new EquirectangularProjection(), (0, 0, 0, 0), new ChartRectangle(0, 0, 100, 50));
+        Assert.Equal(75, point.Project(5, 0).X, 1e-9);
+
+        var bounds = GeoSystem.GetProjectedBounds(new MercatorProjection(), [new(-180, 0), new(double.NaN, 0), new(180, 90)]);
+        Assert.Equal(-Math.PI, bounds.MinX, 1e-12);
+        Assert.Equal(0, bounds.MinY, 1e-12);
+        Assert.Equal(Math.PI, bounds.MaxX, 1e-12);
+        Assert.Equal(Math.PI, bounds.MaxY, 1e-9);
+        Assert.True(double.IsNaN(GeoSystem.GetProjectedBounds(new MercatorProjection(), []).MinX));
+    }
+
+    [Fact]
+    public void GeoSystem_SampleBox()
+    {
+        // Straight meridians and parallels need only the corners; the curved meridians of Equal Earth get a point every 2.5°
+        Assert.Equal([new GeoPosition(0, 0), new(10, 0), new(10, 5), new(0, 5), new(0, 0)], GeoSystem.SampleBox(new EquirectangularProjection(), 0, 0, 10, 5));
+        Assert.HasCount(2 + 72 + 1 + 72, GeoSystem.SampleBox(new EqualEarthProjection(), -180, -90, 180, 90));
+        Assert.HasCount(1 + 12 + 1 + 12 + 1, GeoSystem.SampleBox(new AlbersProjection(), -120, 30, -90, 40));
+    }
+
+    [Fact]
+    public void GeoJson_Features()
+    {
+        const string Json = """
+            {"type":"FeatureCollection","features":[
+              {"type":"Feature","id":42,"properties":{"name":"A","value":1.5,"flag":true,"off":false,"none":null,"list":[1,2]},"geometry":{"type":"Point","coordinates":[1,2,300]}},
+              {"type":"Feature","id":"b","geometry":{"type":"MultiPoint","coordinates":[[1,2],[3,4]]}},
+              {"type":"Feature","id":true,"properties":null,"geometry":{"type":"LineString","coordinates":[[0,0],[1,1]]}},
+              {"type":"Feature","geometry":{"type":"MultiLineString","coordinates":[[[0,0],[1,1]],[[2,2],[3,3]]]}},
+              {"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[0,0],[4,0],[4,4],[0,0]],[[1,1],[2,1],[2,2],[1,1]]]}},
+              {"type":"Feature","geometry":{"type":"MultiPolygon","coordinates":[[[[0,0],[1,0],[1,1],[0,0]]],[[[5,5],[6,5],[6,6],[5,5]]]]}},
+              {"type":"Feature","geometry":{"type":"GeometryCollection","geometries":[{"type":"Point","coordinates":[9,9]},{"type":"LineString","coordinates":[[0,0],[1,0]]}]}},
+              {"type":"Feature","geometry":null}
+            ]}
+            """;
+        var features = GeoJson.ParseFeatures(Json);
+        Assert.HasCount(8, features);
+        Assert.Equal("42", features[0].Id);
+        Assert.Equal("A", features[0].Properties["name"]);
+        Assert.Equal(1.5, features[0].Properties["value"]);
+        Assert.Equal(true, features[0].Properties["flag"]);
+        Assert.Equal(false, features[0].Properties["off"]);
+        Assert.Null(features[0].Properties["none"]);
+        Assert.Equal("[1,2]", ((JsonElement)features[0].Properties["list"]!).GetRawText());
+        Assert.Equal([new GeoPosition(1, 2)], features[0].Geometry!.Points);
+        Assert.Equal("b", features[1].Id);
+        Assert.Equal([new GeoPosition(1, 2), new(3, 4)], features[1].Geometry!.Points);
+        Assert.Null(features[2].Id);
+        Assert.Empty(features[2].Properties);
+        Assert.Equal([new GeoPosition(0, 0), new(1, 1)], features[2].Geometry!.Lines[0]);
+        Assert.HasCount(2, features[3].Geometry!.Lines);
+        Assert.HasCount(1, features[4].Geometry!.Polygons);
+        Assert.HasCount(2, features[4].Geometry!.Polygons[0].Rings);
+        Assert.HasCount(2, features[5].Geometry!.Polygons);
+        Assert.Equal([new GeoPosition(9, 9)], features[6].Geometry!.Points);
+        Assert.HasCount(1, features[6].Geometry!.Lines);
+        Assert.Null(features[7].Geometry);
+
+        // A single feature, a geometry, and a stream
+        Assert.Equal("x", Assert.Single(GeoJson.ParseFeatures("""{"type":"Feature","id":"x","geometry":null}""")).Id);
+        Assert.Equal([new GeoPosition(3, 4)], Assert.Single(GeoJson.ParseFeatures("""{"type":"Point","coordinates":[3,4]}""")).Geometry!.Points);
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(Json));
+        Assert.HasCount(8, GeoJson.ParseFeatures(stream));
+    }
+
+    [Theory]
+    [InlineData("{")]
+    [InlineData("[]")]
+    [InlineData("""{"type":1}""")]
+    [InlineData("""{"type":"Circle","coordinates":[]}""")]
+    [InlineData("""{"type":"FeatureCollection"}""")]
+    [InlineData("""{"type":"FeatureCollection","features":[{"type":"Point","coordinates":[1,2]}]}""")]
+    [InlineData("""{"type":"Point"}""")]
+    [InlineData("""{"type":"GeometryCollection"}""")]
+    [InlineData("""{"type":"Point","coordinates":[1]}""")]
+    [InlineData("""{"type":"Point","coordinates":["a","b"]}""")]
+    [InlineData("""{"type":"Polygon","coordinates":[1,2]}""")]
+    public void GeoJson_Invalid(string json)
+    {
+        Assert.Throws<FormatException>(() => GeoJson.ParseFeatures(json));
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
+        Assert.Throws<FormatException>(() => GeoJson.ParseFeatures(stream));
+    }
+
+    [Fact]
+    public void GeoGeometry_Centroid()
+    {
+        // The centroid of the largest polygon; a hole does not move it
+        var square = new GeoPolygon([[new(0, 0), new(2, 0), new(2, 2), new(0, 2), new(0, 0)], [new(0.1, 0.1), new(0.2, 0.1), new(0.2, 0.2)]]);
+        var island = new GeoPolygon([[new(10, 10), new(10.5, 10), new(10.5, 10.5)]]);
+        Assert.Equal(new GeoPosition(1, 1), new GeoGeometry(polygons: [island, square]).Centroid);
+
+        // A triangle: the mean of its corners
+        var (longitude, latitude) = new GeoGeometry(polygons: [new GeoPolygon([[new(0, 0), new(3, 0), new(0, 3)]])]).Centroid!.Value;
+        Assert.Equal(1, longitude, 1e-12);
+        Assert.Equal(1, latitude, 1e-12);
+
+        // A flat ring, lines, points, and nothing
+        Assert.Equal(new GeoPosition(1, 0), new GeoGeometry(polygons: [new GeoPolygon([[new(0, 0), new(2, 0)]])]).Centroid);
+        Assert.Equal(new GeoPosition(1, 2), new GeoGeometry(polygons: [new GeoPolygon([])], lines: [[new(0, 0), new(2, 4)]]).Centroid);
+        Assert.Equal(new GeoPosition(2, 3), new GeoGeometry(points: [new(1, 2), new(3, 4)]).Centroid);
+        Assert.Null(new GeoGeometry().Centroid);
+        Assert.True(double.IsNaN(GeoPolygon.Mean([]).Longitude));
+    }
+
+    // An equal-area projection of the unit sphere: the area of a small cell is cos(latitude) dλ dφ
+    private static void AssertEqualArea(GeoProjection projection)
+    {
+        foreach (var (longitude, latitude) in new[] { (0.0, 0.0), (40, 20), (-100, 45), (150, -70) })
+        {
+            var a = Derivative(projection, longitude, latitude, alongLongitude: true);
+            var b = Derivative(projection, longitude, latitude, alongLongitude: false);
+            Assert.Equal(Math.Cos(latitude * Math.PI / 180), Math.Abs((a.X * b.Y) - (a.Y * b.X)), 1e-6);
+        }
+    }
+
+    // The derivative of the projection, per radian of longitude or latitude, by central differences
+    private static (double X, double Y, double Length) Derivative(GeoProjection projection, double longitude, double latitude, bool alongLongitude)
+    {
+        const double H = 1e-4;
+        var (x1, y1) = alongLongitude ? projection.Project(longitude - H, latitude) : projection.Project(longitude, latitude - H);
+        var (x2, y2) = alongLongitude ? projection.Project(longitude + H, latitude) : projection.Project(longitude, latitude + H);
+        var scale = 180 / Math.PI / (2 * H);
+        var (dx, dy) = ((x2 - x1) * scale, (y2 - y1) * scale);
+        return (dx, dy, Math.Sqrt((dx * dx) + (dy * dy)));
+    }
 }

@@ -295,11 +295,37 @@ internal static class IccProfileBuilder
     /// tag (CIEXYZ to linear RGB, halved to stay in range), which only applies because the tag input is CIEXYZ.
     /// </summary>
     public static byte[] RgbXyzLut16()
-        => Lut(
+        => Lut("RGB ", "XYZ ", RgbXyzLut16Tags());
+
+    /// <summary>
+    /// A matrix-based RGB display profile (the colorants of ProPhoto RGB, a gamma of 1.8) that also has the lookup tables of
+    /// <see cref="RgbXyzLut16"/>: a color management system converts with the tables, which take precedence over the
+    /// colorants and the tone curves (ICC.1:2022 section 8.10.2).
+    /// </summary>
+    public static byte[] MatrixWithLookupTables()
+    {
+        var curve = Gamma(461);
+        return BuildBytes(
             "RGB ",
             "XYZ ",
+            [
+                ("wtpt", Xyz(0.9642, 1, 0.8249)),
+                ("rXYZ", Xyz(0.7977, 0.2880, 0)),
+                ("gXYZ", Xyz(0.1352, 0.7119, 0)),
+                ("bXYZ", Xyz(0.0313, 0.0001, 0.8249)),
+                ("rTRC", curve),
+                ("gTRC", curve),
+                ("bTRC", curve),
+                .. RgbXyzLut16Tags(),
+            ]);
+    }
+
+    private static (string Signature, byte[] Data)[] RgbXyzLut16Tags()
+        =>
+        [
             ("A2B0", Lut16(3, 3, 3, static rgb => EncodeXyz(RgbToXyz(rgb)), inputEntries: 256, inputTable: static (_, x) => Math.Pow(x, 2.2))),
-            ("B2A0", Lut16(3, 3, 2, static halfRgb => [Math.Min(1, 2 * halfRgb[0]), Math.Min(1, 2 * halfRgb[1]), Math.Min(1, 2 * halfRgb[2])], outputEntries: 1024, outputTable: static (_, x) => Math.Pow(x, 1 / 2.2), matrix: HalfXyzToRgbMatrix())));
+            ("B2A0", Lut16(3, 3, 2, static halfRgb => [Math.Min(1, 2 * halfRgb[0]), Math.Min(1, 2 * halfRgb[1]), Math.Min(1, 2 * halfRgb[2])], outputEntries: 1024, outputTable: static (_, x) => Math.Pow(x, 1 / 2.2), matrix: HalfXyzToRgbMatrix())),
+        ];
 
     /// <summary>
     /// A CMYK output profile with the CIELAB connection space and <c>lut16Type</c> tables (legacy CIELAB encoding), with

@@ -76,6 +76,10 @@ of efforts 0 to 2, effort 5 is 3% smaller than effort 3, and effort 9 another 2%
 efforts 3 to 5, which code them with a palette of their colors and copy their repeated runs: a 2048x2048 screenshot is
 about half as large at effort 5 as at effort 4.
 
+For lossy output, from effort 3 the encoder also learns how to code the low-frequency image and the description of the
+blocks, as it does for lossless output. On 1024x1024 photographs this makes the files 4% smaller at the same quality (7%
+at quality 30, 2% at quality 90), and 1% on 356x356 ones, for about 15% more encoding time (25% on the small images).
+
 ## Show an image while it downloads
 
 [ReadFrameRefinementInto](cref:Meziantou.Framework.Imaging.ImageReader{TPixel}.ReadFrameRefinementInto) renders a frame from the bytes received so far: coarse at first, then finer, then the frame
@@ -149,3 +153,5 @@ public static bool RecompressJpeg(string jpegPath, string jxlPath, string rebuil
   BT.709 or DCI, with sRGB, Display P3 or BT.2020 primaries) or an sRGB ICC profile. Another ICC profile, or the
   PQ and HLG transfer functions, throws an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException): write those images losslessly.
 - The decoder rejects floating-point samples, samples of more than 16 bits, premultiplied alpha and CMYK images.
+- A lossy file with an ICC profile is decoded to the colors of that profile, through its colorants and tone curves, and
+  keeps the profile. A file whose profile converts with lookup tables throws an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException).

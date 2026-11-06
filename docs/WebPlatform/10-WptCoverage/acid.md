@@ -9,27 +9,20 @@ description: "The results of the web-platform-tests of acid, and why the tests t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 1 | 1 | – |
+| [Stable](#stable-tests) | 1 | 1 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
-| [Reftests](#reftests) | 0 | 2 | 2 | – |
-| **All** | **0** | **3** | **3** | **–** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **REQUIRES**: 3
-  - `layout`: 3
+| [Reftests](#reftests) | 2 | 2 | 0 | 100% |
+| **All** | **3** | **3** | **0** | **100%** |
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`acid3/numbered-tests.html`](https://wpt.fyi/results/acid/acid3/numbered-tests.html) | Disabled | – | REQUIRES(layout) | Acid tests check the rendering |
+| [`acid3/numbered-tests.html`](https://wpt.fyi/results/acid/acid3/numbered-tests.html) | Pass | 100 / 100 |  |  |
 
 ## Reftests
 
 | Test | Result | Variants | Kind | Description |
 |---|---|--:|---|---|
-| [`acid2/reftest.html`](https://wpt.fyi/results/acid/acid2/reftest.html) | Disabled | – | REQUIRES(layout) | Acid tests check the rendering |
-| [`acid3/test.html`](https://wpt.fyi/results/acid/acid3/test.html) | Disabled | – | REQUIRES(layout) | Acid tests check the rendering |
+| [`acid2/reftest.html`](https://wpt.fyi/results/acid/acid2/reftest.html) | Pass | 1 / 1 |  |  |
+| [`acid3/test.html`](https://wpt.fyi/results/acid/acid3/test.html) | Pass | 1 / 1 |  |  |

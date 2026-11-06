@@ -26,8 +26,8 @@ fails.
 - **Painting.** The core library paints the documents into a display list; a [rendering backend](07-Rendering/01-Overview.md)
   produces the pixels. Without a backend, nothing is painted, the images are not decoded and `canvas.getContext("2d")`
   returns `null`. The Imaging backend does not paint:
-  - the color glyphs other than the layers of `COLR` version 0 (the paint graphs of `COLR` version 1, the bitmap and SVG
-    glyphs);
+  - the SVG color glyphs (the `SVG ` table of a font): they are drawn as their outlines (the `COLR` glyphs, versions 0 and
+    1, and the bitmap glyphs of `sbix` and `CBDT` are drawn with their colors);
   - the wrapping of the SVG texts in the shapes of `shape-inside`;
   - the canvas layers (`beginLayer()`).
 

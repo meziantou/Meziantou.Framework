@@ -2,7 +2,6 @@
   "notRun": {
     "IndexedDB/crashtests/*": [{ "kind": "TEST RUNNER", "description": "the crash tests (`crashtests` directories and `-crash.` files) are not run by the test discovery" }],
     "WebCryptoAPI/import_export/crashtests/*": [{ "kind": "TEST RUNNER", "description": "the crash tests (`crashtests` directories and `-crash.` files) are not run by the test discovery" }],
-    "acid/*": [{ "kind": "REQUIRES", "features": ["layout"], "description": "Acid tests check the rendering" }],
     "ai/*": [{ "kind": "NOT IMPLEMENTED", "description": "built-in AI APIs (Prompt, Summarizer, Translator, Language Detector...)" }],
     "audio-output/*": [{ "kind": "REQUIRES", "features": ["hardware", "media"], "description": "Audio Output Devices API" }],
     "audio-session/*": [{ "kind": "NOT IMPLEMENTED", "description": "Audio Session API" }],

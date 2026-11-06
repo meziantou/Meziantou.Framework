@@ -621,6 +621,17 @@ jobs:
         if: steps.build-project.outputs.has-project == 'true' && contains(matrix.test-group.projects, 'Meziantou.Framework.Pdf.Corpus')
         run: dotnet run eng/pdf/fetch-tests.cs
 
+      # The Imaging interop tests download the JPEG XL conformance corpus (about 430 MB) at the commit pinned in
+      # tests/Meziantou.Framework.Imaging.InteropTests/JpegXlConformance/corpus.json the first time they need a file:
+      # it is cached, not committed
+      - name: Restore the JPEG XL conformance corpus
+        if: steps.build-project.outputs.has-project == 'true' && contains(matrix.test-group.projects, 'Meziantou.Framework.Imaging.InteropTests')
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: tests/Meziantou.Framework.Imaging.External
+          key: imaging-jxl-conformance-${{ hashFiles('tests/Meziantou.Framework.Imaging.InteropTests/JpegXlConformance/corpus.json') }}
+          restore-keys: imaging-jxl-conformance-
+
       # -graph: see the "Build all projects" step of the run_analyzers job
       - name: Build
         if: steps.build-project.outputs.has-project == 'true'

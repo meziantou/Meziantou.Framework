@@ -334,6 +334,19 @@ internal static class JpegXlTreeCoder
         }
     }
 
+    /// <summary>Joins the trees of the channels, from the first one, with a chain of decisions on the index of the channel.</summary>
+    public static JpegXlTreeLearner.TreeNode ChainChannels(ReadOnlySpan<JpegXlTreeLearner.TreeNode> trees)
+    {
+        const int ChannelProperty = 0;
+        var root = trees[^1];
+        for (var c = trees.Length - 2; c >= 0; c--)
+        {
+            root = JpegXlTreeLearner.TreeNode.CreateDecision(ChannelProperty, c, root, trees[c]);
+        }
+
+        return root;
+    }
+
     /// <summary>
     /// Flattens a learned tree into the nodes the decoder reads, breadth first: the children of a decision come after every
     /// node already listed, and the leaves are numbered in that order (their context).

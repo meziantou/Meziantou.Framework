@@ -11,15 +11,15 @@ description: "The results of the web-platform-tests of jpegxl, and why the tests
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 9 | 12 | 0 | 75% |
 | Tentative | 0 | 0 | 0 | – |
-| [Reftests](#reftests) | 33 | 51 | 0 | 65% |
-| **All** | **42** | **63** | **0** | **67%** |
+| [Reftests](#reftests) | 34 | 51 | 0 | 67% |
+| **All** | **43** | **63** | **0** | **68%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **BUG**: 4
-- **NOT IMPLEMENTED**: 17
+- **NOT IMPLEMENTED**: 16
 
 ## Stable tests
 
@@ -78,7 +78,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`orientation-codestream-vs-exif-reftest.html`](https://wpt.fyi/results/jpegxl/orientation-codestream-vs-exif-reftest.html) | Pass | 1 / 1 |  |  |
 | [`orientation-identity-reftest.html`](https://wpt.fyi/results/jpegxl/orientation-identity-reftest.html) | Pass | 1 / 1 |  |  |
 | [`orientation-rotate-90-ccw-reftest.html`](https://wpt.fyi/results/jpegxl/orientation-rotate-90-ccw-reftest.html) | Pass | 1 / 1 |  |  |
-| [`patches-reftest.html`](https://wpt.fyi/results/jpegxl/patches-reftest.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the JPEG XL images stored in the XYB color space with an ICC profile that is not sRGB (`conformance_patches.jxl`): Meziantou.Framework.Imaging does not decode them (it does not convert XYB to the color space of a profile), so the image is broken |
+| [`patches-reftest.html`](https://wpt.fyi/results/jpegxl/patches-reftest.html) | Pass | 1 / 1 |  |  |
 | [`premultiplied-alpha-grid-reftest.html`](https://wpt.fyi/results/jpegxl/premultiplied-alpha-grid-reftest.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the JPEG XL images whose alpha is premultiplied: Meziantou.Framework.Imaging does not decode them, so the image is broken |
 | [`premultiplied-gray-alpha-grid-reftest.html`](https://wpt.fyi/results/jpegxl/premultiplied-gray-alpha-grid-reftest.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the JPEG XL images whose alpha is premultiplied: Meziantou.Framework.Imaging does not decode them, so the image is broken |
 | [`progressive-1.html`](https://wpt.fyi/results/jpegxl/progressive-1.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the progressive rendering of a truncated JPEG XL image (the tests serve the first bytes of a progressive codestream and expect the image of its first passes): Meziantou.Framework.Imaging rejects a truncated codestream, so the image is broken |

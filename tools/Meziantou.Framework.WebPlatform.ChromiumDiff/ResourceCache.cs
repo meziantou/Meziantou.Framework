@@ -209,10 +209,18 @@ internal sealed class ResourceCache
     {
         public override ValueTask<DocumentResource?> LoadAsync(DocumentRequest request, CancellationToken cancellationToken)
         {
-            // The navigations of the nested browsing contexts are not recorded
+            // The navigations of the nested browsing contexts are not recorded. The URL of a request of the library keeps its
+            // fragment (e.g. <use href="sprite.svg#icon">), which is not sent over HTTP: the recorded URLs have none
+            var url = request.Url;
+            var hash = url.IndexOf('#', StringComparison.Ordinal);
+            if (hash >= 0)
+            {
+                url = url[..hash];
+            }
+
             if (request.Mode == RequestMode.Navigate
                 || request.Method != "GET"
-                || !cache.TryGet(request.Url, out var response, out var body))
+                || !cache.TryGet(url, out var response, out var body))
             {
                 return ValueTask.FromResult<DocumentResource?>(null);
             }

@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="240" viewBox="0 0 360 240" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="360" height="240" fill="#ffffff"/>
+<g class="marks">
+<g>
+<g class="lines">
+<path d="M44.52,224.91 L188.42,201.42 L332.32,131.49" fill="none" stroke="#e5484d" stroke-linejoin="round"><title>Aster</title></path>
+<path d="M44.52,182.95 L188.42,170.09 L332.32,122.95" fill="none" stroke="#e5484d" stroke-linejoin="round"><title>Breeze</title></path>
+<path d="M44.52,113.02 L188.42,115.26 L332.32,109.77" fill="none" stroke="#e5484d" stroke-linejoin="round"><title>Cobalt</title></path>
+<path d="M44.52,29.1 L188.42,60.43 L332.32,93.48" fill="none" stroke="#e5484d" stroke-linejoin="round"><title>Dune</title></path>
+<path d="M188.42,107.43 L332.32,119.25" fill="none" stroke="#e5484d" stroke-linejoin="round"><title>Gap</title></path>
+</g>
+<g class="axes">
+<line x1="44.52" y1="29.1" x2="44.52" y2="224.91" stroke="#8c959f"/>
+<line x1="40.52" y1="224.91" x2="44.52" y2="224.91" stroke="#8c959f"/>
+<text x="37.52" y="227.72" text-anchor="end" font-size="11" fill="#59636e">1,200</text>
+<line x1="40.52" y1="196.94" x2="44.52" y2="196.94" stroke="#8c959f"/>
+<text x="37.52" y="199.75" text-anchor="end" font-size="11" fill="#59636e">1,300</text>
+<line x1="40.52" y1="168.97" x2="44.52" y2="168.97" stroke="#8c959f"/>
+<text x="37.52" y="171.78" text-anchor="end" font-size="11" fill="#59636e">1,400</text>
+<line x1="40.52" y1="140.99" x2="44.52" y2="140.99" stroke="#8c959f"/>
+<text x="37.52" y="143.8" text-anchor="end" font-size="11" fill="#59636e">1,500</text>
+<line x1="40.52" y1="113.02" x2="44.52" y2="113.02" stroke="#8c959f"/>
+<text x="37.52" y="115.83" text-anchor="end" font-size="11" fill="#59636e">1,600</text>
+<line x1="40.52" y1="85.05" x2="44.52" y2="85.05" stroke="#8c959f"/>
+<text x="37.52" y="87.86" text-anchor="end" font-size="11" fill="#59636e">1,700</text>
+<line x1="40.52" y1="57.07" x2="44.52" y2="57.07" stroke="#8c959f"/>
+<text x="37.52" y="59.88" text-anchor="end" font-size="11" fill="#59636e">1,800</text>
+<line x1="40.52" y1="29.1" x2="44.52" y2="29.1" stroke="#8c959f"/>
+<text x="37.52" y="31.91" text-anchor="end" font-size="11" fill="#59636e">1,900</text>
+<text x="44.52" y="18.62" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2328">Weight</text>
+<line x1="188.42" y1="29.1" x2="188.42" y2="224.91" stroke="#8c959f"/>
+<line x1="184.42" y1="29.1" x2="188.42" y2="29.1" stroke="#8c959f"/>
+<text x="181.42" y="31.91" text-anchor="end" font-size="11" fill="#59636e">20</text>
+<line x1="184.42" y1="68.26" x2="188.42" y2="68.26" stroke="#8c959f"/>
+<text x="181.42" y="71.07" text-anchor="end" font-size="11" fill="#59636e">25</text>
+<line x1="184.42" y1="107.43" x2="188.42" y2="107.43" stroke="#8c959f"/>
+<text x="181.42" y="110.24" text-anchor="end" font-size="11" fill="#59636e">30</text>
+<line x1="184.42" y1="146.59" x2="188.42" y2="146.59" stroke="#8c959f"/>
+<text x="181.42" y="149.4" text-anchor="end" font-size="11" fill="#59636e">35</text>
+<line x1="184.42" y1="185.75" x2="188.42" y2="185.75" stroke="#8c959f"/>
+<text x="181.42" y="188.56" text-anchor="end" font-size="11" fill="#59636e">40</text>
+<line x1="184.42" y1="224.91" x2="188.42" y2="224.91" stroke="#8c959f"/>
+<text x="181.42" y="227.72" text-anchor="end" font-size="11" fill="#59636e">45</text>
+<text x="188.42" y="18.62" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2328">MPG</text>
+<line x1="332.32" y1="29.1" x2="332.32" y2="224.91" stroke="#8c959f"/>
+<line x1="328.32" y1="224.91" x2="332.32" y2="224.91" stroke="#8c959f"/>
+<text x="325.32" y="227.72" text-anchor="end" font-size="11" fill="#59636e">10</text>
+<line x1="328.32" y1="127.01" x2="332.32" y2="127.01" stroke="#8c959f"/>
+<text x="325.32" y="129.82" text-anchor="end" font-size="11" fill="#59636e">100</text>
+<line x1="328.32" y1="29.1" x2="332.32" y2="29.1" stroke="#8c959f"/>
+<text x="325.32" y="31.91" text-anchor="end" font-size="11" fill="#59636e">1,000</text>
+<text x="332.32" y="18.62" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2328">Power</text>
+</g>
+</g>
+</g>
+</svg>

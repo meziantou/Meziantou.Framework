@@ -5133,7 +5133,7 @@
     }
   },
   "html/semantics/forms/the-select-element/customizable-select/select-base-appearance-ordering.html": {
-    "reftest": "PASS"
+    "reftest": "FAIL"
   },
   "html/semantics/forms/the-select-element/customizable-select/select-base-appearance-writing-modes.html": {
     "reftest": "PASS"

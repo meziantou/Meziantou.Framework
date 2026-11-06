@@ -422,9 +422,13 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   every table must be reached by a test that compares the decoder with the reference decoders. Lossless (Modular)
   decoding and the encoder are exact. VarDCT is defined in floating point, so lossy decoding is compared with a
   tolerance, measured against both djxl and jxl-oxide, which must also agree with each other: never loosen a tolerance
-  to hide a file that is read in two ways. The integer path (`JpegXlDecoder.WriteFrame`) is only taken by frames that
-  are shown as they are stored; everything else goes through `JpegXlFrameRenderer`, in floating point, where 1 is the
-  largest integer sample. The render order is the one of libjxl: restoration filters, patches, splines, upsampling,
+  to hide a file that is read in two ways. The conformance corpus of the JPEG XL project (`libjxl/conformance`, at the
+  commit of `InteropTests/JpegXlConformance/corpus.json`, downloaded by the tests and never committed) checks every
+  case (`JpegXlConformanceTests`): decoded within its own tolerance plus the rounding of the output depth, or rejected
+  with the `UnsupportedImageFeatureException` that `readme.md` documents. A feature that makes a rejected case decode
+  moves it from `UnsupportedCases` to `DecodedCases`. The integer path (`JpegXlDecoder.WriteFrame`) is only taken by
+  frames that are shown as they are stored; everything else goes through `JpegXlFrameRenderer`, in floating point,
+  where 1 is the largest integer sample. The render order is the one of libjxl: restoration filters, patches, splines, upsampling,
   noise, color transform, blending. The sRGB curve of the XYB output computes its power with two polynomials
   (`JpegXlColorTransform.PowerFiveTwelfths`, 3e-7 relative, against 1.1e-7 for `MathF.Pow`), in the vector paths and
   their scalar reference alike: it was 27 % of the instructions of a lossy decoding. The other transfer functions (BT.709,

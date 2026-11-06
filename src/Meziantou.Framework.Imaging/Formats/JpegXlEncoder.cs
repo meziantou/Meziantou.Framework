@@ -55,10 +55,10 @@ public sealed class JpegXlEncoder : ImageEncoder
     /// <remarks>
     /// The quality selects the quantization steps: 90 is a quality at which the difference with the original is barely
     /// visible at a normal viewing distance, and 100 is the finest quantization the encoder uses, still lossy. From
-    /// the <see cref="Effort"/> 3, the steps of a block also follow its content: they are finer where the image is flat
-    /// or next to an edge, where an error shows, and coarser in texture, which hides it; a quality keeps about the file
-    /// size it has without it. Up to 90, the decoder also smooths the image with the filter of the format that removes
-    /// the edges between blocks, which the encoder prepares by sharpening it.
+    /// the <see cref="Effort"/> 3 and above the quality 80, the steps of a block also follow its content in part: they
+    /// are finer where the image is flat or next to an edge, where an error shows, and coarser in texture, which hides
+    /// it. Below the quality 94, the decoder removes the ringing of coarse steps with the edge-preserving filter of the
+    /// format, more strongly as the quality goes down.
     /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException">The value is not between 0 and 100.</exception>
     public int Quality

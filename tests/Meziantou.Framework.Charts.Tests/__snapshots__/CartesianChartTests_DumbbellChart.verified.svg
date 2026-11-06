@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="240" viewBox="0 0 640 240" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>From 2022 to 2024</title>
+<rect width="640" height="240" fill="#ffffff"/>
+<g class="grid">
+<line x1="48.74" y1="32.8" x2="48.74" y2="209.83" stroke="#e3e6ea"/>
+<line x1="164.76" y1="32.8" x2="164.76" y2="209.83" stroke="#e3e6ea"/>
+<line x1="280.78" y1="32.8" x2="280.78" y2="209.83" stroke="#e3e6ea"/>
+<line x1="396.79" y1="32.8" x2="396.79" y2="209.83" stroke="#e3e6ea"/>
+<line x1="512.81" y1="32.8" x2="512.81" y2="209.83" stroke="#e3e6ea"/>
+<line x1="628.83" y1="32.8" x2="628.83" y2="209.83" stroke="#e3e6ea"/>
+</g>
+<g class="marks">
+<g>
+<line x1="396.79" y1="54.93" x2="570.82" y2="54.93" stroke="#8c959f" stroke-width="2"/>
+<line x1="222.77" y1="99.18" x2="251.77" y2="99.18" stroke="#8c959f" stroke-width="2"/>
+<line x1="48.74" y1="143.44" x2="309.78" y2="143.44" stroke="#8c959f" stroke-width="2"/>
+<line x1="512.81" y1="187.7" x2="628.83" y2="187.7" stroke="#8c959f" stroke-width="2"/>
+</g>
+<g>
+<circle cx="396.79" cy="54.93" r="5" fill="#9498a0"/>
+<circle cx="222.77" cy="99.18" r="5" fill="#9498a0"/>
+<circle cx="48.74" cy="143.44" r="5" fill="#9498a0"/>
+<circle cx="512.81" cy="187.7" r="5" fill="#9498a0"/>
+</g>
+<g>
+<circle cx="570.82" cy="54.93" r="5" fill="#4269d0"/>
+<circle cx="251.77" cy="99.18" r="5" fill="#4269d0"/>
+<circle cx="309.78" cy="143.44" r="5" fill="#4269d0"/>
+<circle cx="628.83" cy="187.7" r="5" fill="#4269d0"/>
+</g>
+</g>
+<g class="axes">
+<line x1="43.74" y1="54.93" x2="48.74" y2="54.93" stroke="#8c959f"/>
+<text x="40.74" y="57.74" text-anchor="end" font-size="11" fill="#59636e">North</text>
+<line x1="43.74" y1="99.18" x2="48.74" y2="99.18" stroke="#8c959f"/>
+<text x="40.74" y="101.99" text-anchor="end" font-size="11" fill="#59636e">South</text>
+<line x1="43.74" y1="143.44" x2="48.74" y2="143.44" stroke="#8c959f"/>
+<text x="40.74" y="146.25" text-anchor="end" font-size="11" fill="#59636e">East</text>
+<line x1="43.74" y1="187.7" x2="48.74" y2="187.7" stroke="#8c959f"/>
+<text x="40.74" y="190.51" text-anchor="end" font-size="11" fill="#59636e">West</text>
+<line x1="48.74" y1="209.83" x2="48.74" y2="214.83" stroke="#8c959f"/>
+<text x="48.74" y="225.72" text-anchor="middle" font-size="11" fill="#59636e">60</text>
+<line x1="164.76" y1="209.83" x2="164.76" y2="214.83" stroke="#8c959f"/>
+<text x="164.76" y="225.72" text-anchor="middle" font-size="11" fill="#59636e">80</text>
+<line x1="280.78" y1="209.83" x2="280.78" y2="214.83" stroke="#8c959f"/>
+<text x="280.78" y="225.72" text-anchor="middle" font-size="11" fill="#59636e">100</text>
+<line x1="396.79" y1="209.83" x2="396.79" y2="214.83" stroke="#8c959f"/>
+<text x="396.79" y="225.72" text-anchor="middle" font-size="11" fill="#59636e">120</text>
+<line x1="512.81" y1="209.83" x2="512.81" y2="214.83" stroke="#8c959f"/>
+<text x="512.81" y="225.72" text-anchor="middle" font-size="11" fill="#59636e">140</text>
+<line x1="628.83" y1="209.83" x2="628.83" y2="214.83" stroke="#8c959f"/>
+<text x="628.83" y="225.72" text-anchor="middle" font-size="11" fill="#59636e">160</text>
+<line x1="48.74" y1="209.83" x2="628.83" y2="209.83" stroke="#8c959f"/>
+</g>
+<text x="10" y="21.49" font-size="16" font-weight="bold" fill="#1f2328">From 2022 to 2024</text>
+</svg>

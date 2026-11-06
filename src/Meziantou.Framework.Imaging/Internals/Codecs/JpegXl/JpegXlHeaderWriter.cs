@@ -174,14 +174,11 @@ internal static class JpegXlHeaderWriter
             }
         }
 
-        // No name; the restoration filters with their default parameters, no extension
+        // No name; the edge-preserving filter with its default parameters but the strength of the first iteration, no extension
         writer.WriteU32(0, 0, 0, 0, 4, 16, 5, 48, 10);
         writer.WriteBool(false);
-        writer.WriteBool(settings.IsGaborEnabled);
-        if (settings.IsGaborEnabled)
-        {
-            writer.WriteBool(false);
-        }
+        // No Gabor-like filter
+        writer.WriteBool(false);
 
         writer.WriteBits((uint)settings.EpfIterations, 2);
         if (settings.EpfIterations > 0)
@@ -192,7 +189,24 @@ internal static class JpegXlHeaderWriter
             }
 
             writer.WriteBool(false);
-            writer.WriteBool(false);
+            if (settings.EpfFirstPassSigmaScale is { } firstPassSigmaScale)
+            {
+                // The quantization multiplier, the scales of the first and third iterations, and the multiplier of the borders
+                writer.WriteBool(true);
+                if (!settings.IsModular)
+                {
+                    writer.WriteF16(0.46f);
+                }
+
+                writer.WriteF16(firstPassSigmaScale);
+                writer.WriteF16(6.5f);
+                writer.WriteF16(2f / 3);
+            }
+            else
+            {
+                writer.WriteBool(false);
+            }
+
             if (settings.IsModular)
             {
                 writer.WriteF16(1);

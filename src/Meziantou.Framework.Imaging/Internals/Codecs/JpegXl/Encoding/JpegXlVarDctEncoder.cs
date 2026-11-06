@@ -10,14 +10,15 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <remarks>
 /// <list type="bullet">
 /// <item><description>
-/// The quantization field first, over the whole frame (<see cref="ComputeQuantField"/>): from the effort 3, each block
-/// has its own quantization factor, finer where an error shows (<see cref="JpegXlAdaptiveQuantization"/>), and the scale
-/// of the quantization of the frame is the one that suits the field. The samples are converted to XYB a first time for
-/// it. Below, every block has the same factor.
+/// The quantization field first, over the whole frame (<see cref="ComputeQuantField"/>): from the effort 3 and below the
+/// distance 1.75, each block has its own quantization factor, finer where an error shows
+/// (<see cref="JpegXlAdaptiveQuantization"/>), blended with the factor of the frame (<see cref="GetFieldStrength"/>), and
+/// the scale of the quantization of the frame is the one that suits the field. The samples are converted to XYB a first
+/// time for it. Otherwise, every block has the same factor.
 /// </description></item>
 /// <item><description>
-/// Analysis, group by group: the samples of the group are converted to XYB, and sharpened when the decoder smooths the
-/// frame (<see cref="JpegXlInverseGaborish"/>); the transform of each area is chosen, from the 8x8 DCT to the 64x64 one
+/// Analysis, group by group: the samples of the group are converted to XYB; the transform of each area is chosen, from
+/// the 8x8 DCT to the 64x64 one
 /// by the effort, by what it costs for the luma (<see cref="GetTransformCost"/>), and has one factor, from the field of
 /// its blocks; then each transform is applied and quantized, and only the quantized values are kept: one value per
 /// coefficient, and the LF value of each block. The blocks of a frame do not predict each other, so the encoder does
@@ -50,8 +51,6 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
     private const byte BlockCovered = 1;
     private const byte BlockFirst = 2;
 
-    /// <summary>The sharpness of the edge-preserving filter of every block: the middle of its range.</summary>
-    private const int Sharpness = 4;
 
     /// <summary>The effort from which each tile has its own factors of the chroma from luma prediction.</summary>
     private const int ChromaFromLumaEffort = 3;
@@ -99,14 +98,16 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
     private const float TypeBits = 4f;
 
     /// <summary>
-    /// The factor of the distance of a frame that the decoder smooths: the sharpening of the encoder gives the same
-    /// quantization steps more to code, so the steps are larger for the same file size, and the frame is closer to the
-    /// original than without the filter.
+    /// The smallest magnitude, in quantization steps, below which a coefficient is quantized to zero: a little above one
+    /// half. <see cref="ApplyZeroThresholds"/> raises it for the higher frequencies.
     /// </summary>
-    private const float GaborishDistanceFactor = 1.25f;
-
-    /// <summary>The magnitude, in quantization steps, below which a coefficient is quantized to zero: a little above one half.</summary>
     private const float ZeroThreshold = 0.58f;
+
+    /// <summary>
+    /// The factor of the step of the LF values of the X channel: the default step is far finer than the one of the
+    /// coefficients of X around it.
+    /// </summary>
+    private const float LfStepFactorX = 2;
 
     private static readonly JpegXlHybridUintConfig CoefficientConfig = new(4, 2, 0);
 
@@ -140,9 +141,6 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
     private readonly int[] _verticalShift = new int[3];
     private TileBlock[] _tileBlocks = new TileBlock[ColorTileBlocks * ColorTileBlocks];
     private readonly int[]?[] _ranks = new int[]?[JpegXlVarDctTables.OrderCount];
-    private readonly bool _gaborish;
-    private readonly float[] _gaborishWeights = new float[3 * JpegXlInverseGaborish.WeightCount];
-    private Av1PooledArray<float>?[] _padded = new Av1PooledArray<float>?[3];
     private readonly int _maxTransformBlocks = 1;
     private readonly bool _usesRectangles;
     private float _referenceStep;
@@ -239,23 +237,13 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
             return;
         }
 
-        // The decoder smooths the frame: the encoder sharpens it first, with what undoes the weights of each channel
-        _gaborish = frame.RestorationFilter.IsGaborEnabled;
         // The scale of the quantization is the one of the quantization field of the frame: see ComputeQuantField
-        _distance = GetDistance(quality) * (_gaborish ? GaborishDistanceFactor : 1f);
+        _distance = GetDistance(quality);
 
         // The X and B channels have their own scale of the quantization: a power of 0.8
         _hfScale[0] = MathF.Pow(0.8f, frame.XqmScale - 2);
         _hfScale[1] = 1;
         _hfScale[2] = MathF.Pow(0.8f, frame.BqmScale - 2);
-
-        if (_gaborish)
-        {
-            for (var c = 0; c < 3; c++)
-            {
-                JpegXlInverseGaborish.GetWeights(frame.RestorationFilter.GaborWeights[c * 2], frame.RestorationFilter.GaborWeights[(c * 2) + 1], _gaborishWeights.AsSpan(c * JpegXlInverseGaborish.WeightCount, JpegXlInverseGaborish.WeightCount));
-            }
-        }
 
         // What the effort searches: the 16x16 transform from 3, the transforms that are not square from 7, the transforms
         // of up to 64 samples per side from 8
@@ -319,20 +307,58 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
     {
         return GetDistance(quality) switch
         {
-            < 0.6f => 0,
+            < 0.7f => 0,
             < 1.5f => 1,
-            < 3.5f => 2,
+            < EpfFirstPassDistance => 2,
             _ => 3,
         };
     }
 
     /// <summary>
-    /// Gets a value indicating whether the decoder smooths the frames of a quality with the Gabor-like filter, which the
-    /// encoder prepares by sharpening them (<see cref="JpegXlInverseGaborish"/>). The pair removes the edges that the
-    /// quantization leaves between blocks; the sharpening is not the exact inverse of the smoothing, which shows on fine
-    /// textures once the quantization is fine, so the highest qualities do not use it.
+    /// Gets the scale of the strength of the first iteration of the edge-preserving filter for a quality, or
+    /// <see langword="null"/> for the default one (0.9): from the distance 2.5, where the decoder applies three
+    /// iterations, a first one four times as strong removes more of the ringing of coarse steps.
     /// </summary>
-    public static bool UsesGaborish(int quality) => GetDistance(quality) >= 1f;
+    public static float? GetEpfFirstPassSigmaScale(int quality) => GetDistance(quality) >= EpfFirstPassDistance ? 3.6f : null;
+
+    /// <summary>The distance from which the decoder applies three iterations of the edge-preserving filter, the first one stronger.</summary>
+    private const float EpfFirstPassDistance = 2.5f;
+
+    /// <summary>
+    /// Gets the sharpness of the edge-preserving filter of every block of the frame, from 0 (no filter) to 7: the finer the
+    /// steps, the less the filter blurs an edge it would otherwise smooth, so the higher the sharpness.
+    /// </summary>
+    private int GetEpfSharpness() => _distance switch
+    {
+        < 1.4f => 7,
+        < 1.75f => 6,
+        < 3.5f => 5,
+        _ => 4,
+    };
+
+    /// <summary>
+    /// Gets the weight of the adaptive quantization field of a distance against the factor of the frame: 0 at the
+    /// distance 1.75 and above, where every block has the factor of the frame. Measured with SSIMULACRA 2 and Butteraugli,
+    /// a field that is not blended makes the files 2.5 % larger at equal quality, and 4 % once the Gabor-like filter is off.
+    /// </summary>
+    internal static float GetFieldStrength(float distance)
+    {
+        ReadOnlySpan<float> distances = [0.5f, 1.0f, 1.4f, 1.75f];
+        ReadOnlySpan<float> strengths = [0.26565f, 0.275459f, 0.058287f, 0f];
+        if (distance <= distances[0])
+            return strengths[0];
+
+        for (var i = 1; i < distances.Length; i++)
+        {
+            if (distance <= distances[i])
+            {
+                var position = (distance - distances[i - 1]) / (distances[i] - distances[i - 1]);
+                return strengths[i - 1] + ((strengths[i] - strengths[i - 1]) * position);
+            }
+        }
+
+        return 0;
+    }
 
     /// <summary>Encodes a frame: its sections, one after the other, and their sizes.</summary>
     /// <param name="lease">The pixels of the frame.</param>
@@ -482,11 +508,6 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
         for (var c = 0; c < 3; c++)
         {
             _samples[c] = Av1PooledArray<float>.Rent(_scope, GroupSize * GroupSize, clear: false);
-            if (_gaborish)
-            {
-                const int PaddedSize = GroupSize + (2 * JpegXlInverseGaborish.Radius);
-                _padded[c] = Av1PooledArray<float>.Rent(_scope, PaddedSize * PaddedSize, clear: false);
-            }
         }
 
         _work = Av1PooledArray<float>.Rent(_scope, (long)JpegXlForwardTransform.MaxSize * JpegXlForwardTransform.MaxSize, clear: false);
@@ -503,8 +524,6 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
         {
             _samples[c]?.Dispose();
             _samples[c] = null;
-            _padded[c]?.Dispose();
-            _padded[c] = null;
             _fieldPlanes[c]?.Dispose();
             _fieldPlanes[c] = null;
         }
@@ -582,7 +601,6 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
         var worker = (JpegXlVarDctEncoder)MemberwiseClone();
         worker._isWorker = true;
         worker._samples = new Av1PooledArray<float>?[3];
-        worker._padded = new Av1PooledArray<float>?[3];
         worker._fieldPlanes = new Av1PooledArray<float>?[3];
         worker._fieldScratch = null;
         worker._tileBlocks = new TileBlock[ColorTileBlocks * ColorTileBlocks];
@@ -616,14 +634,21 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
         var blockCount = (long)_blocksWide * _blocksHigh;
         _field = Av1PooledArray<float>.Rent(_scope, blockCount, clear: false);
         var field = _field.Span;
-        if (_effort < AdaptiveQuantizationEffort)
+        var flat = HfScaleAtDistance1 / _distance;
+        var strength = GetFieldStrength(_distance);
+        if (_effort < AdaptiveQuantizationEffort || strength == 0)
         {
             // One factor for the frame
-            field[..(int)blockCount].Fill(HfScaleAtDistance1 / _distance);
+            field[..(int)blockCount].Fill(flat);
         }
         else
         {
+            // The adaptive field, blended with the factor of the frame
             ComputeAdaptiveQuantField(pixels);
+            foreach (ref var value in field[..(int)blockCount])
+            {
+                value = (strength * value) + ((1 - strength) * flat);
+            }
         }
 
         // The scale of the frame; the LF image keeps at least ten steps per unit of its own scale
@@ -634,7 +659,7 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
         }
 
         _quantLf = Math.Clamp((int)MathF.Round(65536f * LfScaleAtDistance1 / (lfDistance * _globalScale), MidpointRounding.AwayFromZero), 1, 65536);
-        ReadOnlySpan<float> lfQuant = [1f / 4096, 1f / 512, 1f / 256];
+        ReadOnlySpan<float> lfQuant = [LfStepFactorX / 4096, 1f / 512, 1f / 256];
         for (var c = 0; c < 3; c++)
         {
             _lfStep[c] = lfQuant[c] * (65536f / _globalScale / _quantLf);
@@ -1045,6 +1070,8 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
         var bits = 0f;
         var nonZeroCount = 0;
         var lastRank = 0;
+        Span<float> thresholds = stackalloc float[4];
+        GetZeroThresholds(1, blocksWide, blocksHigh, thresholds);
         for (var row = 0; row < rows; row++)
         {
             var values = coefficients.Slice(row * columns, columns);
@@ -1055,6 +1082,11 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
                 var step = steps[column] * scale;
                 var value = values[column];
                 var quantized = Quantize(value / step);
+                if (quantized is 1 or -1 && MathF.Abs(value / step) < thresholds[GetFrequencyQuarter(row, column, rows, columns)])
+                {
+                    quantized = 0;
+                }
+
                 if (quantized == 0)
                 {
                     error += value * value;
@@ -1206,6 +1238,7 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
             var quantizedY = _coefficients[1]!.Span.Slice(groupOffset + offsets[(y * GroupBlocks) + x], size);
             var luma = tileLuma.Slice(block.Offset, size);
             QuantizeLuma(source.Slice(TileArea, size), matrix.Slice(size, size), scale, biasY, biasNumerator, quantizedY, luma);
+            ApplyZeroThresholds(1, blocksWide, blocksHigh, source.Slice(TileArea, size), luma, 0, matrix.Slice(size, size), scale, quantizedY, luma);
 
             // The lowest frequencies are in the LF image
             ClearLowestFrequencies(quantizedY, blocksWide, blocksHigh);
@@ -1265,8 +1298,98 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
             var quantizedB = _coefficients[2]!.Span.Slice(offset, size);
             QuantizeChroma(source[..size], luma, matrix[..size], kx, scale * _hfScale[0], quantizedX);
             QuantizeChroma(source.Slice(2 * TileArea, size), luma, matrix.Slice(2 * size, size), kb, scale * _hfScale[2], quantizedB);
+            ApplyZeroThresholds(0, blocksWide, blocksHigh, source[..size], luma, kx, matrix[..size], scale * _hfScale[0], quantizedX, default);
+            ApplyZeroThresholds(2, blocksWide, blocksHigh, source.Slice(2 * TileArea, size), luma, kb, matrix.Slice(2 * size, size), scale * _hfScale[2], quantizedB, default);
             ClearLowestFrequencies(quantizedX, blocksWide, blocksHigh);
             ClearLowestFrequencies(quantizedB, blocksWide, blocksHigh);
+        }
+    }
+
+    /// <summary>
+    /// Gets the magnitudes, in quantization steps, below which a coefficient of a channel is quantized to zero, for each
+    /// quarter of the frequencies of a transform: low in both directions, high horizontally, high vertically, high in both.
+    /// </summary>
+    /// <remarks>
+    /// The higher frequencies, the X channel outside the distances 0.75 to 1.5, and the high frequencies of B are zeroed
+    /// more readily: a coefficient of magnitude one costs more bits there than its error is worth. The larger transforms
+    /// lower the thresholds a little, and the finest steps (below the distance 1) bring the luma down to one half.
+    /// Measured with SSIMULACRA 2 and Butteraugli: about 0.5 % smaller at equal quality than one threshold.
+    /// </remarks>
+    private void GetZeroThresholds(int channel, int blocksWide, int blocksHigh, Span<float> thresholds)
+    {
+        Span<float> normal = [0.58f, 0.635f, 0.66f, 0.7f];
+        if (channel == 0)
+        {
+            var window = Math.Min(Math.Clamp((_distance - 0.5f) / 0.25f, 0f, 1f), Math.Clamp((2.0f - _distance) / 0.5f, 0f, 1f));
+            normal[0] += window * (0.5f - normal[0]);
+            for (var i = 1; i < 4; i++)
+            {
+                normal[i] += (1 - window) * 0.08f;
+            }
+        }
+        else if (channel == 2)
+        {
+            normal[1..].Fill(0.75f);
+        }
+
+        if (blocksWide > 1 || blocksHigh > 1)
+        {
+            var delta = Math.Clamp(0.003f * blocksWide * blocksHigh, 0f, channel == 1 ? 0.12f : 0.08f);
+            for (var i = 0; i < 4; i++)
+            {
+                normal[i] -= delta;
+            }
+        }
+
+        ReadOnlySpan<float> fine = channel == 1 ? [0.50f, 0.51f, 0.52f, 0.54f] : normal;
+        var position = Math.Clamp((_distance - 0.1f) / 0.9f, 0f, 1f);
+        for (var i = 0; i < 4; i++)
+        {
+            thresholds[i] = fine[i] + (position * (normal[i] - fine[i]));
+        }
+    }
+
+    /// <summary>Gets the quarter of the frequencies of a coefficient of a transform: the index of its threshold in <see cref="GetZeroThresholds"/>.</summary>
+    private static int GetFrequencyQuarter(int row, int column, int rows, int columns) => (row >= rows / 2 ? 2 : 0) + (column >= columns / 2 ? 1 : 0);
+
+    /// <summary>
+    /// Zeroes the coefficients of magnitude one of a channel of a transform that are below the threshold of their quarter
+    /// of the frequencies (<see cref="GetZeroThresholds"/>), once they are quantized with <see cref="ZeroThreshold"/>.
+    /// </summary>
+    /// <param name="channel">The channel: 0 for X, 1 for Y, 2 for B.</param>
+    /// <param name="blocksWide">The number of columns of blocks of the transform.</param>
+    /// <param name="blocksHigh">The number of rows of blocks of the transform.</param>
+    /// <param name="coefficients">The coefficients of the channel.</param>
+    /// <param name="luma">For X and B, the dequantized luma, which <paramref name="factor"/> times predicts them.</param>
+    /// <param name="factor">For X and B, the factor of the chroma from luma prediction.</param>
+    /// <param name="matrix">The dequantization matrix of the channel.</param>
+    /// <param name="scale">The factor of the matrix that gives the steps.</param>
+    /// <param name="quantized">The quantized values, updated.</param>
+    /// <param name="dequantized">For Y, the dequantized values, updated with the values that are zeroed; empty otherwise.</param>
+    private void ApplyZeroThresholds(int channel, int blocksWide, int blocksHigh, ReadOnlySpan<float> coefficients, ReadOnlySpan<float> luma, float factor, ReadOnlySpan<float> matrix, float scale, Span<int> quantized, Span<float> dequantized)
+    {
+        Span<float> thresholds = stackalloc float[4];
+        GetZeroThresholds(channel, blocksWide, blocksHigh, thresholds);
+        var columns = Math.Max(blocksWide, blocksHigh) * 8;
+        var rows = Math.Min(blocksWide, blocksHigh) * 8;
+        for (var row = 0; row < rows; row++)
+        {
+            for (var column = 0; column < columns; column++)
+            {
+                var k = (row * columns) + column;
+                if (quantized[k] is not (1 or -1))
+                    continue;
+
+                var value = channel == 1 ? coefficients[k] : coefficients[k] - (factor * luma[k]);
+                if (MathF.Abs(value / (matrix[k] * scale)) < thresholds[GetFrequencyQuarter(row, column, rows, columns)])
+                {
+                    quantized[k] = 0;
+                    if (!dequantized.IsEmpty)
+                    {
+                        dequantized[k] = 0;
+                    }
+                }
+            }
         }
     }
 
@@ -1405,10 +1528,7 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
         return value < 0 ? -rounded : rounded;
     }
 
-    /// <summary>
-    /// Converts a rectangle of the frame to XYB; the samples outside the frame repeat its last column and its last row.
-    /// When the decoder smooths the frame (the Gabor-like filter), the samples are sharpened so that it gives them back.
-    /// </summary>
+    /// <summary>Converts a rectangle of the frame to XYB; the samples outside the frame repeat its last column and its last row.</summary>
     private void LoadSamples(PixelStorage pixels, int x0, int y0, int width, int height)
     {
         var available = Math.Min(width, _width - x0);
@@ -1416,48 +1536,6 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
         var planeX = _samples[0]!.Span;
         var planeY = _samples[1]!.Span;
         var planeB = _samples[2]!.Span;
-        if (_gaborish)
-        {
-            // The rectangle and what the filter reads around it: the samples of the frame, which is mirrored at its edges
-            // as the decoder mirrors it
-            const int Radius = JpegXlInverseGaborish.Radius;
-            const int Stride = GroupSize + (2 * Radius);
-            var paddedX = _padded[0]!.Span;
-            var paddedY = _padded[1]!.Span;
-            var paddedB = _padded[2]!.Span;
-            var first = Math.Max(0, x0 - Radius);
-            var last = Math.Min(_width, x0 + available + Radius);
-            var origin = x0 - Radius;
-            for (var y = -Radius; y < rows + Radius; y++)
-            {
-                var rowX = paddedX.Slice((y + Radius) * Stride, available + (2 * Radius));
-                var rowY = paddedY.Slice((y + Radius) * Stride, available + (2 * Radius));
-                var rowB = paddedB.Slice((y + Radius) * Stride, available + (2 * Radius));
-                var source = pixels.GetRowSpanCore(Mirror(y0 + y, _height));
-                _color!.Convert(source, _format, first, rowX.Slice(first - origin, last - first), rowY.Slice(first - origin, last - first), rowB.Slice(first - origin, last - first));
-                for (var x = origin; x < first; x++)
-                {
-                    var mirrored = Mirror(x, _width) - origin;
-                    rowX[x - origin] = rowX[mirrored];
-                    rowY[x - origin] = rowY[mirrored];
-                    rowB[x - origin] = rowB[mirrored];
-                }
-
-                for (var x = last; x < x0 + available + Radius; x++)
-                {
-                    var mirrored = Mirror(x, _width) - origin;
-                    rowX[x - origin] = rowX[mirrored];
-                    rowY[x - origin] = rowY[mirrored];
-                    rowB[x - origin] = rowB[mirrored];
-                }
-            }
-
-            var weights = _gaborishWeights.AsSpan();
-            JpegXlInverseGaborish.Apply(paddedX, Stride, planeX, GroupSize, available, rows, weights[..JpegXlInverseGaborish.WeightCount]);
-            JpegXlInverseGaborish.Apply(paddedY, Stride, planeY, GroupSize, available, rows, weights.Slice(JpegXlInverseGaborish.WeightCount, JpegXlInverseGaborish.WeightCount));
-            JpegXlInverseGaborish.Apply(paddedB, Stride, planeB, GroupSize, available, rows, weights.Slice(2 * JpegXlInverseGaborish.WeightCount, JpegXlInverseGaborish.WeightCount));
-        }
-
         for (var y = 0; y < height; y++)
         {
             var rowX = planeX.Slice(y * GroupSize, width);
@@ -1471,26 +1549,11 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
                 continue;
             }
 
-            if (!_gaborish)
-            {
-                _color!.Convert(pixels.GetRowSpanCore(y0 + y), _format, x0, rowX[..available], rowY[..available], rowB[..available]);
-            }
-
+            _color!.Convert(pixels.GetRowSpanCore(y0 + y), _format, x0, rowX[..available], rowY[..available], rowB[..available]);
             rowX[available..].Fill(rowX[available - 1]);
             rowY[available..].Fill(rowY[available - 1]);
             rowB[available..].Fill(rowB[available - 1]);
         }
-    }
-
-    /// <summary>The position inside a side of a position that may be outside: the side is mirrored at its two ends, which are repeated.</summary>
-    private static int Mirror(int position, int size)
-    {
-        while (position < 0 || position >= size)
-        {
-            position = position < 0 ? -position - 1 : (2 * size) - 1 - position;
-        }
-
-        return position;
     }
 
     private void WriteSections(PixelStorage? pixels, LsbBitWriter writer, List<int> sizes, ExtraChannelWriter? writeExtraChannels)
@@ -1512,7 +1575,11 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
         }
         else
         {
-            writer.WriteBool(true);
+            // The default steps, but for X (LfStepFactorX), in units of 1/128
+            writer.WriteBool(false);
+            writer.WriteF16(128f * LfStepFactorX / 4096);
+            writer.WriteF16(128f / 512);
+            writer.WriteF16(128f / 256);
         }
 
         writer.WriteU32((uint)_globalScale, 1, 11, 2049, 11, 4097, 12, 8193, 16);
@@ -1835,6 +1902,7 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
 
         var blockInfo = _blockInfo!.Span;
         var quantField = _quantField!.Span;
+        var sharpness = _jpegQuantization is null ? GetEpfSharpness() : 0;
         var transformCount = 0;
         for (var y = 0; y < height; y++)
         {
@@ -1878,7 +1946,7 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
         var next = 0;
         for (var y = 0; y < height; y++)
         {
-            metadata.Channels[3].GetRow(y).Fill(_jpegQuantization is null ? Sharpness : 0);
+            metadata.Channels[3].GetRow(y).Fill(sharpness);
             for (var x = 0; x < width; x++)
             {
                 var position = ((y0 + y) * _blocksWide) + x0 + x;

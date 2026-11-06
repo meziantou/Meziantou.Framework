@@ -1,0 +1,30 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.Charts</RootNamespace>
+    <Version>1.0.0</Version>
+    <IsTrimmable>true</IsTrimmable>
+    <Description>Grammar-of-graphics chart library that renders deterministic SVG: bar, line, area, scatter, pie, radar, gauge, packed circles, treemap, sunburst, histogram, box plot, heatmap, waterfall, funnel, candlestick and more, built from marks, scales, coordinates and transforms.</Description>
+    <PackageTags>chart;charts;plot;svg;graph;visualization;grammar-of-graphics;bar-chart;line-chart;pie-chart;treemap;sunburst;histogram</PackageTags>
+
+    <!-- Every public member must be documented -->
+    <DisableDocumentationWarnings>false</DisableDocumentationWarnings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The Adobe Glyph List (BSD-3-Clause, see THIRD-PARTY-NOTICES.md): maps characters to the glyph names of the AFM metrics -->
+    <EmbeddedResource Include="../Meziantou.Framework.Pdf/Fonts/GlyphList/glyphlist.txt" Link="Text/glyphlist.txt" LogicalName="Meziantou.Framework.Charts.glyphlist.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The AFM metrics of Helvetica, and the shaper of FontFaceTextMeasurer; brings Meziantou.Framework.Unicode -->
+    <ProjectReference Include="../Meziantou.Framework.Fonts/Meziantou.Framework.Fonts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The tests check the layout algorithms with exact values -->
+    <InternalsVisibleTo Include="Meziantou.Framework.Charts.Tests" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Browser market share</title>
+<rect width="400" height="400" fill="#ffffff"/>
+<g class="marks">
+<g>
+<path d="M200,36.8 A164.05,164.05 0 1,1 73.6,305.42 L124.16,263.59 A98.43,98.43 0 1,0 200,102.42 Z" fill="#4269d0" stroke="#ffffff" stroke-linejoin="round"/>
+<text x="318.75" y="259.54" text-anchor="middle" font-size="11" fill="#ffffff">Chrome</text>
+<path d="M73.6,305.42 A164.05,164.05 0 0,1 56.24,121.82 L113.75,153.43 A98.43,98.43 0 0,0 124.16,263.59 Z" fill="#efb118" stroke="#ffffff" stroke-linejoin="round"/>
+<text x="69.34" y="216.01" text-anchor="middle" font-size="11" fill="#1f2328">Safari</text>
+<path d="M56.24,121.82 A164.05,164.05 0 0,1 87.7,81.26 L132.62,129.1 A98.43,98.43 0 0,0 113.75,153.43 Z" fill="#ff725c" stroke="#ffffff" stroke-linejoin="round"/>
+<text x="96.3" y="123.22" text-anchor="middle" font-size="11" fill="#1f2328">Edge</text>
+<path d="M87.7,81.26 A164.05,164.05 0 0,1 112.1,62.34 L147.26,117.74 A98.43,98.43 0 0,0 132.62,129.1 Z" fill="#6cc5b0" stroke="#ffffff" stroke-linejoin="round"/>
+<path d="M112.1,62.34 A164.05,164.05 0 0,1 200,36.8 L200,102.42 A98.43,98.43 0 0,0 147.26,117.74 Z" fill="#3ca951" stroke="#ffffff" stroke-linejoin="round"/>
+<text x="163.39" y="77.63" text-anchor="middle" font-size="11" fill="#1f2328">Other</text>
+</g>
+<g>
+<text x="200" y="208" text-anchor="middle" font-size="28" font-weight="bold" fill="#1f2328">100%</text>
+</g>
+</g>
+<g class="legend">
+<rect x="10" y="379.45" width="10" height="10" rx="2" fill="#4269d0"/>
+<text x="25" y="387.52" font-size="12" fill="#1f2328">Chrome</text>
+<rect x="81.67" y="379.45" width="10" height="10" rx="2" fill="#efb118"/>
+<text x="96.67" y="387.52" font-size="12" fill="#1f2328">Safari</text>
+<rect x="141.84" y="379.45" width="10" height="10" rx="2" fill="#ff725c"/>
+<text x="156.84" y="387.52" font-size="12" fill="#1f2328">Edge</text>
+<rect x="198.86" y="379.45" width="10" height="10" rx="2" fill="#6cc5b0"/>
+<text x="213.86" y="387.52" font-size="12" fill="#1f2328">Firefox</text>
+<rect x="263.81" y="379.45" width="10" height="10" rx="2" fill="#3ca951"/>
+<text x="278.81" y="387.52" font-size="12" fill="#1f2328">Other</text>
+</g>
+<text x="10" y="21.49" font-size="16" font-weight="bold" fill="#1f2328">Browser market share</text>
+</svg>

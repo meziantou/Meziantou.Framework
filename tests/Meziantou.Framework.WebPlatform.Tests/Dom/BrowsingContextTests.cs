@@ -1254,6 +1254,17 @@ public sealed class BrowsingContextTests
     }
 
     [Fact]
+    public void Navigate_XmlWithAnInvalidByte_ShowsTheWellFormednessError()
+    {
+        // An encoding error is a fatal error of the XML parser (Acid3 test 70): the document shows the error
+        using var context = new BrowsingContext();
+        byte[] content = [.. "<root><fail>"u8, 0xBF, .. "</fail><test/></root>"u8];
+        var document = context.Navigate(_ => new DocumentResource(content) { Headers = [new("Content-Type", "application/xml;charset=utf-8")] });
+        Assert.Equal("parsererror", document.DocumentElement!.LocalName);
+        Assert.Empty(document.GetElementsByTagName("test"));
+    }
+
+    [Fact]
     public async Task NavigateAsync_WithoutUrl()
     {
         using var context = new BrowsingContext();

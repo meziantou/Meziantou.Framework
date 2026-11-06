@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="250" viewBox="0 0 640 250" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Zoomed</title>
+<defs>
+<clipPath id="chart-clip0"><rect x="32.23" y="55.9" width="595.98" height="163.93"/></clipPath>
+</defs>
+<rect width="640" height="250" fill="#ffffff"/>
+<g class="grid">
+<line x1="32.23" y1="219.83" x2="628.22" y2="219.83" stroke="#e3e6ea"/>
+<line x1="32.23" y1="178.84" x2="628.22" y2="178.84" stroke="#e3e6ea"/>
+<line x1="32.23" y1="137.86" x2="628.22" y2="137.86" stroke="#e3e6ea"/>
+<line x1="32.23" y1="96.88" x2="628.22" y2="96.88" stroke="#e3e6ea"/>
+<line x1="32.23" y1="55.9" x2="628.22" y2="55.9" stroke="#e3e6ea"/>
+</g>
+<g class="marks" clip-path="url(#chart-clip0)">
+<g>
+<path d="M-162.11,58.36 L-61.7,58.36 L32.23,74.75 L132.64,104.26 L229.81,138.68 L330.22,168.19 L427.39,184.58 L527.81,184.58 L628.22,168.19 L725.39,138.68 L825.8,104.26 L922.97,74.75" fill="none" stroke="#4269d0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M-162.11,91.96 L-61.7,91.96 L32.23,114.91 L132.64,155.89 L229.81,201.79 L330.22,242.77 L427.39,265.72 L527.81,265.72 L628.22,242.77 L725.39,201.79 L825.8,155.89 L922.97,114.91" fill="none" stroke="#efb118" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M-162.11,9.18 L-61.7,9.18 L32.23,30.49 L132.64,67.37 L229.81,110 L330.22,146.88 L427.39,168.19 L527.81,168.19 L628.22,146.88 L725.39,110 L825.8,67.37 L922.97,30.49" fill="none" stroke="#ff725c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+</g>
+<g class="axes">
+<line x1="27.23" y1="219.83" x2="32.23" y2="219.83" stroke="#8c959f"/>
+<text x="24.23" y="222.64" text-anchor="end" font-size="11" fill="#59636e">0</text>
+<line x1="27.23" y1="178.84" x2="32.23" y2="178.84" stroke="#8c959f"/>
+<text x="24.23" y="181.65" text-anchor="end" font-size="11" fill="#59636e">5</text>
+<line x1="27.23" y1="137.86" x2="32.23" y2="137.86" stroke="#8c959f"/>
+<text x="24.23" y="140.67" text-anchor="end" font-size="11" fill="#59636e">10</text>
+<line x1="27.23" y1="96.88" x2="32.23" y2="96.88" stroke="#8c959f"/>
+<text x="24.23" y="99.69" text-anchor="end" font-size="11" fill="#59636e">15</text>
+<line x1="27.23" y1="55.9" x2="32.23" y2="55.9" stroke="#8c959f"/>
+<text x="24.23" y="58.71" text-anchor="end" font-size="11" fill="#59636e">20</text>
+<line x1="32.23" y1="219.83" x2="32.23" y2="224.83" stroke="#8c959f"/>
+<text x="32.23" y="235.72" text-anchor="middle" font-size="11" fill="#59636e">Mar</text>
+<line x1="132.64" y1="219.83" x2="132.64" y2="224.83" stroke="#8c959f"/>
+<text x="132.64" y="235.72" text-anchor="middle" font-size="11" fill="#59636e">Apr</text>
+<line x1="229.81" y1="219.83" x2="229.81" y2="224.83" stroke="#8c959f"/>
+<text x="229.81" y="235.72" text-anchor="middle" font-size="11" fill="#59636e">May</text>
+<line x1="330.22" y1="219.83" x2="330.22" y2="224.83" stroke="#8c959f"/>
+<text x="330.22" y="235.72" text-anchor="middle" font-size="11" fill="#59636e">Jun</text>
+<line x1="427.39" y1="219.83" x2="427.39" y2="224.83" stroke="#8c959f"/>
+<text x="427.39" y="235.72" text-anchor="middle" font-size="11" fill="#59636e">Jul</text>
+<line x1="527.81" y1="219.83" x2="527.81" y2="224.83" stroke="#8c959f"/>
+<text x="527.81" y="235.72" text-anchor="middle" font-size="11" fill="#59636e">Aug</text>
+<line x1="628.22" y1="219.83" x2="628.22" y2="224.83" stroke="#8c959f"/>
+<text x="628.22" y="235.72" text-anchor="middle" font-size="11" fill="#59636e">Sep</text>
+<line x1="32.23" y1="219.83" x2="628.22" y2="219.83" stroke="#8c959f"/>
+</g>
+<g class="legend">
+<rect x="10" y="33.35" width="10" height="10" rx="2" fill="#4269d0"/>
+<text x="25" y="41.42" font-size="12" fill="#1f2328">Paris</text>
+<rect x="66.04" y="33.35" width="10" height="10" rx="2" fill="#efb118"/>
+<text x="81.04" y="41.42" font-size="12" fill="#1f2328">Oslo</text>
+<rect x="119.71" y="33.35" width="10" height="10" rx="2" fill="#ff725c"/>
+<text x="134.71" y="41.42" font-size="12" fill="#1f2328">Madrid</text>
+</g>
+<text x="10" y="21.49" font-size="16" font-weight="bold" fill="#1f2328">Zoomed</text>
+</svg>

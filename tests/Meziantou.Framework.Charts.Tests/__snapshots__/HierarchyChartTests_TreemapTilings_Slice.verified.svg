@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300" role="img" font-family="Helvetica, Arial, sans-serif">
+<defs>
+<linearGradient id="chart-gradient0" gradientUnits="userSpaceOnUse" x1="10" y1="0" x2="250" y2="0">
+<stop offset="0" stop-color="#440154"/>
+<stop offset="0.0667" stop-color="#471b69"/>
+<stop offset="0.1333" stop-color="#472f7b"/>
+<stop offset="0.2" stop-color="#414386"/>
+<stop offset="0.2667" stop-color="#3a568b"/>
+<stop offset="0.3333" stop-color="#31688e"/>
+<stop offset="0.4" stop-color="#2b788e"/>
+<stop offset="0.4667" stop-color="#25888d"/>
+<stop offset="0.5333" stop-color="#21988a"/>
+<stop offset="0.6" stop-color="#28a883"/>
+<stop offset="0.6667" stop-color="#35b779"/>
+<stop offset="0.7333" stop-color="#5ac567"/>
+<stop offset="0.8" stop-color="#7ed152"/>
+<stop offset="0.8667" stop-color="#a8db38"/>
+<stop offset="0.9333" stop-color="#d3e229"/>
+<stop offset="1" stop-color="#fde725"/>
+</linearGradient>
+</defs>
+<rect width="400" height="300" fill="#ffffff"/>
+<g class="marks">
+<g>
+<rect x="10" y="45.18" width="380" height="171.66" fill="#31688e" fill-opacity="0.251"><title>src: 590</title></rect>
+<rect x="10" y="45.18" width="380" height="79.48" fill="#35b779" fill-opacity="0.251"><title>src / core: 275</title></rect>
+<rect x="10" y="45.18" width="380" height="39.97" fill="#fde725"><title>src / core / parser.cs: 140</title></rect>
+<text x="14" y="56.07" font-size="11" fill="#1f2328">parser.cs</text>
+<rect x="10" y="86.15" width="380" height="25.34" fill="#fde725"><title>src / core / lexer.cs: 90</title></rect>
+<text x="14" y="97.04" font-size="11" fill="#1f2328">lexer.cs</text>
+<rect x="10" y="112.48" width="380" height="12.17" fill="#fde725"><title>src / core / ast.cs: 45</title></rect>
+<rect x="10" y="125.65" width="380" height="75.09" fill="#35b779" fill-opacity="0.251"><title>src / app: 260</title></rect>
+<rect x="10" y="125.65" width="380" height="34.12" fill="#fde725"><title>src / app / main.cs: 120</title></rect>
+<text x="14" y="136.55" font-size="11" fill="#1f2328">main.cs</text>
+<rect x="10" y="160.77" width="380" height="22.41" fill="#fde725"><title>src / app / view.cs: 80</title></rect>
+<text x="14" y="171.67" font-size="11" fill="#1f2328">view.cs</text>
+<rect x="10" y="184.18" width="380" height="16.56" fill="#fde725"><title>src / app / model.cs: 60</title></rect>
+<text x="14" y="195.08" font-size="11" fill="#1f2328">model.cs</text>
+<rect x="10" y="201.74" width="380" height="15.1" fill="#35b779" fill-opacity="0.251"><title>src / util: 55</title></rect>
+<rect x="10" y="201.74" width="380" height="7.78" fill="#fde725"><title>src / util / strings.cs: 30</title></rect>
+<rect x="10" y="210.52" width="380" height="6.32" fill="#fde725"><title>src / util / math.cs: 25</title></rect>
+<rect x="10" y="217.84" width="380" height="44.36" fill="#31688e" fill-opacity="0.251"><title>tests: 155</title></rect>
+<rect x="10" y="217.84" width="380" height="23.88" fill="#35b779"><title>tests / core.tests.cs: 85</title></rect>
+<text x="14" y="228.74" font-size="11" fill="#1f2328">core.tests.cs</text>
+<rect x="10" y="242.71" width="380" height="19.49" fill="#35b779"><title>tests / app.tests.cs: 70</title></rect>
+<text x="14" y="253.61" font-size="11" fill="#1f2328">app.tests.cs</text>
+<rect x="10" y="263.2" width="380" height="26.8" fill="#31688e" fill-opacity="0.251"><title>docs: 95</title></rect>
+<rect x="10" y="263.2" width="380" height="15.1" fill="#35b779"><title>docs / guide.md: 55</title></rect>
+<text x="14" y="274.1" font-size="11" fill="#1f2328">guide.md</text>
+<rect x="10" y="279.29" width="380" height="10.71" fill="#35b779"><title>docs / readme.md: 40</title></rect>
+</g>
+</g>
+<g class="legend">
+<rect x="10" y="10" width="240" height="10" fill="url(#chart-gradient0)"/>
+<line x1="10" y1="20" x2="10" y2="23" stroke="#8c959f"/>
+<text x="10" y="30.9" font-size="11" fill="#59636e">0.0</text>
+<line x1="50" y1="20" x2="50" y2="23" stroke="#8c959f"/>
+<text x="50" y="30.9" text-anchor="middle" font-size="11" fill="#59636e">0.5</text>
+<line x1="90" y1="20" x2="90" y2="23" stroke="#8c959f"/>
+<text x="90" y="30.9" text-anchor="middle" font-size="11" fill="#59636e">1.0</text>
+<line x1="130" y1="20" x2="130" y2="23" stroke="#8c959f"/>
+<text x="130" y="30.9" text-anchor="middle" font-size="11" fill="#59636e">1.5</text>
+<line x1="170" y1="20" x2="170" y2="23" stroke="#8c959f"/>
+<text x="170" y="30.9" text-anchor="middle" font-size="11" fill="#59636e">2.0</text>
+<line x1="210" y1="20" x2="210" y2="23" stroke="#8c959f"/>
+<text x="210" y="30.9" text-anchor="middle" font-size="11" fill="#59636e">2.5</text>
+<line x1="250" y1="20" x2="250" y2="23" stroke="#8c959f"/>
+<text x="250" y="30.9" text-anchor="end" font-size="11" fill="#59636e">3.0</text>
+</g>
+</svg>

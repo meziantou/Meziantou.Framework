@@ -139,11 +139,13 @@ internal sealed class JpegXlEncoderCodec : ImageEncoderCodec
                 if (_color.TransferFunction is JpegXlColorEncoding.TransferPq or JpegXlColorEncoding.TransferHlg)
                     throw new UnsupportedImageFeatureException("Lossy JPEG XL output is not implemented for the PQ and HLG transfer functions: use lossless compression.", ImageFormat.JpegXl, "lossy JPEG XL encoding of PQ or HLG samples");
 
+                // The decoder does not smooth the frame with the Gabor-like filter: measured with SSIMULACRA 2, the sharpening
+                // that prepares it made the files 8 % larger at equal quality
                 var epfIterations = JpegXlVarDctEncoder.GetEpfIterations(_encoder.Quality);
-                var isGaborEnabled = JpegXlVarDctEncoder.UsesGaborish(_encoder.Quality);
+                var firstPassSigmaScale = JpegXlVarDctEncoder.GetEpfFirstPassSigmaScale(_encoder.Quality);
                 _frameSettings = _encoder.Progressive
-                    ? new JpegXlFrameSettings { PassShifts = [0, 0, 0], PassDownsampleShifts = [2, 1], PassDownsampleLastPasses = [0, 1], EpfIterations = epfIterations, IsGaborEnabled = isGaborEnabled }
-                    : new JpegXlFrameSettings { EpfIterations = epfIterations, IsGaborEnabled = isGaborEnabled };
+                    ? new JpegXlFrameSettings { PassShifts = [0, 0, 0], PassDownsampleShifts = [2, 1], PassDownsampleLastPasses = [0, 1], EpfIterations = epfIterations, EpfFirstPassSigmaScale = firstPassSigmaScale }
+                    : new JpegXlFrameSettings { EpfIterations = epfIterations, EpfFirstPassSigmaScale = firstPassSigmaScale };
             }
             else if (_encoder.Progressive)
             {

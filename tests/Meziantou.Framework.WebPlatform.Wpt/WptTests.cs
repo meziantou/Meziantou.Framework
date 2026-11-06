@@ -75,6 +75,8 @@ public sealed class WptTests
 
     public static TheoryData<string> MathMLTests => GetTests("mathml");
 
+    public static TheoryData<string> AcidTests => GetTests("acid");
+
     public static TheoryData<string> HtmlInterestForTests => GetTests("html/semantics/interestfor");
 
     public static TheoryData<string> HtmlScriptingTests => GetTests("html/semantics/scripting-1");
@@ -870,6 +872,10 @@ public sealed class WptTests
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(MathMLTests))]
     public void MathML(string test) => Run("mathml", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(AcidTests))]
+    public void Acid(string test) => Run("acid", test);
 
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(HtmlInterestForTests))]

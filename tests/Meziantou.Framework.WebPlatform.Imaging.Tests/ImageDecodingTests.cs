@@ -616,6 +616,36 @@ public sealed class ImageDecodingTests : IDisposable
         AssertPixel(new Rgba32(210, 80, 130, 255), pixels, 8, 4, 4);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ColorProfile_WiderThanSrgbIsKeptForTheWideGamutBitmaps(bool wideSamples)
+    {
+        // The red of Display P3 is outside of the gamut of sRGB: color(srgb 1.0930 -0.2267 -0.1501)
+        using Image image = wideSamples ? new Image<Rgba64>(4, 4, new Rgba64(65535, 0, 0, 65535)) : new Image<Rgba32>(4, 4, new Rgba32(255, 0, 0, 255));
+        image.Metadata.IccProfile = ImagingMetadata.IccProfile.DisplayP3;
+        var data = Encode(image, new ImagingFormats.PngEncoder());
+        using var decoded = _backend.DecodeImage(data, mimeType: null, applyOrientation: true);
+        Assert.NotNull(decoded);
+        Assert.Equal(RenderingColorSpace.Srgb, decoded.ColorSpace);
+        Assert.Equal(ImageDataPixelFormat.RgbaFloat16, decoded.PixelFormat);
+
+        // The pixels of the pages are clipped to sRGB
+        var pixels = new byte[4 * 4 * 4];
+        decoded.ReadPixels(pixels);
+        AssertPixel(new Rgba32(255, 0, 0, 255), pixels, 4, 1, 1);
+
+        // The half floats keep the colors outside of the gamut, and the Display P3 pixels are the encoded ones
+        var halves = new byte[4 * 4 * 8];
+        decoded.ReadPixels(halves, ImageDataPixelFormat.RgbaFloat16, RenderingColorSpace.Srgb);
+        var samples = unsafe(System.Runtime.InteropServices.MemoryMarshal.Cast<byte, Half>(halves.AsSpan()));
+        Assert.InRange((float)samples[0], 1.09f, 1.10f);
+        Assert.InRange((float)samples[1], -0.23f, -0.22f);
+        Assert.InRange((float)samples[2], -0.16f, -0.14f);
+        decoded.ReadPixels(pixels, ImageDataPixelFormat.RgbaUnorm8, RenderingColorSpace.DisplayP3);
+        AssertPixel(new Rgba32(255, 0, 0, 255), pixels, 4, 1, 1, tolerance: 1);
+    }
+
     [Fact]
     public void ColorProfile_OfSrgbChangesNoPixel()
     {

@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="300" viewBox="0 0 640 300" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Conversion funnel</title>
+<rect width="640" height="300" fill="#ffffff"/>
+<g class="marks">
+<g>
+<rect x="71.96" y="39.07" width="558.04" height="56.46" fill="#4269d0"/>
+<text x="350.98" y="70.11" text-anchor="middle" font-size="11" fill="#ffffff">12,000</text>
+<path d="M71.96,95.53 L630,95.53 L448.64,101.8 L253.33,101.8 Z" fill="#4269d0" fill-opacity="0.302"/>
+<rect x="253.33" y="101.8" width="195.31" height="56.46" fill="#4269d0"/>
+<text x="350.98" y="132.84" text-anchor="middle" font-size="11" fill="#ffffff">4,200</text>
+<path d="M253.33,158.26 L448.64,158.26 L392.83,164.54 L309.13,164.54 Z" fill="#4269d0" fill-opacity="0.302"/>
+<rect x="309.13" y="164.54" width="83.71" height="56.46" fill="#4269d0"/>
+<text x="350.98" y="195.58" text-anchor="middle" font-size="11" fill="#ffffff">1,800</text>
+<path d="M309.13,221 L392.83,221 L366.1,227.27 L335.87,227.27 Z" fill="#4269d0" fill-opacity="0.302"/>
+<rect x="335.87" y="227.27" width="30.23" height="56.46" fill="#4269d0"/>
+<text x="350.98" y="258.31" text-anchor="middle" font-size="11" fill="#ffffff">650</text>
+</g>
+</g>
+<g class="axes">
+<line x1="66.96" y1="67.3" x2="71.96" y2="67.3" stroke="#8c959f"/>
+<text x="63.96" y="70.11" text-anchor="end" font-size="11" fill="#59636e">Visits</text>
+<line x1="66.96" y1="130.03" x2="71.96" y2="130.03" stroke="#8c959f"/>
+<text x="63.96" y="132.84" text-anchor="end" font-size="11" fill="#59636e">Sign-ups</text>
+<line x1="66.96" y1="192.77" x2="71.96" y2="192.77" stroke="#8c959f"/>
+<text x="63.96" y="195.58" text-anchor="end" font-size="11" fill="#59636e">Trials</text>
+<line x1="66.96" y1="255.5" x2="71.96" y2="255.5" stroke="#8c959f"/>
+<text x="63.96" y="258.31" text-anchor="end" font-size="11" fill="#59636e">Purchases</text>
+</g>
+<text x="10" y="21.49" font-size="16" font-weight="bold" fill="#1f2328">Conversion funnel</text>
+</svg>

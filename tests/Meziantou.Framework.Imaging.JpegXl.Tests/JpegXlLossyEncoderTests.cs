@@ -183,21 +183,22 @@ public sealed class JpegXlLossyEncoderTests
     }
 
     /// <summary>
-    /// The decoder smooths the frames of the qualities up to 90 (the Gabor-like filter), which the encoder sharpened; above,
-    /// where the quantization is finer than what the pair of filters loses, it does not.
+    /// The decoder never smooths a lossy frame with the Gabor-like filter, and applies more iterations of the
+    /// edge-preserving filter as the quantization gets coarser: none at the highest qualities, three at the lowest.
     /// </summary>
     [Theory]
-    [InlineData(0, true)]
-    [InlineData(75, true)]
-    [InlineData(90, true)]
-    [InlineData(91, false)]
-    [InlineData(100, false)]
-    public void TheDecoderSmoothsTheFramesOfTheQualitiesThatNeedIt(int quality, bool expected)
+    [InlineData(0, 3)]
+    [InlineData(70, 3)]
+    [InlineData(75, 2)]
+    [InlineData(90, 1)]
+    [InlineData(95, 0)]
+    [InlineData(100, 0)]
+    public void TheDecoderFiltersTheFramesOfTheQualitiesThatNeedIt(int quality, int expectedIterations)
     {
         using var image = CreatePhoto(96, 80, seed: 3);
         var data = Save(image, new JpegXlEncoder { Compression = JpegXlCompression.Lossy, Quality = quality });
         var frame = Assert.Single(ReferenceJpegXl.Parse(data).Frames);
-        Assert.Equal(expected, frame.IsGaborishEnabled);
+        Assert.Equal((false, expectedIterations), (frame.IsGaborishEnabled, frame.EdgePreservingIterations));
 
         // A lossless frame is never filtered
         var lossless = Assert.Single(ReferenceJpegXl.Parse(Save(image, new JpegXlEncoder())).Frames);
@@ -205,15 +206,15 @@ public sealed class JpegXlLossyEncoderTests
     }
 
     /// <summary>
-    /// The size of a file grows with the quality across the quality where the decoder stops smoothing the frames, and the
-    /// image is closer to its source on each side of it.
+    /// The size of a file grows with the quality across the qualities where the filters of the decoder change: the number
+    /// of iterations of the edge-preserving filter, its sharpness, and the weight of the adaptive quantization field.
     /// </summary>
     [Fact]
-    public void TheQualityScaleIsMonotonicAroundTheFilterThreshold()
+    public void TheQualityScaleIsMonotonicAroundTheFilterThresholds()
     {
         using var image = CreatePhoto(300, 270, seed: 9);
         var previousLength = 0;
-        foreach (var quality in new[] { 86, 88, 90, 91, 93, 95 })
+        foreach (var quality in new[] { 70, 72, 74, 76, 82, 84, 86, 88, 90, 91, 93, 94, 95, 97 })
         {
             var length = Save(image, new JpegXlEncoder { Compression = JpegXlCompression.Lossy, Quality = quality }).Length;
             Assert.True(length > previousLength, $"quality {quality}: {length} bytes after {previousLength}.");
@@ -322,77 +323,6 @@ public sealed class JpegXlLossyEncoderTests
         for (var i = 0; i < samples.Length; i++)
         {
             Assert.True(Math.Abs(decoded[i] - samples[i]) < 1e-4f, $"sample {i}: {decoded[i]} instead of {samples[i]}.");
-        }
-    }
-
-    /// <summary>
-    /// The sharpening of the encoder is undone by the smoothing of the decoder: exactly for a constant and for a slope, and
-    /// to a small fraction of the range for the samples of an image, which hold little of the highest frequencies.
-    /// </summary>
-    [Fact]
-    public void TheSmoothingOfTheDecoderUndoesTheSharpeningOfTheEncoder()
-    {
-        const int Width = 64;
-        const int Height = 48;
-        const int Radius = JpegXlInverseGaborish.Radius;
-        var filter = JpegXlRestorationFilter.Default;
-        Span<float> weights = stackalloc float[JpegXlInverseGaborish.WeightCount];
-        JpegXlInverseGaborish.GetWeights(filter.GaborWeights[0], filter.GaborWeights[1], weights);
-
-        // The weights of a filter that keeps a constant sum up to 1: the center, four of each of the samples at (1, 0), (1, 1), (2, 0) and (2, 2), eight at (2, 1)
-        Assert.True(Math.Abs(weights[0] + (4 * (weights[1] + weights[2] + weights[3] + weights[5])) + (8 * weights[4]) - 1) < 1e-6f);
-
-        using var image = CreatePhoto(Width, Height, seed: 12);
-        var pixels = new Rgba32[Width * Height];
-        image.Frames[0].CopyPixelDataTo(pixels);
-        var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(TheSmoothingOfTheDecoderUndoesTheSharpeningOfTheEncoder));
-        // White noise is the worst input: it holds as much of the highest frequencies as of the others (0.092 is measured)
-        foreach (var (name, tolerance) in new[] { ("constant", 1e-5), ("slope", 1e-5), ("photo", 0.012), ("noise", 0.12) })
-        {
-            // The plane, mirrored around the frame as the decoder mirrors it
-            float Sample(int x, int y)
-            {
-                x = x < 0 ? -x - 1 : x >= Width ? (2 * Width) - 1 - x : x;
-                y = y < 0 ? -y - 1 : y >= Height ? (2 * Height) - 1 - y : y;
-                return name switch
-                {
-                    "constant" => 0.37f,
-                    "slope" => 0.1f + (x * 0.004f) + (y * 0.007f),
-                    "photo" => pixels[(y * Width) + x].G / 255f,
-                    _ => (((uint)((x * 73856093) ^ (y * 19349663)) * 2654435761u) >> 8) * (1f / (1 << 24)),
-                };
-            }
-
-            var paddedStride = Width + (2 * Radius);
-            var padded = new float[paddedStride * (Height + (2 * Radius))];
-            for (var y = -Radius; y < Height + Radius; y++)
-            {
-                for (var x = -Radius; x < Width + Radius; x++)
-                {
-                    padded[((y + Radius) * paddedStride) + x + Radius] = Sample(x, y);
-                }
-            }
-
-            using var sharpened = Av1PooledArray<float>.Rent(scope, Width * Height, clear: true);
-            JpegXlInverseGaborish.Apply(padded, paddedStride, sharpened.Span, Width, Width, Height, weights);
-
-            // The decoder filters three planes: the same one three times
-            using var second = Av1PooledArray<float>.Rent(scope, Width * Height, clear: false);
-            using var third = Av1PooledArray<float>.Rent(scope, Width * Height, clear: false);
-            sharpened.Span.CopyTo(second.Span);
-            sharpened.Span.CopyTo(third.Span);
-            JpegXlRestorationFilters.ApplyGaborish([sharpened, second, third], Width, Width, Height, filter, bands: 1, scope, TestContext.Current.CancellationToken);
-            // Away from the edges of the frame, where the mirror image of a slope is not a slope
-            var worst = 0.0;
-            for (var y = Radius + 1; y < Height - Radius - 1; y++)
-            {
-                for (var x = Radius + 1; x < Width - Radius - 1; x++)
-                {
-                    worst = Math.Max(worst, Math.Abs(sharpened.Span[(y * Width) + x] - Sample(x, y)));
-                }
-            }
-
-            Assert.True(worst <= tolerance, $"{name}: the decoder gives back the samples within {worst:G3}, more than {tolerance}.");
         }
     }
 

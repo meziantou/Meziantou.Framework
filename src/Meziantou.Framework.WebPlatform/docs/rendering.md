@@ -245,9 +245,13 @@ The services of a backend (`Rendering/RenderingBackend.cs`):
   animation with the EXIF orientation given by the library (`ImageMetadata.GetExifOrientation`) and its colors converted
   to sRGB (or the encoded values for `colorSpaceConversion: "none"`). `DecodeImage(bytes, mimeType, applyOrientation)` is
   its first frame. The SVG images are not decoded by the backend: they are painted by their document (see
-  [SVG images](#svg-images)).
-- `CreateImage(width, height, rgba)` → `RenderingImage`: an image of pixels in the format of `ImageData` (the bitmaps of
-  `ImageBitmap`).
+  [SVG images](#svg-images)). A `RenderingImage` reads its pixels in a color space (`ReadPixels(destination, pixelFormat,
+  colorSpace)`), and gives the component format and the color space that keep its colors (`PixelFormat`, `ColorSpace`):
+  the half floats of sRGB of a decoded image whose colors are outside of the gamut of sRGB (see below).
+- `CreateImage(width, height, rgba, pixelFormat, colorSpace)` → `RenderingImage`: an image of pixels in the format of
+  `ImageData`, sRGB or Display P3 (the bitmaps of `ImageBitmap`).
+- `EncodeImage(width, height, rgba, mimeType, quality, colorSpace)`: the JPEG and WebP files of the canvases, tagged with
+  the profile of Display P3 for a Display P3 bitmap.
 - `EncodeImage(width, height, rgba, mimeType, quality)` → the bytes of a JPEG or WebP file (`toDataURL()`, `toBlob()`,
   `convertToBlob()`); the library encodes the PNG files itself (`Rendering/PngEncoder.cs`), so a type the backend does not
   encode is serialized as PNG. The Imaging backend composites the JPEG images over opaque black and encodes a WebP image
@@ -332,7 +336,13 @@ sample is published with Native AOT on CI), and the same document gives the same
   description of an image without profile (e.g. a JPEG XL or AVIF image in Display P3, or a PNG image with a `cICP`
   chunk; the PQ and HLG samples are tone mapped with the curve of Report ITU-R BT.2390, from the peak given by the light
   levels of the image), the samples of 16 bits before they are reduced (as in the browsers, the gamma and the
-  chromaticities of a PNG image without ICC profile are ignored). The EXIF orientation given by the core library is
+  chromaticities of a PNG image without ICC profile are ignored; the black point of a CMYK profile is not compensated).
+  The pixels of the pages are clipped to sRGB. A still image whose colors are outside of the gamut of sRGB (a matrix-based
+  ICC profile whose primaries or secondaries are outside of sRGB, e.g. Display P3 or Adobe RGB, a `cICP` description of
+  Display P3, or a CMYK image) is decoded a second time, the first time a bitmap of a wider gamut or of half floats draws
+  or reads it (a Display P3 or `float16` canvas, `createImageBitmap()`): to sRGB half floats without clipping, or to
+  Display P3 with 16 bits per component for a CMYK image, whose profile has lookup tables. The other wide-gamut
+  descriptions (the ICC profiles with lookup tables, the `cICP` descriptions of other primaries) stay clipped to sRGB. The EXIF orientation given by the core library is
   applied (the orientation of the codestream of a JPEG XL image, whose EXIF metadata is ignored), and the loop count is
   read by the core library (`ImageMetadata.GetAnimationRepetitionCount`; the number of plays of an AVIF sequence or of a
   JPEG XL animation). An invalid animated PNG is
@@ -367,8 +377,8 @@ rectangles and the image shaders, which are in natural pixels, to the decoded pi
   painted again after the next frame (a screenshot shows the current frame). The images of the same URL in the list of
   available images share their animation, as in the browsers. `image-animation` is not implemented.
 
-The bitmaps (`Html/Canvas/`) are pixels in the format of `ImageData` (RGBA bytes, not premultiplied, sRGB), processed by the
-library:
+The bitmaps (`Html/Canvas/`) are pixels in the format of `ImageData` (RGBA bytes or half floats, not premultiplied, sRGB
+or Display P3: `BitmapPixels.ColorSpace`), processed by the library:
 
 - `ImageData` (both constructors, the `rgba-unorm8` and `rgba-float16` formats, the color spaces, serializable); its `data`
   is the array given to the constructor, or an array created once and shared with the .NET code (`ImageData.Data`).
@@ -383,8 +393,9 @@ library:
   (`SvgImage.Rasterize`) at the output size (its natural size scaled by the resize options and the source rectangle; an
   image without natural dimensions needs `resizeWidth` and `resizeHeight`), so the resize options scale the vector image
   and not its pixels. The bitmap of a `video` is the frame its media player gives (`MediaPlayer.GetVideoFrame()`, see
-  [Media elements](browsing-context.md#media-elements)); a video without frame is an `InvalidStateError`. `VideoFrame` sources are not supported. The pixels of an `ImageData` or of a canvas in another
-  color space are converted to sRGB.
+  [Media elements](browsing-context.md#media-elements)); a video without frame is an `InvalidStateError`. `VideoFrame` sources are not supported. The bitmap keeps
+  the color space of a canvas or of an `ImageData` (the linear color spaces are converted to sRGB or Display P3), and the
+  colors of a decoded image outside of the gamut of sRGB (in half floats).
 - `ImageBitmap` (`close()`, serializable and transferable when it is origin-clean) and `ImageBitmapRenderingContext`
   (`canvas.getContext("bitmaprenderer")`, `transferFromImageBitmap()`): the canvas paints its output bitmap (over black
   with `alpha: false`). The 2D contexts are described in [Canvas](#canvas).
@@ -450,8 +461,10 @@ operations (see [Paint worklet images](#paint-worklet-images)).
   with the conversion between the color space of the canvas and the one of the image data (`srgb`, `display-p3` and their
   linear variants) and the `rgba-float16` format. Float16 canvases store half-float components, with format-aware pixel
   transfers that preserve negative colors, highlights and subnormal samples; color-space conversion does not quantize through bytes.
-- **Serialization**: `toDataURL()`, `toBlob()` and `OffscreenCanvas.convertToBlob()` serialize the bitmap (converted to sRGB)
-  as PNG (encoded by the library, with 16-bit integer samples for float16 bitmaps), JPEG or WebP (encoded by the backend, with their quality); another type is PNG.
+- **Serialization**: `toDataURL()`, `toBlob()` and `OffscreenCanvas.convertToBlob()` serialize the bitmap in its color
+  space as PNG (encoded by the library, with 16-bit integer samples for float16 bitmaps, and a `cICP` chunk for a Display P3
+  bitmap), JPEG or WebP (encoded by the backend, with their quality, and the ICC profile of Display P3 for a Display P3
+  bitmap); another type is PNG.
 - **OffscreenCanvas**: its 2D or `bitmaprenderer` context, `transferToImageBitmap()`, `convertToBlob()`, its transfer to a
   worker (a canvas with a context cannot be transferred), and `canvas.transferControlToOffscreen()`: the canvas element
   becomes its placeholder (its `getContext()` and the setters of its `width` and `height` throw an `InvalidStateError`). The
@@ -465,7 +478,6 @@ operations (see [Paint worklet images](#paint-worklet-images)).
 - `drawFocusIfNeeded()` strokes the path with a 2px ring when the element is focused and is a descendant of the canvas.
 - Not implemented: the canvas layers (`beginLayer()`, `endLayer()`, a proposal that the HTML Standard does not define yet),
   `CanvasFilter` objects, the HDR settings (`toneMapping`), HDR gradient colors and intermediate layers and effects,
-  the wide-gamut colors of the decoded images (decoded to sRGB),
   `captureStream()`, the text clusters of `TextMetrics`, HTML-in-canvas (`drawElementImage()`), WebGL and WebGPU.
 
 ## Display list
@@ -519,7 +531,7 @@ algorithm (`CssColorConversion.GamutMap`): the OkLCh chroma is reduced at consta
 least 100% is white and of at most 0% black. The browsers clip each component instead: the tests written for clipping (e.g.
 `xyz-d50-004`, `color-mix-non-srgb-001`) differ by one level of a component. The legacy sRGB colors (`rgb()`, `hsl()` and
 `hwb()`) are 8-bit colors whose components are clamped (`hsl(120, 200%, 50%)` is lime), as their serialization and as in
-the browsers. The images are not gamut mapped (they are decoded to sRGB, see the limitations of the canvas).
+the browsers. The images are not gamut mapped: their colors outside of the gamut of the bitmap are clipped, as in the browsers.
 
 The glyphs are drawn by id at the positions computed by the managed text shaping, with the font file the layout measured
 (`DisplayFont`: the sfnt bytes of `FontFile.Data` after the WOFF/WOFF2 decoding, the face index, the size, the values of

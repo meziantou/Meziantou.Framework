@@ -48,10 +48,10 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 26,215 | 29,691 | 2,106 | 95% |
-| [Tentative](#tentative-tests) | 1,361 | 3,074 | 698 | 57% |
+| [Stable](#stable-tests) | 26,216 | 29,691 | 2,105 | 95% |
+| [Tentative](#tentative-tests) | 1,367 | 3,074 | 692 | 57% |
 | [Reftests](#reftests) | 27,923 | 29,220 | 172 | 96% |
-| **All** | **55,499** | **61,985** | **2,976** | **94%** |
+| **All** | **55,506** | **61,985** | **2,969** | **94%** |
 
 ## Failure reasons
 
@@ -59,10 +59,10 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 189
 - **TEST BUG**: 1,034
-- **NOT IMPLEMENTED**: 4,294
-- **REQUIRES**: 770
+- **NOT IMPLEMENTED**: 4,287
+- **REQUIRES**: 763
   - `hardware`: 574
-  - `layout`: 30
+  - `layout`: 23
   - `media`: 18
   - `service-workers`: 1
   - `user-input`: 154
@@ -129,7 +129,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`css/css-contain`](css/css-contain.md) | 94 | 97 | 0 | 97% |
 | [`css/css-content`](css/css-content.md) | 9 | 9 | 0 | 100% |
 | [`css/css-counter-styles`](css/css-counter-styles.md) | 12 | 12 | 0 | 100% |
-| [`css/css-device-adapt`](css/css-device-adapt.md) | 0 | 1 | 1 | – |
+| [`css/css-device-adapt`](css/css-device-adapt.md) | 1 | 1 | 0 | 100% |
 | [`css/css-display`](css/css-display.md) | 36 | 36 | 0 | 100% |
 | [`css/css-easing`](css/css-easing.md) | 12 | 13 | 0 | 92% |
 | [`css/css-env`](css/css-env.md) | 3 | 3 | 0 | 100% |
@@ -419,7 +419,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 320 | 330 | 0 | 97% |
 | [`xml`](xml.md) | 0 | 12 | 12 | – |
-| **Total (343 sections)** | **26,215** | **29,691** | **2,106** | **95%** |
+| **Total (343 sections)** | **26,216** | **29,691** | **2,105** | **95%** |
 
 ## Tentative tests
 
@@ -444,7 +444,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`css/css-break`](css/css-break.md#tentative-tests) | 6 | 6 | 0 | 100% |
 | [`css/css-cascade`](css/css-cascade.md#tentative-tests) | 1 | 1 | 0 | 100% |
 | [`css/css-conditional`](css/css-conditional.md#tentative-tests) | 6 | 6 | 0 | 100% |
-| [`css/css-device-adapt`](css/css-device-adapt.md#tentative-tests) | 0 | 6 | 6 | – |
+| [`css/css-device-adapt`](css/css-device-adapt.md#tentative-tests) | 6 | 6 | 0 | 100% |
 | [`css/css-display`](css/css-display.md#tentative-tests) | 8 | 8 | 0 | 100% |
 | [`css/css-env`](css/css-env.md#tentative-tests) | 8 | 8 | 0 | 100% |
 | [`css/css-flexbox`](css/css-flexbox.md#tentative-tests) | 6 | 6 | 0 | 100% |
@@ -589,7 +589,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`workers`](workers.md#tentative-tests) | 1 | 8 | 0 | 13% |
 | [`xhr`](xhr.md#tentative-tests) | 2 | 2 | 0 | 100% |
 | [`xml`](xml.md#tentative-tests) | 0 | 2 | 2 | – |
-| **Total (164 sections)** | **1,361** | **3,074** | **698** | **57%** |
+| **Total (164 sections)** | **1,367** | **3,074** | **692** | **57%** |
 
 ## Reftests
 

@@ -520,6 +520,8 @@ public sealed class WptTests
 
     public static TheoryData<string> CssViewportTests => GetTests("css/css-viewport");
 
+    public static TheoryData<string> CssDeviceAdaptTests => GetTests("css/css-device-adapt");
+
     public static TheoryData<string> CssTypedOmTests => GetTests("css/css-typed-om");
 
     public static TheoryData<string> CssParserApiTests => GetTests("css/css-parser-api");
@@ -1760,6 +1762,10 @@ public sealed class WptTests
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(CssViewportTests))]
     public void CssViewport(string test) => Run("css/css-viewport", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(CssDeviceAdaptTests))]
+    public void CssDeviceAdapt(string test) => Run("css/css-device-adapt", test);
 
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(CssTypedOmTests))]

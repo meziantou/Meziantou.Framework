@@ -9,32 +9,24 @@ description: "The results of the web-platform-tests of css/css-device-adapt, and
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 1 | 1 | – |
-| [Tentative](#tentative-tests) | 0 | 6 | 6 | – |
+| [Stable](#stable-tests) | 1 | 1 | 0 | 100% |
+| [Tentative](#tentative-tests) | 6 | 6 | 0 | 100% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **0** | **7** | **7** | **–** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **NOT IMPLEMENTED**: 7
-- **REQUIRES**: 7
-  - `layout`: 7
+| **All** | **7** | **7** | **0** | **100%** |
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`viewport-should-not-affect-devicePixelRatio.html`](https://wpt.fyi/results/css/css-device-adapt/viewport-should-not-affect-devicePixelRatio.html) | Disabled | – | NOT IMPLEMENTED, REQUIRES(layout) | the viewport `<meta>` scaling (`initial-scale`, `user-scalable`); the viewport size is checked |
+| [`viewport-should-not-affect-devicePixelRatio.html`](https://wpt.fyi/results/css/css-device-adapt/viewport-should-not-affect-devicePixelRatio.html) | Pass | 1 / 1 |  |  |
 
 ## Tentative tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`documentElement-clientWidth-on-minimum-scale-size.tentative.html`](https://wpt.fyi/results/css/css-device-adapt/documentElement-clientWidth-on-minimum-scale-size.tentative.html) | Disabled | – | NOT IMPLEMENTED, REQUIRES(layout) | the viewport `<meta>` scaling (`initial-scale`, `user-scalable`); the viewport size is checked |
-| [`viewport-clamp-initial-scale-to-max.tentative.html`](https://wpt.fyi/results/css/css-device-adapt/viewport-clamp-initial-scale-to-max.tentative.html) | Disabled | – | NOT IMPLEMENTED, REQUIRES(layout) | the viewport `<meta>` scaling (`initial-scale`, `user-scalable`); the viewport size is checked |
-| [`viewport-clamp-initial-scale-to-min.tentative.html`](https://wpt.fyi/results/css/css-device-adapt/viewport-clamp-initial-scale-to-min.tentative.html) | Disabled | – | NOT IMPLEMENTED, REQUIRES(layout) | the viewport `<meta>` scaling (`initial-scale`, `user-scalable`); the viewport size is checked |
-| [`viewport-user-scalable-no-clamp-to-max.tentative.html`](https://wpt.fyi/results/css/css-device-adapt/viewport-user-scalable-no-clamp-to-max.tentative.html) | Disabled | – | NOT IMPLEMENTED, REQUIRES(layout) | the viewport `<meta>` scaling (`initial-scale`, `user-scalable`); the viewport size is checked |
-| [`viewport-user-scalable-no-clamp-to-min.tentative.html`](https://wpt.fyi/results/css/css-device-adapt/viewport-user-scalable-no-clamp-to-min.tentative.html) | Disabled | – | NOT IMPLEMENTED, REQUIRES(layout) | the viewport `<meta>` scaling (`initial-scale`, `user-scalable`); the viewport size is checked |
-| [`viewport-user-scalable-no-wide-content.tentative.html`](https://wpt.fyi/results/css/css-device-adapt/viewport-user-scalable-no-wide-content.tentative.html) | Disabled | – | NOT IMPLEMENTED, REQUIRES(layout) | the viewport `<meta>` scaling (`initial-scale`, `user-scalable`); the viewport size is checked |
+| [`documentElement-clientWidth-on-minimum-scale-size.tentative.html`](https://wpt.fyi/results/css/css-device-adapt/documentElement-clientWidth-on-minimum-scale-size.tentative.html) | Pass | 1 / 1 |  |  |
+| [`viewport-clamp-initial-scale-to-max.tentative.html`](https://wpt.fyi/results/css/css-device-adapt/viewport-clamp-initial-scale-to-max.tentative.html) | Pass | 1 / 1 |  |  |
+| [`viewport-clamp-initial-scale-to-min.tentative.html`](https://wpt.fyi/results/css/css-device-adapt/viewport-clamp-initial-scale-to-min.tentative.html) | Pass | 1 / 1 |  |  |
+| [`viewport-user-scalable-no-clamp-to-max.tentative.html`](https://wpt.fyi/results/css/css-device-adapt/viewport-user-scalable-no-clamp-to-max.tentative.html) | Pass | 1 / 1 |  |  |
+| [`viewport-user-scalable-no-clamp-to-min.tentative.html`](https://wpt.fyi/results/css/css-device-adapt/viewport-user-scalable-no-clamp-to-min.tentative.html) | Pass | 1 / 1 |  |  |
+| [`viewport-user-scalable-no-wide-content.tentative.html`](https://wpt.fyi/results/css/css-device-adapt/viewport-user-scalable-no-wide-content.tentative.html) | Pass | 1 / 1 |  |  |

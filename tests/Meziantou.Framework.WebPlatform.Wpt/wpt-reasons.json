@@ -18,7 +18,6 @@
     "core-aam/*": [{ "kind": "TEST RUNNER", "description": "needs the platform accessibility API of a browser" }],
     "cpu-performance/*": [{ "kind": "REQUIRES", "features": ["hardware"], "description": "CPU Performance API" }],
     "credential-management/*": [{ "kind": "NOT IMPLEMENTED", "description": "Credential Management API" }],
-    "css/css-device-adapt/*": [{ "kind": "NOT IMPLEMENTED", "description": "the viewport `<meta>` scaling (`initial-scale`, `user-scalable`)" }, { "kind": "REQUIRES", "features": ["layout"], "description": "the viewport size is checked" }],
     "css/css-exclusions/*": [{ "kind": "NOT IMPLEMENTED", "description": "CSS Exclusions (`wrap-flow`, `wrap-through` have no effect); Requires layout" }],
     "css/css-exclusions/inheritance.html": [{ "kind": "TEST RUNNER", "description": "`css/css-exclusions` is not fetched (CSS Exclusions are not implemented and most tests need layout)" }],
     "css/css-image-animation/*": [{ "kind": "NOT IMPLEMENTED", "description": "the `image-animation` property (the animated images always play)" }],

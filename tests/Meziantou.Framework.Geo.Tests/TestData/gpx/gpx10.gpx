@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="ISO-8859-1" standalone="yes"?>
+<gpx version="1.0" creator="ExpertGPS 1.1 - http://www.topografix.com"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns="http://www.topografix.com/GPX/1/0"
+  xmlns:topografix="http://www.topografix.com/GPX/Private/TopoGrafix/0/2"
+  xsi:schemaLocation="http://www.topografix.com/GPX/1/0 http://www.topografix.com/GPX/1/0/gpx.xsd">
+<name>Boston Freedom Trail</name>
+<desc>A self-guided tour of Boston's Freedom Trail</desc>
+<time>2002-02-27T17:18:33Z</time>
+<bounds minlat="42.355001" minlon="-71.063353" maxlat="42.367347" maxlon="-71.052313"/>
+<wpt lat="42.355001" lon="-71.063353">
+  <ele>12.192000</ele>
+  <time>2002-02-10T21:01:29Z</time>
+  <name>BOSTCOMMON</name>
+  <cmt>Boston Common</cmt>
+  <desc>Boston Common</desc>
+  <url>http://www.cityofboston.gov/parks/</url>
+  <urlname>Boston Common</urlname>
+  <sym>Park</sym>
+  <type>Park</type>
+</wpt>
+<wpt lat="42.357800" lon="-71.062200">
+  <ele>16.764000</ele>
+  <name>PARKSTCH</name>
+  <cmt>Park Street Church</cmt>
+  <sym>Church</sym>
+</wpt>
+<rte>
+  <name>FREEDOM</name>
+  <desc>Freedom Trail walking route</desc>
+  <number>1</number>
+  <topografix:color>ff0000</topografix:color>
+  <rtept lat="42.355001" lon="-71.063353">
+    <ele>12.192000</ele>
+    <name>BOSTCOMMON</name>
+  </rtept>
+  <rtept lat="42.357800" lon="-71.062200">
+    <ele>16.764000</ele>
+    <name>PARKSTCH</name>
+  </rtept>
+  <rtept lat="42.358340" lon="-71.060270">
+    <name>OLDCORNER</name>
+  </rtept>
+</rte>
+<trk>
+  <name>Recorded walk</name>
+  <number>2</number>
+  <trkseg>
+    <trkpt lat="42.355001" lon="-71.063353">
+      <ele>12.192000</ele>
+      <time>2002-02-27T17:18:33Z</time>
+      <course>12.5</course>
+      <speed>1.3</speed>
+    </trkpt>
+    <trkpt lat="42.357800" lon="-71.062200">
+      <ele>16.764000</ele>
+      <time>2002-02-27T17:25:10Z</time>
+    </trkpt>
+  </trkseg>
+</trk>
+</gpx>

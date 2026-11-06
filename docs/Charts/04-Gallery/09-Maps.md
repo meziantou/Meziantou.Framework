@@ -1,21 +1,23 @@
 ---
 title: Maps
-description: Choropleths and points on maps, from GeoJSON, in geographic projections.
+description: Choropleths and points on maps, from GeoJSON, TopoJSON, Shapefile and other formats, in geographic projections.
 ---
 
 ## Choropleth
 
-A choropleth colors regions by a value. Read the regions with
-[GeoJson.ParseFeatures](cref:Meziantou.Framework.Charts.GeoJson.ParseFeatures), which returns the features of a GeoJSON
-document, and draw them with a [GeoMark\<T\>](cref:Meziantou.Framework.Charts.GeoMark{T}): its
+A choropleth colors regions by a value. Read the regions with the `Meziantou.Framework.Geo` package, a dependency of
+the charts: [GeoJson.Parse](cref:Meziantou.Framework.Geo.GeoJson.Parse) returns the features of a GeoJSON document, and
+the package reads [other formats](../../Geo/01-Introduction.md) too, such as TopoJSON and Shapefile. Draw the features
+with a [GeoMark\<T\>](cref:Meziantou.Framework.Charts.GeoMark{T}): its
 [Fill](cref:Meziantou.Framework.Charts.Mark{T}.Fill) channel is mapped by the color scale, as for any mark. The
-[Properties](cref:Meziantou.Framework.Charts.GeoFeature.Properties) of a feature hold the values of its GeoJSON
-properties: a JSON number is a `double` and a string is a `string`.
+[Properties](cref:Meziantou.Framework.Geo.GeoFeature.Properties) of a feature hold the values of its GeoJSON
+properties: a JSON number is a `double` and a string is a `string`. The examples need
+`using Meziantou.Framework.Geo;`.
 
 <!-- ref:../../../tests/Meziantou.Framework.Charts.Tests/StatisticalChartTests.cs;region=Charts_Choropleth;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var path = Path.Combine(AppContext.BaseDirectory, "TestData", "countries-110m.geojson");
-var countries = GeoJson.ParseFeatures(File.ReadAllText(path))
+var countries = GeoJson.Parse(File.ReadAllText(path))
     .Where(country => country.Properties["continent"] is not "Antarctica")
     .ToList();
 
@@ -55,7 +57,7 @@ A plot with a geo mark uses [GeoCoordinates](cref:Meziantou.Framework.Charts.Geo
 the latitude, in degrees. The other marks draw on the map with their usual channels: a
 [DotMark\<T\>](cref:Meziantou.Framework.Charts.DotMark{T}) places its dots at their longitudes and latitudes, and a
 [TextMark\<T\>](cref:Meziantou.Framework.Charts.TextMark{T}) labels them. The
-[Centroid](cref:Meziantou.Framework.Charts.GeoGeometry.Centroid) of a geometry is a position to label a region. The
+[LabelPosition](cref:Meziantou.Framework.Geo.GeoGeometry.LabelPosition) of a geometry is a position to label a region. The
 cities of this example are records like this:
 
 <!-- ref:../../../tests/Meziantou.Framework.Charts.Tests/Samples/City.cs;region=Charts_CityRecord;format=md-fenced-code-block;dedent=true -->
@@ -67,7 +69,7 @@ public sealed record City(string Name, double Longitude, double Latitude, double
 <!-- ref:../../../tests/Meziantou.Framework.Charts.Tests/StatisticalChartTests.cs;region=Charts_MapPoints;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var path = Path.Combine(AppContext.BaseDirectory, "TestData", "countries-110m.geojson");
-var countries = GeoJson.ParseFeatures(File.ReadAllText(path));
+var countries = GeoJson.Parse(File.ReadAllText(path));
 City[] cities =
 [
     new("London", -0.13, 51.51, 9.0), new("Paris", 2.35, 48.86, 11.1), new("Madrid", -3.70, 40.42, 6.7),
@@ -116,10 +118,11 @@ The map fits the shapes of the geo marks and the positions of the other marks. S
 
 | Projection | Use it for |
 |---|---|
-| [EquirectangularProjection](cref:Meziantou.Framework.Charts.EquirectangularProjection) | the default: the longitude is x and the latitude is y |
-| [MercatorProjection](cref:Meziantou.Framework.Charts.MercatorProjection) | the maps of web sites: it keeps the shapes, and enlarges the areas far from the equator |
-| [EqualEarthProjection](cref:Meziantou.Framework.Charts.EqualEarthProjection) | world choropleths: the areas are in proportion to the areas of the regions |
-| [AlbersProjection](cref:Meziantou.Framework.Charts.AlbersProjection) | the choropleths of a country or a continent: equal-area, centered on its [CentralMeridian](cref:Meziantou.Framework.Charts.AlbersProjection.CentralMeridian) |
+| [EquirectangularProjection](cref:Meziantou.Framework.Geo.EquirectangularProjection) | the default: the longitude is x and the latitude is y |
+| [MercatorProjection](cref:Meziantou.Framework.Geo.MercatorProjection) | the maps of web sites: it keeps the shapes, and enlarges the areas far from the equator |
+| [EqualEarthProjection](cref:Meziantou.Framework.Geo.EqualEarthProjection) | world choropleths: the areas are in proportion to the areas of the regions |
+| [AlbersProjection](cref:Meziantou.Framework.Geo.AlbersProjection) | the choropleths of a country or a continent: equal-area, centered on its [CentralMeridian](cref:Meziantou.Framework.Geo.AlbersProjection.CentralMeridian) |
 
 The Albers projection measures the longitudes from its central meridian, and does not cut the shapes that cross the
-opposite meridian: give it the regions of the map, not the whole world.
+opposite meridian: give it the regions of the map, not the whole world. The projections are part of the
+`Meziantou.Framework.Geo` package: see [projections](../../Geo/05-Projections.md) to use them without a chart.

@@ -99,7 +99,7 @@ The coordinates turn the positions of the x and y scales into points:
   and end angles for a gauge, and an inner radius for a donut. Transposed, y is the angle: bars become radial bars.
 
 - [GeoCoordinates](cref:Meziantou.Framework.Charts.GeoCoordinates): x is the longitude and y is the latitude, in degrees,
-  and a [GeoProjection](cref:Meziantou.Framework.Charts.GeoProjection) places them on a map, scaled to fit the plot area.
+  and a [GeoProjection](cref:Meziantou.Framework.Geo.GeoProjection) places them on a map, scaled to fit the plot area.
   The map has no axes; it can have a graticule and the outline of the globe.
 
 Plots that have an [ArcMark\<T\>](cref:Meziantou.Framework.Charts.ArcMark{T}) use polar coordinates by default, and

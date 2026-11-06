@@ -95,6 +95,43 @@ public sealed class LayoutTests
     }
 
     [Fact]
+    public void Sankey_TwoNodes()
+    {
+        // A single link fills the height; the nodes are at the two ends
+        var layout = SankeyLayout.Compute([("A", "B", 10)], new ChartRectangle(0, 0, 100, 100), nodeWidth: 10, nodePadding: 10, iterations: 6, SankeyAlignment.Justify);
+        var (a, b) = (layout.Nodes[0], layout.Nodes[1]);
+        Assert.Equal((0.0, 10.0, 0.0, 100.0), (a.X0, a.X1, a.Y0, a.Y1));
+        Assert.Equal((90.0, 100.0, 0.0, 100.0), (b.X0, b.X1, b.Y0, b.Y1));
+        Assert.Equal((100.0, 50.0, 50.0), (layout.Links[0].Width, layout.Links[0].Y0, layout.Links[0].Y1));
+    }
+
+    [Fact]
+    public void Sankey_DepthsValuesAndAlignment()
+    {
+        (string, string, double)[] links = [("A", "B", 4), ("B", "C", 3), ("B", "D", 1), ("E", "C", 2)];
+        var layout = SankeyLayout.Compute(links, new ChartRectangle(0, 0, 300, 100), nodeWidth: 20, nodePadding: 5, iterations: 6, SankeyAlignment.Justify);
+        var nodes = layout.Nodes.ToDictionary(node => node.Name);
+        Assert.Equal([0, 1, 2, 2, 0], layout.Nodes.Select(node => node.Depth).ToArray());
+        Assert.Equal([2, 1, 0, 0, 1], layout.Nodes.Select(node => node.Height).ToArray());
+        Assert.Equal([4, 4, 5, 1, 2], layout.Nodes.Select(node => node.Value).ToArray());
+
+        // Justified: the sinks are in the last column; E has a single link, to the last column, so it stays in its own
+        Assert.Equal([0, 1, 2, 2, 0], layout.Nodes.Select(node => node.Layer).ToArray());
+        Assert.Equal(280, nodes["C"].X0);
+
+        var right = SankeyLayout.Compute(links, new ChartRectangle(0, 0, 300, 100), 20, 5, 6, SankeyAlignment.Right);
+        Assert.Equal(1, right.Nodes.Single(node => node.Name == "E").Layer);
+        var center = SankeyLayout.Compute(links, new ChartRectangle(0, 0, 300, 100), 20, 5, 6, SankeyAlignment.Center);
+        Assert.Equal(1, center.Nodes.Single(node => node.Name == "E").Layer);
+
+        // Each node is as tall as its value, at the same scale, and the nodes of a column do not overlap
+        var scale = (nodes["A"].Y1 - nodes["A"].Y0) / 4;
+        Assert.Equal(5 * scale, nodes["C"].Y1 - nodes["C"].Y0, 1e-9);
+        Assert.True(nodes["D"].Y0 >= nodes["C"].Y1 + 5 - 1e-9 || nodes["C"].Y0 >= nodes["D"].Y1 + 5 - 1e-9);
+        Assert.Empty(SankeyLayout.Compute([], new ChartRectangle(0, 0, 10, 10), 1, 1, 6, SankeyAlignment.Justify).Nodes);
+    }
+
+    [Fact]
     public void Random_IsTheLcgOfD3()
     {
         var random = CirclePacking.CreateRandom();

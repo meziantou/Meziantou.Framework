@@ -745,6 +745,27 @@ namespace Meziantou.Framework.Charts
         public RuleYMark(System.Collections.Generic.IEnumerable<T> data, System.Func<T, object?> y) { }
     }
 
+    public enum SankeyAlignment
+    {
+        Justify = 0,
+        Left = 1,
+        Right = 2,
+        Center = 3,
+    }
+
+    public sealed class SankeyMark<T> : Meziantou.Framework.Charts.Mark<T>
+    {
+        public Meziantou.Framework.Charts.SankeyAlignment Alignment { get => throw null; set { } }
+        public double LinkOpacity { get => throw null; set { } }
+        public double NodePadding { get => throw null; set { } }
+        public double NodeWidth { get => throw null; set { } }
+        public bool ShowLabels { get => throw null; set { } }
+        public System.Func<T, object?> Source { get => throw null; }
+        public System.Func<T, object?> Target { get => throw null; }
+        public System.Func<T, object?> Value { get => throw null; }
+        public SankeyMark(System.Collections.Generic.IEnumerable<T> data, System.Func<T, object?> source, System.Func<T, object?> target, System.Func<T, object?> value) { }
+    }
+
     public abstract class Scale
     {
         public bool Reverse { get => throw null; set { } }

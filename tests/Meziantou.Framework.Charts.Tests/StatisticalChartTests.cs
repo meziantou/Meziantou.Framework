@@ -348,6 +348,54 @@ public sealed class StatisticalChartTests
     }
 
     [Fact]
+    public void Sankey()
+    {
+        #region Charts_Sankey
+        Flow[] flows =
+        [
+            new("Coal", "Electricity", 25), new("Gas", "Electricity", 30), new("Nuclear", "Electricity", 20), new("Solar", "Electricity", 10),
+            new("Gas", "Heating", 35), new("Oil", "Transport", 45),
+            new("Electricity", "Homes", 30), new("Electricity", "Industry", 25), new("Electricity", "Losses", 30),
+            new("Heating", "Homes", 25), new("Heating", "Losses", 10), new("Transport", "Losses", 30), new("Transport", "Mobility", 15),
+        ];
+
+        var plot = new Plot { Title = "Energy flows", Height = 420 };
+        plot.Add(new SankeyMark<Flow>(flows, source: flow => flow.Source, target: flow => flow.Target, value: flow => flow.Value));
+        #endregion
+
+        ChartAssert.Svg(plot, "Sankey");
+    }
+
+    [Theory]
+    [InlineData(SankeyAlignment.Left)]
+    [InlineData(SankeyAlignment.Right)]
+    [InlineData(SankeyAlignment.Center)]
+    public void SankeyAlignments(SankeyAlignment alignment)
+    {
+        Flow[] flows = [new("A", "B", 10), new("B", "C", 6), new("B", "D", 4), new("E", "C", 3), new("F", "D", double.NaN)];
+        var plot = new Plot { Width = 400, Height = 240 };
+        plot.Add(new SankeyMark<Flow>(flows, source: flow => flow.Source, target: flow => flow.Target, value: flow => flow.Value)
+        {
+            Alignment = alignment,
+            NodeWidth = 10,
+            NodePadding = 20,
+            LinkOpacity = 0.6,
+            ShowLabels = alignment is not SankeyAlignment.Center,
+            Fill = flow => flow.Target,
+            Title = flow => flow.Source + flow.Target,
+        });
+        ChartAssert.Svg(plot, documentationImage: null, memberName: nameof(SankeyAlignments) + "_" + alignment);
+    }
+
+    [Fact]
+    public void SankeyRejectsCycles()
+    {
+        var plot = new Plot();
+        plot.Add(new SankeyMark<Flow>([new("A", "B", 1), new("B", "A", 1)], source: flow => flow.Source, target: flow => flow.Target, value: flow => flow.Value));
+        Assert.Throws<InvalidOperationException>(() => plot.ToSvg());
+    }
+
+    [Fact]
     public void GroupedAndCumulativeTransforms()
     {
         var plot = new Plot { Height = 260 };

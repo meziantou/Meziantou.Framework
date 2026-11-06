@@ -473,6 +473,19 @@ intrinsic block sizes (`IntrinsicSizesCache`, `IntrinsicBlockSizeCache`) are kep
 - **Algorithms.** The cache is outside of the formatting contexts: a new input of a layout algorithm must be in the
   constraint space (or make the layout not kept with `PreventLayoutCaching`), and a new change of the state of the block
   formatting context must be recorded as an operation.
+- **Fragment index.** After each pass, `LayoutEngine.IndexFragments` links the fragments of each box in the order of the
+  fragment tree (`LayoutBox.FirstFragment`, `LastFragment`, `Fragment.NextFragmentOfBox`), and collects the sticky positioned
+  boxes, the scroll containers (their scroll states), the scroll-state query containers and the initial scroll targets. When
+  the pass used results of the previous passes, the index is incremental: the subtree of a box fragment that the previous
+  index reached (`Fragment.IndexVersion`), and that is the only fragment of its box, is not visited (the fragments of the
+  boxes it contains are in it, since a result is not kept in a fragmentation context), unless it contains a fragment that
+  each index collects (`Fragment.HasIndexedFragments`, computed once per fragment); the boxes in it keep their links. The
+  fragments of the previous tree that the new index did not reach are then visited (their ancestors are not in the new tree
+  either), and their boxes that were not indexed again lose their links: the links of a box are valid when the box was
+  indexed after the last index that visited all the fragments (`LayoutEngine.GetFirstFragment`). A change then visits the
+  new fragments, the direct children of the new fragments and the replaced ones, instead of the whole tree. The verification
+  of the incremental layout also indexes the tree again and compares the links and the collected fragments
+  (`LayoutEngine.VerifyFragmentIndex`).
 
 ### Formatting contexts
 
@@ -4560,7 +4573,8 @@ The CSSOM View APIs (`Css/Om/CssomView.cs`, `CssomView.Scrolling.cs`, `CssomView
 read the fragment tree (a forced layout):
 
 - `LayoutEngine.GetFragments(element, pseudoElement?)`: the box fragments of the principal box and of its continuations, in
-  fragment tree order (indexed after each pass: `LayoutBox.FirstFragment` + `Fragment.NextFragmentOfBox`);
+  fragment tree order (indexed after each pass: `LayoutBox.FirstFragment` + `Fragment.NextFragmentOfBox`, see
+  [Layout result cache](#layout-result-cache));
   `GetFragmentsWithSplitBlocks(element)` adds the blocks split out of an inline box between its parts (`getClientRects()`,
   `offsetWidth`); `GetTextFragments(textNode)`: the text fragments of all the runs of a text node.
 - Mappings (`LayoutEngine.Geometry.cs`): `MapToRoot(fragment, rect)` returns a `PhysicalQuad` in the coordinates of the root

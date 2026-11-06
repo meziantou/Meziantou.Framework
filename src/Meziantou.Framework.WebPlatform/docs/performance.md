@@ -107,9 +107,22 @@ their results (e.g. the rows of a table whose row group is built again):
 | `AnimationFrame` | 12.0 MB | 0.6 MB | 41–48 ms | 3–10 ms |
 
 (2026-10-16, three rounds, a machine under heavy load: the third round ran with twice the load of the first.) Before the
-invalidation of the styles by element, each of these changes took 380–450 ms of CPU and allocated 189 MB. The remaining costs
-of a change are the indexing of the fragment tree after each pass (`LayoutEngine.IndexFragments`, a walk of all the
-fragments), the layout of the ancestors of the changed boxes, the recomputed styles and the patch of the box tree.
+invalidation of the styles by element, each of these changes took 380–450 ms of CPU and allocated 189 MB. The index of the
+fragment tree after each pass (`LayoutEngine.IndexFragments`, a walk of all the fragments) was then about half of the samples
+of `ClassChange` (48%) and a third of `OffsetTopAfterEachWrite`. It is now incremental: the subtrees of the fragments kept by
+the layout result cache are not visited again, unless they contain a fragment that each index collects (a sticky box, a scroll
+container...), see [layout.md](layout.md#layout-result-cache); it is 11% of the samples of `ClassChange`:
+
+| Scenario | Allocated: layout result cache | incremental fragment index | Process CPU time: layout result cache | incremental fragment index |
+|---|---:|---:|---:|---:|
+| `ClassChange` | 0.5 MB | 0.5 MB | 7.6–8.0 ms | 3.0–4.3 ms |
+| `AppendTableRow` | 0.6 MB | 0.6 MB | 11.1–11.4 ms | 8.4–10.5 ms |
+| `OffsetTopAfterEachWrite` (10 layouts) | 4.9 MB | 4.9 MB | 31–37 ms | 18–22 ms |
+| `AnimationFrame` | 0.5 MB | 0.5 MB | 6.8–7.6 ms | 3.3–4.4 ms |
+
+(2026-11-05, three rounds of 100 invocations, the two variants run alternately, a machine under heavy load.) The remaining
+costs of a change are the layout of the ancestors of the changed boxes (the block formatting context of a parent replays
+the operations of its kept children), the recomputed styles and the patch of the box tree.
 
 ## Regressions
 

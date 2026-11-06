@@ -352,7 +352,9 @@ without layout, `min-width: auto`), `SvgBoundingBox` (`getBBox()`) and `Animatio
 `BoxTree.TryPatch` (`BoxTreeBuilder.Incremental.cs`) updates the tree after a change instead of building it again: the
 style engine records the changes since the tree was built (`BoxTreeChanges`, `StyleEngine.BoxTreeChanges.cs`): the elements
 whose styles or pseudo-element styles were discarded by the [invalidation by element](computed-style.md#invalidation), and
-the elements whose attributes, children or texts changed (the log of the document). The boxes of each changed element and of
+the elements whose attributes, children or texts changed (the log of the document). The removed elements and the elements
+that had no style (the inserted ones) are not recorded: their boxes are built with the boxes of their parent, whose children
+changed (more than 1,000 recorded elements build the whole tree again). The boxes of each changed element and of
 its descendants are built again in a temporary parent and replace its previous principal box; the other boxes are kept,
 with the state the layout attached to them (see [Layout result cache](#layout-result-cache)). In a rebuilt subtree, the
 boxes of the elements that did not change (neither them nor a descendant) are kept too: the build appends a placeholder
@@ -473,6 +475,19 @@ intrinsic block sizes (`IntrinsicSizesCache`, `IntrinsicBlockSizeCache`) are kep
 - **Algorithms.** The cache is outside of the formatting contexts: a new input of a layout algorithm must be in the
   constraint space (or make the layout not kept with `PreventLayoutCaching`), and a new change of the state of the block
   formatting context must be recorded as an operation.
+- **Fragment index.** After each pass, `LayoutEngine.IndexFragments` links the fragments of each box in the order of the
+  fragment tree (`LayoutBox.FirstFragment`, `LastFragment`, `Fragment.NextFragmentOfBox`), and collects the sticky positioned
+  boxes, the scroll containers (their scroll states), the scroll-state query containers and the initial scroll targets. When
+  the pass used results of the previous passes, the index is incremental: the subtree of a box fragment that the previous
+  index reached (`Fragment.IndexVersion`), and that is the only fragment of its box, is not visited (the fragments of the
+  boxes it contains are in it, since a result is not kept in a fragmentation context), unless it contains a fragment that
+  each index collects (`Fragment.HasIndexedFragments`, computed once per fragment); the boxes in it keep their links. The
+  fragments of the previous tree that the new index did not reach are then visited (their ancestors are not in the new tree
+  either), and their boxes that were not indexed again lose their links: the links of a box are valid when the box was
+  indexed after the last index that visited all the fragments (`LayoutEngine.GetFirstFragment`). A change then visits the
+  new fragments, the direct children of the new fragments and the replaced ones, instead of the whole tree. The verification
+  of the incremental layout also indexes the tree again and compares the links and the collected fragments
+  (`LayoutEngine.VerifyFragmentIndex`).
 
 ### Formatting contexts
 
@@ -4561,7 +4576,8 @@ The CSSOM View APIs (`Css/Om/CssomView.cs`, `CssomView.Scrolling.cs`, `CssomView
 read the fragment tree (a forced layout):
 
 - `LayoutEngine.GetFragments(element, pseudoElement?)`: the box fragments of the principal box and of its continuations, in
-  fragment tree order (indexed after each pass: `LayoutBox.FirstFragment` + `Fragment.NextFragmentOfBox`);
+  fragment tree order (indexed after each pass: `LayoutBox.FirstFragment` + `Fragment.NextFragmentOfBox`, see
+  [Layout result cache](#layout-result-cache));
   `GetFragmentsWithSplitBlocks(element)` adds the blocks split out of an inline box between its parts (`getClientRects()`,
   `offsetWidth`); `GetTextFragments(textNode)`: the text fragments of all the runs of a text node.
 - Mappings (`LayoutEngine.Geometry.cs`): `MapToRoot(fragment, rect)` returns a `PhysicalQuad` in the coordinates of the root
@@ -5615,8 +5631,15 @@ and `fvar` tables. `InstalledFontCollection.System` wraps it, and is used when t
   as `FromFont` once the font is loaded); only the selected face is loaded, from its file, and the faces of a file share
   the loaded file. A face whose file can no longer be loaded (removed or changed since the scan) makes its family missing;
 - the bundled fonts keep their names and the generic families (`serif`, `sans-serif`, `monospace`, `math`): only the
-  families the bundled fonts do not have come from the machine, and the default font does not change. The fonts of the
-  machine add no installed font fallback.
+  families the bundled fonts do not have come from the machine, and the default font does not change;
+- the fonts of the machine are the last part of the installed font fallback (`FontFallbackList.SystemFallbackEntry`, after
+  the bundled fonts and the fallback fonts of the host): a character that no other font has is drawn with the family of
+  `InstalledFontCollection.FindSystemFallbackFamily`, matched with the font properties: the first of a list of families
+  that browsers use for the emoji and the scripts on macOS, Windows and Linux that has the character, else the first font
+  of the index that has it (from the character map of the index, `SystemFontDescriptor.Covers`, without loading the font),
+  cached per character. The last resort font of macOS (`.LastResort`, whose glyphs picture the missing characters) and the
+  fonts that cannot be loaded (Apple Color Emoji, larger than the limit of the font reader) are skipped. The fonts that a
+  host installs (`InstalledFonts`) are not searched this way.
 
 ### CSS Font Loading
 

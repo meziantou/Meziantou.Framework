@@ -93,7 +93,7 @@
     "total": 2
   },
   "css/css-color/color-layers-no-blend-mode.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-color/color-mix-basic-001.html": {
     "reftest": "PASS"

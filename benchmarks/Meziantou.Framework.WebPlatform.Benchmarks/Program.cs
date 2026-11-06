@@ -8,6 +8,7 @@ using Meziantou.Framework.WebPlatform.Benchmarks;
 //   dotnet run -c Release -- compare <base> <head> [<time> <allocations>]           compares two BenchmarkDotNet JSON reports
 //   dotnet run -c Release -- invalidation <class|row|offset|frame|transition-frame|transition-reversal> <count> runs a scenario of InvalidationBenchmarks in a loop (profiling)
 //   dotnet run -c Release -- style <wikipedia-styled|small-bootstrap> <count>       runs StyleBenchmarks in a loop (profiling)
+//   dotnet run -c Release -- table <rows> <count>                                   lays out the table of TableBenchmarks in a loop (profiling)
 //   dotnet run -c Release -- script <ParseAndRun|CreateRealm|DispatchEvents> <count> runs ScriptBenchmarks in a loop (profiling)
 return args switch
 {
@@ -15,6 +16,7 @@ return args switch
     ["compare", var @base, var head] => BenchmarkComparison.Run(@base, head, timeThreshold: 0.25, allocationThreshold: 0.05),
     ["compare", var @base, var head, var time, var allocations] => BenchmarkComparison.Run(@base, head, double.Parse(time, CultureInfo.InvariantCulture), double.Parse(allocations, CultureInfo.InvariantCulture)),
     ["invalidation", var scenario, var count] => InvalidationProfile.Run(scenario, int.Parse(count, CultureInfo.InvariantCulture)),
+    ["table", var rows, var count] => TableProfile.Run(int.Parse(rows, CultureInfo.InvariantCulture), int.Parse(count, CultureInfo.InvariantCulture)),
     ["style", var document, var count] => StyleProfile.Run(document, int.Parse(count, CultureInfo.InvariantCulture)),
     ["script", var scenario, var count] => ScriptProfile.Run(scenario, int.Parse(count, CultureInfo.InvariantCulture)),
     _ => RunBenchmarks(args),

@@ -49,7 +49,11 @@ internal enum StyleInvalidationStates : byte
 /// <param name="OldValue">The previous value of the attribute.</param>
 /// <param name="NewValue">The new value of the attribute.</param>
 /// <param name="States">The changed states.</param>
-internal readonly record struct StyleInvalidation(StyleInvalidationKind Kind, Node Target, Node? Child = null, string? Name = null, string? Namespace = null, string? OldValue = null, string? NewValue = null, StyleInvalidationStates States = StyleInvalidationStates.None);
+/// <param name="NextChildren">
+/// The nodes inserted in (or removed from) the same element just after <paramref name="Child"/>, in order (see
+/// <see cref="StyleInvalidationLog.Add"/>), or null.
+/// </param>
+internal readonly record struct StyleInvalidation(StyleInvalidationKind Kind, Node Target, Node? Child = null, string? Name = null, string? Namespace = null, string? OldValue = null, string? NewValue = null, StyleInvalidationStates States = StyleInvalidationStates.None, List<Node>? NextChildren = null);
 
 /// <summary>
 /// The changes of the connected nodes of a document since the computed styles were last updated, which the style engine of the
@@ -69,10 +73,30 @@ internal sealed class StyleInvalidationLog
 
     public List<StyleInvalidation> Entries => _entries;
 
+    /// <summary>
+    /// Records a change. The nodes inserted in an element (or removed from it) one after the other are recorded in one entry (see
+    /// <see cref="StyleInvalidation.NextChildren"/>): the children of a fragment or of a parsed markup (<c>innerHTML</c>) are
+    /// inserted one by one, and they would make the log full.
+    /// </summary>
     public void Add(StyleInvalidation entry)
     {
         if (IsFull)
             return;
+
+        if (entry is { Kind: StyleInvalidationKind.ChildInserted or StyleInvalidationKind.ChildRemoved, Target: Element, Child: { } child } && _entries.Count > 0
+            && _entries[^1] is var last && last.Kind == entry.Kind && ReferenceEquals(last.Target, entry.Target))
+        {
+            if (last.NextChildren is { } nextChildren)
+            {
+                nextChildren.Add(child);
+            }
+            else
+            {
+                _entries[^1] = last with { NextChildren = [child] };
+            }
+
+            return;
+        }
 
         if (_entries.Count >= MaxCount)
         {

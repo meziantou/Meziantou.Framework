@@ -161,8 +161,30 @@ internal sealed class PlotRenderer
         var facets = FacetGrid.Create(_marks.Select(mark => mark.Data), _plot.Facets);
 
         // The scales are mapped to the frame of a chart of the grid before the chart is drawn
+        var lateColorsResolved = false;
         void RenderCell(FacetCell cell, CoordinateSystem system, ChartRectangle frame)
         {
+            if (!lateColorsResolved)
+            {
+                // Before the first chart is drawn, the continuous color scale includes the values the marks compute from
+                // positions. The charts of a grid have the same size, so the frame of the first one serves for all.
+                lateColorsResolved = true;
+                if (_color is ResolvedContinuousColorScale continuous)
+                {
+                    foreach (var (mark, data) in _marks)
+                    {
+                        var context = new RenderContext(_theme, _measurer, _x, mark.UseSecondaryYScale ? _y2 : _y, _color, _size, system, frame);
+                        foreach (var facetCell in facets.Cells)
+                        {
+                            foreach (var value in mark.GetLateColorValues(context, data.ForFacet(facetCell.XKey, facetCell.YKey)))
+                            {
+                                continuous.Include(value);
+                            }
+                        }
+                    }
+                }
+            }
+
             var target = marks;
             if (facets.IsFaceted)
             {

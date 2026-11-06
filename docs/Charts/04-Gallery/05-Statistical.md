@@ -1,6 +1,6 @@
 ---
 title: Statistical charts
-description: Histograms, box plots, density plots, violin plots, ridgeline plots, trend lines, moving averages, heatmaps, waterfalls, funnels, candlesticks, bullet charts, calendar heatmaps, Marimekko charts and sparklines.
+description: Histograms, box plots, density plots, violin plots, ridgeline plots, hexbin plots, density contours, trend lines, moving averages, heatmaps, waterfalls, funnels, candlesticks, bullet charts, calendar heatmaps, Marimekko charts and sparklines.
 ---
 
 ## Histogram
@@ -95,6 +95,49 @@ plot.XAxis.Label = "Temperature (°C)";
 <!-- endref -->
 
 ![Twelve overlapping densities of temperatures, one per month, shifting right in summer](../images/Ridgeline.svg)
+
+## Hexbin plot
+
+A [HexbinMark\<T\>](cref:Meziantou.Framework.Charts.HexbinMark{T}) tiles the plot area with hexagons of
+[Radius](cref:Meziantou.Framework.Charts.HexbinMark{T}.Radius) pixels, as d3-hexbin does, and colors each hexagon by the
+number of its points with the color scale. It shows where a scatter plot with too many points is dense. The hexagons are
+regular on the screen, so the points are binned once the chart is laid out, and the legend shows the counts.
+
+<!-- ref:../../../tests/Meziantou.Framework.Charts.Tests/StatisticalChartTests.cs;region=Charts_Hexbin;format=md-fenced-code-block;dedent=true -->
+```csharp
+var xs = SampleData.Normal(2000, mean: 50, deviation: 12, seed: 1);
+var ys = SampleData.Normal(2000, mean: 30, deviation: 8, seed: 2);
+var points = xs.Zip(ys, (x, y) => (X: x + (y / 2), Y: y)).ToArray();
+
+var plot = new Plot { Title = "2,000 points in hexagonal bins" };
+plot.Add(new HexbinMark<(double X, double Y)>(points, x: point => point.X, y: point => point.Y) { Radius = 8 });
+plot.Legend.Title = "Points";
+```
+<!-- endref -->
+
+![An elongated cloud of hexagons, darker where the points are dense](../images/Hexbin.svg)
+
+## Density contours
+
+A [ContourMark\<T\>](cref:Meziantou.Framework.Charts.ContourMark{T}) estimates the density of the points on a grid,
+with a Gaussian kernel along each axis, and cuts it at round thresholds with the marching squares of d3-contour. The
+region above each threshold is filled with its color, or outlined when
+[Filled](cref:Meziantou.Framework.Charts.ContourMark{T}.Filled) is off.
+
+<!-- ref:../../../tests/Meziantou.Framework.Charts.Tests/StatisticalChartTests.cs;region=Charts_Contour;format=md-fenced-code-block;dedent=true -->
+```csharp
+var first = SampleData.Normal(300, mean: 2, deviation: 0.8, seed: 3).Zip(SampleData.Normal(300, mean: 3, deviation: 0.6, seed: 4));
+var second = SampleData.Normal(200, mean: 5, deviation: 1, seed: 5).Zip(SampleData.Normal(200, mean: 6, deviation: 0.9, seed: 6));
+var points = first.Concat(second).Select(point => (X: point.First, Y: point.Second)).ToArray();
+
+var plot = new Plot { Title = "Density of two clusters", ColorScale = new SequentialColorScale { Scheme = ColorScheme.Blues } };
+plot.Add(new ContourMark<(double X, double Y)>(points, x: point => point.X, y: point => point.Y));
+plot.Add(new DotMark<(double X, double Y)>(points, x: point => point.X, y: point => point.Y) { Radius = 1.2, FillColor = "#1f2328", FillOpacity = 0.5 });
+plot.Legend.Title = "Density";
+```
+<!-- endref -->
+
+![Nested filled contours around two clusters of points](../images/Contour.svg)
 
 ## Trend line
 

@@ -256,6 +256,89 @@ public sealed class LayoutTests
     }
 
     [Fact]
+    public void Hexbin_MatchesD3()
+    {
+        // d3-hexbin with a radius of 10: the columns are 10√3 apart, the rows 15 apart, and the odd rows are shifted by
+        // half a column
+        var dx = 10 * Math.Sqrt(3);
+        (double, double)[] points = [(0, 0), (2, 3), (dx / 2, 15), (dx, 0), (dx / 2, 7), (dx / 2, 8), (double.NaN, 0)];
+        var bins = Hexbin.Compute(points, radius: 10);
+        Assert.Equal([(0.0, 0.0), (dx / 2, 15.0), (dx, 0.0)], bins.Select(bin => (bin.X, bin.Y)).ToArray());
+
+        // (dx / 2, 7) and (dx / 2, 8) are near the edge between the rows (more than a third of a row from the center of
+        // their nearest row): both go to the hexagon of the odd row, whose center is closer
+        Assert.Equal([0, 1], bins[0].Points);
+        Assert.Equal([2, 4, 5], bins[1].Points);
+        Assert.Equal([3], bins[2].Points);
+
+        // Negative coordinates: the row -1 is odd, so its hexagons are shifted too
+        var negative = Hexbin.Compute([(-dx / 2, -15)], radius: 10);
+        Assert.Equal((-dx / 2, -15.0), (negative[0].X, negative[0].Y));
+    }
+
+    [Fact]
+    public void Hexagon_PointyTop()
+    {
+        var corners = Hexbin.Hexagon(0, 0, 10);
+        Assert.HasCount(6, corners);
+        Assert.Equal(0, corners[0].X, 9);
+        Assert.Equal(-10, corners[0].Y, 9);
+        Assert.Equal(5 * Math.Sqrt(3), corners[1].X, 9);
+        Assert.Equal(-5, corners[1].Y, 9);
+    }
+
+    [Fact]
+    public void Contours_MarchingSquares()
+    {
+        // A single cell above the threshold, at the center of a 3×3 grid: the edges are halfway between the centers of the
+        // cells (x + 0.5) when the threshold is halfway between the values
+        double[] grid = [0, 0, 0, 0, 1, 0, 0, 0, 0];
+        var polygon = Assert.Single(Contours.Compute(grid, 3, 3, 0.5));
+        var ring = Assert.Single(polygon);
+        Assert.Equal([(1.0, 1.5), (1.5, 1.0), (1.5, 2.0), (2.0, 1.5)], ring.Distinct().Order().ToArray());
+        Assert.True(Contours.Area(ring) > 0);
+
+        // Linear interpolation: a threshold of 0.25 is a quarter of the way from 0 to 1, so the edge is 0.25 past the center of the outer cell
+        var smooth = Assert.Single(Assert.Single(Contours.Compute(grid, 3, 3, 0.25)));
+        Assert.Contains((0.75, 1.5), smooth);
+        Assert.Contains((2.25, 1.5), smooth);
+
+        // A ring of cells around a cell below the threshold: a polygon with a hole
+        double[] ringGrid =
+        [
+            0, 0, 0, 0, 0,
+            0, 1, 1, 1, 0,
+            0, 1, 0, 1, 0,
+            0, 1, 1, 1, 0,
+            0, 0, 0, 0, 0,
+        ];
+        var withHole = Assert.Single(Contours.Compute(ringGrid, 5, 5, 0.5));
+        Assert.HasCount(2, withHole);
+        Assert.True(Contours.Area(withHole[0]) > 0);
+        Assert.True(Contours.Area(withHole[1]) < 0);
+
+        // Nothing above the threshold, or everything: no polygon, or the whole grid
+        Assert.Empty(Contours.Compute(grid, 3, 3, 2));
+        var all = Assert.Single(Assert.Single(Contours.Compute(grid, 3, 3, -1)));
+        Assert.True(Contours.Area(all) > 0);
+        Assert.Contains((0.5, 0.0), all);
+        Assert.Contains((0.0, 0.5), all);
+        Assert.Contains((3.0, 2.5), all);
+        Assert.Contains((2.5, 3.0), all);
+    }
+
+    [Fact]
+    public void KernelDensity_TwoDimensions()
+    {
+        // A single point at the origin, bandwidths of 1, a 3×3 grid from -1 to 1: the density is e^(-r²/2) / 2π
+        var (grid, x0, stepX, y0, stepY) = KernelDensity.Evaluate2D([0], [0], 1, 1, size: 3, cut: 1);
+        Assert.Equal((-1.0, 1.0, -1.0, 1.0), (x0, stepX, y0, stepY));
+        Assert.Equal(1 / (2 * Math.PI), grid[4], 12);
+        Assert.Equal(Math.Exp(-0.5) / (2 * Math.PI), grid[1], 12);
+        Assert.Equal(Math.Exp(-1) / (2 * Math.PI), grid[0], 12);
+    }
+
+    [Fact]
     public void Tree_TwoChildren()
     {
         // Siblings 1 apart, half a separation on each side: 0.25 and 0.75, the root centered over them

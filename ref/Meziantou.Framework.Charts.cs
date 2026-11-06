@@ -308,6 +308,19 @@ namespace Meziantou.Framework.Charts
         public bool? Zero { get => throw null; set { } }
     }
 
+    public sealed class ContourMark<T> : Meziantou.Framework.Charts.Mark<T>
+    {
+        public double? BandwidthX { get => throw null; set { } }
+        public double? BandwidthY { get => throw null; set { } }
+        public double FillOpacity { get => throw null; set { } }
+        public bool Filled { get => throw null; set { } }
+        public int GridSize { get => throw null; set { } }
+        public int Thresholds { get => throw null; set { } }
+        public System.Func<T, object?> X { get => throw null; }
+        public System.Func<T, object?> Y { get => throw null; }
+        public ContourMark(System.Collections.Generic.IEnumerable<T> data, System.Func<T, object?> x, System.Func<T, object?> y) { }
+    }
+
     public abstract class Coordinates
     {
         public bool Transposed { get => throw null; set { } }
@@ -399,6 +412,14 @@ namespace Meziantou.Framework.Charts
     public sealed class GroupTransform : Meziantou.Framework.Charts.Transform
     {
         public Meziantou.Framework.Charts.GroupReducer Reducer { get => throw null; set { } }
+    }
+
+    public sealed class HexbinMark<T> : Meziantou.Framework.Charts.Mark<T>
+    {
+        public double Radius { get => throw null; set { } }
+        public System.Func<T, object?> X { get => throw null; }
+        public System.Func<T, object?> Y { get => throw null; }
+        public HexbinMark(System.Collections.Generic.IEnumerable<T> data, System.Func<T, object?> x, System.Func<T, object?> y) { }
     }
 
     public static class Hierarchy

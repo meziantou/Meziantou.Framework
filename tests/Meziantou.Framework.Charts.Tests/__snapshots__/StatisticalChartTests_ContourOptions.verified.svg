@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300" role="img" font-family="Helvetica, Arial, sans-serif">
+<defs>
+<linearGradient id="chart-gradient0" gradientUnits="userSpaceOnUse" x1="10" y1="0" x2="250" y2="0">
+<stop offset="0" stop-color="#440154"/>
+<stop offset="0.0667" stop-color="#471b69"/>
+<stop offset="0.1333" stop-color="#472f7b"/>
+<stop offset="0.2" stop-color="#414386"/>
+<stop offset="0.2667" stop-color="#3a568b"/>
+<stop offset="0.3333" stop-color="#31688e"/>
+<stop offset="0.4" stop-color="#2b788e"/>
+<stop offset="0.4667" stop-color="#25888d"/>
+<stop offset="0.5333" stop-color="#21988a"/>
+<stop offset="0.6" stop-color="#28a883"/>
+<stop offset="0.6667" stop-color="#35b779"/>
+<stop offset="0.7333" stop-color="#5ac567"/>
+<stop offset="0.8" stop-color="#7ed152"/>
+<stop offset="0.8667" stop-color="#a8db38"/>
+<stop offset="0.9333" stop-color="#d3e229"/>
+<stop offset="1" stop-color="#fde725"/>
+</linearGradient>
+</defs>
+<rect width="300" height="300" fill="#ffffff"/>
+<g class="grid">
+<line x1="29.78" y1="269.83" x2="290" y2="269.83" stroke="#e3e6ea"/>
+<line x1="29.78" y1="241.74" x2="290" y2="241.74" stroke="#e3e6ea"/>
+<line x1="29.78" y1="213.66" x2="290" y2="213.66" stroke="#e3e6ea"/>
+<line x1="29.78" y1="185.58" x2="290" y2="185.58" stroke="#e3e6ea"/>
+<line x1="29.78" y1="157.5" x2="290" y2="157.5" stroke="#e3e6ea"/>
+<line x1="29.78" y1="129.42" x2="290" y2="129.42" stroke="#e3e6ea"/>
+<line x1="29.78" y1="101.34" x2="290" y2="101.34" stroke="#e3e6ea"/>
+<line x1="29.78" y1="73.26" x2="290" y2="73.26" stroke="#e3e6ea"/>
+<line x1="29.78" y1="45.18" x2="290" y2="45.18" stroke="#e3e6ea"/>
+</g>
+<g class="marks">
+<g>
+<path d="M193.16,120.63 L199.68,124.44 L203.19,127.55 L207.69,133.64 L208.21,134.47 L210.8,141.39 L212.53,148.32 L214.35,155.24 L215.69,159.91 L216.49,162.16 L218.13,169.08 L217.67,176 L215.69,180.51 L214.74,182.92 L208.96,189.84 L207.69,190.9 L199.68,195.84 L197.57,196.76 L191.68,199.27 L183.68,202.09 L179.07,203.68 L175.67,205.16 L167.67,208.26 L159.66,210.08 L151.66,210.16 L143.66,208.53 L135.65,205.03 L133.61,203.68 L127.65,199.89 L123.93,196.76 L119.64,192.91 L116.32,189.84 L111.64,185.18 L109.27,182.92 L103.66,176 L103.63,175.95 L100.55,169.08 L100.05,162.16 L101.7,155.24 L103.63,151.38 L105.52,148.32 L111.19,141.39 L111.64,140.85 L116.51,134.47 L119.64,129.96 L121.32,127.55 L127.02,120.63 L127.65,120.06 L135.65,115.92 L143.66,114.4 L151.66,114.03 L159.66,114.43 L167.67,115.26 L175.67,116.21 L183.68,117.46 L191.68,119.86 L193.16,120.63 Z" fill="none" stroke="#440154" stroke-width="2" stroke-linejoin="round"><title>contour</title></path>
+<path d="M171.12,134.47 L175.67,135.28 L183.68,139.53 L185.59,141.39 L190.53,148.32 L191.68,150.36 L193.91,155.24 L196.28,162.16 L197.4,169.08 L196.22,176 L191.68,181.85 L190.51,182.92 L183.68,186.61 L175.95,189.84 L175.67,189.94 L167.67,192.69 L159.66,194.68 L151.66,195.13 L143.66,193.44 L136.78,189.84 L135.65,189.04 L129.32,182.92 L127.65,180.39 L124.54,176 L122.13,169.08 L123.56,162.16 L127.65,156.72 L128.91,155.24 L134.93,148.32 L135.65,147.38 L141.23,141.39 L143.66,139.28 L151.66,135.46 L156.8,134.47 L159.66,134.07 L167.67,133.96 L171.12,134.47 Z" fill="none" stroke="#23908c" stroke-width="2" stroke-linejoin="round"><title>contour</title></path>
+<path d="M170.79,162.16 L173.43,169.08 L167.67,174.02 L163.34,176 L159.66,176.86 L154.72,176 L154.67,169.08 L159.66,164.24 L163.4,162.16 L167.67,160.78 L170.79,162.16 Z" fill="none" stroke="#fde725" stroke-width="2" stroke-linejoin="round"><title>contour</title></path>
+</g>
+</g>
+<g class="axes">
+<line x1="24.78" y1="269.83" x2="29.78" y2="269.83" stroke="#8c959f"/>
+<text x="21.78" y="272.64" text-anchor="end" font-size="11" fill="#59636e">-8</text>
+<line x1="24.78" y1="241.74" x2="29.78" y2="241.74" stroke="#8c959f"/>
+<text x="21.78" y="244.55" text-anchor="end" font-size="11" fill="#59636e">-6</text>
+<line x1="24.78" y1="213.66" x2="29.78" y2="213.66" stroke="#8c959f"/>
+<text x="21.78" y="216.47" text-anchor="end" font-size="11" fill="#59636e">-4</text>
+<line x1="24.78" y1="185.58" x2="29.78" y2="185.58" stroke="#8c959f"/>
+<text x="21.78" y="188.39" text-anchor="end" font-size="11" fill="#59636e">-2</text>
+<line x1="24.78" y1="157.5" x2="29.78" y2="157.5" stroke="#8c959f"/>
+<text x="21.78" y="160.31" text-anchor="end" font-size="11" fill="#59636e">0</text>
+<line x1="24.78" y1="129.42" x2="29.78" y2="129.42" stroke="#8c959f"/>
+<text x="21.78" y="132.23" text-anchor="end" font-size="11" fill="#59636e">2</text>
+<line x1="24.78" y1="101.34" x2="29.78" y2="101.34" stroke="#8c959f"/>
+<text x="21.78" y="104.15" text-anchor="end" font-size="11" fill="#59636e">4</text>
+<line x1="24.78" y1="73.26" x2="29.78" y2="73.26" stroke="#8c959f"/>
+<text x="21.78" y="76.07" text-anchor="end" font-size="11" fill="#59636e">6</text>
+<line x1="24.78" y1="45.18" x2="29.78" y2="45.18" stroke="#8c959f"/>
+<text x="21.78" y="47.99" text-anchor="end" font-size="11" fill="#59636e">8</text>
+<line x1="29.78" y1="269.83" x2="29.78" y2="274.83" stroke="#8c959f"/>
+<text x="29.78" y="285.72" text-anchor="middle" font-size="11" fill="#59636e">-4</text>
+<line x1="94.83" y1="269.83" x2="94.83" y2="274.83" stroke="#8c959f"/>
+<text x="94.83" y="285.72" text-anchor="middle" font-size="11" fill="#59636e">-2</text>
+<line x1="159.89" y1="269.83" x2="159.89" y2="274.83" stroke="#8c959f"/>
+<text x="159.89" y="285.72" text-anchor="middle" font-size="11" fill="#59636e">0</text>
+<line x1="224.94" y1="269.83" x2="224.94" y2="274.83" stroke="#8c959f"/>
+<text x="224.94" y="285.72" text-anchor="middle" font-size="11" fill="#59636e">2</text>
+<line x1="290" y1="269.83" x2="290" y2="274.83" stroke="#8c959f"/>
+<text x="290" y="285.72" text-anchor="middle" font-size="11" fill="#59636e">4</text>
+<line x1="29.78" y1="269.83" x2="290" y2="269.83" stroke="#8c959f"/>
+</g>
+<g class="legend">
+<rect x="10" y="10" width="240" height="10" fill="url(#chart-gradient0)"/>
+<line x1="10" y1="20" x2="10" y2="23" stroke="#8c959f"/>
+<text x="10" y="30.9" font-size="11" fill="#59636e">0.020</text>
+<line x1="40" y1="20" x2="40" y2="23" stroke="#8c959f"/>
+<line x1="70" y1="20" x2="70" y2="23" stroke="#8c959f"/>
+<text x="70" y="30.9" text-anchor="middle" font-size="11" fill="#59636e">0.030</text>
+<line x1="100" y1="20" x2="100" y2="23" stroke="#8c959f"/>
+<line x1="130" y1="20" x2="130" y2="23" stroke="#8c959f"/>
+<text x="130" y="30.9" text-anchor="middle" font-size="11" fill="#59636e">0.040</text>
+<line x1="160" y1="20" x2="160" y2="23" stroke="#8c959f"/>
+<line x1="190" y1="20" x2="190" y2="23" stroke="#8c959f"/>
+<text x="190" y="30.9" text-anchor="middle" font-size="11" fill="#59636e">0.050</text>
+<line x1="220" y1="20" x2="220" y2="23" stroke="#8c959f"/>
+<line x1="250" y1="20" x2="250" y2="23" stroke="#8c959f"/>
+<text x="250" y="30.9" text-anchor="end" font-size="11" fill="#59636e">0.060</text>
+</g>
+</svg>

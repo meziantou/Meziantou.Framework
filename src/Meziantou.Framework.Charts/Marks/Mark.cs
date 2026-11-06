@@ -32,6 +32,9 @@ public abstract class Mark
     /// </summary>
     internal virtual double GetYHeadroom() => 0;
 
+    /// <summary>The values the mark maps with a continuous color scale that are known only once the scales are laid out (the counts of hexagons).</summary>
+    internal virtual IEnumerable<double> GetLateColorValues(RenderContext context, MarkData data) => [];
+
     /// <summary>Evaluates the channels and applies the transform.</summary>
     internal abstract MarkData Prepare();
 

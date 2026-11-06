@@ -352,6 +352,96 @@ public sealed class StatisticalChartTests
     }
 
     [Fact]
+    public void Hexbin()
+    {
+        #region Charts_Hexbin
+        var xs = SampleData.Normal(2000, mean: 50, deviation: 12, seed: 1);
+        var ys = SampleData.Normal(2000, mean: 30, deviation: 8, seed: 2);
+        var points = xs.Zip(ys, (x, y) => (X: x + (y / 2), Y: y)).ToArray();
+
+        var plot = new Plot { Title = "2,000 points in hexagonal bins" };
+        plot.Add(new HexbinMark<(double X, double Y)>(points, x: point => point.X, y: point => point.Y) { Radius = 8 });
+        plot.Legend.Title = "Points";
+        #endregion
+
+        ChartAssert.Svg(plot, "Hexbin");
+    }
+
+    [Fact]
+    public void HexbinOptions()
+    {
+        // In a facet grid, the hexagons of every chart extend the color scale; a scale that sets its domain keeps it
+        var points = SampleData.Normal(300, mean: 0, deviation: 1, seed: 7).Select((value, index) => (X: value, Y: index % 10, Group: index % 2 is 0 ? "Even" : "Odd")).ToArray();
+        var plot = new Plot { Width = 400, Height = 220 };
+        plot.Add(new HexbinMark<(double X, int Y, string Group)>(points, x: point => point.X, y: point => point.Y)
+        {
+            Radius = 12,
+            FacetX = point => point.Group,
+            StrokeColor = ChartColor.Black,
+            StrokeWidth = 1,
+            Title = point => point.Group,
+        });
+        ChartAssert.Svg(plot);
+
+        var fixedScale = new Plot { ColorScale = new SequentialColorScale { Minimum = 0, Maximum = 100 } };
+        fixedScale.Add(new HexbinMark<(double X, int Y, string Group)>(points, x: point => point.X, y: point => point.Y));
+        Assert.Contains(">100</text>", fixedScale.ToSvg());
+
+        // Without a continuous color scale, the hexagons have the fill color
+        var ordinal = new Plot { ColorScale = new OrdinalColorScale() };
+        ordinal.Add(new HexbinMark<(double X, int Y, string Group)>(points, x: point => point.X, y: point => point.Y) { FillColor = "#123456" });
+        Assert.Contains("#123456", ordinal.ToSvg());
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => new HexbinMark<int>([], x: i => i, y: i => i) { Radius = 0 });
+    }
+
+    [Fact]
+    public void Contour()
+    {
+        #region Charts_Contour
+        var first = SampleData.Normal(300, mean: 2, deviation: 0.8, seed: 3).Zip(SampleData.Normal(300, mean: 3, deviation: 0.6, seed: 4));
+        var second = SampleData.Normal(200, mean: 5, deviation: 1, seed: 5).Zip(SampleData.Normal(200, mean: 6, deviation: 0.9, seed: 6));
+        var points = first.Concat(second).Select(point => (X: point.First, Y: point.Second)).ToArray();
+
+        var plot = new Plot { Title = "Density of two clusters", ColorScale = new SequentialColorScale { Scheme = ColorScheme.Blues } };
+        plot.Add(new ContourMark<(double X, double Y)>(points, x: point => point.X, y: point => point.Y));
+        plot.Add(new DotMark<(double X, double Y)>(points, x: point => point.X, y: point => point.Y) { Radius = 1.2, FillColor = "#1f2328", FillOpacity = 0.5 });
+        plot.Legend.Title = "Density";
+        #endregion
+
+        ChartAssert.Svg(plot, "Contour");
+    }
+
+    [Fact]
+    public void ContourOptions()
+    {
+        var points = SampleData.Normal(100, mean: 0, deviation: 1, seed: 8).Zip(SampleData.Normal(100, mean: 0, deviation: 2, seed: 9)).Append((double.NaN, 1)).ToArray();
+        var plot = new Plot { Width = 300, Height = 300 };
+        plot.Add(new ContourMark<(double First, double Second)>(points, x: point => point.First, y: point => point.Second)
+        {
+            Filled = false,
+            BandwidthX = 0.5,
+            BandwidthY = 1,
+            GridSize = 32,
+            Thresholds = 4,
+            StrokeWidth = 2,
+            Title = _ => "contour",
+        });
+        ChartAssert.Svg(plot);
+
+        var stroked = new Plot { Width = 300, Height = 300 };
+        stroked.Add(new ContourMark<(double First, double Second)>(points, x: point => point.First, y: point => point.Second) { StrokeColor = ChartColor.White, Thresholds = 3 });
+        Assert.Contains("stroke=\"#ffffff\"", stroked.ToSvg());
+
+        // Without points, or with categories, there is nothing to draw
+        var empty = new Plot();
+        empty.Add(new ContourMark<(double, double)>([(double.NaN, 0)], x: point => point.Item1, y: point => point.Item2));
+        empty.Add(new ContourMark<string>(["a"], x: value => value, y: value => value));
+        Assert.DoesNotContain("<path", empty.ToSvg());
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => new ContourMark<int>([], x: i => i, y: i => i) { GridSize = 1 });
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => new ContourMark<int>([], x: i => i, y: i => i) { Thresholds = 0 });
+    }
+
+    [Fact]
     public void TrendLine()
     {
         #region Charts_TrendLine

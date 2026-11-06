@@ -55,6 +55,13 @@ public sealed class IccProfile
     public static IccProfile SrgbGray => BuiltInIccProfiles.SrgbGray;
 
     /// <summary>
+    /// Gets the Display P3 profile (https://www.w3.org/TR/css-color-4/#predefined-display-p3): the DCI-P3 primaries with
+    /// the D65 white point and the sRGB transfer function, the wide-gamut color space of the screens of the phones and of
+    /// the computers. It is a version 4 matrix-based display profile, built as <see cref="Srgb"/>.
+    /// </summary>
+    public static IccProfile DisplayP3 => BuiltInIccProfiles.DisplayP3;
+
+    /// <summary>
     /// Gets a CMYK profile for web offset printing on coated paper, compatible with the CGATS TR 001 characterization
     /// data: the color space assumed by default for CMYK samples without profile (see
     /// <see cref="CmykConversionOptions.AssumedSourceProfile"/>).

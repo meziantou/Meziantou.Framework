@@ -53,6 +53,22 @@ using var screenshot = canvas.TakeScreenshot();
 - [OffscreenCanvas](cref:Meziantou.Framework.WebPlatform.Dom.OffscreenCanvas) works the same way, also in the workers.
 - Without a backend, `GetContext("2d")` returns null, as in a browser without canvas support.
 
+## Wide-gamut colors
+
+Request [PredefinedColorSpace.DisplayP3](cref:Meziantou.Framework.WebPlatform.Dom.PredefinedColorSpace.DisplayP3) in [CanvasRenderingContext2DSettings.ColorSpace](cref:Meziantou.Framework.WebPlatform.Dom.CanvasRenderingContext2DSettings.ColorSpace)
+to draw the colors of Display P3, whose gamut is wider than the one of sRGB, as in a browser:
+
+- The CSS colors and the images keep their colors outside of sRGB. The Imaging backend decodes an image whose color
+  profile is wider than sRGB (such as Display P3 or Adobe RGB), a PNG image tagged as Display P3 with a `cICP` chunk,
+  and a CMYK JPEG image a second time, without clipping, the first time a Display P3 or a half-float canvas draws it.
+  The pages, which are sRGB, and the 8-bit sRGB canvases clip these colors.
+- [GetImageData](cref:Meziantou.Framework.WebPlatform.Dom.CanvasRenderingContext2DBase.GetImageData) and [PutImageData](cref:Meziantou.Framework.WebPlatform.Dom.CanvasRenderingContext2DBase.PutImageData) convert between the color space of the canvas and the
+  one of the [ImageData](cref:Meziantou.Framework.WebPlatform.Dom.ImageData).
+- `createImageBitmap()` keeps the color space of a canvas or of an image data, and the colors of an image outside of
+  sRGB: a bitmap drawn on a Display P3 canvas keeps them.
+- [ToDataUrl()](cref:Meziantou.Framework.WebPlatform.Dom.HtmlCanvasElement.ToDataUrl) and [ToBlob()](cref:Meziantou.Framework.WebPlatform.Dom.HtmlCanvasElement.ToBlob) serialize the pixels of the canvas in its color space: a PNG image
+  is tagged as Display P3 with a `cICP` chunk, a JPEG or WebP image with the ICC profile of Display P3.
+
 ## Half-float pixels
 
 The Imaging backend stores `float16` canvases as half-precision floating-point pixels. [GetContextAttributes](cref:Meziantou.Framework.WebPlatform.Dom.CanvasRenderingContext2DBase.GetContextAttributes)

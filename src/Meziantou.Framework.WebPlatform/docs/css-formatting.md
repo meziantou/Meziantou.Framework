@@ -35,7 +35,8 @@ are written in their serialized form: the longhands are combined into their shor
 
 `CssMinifyFormatter` removes the whitespace that is not needed (around the commas, the brackets, the combinators other
 than the descendant combinator, the colons of the media features...) and the semicolon of the last declaration of a
-block. The values of the custom properties are written as is. Each other transformation can be disabled:
+block. The values of the custom properties are written as is, and the numbers and colors of the values that contain a
+substitution function (`var()`, `env()`...) are not shortened: these values are kept as specified. Each other transformation can be disabled:
 
 | Option | Default | Description |
 |---|---|---|

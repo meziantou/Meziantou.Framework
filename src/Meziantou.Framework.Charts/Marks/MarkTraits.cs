@@ -35,4 +35,7 @@ internal enum MarkTraits
 
     /// <summary>The domain of the y scale is not extended to round values.</summary>
     ExactY = 1 << 9,
+
+    /// <summary>The plot uses geographic coordinates when it does not set its coordinates.</summary>
+    PreferGeo = 1 << 10,
 }

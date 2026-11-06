@@ -35,6 +35,24 @@ public abstract class Mark
     /// <summary>The values the mark maps with a continuous color scale that are known only once the scales are laid out (the counts of hexagons).</summary>
     internal virtual IEnumerable<double> GetLateColorValues(RenderContext context, MarkData data) => [];
 
+    /// <summary>The positions a map fits, in geographic coordinates: the longitudes (x, x1, x2) and the latitudes (y, y1, y2) of the rows, each with each.</summary>
+    internal virtual IEnumerable<GeoPosition> GetGeoPositions(MarkData data)
+    {
+        ChannelValues[] xs = [.. new[] { data.X, data.X1, data.X2 }.Where(channel => channel is { IsContinuous: true })!];
+        ChannelValues[] ys = [.. new[] { data.Y, data.Y1, data.Y2 }.Where(channel => channel is { IsContinuous: true })!];
+        for (var i = 0; i < data.Count; i++)
+        {
+            foreach (var x in xs)
+            {
+                foreach (var y in ys)
+                {
+                    if (!double.IsNaN(x.Numbers[i]) && !double.IsNaN(y.Numbers[i]))
+                        yield return new GeoPosition(x.Numbers[i], y.Numbers[i]);
+                }
+            }
+        }
+    }
+
     /// <summary>Evaluates the channels and applies the transform.</summary>
     internal abstract MarkData Prepare();
 

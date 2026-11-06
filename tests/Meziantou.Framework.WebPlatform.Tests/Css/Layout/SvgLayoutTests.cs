@@ -98,6 +98,18 @@ public sealed class SvgLayoutTests : IDisposable
     }
 
     [Fact]
+    public void Text_OnPathOnTheRightSide()
+    {
+        // side="right": the text is placed on the path reversed (from its end point), startOffset measured along it, and the
+        // characters are rotated by 180 degrees
+        var document = Parse("<svg><path id=p d='M 10 10 L 110 10'/><text style='font: 10px Ahem'><textPath id=t href='#p' side=right startOffset=20>ab</textPath></text></svg>");
+        var textPath = Get<SvgTextContentElement>(document, "t");
+        Assert.Equal(90, textPath.GetStartPositionOfChar(0).X, 6);
+        Assert.Equal(80, textPath.GetStartPositionOfChar(1).X, 6);
+        Assert.Equal(180, Math.Abs(textPath.GetRotationOfChar(0)), 6);
+    }
+
+    [Fact]
     public void Text_BidiReordering()
     {
         // "cd" is in a right-to-left override: it is displayed as "dc" between "ab" and "e" (the control codes are addressable

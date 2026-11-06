@@ -50,8 +50,8 @@ The features of `REQUIRES`:
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 26,230 | 29,691 | 2,104 | 95% |
 | [Tentative](#tentative-tests) | 1,370 | 3,074 | 692 | 58% |
-| [Reftests](#reftests) | 27,946 | 29,220 | 170 | 96% |
-| **All** | **55,546** | **61,985** | **2,966** | **94%** |
+| [Reftests](#reftests) | 27,951 | 29,220 | 170 | 96% |
+| **All** | **55,551** | **61,985** | **2,966** | **94%** |
 
 ## Failure reasons
 
@@ -59,7 +59,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 170
 - **TEST BUG**: 1,033
-- **NOT IMPLEMENTED**: 4,266
+- **NOT IMPLEMENTED**: 4,261
 - **REQUIRES**: 762
   - `hardware`: 574
   - `layout`: 20
@@ -719,10 +719,10 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`selection`](selection.md#reftests) | 19 | 19 | 0 | 100% |
 | [`service-workers`](service-workers.md#reftests) | 1 | 1 | 0 | 100% |
 | [`shadow-dom`](shadow-dom.md#reftests) | 26 | 26 | 0 | 100% |
-| [`svg`](svg.md#reftests) | 557 | 629 | 2 | 89% |
+| [`svg`](svg.md#reftests) | 562 | 629 | 2 | 90% |
 | [`trusted-types`](trusted-types.md#reftests) | 1 | 1 | 0 | 100% |
 | [`web-animations`](web-animations.md#reftests) | 18 | 18 | 0 | 100% |
 | [`webgl`](webgl.md#reftests) | 0 | 2 | 0 | 0% |
 | [`webvtt`](webvtt.md#reftests) | 182 | 251 | 0 | 73% |
 | [`xml`](xml.md#reftests) | 0 | 3 | 3 | – |
-| **Total (130 sections)** | **27,946** | **29,220** | **170** | **96%** |
+| **Total (130 sections)** | **27,951** | **29,220** | **170** | **96%** |

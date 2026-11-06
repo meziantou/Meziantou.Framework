@@ -3592,7 +3592,8 @@ its user space to CSS px), by the classes of `Svg/`:
   the start and the end of a text path), `text-anchor` per chunk, and the text paths (the `path` attribute when it has a
   segment, else the shape referenced by `href` with its transform; `startOffset` with the `path-length` of the shape; the middle of each
   character at its distance along the path, hidden beyond the ends of an open path, the `dy` shift along the normal; the
-  inline axis of the text on a path is the distance along the path, in visual order). The first character (in logical
+  inline axis of the text on a path is the distance along the path, in visual order; with `side="right"`, the path is
+  reversed: its subpaths in the reverse order, each one in the opposite direction, `startOffset` measured from its end). The first character (in logical
   order) starts an anchored chunk at the origin when it has no `x` or `y`; a chunk is anchored by its visual extent (its
   line-left edge for `text-anchor: start` in a left-to-right paragraph, its line-right edge in a right-to-left one); the
   spacing of `textLength` is distributed between the typographic characters in visual order.
@@ -3639,7 +3640,7 @@ its user space to CSS px), by the classes of `Svg/`:
 - Not done: the content areas of `shape-inside` and `shape-subtract` (with `shape-padding` and `shape-margin`; the text is
   not wrapped), `text-align`, `text-indent` and the hyphenation in the auto-wrapped texts, the preserved line breaks of the
   texts without `inline-size` (the pre-formatted multi-line text of SVG 2, which no browser implements: one line),
-  `side`/`method`/`spacing` of `textPath`, nested `textPath`, the
+  `method`/`spacing` of `textPath`, nested `textPath`, the
   markers in the bounding boxes, the `clipped` option of `getBBox()`, the masks and the `clip-path` basic shapes in the hit
   testing. The geometry uses the animated values of the SMIL animations (see [animations.md](animations.md#svg-animations-smil)).
   The SVG content is painted by the SVG painting (see [SVG painting](#svg-painting)).

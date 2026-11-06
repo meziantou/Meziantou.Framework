@@ -3891,25 +3891,25 @@
     "reftest": "PASS"
   },
   "svg/text/reftests/textpath-side-001.svg": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "svg/text/reftests/textpath-side-002.svg": {
     "reftest": "PASS"
   },
   "svg/text/reftests/textpath-side-003.svg": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "svg/text/reftests/textpath-side-004.svg": {
     "reftest": "PASS"
   },
   "svg/text/reftests/textpath-side-005.svg": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "svg/text/reftests/textpath-side-right-startoffset.svg": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "svg/text/reftests/textpath-side-right-subpaths.svg": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "svg/text/reftests/tiny-text-with-scaling.html": {
     "reftest": "PASS"

@@ -10,9 +10,9 @@ same charts as images (PNG, WebP, JPEG...) or on the canvas of [Meziantou.Framew
 
 There is no class per chart type. A chart is a [Plot](cref:Meziantou.Framework.Charts.Plot) made of layers called marks
 (bars, lines, dots, arcs, rectangles, rules, texts...). The scales map the values of the data to positions, colors and
-sizes, and the coordinates place the positions: Cartesian or polar. A pie is an arc mark in polar coordinates, a
-horizontal bar chart is a bar mark with transposed coordinates, and a radar chart is a closed line in polar coordinates.
-This approach is called the grammar of graphics; Vega-Lite and Observable Plot use it too.
+sizes, and the coordinates place the positions: Cartesian, polar or geographic. A pie is an arc mark in polar
+coordinates, a horizontal bar chart is a bar mark with transposed coordinates, and a radar chart is a closed line in
+polar coordinates. This approach is called the grammar of graphics; Vega-Lite and Observable Plot use it too.
 
 The library covers:
 
@@ -23,6 +23,8 @@ The library covers:
 - Hierarchical charts: packed circles, treemaps, sunbursts, icicles, tree diagrams and dendrograms.
 - Flows: Sankey diagrams and chord diagrams.
 - Networks: network graphs with a force-directed layout.
+- Maps: choropleths and points on maps, from GeoJSON, in the equirectangular, Mercator, Equal Earth and Albers
+  projections.
 - Statistical charts: histograms, box plots, density plots, violin plots, ridgeline plots, hexbin plots, density
   contours, parallel coordinates, trend lines, moving averages, heatmaps, waterfalls, funnels, candlesticks, bullet
   charts, calendar heatmaps, Marimekko charts and sparklines.

@@ -510,7 +510,7 @@ internal sealed partial class BoxTreeBuilder
         var patchedBox = (ContainerBox)patched;
         var builtBox = (ContainerBox)built;
         if (patchedBox.Kind != builtBox.Kind || patchedBox.ChildrenAreInline != builtBox.ChildrenAreInline || patchedBox.IsOutsideMarker != builtBox.IsOutsideMarker
-            || patchedBox.IsRubyWhiteSpace != builtBox.IsRubyWhiteSpace || patchedBox.SkipsContents != builtBox.SkipsContents || patchedBox.IsContentVisibilityAuto != builtBox.IsContentVisibilityAuto || patchedBox.GeneratedImage != builtBox.GeneratedImage
+            || patchedBox.IsRubyWhiteSpace != builtBox.IsRubyWhiteSpace || patchedBox.SkipsContents != builtBox.SkipsContents || patchedBox.IsContentVisibilityAuto != builtBox.IsContentVisibilityAuto || patchedBox.GeneratedImage != builtBox.GeneratedImage || patchedBox.MarkerSymbol != builtBox.MarkerSymbol
             || patchedBox.IsInTopLayer != builtBox.IsInTopLayer || patchedBox.IsFieldsetContent != builtBox.IsFieldsetContent || patchedBox.IsTextControlInnerEditor != builtBox.IsTextControlInnerEditor
             || patchedBox.IsFormControlContents != builtBox.IsFormControlContents || (patchedBox.Continuation is null) != (builtBox.Continuation is null)
             || (patchedBox.PreviousContinuation is null) != (builtBox.PreviousContinuation is null) || (patchedBox.FirstLineStyle is null) != (builtBox.FirstLineStyle is null)

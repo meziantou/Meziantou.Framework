@@ -50,15 +50,15 @@ The features of `REQUIRES`:
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 26,230 | 29,691 | 2,104 | 95% |
 | [Tentative](#tentative-tests) | 1,370 | 3,074 | 692 | 58% |
-| [Reftests](#reftests) | 27,952 | 29,220 | 170 | 96% |
-| **All** | **55,552** | **61,985** | **2,966** | **94%** |
+| [Reftests](#reftests) | 27,953 | 29,220 | 170 | 96% |
+| **All** | **55,553** | **61,985** | **2,966** | **94%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **BUG**: 170
-- **TEST BUG**: 1,036
+- **TEST BUG**: 1,035
 - **NOT IMPLEMENTED**: 4,257
 - **REQUIRES**: 762
   - `hardware`: 574
@@ -618,7 +618,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`css/css-contain`](css/css-contain.md#reftests) | 431 | 432 | 0 | 99.7% |
 | [`css/css-content`](css/css-content.md#reftests) | 65 | 65 | 0 | 100% |
 | [`css/css-counter-styles`](css/css-counter-styles.md#reftests) | 253 | 259 | 0 | 98% |
-| [`css/css-display`](css/css-display.md#reftests) | 164 | 218 | 0 | 75% |
+| [`css/css-display`](css/css-display.md#reftests) | 166 | 218 | 0 | 76% |
 | [`css/css-exclusions`](css/css-exclusions.md#reftests) | 0 | 4 | 4 | – |
 | [`css/css-flexbox`](css/css-flexbox.md#reftests) | 1,018 | 1,023 | 0 | 99.5% |
 | [`css/css-font-loading`](css/css-font-loading.md#reftests) | 7 | 7 | 0 | 100% |
@@ -668,7 +668,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`css/css-viewport`](css/css-viewport.md#reftests) | 108 | 108 | 0 | 100% |
 | [`css/css-will-change`](css/css-will-change.md#reftests) | 47 | 47 | 0 | 100% |
 | [`css/css-writing-modes`](css/css-writing-modes.md#reftests) | 1,145 | 1,159 | 0 | 99% |
-| [`css/CSS2`](css/CSS2.md#reftests) | 6,225 | 6,285 | 0 | 99% |
+| [`css/CSS2`](css/CSS2.md#reftests) | 6,224 | 6,285 | 0 | 99% |
 | [`css/cssom`](css/cssom.md#reftests) | 9 | 12 | 0 | 75% |
 | [`css/cssom-view`](css/cssom-view.md#reftests) | 11 | 11 | 0 | 100% |
 | [`css/fill-stroke`](css/fill-stroke.md#reftests) | 1 | 1 | 0 | 100% |
@@ -725,4 +725,4 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`webgl`](webgl.md#reftests) | 0 | 2 | 0 | 0% |
 | [`webvtt`](webvtt.md#reftests) | 182 | 251 | 0 | 73% |
 | [`xml`](xml.md#reftests) | 0 | 3 | 3 | – |
-| **Total (130 sections)** | **27,952** | **29,220** | **170** | **96%** |
+| **Total (130 sections)** | **27,953** | **29,220** | **170** | **96%** |

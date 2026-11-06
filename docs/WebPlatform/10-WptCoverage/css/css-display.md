@@ -11,14 +11,14 @@ description: "The results of the web-platform-tests of css/css-display, and why 
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 36 | 36 | 0 | 100% |
 | [Tentative](#tentative-tests) | 8 | 8 | 0 | 100% |
-| [Reftests](#reftests) | 164 | 218 | 0 | 75% |
-| **All** | **208** | **262** | **0** | **79%** |
+| [Reftests](#reftests) | 166 | 218 | 0 | 76% |
+| **All** | **210** | **262** | **0** | **80%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **TEST BUG**: 54
+- **TEST BUG**: 52
 
 ## Stable tests
 
@@ -183,7 +183,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`run-in/run-in-basic-003.xht`](https://wpt.fyi/results/css/css-display/run-in/run-in-basic-003.xht) | Pass | 1 / 1 |  |  |
 | [`run-in/run-in-basic-004.xht`](https://wpt.fyi/results/css/css-display/run-in/run-in-basic-004.xht) | Pass | 1 / 1 |  |  |
 | [`run-in/run-in-basic-005.xht`](https://wpt.fyi/results/css/css-display/run-in/run-in-basic-005.xht) | Pass | 1 / 1 |  |  |
-| [`run-in/run-in-basic-006.xht`](https://wpt.fyi/results/css/css-display/run-in/run-in-basic-006.xht) | Fail | 0 / 1 | TEST BUG | the reference has no list marker: the run-in box runs in to the list item (after its marker), but the outside marker of the list item is painted in the margin of the body, where the reference has nothing |
+| [`run-in/run-in-basic-006.xht`](https://wpt.fyi/results/css/css-display/run-in/run-in-basic-006.xht) | Pass | 1 / 1 |  |  |
 | [`run-in/run-in-basic-007.xht`](https://wpt.fyi/results/css/css-display/run-in/run-in-basic-007.xht) | Fail | 0 / 1 | TEST BUG | the test expects a run-in box to run in to a block box with `overflow: scroll`; in CSS Display 3 a run-in sequence only runs in to "a block box that does not establish a new formatting context" (https://drafts.csswg.org/css-display-3/#run-in-layout): the header stays in an anonymous block before the scroll container |
 | [`run-in/run-in-basic-008.xht`](https://wpt.fyi/results/css/css-display/run-in/run-in-basic-008.xht) | Pass | 1 / 1 |  |  |
 | [`run-in/run-in-basic-009.xht`](https://wpt.fyi/results/css/css-display/run-in/run-in-basic-009.xht) | Pass | 1 / 1 |  |  |
@@ -259,7 +259,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`run-in/run-in-inline-table-between-001.xht`](https://wpt.fyi/results/css/css-display/run-in/run-in-inline-table-between-001.xht) | Fail | 0 / 1 | TEST BUG | the test checks the run-in model of the old CSS 2.1 drafts, where a run-in box that is not followed by a block box becomes a block box (on a line of its own); in CSS Display 3 "an anonymous block box is generated around the run-in sequence and all immediately following inline-level content" (https://drafts.csswg.org/css-display-3/#run-in-layout): the run-in box is on the line of the text or of the inline-level box that follows it; the test passes in the browsers only because they do not support `display: run-in` (the element stays a block) |
 | [`run-in/run-in-inline-table-between-002.xht`](https://wpt.fyi/results/css/css-display/run-in/run-in-inline-table-between-002.xht) | Fail | 0 / 1 | TEST BUG | the test checks the run-in model of the old CSS 2.1 drafts, where a run-in box that is not followed by a block box becomes a block box (on a line of its own); in CSS Display 3 "an anonymous block box is generated around the run-in sequence and all immediately following inline-level content" (https://drafts.csswg.org/css-display-3/#run-in-layout): the run-in box is on the line of the text or of the inline-level box that follows it; the test passes in the browsers only because they do not support `display: run-in` (the element stays a block) |
 | [`run-in/run-in-inline-table-between-003.xht`](https://wpt.fyi/results/css/css-display/run-in/run-in-inline-table-between-003.xht) | Pass | 1 / 1 |  |  |
-| [`run-in/run-in-listitem-between-001.xht`](https://wpt.fyi/results/css/css-display/run-in/run-in-listitem-between-001.xht) | Fail | 0 / 1 | TEST BUG | the test expects a run-in box followed by a list item not to run in (old CSS 2.1 drafts) and its reference has no list marker; in CSS Display 3 a list item is a block box: the run-in box runs in to the empty list item, after its marker (https://drafts.csswg.org/css-display-3/#run-in-layout), and the outside markers of the two list items are painted in the margin of the body |
+| [`run-in/run-in-listitem-between-001.xht`](https://wpt.fyi/results/css/css-display/run-in/run-in-listitem-between-001.xht) | Pass | 1 / 1 |  |  |
 | [`run-in/run-in-listitem-between-002.xht`](https://wpt.fyi/results/css/css-display/run-in/run-in-listitem-between-002.xht) | Pass | 1 / 1 |  |  |
 | [`run-in/run-in-listitem-between-003.xht`](https://wpt.fyi/results/css/css-display/run-in/run-in-listitem-between-003.xht) | Pass | 1 / 1 |  |  |
 | [`run-in/run-in-relpos-between-001.xht`](https://wpt.fyi/results/css/css-display/run-in/run-in-relpos-between-001.xht) | Fail | 0 / 1 | TEST BUG | the test checks the run-in model of the old CSS 2.1 drafts, where a run-in box that is not followed by a block box becomes a block box (on a line of its own); in CSS Display 3 "an anonymous block box is generated around the run-in sequence and all immediately following inline-level content" (https://drafts.csswg.org/css-display-3/#run-in-layout): the run-in box is on the line of the text or of the inline-level box that follows it; the test passes in the browsers only because they do not support `display: run-in` (the element stays a block) |

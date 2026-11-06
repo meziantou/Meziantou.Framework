@@ -1,5 +1,6 @@
 using Meziantou.Framework.Imaging;
 using Meziantou.Framework.Imaging.Formats;
+using Meziantou.Framework.WebPlatform.Rendering;
 
 namespace Meziantou.Framework.WebPlatform.Imaging;
 
@@ -16,17 +17,18 @@ internal static class ImagingImageEncoder
     /// <summary>The default quality of the WebP images of the browsers.</summary>
     private const double DefaultWebPQuality = 0.8;
 
-    /// <summary>Encodes pixels (RGBA, not premultiplied, sRGB) as an image file.</summary>
+    /// <summary>Encodes pixels (RGBA, not premultiplied) as an image file, tagged with the Display P3 profile when they are Display P3.</summary>
     /// <param name="width">The width in pixels (at least 1).</param>
     /// <param name="height">The height in pixels (at least 1).</param>
     /// <param name="pixels">The pixels: 4 bytes per pixel, row by row.</param>
     /// <param name="mimeType">The MIME type of the image file (lowercase).</param>
     /// <param name="quality">The quality from 0 to 1 of a lossy format, or null (or a value out of the range) for the default quality.</param>
+    /// <param name="colorSpace">The color space of the pixels.</param>
     /// <returns>
     /// The bytes of the file, or null when the type is not <c>image/jpeg</c> or <c>image/webp</c>, or when the format cannot
     /// store the image (it is larger than the largest image of the format): the image is then encoded as PNG.
     /// </returns>
-    public static byte[]? Encode(int width, int height, ReadOnlySpan<byte> pixels, string mimeType, double? quality)
+    public static byte[]? Encode(int width, int height, ReadOnlySpan<byte> pixels, string mimeType, double? quality, RenderingColorSpace colorSpace = RenderingColorSpace.Srgb)
     {
         ImageEncoder encoder;
         switch (mimeType)
@@ -58,6 +60,10 @@ internal static class ImagingImageEncoder
         try
         {
             using var image = Image.ImportPixelBytes<Rgba32>(pixels, width, height, width * 4, ImagingImageDecoder.Configuration);
+            if (colorSpace == RenderingColorSpace.DisplayP3)
+            {
+                image.Metadata.IccProfile = Meziantou.Framework.Imaging.Metadata.IccProfile.DisplayP3;
+            }
             using var stream = new MemoryStream();
             image.Save(stream, encoder);
             return stream.ToArray();

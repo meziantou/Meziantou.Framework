@@ -1596,7 +1596,7 @@
     "reftest": "PASS"
   },
   "css/css-gaps/multicol/multicol-gap-decorations-007.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-gaps/multicol/multicol-gap-decorations-008.html": {
     "reftest": "PASS"

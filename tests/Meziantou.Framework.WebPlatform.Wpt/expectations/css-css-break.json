@@ -1902,16 +1902,16 @@
     "reftest": "PASS"
   },
   "css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-027.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-028.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-029.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-030.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-031.html": {
     "reftest": "PASS"
@@ -1923,13 +1923,13 @@
     "reftest": "PASS"
   },
   "css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-034.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-035.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-036.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-037.html": {
     "reftest": "PASS"
@@ -1971,7 +1971,7 @@
     "reftest": "PASS"
   },
   "css/css-break/grid/grid-lanes/column-single-lane-fragmentation-012.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-break/grid/grid-lanes/grid-lanes-container-fragmentation-001.html": {
     "reftest": "PASS"

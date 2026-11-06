@@ -19,6 +19,14 @@ internal sealed class GridLanesBreaks
     /// <summary>The block size of the fragmentainers after the last one of <see cref="Ends"/>.</summary>
     public required double NextBlockSize { get; init; }
 
+    /// <summary>
+    /// The block-end edge of the margin box of each item that is broken, from the block-start edge of the content box of the
+    /// container (in the coordinates of <see cref="Ends"/>: a fragmentainer starts where the previous one ends), once its contents
+    /// are fragmented: the rest of an item is taller than the part of the item after the end of the fragmentainer when its
+    /// contents are pushed by their own breaks (a line box that does not fit), and the next items of its lanes follow it.
+    /// </summary>
+    public Dictionary<ContainerBox, double>? ItemEnds { get; init; }
+
     /// <summary>The fragmentation context is a multi-column container (else pages): the forced breaks are the column breaks.</summary>
     public bool IsColumns { get; init; } = true;
 
@@ -55,6 +63,18 @@ internal sealed class GridLanesBreaks
         {
             if (Math.Abs(Ends[i] - other.Ends[i]) > Epsilon)
                 return false;
+        }
+
+        if ((ItemEnds?.Count ?? 0) != (other.ItemEnds?.Count ?? 0))
+            return false;
+
+        if (ItemEnds is not null && other.ItemEnds is not null)
+        {
+            foreach (var (box, end) in ItemEnds)
+            {
+                if (!other.ItemEnds.TryGetValue(box, out var otherEnd) || Math.Abs(end - otherEnd) > Epsilon)
+                    return false;
+            }
         }
 
         return true;

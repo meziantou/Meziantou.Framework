@@ -561,6 +561,7 @@ namespace Meziantou.Framework.Charts
 
     public abstract class HierarchyMark<T> : Meziantou.Framework.Charts.Mark
     {
+        public System.Func<Meziantou.Framework.Charts.HierarchyNode<T>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>?>? DataAttributes { get => throw null; set { } }
         public System.Func<Meziantou.Framework.Charts.HierarchyNode<T>, object?>? Fill { get => throw null; set { } }
         public Meziantou.Framework.Charts.ChartColor? FillColor { get => throw null; set { } }
         public System.Func<Meziantou.Framework.Charts.HierarchyNode<T>, string?>? Label { get => throw null; set { } }
@@ -684,6 +685,7 @@ namespace Meziantou.Framework.Charts
     public abstract class Mark<T> : Meziantou.Framework.Charts.Mark
     {
         public System.Collections.Generic.IEnumerable<T> Data { get => throw null; }
+        public System.Func<T, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>?>? DataAttributes { get => throw null; set { } }
         public System.Func<T, object?>? FacetX { get => throw null; set { } }
         public System.Func<T, object?>? FacetY { get => throw null; set { } }
         public System.Func<T, object?>? Fill { get => throw null; set { } }
@@ -998,8 +1000,10 @@ namespace Meziantou.Framework.Charts
     public abstract class SceneElement
     {
         public string? CssClass { get => throw null; set { } }
+        public System.Collections.Generic.IReadOnlyDictionary<string, string> DataAttributes { get => throw null; }
         public double Opacity { get => throw null; set { } }
         public string? Tooltip { get => throw null; set { } }
+        public void SetDataAttribute(string name, string? value) { }
     }
 
     public enum SceneFillRule

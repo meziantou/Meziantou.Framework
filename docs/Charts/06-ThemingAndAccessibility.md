@@ -68,4 +68,7 @@ var svg = plot.ToSvg(new SvgRenderOptions { IdPrefix = "sales", IncludeNamespace
 ```
 <!-- endref -->
 
+The [DataAttributes](cref:Meziantou.Framework.Charts.Mark{T}.DataAttributes) channel adds `data-*` attributes to each
+shape, for the scripts of a web page: see [tooltips in a web page](08-WebPageTooltips.md).
+
 Texts from users are safe to chart: the markup characters are escaped, and the characters XML forbids are removed.

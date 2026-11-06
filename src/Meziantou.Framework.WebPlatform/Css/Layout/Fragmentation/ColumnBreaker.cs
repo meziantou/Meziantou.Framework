@@ -1341,13 +1341,21 @@ internal static partial class ColumnBreaker
                 end = Math.Min(end, ((IItemCursor)item.Cursor!).GetPlacedOffset(item.IntrinsicEnd));
             }
 
+            // (the fragments of a box that grows with its contents are not taller together than its maximum block size: the box ends
+            // there, its contents overflow it)
+            var maxEnd = item.CanGrow && double.IsFinite(item.MaxEnd) ? GetOffset(item.MaxEnd + item.PushShift) : double.PositiveInfinity;
+            var reachesMax = !placed && maxEnd <= available + Epsilon;
             var isNested = item.Nested is not null && item.CanGrow;
-            if ((placed || !item.CanGrow) && (item.IsMonolithic ? item.IsFlowDone : isNested || end <= available + Epsilon))
+            if ((placed || !item.CanGrow || reachesMax) && (item.IsMonolithic ? item.IsFlowDone : isNested || end <= available + Epsilon || reachesMax))
             {
-                if (placed && item.CanGrow && item.AdvancedIndex == _index)
+                if (reachesMax)
+                {
+                    end = maxEnd;
+                }
+                else if (placed && item.CanGrow && item.AdvancedIndex == _index)
                 {
                     var placedEnd = ((IItemCursor)item.Cursor!).GetPlacedOffset(item.IntrinsicEnd);
-                    end = (isNested && !item.HasMinimumEnd) || item.IsRowSubgrid ? placedEnd : Math.Max(end, placedEnd);
+                    end = Math.Min((isNested && !item.HasMinimumEnd) || item.IsRowSubgrid ? placedEnd : Math.Max(end, placedEnd), Math.Max(end, maxEnd));
                 }
                 else if (item.IsRowSubgrid && item.IsFlowDone && item.AdvancedIndex == _index)
                 {

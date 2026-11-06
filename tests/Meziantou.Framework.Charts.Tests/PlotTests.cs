@@ -101,6 +101,45 @@ public sealed class PlotTests
     }
 
     [Fact]
+    public void Svg_WritesDataAttributesSortedAndEscaped()
+    {
+        var scene = new ChartScene(100, 50, "sans-serif");
+        var group = scene.Root.Add(new SceneGroup { CssClass = "g" });
+        group.SetDataAttribute("series", "a");
+        var circle = group.Add(new SceneCircle(5, 5, 5) { Tooltip = "circle" });
+        circle.SetDataAttribute("value", "x & \"y\" <z>");
+        circle.SetDataAttribute("a.b_c-1", "1");
+        circle.SetDataAttribute("removed", "1");
+        circle.SetDataAttribute("removed", value: null);
+        circle.SetDataAttribute("replaced", "1");
+        circle.SetDataAttribute("replaced", "2");
+        scene.Root.Add(new SceneText(0, 10, "text", new ChartFont(10), ChartColor.Black)).SetDataAttribute("kind", "label");
+
+        var svg = SvgChartRenderer.Render(scene);
+        Assert.Contains("<g class=\"g\" data-series=\"a\">", svg);
+        Assert.Contains("data-a.b_c-1=\"1\" data-replaced=\"2\" data-value=\"x &amp; &quot;y&quot; &lt;z&gt;\"><title>circle</title></circle>", svg);
+        Assert.Contains("data-kind=\"label\">text</text>", svg);
+        Assert.DoesNotContain("data-removed", svg);
+        Assert.HasCount(3, circle.DataAttributes);
+        Assert.Empty(scene.Root.DataAttributes);
+        _ = System.Xml.Linq.XDocument.Parse(svg);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("Region")]
+    [InlineData("data:x")]
+    [InlineData("a b")]
+    [InlineData("caf\u00e9")]
+    [InlineData("on\"click")]
+    public void SetDataAttribute_RejectsInvalidNames(string name)
+    {
+        var element = new SceneCircle(0, 0, 1);
+        Assert.Throws<ArgumentException>(nameof(name), () => element.SetDataAttribute(name, "value"));
+        Assert.Empty(element.DataAttributes);
+    }
+
+    [Fact]
     public void Svg_WritesEveryPrimitive()
     {
         var scene = new ChartScene(100, 100, "sans-serif");

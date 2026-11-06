@@ -2265,7 +2265,7 @@ internal static partial class CssValueComputer
         ["visitedtext"] = "rgb(208, 173, 240)",
     }.ToFrozenDictionary(StringComparer.Ordinal);
 
-    private static bool IsColorFunction(string name) => name is "rgb" or "rgba" or "hsl" or "hsla" or "hwb" or "lab" or "lch" or "oklab" or "oklch" or "ictcp" or "jzazbz" or "jzczhz" or "color" or "device-cmyk" or "light-dark" or "color-mix" or "color-hdr" or "alpha" or "contrast-color";
+    private static bool IsColorFunction(string name) => name is "rgb" or "rgba" or "hsl" or "hsla" or "hwb" or "lab" or "lch" or "oklab" or "oklch" or "ictcp" or "jzazbz" or "jzczhz" or "color" or "device-cmyk" or "light-dark" or "color-mix" or "color-layers" or "color-hdr" or "alpha" or "contrast-color";
 
     /// <summary>
     /// Returns whether the computed value of a color does not depend on the element: a hex color, a named color, transparent, or
@@ -2468,6 +2468,9 @@ internal static partial class CssValueComputer
                         math => CssCalc.Evaluate(math, CreateCalcContext(context, percentageUnit: null)) is { IsNumeric: true, Unit: "%" } result ? result.Value : null);
                 }
 
+                if (name == "color-layers")
+                    return CssColorLayers.Compute(function, color => ResolveColor(color, style, isColorProperty));
+
                 if (!IsColorFunction(name))
                     return null;
 
@@ -2553,6 +2556,9 @@ internal static partial class CssValueComputer
 
                     if (name == "color-mix")
                         return CssColorMix.Compute(function, ResolveColorWithoutElement, math => CssCalc.Evaluate(math, CssCalcContext.Default) is { IsNumeric: true, Unit: "%" } result ? result.Value : null);
+
+                    if (name == "color-layers")
+                        return CssColorLayers.Compute(function, ResolveColorWithoutElement);
 
                     // https://drafts.csswg.org/css-color-hdr-1/#headroom-interpolation: the color of an SDR display (a headroom of 0)
                     if (name == "color-hdr")
@@ -2709,7 +2715,7 @@ internal static partial class CssValueComputer
     public static string ResolveCurrentColor(ComputedStyle style, string property, string value, string color)
     {
         var replaced = ReplaceCurrentColor(value, color);
-        if (value.Contains("color-mix(", StringComparison.Ordinal) || value.Contains("contrast-color(", StringComparison.Ordinal) || value.Contains("(from ", StringComparison.Ordinal))
+        if (value.Contains("color-mix(", StringComparison.Ordinal) || value.Contains("color-layers(", StringComparison.Ordinal) || value.Contains("contrast-color(", StringComparison.Ordinal) || value.Contains("(from ", StringComparison.Ordinal))
             return ComputeGeneric(style, CssPropertyRegistry.Get(property), replaced, baseUrl: null, hasColors: true);
 
         return replaced;

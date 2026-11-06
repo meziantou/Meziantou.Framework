@@ -519,7 +519,11 @@ like the imported style sheets (`DocumentRequest.Initiator` is null), when the d
   `accent-color: AccentColor` is the accent color of the parent and the `currentcolor` of `accent-color` in the `color` of
   the same element is the color of the parent, also for the colors of a canvas; `light-dark()`, `color-mix()` in the
   sRGB, linear sRGB, XYZ, Lab, LCH, Oklab and Oklch color spaces, `contrast-color()`, which is white or black, whichever has
-  the higher WCAG 2.1 contrast ratio); the resolved value of a color is its used value (`currentcolor` is resolved). The
+  the higher WCAG 2.1 contrast ratio, `color-layers()` of [CSS Color 6](https://drafts.csswg.org/css-color-6/#color-layers),
+  whose colors are composited with Source Over and its blend mode, the first color on top, as the layers of a background:
+  each color is CSS gamut mapped to sRGB, then they are composited in sRGB, as the specification does not give the color
+  space); the resolved value of a color is its used
+  value (`currentcolor` is resolved). The
   relative color syntax is kept as specified. `light-dark()` of images computes to the image of the used color scheme
   (`none` is `image(rgba(0, 0, 0, 0))`).
 - The color conversions follow the sample code of CSS Color 4, except the transfer function of `rec2020`: the piecewise

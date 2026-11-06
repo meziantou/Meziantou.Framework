@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="240" viewBox="0 0 640 240" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="640" height="240" fill="#ffffff"/>
+<g class="marks">
+<g>
+<rect x="71.96" y="17.1" width="558.04" height="63.87" fill="#4269d0"/>
+<text x="350.98" y="51.84" text-anchor="middle" font-size="11" fill="#ffffff">12k</text>
+<path d="M71.96,80.97 L630,80.97 L448.64,88.06 L253.33,88.06 Z" fill="#efb118" fill-opacity="0.302"/>
+<rect x="253.33" y="88.06" width="195.31" height="63.87" fill="#efb118"/>
+<text x="350.98" y="122.81" text-anchor="middle" font-size="11" fill="#1f2328">4.2k</text>
+<path d="M253.33,151.94 L448.64,151.94 L366.1,159.03 L335.87,159.03 Z" fill="#ff725c" fill-opacity="0.302"/>
+<rect x="335.87" y="159.03" width="30.23" height="63.87" fill="#ff725c"/>
+<text x="350.98" y="193.78" text-anchor="middle" font-size="11" fill="#1f2328">650</text>
+</g>
+</g>
+<g class="axes">
+<line x1="66.96" y1="49.03" x2="71.96" y2="49.03" stroke="#8c959f"/>
+<text x="63.96" y="51.84" text-anchor="end" font-size="11" fill="#59636e">Visits</text>
+<line x1="66.96" y1="120" x2="71.96" y2="120" stroke="#8c959f"/>
+<text x="63.96" y="122.81" text-anchor="end" font-size="11" fill="#59636e">Sign-ups</text>
+<line x1="66.96" y1="190.97" x2="71.96" y2="190.97" stroke="#8c959f"/>
+<text x="63.96" y="193.78" text-anchor="end" font-size="11" fill="#59636e">Purchases</text>
+</g>
+</svg>

@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="300" viewBox="0 0 640 300" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="640" height="300" fill="#ffffff"/>
+<g class="marks">
+<g>
+<rect x="10" y="10" width="435.48" height="93.33" fill="#4682b4" stroke="#ffffff"><title>/src</title></rect>
+<text x="227.74" y="59.48" text-anchor="middle" font-size="11" fill="#ffffff">src</text>
+<rect x="10" y="103.33" width="191.9" height="93.33" fill="#4682b4" fill-opacity="0.8" stroke="#ffffff"><title>/src/app</title></rect>
+<text x="105.95" y="152.81" text-anchor="middle" font-size="11" fill="#ffffff">app</text>
+<rect x="10" y="196.67" width="88.57" height="93.33" fill="#4682b4" fill-opacity="0.6" stroke="#ffffff"><title>/src/app/main.cs</title></rect>
+<text x="54.29" y="246.14" text-anchor="middle" font-size="11" fill="#ffffff">main.cs</text>
+<rect x="98.57" y="196.67" width="59.05" height="93.33" fill="#4682b4" fill-opacity="0.6" stroke="#ffffff"><title>/src/app/view.cs</title></rect>
+<text x="128.1" y="246.14" text-anchor="middle" font-size="11" fill="#ffffff">view.cs</text>
+<rect x="157.62" y="196.67" width="44.29" height="93.33" fill="#4682b4" fill-opacity="0.6" stroke="#ffffff"><title>/src/app/model.cs</title></rect>
+<rect x="201.9" y="103.33" width="202.98" height="93.33" fill="#4682b4" fill-opacity="0.8" stroke="#ffffff"><title>/src/core</title></rect>
+<text x="303.39" y="152.81" text-anchor="middle" font-size="11" fill="#ffffff">core</text>
+<rect x="201.9" y="196.67" width="103.33" height="93.33" fill="#4682b4" fill-opacity="0.6" stroke="#ffffff"><title>/src/core/parser.cs</title></rect>
+<text x="253.57" y="246.14" text-anchor="middle" font-size="11" fill="#ffffff">parser.cs</text>
+<rect x="305.24" y="196.67" width="66.43" height="93.33" fill="#4682b4" fill-opacity="0.6" stroke="#ffffff"><title>/src/core/lexer.cs</title></rect>
+<text x="338.45" y="246.14" text-anchor="middle" font-size="11" fill="#ffffff">lexer.cs</text>
+<rect x="371.67" y="196.67" width="33.21" height="93.33" fill="#4682b4" fill-opacity="0.6" stroke="#ffffff"><title>/src/core/ast.cs</title></rect>
+<text x="388.27" y="246.14" text-anchor="middle" font-size="11" fill="#ffffff">ast.cs</text>
+<rect x="404.88" y="103.33" width="40.6" height="93.33" fill="#4682b4" fill-opacity="0.8" stroke="#ffffff"><title>/src/util</title></rect>
+<text x="425.18" y="152.81" text-anchor="middle" font-size="11" fill="#ffffff">util</text>
+<rect x="404.88" y="196.67" width="22.14" height="93.33" fill="#4682b4" fill-opacity="0.6" stroke="#ffffff"><title>/src/util/strings.cs</title></rect>
+<rect x="427.02" y="196.67" width="18.45" height="93.33" fill="#4682b4" fill-opacity="0.6" stroke="#ffffff"><title>/src/util/math.cs</title></rect>
+<rect x="445.48" y="10" width="114.4" height="93.33" fill="#4682b4" stroke="#ffffff"><title>/tests</title></rect>
+<text x="502.68" y="59.48" text-anchor="middle" font-size="11" fill="#ffffff">tests</text>
+<rect x="445.48" y="103.33" width="51.67" height="93.33" fill="#4682b4" fill-opacity="0.8" stroke="#ffffff"><title>/tests/app.tests.cs</title></rect>
+<rect x="497.14" y="103.33" width="62.74" height="93.33" fill="#4682b4" fill-opacity="0.8" stroke="#ffffff"><title>/tests/core.tests.cs</title></rect>
+<rect x="559.88" y="10" width="70.12" height="93.33" fill="#4682b4" stroke="#ffffff"><title>/docs</title></rect>
+<text x="594.94" y="59.48" text-anchor="middle" font-size="11" fill="#ffffff">docs</text>
+<rect x="559.88" y="103.33" width="29.52" height="93.33" fill="#4682b4" fill-opacity="0.8" stroke="#ffffff"><title>/docs/readme.md</title></rect>
+<rect x="589.4" y="103.33" width="40.6" height="93.33" fill="#4682b4" fill-opacity="0.8" stroke="#ffffff"><title>/docs/guide.md</title></rect>
+</g>
+</g>
+</svg>

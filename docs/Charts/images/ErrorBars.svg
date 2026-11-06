@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="300" viewBox="0 0 640 300" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Mean and standard deviation</title>
+<rect width="640" height="300" fill="#ffffff"/>
+<g class="grid">
+<line x1="32.23" y1="269.83" x2="630" y2="269.83" stroke="#e3e6ea"/>
+<line x1="32.23" y1="230.32" x2="630" y2="230.32" stroke="#e3e6ea"/>
+<line x1="32.23" y1="190.82" x2="630" y2="190.82" stroke="#e3e6ea"/>
+<line x1="32.23" y1="151.31" x2="630" y2="151.31" stroke="#e3e6ea"/>
+<line x1="32.23" y1="111.81" x2="630" y2="111.81" stroke="#e3e6ea"/>
+<line x1="32.23" y1="72.3" x2="630" y2="72.3" stroke="#e3e6ea"/>
+<line x1="32.23" y1="32.8" x2="630" y2="32.8" stroke="#e3e6ea"/>
+</g>
+<g class="marks">
+<g>
+<line x1="131.86" y1="189.31" x2="131.86" y2="107.38" stroke="#1f2328" stroke-width="2"/>
+<line x1="331.12" y1="122.76" x2="331.12" y2="59.91" stroke="#1f2328" stroke-width="2"/>
+<line x1="530.37" y1="251.64" x2="530.37" y2="124.05" stroke="#1f2328" stroke-width="2"/>
+</g>
+<g>
+<circle cx="131.86" cy="148.35" r="5" fill="#4269d0"/>
+<circle cx="331.12" cy="91.33" r="5" fill="#4269d0"/>
+<circle cx="530.37" cy="187.85" r="5" fill="#4269d0"/>
+</g>
+</g>
+<g class="axes">
+<line x1="27.23" y1="269.83" x2="32.23" y2="269.83" stroke="#8c959f"/>
+<text x="24.23" y="272.64" text-anchor="end" font-size="11" fill="#59636e">20</text>
+<line x1="27.23" y1="230.32" x2="32.23" y2="230.32" stroke="#8c959f"/>
+<text x="24.23" y="233.13" text-anchor="end" font-size="11" fill="#59636e">30</text>
+<line x1="27.23" y1="190.82" x2="32.23" y2="190.82" stroke="#8c959f"/>
+<text x="24.23" y="193.63" text-anchor="end" font-size="11" fill="#59636e">40</text>
+<line x1="27.23" y1="151.31" x2="32.23" y2="151.31" stroke="#8c959f"/>
+<text x="24.23" y="154.12" text-anchor="end" font-size="11" fill="#59636e">50</text>
+<line x1="27.23" y1="111.81" x2="32.23" y2="111.81" stroke="#8c959f"/>
+<text x="24.23" y="114.62" text-anchor="end" font-size="11" fill="#59636e">60</text>
+<line x1="27.23" y1="72.3" x2="32.23" y2="72.3" stroke="#8c959f"/>
+<text x="24.23" y="75.11" text-anchor="end" font-size="11" fill="#59636e">70</text>
+<line x1="27.23" y1="32.8" x2="32.23" y2="32.8" stroke="#8c959f"/>
+<text x="24.23" y="35.61" text-anchor="end" font-size="11" fill="#59636e">80</text>
+<line x1="131.86" y1="269.83" x2="131.86" y2="274.83" stroke="#8c959f"/>
+<text x="131.86" y="285.72" text-anchor="middle" font-size="11" fill="#59636e">A</text>
+<line x1="331.12" y1="269.83" x2="331.12" y2="274.83" stroke="#8c959f"/>
+<text x="331.12" y="285.72" text-anchor="middle" font-size="11" fill="#59636e">B</text>
+<line x1="530.37" y1="269.83" x2="530.37" y2="274.83" stroke="#8c959f"/>
+<text x="530.37" y="285.72" text-anchor="middle" font-size="11" fill="#59636e">C</text>
+<line x1="32.23" y1="269.83" x2="630" y2="269.83" stroke="#8c959f"/>
+</g>
+<text x="10" y="21.49" font-size="16" font-weight="bold" fill="#1f2328">Mean and standard deviation</text>
+</svg>

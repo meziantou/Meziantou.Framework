@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="200" viewBox="0 0 640 200" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Symbols</title>
+<rect width="640" height="200" fill="#ffffff"/>
+<g class="grid">
+<line x1="35.29" y1="169.83" x2="630" y2="169.83" stroke="#e3e6ea"/>
+<line x1="35.29" y1="101.31" x2="630" y2="101.31" stroke="#e3e6ea"/>
+<line x1="35.29" y1="32.8" x2="630" y2="32.8" stroke="#e3e6ea"/>
+</g>
+<g class="marks">
+<g>
+<circle cx="94.76" cy="169.83" r="8" fill="#4269d0"/>
+<circle cx="213.7" cy="169.83" r="8" fill="#efb118"/>
+<circle cx="332.65" cy="169.83" r="8" fill="#ff725c"/>
+<circle cx="451.59" cy="169.83" r="8" fill="#6cc5b0"/>
+<circle cx="570.53" cy="169.83" r="8" fill="#3ca951"/>
+</g>
+<g>
+<circle cx="94.76" cy="32.8" r="8" fill="#4269d0" stroke="#000000"/>
+</g>
+<g>
+<rect x="206.62" y="25.71" width="14.18" height="14.18" fill="#4269d0" stroke="#000000"/>
+</g>
+<g>
+<path d="M332.65,22.02 L341.98,38.19 L323.31,38.19 Z" fill="#4269d0" stroke="#000000"/>
+</g>
+<g>
+<path d="M451.59,22.78 L461.61,32.8 L451.59,42.82 L441.56,32.8 Z" fill="#4269d0" stroke="#000000"/>
+</g>
+<g>
+<path d="M567.33,24 L573.73,24 L573.73,29.6 L579.33,29.6 L579.33,36 L573.73,36 L573.73,41.6 L567.33,41.6 L567.33,36 L561.73,36 L561.73,29.6 L567.33,29.6 Z" fill="#4269d0" stroke="#000000"/>
+</g>
+</g>
+<g class="axes">
+<line x1="30.29" y1="169.83" x2="35.29" y2="169.83" stroke="#8c959f"/>
+<text x="27.29" y="172.64" text-anchor="end" font-size="11" fill="#59636e">1.0</text>
+<line x1="30.29" y1="101.31" x2="35.29" y2="101.31" stroke="#8c959f"/>
+<text x="27.29" y="104.12" text-anchor="end" font-size="11" fill="#59636e">1.5</text>
+<line x1="30.29" y1="32.8" x2="35.29" y2="32.8" stroke="#8c959f"/>
+<text x="27.29" y="35.61" text-anchor="end" font-size="11" fill="#59636e">2.0</text>
+<line x1="94.76" y1="169.83" x2="94.76" y2="174.83" stroke="#8c959f"/>
+<text x="94.76" y="185.72" text-anchor="middle" font-size="11" fill="#59636e">Circle</text>
+<line x1="213.7" y1="169.83" x2="213.7" y2="174.83" stroke="#8c959f"/>
+<text x="213.7" y="185.72" text-anchor="middle" font-size="11" fill="#59636e">Square</text>
+<line x1="332.65" y1="169.83" x2="332.65" y2="174.83" stroke="#8c959f"/>
+<text x="332.65" y="185.72" text-anchor="middle" font-size="11" fill="#59636e">Triangle</text>
+<line x1="451.59" y1="169.83" x2="451.59" y2="174.83" stroke="#8c959f"/>
+<text x="451.59" y="185.72" text-anchor="middle" font-size="11" fill="#59636e">Diamond</text>
+<line x1="570.53" y1="169.83" x2="570.53" y2="174.83" stroke="#8c959f"/>
+<text x="570.53" y="185.72" text-anchor="middle" font-size="11" fill="#59636e">Cross</text>
+<line x1="35.29" y1="169.83" x2="630" y2="169.83" stroke="#8c959f"/>
+</g>
+<text x="10" y="21.49" font-size="16" font-weight="bold" fill="#1f2328">Symbols</text>
+</svg>

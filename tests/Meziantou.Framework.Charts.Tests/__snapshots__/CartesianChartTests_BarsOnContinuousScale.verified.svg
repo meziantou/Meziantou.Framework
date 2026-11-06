@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="250" viewBox="0 0 640 250" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="640" height="250" fill="#ffffff"/>
+<g class="grid">
+<line x1="38.35" y1="219.83" x2="619.65" y2="219.83" stroke="#e3e6ea"/>
+<line x1="38.35" y1="167.37" x2="619.65" y2="167.37" stroke="#e3e6ea"/>
+<line x1="38.35" y1="114.91" x2="619.65" y2="114.91" stroke="#e3e6ea"/>
+<line x1="38.35" y1="62.46" x2="619.65" y2="62.46" stroke="#e3e6ea"/>
+<line x1="38.35" y1="10" x2="619.65" y2="10" stroke="#e3e6ea"/>
+</g>
+<g class="marks">
+<g>
+<rect x="-48.85" y="93.93" width="174.39" height="125.9" fill="#4269d0"/>
+<rect x="241.8" y="78.19" width="174.39" height="141.63" fill="#4269d0"/>
+<rect x="532.46" y="62.46" width="174.39" height="157.37" fill="#4269d0"/>
+</g>
+</g>
+<g class="axes">
+<line x1="33.35" y1="219.83" x2="38.35" y2="219.83" stroke="#8c959f"/>
+<text x="30.35" y="222.64" text-anchor="end" font-size="11" fill="#59636e">0</text>
+<line x1="33.35" y1="167.37" x2="38.35" y2="167.37" stroke="#8c959f"/>
+<text x="30.35" y="170.18" text-anchor="end" font-size="11" fill="#59636e">50</text>
+<line x1="33.35" y1="114.91" x2="38.35" y2="114.91" stroke="#8c959f"/>
+<text x="30.35" y="117.72" text-anchor="end" font-size="11" fill="#59636e">100</text>
+<line x1="33.35" y1="62.46" x2="38.35" y2="62.46" stroke="#8c959f"/>
+<text x="30.35" y="65.27" text-anchor="end" font-size="11" fill="#59636e">150</text>
+<line x1="33.35" y1="10" x2="38.35" y2="10" stroke="#8c959f"/>
+<text x="30.35" y="12.81" text-anchor="end" font-size="11" fill="#59636e">200</text>
+<line x1="38.35" y1="219.83" x2="38.35" y2="224.83" stroke="#8c959f"/>
+<text x="38.35" y="235.72" text-anchor="middle" font-size="11" fill="#59636e">2,022.0</text>
+<line x1="96.48" y1="219.83" x2="96.48" y2="224.83" stroke="#8c959f"/>
+<text x="96.48" y="235.72" text-anchor="middle" font-size="11" fill="#59636e">2,022.2</text>
+<line x1="154.61" y1="219.83" x2="154.61" y2="224.83" stroke="#8c959f"/>
+<text x="154.61" y="235.72" text-anchor="middle" font-size="11" fill="#59636e">2,022.4</text>
+<line x1="212.74" y1="219.83" x2="212.74" y2="224.83" stroke="#8c959f"/>
+<text x="212.74" y="235.72" text-anchor="middle" font-size="11" fill="#59636e">2,022.6</text>
+<line x1="270.87" y1="219.83" x2="270.87" y2="224.83" stroke="#8c959f"/>
+<text x="270.87" y="235.72" text-anchor="middle" font-size="11" fill="#59636e">2,022.8</text>
+<line x1="329" y1="219.83" x2="329" y2="224.83" stroke="#8c959f"/>
+<text x="329" y="235.72" text-anchor="middle" font-size="11" fill="#59636e">2,023.0</text>
+<line x1="387.13" y1="219.83" x2="387.13" y2="224.83" stroke="#8c959f"/>
+<text x="387.13" y="235.72" text-anchor="middle" font-size="11" fill="#59636e">2,023.2</text>
+<line x1="445.26" y1="219.83" x2="445.26" y2="224.83" stroke="#8c959f"/>
+<text x="445.26" y="235.72" text-anchor="middle" font-size="11" fill="#59636e">2,023.4</text>
+<line x1="503.39" y1="219.83" x2="503.39" y2="224.83" stroke="#8c959f"/>
+<text x="503.39" y="235.72" text-anchor="middle" font-size="11" fill="#59636e">2,023.6</text>
+<line x1="561.52" y1="219.83" x2="561.52" y2="224.83" stroke="#8c959f"/>
+<text x="561.52" y="235.72" text-anchor="middle" font-size="11" fill="#59636e">2,023.8</text>
+<line x1="619.65" y1="219.83" x2="619.65" y2="224.83" stroke="#8c959f"/>
+<text x="619.65" y="235.72" text-anchor="middle" font-size="11" fill="#59636e">2,024.0</text>
+<line x1="38.35" y1="219.83" x2="619.65" y2="219.83" stroke="#8c959f"/>
+</g>
+</svg>

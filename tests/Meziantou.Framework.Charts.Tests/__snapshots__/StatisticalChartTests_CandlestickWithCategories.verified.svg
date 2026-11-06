@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="250" viewBox="0 0 640 250" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="640" height="250" fill="#ffffff"/>
+<g class="grid">
+<line x1="38.35" y1="219.83" x2="630" y2="219.83" stroke="#e3e6ea"/>
+<line x1="38.35" y1="184.85" x2="630" y2="184.85" stroke="#e3e6ea"/>
+<line x1="38.35" y1="149.88" x2="630" y2="149.88" stroke="#e3e6ea"/>
+<line x1="38.35" y1="114.91" x2="630" y2="114.91" stroke="#e3e6ea"/>
+<line x1="38.35" y1="79.94" x2="630" y2="79.94" stroke="#e3e6ea"/>
+<line x1="38.35" y1="44.97" x2="630" y2="44.97" stroke="#e3e6ea"/>
+<line x1="38.35" y1="10" x2="630" y2="10" stroke="#e3e6ea"/>
+</g>
+<g class="marks">
+<g>
+<g>
+<line x1="97.51" y1="176.11" x2="97.51" y2="106.17" stroke="#3ca951"/>
+<rect x="73.85" y="149.88" width="47.33" height="0" fill="#3ca951" stroke="#3ca951"/>
+</g>
+<g>
+<line x1="215.84" y1="187.3" x2="215.84" y2="44.8" stroke="#3ca951"/>
+<rect x="192.18" y="80.47" width="47.33" height="69.42" fill="#3ca951" stroke="#3ca951"/>
+</g>
+<g>
+<line x1="334.17" y1="141.84" x2="334.17" y2="46.89" stroke="#e5484d"/>
+<rect x="310.51" y="80.47" width="47.33" height="17.84" fill="#e5484d" stroke="#e5484d"/>
+</g>
+<g>
+<line x1="452.5" y1="204.26" x2="452.5" y2="54.76" stroke="#e5484d"/>
+<rect x="428.84" y="98.3" width="47.33" height="64.7" fill="#e5484d" stroke="#e5484d"/>
+</g>
+<g>
+<line x1="570.83" y1="195" x2="570.83" y2="90.78" stroke="#3ca951"/>
+<rect x="547.17" y="128.38" width="47.33" height="34.62" fill="#3ca951" stroke="#3ca951"/>
+</g>
+</g>
+</g>
+<g class="axes">
+<line x1="33.35" y1="219.83" x2="38.35" y2="219.83" stroke="#8c959f"/>
+<text x="30.35" y="222.64" text-anchor="end" font-size="11" fill="#59636e">96</text>
+<line x1="33.35" y1="184.85" x2="38.35" y2="184.85" stroke="#8c959f"/>
+<text x="30.35" y="187.66" text-anchor="end" font-size="11" fill="#59636e">98</text>
+<line x1="33.35" y1="149.88" x2="38.35" y2="149.88" stroke="#8c959f"/>
+<text x="30.35" y="152.69" text-anchor="end" font-size="11" fill="#59636e">100</text>
+<line x1="33.35" y1="114.91" x2="38.35" y2="114.91" stroke="#8c959f"/>
+<text x="30.35" y="117.72" text-anchor="end" font-size="11" fill="#59636e">102</text>
+<line x1="33.35" y1="79.94" x2="38.35" y2="79.94" stroke="#8c959f"/>
+<text x="30.35" y="82.75" text-anchor="end" font-size="11" fill="#59636e">104</text>
+<line x1="33.35" y1="44.97" x2="38.35" y2="44.97" stroke="#8c959f"/>
+<text x="30.35" y="47.78" text-anchor="end" font-size="11" fill="#59636e">106</text>
+<line x1="33.35" y1="10" x2="38.35" y2="10" stroke="#8c959f"/>
+<text x="30.35" y="12.81" text-anchor="end" font-size="11" fill="#59636e">108</text>
+<line x1="97.51" y1="219.83" x2="97.51" y2="224.83" stroke="#8c959f"/>
+<text x="97.51" y="235.72" text-anchor="middle" font-size="11" fill="#59636e">Mar 1</text>
+<line x1="215.84" y1="219.83" x2="215.84" y2="224.83" stroke="#8c959f"/>
+<text x="215.84" y="235.72" text-anchor="middle" font-size="11" fill="#59636e">Mar 2</text>
+<line x1="334.17" y1="219.83" x2="334.17" y2="224.83" stroke="#8c959f"/>
+<text x="334.17" y="235.72" text-anchor="middle" font-size="11" fill="#59636e">Mar 3</text>
+<line x1="452.5" y1="219.83" x2="452.5" y2="224.83" stroke="#8c959f"/>
+<text x="452.5" y="235.72" text-anchor="middle" font-size="11" fill="#59636e">Mar 4</text>
+<line x1="570.83" y1="219.83" x2="570.83" y2="224.83" stroke="#8c959f"/>
+<text x="570.83" y="235.72" text-anchor="middle" font-size="11" fill="#59636e">Mar 5</text>
+<line x1="38.35" y1="219.83" x2="630" y2="219.83" stroke="#8c959f"/>
+</g>
+</svg>

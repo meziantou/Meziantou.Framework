@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="120" viewBox="0 0 300 120" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="300" height="120" fill="#ffffff"/>
+<g class="marks">
+<g>
+<rect x="20.5" y="20.5" width="259" height="79" fill="#eeeeee"/>
+</g>
+<g>
+<circle cx="20" cy="100" r="3.5" fill="#4269d0"/>
+<circle cx="46" cy="92" r="3.5" fill="#4269d0"/>
+<circle cx="72" cy="84" r="3.5" fill="#4269d0"/>
+<circle cx="98" cy="76" r="3.5" fill="#4269d0"/>
+<circle cx="124" cy="68" r="3.5" fill="#4269d0"/>
+<circle cx="150" cy="60" r="3.5" fill="#4269d0"/>
+<circle cx="176" cy="52" r="3.5" fill="#4269d0"/>
+<circle cx="202" cy="44" r="3.5" fill="#4269d0"/>
+<circle cx="228" cy="36" r="3.5" fill="#4269d0"/>
+<circle cx="254" cy="28" r="3.5" fill="#4269d0"/>
+</g>
+</g>
+</svg>

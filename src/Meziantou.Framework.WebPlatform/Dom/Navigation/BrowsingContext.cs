@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text;
 using Meziantou.Framework.WebPlatform.Dom.FileApi;
 using Meziantou.Framework.WebPlatform.Encodings;
 using Meziantou.Framework.WebPlatform.Html;
@@ -2667,7 +2668,9 @@ public sealed partial class BrowsingContext : IDisposable
 
     /// <summary>
     /// Decodes an XML document (https://html.spec.whatwg.org/multipage/document-lifecycle.html#read-xml): the byte order mark,
-    /// then the charset parameter, then the encoding of the XML declaration, then UTF-8.
+    /// then the charset parameter, then the encoding of the XML declaration, then UTF-8. A byte sequence that is not valid in
+    /// the encoding is a fatal error (https://www.w3.org/TR/xml/#charencoding): the text ends at the error with U+FFFF, a
+    /// character that XML does not allow, so the parser reports a well-formedness error there (Acid3 test 70).
     /// </summary>
     private static string DecodeXml(ReadOnlySpan<byte> bytes, string? charset, out WebEncodingId encoding)
     {
@@ -2677,7 +2680,13 @@ public sealed partial class BrowsingContext : IDisposable
             encoding = XmlHttpRequest.GetXmlEncoding(bytes) ?? WebEncodingId.Utf8;
         }
 
-        return WebEncodingRegistry.CreateDecoder(encoding).DecodeToString(bytes[bomLength..]);
+        var builder = new StringBuilder(bytes.Length);
+        if (!WebEncodingRegistry.CreateDecoder(encoding, fatal: true).DecodeTo(bytes[bomLength..], builder, flush: true))
+        {
+            builder.Append('￿');
+        }
+
+        return builder.ToString();
     }
 
     private static string Decode(ReadOnlySpan<byte> bytes, string? charset, out WebEncodingId encoding)

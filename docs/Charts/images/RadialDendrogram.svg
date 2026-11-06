@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="520" viewBox="0 0 520 520" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Files of the repository</title>
+<rect width="520" height="520" fill="#ffffff"/>
+<g class="marks">
+<g>
+<path d="M260,271.4 C236.37,285.7 283.02,286.65 306.04,301.91" fill="none" stroke="#8c959f" stroke-width="1.2"/>
+<path d="M306.04,301.91 C329.06,317.16 315.81,210.18 334.42,189.77" fill="none" stroke="#8c959f" stroke-width="1.2"/>
+<path d="M334.42,189.77 C353.02,169.36 309.88,142.65 319.85,116.9" fill="none" stroke="#8c959f" stroke-width="1.2"/>
+<path d="M334.42,189.77 C353.02,169.36 353.02,169.36 371.62,148.96" fill="none" stroke="#8c959f" stroke-width="1.2"/>
+<path d="M334.42,189.77 C353.02,169.36 383.6,209.86 408.32,197.55" fill="none" stroke="#8c959f" stroke-width="1.2"/>
+<path d="M306.04,301.91 C329.06,317.16 326.11,321.32 348.15,337.97" fill="none" stroke="#8c959f" stroke-width="1.2"/>
+<path d="M348.15,337.97 C370.18,354.61 392.8,309.19 419.36,316.74" fill="none" stroke="#8c959f" stroke-width="1.2"/>
+<path d="M348.15,337.97 C370.18,354.61 370.18,354.61 392.22,371.25" fill="none" stroke="#8c959f" stroke-width="1.2"/>
+<path d="M348.15,337.97 C370.18,354.61 332.69,388.79 347.22,412.27" fill="none" stroke="#8c959f" stroke-width="1.2"/>
+<path d="M306.04,301.91 C329.06,317.16 230.07,348.65 220.1,374.4" fill="none" stroke="#8c959f" stroke-width="1.2"/>
+<path d="M220.1,374.4 C210.12,400.15 234.63,407.12 229.56,434.27" fill="none" stroke="#8c959f" stroke-width="1.2"/>
+<path d="M220.1,374.4 C210.12,400.15 187.31,388.79 172.78,412.27" fill="none" stroke="#8c959f" stroke-width="1.2"/>
+<path d="M260,271.4 C212.75,299.99 205.01,276.5 150.01,281.59" fill="none" stroke="#8c959f" stroke-width="1.2"/>
+<path d="M150.01,281.59 C122.52,284.14 127.2,309.19 100.64,316.74" fill="none" stroke="#8c959f" stroke-width="1.2"/>
+<path d="M150.01,281.59 C122.52,284.14 122.52,258.66 95.02,256.11" fill="none" stroke="#8c959f" stroke-width="1.2"/>
+<path d="M260,271.4 C212.75,299.99 230.93,224.44 201.85,177.49" fill="none" stroke="#8c959f" stroke-width="1.2"/>
+<path d="M201.85,177.49 C187.31,154.01 166.98,169.36 148.38,148.96" fill="none" stroke="#8c959f" stroke-width="1.2"/>
+<path d="M201.85,177.49 C187.31,154.01 210.12,142.65 200.15,116.9" fill="none" stroke="#8c959f" stroke-width="1.2"/>
+<circle cx="260" cy="271.4" r="3.5" fill="#1f2328" stroke="#ffffff"><title>: 0</title></circle>
+<circle cx="306.04" cy="301.91" r="3.5" fill="#4269d0" stroke="#ffffff"><title>src: 0</title></circle>
+<circle cx="334.42" cy="189.77" r="3.5" fill="#4269d0" stroke="#ffffff"><title>src / app: 0</title></circle>
+<circle cx="319.85" cy="116.9" r="3.5" fill="#4269d0" stroke="#ffffff"><title>src / app / main.cs: 0</title></circle>
+<text x="322.56" y="112.72" font-size="11" fill="#1f2328" transform="rotate(-68.82 322.56 112.72)">main.cs</text>
+<circle cx="371.62" cy="148.96" r="3.5" fill="#4269d0" stroke="#ffffff"><title>src / app / view.cs: 0</title></circle>
+<text x="376.68" y="146.22" font-size="11" fill="#1f2328" transform="rotate(-47.65 376.68 146.22)">view.cs</text>
+<circle cx="408.32" cy="197.55" r="3.5" fill="#4269d0" stroke="#ffffff"><title>src / app / model.cs: 0</title></circle>
+<text x="415.03" y="197.01" font-size="11" fill="#1f2328" transform="rotate(-26.47 415.03 197.01)">model.cs</text>
+<circle cx="348.15" cy="337.97" r="3.5" fill="#4269d0" stroke="#ffffff"><title>src / core: 0</title></circle>
+<circle cx="419.36" cy="316.74" r="3.5" fill="#4269d0" stroke="#ffffff"><title>src / core / parser.cs: 0</title></circle>
+<text x="426.58" y="321.61" font-size="11" fill="#1f2328" transform="rotate(15.88 426.58 321.61)">parser.cs</text>
+<circle cx="392.22" cy="371.25" r="3.5" fill="#4269d0" stroke="#ffffff"><title>src / core / lexer.cs: 0</title></circle>
+<text x="398.21" y="378.58" font-size="11" fill="#1f2328" transform="rotate(37.06 398.21 378.58)">lexer.cs</text>
+<circle cx="347.22" cy="412.27" r="3.5" fill="#4269d0" stroke="#ffffff"><title>src / core / ast.cs: 0</title></circle>
+<text x="351.17" y="421.46" font-size="11" fill="#1f2328" transform="rotate(58.24 351.17 421.46)">ast.cs</text>
+<circle cx="220.1" cy="374.4" r="3.5" fill="#4269d0" stroke="#ffffff"><title>src / util: 0</title></circle>
+<circle cx="229.56" cy="434.27" r="3.5" fill="#4269d0" stroke="#ffffff"><title>src / util / strings.cs: 0</title></circle>
+<text x="228.18" y="444.45" text-anchor="end" font-size="11" fill="#1f2328" transform="rotate(-79.41 228.18 444.45)">strings.cs</text>
+<circle cx="172.78" cy="412.27" r="3.5" fill="#4269d0" stroke="#ffffff"><title>src / util / math.cs: 0</title></circle>
+<text x="168.83" y="421.46" text-anchor="end" font-size="11" fill="#1f2328" transform="rotate(-58.24 168.83 421.46)">math.cs</text>
+<circle cx="150.01" cy="281.59" r="3.5" fill="#efb118" stroke="#ffffff"><title>tests: 0</title></circle>
+<circle cx="100.64" cy="316.74" r="3.5" fill="#efb118" stroke="#ffffff"><title>tests / app.tests.cs: 0</title></circle>
+<text x="93.42" y="321.61" text-anchor="end" font-size="11" fill="#1f2328" transform="rotate(-15.88 93.42 321.61)">app.tests.cs</text>
+<circle cx="95.02" cy="256.11" r="3.5" fill="#efb118" stroke="#ffffff"><title>tests / core.tests.cs: 0</title></circle>
+<text x="87.55" y="258.23" text-anchor="end" font-size="11" fill="#1f2328" transform="rotate(5.29 87.55 258.23)">core.tests.cs</text>
+<circle cx="201.85" cy="177.49" r="3.5" fill="#ff725c" stroke="#ffffff"><title>docs: 0</title></circle>
+<circle cx="148.38" cy="148.96" r="3.5" fill="#ff725c" stroke="#ffffff"><title>docs / readme.md: 0</title></circle>
+<text x="143.32" y="146.22" text-anchor="end" font-size="11" fill="#1f2328" transform="rotate(47.65 143.32 146.22)">readme.md</text>
+<circle cx="200.15" cy="116.9" r="3.5" fill="#ff725c" stroke="#ffffff"><title>docs / guide.md: 0</title></circle>
+<text x="197.44" y="112.72" text-anchor="end" font-size="11" fill="#1f2328" transform="rotate(68.82 197.44 112.72)">guide.md</text>
+</g>
+</g>
+<text x="10" y="21.49" font-size="16" font-weight="bold" fill="#1f2328">Files of the repository</text>
+</svg>

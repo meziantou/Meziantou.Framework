@@ -31,6 +31,11 @@ rendering also changes the images of the pages (`DocumentationImageTests`).
   (BSD-3-Clause) and wrote nothing else (`Internals/Codecs/Exr/ExrCompression.md`); the codec is written from that
   description and the OpenEXR File Layout, never from the source. Extend the description the same way (a separate
   agent reads the source and writes prose) when a compression is added.
+  The settings of the frame of the lossy JPEG XL encoder (no Gabor-like filter, the weight of the adaptive
+  quantization field, the zero thresholds, the edge-preserving filter, the step of the LF values of X) were taken from
+  jixel (BSD-3-Clause), whose source the user allowed reading for that purpose, and each one was kept on measurements
+  (see "Lossy JPEG XL quality tools"); they are listed in `THIRD-PARTY-NOTICES.md`. Reading the source of another codec
+  needs the same explicit permission.
 - No public allocator, custom pixel type, codec plug-in or image-processor interface. Implementation types are `internal`
   and live under `Internals/`.
 - Public namespaces: `Meziantou.Framework.Imaging`, `.Metadata`, `.Formats` (encoder settings), `.Drawing` (brushes,
@@ -434,8 +439,8 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   (`JpegXlVarDctEncoder`) mirrors `JpegXlVarDctDecoder`: its forward DCT undoes the halving steps of the inverse DCT
   of the decoder in the opposite order, and its LF matrices and its color matrix are measured on, or inverted from,
   what the decoder computes (`JpegXlForwardTransform`, `JpegXlForwardColor`); a coefficient is written with the
-  context derivation the decoder reads it with (`JpegXlCoefficientContexts`). The vector paths of the encoder (Gaborish,
-  quantization, the terms of the adaptive quantization) do the operations of the scalar code in the same order, and the
+  context derivation the decoder reads it with (`JpegXlCoefficientContexts`). The vector paths of the encoder
+  (quantization, the terms of the adaptive quantization) do the operations of the scalar code in the same order, and the
   sums stay scalar, so they leave the files unchanged; the conversion to XYB uses its own cube root
   (`JpegXlForwardColor.CubeRoot`, three Newton steps, within 3e-7 of `MathF.Cbrt`), the same in the scalar and the vector
   code, so the files do not depend on the vector width. The forward DCT was a product by bases
@@ -514,8 +519,13 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
     (`LearnedTreesDecodeExactlyInLibJxlAndJxlOxide`); the corpus fixtures are a single group.
 - **Lossy JPEG XL quality tools** (`JpegXlVarDctEncoder`). Each one is kept or left out on measurements, not on what
   other encoders do: file size at equal PSNR, SSIM, MS-SSIM, XPSNR and VMAF (FFmpeg and the `vmaf` tool on djxl output)
-  over photographs of several sizes, with cjxl at its efforts 3 and 7 as the yardstick. Measure again before changing a
-  constant, on real photographs: the synthetic patterns of the tests are noise and say nothing.
+  over photographs of several sizes, with cjxl at its efforts 3 and 7 as the yardstick. Since 2026-11 the frame settings
+  are tuned on SSIMULACRA 2 and Butteraugli (`ImageSimilarity`, on djxl output), checked with PSNR, over five 1024x1024
+  photographs at 13 qualities, with jixel and cjxl as yardsticks: file size at equal SSIMULACRA 2 went down by 14.5 %,
+  at equal Butteraugli by 3 % and at equal PSNR by 2 % at every effort; the encoder then matches jixel at its `Fastest`
+  speed and is 9 % smaller than cjxl at its effort 7 (SSIMULACRA 2). A quality writes 8 to 15 % smaller files from 75 to
+  95, a little further from the source (SSIMULACRA 2 at most 0.8 lower), and closer to it below 70. Measure again before
+  changing a constant, on real photographs: the synthetic patterns of the tests are noise and say nothing.
   - *Transform selection* (`ChooseSquare`, `GetTransformCost`): squares of 16, 32 and 64 samples and their halves
     against their quarters, on the luma, by `bits + weight * squared error`. The squared error of the samples is exact
     (every DCT of the format has basis functions of the same energy); the bits are a model fitted on frames coded with
@@ -539,15 +549,31 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   - *The block list* is a Modular channel whose first row holds the transforms and whose second row holds the
     quantization factors: the tree gives each row its own context and predictor (`firstRowChannel`), which made the
     list 15 % smaller on a photograph.
-  - *Gaborish* (`JpegXlInverseGaborish`, `UsesGaborish`): the encoder sharpens with `3 I - 3 S + S^2`, three terms of the
-    inverse of the smoothing `S` of the decoder, computed from its weights. It is smaller at equal PSNR, SSIM and XPSNR
-    (5 to 8 %) and larger at equal MS-SSIM (3 %) and VMAF (10 %): it stays because it removes block edges, with the
-    distance scaled so that a quality keeps its file size. Above quality 90 the pair loses fine texture that the
-    quantization would keep (a PSNR ceiling near 46 dB on a textured image), so it is off. A 5x5 least-squares inverse
-    does not keep a constant (2.6 % of gain at the frequency 0): do not use one.
-  - *Adaptive quantization* (`JpegXlAdaptiveQuantization`, `ComputeQuantField`): a quantization factor per block,
-    which moves bits from texture to flat areas and to the neighborhood of edges. Unlike the other tools it is not
-    kept on the measurements: none of the five metrics rewards that redistribution. Measured on the ten images,
+  - *No Gabor-like filter*: the encoder sharpened the frame with three terms of the inverse of the smoothing of the
+    decoder, from the distance 1. It made the files 5 to 8 % smaller at equal PSNR, SSIM and XPSNR, but 8 % larger at
+    equal SSIMULACRA 2 (1.5 % smaller at equal Butteraugli, and PSNR no better on the photographs of the 2026-11
+    measurement): it was removed.
+  - *Zero thresholds* (`GetZeroThresholds`, `ApplyZeroThresholds`): a coefficient of magnitude one is zeroed below a
+    threshold that grows with its quarter of the frequencies (0.58 to 0.7 steps for the luma, 0.75 for the high
+    frequencies of B, more for X outside the distances 0.75 to 1.5), lower for the larger transforms and down to one half
+    for the luma at the finest steps; the transform selection costs the luma with them. About 0.5 % at equal quality.
+  - *Edge-preserving filter* (`GetEpfIterations`, `GetEpfFirstPassSigmaScale`, `GetEpfSharpness`): one iteration from
+    the distance 0.7, two from 1.5, three from 2.5 with a first iteration four times as strong (3.6 instead of 0.9); the
+    sharpness of every block is 7 below the distance 1.4, then 6, 5 from 1.75, 4 from 3.5 (it was 4 everywhere). Together
+    with the LF step of X: 4 % at equal SSIMULACRA 2.
+  - *LF step of X* (`LfStepFactorX`): twice the default step, written in `LfGlobal`: the default one is far finer than
+    the steps of the coefficients of X around it. 1.5 % at equal SSIMULACRA 2.
+  - *Tried and left out* (2026-11, SSIMULACRA 2): the flatter B row of the 8x8 table that jixel writes (+1.2 to 2 %), the
+    16x16 decision of jixel (error in quantization steps over the three channels, its rate model, biases and margins:
+    +4 %), coarser LF steps (+3 %), finer X and B scales (`XqmScale`, `BqmScale`: within 0.3 %), a refinement of the clusters of
+    the coefficient contexts (-0.5 % for 12 % more time), the weighted predictor for the LF image (-0.2 %). The LF image
+    is a third of a low-quality file and is coded without a context tree: a lossless coder with one (cjxl -e 9) makes it
+    10 to 12 % smaller, about 3 % of the file, the largest gain left.
+  - *Adaptive quantization* (`JpegXlAdaptiveQuantization`, `ComputeQuantField`, `GetFieldStrength`): a quantization
+    factor per block, which moves bits from texture to flat areas and to the neighborhood of edges. It is blended with
+    the factor of the frame, with a weight of 0.27 up to the distance 1, 0.06 at 1.4 and none from 1.75, where the pass
+    is skipped: on SSIMULACRA 2 and Butteraugli the full field made the files 2.5 to 4 % larger. Before 2026-11 it was
+    applied in full at every distance, although none of the five metrics below rewarded that redistribution. Measured on the ten images,
     effort 5, file size at equal quality against one factor for the frame: PSNR-Y +4.7 %, SSIM 0.0 %, XPSNR +4.7 %,
     MS-SSIM +0.1 %, VMAF +3.9 %; against cjxl at its default effort the encoder stays smaller (-5.3 %, -4.6 %, -4.8 %,
     -5.5 %, -0.5 %). Three simpler fields (a factor that follows the activity of the block: 8x8 blocks, 16x16 cells and

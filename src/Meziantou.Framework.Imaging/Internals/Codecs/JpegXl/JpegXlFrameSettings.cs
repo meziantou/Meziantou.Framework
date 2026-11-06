@@ -38,9 +38,9 @@ internal sealed class JpegXlFrameSettings
     /// <summary>Gets, for each entry of <see cref="PassDownsampleShifts"/>, the pass that completes it.</summary>
     public int[] PassDownsampleLastPasses { get; init; } = [];
 
-    /// <summary>Gets a value indicating whether the decoder applies the Gabor-like filter, with its default weights.</summary>
-    public bool IsGaborEnabled { get; init; }
-
     /// <summary>Gets the number of iterations of the edge-preserving filter the decoder applies, with its default parameters.</summary>
     public int EpfIterations { get; init; }
+
+    /// <summary>Gets the scale of the strength of the first iteration of the edge-preserving filter, or <see langword="null"/> for the default one.</summary>
+    public float? EpfFirstPassSigmaScale { get; init; }
 }

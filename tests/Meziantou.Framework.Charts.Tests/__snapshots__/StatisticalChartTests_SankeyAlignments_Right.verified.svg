@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="240" viewBox="0 0 400 240" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="400" height="240" fill="#ffffff"/>
+<g class="marks">
+<g>
+<path d="M20,93.45 C107.5,93.45 107.5,93.45 195,93.45" fill="none" stroke="#4269d0" stroke-opacity="0.6" stroke-width="120.69"><title>AB</title></path>
+<path d="M205,69.31 C292.5,69.31 292.5,69.31 380,69.31" fill="none" stroke="#efb118" stroke-opacity="0.6" stroke-width="72.42"><title>BC</title></path>
+<path d="M205,129.65 C292.5,129.65 292.5,185.86 380,185.86" fill="none" stroke="#ff725c" stroke-opacity="0.6" stroke-width="48.28"><title>BD</title></path>
+<path d="M205,191.9 C292.5,191.9 292.5,123.62 380,123.62" fill="none" stroke="#efb118" stroke-opacity="0.6" stroke-width="36.21"><title>EC</title></path>
+<path d="M205,230 C292.5,230 292.5,210 380,210" fill="none" stroke="#ff725c" stroke-opacity="0.6"><title>FD</title></path>
+<rect x="10" y="33.1" width="10" height="120.69" fill="#4269d0"><title>A: 10</title></rect>
+<text x="26" y="96.26" font-size="11" fill="#1f2328">A</text>
+<rect x="195" y="33.1" width="10" height="120.69" fill="#efb118"><title>B: 10</title></rect>
+<text x="211" y="96.26" font-size="11" fill="#1f2328">B</text>
+<rect x="380" y="33.1" width="10" height="108.62" fill="#ff725c"><title>C: 9</title></rect>
+<text x="374" y="90.22" text-anchor="end" font-size="11" fill="#1f2328">C</text>
+<rect x="380" y="161.72" width="10" height="48.28" fill="#6cc5b0"><title>D: 4</title></rect>
+<text x="374" y="188.67" text-anchor="end" font-size="11" fill="#1f2328">D</text>
+<rect x="195" y="173.79" width="10" height="36.21" fill="#3ca951"><title>E: 3</title></rect>
+<text x="211" y="194.71" font-size="11" fill="#1f2328">E</text>
+<rect x="195" y="230" width="10" height="1" fill="#ff8ab7"><title>F: 0</title></rect>
+<text x="211" y="232.81" font-size="11" fill="#1f2328">F</text>
+</g>
+</g>
+<g class="legend">
+<rect x="10" y="10.55" width="10" height="10" rx="2" fill="#4269d0"/>
+<text x="25" y="18.62" font-size="12" fill="#1f2328">B</text>
+<rect x="47" y="10.55" width="10" height="10" rx="2" fill="#efb118"/>
+<text x="62" y="18.62" font-size="12" fill="#1f2328">C</text>
+<rect x="84.67" y="10.55" width="10" height="10" rx="2" fill="#ff725c"/>
+<text x="99.67" y="18.62" font-size="12" fill="#1f2328">D</text>
+</g>
+</svg>

@@ -1,0 +1,161 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200" viewBox="0 0 300 200" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Thinned labels</title>
+<rect width="300" height="200" fill="#ffffff"/>
+<g class="grid">
+<line x1="26.12" y1="148.4" x2="290" y2="148.4" stroke="#e3e6ea"/>
+<line x1="26.12" y1="109.86" x2="290" y2="109.86" stroke="#e3e6ea"/>
+<line x1="26.12" y1="71.33" x2="290" y2="71.33" stroke="#e3e6ea"/>
+<line x1="26.12" y1="32.8" x2="290" y2="32.8" stroke="#e3e6ea"/>
+</g>
+<g class="marks">
+<g>
+<rect x="26.56" y="129.13" width="3.95" height="19.27" fill="#4269d0"/>
+<rect x="30.95" y="109.86" width="3.95" height="38.53" fill="#4269d0"/>
+<rect x="35.34" y="90.6" width="3.95" height="57.8" fill="#4269d0"/>
+<rect x="39.73" y="71.33" width="3.95" height="77.06" fill="#4269d0"/>
+<rect x="44.12" y="52.07" width="3.95" height="96.33" fill="#4269d0"/>
+<rect x="48.51" y="32.8" width="3.95" height="115.6" fill="#4269d0"/>
+<rect x="52.9" y="148.4" width="3.95" height="0" fill="#4269d0"/>
+<rect x="57.29" y="129.13" width="3.95" height="19.27" fill="#4269d0"/>
+<rect x="61.68" y="109.86" width="3.95" height="38.53" fill="#4269d0"/>
+<rect x="66.07" y="90.6" width="3.95" height="57.8" fill="#4269d0"/>
+<rect x="70.46" y="71.33" width="3.95" height="77.06" fill="#4269d0"/>
+<rect x="74.85" y="52.07" width="3.95" height="96.33" fill="#4269d0"/>
+<rect x="79.24" y="32.8" width="3.95" height="115.6" fill="#4269d0"/>
+<rect x="83.63" y="148.4" width="3.95" height="0" fill="#4269d0"/>
+<rect x="88.03" y="129.13" width="3.95" height="19.27" fill="#4269d0"/>
+<rect x="92.42" y="109.86" width="3.95" height="38.53" fill="#4269d0"/>
+<rect x="96.81" y="90.6" width="3.95" height="57.8" fill="#4269d0"/>
+<rect x="101.2" y="71.33" width="3.95" height="77.06" fill="#4269d0"/>
+<rect x="105.59" y="52.07" width="3.95" height="96.33" fill="#4269d0"/>
+<rect x="109.98" y="32.8" width="3.95" height="115.6" fill="#4269d0"/>
+<rect x="114.37" y="148.4" width="3.95" height="0" fill="#4269d0"/>
+<rect x="118.76" y="129.13" width="3.95" height="19.27" fill="#4269d0"/>
+<rect x="123.15" y="109.86" width="3.95" height="38.53" fill="#4269d0"/>
+<rect x="127.54" y="90.6" width="3.95" height="57.8" fill="#4269d0"/>
+<rect x="131.93" y="71.33" width="3.95" height="77.06" fill="#4269d0"/>
+<rect x="136.32" y="52.07" width="3.95" height="96.33" fill="#4269d0"/>
+<rect x="140.71" y="32.8" width="3.95" height="115.6" fill="#4269d0"/>
+<rect x="145.11" y="148.4" width="3.95" height="0" fill="#4269d0"/>
+<rect x="149.5" y="129.13" width="3.95" height="19.27" fill="#4269d0"/>
+<rect x="153.89" y="109.86" width="3.95" height="38.53" fill="#4269d0"/>
+<rect x="158.28" y="90.6" width="3.95" height="57.8" fill="#4269d0"/>
+<rect x="162.67" y="71.33" width="3.95" height="77.06" fill="#4269d0"/>
+<rect x="167.06" y="52.07" width="3.95" height="96.33" fill="#4269d0"/>
+<rect x="171.45" y="32.8" width="3.95" height="115.6" fill="#4269d0"/>
+<rect x="175.84" y="148.4" width="3.95" height="0" fill="#4269d0"/>
+<rect x="180.23" y="129.13" width="3.95" height="19.27" fill="#4269d0"/>
+<rect x="184.62" y="109.86" width="3.95" height="38.53" fill="#4269d0"/>
+<rect x="189.01" y="90.6" width="3.95" height="57.8" fill="#4269d0"/>
+<rect x="193.4" y="71.33" width="3.95" height="77.06" fill="#4269d0"/>
+<rect x="197.79" y="52.07" width="3.95" height="96.33" fill="#4269d0"/>
+<rect x="202.19" y="32.8" width="3.95" height="115.6" fill="#4269d0"/>
+<rect x="206.58" y="148.4" width="3.95" height="0" fill="#4269d0"/>
+<rect x="210.97" y="129.13" width="3.95" height="19.27" fill="#4269d0"/>
+<rect x="215.36" y="109.86" width="3.95" height="38.53" fill="#4269d0"/>
+<rect x="219.75" y="90.6" width="3.95" height="57.8" fill="#4269d0"/>
+<rect x="224.14" y="71.33" width="3.95" height="77.06" fill="#4269d0"/>
+<rect x="228.53" y="52.07" width="3.95" height="96.33" fill="#4269d0"/>
+<rect x="232.92" y="32.8" width="3.95" height="115.6" fill="#4269d0"/>
+<rect x="237.31" y="148.4" width="3.95" height="0" fill="#4269d0"/>
+<rect x="241.7" y="129.13" width="3.95" height="19.27" fill="#4269d0"/>
+<rect x="246.09" y="109.86" width="3.95" height="38.53" fill="#4269d0"/>
+<rect x="250.48" y="90.6" width="3.95" height="57.8" fill="#4269d0"/>
+<rect x="254.87" y="71.33" width="3.95" height="77.06" fill="#4269d0"/>
+<rect x="259.26" y="52.07" width="3.95" height="96.33" fill="#4269d0"/>
+<rect x="263.66" y="32.8" width="3.95" height="115.6" fill="#4269d0"/>
+<rect x="268.05" y="148.4" width="3.95" height="0" fill="#4269d0"/>
+<rect x="272.44" y="129.13" width="3.95" height="19.27" fill="#4269d0"/>
+<rect x="276.83" y="109.86" width="3.95" height="38.53" fill="#4269d0"/>
+<rect x="281.22" y="90.6" width="3.95" height="57.8" fill="#4269d0"/>
+<rect x="285.61" y="71.33" width="3.95" height="77.06" fill="#4269d0"/>
+</g>
+</g>
+<g class="axes">
+<line x1="21.12" y1="148.4" x2="26.12" y2="148.4" stroke="#8c959f"/>
+<text x="18.12" y="151.21" text-anchor="end" font-size="11" fill="#59636e">0</text>
+<line x1="21.12" y1="109.86" x2="26.12" y2="109.86" stroke="#8c959f"/>
+<text x="18.12" y="112.68" text-anchor="end" font-size="11" fill="#59636e">2</text>
+<line x1="21.12" y1="71.33" x2="26.12" y2="71.33" stroke="#8c959f"/>
+<text x="18.12" y="74.14" text-anchor="end" font-size="11" fill="#59636e">4</text>
+<line x1="21.12" y1="32.8" x2="26.12" y2="32.8" stroke="#8c959f"/>
+<text x="18.12" y="35.61" text-anchor="end" font-size="11" fill="#59636e">6</text>
+<line x1="28.53" y1="148.4" x2="28.53" y2="153.4" stroke="#8c959f"/>
+<text x="32.48" y="160.35" text-anchor="end" font-size="11" fill="#59636e" transform="rotate(-45 32.48 160.35)">Day 1</text>
+<line x1="32.92" y1="148.4" x2="32.92" y2="153.4" stroke="#8c959f"/>
+<line x1="37.31" y1="148.4" x2="37.31" y2="153.4" stroke="#8c959f"/>
+<line x1="41.7" y1="148.4" x2="41.7" y2="153.4" stroke="#8c959f"/>
+<line x1="46.09" y1="148.4" x2="46.09" y2="153.4" stroke="#8c959f"/>
+<text x="50.04" y="160.35" text-anchor="end" font-size="11" fill="#59636e" transform="rotate(-45 50.04 160.35)">Day 5</text>
+<line x1="50.48" y1="148.4" x2="50.48" y2="153.4" stroke="#8c959f"/>
+<line x1="54.88" y1="148.4" x2="54.88" y2="153.4" stroke="#8c959f"/>
+<line x1="59.27" y1="148.4" x2="59.27" y2="153.4" stroke="#8c959f"/>
+<line x1="63.66" y1="148.4" x2="63.66" y2="153.4" stroke="#8c959f"/>
+<text x="67.61" y="160.35" text-anchor="end" font-size="11" fill="#59636e" transform="rotate(-45 67.61 160.35)">Day 9</text>
+<line x1="68.05" y1="148.4" x2="68.05" y2="153.4" stroke="#8c959f"/>
+<line x1="72.44" y1="148.4" x2="72.44" y2="153.4" stroke="#8c959f"/>
+<line x1="76.83" y1="148.4" x2="76.83" y2="153.4" stroke="#8c959f"/>
+<line x1="81.22" y1="148.4" x2="81.22" y2="153.4" stroke="#8c959f"/>
+<text x="85.17" y="160.35" text-anchor="end" font-size="11" fill="#59636e" transform="rotate(-45 85.17 160.35)">Day 13</text>
+<line x1="85.61" y1="148.4" x2="85.61" y2="153.4" stroke="#8c959f"/>
+<line x1="90" y1="148.4" x2="90" y2="153.4" stroke="#8c959f"/>
+<line x1="94.39" y1="148.4" x2="94.39" y2="153.4" stroke="#8c959f"/>
+<line x1="98.78" y1="148.4" x2="98.78" y2="153.4" stroke="#8c959f"/>
+<text x="102.73" y="160.35" text-anchor="end" font-size="11" fill="#59636e" transform="rotate(-45 102.73 160.35)">Day 17</text>
+<line x1="103.17" y1="148.4" x2="103.17" y2="153.4" stroke="#8c959f"/>
+<line x1="107.56" y1="148.4" x2="107.56" y2="153.4" stroke="#8c959f"/>
+<line x1="111.96" y1="148.4" x2="111.96" y2="153.4" stroke="#8c959f"/>
+<line x1="116.35" y1="148.4" x2="116.35" y2="153.4" stroke="#8c959f"/>
+<text x="120.29" y="160.35" text-anchor="end" font-size="11" fill="#59636e" transform="rotate(-45 120.29 160.35)">Day 21</text>
+<line x1="120.74" y1="148.4" x2="120.74" y2="153.4" stroke="#8c959f"/>
+<line x1="125.13" y1="148.4" x2="125.13" y2="153.4" stroke="#8c959f"/>
+<line x1="129.52" y1="148.4" x2="129.52" y2="153.4" stroke="#8c959f"/>
+<line x1="133.91" y1="148.4" x2="133.91" y2="153.4" stroke="#8c959f"/>
+<text x="137.86" y="160.35" text-anchor="end" font-size="11" fill="#59636e" transform="rotate(-45 137.86 160.35)">Day 25</text>
+<line x1="138.3" y1="148.4" x2="138.3" y2="153.4" stroke="#8c959f"/>
+<line x1="142.69" y1="148.4" x2="142.69" y2="153.4" stroke="#8c959f"/>
+<line x1="147.08" y1="148.4" x2="147.08" y2="153.4" stroke="#8c959f"/>
+<line x1="151.47" y1="148.4" x2="151.47" y2="153.4" stroke="#8c959f"/>
+<text x="155.42" y="160.35" text-anchor="end" font-size="11" fill="#59636e" transform="rotate(-45 155.42 160.35)">Day 29</text>
+<line x1="155.86" y1="148.4" x2="155.86" y2="153.4" stroke="#8c959f"/>
+<line x1="160.25" y1="148.4" x2="160.25" y2="153.4" stroke="#8c959f"/>
+<line x1="164.64" y1="148.4" x2="164.64" y2="153.4" stroke="#8c959f"/>
+<line x1="169.03" y1="148.4" x2="169.03" y2="153.4" stroke="#8c959f"/>
+<text x="172.98" y="160.35" text-anchor="end" font-size="11" fill="#59636e" transform="rotate(-45 172.98 160.35)">Day 33</text>
+<line x1="173.43" y1="148.4" x2="173.43" y2="153.4" stroke="#8c959f"/>
+<line x1="177.82" y1="148.4" x2="177.82" y2="153.4" stroke="#8c959f"/>
+<line x1="182.21" y1="148.4" x2="182.21" y2="153.4" stroke="#8c959f"/>
+<line x1="186.6" y1="148.4" x2="186.6" y2="153.4" stroke="#8c959f"/>
+<text x="190.55" y="160.35" text-anchor="end" font-size="11" fill="#59636e" transform="rotate(-45 190.55 160.35)">Day 37</text>
+<line x1="190.99" y1="148.4" x2="190.99" y2="153.4" stroke="#8c959f"/>
+<line x1="195.38" y1="148.4" x2="195.38" y2="153.4" stroke="#8c959f"/>
+<line x1="199.77" y1="148.4" x2="199.77" y2="153.4" stroke="#8c959f"/>
+<line x1="204.16" y1="148.4" x2="204.16" y2="153.4" stroke="#8c959f"/>
+<text x="208.11" y="160.35" text-anchor="end" font-size="11" fill="#59636e" transform="rotate(-45 208.11 160.35)">Day 41</text>
+<line x1="208.55" y1="148.4" x2="208.55" y2="153.4" stroke="#8c959f"/>
+<line x1="212.94" y1="148.4" x2="212.94" y2="153.4" stroke="#8c959f"/>
+<line x1="217.33" y1="148.4" x2="217.33" y2="153.4" stroke="#8c959f"/>
+<line x1="221.72" y1="148.4" x2="221.72" y2="153.4" stroke="#8c959f"/>
+<text x="225.67" y="160.35" text-anchor="end" font-size="11" fill="#59636e" transform="rotate(-45 225.67 160.35)">Day 45</text>
+<line x1="226.11" y1="148.4" x2="226.11" y2="153.4" stroke="#8c959f"/>
+<line x1="230.51" y1="148.4" x2="230.51" y2="153.4" stroke="#8c959f"/>
+<line x1="234.9" y1="148.4" x2="234.9" y2="153.4" stroke="#8c959f"/>
+<line x1="239.29" y1="148.4" x2="239.29" y2="153.4" stroke="#8c959f"/>
+<text x="243.24" y="160.35" text-anchor="end" font-size="11" fill="#59636e" transform="rotate(-45 243.24 160.35)">Day 49</text>
+<line x1="243.68" y1="148.4" x2="243.68" y2="153.4" stroke="#8c959f"/>
+<line x1="248.07" y1="148.4" x2="248.07" y2="153.4" stroke="#8c959f"/>
+<line x1="252.46" y1="148.4" x2="252.46" y2="153.4" stroke="#8c959f"/>
+<line x1="256.85" y1="148.4" x2="256.85" y2="153.4" stroke="#8c959f"/>
+<text x="260.8" y="160.35" text-anchor="end" font-size="11" fill="#59636e" transform="rotate(-45 260.8 160.35)">Day 53</text>
+<line x1="261.24" y1="148.4" x2="261.24" y2="153.4" stroke="#8c959f"/>
+<line x1="265.63" y1="148.4" x2="265.63" y2="153.4" stroke="#8c959f"/>
+<line x1="270.02" y1="148.4" x2="270.02" y2="153.4" stroke="#8c959f"/>
+<line x1="274.41" y1="148.4" x2="274.41" y2="153.4" stroke="#8c959f"/>
+<text x="278.36" y="160.35" text-anchor="end" font-size="11" fill="#59636e" transform="rotate(-45 278.36 160.35)">Day 57</text>
+<line x1="278.8" y1="148.4" x2="278.8" y2="153.4" stroke="#8c959f"/>
+<line x1="283.19" y1="148.4" x2="283.19" y2="153.4" stroke="#8c959f"/>
+<line x1="287.59" y1="148.4" x2="287.59" y2="153.4" stroke="#8c959f"/>
+<line x1="26.12" y1="148.4" x2="290" y2="148.4" stroke="#8c959f"/>
+</g>
+<text x="10" y="21.49" font-size="16" font-weight="bold" fill="#1f2328">Thinned labels</text>
+</svg>

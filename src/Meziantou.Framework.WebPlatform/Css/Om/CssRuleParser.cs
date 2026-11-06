@@ -848,6 +848,16 @@ internal sealed partial class CssRuleParser
                 return new CssPositionTryRule(positionTryName.Token.Value, declarations);
             }
 
+            case "color-profile" when rule.Block is not null && context is CssRuleContext.TopLevel or CssRuleContext.Grouping:
+            {
+                // https://drafts.csswg.org/css-color-5/#at-profile: a dashed identifier or device-cmyk
+                if (prelude is not [CssPreservedToken { Type: CssTokenType.Ident } profileName] || !(profileName.Token.Value.StartsWith("--", StringComparison.Ordinal) || profileName.Token.IsIdent("device-cmyk")))
+                    return null;
+
+                var profile = profileName.Token.Value.StartsWith("--", StringComparison.Ordinal) ? profileName.Token.Value : "device-cmyk";
+                return new CssColorProfileRule(profile, ParseDescriptors(rule.Block, "@color-profile").ToDictionary(d => d.Name, d => d.Value.Value, StringComparer.Ordinal));
+            }
+
             case "font-palette-values" when rule.Block is not null && context is CssRuleContext.TopLevel or CssRuleContext.Grouping:
             {
                 if (prelude is not [CssPreservedToken { Type: CssTokenType.Ident } paletteName] || !paletteName.Token.Value.StartsWith("--", StringComparison.Ordinal))
@@ -1811,7 +1821,7 @@ internal sealed partial class CssRuleParser
     /// the margin rules of @page and the feature value blocks of @font-feature-values (e.g. @swash) included.
     /// </summary>
     private static bool IsSupportedAtRule(string name) => InfraAscii.ToAsciiLowercase(name) is "import" or "namespace" or "media" or "supports" or "container" or "layer"
-        or "custom-media" or "scope" or "starting-style" or "font-face" or "keyframes" or "-webkit-keyframes" or "page" or "property" or "counter-style" or "font-feature-values" or "font-palette-values" or "function" or "position-try" or "view-transition"
+        or "custom-media" or "scope" or "starting-style" or "font-face" or "keyframes" or "-webkit-keyframes" or "page" or "property" or "counter-style" or "font-feature-values" or "font-palette-values" or "color-profile" or "function" or "position-try" or "view-transition"
         or "stylistic" or "historical-forms" or "styleset" or "character-variant" or "swash" or "ornaments" or "annotation"
         or "top-left-corner" or "top-left" or "top-center" or "top-right" or "top-right-corner" or "bottom-left-corner" or "bottom-left" or "bottom-center"
         or "bottom-right" or "bottom-right-corner" or "left-top" or "left-middle" or "left-bottom" or "right-top" or "right-middle" or "right-bottom";

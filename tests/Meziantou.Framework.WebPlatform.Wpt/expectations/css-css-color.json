@@ -27,7 +27,7 @@
     "total": 120
   },
   "css/css-color/at-color-profile-001.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-color/background-color-hsl-001.html": {
     "reftest": "PASS"

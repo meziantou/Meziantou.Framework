@@ -11,8 +11,8 @@ description: "The results of the web-platform-tests of css/css-color, and why th
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 67 | 69 | 0 | 97% |
 | Tentative | 0 | 0 | 0 | – |
-| [Reftests](#reftests) | 302 | 308 | 1 | 98% |
-| **All** | **369** | **377** | **1** | **98%** |
+| [Reftests](#reftests) | 303 | 308 | 1 | 99% |
+| **All** | **370** | **377** | **1** | **98%** |
 
 ## Failure reasons
 
@@ -20,7 +20,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 1
 - **TEST BUG**: 4
-- **NOT IMPLEMENTED**: 2
+- **NOT IMPLEMENTED**: 1
 - **FLAKY**: 1
 
 ## Stable tests
@@ -108,7 +108,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`animation/contrast-color-interpolation.html`](https://wpt.fyi/results/css/css-color/animation/contrast-color-interpolation.html) | Pass | 1 / 1 |  |  |
 | [`animation/opacity-animation-ending-correctly-001.html`](https://wpt.fyi/results/css/css-color/animation/opacity-animation-ending-correctly-001.html) | Pass | 1 / 1 |  |  |
 | [`animation/opacity-animation-ending-correctly-002.html`](https://wpt.fyi/results/css/css-color/animation/opacity-animation-ending-correctly-002.html) | Disabled | – | FLAKY | reftest whose result depends on the platform: the glyphs are antialiased by the font engine of the platform (CoreText, FreeType, DirectWrite), so it passes on Linux and fails on macOS or the reverse |
-| [`at-color-profile-001.html`](https://wpt.fyi/results/css/css-color/at-color-profile-001.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the `@color-profile` rule and the custom color spaces (`color(--foo 0.6 0 0)` is parsed and kept in the computed value but is not converted with the ICC profile: the background is not painted); fails in every browser |
+| [`at-color-profile-001.html`](https://wpt.fyi/results/css/css-color/at-color-profile-001.html) | Pass | 1 / 1 |  |  |
 | [`background-color-hsl-001.html`](https://wpt.fyi/results/css/css-color/background-color-hsl-001.html) | Pass | 1 / 1 |  |  |
 | [`background-color-hsl-002.html`](https://wpt.fyi/results/css/css-color/background-color-hsl-002.html) | Pass | 1 / 1 |  |  |
 | [`background-color-hsl-003.html`](https://wpt.fyi/results/css/css-color/background-color-hsl-003.html) | Pass | 1 / 1 |  |  |

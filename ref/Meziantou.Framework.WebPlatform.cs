@@ -540,6 +540,14 @@ namespace Meziantou.Framework.WebPlatform.Css.Om
         public System.Collections.Generic.IReadOnlyList<string> GetArguments() => throw null;
     }
 
+    public sealed class CssColorProfileRule : Meziantou.Framework.WebPlatform.Css.Om.CssRule
+    {
+        public string Components { get => throw null; }
+        public string Name { get => throw null; }
+        public string RenderingIntent { get => throw null; }
+        public string Src { get => throw null; }
+    }
+
     public abstract class CssConditionRule : Meziantou.Framework.WebPlatform.Css.Om.CssGroupingRule
     {
         public abstract string ConditionText { get; }

@@ -1536,6 +1536,8 @@ public sealed class ComputedStyleTests : IDisposable
     [InlineData("<div id=target style='display: math'></div>", "inline")]
     [InlineData("<div id=target style='display: block math'></div>", "block")]
     [InlineData("<math id=target style='display: block math'></math>", "block math")]
+    [InlineData("<math><mtext><span id=target>a</span></mtext></math>", "block")]
+    [InlineData("<math><mtable id=target></mtable></math>", "inline-table")]
     [InlineData("<textarea id=target></textarea>", "inline-block")]
     public void GetComputedStyle_Display(string html, string expected)
     {

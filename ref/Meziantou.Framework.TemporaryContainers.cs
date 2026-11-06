@@ -97,26 +97,50 @@ namespace Meziantou.Framework.TemporaryContainers
 
     public static class ContainerDefinitionMongoDbExtensions
     {
-        public static Meziantou.Framework.TemporaryContainers.MongoDbContainerDefinition CreateMongoDb() => throw null;
-        public static Meziantou.Framework.TemporaryContainers.MongoDbContainerDefinition CreateMongoDb(Meziantou.Framework.TemporaryContainers.ImageSource image) => throw null;
+        extension(Meziantou.Framework.TemporaryContainers.ContainerDefinition)
+        {
+            public static Meziantou.Framework.TemporaryContainers.MongoDbContainerDefinition CreateMongoDb() => throw null;
+        }
+        extension(Meziantou.Framework.TemporaryContainers.ContainerDefinition)
+        {
+            public static Meziantou.Framework.TemporaryContainers.MongoDbContainerDefinition CreateMongoDb(Meziantou.Framework.TemporaryContainers.ImageSource image) => throw null;
+        }
     }
 
     public static class ContainerDefinitionPostgreSqlExtensions
     {
-        public static Meziantou.Framework.TemporaryContainers.PostgreSqlContainerDefinition CreatePostgreSql() => throw null;
-        public static Meziantou.Framework.TemporaryContainers.PostgreSqlContainerDefinition CreatePostgreSql(Meziantou.Framework.TemporaryContainers.ImageSource image) => throw null;
+        extension(Meziantou.Framework.TemporaryContainers.ContainerDefinition)
+        {
+            public static Meziantou.Framework.TemporaryContainers.PostgreSqlContainerDefinition CreatePostgreSql() => throw null;
+        }
+        extension(Meziantou.Framework.TemporaryContainers.ContainerDefinition)
+        {
+            public static Meziantou.Framework.TemporaryContainers.PostgreSqlContainerDefinition CreatePostgreSql(Meziantou.Framework.TemporaryContainers.ImageSource image) => throw null;
+        }
     }
 
     public static class ContainerDefinitionRedisExtensions
     {
-        public static Meziantou.Framework.TemporaryContainers.RedisContainerDefinition CreateRedis() => throw null;
-        public static Meziantou.Framework.TemporaryContainers.RedisContainerDefinition CreateRedis(Meziantou.Framework.TemporaryContainers.ImageSource image) => throw null;
+        extension(Meziantou.Framework.TemporaryContainers.ContainerDefinition)
+        {
+            public static Meziantou.Framework.TemporaryContainers.RedisContainerDefinition CreateRedis() => throw null;
+        }
+        extension(Meziantou.Framework.TemporaryContainers.ContainerDefinition)
+        {
+            public static Meziantou.Framework.TemporaryContainers.RedisContainerDefinition CreateRedis(Meziantou.Framework.TemporaryContainers.ImageSource image) => throw null;
+        }
     }
 
     public static class ContainerDefinitionSqlServerExtensions
     {
-        public static Meziantou.Framework.TemporaryContainers.SqlServerContainerDefinition CreateSqlServer() => throw null;
-        public static Meziantou.Framework.TemporaryContainers.SqlServerContainerDefinition CreateSqlServer(Meziantou.Framework.TemporaryContainers.ImageSource image) => throw null;
+        extension(Meziantou.Framework.TemporaryContainers.ContainerDefinition)
+        {
+            public static Meziantou.Framework.TemporaryContainers.SqlServerContainerDefinition CreateSqlServer() => throw null;
+        }
+        extension(Meziantou.Framework.TemporaryContainers.ContainerDefinition)
+        {
+            public static Meziantou.Framework.TemporaryContainers.SqlServerContainerDefinition CreateSqlServer(Meziantou.Framework.TemporaryContainers.ImageSource image) => throw null;
+        }
     }
 
     public sealed class ContainerEnvironmentCollection : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Collections.IEnumerable

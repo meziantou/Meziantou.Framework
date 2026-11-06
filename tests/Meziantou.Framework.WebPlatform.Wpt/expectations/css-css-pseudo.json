@@ -338,7 +338,7 @@
     "reftest": "PASS"
   },
   "css/css-pseudo/first-line-opacity-001.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-pseudo/first-line-replaced-001.html": {
     "reftest": "PASS"

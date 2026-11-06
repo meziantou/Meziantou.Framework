@@ -1032,7 +1032,7 @@
     "reftest": "FAIL"
   },
   "mathml/relations/css-styling/first-line-first-letter-pseudo-elements-004.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "mathml/relations/css-styling/floats/floating-inside-mathml-with-block-display.html": {
     "reftest": "PASS"

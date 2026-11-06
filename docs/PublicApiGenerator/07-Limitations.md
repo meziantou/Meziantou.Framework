@@ -13,8 +13,10 @@ description: What the public API generator does not do, and how to work around i
   declares a base type cannot be found next to the assembly being read or in the runtime, the members that hide its
   members are not marked `new`. See [The `new` modifier](06-Library/03-ReadingTheApiModel.md#the-new-modifier).
 - **Some members cannot be written in C#.** Members with names that are not valid C# identifiers (such as `<Clone>$`),
-  static constructors and compiler-generated types are not part of the API files or of the model. C# 14 extension
-  blocks are represented by the static methods the compiler generates for them.
+  static constructors and compiler-generated types are not part of the API files or of the model.
+- **Extension blocks are not grouped as in the source code.** The API files write each member of a C# 14 extension block
+  in its own block, and instance extension methods as classic extension methods. See
+  [Extension members](03-ApiFiles.md#extension-members).
 - **Some attributes are not written to the API files**, such as `EditorBrowsableAttribute` or `NullableAttribute`, and
   `[RequiresPreviewFeatures]` is the only assembly attribute written. The
   [model](06-Library/03-ReadingTheApiModel.md#what-the-model-contains) has all of them.

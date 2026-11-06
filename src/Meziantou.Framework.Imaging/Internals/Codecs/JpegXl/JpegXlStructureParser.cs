@@ -113,6 +113,12 @@ internal sealed class JpegXlStructureParser : ImageParser<ImageInfo>
     /// <summary>Gets the ICC profile of the codestream, when the image header announces one and it is read.</summary>
     public byte[]? IccProfileBytes => _walker.IccProfile;
 
+    /// <summary>
+    /// Gets the color space of the ICC profile that the samples of an XYB image are rendered to, once the image header is
+    /// parsed, or <see langword="null"/> when they are rendered to the color encoding of the image (sRGB for an sRGB profile).
+    /// </summary>
+    public JpegXlIccOutput? XybIccOutput { get; private set; }
+
     public override ParseStatus Parse(ReadOnlySpan<byte> buffer, bool isEndOfInput, out int consumed)
     {
         consumed = 0;
@@ -568,8 +574,20 @@ internal sealed class JpegXlStructureParser : ImageParser<ImageInfo>
         {
             // The profile was charged when it was decoded
             var adopted = _walker.IccProfile is { } icc && _metadata.TryAdoptIccProfile(icc, isGray);
-            if (header.IsXybEncoded && !(adopted && SrgbProfileRecognition.IsSrgb(_metadata.Metadata.IccProfile!, PixelFormatWidening.GetWidenedFormat(DefaultPixelFormat))))
-                throw JpegXlFormat.Unsupported("The JPEG XL image is stored in the XYB color space and its ICC profile is not sRGB: decoding it requires a color conversion to that profile.", "XYB image with a color profile other than sRGB");
+            if (header.IsXybEncoded)
+            {
+                // The samples of XYB are rendered to the color space of the profile: an sRGB profile as sRGB, another one
+                // through its colorants and tone curves; a profile that converts with lookup tables is not rendered
+                var profile = adopted ? _metadata.Metadata.IccProfile : null;
+                if (profile is null)
+                    throw JpegXlFormat.Unsupported("The JPEG XL image is stored in the XYB color space and its ICC profile cannot describe its samples.", "XYB image with an ICC profile based on lookup tables");
+
+                if (!SrgbProfileRecognition.IsSrgb(profile, PixelFormatWidening.GetWidenedFormat(DefaultPixelFormat)))
+                {
+                    XybIccOutput = JpegXlIccOutput.TryCreate(profile)
+                        ?? throw JpegXlFormat.Unsupported("The JPEG XL image is stored in the XYB color space and its ICC profile converts from the profile connection space with lookup tables, or from CIELAB: only a matrix-based or monochrome profile with XYZ as connection space is rendered.", "XYB image with an ICC profile based on lookup tables");
+                }
+            }
         }
         else if (encoding.IsLinearSrgb)
         {

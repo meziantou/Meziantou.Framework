@@ -72,6 +72,9 @@ internal static class IccTestProfiles
     /// <inheritdoc cref="IccProfileBuilder.RgbXyzLut16"/>
     public static IccProfile RgbXyzLut16() => Wrap(IccProfileBuilder.RgbXyzLut16());
 
+    /// <summary>A matrix-based RGB profile that also has lookup tables, which take precedence over its colorants and curves.</summary>
+    public static IccProfile MatrixWithLookupTables() => Wrap(IccProfileBuilder.MatrixWithLookupTables());
+
     /// <inheritdoc cref="IccProfileBuilder.CmykLabLut16"/>
     public static IccProfile CmykLabLut16(bool withColorimetricTables = true, bool withSaturationTables = true)
         => Wrap(IccProfileBuilder.CmykLabLut16(withColorimetricTables, withSaturationTables));

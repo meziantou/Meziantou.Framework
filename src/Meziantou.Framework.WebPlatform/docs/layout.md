@@ -1800,8 +1800,12 @@ an atomic inline laid out while its parent collects its items rents another inst
     an annotation are one column): a `RubyColumn` item followed by the items of its bases, then by the items of its
     annotations (`InlineItemFlags.RubyAnnotation`); the white space between the columns is between them. The side of each
     level is the `ruby-position` of its annotation container (of the ruby container for an anonymous level: the one of the
-    annotations does not apply), `alternate` alternating from the previous level; `inter-character` is laid out as `over`.
-    The ruby container and the internal ruby boxes are bidi isolates ([bidi](https://drafts.csswg.org/css-ruby-1/#bidi)); the
+    annotations does not apply), `alternate` alternating from the previous level; `inter-character` is laid out as `over`. On
+    the first formatted line, the side is the one of the `ruby-position` the boxes inherit from `::first-line`
+    (`RubyAnnotationInfo.IsOverOnFirstLine`).
+    The ruby container and the internal ruby boxes are bidi isolates ([bidi](https://drafts.csswg.org/css-ruby-1/#bidi)): a base
+    container has no inline box in the items, only its bidi controls around the columns of its segment, which are ordered by
+    its direction (the annotations follow their bases); the
     preserved segment breaks in a ruby container are collapsible segment breaks (no forced line break in the annotations; as in
     Gecko, nor in the bases).
   - *Line breaking*: a column is a unit, "ruby may be broken wherever all levels simultaneously allow a break"
@@ -1853,7 +1857,7 @@ an atomic inline laid out while its parent collects its items rents another inst
     containers and their bases and annotations have box fragments in the line (`getBoundingClientRect()`, hit testing,
     painting); the decorations of the ruby container and of its ancestors are not propagated to the annotations
     (`Painter.GetAppliedDecorations`). The default styles of CSS Ruby that the HTML style sheet does not have are in
-    `StyleEngine.SupplementalStyleSheet` (`rb`, `rtc`, the font size and the line height of the annotations).
+    `StyleEngine.SupplementalStyleSheet` (`rbc`, `rb`, `rtc`, the font size and the line height of the annotations).
 - **Empty lines**: a line without text, preserved white space, atomic inline, inline-axis edges or forced break has no height
   and no baseline ([§9.4.2](https://drafts.csswg.org/css2/#inline-formatting)), and does not separate the margins: a block
   container with only such lines collapses through.

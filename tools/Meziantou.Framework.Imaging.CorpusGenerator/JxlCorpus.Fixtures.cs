@@ -537,9 +537,10 @@ internal static partial class JxlCorpus
             "The color channels are premultiplied by the alpha channel: an image of the library holds straight alpha.", file => file.ExtraChannels is [{ Type: 0, IsAlphaAssociated: true }]);
         Add("pq-white-point-e", Cjxl(c, rgb, ["-d", "0", "-x", "color_space=RGB_0.3333;0.3333_202_Rel_PeQ"]), "PQ or HLG with a custom color space",
             "The PQ transfer function with the white point E: neither code points nor the parametric curve of an ICC profile describe it.", file => file is { WhitePoint: 10, TransferFunction: 16, Gamma: null });
-        var profile = File.ReadAllBytes(CorpusDriver.CorpusDir / "icc" / "profiles" / "ProPhoto-v4.icc");
-        Add("xyb-icc", Cjxl(c, CommonCorpus.PatternDetailColor(32, 24, 3), ["-d", "1"], files: [("icc_pathname", profile, "{icc/profiles/ProPhoto-v4.icc}")]), "XYB image with a color profile other than sRGB",
-            "A lossy image whose samples are to be converted from XYB to the color space of an ICC profile that is not sRGB.", file => file is { IsXybEncoded: true, HasIccProfile: true });
+        // A profile with colorants and tone curves is rendered through them; one with lookup tables is not
+        var profile = IccProfileBuilder.MatrixWithLookupTables();
+        Add("xyb-icc", Cjxl(c, CommonCorpus.PatternDetailColor(32, 24, 3), ["-d", "1"], files: [("icc_pathname", profile, "{IccProfileBuilder.MatrixWithLookupTables}")]), "XYB image with an ICC profile based on lookup tables",
+            "A lossy image whose samples are to be rendered from XYB to the color space of an ICC profile that converts from the profile connection space with a lookup table (BToA0), which takes precedence over its colorants and tone curves.", file => file is { IsXybEncoded: true, HasIccProfile: true });
     }
 
     private static void BuildLimits(Corpus<JxlTools> c)

@@ -27,6 +27,11 @@
     "reason": "form controls: Chromium gives them a font of 13.333px (font: -webkit-small-control), the library inherits the font of their parent (the user agent style sheet of the HTML Standard)"
   },
   {
+    "fixture": "gradients.html",
+    "scenario": "omit-background",
+    "reason": "image resampling: since Chromium 156, the edges of the scaled-up tiles of the semi-transparent background image of the multi-layer box have other alpha values"
+  },
+  {
     "fixture": "images.html",
     "scenario": "desktop-dpr2",
     "reason": "image resampling: Skia scales the images up with another filter than the library at a device pixel ratio of 2"
@@ -34,16 +39,6 @@
   {
     "fixture": "text.html",
     "scenario": "*",
-    "reason": "text: Skia renders heavier glyphs (the gamma and the contrast of its glyph masks) at other subpixel positions, Chromium paints the disc markers of the lists as shapes (Blink's symbol markers) where the library paints the text of the marker, and Blink rounds the font metrics of the line with superscripts and subscripts to whole pixels"
-  },
-  {
-    "fixture": "print-basic.html",
-    "scenario": "*",
-    "reason": "text: Skia renders heavier glyphs (the gamma and the contrast of its glyph masks) at other subpixel positions"
-  },
-  {
-    "fixture": "element-clip.html",
-    "scenario": "element",
-    "reason": "text of the element screenshot: Skia renders heavier glyphs (the gamma and the contrast of its glyph masks) at other subpixel positions"
+    "reason": "text: Skia renders glyphs at other subpixel positions (and CoreText on macOS makes the stems of the glyphs a little wider), Chromium paints the disc markers of the lists as shapes (Blink's symbol markers) where the library paints the text of the marker, and Blink rounds the font metrics of the line with superscripts and subscripts to whole pixels"
   }
 ]

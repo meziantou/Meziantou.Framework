@@ -177,6 +177,9 @@ origin on the baseline, in the coordinates of the drawing. `canvas.StrokeGlyphs`
 - Each glyph is filled on its own, over the ones before it, as browsers draw text.
 - [GlyphRunOptions](cref:Meziantou.Framework.Imaging.Typography.GlyphRunOptions) gives a synthetic bold and oblique ([Synthesis](cref:Meziantou.Framework.Imaging.Typography.GlyphRunOptions.Synthesis), [BoldWidth](cref:Meziantou.Framework.Imaging.Typography.GlyphRunOptions.BoldWidth), [ObliqueShear](cref:Meziantou.Framework.Imaging.Typography.GlyphRunOptions.ObliqueShear)) and the palette of
   color glyphs ([Palette](cref:Meziantou.Framework.Imaging.Typography.GlyphRunOptions.Palette)).
+- [Contrast](cref:Meziantou.Framework.Imaging.Typography.GlyphRunOptions.Contrast) and [Gamma](cref:Meziantou.Framework.Imaging.Typography.GlyphRunOptions.Gamma) correct the coverage of the
+  antialiased glyphs, as the glyph masks of Skia for a dark text: a contrast of 1 makes the text heavier, the way browsers
+  draw it.
 - [GlyphRunOptions.Cache](cref:Meziantou.Framework.Imaging.Typography.GlyphRunOptions.Cache) is a [GlyphCache](cref:Meziantou.Framework.Imaging.Typography.GlyphCache) you own, bounded in bytes, that keeps the coverage of the glyphs drawn
   with it: the pixels are the same with or without it, and a run whose glyphs are in the cache allocates nothing.
 

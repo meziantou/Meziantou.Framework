@@ -14,8 +14,10 @@ namespace Meziantou.Framework.Imaging.InteropTests.JpegXlConformance;
 /// that do not return floating-point samples: both images are clamped to [0, 1], then the largest error of a sample and
 /// the largest root mean square error of a channel are compared with the tolerances of each frame. The reference
 /// decoding is in the color space of its <c>reference.icc</c>; the library returns its samples in the color encoding of
-/// the file, which is the color space of that profile in every case (the expected label is checked), so no color
-/// conversion is needed.
+/// the file. That is the color space of the reference profile (the expected label is checked) except for the images stored
+/// in XYB with an ICC profile, whose references are in linear sRGB: their samples are converted to it, as the script
+/// converts with lcms2, through the colorants and the tone curves of both profiles (<see cref="IccMatrixShaperConversion"/>,
+/// independent of the library).
 /// </para>
 /// <para>
 /// A profile the library writes for an enumerated color encoding is compared with <c>reference.icc</c> by its colorants and
@@ -26,8 +28,9 @@ namespace Meziantou.Framework.Imaging.InteropTests.JpegXlConformance;
 /// <para>
 /// The library rounds every frame to the depth of the image (8 or 16 bits), and the tolerances of the corpus are smaller
 /// than the rounding of 8-bit samples (1/510): the limits add half a step to the largest error and the root mean square
-/// of a uniform rounding, a step divided by the square root of 12, to the other. djxl passes every case and jxl-oxide
-/// all but six (gamut mapping) under the same comparison of floating-point outputs.
+/// of a uniform rounding, a step divided by the square root of 12, to the other; both carried through the conversion of
+/// the samples, if any, by its derivatives. djxl passes every case and jxl-oxide all but six (gamut mapping) under the
+/// same comparison of floating-point outputs.
 /// </para>
 /// </remarks>
 public sealed class JpegXlConformanceTests
@@ -46,6 +49,12 @@ public sealed class JpegXlConformanceTests
 
         /// <summary>A profile the library writes for the enumerated color encoding of the file: equivalent to <c>reference.icc</c>.</summary>
         SynthesizedIcc,
+
+        /// <summary>
+        /// The ICC profile of the file (<c>original.icc</c>), returned byte for byte, while <c>reference.icc</c> is another color
+        /// space: the samples are converted to it.
+        /// </summary>
+        ConvertedIcc,
     }
 
     public static TheoryData<string, OutputColor> DecodedCases => new()
@@ -67,6 +76,8 @@ public sealed class JpegXlConformanceTests
         { "cafe", OutputColor.EmbeddedIcc },
         { "cafe_5", OutputColor.EmbeddedIcc },
         { "delta_palette", OutputColor.Srgb },
+        { "grayscale", OutputColor.ConvertedIcc },
+        { "grayscale_5", OutputColor.ConvertedIcc },
         { "grayscale_jpeg", OutputColor.EmbeddedIcc },
         { "grayscale_jpeg_5", OutputColor.EmbeddedIcc },
         { "lz77_flower", OutputColor.SynthesizedIcc },
@@ -75,7 +86,11 @@ public sealed class JpegXlConformanceTests
         { "noise_5", OutputColor.Srgb },
         { "opsin_inverse", OutputColor.Srgb },
         { "opsin_inverse_5", OutputColor.Srgb },
+        { "patches", OutputColor.ConvertedIcc },
+        { "patches_5", OutputColor.ConvertedIcc },
         { "patches_lossless", OutputColor.EmbeddedIcc },
+        { "progressive", OutputColor.ConvertedIcc },
+        { "progressive_5", OutputColor.ConvertedIcc },
         { "sunset_logo", OutputColor.Srgb },
         { "upsampling", OutputColor.Srgb },
         { "upsampling_5", OutputColor.Srgb },
@@ -86,14 +101,8 @@ public sealed class JpegXlConformanceTests
     {
         { "alpha_premultiplied", "premultiplied alpha" },
         { "cmyk_layers", "black channel" },
-        { "grayscale", "XYB color space and its ICC profile is not sRGB" },
-        { "grayscale_5", "XYB color space and its ICC profile is not sRGB" },
         { "grayscale_public_university", "grayscale Modular frame with restoration filters" },
         { "lossless_pfm", "floating-point color samples" },
-        { "patches", "XYB color space and its ICC profile is not sRGB" },
-        { "patches_5", "XYB color space and its ICC profile is not sRGB" },
-        { "progressive", "XYB color space and its ICC profile is not sRGB" },
-        { "progressive_5", "XYB color space and its ICC profile is not sRGB" },
         { "spot", "spot color" },
     };
 
@@ -114,6 +123,7 @@ public sealed class JpegXlConformanceTests
         using var image = Image.Load(testCase.InputPath);
         var referenceIcc = await File.ReadAllBytesAsync(await testCase.GetReferenceIccAsync(XunitCancellationToken), XunitCancellationToken);
         var metadata = image.Metadata;
+        IccMatrixShaperConversion? conversion = null;
         switch (color)
         {
             case OutputColor.Srgb:
@@ -139,6 +149,13 @@ public sealed class JpegXlConformanceTests
                 AssertEquivalentProfiles(referenceIcc, metadata.IccProfile.Data.ToArray());
                 break;
 
+            case OutputColor.ConvertedIcc:
+                Assert.NotNull(metadata.IccProfile);
+                var fileIcc = await File.ReadAllBytesAsync(await testCase.GetOriginalIccAsync(XunitCancellationToken), XunitCancellationToken);
+                Assert.Equal(fileIcc, metadata.IccProfile.Data.ToArray());
+                conversion = IccMatrixShaperConversion.Create(fileIcc, referenceIcc, IsSixteenBit(image.PixelFormat) ? ushort.MaxValue : byte.MaxValue);
+                break;
+
             default:
                 throw new ArgumentOutOfRangeException(nameof(color), color, message: null);
         }
@@ -150,7 +167,7 @@ public sealed class JpegXlConformanceTests
         }
 
         var referencePath = await testCase.GetReferenceImageAsync(XunitCancellationToken);
-        Assert.Empty(Compare(testCase, image, referencePath));
+        Assert.Empty(Compare(testCase, image, referencePath, conversion));
     }
 
     [Theory]
@@ -175,8 +192,12 @@ public sealed class JpegXlConformanceTests
     }
 
     /// <summary>Compares every frame with the reference decoding.</summary>
+    /// <param name="testCase">The test case.</param>
+    /// <param name="image">The decoded image.</param>
+    /// <param name="referencePath">The reference decoding.</param>
+    /// <param name="conversion">The conversion of the decoded colors to the color space of the reference, or <see langword="null"/> when they are in it.</param>
     /// <returns>A description of each frame that exceeds its tolerance; empty when every frame is within it.</returns>
-    private static List<string> Compare(JpegXlConformanceCase testCase, Image image, FullPath referencePath)
+    private static List<string> Compare(JpegXlConformanceCase testCase, Image image, FullPath referencePath, IccMatrixShaperConversion? conversion)
     {
         using var reference = new JpegXlConformanceCase.NpyFrameReader(referencePath);
         Assert.Equal((testCase.Frames.Count, image.Height, image.Width), (reference.FrameCount, reference.Height, reference.Width));
@@ -185,71 +206,104 @@ public sealed class JpegXlConformanceTests
         Assert.True(channels is 1 or 3 or 4, $"Unexpected channel count {channels}.");
 
         var format = image.PixelFormat;
-        var (bytesPerPixel, is16Bit) = format switch
+        var bytesPerPixel = format switch
         {
-            PixelFormat.Gray8 => (1, false),
-            PixelFormat.La16 => (2, false),
-            PixelFormat.Rgb24 => (3, false),
-            PixelFormat.Rgba32 => (4, false),
-            PixelFormat.Gray16 => (2, true),
-            PixelFormat.La32 => (4, true),
-            PixelFormat.Rgb48 => (6, true),
-            PixelFormat.Rgba64 => (8, true),
+            PixelFormat.Gray8 => 1,
+            PixelFormat.La16 or PixelFormat.Gray16 => 2,
+            PixelFormat.Rgb24 => 3,
+            PixelFormat.Rgba32 or PixelFormat.La32 => 4,
+            PixelFormat.Rgb48 => 6,
+            PixelFormat.Rgba64 => 8,
             _ => throw new InvalidOperationException($"Unexpected pixel format {format}."),
         };
         var isGray = format is PixelFormat.Gray8 or PixelFormat.La16 or PixelFormat.Gray16 or PixelFormat.La32;
         Assert.Equal(channels == 1, isGray);
+        var colorChannels = isGray ? 1 : 3;
+        Assert.True(conversion is null || conversion.ChannelCount == colorChannels, "The conversion does not have the channels of the image.");
 
-        var step = 1.0 / (is16Bit ? ushort.MaxValue : byte.MaxValue);
+        var maxLevel = IsSixteenBit(format) ? ushort.MaxValue : byte.MaxValue;
+        var step = 1.0 / maxLevel;
         var pixelCount = image.Width * image.Height;
         var raw = new byte[pixelCount * bytesPerPixel];
         var referenceSamples = new float[pixelCount * channels];
         var actual = new float[4];
         var errors = new List<string>();
+        Span<int> levels = stackalloc int[3];
+        Span<double> values = stackalloc double[4];
+        Span<double> gains = stackalloc double[4];
+        Span<double> squaredGains = stackalloc double[4];
         Span<double> squares = stackalloc double[4];
+        Span<double> squaredGainSums = stackalloc double[4];
         for (var frame = 0; frame < testCase.Frames.Count; frame++)
         {
             reference.ReadFrame(referenceSamples);
             image.Frames[frame].CopyPixelBytesTo(raw);
+
+            // The largest error once the rounding of the sample is taken away, and the sums of the squares of the errors
+            // and of the gains of the conversion, for the root mean squares
+            var peakExcess = 0.0;
             var peak = 0.0;
             squares.Clear();
+            squaredGainSums.Clear();
             for (var pixel = 0; pixel < pixelCount; pixel++)
             {
                 ReadPixel(raw.AsSpan(pixel * bytesPerPixel, bytesPerPixel), format, actual);
-
                 if (channels == 3 && actual[3] != 1)
                 {
                     errors.Add($"frame {frame}: the reference has no alpha channel, the decoded pixel {pixel % image.Width}, {pixel / image.Width} has the alpha {actual[3]}");
                     return errors;
                 }
 
+                // A sample is rounded by up to half a step; a conversion scales that by its derivatives
+                for (var channel = 0; channel < 4; channel++)
+                {
+                    values[channel] = actual[channel];
+                    gains[channel] = 1;
+                    squaredGains[channel] = 1;
+                }
+
+                if (conversion is not null)
+                {
+                    for (var channel = 0; channel < colorChannels; channel++)
+                    {
+                        levels[channel] = (int)Math.Round(actual[channel] * maxLevel, MidpointRounding.AwayFromZero);
+                    }
+
+                    conversion.Convert(levels[..colorChannels], values, gains, squaredGains);
+                }
+
                 for (var channel = 0; channel < channels; channel++)
                 {
                     var expected = Math.Clamp(referenceSamples[(pixel * channels) + channel], 0f, 1f);
-                    var value = channels == 1 ? actual[0] : actual[channel];
-                    var error = Math.Abs(expected - (double)value);
+                    var error = Math.Abs(expected - Math.Clamp(values[channel], 0, 1));
                     peak = Math.Max(peak, error);
+                    peakExcess = Math.Max(peakExcess, error - (gains[channel] * step / 2));
                     squares[channel] += error * error;
+                    squaredGainSums[channel] += squaredGains[channel];
                 }
             }
 
-            var rms = 0.0;
+            var tolerance = testCase.Frames[frame];
             for (var channel = 0; channel < channels; channel++)
             {
-                rms = Math.Max(rms, Math.Sqrt(squares[channel] / pixelCount));
+                var rms = Math.Sqrt(squares[channel] / pixelCount);
+                var rmsLimit = tolerance.Rms + (Math.Sqrt(squaredGainSums[channel] / pixelCount) * step / Math.Sqrt(12));
+                if (rms > rmsLimit)
+                {
+                    errors.Add(string.Create(CultureInfo.InvariantCulture, $"frame {frame}, channel {channel}: RMSE {rms:G6} (limit {rmsLimit:G6})"));
+                }
             }
 
-            var tolerance = testCase.Frames[frame];
-            var peakLimit = tolerance.Peak + (step / 2) + 1e-6;
-            var rmsLimit = tolerance.Rms + (step / Math.Sqrt(12));
-            if (peak > peakLimit || rms > rmsLimit)
+            if (peakExcess > tolerance.Peak + 1e-6)
             {
-                errors.Add(string.Create(CultureInfo.InvariantCulture, $"frame {frame}: peak error {peak:G6} (limit {peakLimit:G6}), RMSE {rms:G6} (limit {rmsLimit:G6})"));
+                errors.Add(string.Create(CultureInfo.InvariantCulture, $"frame {frame}: peak error {peak:G6}, {peakExcess:G6} beyond the rounding of the samples (limit {tolerance.Peak:G6})"));
             }
         }
 
         return errors;
     }
+
+    private static bool IsSixteenBit(PixelFormat format) => format is PixelFormat.Gray16 or PixelFormat.La32 or PixelFormat.Rgb48 or PixelFormat.Rgba64;
 
     /// <summary>
     /// Asserts that two matrix/TRC profiles describe the same color space: the same colorants (or gray), within the
@@ -257,8 +311,8 @@ public sealed class JpegXlConformanceTests
     /// </summary>
     private static void AssertEquivalentProfiles(byte[] expected, byte[] actual)
     {
-        var expectedTags = ReadIccTags(expected);
-        var actualTags = ReadIccTags(actual);
+        var expectedTags = IccTags.Read(expected);
+        var actualTags = IccTags.Read(actual);
         Assert.Equal(expected.AsSpan(16, 4).ToArray(), actual.AsSpan(16, 4).ToArray());
         var isGray = expectedTags.ContainsKey("kTRC");
         foreach (var signature in isGray ? (string[])["kTRC"] : ["rXYZ", "gXYZ", "bXYZ", "rTRC", "gTRC", "bTRC"])
@@ -280,72 +334,12 @@ public sealed class JpegXlConformanceTests
                 for (var step = 0; step <= 100; step++)
                 {
                     var x = step / 100.0;
-                    var expectedValue = EvaluateCurve(expectedTag.Span, x);
-                    var actualValue = EvaluateCurve(actualTag.Span, x);
+                    var expectedValue = IccTags.EvaluateCurve(expectedTag.Span, x);
+                    var actualValue = IccTags.EvaluateCurve(actualTag.Span, x);
                     Assert.True(Math.Abs(expectedValue - actualValue) <= 0.0001, $"{signature}({x}): {actualValue} instead of {expectedValue}");
                 }
             }
         }
-    }
-
-    private static Dictionary<string, ReadOnlyMemory<byte>> ReadIccTags(byte[] profile)
-    {
-        var tags = new Dictionary<string, ReadOnlyMemory<byte>>(StringComparer.Ordinal);
-        var count = BinaryPrimitives.ReadInt32BigEndian(profile.AsSpan(128));
-        for (var i = 0; i < count; i++)
-        {
-            var entry = profile.AsSpan(132 + (12 * i), 12);
-            var signature = System.Text.Encoding.ASCII.GetString(entry[..4]);
-            tags[signature] = profile.AsMemory(BinaryPrimitives.ReadInt32BigEndian(entry[4..]), BinaryPrimitives.ReadInt32BigEndian(entry[8..]));
-        }
-
-        return tags;
-    }
-
-    /// <summary>Evaluates a <c>curveType</c> or a <c>parametricCurveType</c> of ICC.1:2022 (sections 10.6 and 10.18) at a device value.</summary>
-    private static double EvaluateCurve(ReadOnlySpan<byte> tag, double x)
-    {
-        if (tag[..4].SequenceEqual("curv"u8))
-        {
-            var count = BinaryPrimitives.ReadInt32BigEndian(tag[8..]);
-            if (count == 0)
-                return x;
-
-            if (count == 1)
-                return Math.Pow(x, BinaryPrimitives.ReadUInt16BigEndian(tag[12..]) / 256.0);
-
-            var position = x * (count - 1);
-            var index = Math.Min((int)position, count - 2);
-            var low = BinaryPrimitives.ReadUInt16BigEndian(tag[(12 + (2 * index))..]) / 65535.0;
-            var high = BinaryPrimitives.ReadUInt16BigEndian(tag[(14 + (2 * index))..]) / 65535.0;
-            return low + ((high - low) * (position - index));
-        }
-
-        Assert.True(tag[..4].SequenceEqual("para"u8), "The curve is neither a curveType nor a parametricCurveType.");
-        var function = BinaryPrimitives.ReadUInt16BigEndian(tag[8..]);
-        Span<double> p = stackalloc double[7];
-        var parameterCount = function switch
-        {
-            0 => 1,
-            1 => 3,
-            2 => 4,
-            3 => 5,
-            4 => 7,
-            _ => throw new InvalidOperationException($"Unknown parametric function {function}."),
-        };
-        for (var i = 0; i < parameterCount; i++)
-        {
-            p[i] = BinaryPrimitives.ReadInt32BigEndian(tag[(12 + (4 * i))..]) / 65536.0;
-        }
-
-        return function switch
-        {
-            0 => Math.Pow(x, p[0]),
-            1 => x >= -p[2] / p[1] ? Math.Pow((p[1] * x) + p[2], p[0]) : 0,
-            2 => x >= -p[2] / p[1] ? Math.Pow((p[1] * x) + p[2], p[0]) + p[3] : p[3],
-            3 => x >= p[4] ? Math.Pow((p[1] * x) + p[2], p[0]) : p[3] * x,
-            _ => x >= p[4] ? Math.Pow((p[1] * x) + p[2], p[0]) + p[5] : (p[3] * x) + p[6],
-        };
     }
 
     /// <summary>Reads one pixel as straight RGBA in [0, 1]; a gray level is in the three colors.</summary>

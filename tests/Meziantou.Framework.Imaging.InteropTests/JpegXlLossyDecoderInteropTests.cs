@@ -1,5 +1,8 @@
+using System.Buffers.Binary;
+using Meziantou.Framework.Imaging.CorpusGenerator.Common;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.TestHarness.ExternalTools;
+using Meziantou.Framework.Imaging.TestHarness.Fixtures;
 
 namespace Meziantou.Framework.Imaging.InteropTests;
 
@@ -479,6 +482,117 @@ public sealed class JpegXlLossyDecoderInteropTests
         await jxl.EncodeFromTreeAsync(tree, jxlPath, XunitCancellationToken);
         using var image = await JpegXlReferenceComparison.AssertDecodesLikeTheReferencesAsync(jxlPath, djxlTolerance, oxideTolerance, name);
     }
+
+    /// <summary>
+    /// An image stored in XYB with an ICC profile that is not sRGB is rendered to the color space of its profile, through its
+    /// colorants and tone curves. The profiles are those of the corpus that cjxl keeps as profiles (it stores the others as
+    /// a color encoding): parametric curves with a linear segment near black (the "Compat" profiles and ProPhoto RGB) and
+    /// sampled curves. djxl returns such an image in linear sRGB: the samples of the library are converted to linear sRGB
+    /// through the profile, independently of the library (<see cref="IccMatrixShaperConversion"/>), and compared with a
+    /// tolerance once the rounding of the samples, carried through the conversion, is taken away. Only the colors inside
+    /// the gamut of the profile are compared: a color outside it is clipped in the profile (the "Compat" profiles of Apple
+    /// RGB and ColorMatch RGB are smaller than sRGB, and lossy XYB also yields colors outside ProPhoto RGB), and djxl keeps it.
+    /// </summary>
+    [Theory]
+    [InlineData("photo-rgb8", "AdobeCompat-v4")]
+    [InlineData("photo-rgb8", "AppleCompat-v4")]
+    [InlineData("photo-rgb8", "ColorMatchCompat-v4")]
+    [InlineData("photo-rgb8", "ProPhoto-v4")]
+    [InlineData("photo-rgb8", "ProPhoto-v2-magic")]
+    [InlineData("photo-rgb8", "ProPhoto-v2-micro")]
+    [InlineData("photo-rgb8", "WideGamutCompat-v4")]
+    [InlineData("photo-rgb16", "ProPhoto-v4")]
+    public async Task AnXybImageIsRenderedToTheColorSpaceOfItsProfile(string patternName, string profileName)
+    {
+        // Measured beyond the rounding: up to 0.0003 (0.0004 at 16 bits), what libjxl costs elsewhere, and an RMSE of
+        // 0.0001, the white of the linear sRGB of djxl (Z = 0.82521) against the illuminant of the connection space that
+        // the profiles use (Z = 0.8249)
+        const double PeakTolerance = DjxlTolerance;
+        const double RmsTolerance = 0.0002;
+        var jxl = await RequiredTools.LibJxlAsync();
+        var pattern = JpegXlPattern.Get(patternName);
+        var name = $"{patternName}-{profileName}";
+        var directory = InteropSettings.GetArtifactsDirectory(nameof(AnXybImageIsRenderedToTheColorSpaceOfItsProfile));
+        var pamPath = directory / (name + ".pam");
+        var jxlPath = directory / (name + ".jxl");
+        var iccPath = FixtureRoot.GetDirectory() / "icc" / "profiles" / (profileName + ".icc");
+        var profile = await File.ReadAllBytesAsync(iccPath, XunitCancellationToken);
+        await File.WriteAllBytesAsync(pamPath, pattern.ToPam(), XunitCancellationToken);
+        await jxl.EncodeAsync(pamPath, jxlPath, ["-d", "1", "-x", "icc_pathname=" + iccPath], XunitCancellationToken);
+        var info = await jxl.GetInfoAsync(jxlPath, XunitCancellationToken);
+        Assert.True(info.IsXybEncoded);
+        Assert.Equal(profile.Length, info.IccProfileLength);
+
+        using var image = Image.Load(jxlPath);
+        Assert.Equal(profile, image.Metadata.IccProfile?.Data.ToArray());
+        var is16Bit = pattern.MaxValue > 255;
+        Assert.Equal(is16Bit ? PixelFormat.Rgb48 : PixelFormat.Rgb24, image.PixelFormat);
+        var maxLevel = is16Bit ? ushort.MaxValue : byte.MaxValue;
+        var conversion = IccMatrixShaperConversion.Create(profile, LinearSrgbProfile, maxLevel);
+        var reference = await jxl.DecodeFramesAsync(jxlPath, XunitCancellationToken);
+        Assert.Equal((1, image.Height, image.Width, 3), (reference.FrameCount, reference.Height, reference.Width, reference.ChannelCount));
+
+        var bytesPerSample = is16Bit ? 2 : 1;
+        var raw = new byte[image.Width * image.Height * 3 * bytesPerSample];
+        image.Frames[0].CopyPixelBytesTo(raw);
+        Span<int> levels = stackalloc int[3];
+        Span<double> values = stackalloc double[3];
+        Span<double> gains = stackalloc double[3];
+        Span<double> squaredGains = stackalloc double[3];
+        Span<double> expected = stackalloc double[3];
+        double peakExcess = 0, squares = 0, squaredGainSum = 0;
+        var compared = 0;
+        for (var y = 0; y < image.Height; y++)
+        {
+            for (var x = 0; x < image.Width; x++)
+            {
+                var offset = ((y * image.Width) + x) * 3;
+                for (var c = 0; c < 3; c++)
+                {
+                    levels[c] = is16Bit ? BinaryPrimitives.ReadUInt16LittleEndian(raw.AsSpan((offset + c) * 2)) : raw[offset + c];
+                }
+
+                for (var c = 0; c < 3; c++)
+                {
+                    expected[c] = reference.GetSample(0, x, y, c);
+                }
+
+                if (!conversion.IsInSourceGamut(expected))
+                    continue;
+
+                compared++;
+                conversion.Convert(levels, values, gains, squaredGains);
+                for (var c = 0; c < 3; c++)
+                {
+                    var error = Math.Abs(Math.Clamp(expected[c], 0, 1) - Math.Clamp(values[c], 0, 1));
+                    peakExcess = Math.Max(peakExcess, error - (gains[c] / maxLevel / 2));
+                    squares += error * error;
+                    squaredGainSum += squaredGains[c];
+                }
+            }
+        }
+
+        // Most colors of the photograph are inside every gamut
+        Assert.True(compared >= image.Width * image.Height / 2, $"{name}: only {compared} pixels of {image.Width * image.Height} are in the gamut of the profile.");
+        var count = compared * 3.0;
+        var rms = Math.Sqrt(squares / count);
+        var rmsLimit = RmsTolerance + (Math.Sqrt(squaredGainSum / count) / maxLevel / Math.Sqrt(12));
+        Assert.True(peakExcess <= PeakTolerance && rms <= rmsLimit, string.Create(CultureInfo.InvariantCulture, $"{name}: the library differs from djxl {jxl.Version} by {peakExcess:G4} beyond the rounding of its samples (limit {PeakTolerance}), RMSE {rms:G4} (limit {rmsLimit:G4})."));
+    }
+
+    /// <summary>Linear sRGB: the colorants of the sRGB profiles of the ICC adapted to D50, identity curves.</summary>
+    private static readonly byte[] LinearSrgbProfile = IccProfileBuilder.BuildBytes(
+        "RGB ",
+        "XYZ ",
+        [
+            ("wtpt", IccProfileBuilder.Xyz(0.9642, 1, 0.8249)),
+            ("rXYZ", IccProfileBuilder.Xyz(IccProfileBuilder.SrgbColorants[0][0], IccProfileBuilder.SrgbColorants[0][1], IccProfileBuilder.SrgbColorants[0][2])),
+            ("gXYZ", IccProfileBuilder.Xyz(IccProfileBuilder.SrgbColorants[1][0], IccProfileBuilder.SrgbColorants[1][1], IccProfileBuilder.SrgbColorants[1][2])),
+            ("bXYZ", IccProfileBuilder.Xyz(IccProfileBuilder.SrgbColorants[2][0], IccProfileBuilder.SrgbColorants[2][1], IccProfileBuilder.SrgbColorants[2][2])),
+            ("rTRC", IccProfileBuilder.Curve()),
+            ("gTRC", IccProfileBuilder.Curve()),
+            ("bTRC", IccProfileBuilder.Curve()),
+        ]);
 
     /// <summary>Creates an 8-bit image from a pattern, its rows rotated by an offset so that frames differ.</summary>
     private static Image CreateImage(JpegXlPattern pattern, int rowOffset)

@@ -149,3 +149,5 @@ public static bool RecompressJpeg(string jpegPath, string jxlPath, string rebuil
   BT.709 or DCI, with sRGB, Display P3 or BT.2020 primaries) or an sRGB ICC profile. Another ICC profile, or the
   PQ and HLG transfer functions, throws an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException): write those images losslessly.
 - The decoder rejects floating-point samples, samples of more than 16 bits, premultiplied alpha and CMYK images.
+- A lossy file with an ICC profile is decoded to the colors of that profile, through its colorants and tone curves, and
+  keeps the profile. A file whose profile converts with lookup tables throws an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException).

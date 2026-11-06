@@ -374,23 +374,76 @@ internal sealed class IccProfileModel
 
         if (ChannelCount == 3)
         {
-            Span<double> matrix = stackalloc double[9];
             Span<double> inverse = stackalloc double[9];
-            ReadColorantMatrix(matrix);
-            if (!IccMatrixStage.TryInvert(matrix, inverse))
-                throw Unsupported("has colorants that do not span a color space, so it cannot be a destination.", "ICC profile with a singular colorant matrix");
-
-            // A curve read once is inverted once: the channels of the same curve share the inverse (and its tables)
-            var curves = ReadRgbCurves();
-            var red = Invert(curves[0], IccReader.TagRedCurve);
-            var green = ReferenceEquals(curves[1], curves[0]) ? red : Invert(curves[1], IccReader.TagGreenCurve);
-            var blue = ReferenceEquals(curves[2], curves[0]) ? red : ReferenceEquals(curves[2], curves[1]) ? green : Invert(curves[2], IccReader.TagBlueCurve);
+            var curves = ReadInverseMatrixShaper(inverse);
             stages.Add(new IccMatrixStage(inverse));
-            stages.Add(new IccInverseCurvesStage([red, green, blue]));
+            stages.Add(new IccInverseCurvesStage(curves));
             return;
         }
 
         throw Unsupported("has no lookup table ('B2A0') from the profile connection space, so it cannot be a destination.", "ICC profile without a conversion from the profile connection space");
+    }
+
+    /// <summary>
+    /// Gets the conversion from CIEXYZ of the connection space to normalized device values of a profile that converts with
+    /// its colorants and tone curves for every rendering intent (ICC.1:2022 sections 8.3.3 and 8.3.4), as
+    /// <see cref="AppendFromConnectionSpace"/> applies it: the inverse of the colorant matrix, then the inverse of each
+    /// tone curve. A monochrome profile has a single curve, applied to the Y of the connection space.
+    /// </summary>
+    /// <param name="matrix">Receives the nine values of the inverse colorant matrix, row by row (the identity for a monochrome profile).</param>
+    /// <param name="curves">Receives the inverse tone curve of each device channel.</param>
+    /// <returns>
+    /// <see langword="false"/> when a rendering intent converts from the connection space with a lookup table, when the
+    /// connection space is CIELAB, or when the profile has not the colorants and tone curves of an RGB or monochrome profile.
+    /// </returns>
+    /// <exception cref="InvalidImageContentException">A colorant or a curve is malformed.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The colorants do not span a color space, or a curve is constant.</exception>
+    public bool TryGetMatrixShaperFromConnectionSpace(Span<double> matrix, [NotNullWhen(true)] out IccInverseCurve[]? curves)
+    {
+        curves = null;
+        if (IsLabConnectionSpace || !HasConversion(deviceToConnection: false, IccRenderingIntent.RelativeColorimetric))
+            return false;
+
+        foreach (var intent in (ReadOnlySpan<IccRenderingIntent>)[IccRenderingIntent.Perceptual, IccRenderingIntent.RelativeColorimetric, IccRenderingIntent.Saturation, IccRenderingIntent.AbsoluteColorimetric])
+        {
+            if (UsesLookupTable(deviceToConnection: false, intent))
+                return false;
+        }
+
+        switch (ChannelCount)
+        {
+            case 1:
+                matrix.Clear();
+                matrix[0] = matrix[4] = matrix[8] = 1;
+                curves = [Invert(ReadCurve(IccReader.TagGrayCurve), IccReader.TagGrayCurve)];
+                return true;
+
+            case 3:
+                if (!IccReader.TryGetTag(_data.Span, IccReader.TagGreenCurve, out _) || !IccReader.TryGetTag(_data.Span, IccReader.TagBlueCurve, out _))
+                    return false;
+
+                curves = ReadInverseMatrixShaper(matrix);
+                return true;
+
+            default:
+                return false;
+        }
+    }
+
+    /// <summary>Reads the inverse of the colorant matrix and the inverses of the red, green and blue tone curves.</summary>
+    private IccInverseCurve[] ReadInverseMatrixShaper(Span<double> inverse)
+    {
+        Span<double> matrix = stackalloc double[9];
+        ReadColorantMatrix(matrix);
+        if (!IccMatrixStage.TryInvert(matrix, inverse))
+            throw Unsupported("has colorants that do not span a color space, so it cannot be a destination.", "ICC profile with a singular colorant matrix");
+
+        // A curve read once is inverted once: the channels of the same curve share the inverse (and its tables)
+        var curves = ReadRgbCurves();
+        var red = Invert(curves[0], IccReader.TagRedCurve);
+        var green = ReferenceEquals(curves[1], curves[0]) ? red : Invert(curves[1], IccReader.TagGreenCurve);
+        var blue = ReferenceEquals(curves[2], curves[0]) ? red : ReferenceEquals(curves[2], curves[1]) ? green : Invert(curves[2], IccReader.TagBlueCurve);
+        return [red, green, blue];
     }
 
     /// <summary>

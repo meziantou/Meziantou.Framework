@@ -465,6 +465,12 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
     7,105/65535 on the macOS wallpaper thumbnails). It reads the colorants of a synthetic version 4 profile with a D65
     `wtpt` and no `chad` as adapted from D65, unlike djxl, the library and its own handling of Apple's real profiles.
     Compare the pixels in gamut only.
+  - An XYB image with another matrix-based or monochrome profile (XYZ connection space, no `BToA` table) is rendered
+    to it (`JpegXlIccOutput`): linear sRGB adapted to the illuminant of the connection space with Bradford, then the
+    inverse colorants and tone curves of `IccProfileModel.TryGetMatrixShaperFromConnectionSpace`, the code of the color
+    conversions of the library. djxl returns such files in linear sRGB: `AnXybImageIsRenderedToTheColorSpaceOfItsProfile`
+    converts the samples of the library back through the profile (`IccMatrixShaperConversion`, independent of the
+    library) and compares the colors inside the gamut of the profile; the conformance corpus has three such files.
 - **Lossless JPEG XL tools** (`JpegXlLosslessFrameEncoder`, from the effort 3; below it, `JpegXlModularEncoder` codes each
   group with a leaf per channel, as the progressive output, the alpha channel of a lossy frame and its LF image still
   do). One tree and one entropy code for the whole frame are in `LfGlobal` and every group uses them, so the

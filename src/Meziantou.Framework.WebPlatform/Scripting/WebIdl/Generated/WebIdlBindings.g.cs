@@ -64,6 +64,7 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["CSSApplyBlockRule"] = Binding_CSSApplyBlockRule<TAdapter, TValue>.Binding,
             ["CSSApplyStatementRule"] = Binding_CSSApplyStatementRule<TAdapter, TValue>.Binding,
             ["CSSColor"] = Binding_CSSColor<TAdapter, TValue>.Binding,
+            ["CSSColorProfileRule"] = Binding_CSSColorProfileRule<TAdapter, TValue>.Binding,
             ["CSSColorValue"] = Binding_CSSColorValue<TAdapter, TValue>.Binding,
             ["CSSConditionRule"] = Binding_CSSConditionRule<TAdapter, TValue>.Binding,
             ["CSSContainerRule"] = Binding_CSSContainerRule<TAdapter, TValue>.Binding,

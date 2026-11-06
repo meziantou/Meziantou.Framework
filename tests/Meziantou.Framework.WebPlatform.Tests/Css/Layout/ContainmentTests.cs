@@ -232,6 +232,28 @@ public sealed class ContainmentTests : IDisposable
     }
 
     [Fact]
+    public void ContentVisibilityAuto_InitialProximityIsDeterminedBeforeTheFirstPaint()
+    {
+        // A document painted before its first rendering update (e.g. a screenshot) paints the elements close to the viewport
+        // with their contents, as in the browsers: size containment would shrink the card to its padding (max-content)
+        var document = Parse("<div id=close style='content-visibility: auto; contain-intrinsic-block-size: 300px; display: grid; max-inline-size: max-content; padding: 10px'><div style='width: 200px; height: 30px'></div></div><div style='height: 2000px'></div><div id=far style='content-visibility: auto'><div style='height: 10px'></div></div>");
+        var events = new List<(string Id, bool Skipped)>();
+        foreach (var id in (string[])["close", "far"])
+        {
+            Get(document, id).AddEventListener("contentvisibilityautostatechange", e => events.Add((((Element)e.Target!).Id, ((ContentVisibilityAutoStateChangeEvent)e).Skipped)));
+        }
+
+        Assert.NotNull(document.GetLayoutEngine().GetDisplayList());
+        Assert.Equal(new PhysicalRect(0, 0, 220, 50), GetRect(document, "close"));
+        Assert.Equal(0, GetRect(document, "far").Height);
+
+        // The events of the initial determinations are fired once
+        RunFrames(2);
+        Assert.Equal(new PhysicalRect(0, 0, 220, 50), GetRect(document, "close"));
+        Assert.Equal([("close", false), ("far", true)], events);
+    }
+
+    [Fact]
     public void ContentVisibilityAuto_FocusedOrSelectedContentsAreRelevant()
     {
         var document = Parse("<div style='height: 2000px'></div><div id=far style='content-visibility: auto'><div id=child tabindex=0 style='height: 10px'>x</div></div>");

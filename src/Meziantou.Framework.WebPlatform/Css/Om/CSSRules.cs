@@ -1491,3 +1491,44 @@ public sealed class CssFontPaletteValuesRule : CssRule
 
     internal override List<CssSerializedDeclaration> GetDeclarations() => [.. _descriptors.Select(d => new CssSerializedDeclaration(d.Key, d.Value, Important: false))];
 }
+
+/// <summary>
+/// The <c>@color-profile</c> rule (https://drafts.csswg.org/css-color-5/#at-profile): the ICC profile of a custom color
+/// space, whose colors are written <c>color(--name ...)</c>.
+/// </summary>
+/// <seealso href="https://drafts.csswg.org/css-color-5/#cssomdef-csscolorprofilerule"/>
+[IdlInterface("CSSColorProfileRule", "https://drafts.csswg.org/css-color-5/#cssomdef-csscolorprofilerule")]
+public sealed class CssColorProfileRule : CssRule
+{
+    private readonly Dictionary<string, string> _descriptors;
+
+    internal CssColorProfileRule(string name, Dictionary<string, string> descriptors)
+    {
+        Name = name;
+        _descriptors = descriptors;
+    }
+
+    /// <summary>Gets the name of the color profile: a dashed identifier (including the leading <c>--</c>) or <c>device-cmyk</c>.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-color-5/#dom-csscolorprofilerule-name"/>
+    [IdlMember("name", "https://drafts.csswg.org/css-color-5/#dom-csscolorprofilerule-name")]
+    public string Name { get; }
+
+    /// <summary>Gets the <c>src</c> descriptor of the rule (the URL of the ICC profile), or an empty string when it is not set.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-color-5/#dom-csscolorprofilerule-src"/>
+    [IdlMember("src", "https://drafts.csswg.org/css-color-5/#dom-csscolorprofilerule-src")]
+    public string Src => _descriptors.GetValueOrDefault("src", "");
+
+    /// <summary>Gets the <c>rendering-intent</c> descriptor of the rule, or an empty string when it is not set.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-color-5/#dom-csscolorprofilerule-renderingintent"/>
+    [IdlMember("renderingIntent", "https://drafts.csswg.org/css-color-5/#dom-csscolorprofilerule-renderingintent")]
+    public string RenderingIntent => _descriptors.GetValueOrDefault("rendering-intent", "");
+
+    /// <summary>Gets the <c>components</c> descriptor of the rule (the names of the components), or an empty string when it is not set.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-color-5/#dom-csscolorprofilerule-components"/>
+    [IdlMember("components", "https://drafts.csswg.org/css-color-5/#dom-csscolorprofilerule-components")]
+    public string Components => _descriptors.GetValueOrDefault("components", "");
+
+    internal override string GetPrelude() => "@color-profile " + (Name.StartsWith("--", StringComparison.Ordinal) ? CssSerializer.SerializeIdentifier(Name) : Name);
+
+    internal override List<CssSerializedDeclaration> GetDeclarations() => [.. _descriptors.Select(d => new CssSerializedDeclaration(d.Key, d.Value, Important: false))];
+}

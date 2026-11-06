@@ -890,6 +890,16 @@ internal sealed partial class StyleEngine
     }
 
     /// <summary>
+    /// Returns the @color-profile rules of the style sheets of the document that apply, by name, with the base URL of their
+    /// style sheet (https://drafts.csswg.org/css-color-5/#at-profile).
+    /// </summary>
+    internal IReadOnlyDictionary<string, (CssColorProfileRule Rule, string? BaseUrl)> GetColorProfileRules()
+    {
+        EnsureUpToDate();
+        return GetTreeStyles(_document).ColorProfileRules;
+    }
+
+    /// <summary>
     /// Returns the origin of the winning declaration of a longhand property of an element (https://drafts.csswg.org/css-cascade-5/#cascade-origin;
     /// the presentational hints and the style attribute are in the author origin), or null when no declaration of the
     /// property applies to the element (the value is inherited or initial). The cascade of the element runs again: the
@@ -2600,6 +2610,8 @@ internal sealed partial class StyleEngine
 
         public required List<CssFontPaletteValuesRule> FontPaletteValuesRules { get; init; }
 
+        public required Dictionary<string, (CssColorProfileRule Rule, string? BaseUrl)> ColorProfileRules { get; init; }
+
         public required Dictionary<string, CssKeyframesRule> KeyframesRules { get; init; }
 
         public CssViewTransitionRule? ViewTransitionRule { get; init; }
@@ -2677,6 +2689,7 @@ internal sealed partial class StyleEngine
             FontFaceLayers = collector.FontFaceLayers,
             FontFeatureValuesRules = collector.FontFeatureValuesRules,
             FontPaletteValuesRules = collector.FontPaletteValuesRules,
+            ColorProfileRules = collector.ColorProfileRules,
             KeyframesRules = collector.KeyframesRules,
             ViewTransitionRule = collector.ViewTransitionRule,
             PositionTryRules = collector.PositionTryRules,

@@ -40,9 +40,54 @@ public abstract class Mark<T> : Mark
     /// <summary>Gets or sets the transform applied to the rows before they are drawn (stack, bin, group...), or <see langword="null"/> for none.</summary>
     public Transform? Transform { get; set; }
 
+    /// <summary>
+    /// Gets or sets the channel of the column of the facet grid of each row, or <see langword="null"/>. With facets, the
+    /// plot is a grid of small charts (small multiples) that share the scales; each row is drawn in the chart of its
+    /// facet. A mark without facet channels is drawn in every chart, such as a reference line.
+    /// </summary>
+    public Func<T, object?>? FacetX { get; set; }
+
+    /// <summary>Gets or sets the channel of the row of the facet grid of each row, or <see langword="null"/>. See <see cref="FacetX"/>.</summary>
+    public Func<T, object?>? FacetY { get; set; }
+
     internal sealed override MarkData Prepare()
     {
         var rows = Data as IReadOnlyList<T> ?? [.. Data];
+        var facetX = Evaluate(rows, FacetX)?.ToCategorical();
+        var facetY = Evaluate(rows, FacetY)?.ToCategorical();
+        if (facetX is null && facetY is null)
+            return PrepareRows(rows);
+
+        // The rows of each facet are prepared apart, so the transforms (stacks, bins, totals) apply to each facet
+        var groups = new Dictionary<(string?, string?), List<T>>();
+        var order = new List<(string? X, string? Y)>();
+        for (var i = 0; i < rows.Count; i++)
+        {
+            var key = (facetX?.Categories[i], facetY?.Categories[i]);
+            if (!groups.TryGetValue(key, out var list))
+            {
+                list = [];
+                groups.Add(key, list);
+                order.Add(key);
+            }
+
+            list.Add(rows[i]);
+        }
+
+        var parts = new List<MarkData>(order.Count);
+        foreach (var key in order)
+        {
+            var part = PrepareRows(groups[key]);
+            part.FacetX = facetX is null ? null : ChannelValues.FromCategories([.. Enumerable.Repeat(key.X, part.Count)]);
+            part.FacetY = facetY is null ? null : ChannelValues.FromCategories([.. Enumerable.Repeat(key.Y, part.Count)]);
+            parts.Add(part);
+        }
+
+        return MarkData.Concat(parts);
+    }
+
+    private MarkData PrepareRows(IReadOnlyList<T> rows)
+    {
         var data = new MarkData(rows.Count)
         {
             Fill = Evaluate(rows, Fill),

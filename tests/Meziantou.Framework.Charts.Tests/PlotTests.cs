@@ -16,6 +16,7 @@ public sealed class PlotTests
         Assert.Throws<ArgumentNullException>("x", () => new BarMark<int>([], x: null!, y: i => i));
         Assert.Throws<ArgumentNullException>("root", () => new PackMark<int>(null!));
         Assert.Throws<ArgumentNullException>("data", () => new ScenePath(null!));
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => new FacetOptions { Columns = 0 });
     }
 
     [Fact]

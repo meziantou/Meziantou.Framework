@@ -1,0 +1,145 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Efficiency by weight</title>
+<defs>
+<clipPath id="chart-clip0"><rect x="32.23" y="49.9" width="169.29" height="155.32"/></clipPath>
+<clipPath id="chart-clip1"><rect x="235.04" y="49.9" width="169.29" height="155.32"/></clipPath>
+<clipPath id="chart-clip2"><rect x="437.85" y="49.9" width="169.29" height="155.32"/></clipPath>
+<clipPath id="chart-clip3"><rect x="32.23" y="217.4" width="169.29" height="155.32"/></clipPath>
+<clipPath id="chart-clip4"><rect x="235.04" y="217.4" width="169.29" height="155.32"/></clipPath>
+<clipPath id="chart-clip5"><rect x="437.85" y="217.4" width="169.29" height="155.32"/></clipPath>
+</defs>
+<rect width="640" height="420" fill="#ffffff"/>
+<g class="grid">
+<line x1="32.23" y1="205.23" x2="201.52" y2="205.23" stroke="#e3e6ea"/>
+<line x1="32.23" y1="174.16" x2="201.52" y2="174.16" stroke="#e3e6ea"/>
+<line x1="32.23" y1="143.1" x2="201.52" y2="143.1" stroke="#e3e6ea"/>
+<line x1="32.23" y1="112.03" x2="201.52" y2="112.03" stroke="#e3e6ea"/>
+<line x1="32.23" y1="80.97" x2="201.52" y2="80.97" stroke="#e3e6ea"/>
+<line x1="32.23" y1="49.9" x2="201.52" y2="49.9" stroke="#e3e6ea"/>
+<line x1="235.04" y1="205.23" x2="404.33" y2="205.23" stroke="#e3e6ea"/>
+<line x1="235.04" y1="174.16" x2="404.33" y2="174.16" stroke="#e3e6ea"/>
+<line x1="235.04" y1="143.1" x2="404.33" y2="143.1" stroke="#e3e6ea"/>
+<line x1="235.04" y1="112.03" x2="404.33" y2="112.03" stroke="#e3e6ea"/>
+<line x1="235.04" y1="80.97" x2="404.33" y2="80.97" stroke="#e3e6ea"/>
+<line x1="235.04" y1="49.9" x2="404.33" y2="49.9" stroke="#e3e6ea"/>
+<line x1="437.85" y1="205.23" x2="607.14" y2="205.23" stroke="#e3e6ea"/>
+<line x1="437.85" y1="174.16" x2="607.14" y2="174.16" stroke="#e3e6ea"/>
+<line x1="437.85" y1="143.1" x2="607.14" y2="143.1" stroke="#e3e6ea"/>
+<line x1="437.85" y1="112.03" x2="607.14" y2="112.03" stroke="#e3e6ea"/>
+<line x1="437.85" y1="80.97" x2="607.14" y2="80.97" stroke="#e3e6ea"/>
+<line x1="437.85" y1="49.9" x2="607.14" y2="49.9" stroke="#e3e6ea"/>
+<line x1="32.23" y1="372.73" x2="201.52" y2="372.73" stroke="#e3e6ea"/>
+<line x1="32.23" y1="341.66" x2="201.52" y2="341.66" stroke="#e3e6ea"/>
+<line x1="32.23" y1="310.6" x2="201.52" y2="310.6" stroke="#e3e6ea"/>
+<line x1="32.23" y1="279.53" x2="201.52" y2="279.53" stroke="#e3e6ea"/>
+<line x1="32.23" y1="248.47" x2="201.52" y2="248.47" stroke="#e3e6ea"/>
+<line x1="32.23" y1="217.4" x2="201.52" y2="217.4" stroke="#e3e6ea"/>
+<line x1="235.04" y1="372.73" x2="404.33" y2="372.73" stroke="#e3e6ea"/>
+<line x1="235.04" y1="341.66" x2="404.33" y2="341.66" stroke="#e3e6ea"/>
+<line x1="235.04" y1="310.6" x2="404.33" y2="310.6" stroke="#e3e6ea"/>
+<line x1="235.04" y1="279.53" x2="404.33" y2="279.53" stroke="#e3e6ea"/>
+<line x1="235.04" y1="248.47" x2="404.33" y2="248.47" stroke="#e3e6ea"/>
+<line x1="235.04" y1="217.4" x2="404.33" y2="217.4" stroke="#e3e6ea"/>
+<line x1="437.85" y1="372.73" x2="607.14" y2="372.73" stroke="#e3e6ea"/>
+<line x1="437.85" y1="341.66" x2="607.14" y2="341.66" stroke="#e3e6ea"/>
+<line x1="437.85" y1="310.6" x2="607.14" y2="310.6" stroke="#e3e6ea"/>
+<line x1="437.85" y1="279.53" x2="607.14" y2="279.53" stroke="#e3e6ea"/>
+<line x1="437.85" y1="248.47" x2="607.14" y2="248.47" stroke="#e3e6ea"/>
+<line x1="437.85" y1="217.4" x2="607.14" y2="217.4" stroke="#e3e6ea"/>
+</g>
+<g class="marks">
+<g class="facet" clip-path="url(#chart-clip0)">
+<g>
+<circle cx="49.16" cy="68.54" r="5" fill="#4269d0"/>
+<circle cx="61.86" cy="93.39" r="5" fill="#4269d0"/>
+<circle cx="70.32" cy="112.03" r="5" fill="#4269d0"/>
+<circle cx="57.63" cy="87.18" r="5" fill="#4269d0"/>
+</g>
+</g>
+<g class="facet" clip-path="url(#chart-clip1)">
+<g>
+</g>
+</g>
+<g class="facet" clip-path="url(#chart-clip2)">
+<g>
+<circle cx="446.32" cy="49.9" r="5" fill="#ff725c"/>
+<circle cx="459.01" cy="80.97" r="5" fill="#ff725c"/>
+<circle cx="480.17" cy="124.46" r="5" fill="#ff725c"/>
+</g>
+</g>
+<g class="facet" clip-path="url(#chart-clip3)">
+<g>
+</g>
+</g>
+<g class="facet" clip-path="url(#chart-clip4)">
+<g>
+<circle cx="285.83" cy="304.38" r="5" fill="#efb118"/>
+<circle cx="311.22" cy="347.87" r="5" fill="#efb118"/>
+<circle cx="328.15" cy="372.73" r="5" fill="#efb118"/>
+<circle cx="298.52" cy="329.23" r="5" fill="#efb118"/>
+</g>
+</g>
+<g class="facet" clip-path="url(#chart-clip5)">
+<g>
+<circle cx="484.41" cy="310.6" r="5" fill="#ff725c"/>
+</g>
+</g>
+</g>
+<g class="axes">
+<line x1="27.23" y1="205.23" x2="32.23" y2="205.23" stroke="#8c959f"/>
+<text x="24.23" y="208.04" text-anchor="end" font-size="11" fill="#59636e">20</text>
+<line x1="27.23" y1="174.16" x2="32.23" y2="174.16" stroke="#8c959f"/>
+<text x="24.23" y="176.97" text-anchor="end" font-size="11" fill="#59636e">25</text>
+<line x1="27.23" y1="143.1" x2="32.23" y2="143.1" stroke="#8c959f"/>
+<text x="24.23" y="145.91" text-anchor="end" font-size="11" fill="#59636e">30</text>
+<line x1="27.23" y1="112.03" x2="32.23" y2="112.03" stroke="#8c959f"/>
+<text x="24.23" y="114.84" text-anchor="end" font-size="11" fill="#59636e">35</text>
+<line x1="27.23" y1="80.97" x2="32.23" y2="80.97" stroke="#8c959f"/>
+<text x="24.23" y="83.78" text-anchor="end" font-size="11" fill="#59636e">40</text>
+<line x1="27.23" y1="49.9" x2="32.23" y2="49.9" stroke="#8c959f"/>
+<text x="24.23" y="52.71" text-anchor="end" font-size="11" fill="#59636e">45</text>
+<line x1="32.23" y1="205.23" x2="201.52" y2="205.23" stroke="#8c959f"/>
+<text x="116.88" y="41.42" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2328" class="facet-header">Europe</text>
+<line x1="235.04" y1="205.23" x2="404.33" y2="205.23" stroke="#8c959f"/>
+<text x="319.69" y="41.42" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2328" class="facet-header">USA</text>
+<line x1="437.85" y1="205.23" x2="607.14" y2="205.23" stroke="#8c959f"/>
+<text x="522.5" y="41.42" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2328" class="facet-header">Japan</text>
+<text x="613.14" y="127.56" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2328" transform="rotate(90 613.14 127.56)" class="facet-header">Economical</text>
+<line x1="27.23" y1="372.73" x2="32.23" y2="372.73" stroke="#8c959f"/>
+<text x="24.23" y="375.54" text-anchor="end" font-size="11" fill="#59636e">20</text>
+<line x1="27.23" y1="341.66" x2="32.23" y2="341.66" stroke="#8c959f"/>
+<text x="24.23" y="344.47" text-anchor="end" font-size="11" fill="#59636e">25</text>
+<line x1="27.23" y1="310.6" x2="32.23" y2="310.6" stroke="#8c959f"/>
+<text x="24.23" y="313.41" text-anchor="end" font-size="11" fill="#59636e">30</text>
+<line x1="27.23" y1="279.53" x2="32.23" y2="279.53" stroke="#8c959f"/>
+<text x="24.23" y="282.34" text-anchor="end" font-size="11" fill="#59636e">35</text>
+<line x1="27.23" y1="248.47" x2="32.23" y2="248.47" stroke="#8c959f"/>
+<text x="24.23" y="251.28" text-anchor="end" font-size="11" fill="#59636e">40</text>
+<line x1="27.23" y1="217.4" x2="32.23" y2="217.4" stroke="#8c959f"/>
+<text x="24.23" y="220.21" text-anchor="end" font-size="11" fill="#59636e">45</text>
+<line x1="32.23" y1="372.73" x2="32.23" y2="377.73" stroke="#8c959f"/>
+<text x="32.23" y="388.62" text-anchor="middle" font-size="11" fill="#59636e">1,000</text>
+<line x1="116.88" y1="372.73" x2="116.88" y2="377.73" stroke="#8c959f"/>
+<text x="116.88" y="388.62" text-anchor="middle" font-size="11" fill="#59636e">2,000</text>
+<line x1="201.52" y1="372.73" x2="201.52" y2="377.73" stroke="#8c959f"/>
+<text x="201.52" y="388.62" text-anchor="middle" font-size="11" fill="#59636e">3,000</text>
+<line x1="32.23" y1="372.73" x2="201.52" y2="372.73" stroke="#8c959f"/>
+<line x1="235.04" y1="372.73" x2="235.04" y2="377.73" stroke="#8c959f"/>
+<text x="235.04" y="388.62" text-anchor="middle" font-size="11" fill="#59636e">1,000</text>
+<line x1="319.69" y1="372.73" x2="319.69" y2="377.73" stroke="#8c959f"/>
+<text x="319.69" y="388.62" text-anchor="middle" font-size="11" fill="#59636e">2,000</text>
+<line x1="404.33" y1="372.73" x2="404.33" y2="377.73" stroke="#8c959f"/>
+<text x="404.33" y="388.62" text-anchor="middle" font-size="11" fill="#59636e">3,000</text>
+<line x1="235.04" y1="372.73" x2="404.33" y2="372.73" stroke="#8c959f"/>
+<line x1="437.85" y1="372.73" x2="437.85" y2="377.73" stroke="#8c959f"/>
+<text x="437.85" y="388.62" text-anchor="middle" font-size="11" fill="#59636e">1,000</text>
+<line x1="522.5" y1="372.73" x2="522.5" y2="377.73" stroke="#8c959f"/>
+<text x="522.5" y="388.62" text-anchor="middle" font-size="11" fill="#59636e">2,000</text>
+<line x1="607.14" y1="372.73" x2="607.14" y2="377.73" stroke="#8c959f"/>
+<text x="607.14" y="388.62" text-anchor="middle" font-size="11" fill="#59636e">3,000</text>
+<line x1="437.85" y1="372.73" x2="607.14" y2="372.73" stroke="#8c959f"/>
+<text x="613.14" y="295.06" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2328" transform="rotate(90 613.14 295.06)" class="facet-header">Powerful</text>
+<text x="319.69" y="405.52" text-anchor="middle" font-size="12" fill="#1f2328">Weight (kg)</text>
+</g>
+<text x="10" y="21.49" font-size="16" font-weight="bold" fill="#1f2328">Efficiency by weight</text>
+</svg>

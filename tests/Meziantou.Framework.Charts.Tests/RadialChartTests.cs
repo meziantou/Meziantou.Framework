@@ -164,13 +164,33 @@ public sealed class RadialChartTests
         {
             Fill = part => part.Name,
         });
-        plot.Add(new RuleXMark(Value) { Y1 = _ => 0, Y2 = _ => 1, StrokeWidth = 3 });
+        plot.Add(new RuleXMark(Value / 100) { Y1 = _ => 0, Y2 = _ => 1, StrokeWidth = 3 }); // The slices span 0 to 1
         plot.Add(new TextMark<double>([Value], text: value => value.ToString(CultureInfo.InvariantCulture) + "%") { FontSize = 32, Bold = true, OffsetY = -24 });
         plot.ColorScale = new OrdinalColorScale { Palette = ["#4269d0", "#e3e6ea"] };
         plot.Legend.Visible = false;
         #endregion
 
         ChartAssert.Svg(plot, "Gauge");
+    }
+
+    [Fact]
+    public void FacetedPies()
+    {
+        #region Charts_FacetedPies
+        var plot = new Plot
+        {
+            Title = "Share of each region, by year",
+            Height = 260,
+            Coordinates = new PolarCoordinates { InnerRadius = 0.5 },
+        };
+        plot.Add(new ArcMark<Sale>(SampleData.Sales, value: sale => sale.Amount)
+        {
+            FacetX = sale => sale.Year,
+            Fill = sale => sale.Region,
+        });
+        #endregion
+
+        ChartAssert.Svg(plot, "FacetedPies");
     }
 
     [Fact]

@@ -337,6 +337,14 @@ namespace Meziantou.Framework.Charts
         Cross = 4,
     }
 
+    public sealed class FacetOptions
+    {
+        public int? Columns { get => throw null; set { } }
+        public double Gap { get => throw null; set { } }
+        public System.Collections.Generic.IReadOnlyList<string>? XDomain { get => throw null; set { } }
+        public System.Collections.Generic.IReadOnlyList<string>? YDomain { get => throw null; set { } }
+    }
+
     public sealed class FontFaceTextMeasurer : Meziantou.Framework.Charts.ITextMeasurer
     {
         public string FontFamily { get => throw null; }
@@ -499,6 +507,8 @@ namespace Meziantou.Framework.Charts
     public abstract class Mark<T> : Meziantou.Framework.Charts.Mark
     {
         public System.Collections.Generic.IEnumerable<T> Data { get => throw null; }
+        public System.Func<T, object?>? FacetX { get => throw null; set { } }
+        public System.Func<T, object?>? FacetY { get => throw null; set { } }
         public System.Func<T, object?>? Fill { get => throw null; set { } }
         public Meziantou.Framework.Charts.ChartColor? FillColor { get => throw null; set { } }
         public System.Func<T, object?>? Stroke { get => throw null; set { } }
@@ -612,6 +622,7 @@ namespace Meziantou.Framework.Charts
         public Meziantou.Framework.Charts.ColorScale? ColorScale { get => throw null; set { } }
         public Meziantou.Framework.Charts.Coordinates? Coordinates { get => throw null; set { } }
         public string? Description { get => throw null; set { } }
+        public Meziantou.Framework.Charts.FacetOptions Facets { get => throw null; }
         public double Height { get => throw null; set { } }
         public Meziantou.Framework.Charts.Legend Legend { get => throw null; }
         public Meziantou.Framework.Charts.ChartMargin? Margin { get => throw null; set { } }

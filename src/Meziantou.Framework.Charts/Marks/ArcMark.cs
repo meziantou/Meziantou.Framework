@@ -6,7 +6,11 @@ namespace Meziantou.Framework.Charts;
 /// polar area (rose) chart. The plot uses polar coordinates, unless it sets other coordinates.
 /// </summary>
 /// <typeparam name="T">The type of the rows.</typeparam>
-/// <remarks>Without a <see cref="Mark{T}.Fill"/> channel, each slice gets the next color of the palette.</remarks>
+/// <remarks>
+/// <para>Without a <see cref="Mark{T}.Fill"/> channel, each slice gets the next color of the palette.</para>
+/// <para>On the x scale, the slices go from 0 to 1: a slice of a quarter of the total goes from 0 to 0.25, so every pie
+/// is a full circle, even when facets share the scale. Draw a marker at 0.72 to point at 72% of a gauge.</para>
+/// </remarks>
 public sealed class ArcMark<T> : Mark<T>
 {
     /// <summary>Initializes a new instance of the <see cref="ArcMark{T}"/> class.</summary>
@@ -54,6 +58,17 @@ public sealed class ArcMark<T> : Mark<T>
                 x1[i] = i;
                 x2[i] = i + 1;
                 y2[i] = radius.GetNumber(i);
+            }
+        }
+
+        // The angles are fractions of the whole, so every pie is a full circle, even when facets share the scale
+        var whole = radius is null ? total : rows.Count;
+        if (whole > 0)
+        {
+            for (var i = 0; i < rows.Count; i++)
+            {
+                x1[i] /= whole;
+                x2[i] /= whole;
             }
         }
 

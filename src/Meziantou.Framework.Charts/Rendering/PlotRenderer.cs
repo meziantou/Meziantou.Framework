@@ -103,36 +103,46 @@ internal sealed class PlotRenderer
         var area = new ChartRectangle(Padding, top, Math.Max(1, width - Padding - right), Math.Max(1, height - top - bottom));
         var grid = new SceneGroup { CssClass = "grid" };
         var axes = new SceneGroup { CssClass = "axes" };
-        CoordinateSystem system;
-        ChartRectangle frame;
+        var marks = new SceneGroup { CssClass = "marks" };
+        var facets = FacetGrid.Create(_marks.Select(mark => mark.Data), _plot.Facets);
+
+        // The scales are mapped to the frame of a chart of the grid before the chart is drawn
+        void RenderCell(FacetCell cell, CoordinateSystem system, ChartRectangle frame)
+        {
+            var context = new RenderContext(_theme, _measurer, _x, _y, _color, _size, system, frame);
+            var target = marks;
+            if (facets.IsFaceted)
+            {
+                target = marks.Add(new SceneGroup { CssClass = "facet", Clip = _plot.Clip ? frame : null });
+            }
+            else
+            {
+                marks.Clip = _plot.Clip ? frame : null;
+            }
+
+            foreach (var (mark, data) in _marks)
+            {
+                var group = new SceneGroup { CssClass = mark.CssClass, Opacity = mark.Opacity };
+                mark.Render(context, data.ForFacet(cell.XKey, cell.YKey), group);
+                target.Add(group);
+            }
+        }
+
         if (_coordinates is PolarCoordinates polar)
         {
-            var polarSystem = LayoutPolar(polar, area);
-            system = polarSystem;
-            frame = _plot.Margin is { } margin ? FromMargin(margin) : area;
-            RenderPolarAxes(polarSystem, grid, axes);
+            LayoutPolarCells(polar, area, facets, grid, axes, RenderCell);
         }
         else
         {
-            var cartesian = new CartesianSystem(_coordinates.Transposed);
-            system = cartesian;
-            frame = LayoutCartesian(area, grid, axes);
+            LayoutCartesianCells(area, facets, grid, axes, RenderCell);
         }
 
-        var context = new RenderContext(_theme, _measurer, _x, _y, _color, _size, system, frame);
         if (grid.Children.Count > 0)
         {
             _scene.Root.Add(grid);
         }
 
-        var marks = _scene.Root.Add(new SceneGroup { CssClass = "marks", Clip = _plot.Clip ? frame : null });
-        foreach (var (mark, data) in _marks)
-        {
-            var group = new SceneGroup { CssClass = mark.CssClass, Opacity = mark.Opacity };
-            mark.Render(context, data, group);
-            marks.Add(group);
-        }
-
+        _scene.Root.Add(marks);
         if (axes.Children.Count > 0)
         {
             _scene.Root.Add(axes);
@@ -159,7 +169,9 @@ internal sealed class PlotRenderer
 
     private ChartRectangle FromMargin(ChartMargin margin) => new(margin.Left, margin.Top, Math.Max(1, _plot.Width - margin.Left - margin.Right), Math.Max(1, _plot.Height - margin.Top - margin.Bottom));
 
-    private ChartRectangle LayoutCartesian(ChartRectangle area, SceneGroup grid, SceneGroup axes)
+    private ChartFont HeaderFont => new(_theme.FontSize, Bold: true);
+
+    private void LayoutCartesianCells(ChartRectangle area, FacetGrid facets, SceneGroup grid, SceneGroup axes, Action<FacetCell, CoordinateSystem, ChartRectangle> renderCell)
     {
         var transposed = _coordinates.Transposed;
         var vertical = transposed ? _x : _y;
@@ -168,36 +180,39 @@ internal sealed class PlotRenderer
         var horizontalAxis = transposed ? _plot.YAxis : _plot.XAxis;
         var verticalVisible = vertical is not null && (verticalAxis.Visible ?? !HidesAxis(isX: transposed));
         var horizontalVisible = horizontal is not null && (horizontalAxis.Visible ?? !HidesAxis(isX: !transposed));
+        var gapX = facets.IsFaceted ? _plot.Facets.Gap : 0;
+        var gapY = gapX;
+        var headerHeight = facets.HasHeaders ? _measurer.Measure("Xg", HeaderFont).Height + 6 : 0;
+        var rowLabelWidth = facets.HasRowLabels ? _measurer.Measure("Xg", HeaderFont).Height + 6 : 0;
 
         var verticalWidth = 0.0;
         var horizontalHeight = 0.0;
         var extraLeft = 0.0;
         var extraRight = 0.0;
         HorizontalAxisLayout? horizontalLayout = null;
-        var verticalLabels = new List<AxisLabel>();
-        var frame = area;
-        var maxVerticalLabelWidth = Math.Max(40, _plot.Width * 0.3);
+        var gridArea = area;
         for (var iteration = 0; iteration < 3; iteration++)
         {
-            frame = _plot.Margin is { } margin
+            gridArea = _plot.Margin is { } margin
                 ? FromMargin(margin)
-                : new ChartRectangle(area.X + verticalWidth + extraLeft, area.Y, Math.Max(1, area.Width - verticalWidth - extraLeft - extraRight), Math.Max(1, area.Height - horizontalHeight));
+                : new ChartRectangle(area.X + verticalWidth + extraLeft, area.Y, Math.Max(1, area.Width - verticalWidth - extraLeft - extraRight - rowLabelWidth), Math.Max(1, area.Height - horizontalHeight));
 
+            var frame = GetCellFrame(gridArea, facets, facets.Cells[0], gapX, gapY, headerHeight);
             Configure(vertical, frame.Bottom, frame.Y, frame.Height / 40);
             Configure(horizontal, frame.X, frame.Right, frame.Width / 80);
 
-            verticalLabels.Clear();
             verticalWidth = 0;
             if (verticalVisible)
             {
-                foreach (var tick in vertical!.GetTicks())
-                {
-                    var text = TextFitting.Truncate(_measurer, tick.Label, TickFont, maxVerticalLabelWidth) ?? TextFitting.Ellipsis;
-                    verticalLabels.Add(new AxisLabel(tick.Position, text, _measurer.Measure(text, TickFont)));
-                }
-
+                var verticalLabels = MeasureVerticalLabels(vertical!);
                 var labelsWidth = verticalLabels.Count is 0 ? 0 : verticalLabels.Max(label => label.Metrics.Width);
                 verticalWidth = labelsWidth + verticalAxis.TickSize + TickLabelGap + 2;
+
+                // The labels at the ends of two charts one above the other must not overlap
+                if (facets.IsFaceted && verticalLabels.Count > 0)
+                {
+                    gapY = Math.Max(_plot.Facets.Gap, verticalLabels.Max(label => label.Metrics.Height) + 2);
+                }
                 if (verticalAxis.Label is { Length: > 0 } label)
                 {
                     verticalWidth += _measurer.Measure(label, LabelFont).Height + AxisLabelGap;
@@ -209,7 +224,7 @@ internal sealed class PlotRenderer
             extraRight = 0;
             if (horizontalVisible)
             {
-                horizontalLayout = HorizontalAxisLayout.Create(horizontal!.GetTicks(), _measurer, TickFont, horizontalAxis.TickRotation, Math.Max(40, Math.Min(150, _plot.Height * 0.3)));
+                horizontalLayout = CreateHorizontalLayout(horizontal!, horizontalAxis);
                 horizontalHeight = horizontalAxis.TickSize + TickLabelGap + horizontalLayout.LabelBlockHeight + 2;
                 if (horizontalAxis.Label is { Length: > 0 } label)
                 {
@@ -225,27 +240,105 @@ internal sealed class PlotRenderer
                     var leftExtent = horizontalLayout.Rotation == 0 ? first.Metrics.Width / 2 : first.Metrics.Width * Math.Cos(horizontalLayout.Rotation * Math.PI / 180);
                     var requiredLeft = 2 + leftExtent - (first.Position - frame.X);
                     extraLeft = Math.Max(0, requiredLeft - (area.X + verticalWidth));
+                    var rightExtent = 0.0;
                     if (horizontalLayout.Rotation == 0)
                     {
-                        var requiredRight = _plot.Width - 2 - (last.Metrics.Width / 2) - (last.Position - frame.Right);
-                        extraRight = Math.Max(0, area.Right - requiredRight);
+                        var requiredRight = _plot.Width - 2 - rowLabelWidth - (last.Metrics.Width / 2) - (last.Position - frame.Right);
+                        extraRight = Math.Max(0, area.Right - rowLabelWidth - requiredRight);
+                        rightExtent = (last.Metrics.Width / 2) - (frame.Right - last.Position);
+                    }
+
+                    // The labels at the ends of two charts side by side must not overlap
+                    if (facets.IsFaceted)
+                    {
+                        gapX = Math.Max(_plot.Facets.Gap, Math.Max(0, leftExtent - (first.Position - frame.X)) + Math.Max(0, rightExtent) + 6);
                     }
                 }
             }
         }
 
-        if (verticalVisible)
+        var cartesian = new CartesianSystem(transposed);
+        var single = !facets.IsFaceted;
+        foreach (var cell in facets.Cells)
         {
-            RenderVerticalAxis(vertical!, verticalAxis, verticalLabels, frame, grid, axes, isYScale: !transposed);
+            var frame = GetCellFrame(gridArea, facets, cell, gapX, gapY, headerHeight);
+            Configure(vertical, frame.Bottom, frame.Y, frame.Height / 40);
+            Configure(horizontal, frame.X, frame.Right, frame.Width / 80);
+            if (verticalVisible)
+            {
+                RenderVerticalAxis(vertical!, verticalAxis, MeasureVerticalLabels(vertical!), frame, grid, axes, isYScale: !transposed, drawLabels: cell.IsLeft, titleArea: single ? frame : null);
+            }
+
+            if (horizontalVisible)
+            {
+                horizontalLayout = CreateHorizontalLayout(horizontal!, horizontalAxis);
+                RenderHorizontalAxis(horizontal!, horizontalAxis, horizontalLayout, frame, grid, axes, isYScale: transposed, drawLabels: cell.IsBottom, titleArea: single ? frame : null);
+            }
+
+            RenderFacetLabels(facets, cell, frame, axes);
+            renderCell(cell, cartesian, frame);
         }
 
-        if (horizontalVisible)
+        if (!single)
         {
-            RenderHorizontalAxis(horizontal!, horizontalAxis, horizontalLayout!, frame, grid, axes, isYScale: transposed);
-        }
+            // The titles of the axes, once for the grid
+            var titleArea = new ChartRectangle(gridArea.X, gridArea.Y + headerHeight, gridArea.Width, gridArea.Height - headerHeight);
+            if (verticalVisible)
+            {
+                RenderVerticalTitle(verticalAxis, titleArea, axes);
+            }
 
-        return frame;
+            if (horizontalVisible)
+            {
+                RenderHorizontalTitle(horizontalAxis, horizontalLayout!, titleArea, axes);
+            }
+        }
     }
+
+    private static ChartRectangle GetCellFrame(ChartRectangle gridArea, FacetGrid facets, FacetCell cell, double gapX, double gapY, double headerHeight)
+    {
+        var headers = facets.Wraps ? facets.Rows * headerHeight : headerHeight;
+        var width = Math.Max(1, (gridArea.Width - (gapX * (facets.Columns - 1))) / facets.Columns);
+        var height = Math.Max(1, (gridArea.Height - headers - (gapY * (facets.Rows - 1))) / facets.Rows);
+        var x = gridArea.X + (cell.Column * (width + gapX));
+        var y = facets.Wraps
+            ? gridArea.Y + (cell.Row * (height + gapY + headerHeight)) + headerHeight
+            : gridArea.Y + headerHeight + (cell.Row * (height + gapY));
+        return new ChartRectangle(x, y, width, height);
+    }
+
+    private void RenderFacetLabels(FacetGrid facets, FacetCell cell, ChartRectangle frame, SceneGroup axes)
+    {
+        var font = HeaderFont;
+        if (cell.HasHeader && cell.XKey is { } header)
+        {
+            var text = TextFitting.Truncate(_measurer, header, font, frame.Width) ?? TextFitting.Ellipsis;
+            var metrics = _measurer.Measure(text, font);
+            axes.Add(new SceneText(frame.CenterX, frame.Y - 6 - metrics.Descent, text, font, _theme.Foreground) { Anchor = SceneTextAnchor.Middle, MeasuredWidth = metrics.Width, CssClass = "facet-header" });
+        }
+
+        if (facets.HasRowLabels && cell.IsRight && cell.YKey is { } rowLabel)
+        {
+            var text = TextFitting.Truncate(_measurer, rowLabel, font, frame.Height) ?? TextFitting.Ellipsis;
+            var metrics = _measurer.Measure(text, font);
+            axes.Add(new SceneText(frame.Right + 6, frame.CenterY, text, font, _theme.Foreground) { Anchor = SceneTextAnchor.Middle, Rotation = 90, MeasuredWidth = metrics.Width, CssClass = "facet-header" });
+        }
+    }
+
+    private List<AxisLabel> MeasureVerticalLabels(ResolvedScale scale)
+    {
+        var maxWidth = Math.Max(40, _plot.Width * 0.3);
+        var labels = new List<AxisLabel>();
+        foreach (var tick in scale.GetTicks())
+        {
+            var text = TextFitting.Truncate(_measurer, tick.Label, TickFont, maxWidth) ?? TextFitting.Ellipsis;
+            labels.Add(new AxisLabel(tick.Position, text, _measurer.Measure(text, TickFont)));
+        }
+
+        return labels;
+    }
+
+    private HorizontalAxisLayout CreateHorizontalLayout(ResolvedScale scale, Axis axis) => HorizontalAxisLayout.Create(scale.GetTicks(), _measurer, TickFont, axis.TickRotation, Math.Max(40, Math.Min(150, _plot.Height * 0.3)));
 
     private static void Configure(ResolvedScale? scale, double start, double end, double tickCount)
     {
@@ -266,7 +359,7 @@ internal sealed class PlotRenderer
 
     private bool HidesAxis(bool isX) => _traits.HasFlag(isX ? MarkTraits.HideXAxis : MarkTraits.HideYAxis);
 
-    private void RenderVerticalAxis(ResolvedScale scale, Axis axis, List<AxisLabel> labels, ChartRectangle frame, SceneGroup grid, SceneGroup axes, bool isYScale)
+    private void RenderVerticalAxis(ResolvedScale scale, Axis axis, List<AxisLabel> labels, ChartRectangle frame, SceneGroup grid, SceneGroup axes, bool isYScale, bool drawLabels, ChartRectangle? titleArea)
     {
         var showGrid = axis.Grid ?? HasGridByDefault(scale, isYScale);
         var lastLabel = double.NaN;
@@ -276,6 +369,9 @@ internal sealed class PlotRenderer
             {
                 grid.Add(new SceneLine(frame.X, label.Position, frame.Right, label.Position) { Stroke = _theme.GridColor });
             }
+
+            if (!drawLabels)
+                continue;
 
             if (axis.TickSize > 0)
             {
@@ -299,10 +395,18 @@ internal sealed class PlotRenderer
             axes.Add(new SceneLine(frame.X, frame.Y, frame.X, frame.Bottom) { Stroke = _theme.AxisColor });
         }
 
+        if (titleArea is { } area)
+        {
+            RenderVerticalTitle(axis, area, axes);
+        }
+    }
+
+    private void RenderVerticalTitle(Axis axis, ChartRectangle area, SceneGroup axes)
+    {
         if (axis.Label is { Length: > 0 } text)
         {
             var metrics = _measurer.Measure(text, LabelFont);
-            axes.Add(new SceneText(Padding + metrics.Ascent, frame.CenterY, text, LabelFont, _theme.Foreground)
+            axes.Add(new SceneText(Padding + metrics.Ascent, area.CenterY, text, LabelFont, _theme.Foreground)
             {
                 Anchor = SceneTextAnchor.Middle,
                 Rotation = -90,
@@ -311,7 +415,7 @@ internal sealed class PlotRenderer
         }
     }
 
-    private void RenderHorizontalAxis(ResolvedScale scale, Axis axis, HorizontalAxisLayout layout, ChartRectangle frame, SceneGroup grid, SceneGroup axes, bool isYScale)
+    private void RenderHorizontalAxis(ResolvedScale scale, Axis axis, HorizontalAxisLayout layout, ChartRectangle frame, SceneGroup grid, SceneGroup axes, bool isYScale, bool drawLabels, ChartRectangle? titleArea)
     {
         var showGrid = axis.Grid ?? HasGridByDefault(scale, isYScale);
         var baseline = frame.Bottom + axis.TickSize + TickLabelGap;
@@ -322,6 +426,9 @@ internal sealed class PlotRenderer
             {
                 grid.Add(new SceneLine(label.Position, frame.Y, label.Position, frame.Bottom) { Stroke = _theme.GridColor });
             }
+
+            if (!drawLabels)
+                continue;
 
             if (axis.TickSize > 0)
             {
@@ -356,10 +463,18 @@ internal sealed class PlotRenderer
             axes.Add(new SceneLine(frame.X, frame.Bottom, frame.Right, frame.Bottom) { Stroke = _theme.AxisColor });
         }
 
+        if (titleArea is { } area)
+        {
+            RenderHorizontalTitle(axis, layout, area, axes);
+        }
+    }
+
+    private void RenderHorizontalTitle(Axis axis, HorizontalAxisLayout layout, ChartRectangle area, SceneGroup axes)
+    {
         if (axis.Label is { Length: > 0 } text)
         {
             var metrics = _measurer.Measure(text, LabelFont);
-            axes.Add(new SceneText(frame.CenterX, baseline + layout.LabelBlockHeight + AxisLabelGap + metrics.Ascent, text, LabelFont, _theme.Foreground)
+            axes.Add(new SceneText(area.CenterX, area.Bottom + axis.TickSize + TickLabelGap + layout.LabelBlockHeight + AxisLabelGap + metrics.Ascent, text, LabelFont, _theme.Foreground)
             {
                 Anchor = SceneTextAnchor.Middle,
                 MeasuredWidth = metrics.Width,
@@ -367,12 +482,31 @@ internal sealed class PlotRenderer
         }
     }
 
+    private void LayoutPolarCells(PolarCoordinates polar, ChartRectangle area, FacetGrid facets, SceneGroup grid, SceneGroup axes, Action<FacetCell, CoordinateSystem, ChartRectangle> renderCell)
+    {
+        if (!facets.IsFaceted)
+        {
+            var system = LayoutPolar(polar, _plot.Margin is { } margin ? FromMargin(margin) : area);
+            RenderPolarAxes(system, grid, axes);
+            renderCell(facets.Cells[0], system, _plot.Margin is { } frameMargin ? FromMargin(frameMargin) : area);
+            return;
+        }
+
+        var headerHeight = facets.HasHeaders ? _measurer.Measure("Xg", HeaderFont).Height + 6 : 0;
+        var rowLabelWidth = facets.HasRowLabels ? _measurer.Measure("Xg", HeaderFont).Height + 6 : 0;
+        var gridArea = new ChartRectangle(area.X, area.Y, Math.Max(1, area.Width - rowLabelWidth), area.Height);
+        foreach (var cell in facets.Cells)
+        {
+            var frame = GetCellFrame(gridArea, facets, cell, _plot.Facets.Gap, _plot.Facets.Gap, headerHeight);
+            var system = LayoutPolar(polar, frame);
+            RenderPolarAxes(system, grid, axes);
+            RenderFacetLabels(facets, cell, frame, axes);
+            renderCell(cell, system, frame);
+        }
+    }
+
     private PolarSystem LayoutPolar(PolarCoordinates polar, ChartRectangle area)
     {
-        if (_plot.Margin is { } margin)
-        {
-            area = FromMargin(margin);
-        }
 
         var transposed = polar.Transposed;
         var angular = transposed ? _y : _x;

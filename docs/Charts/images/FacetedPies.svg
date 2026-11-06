@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="260" viewBox="0 0 640 260" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Share of each region, by year</title>
+<rect width="640" height="260" fill="#ffffff"/>
+<g class="marks">
+<g class="facet">
+<g>
+<path d="M109.33,77 A84.5,84.5 0 0,1 190.81,183.89 L150.07,172.7 A42.25,42.25 0 0,0 109.33,119.25 Z" fill="#4269d0" stroke="#ffffff" stroke-linejoin="round"/>
+<path d="M190.81,183.89 A84.5,84.5 0 0,1 102.86,245.75 L106.1,203.63 A42.25,42.25 0 0,0 150.07,172.7 Z" fill="#efb118" stroke="#ffffff" stroke-linejoin="round"/>
+<path d="M102.86,245.75 A84.5,84.5 0 0,1 38.41,207.43 L73.87,184.47 A42.25,42.25 0 0,0 106.1,203.63 Z" fill="#ff725c" stroke="#ffffff" stroke-linejoin="round"/>
+<path d="M38.41,207.43 A84.5,84.5 0 0,1 109.33,77 L109.33,119.25 A42.25,42.25 0 0,0 73.87,184.47 Z" fill="#6cc5b0" stroke="#ffffff" stroke-linejoin="round"/>
+</g>
+</g>
+<g class="facet">
+<g>
+<path d="M320,77 A84.5,84.5 0 0,1 400.36,187.61 L360.18,174.56 A42.25,42.25 0 0,0 320,119.25 Z" fill="#4269d0" stroke="#ffffff" stroke-linejoin="round"/>
+<path d="M400.36,187.61 A84.5,84.5 0 0,1 296.71,242.73 L308.35,202.11 A42.25,42.25 0 0,0 360.18,174.56 Z" fill="#efb118" stroke="#ffffff" stroke-linejoin="round"/>
+<path d="M296.71,242.73 A84.5,84.5 0 0,1 236.78,176.17 L278.39,168.84 A42.25,42.25 0 0,0 308.35,202.11 Z" fill="#ff725c" stroke="#ffffff" stroke-linejoin="round"/>
+<path d="M236.78,176.17 A84.5,84.5 0 0,1 320,77 L320,119.25 A42.25,42.25 0 0,0 278.39,168.84 Z" fill="#6cc5b0" stroke="#ffffff" stroke-linejoin="round"/>
+</g>
+</g>
+<g class="facet">
+<g>
+<path d="M530.67,77 A84.5,84.5 0 0,1 611.94,184.62 L571.3,173.06 A42.25,42.25 0 0,0 530.67,119.25 Z" fill="#4269d0" stroke="#ffffff" stroke-linejoin="round"/>
+<path d="M611.94,184.62 A84.5,84.5 0 0,1 541.05,245.36 L535.86,203.43 A42.25,42.25 0 0,0 571.3,173.06 Z" fill="#efb118" stroke="#ffffff" stroke-linejoin="round"/>
+<path d="M541.05,245.36 A84.5,84.5 0 0,1 452.85,194.44 L491.76,177.97 A42.25,42.25 0 0,0 535.86,203.43 Z" fill="#ff725c" stroke="#ffffff" stroke-linejoin="round"/>
+<path d="M452.85,194.44 A84.5,84.5 0 0,1 530.67,77 L530.67,119.25 A42.25,42.25 0 0,0 491.76,177.97 Z" fill="#6cc5b0" stroke="#ffffff" stroke-linejoin="round"/>
+</g>
+</g>
+</g>
+<g class="axes">
+<text x="109.33" y="64.52" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2328" class="facet-header">2022</text>
+<text x="320" y="64.52" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2328" class="facet-header">2023</text>
+<text x="530.67" y="64.52" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2328" class="facet-header">2024</text>
+</g>
+<g class="legend">
+<rect x="10" y="33.35" width="10" height="10" rx="2" fill="#4269d0"/>
+<text x="25" y="41.42" font-size="12" fill="#1f2328">North</text>
+<rect x="68.82" y="33.35" width="10" height="10" rx="2" fill="#efb118"/>
+<text x="83.82" y="41.42" font-size="12" fill="#1f2328">South</text>
+<rect x="129.18" y="33.35" width="10" height="10" rx="2" fill="#ff725c"/>
+<text x="144.18" y="41.42" font-size="12" fill="#1f2328">East</text>
+<rect x="182.19" y="33.35" width="10" height="10" rx="2" fill="#6cc5b0"/>
+<text x="197.19" y="41.42" font-size="12" fill="#1f2328">West</text>
+</g>
+<text x="10" y="21.49" font-size="16" font-weight="bold" fill="#1f2328">Share of each region, by year</text>
+</svg>

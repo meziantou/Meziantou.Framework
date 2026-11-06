@@ -68,6 +68,9 @@ public sealed class Plot
     /// <summary>Gets the options of the legend of the color scale.</summary>
     public Legend Legend { get; } = new();
 
+    /// <summary>Gets the options of the grid of small charts, when marks have facets (<see cref="Mark{T}.FacetX"/>, <see cref="Mark{T}.FacetY"/>).</summary>
+    public FacetOptions Facets { get; } = new();
+
     /// <summary>Gets or sets the theme. The default is <see cref="ChartTheme.Light"/>.</summary>
     public ChartTheme Theme { get; set; } = ChartTheme.Light;
 

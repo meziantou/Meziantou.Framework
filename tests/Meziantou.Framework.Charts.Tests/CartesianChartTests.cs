@@ -401,6 +401,80 @@ public sealed class CartesianChartTests
     }
 
     [Fact]
+    public void Facets()
+    {
+        #region Charts_Facets
+        var plot = new Plot { Title = "Sales by region, one chart per year", Height = 300 };
+        plot.Add(new BarMark<Sale>(SampleData.Sales, x: sale => sale.Region, y: sale => sale.Amount)
+        {
+            FacetX = sale => sale.Year,
+            Fill = sale => sale.Region,
+        });
+        plot.Legend.Visible = false;
+        plot.YAxis.Label = "Amount";
+        #endregion
+
+        ChartAssert.Svg(plot, "Facets");
+    }
+
+    [Fact]
+    public void FacetWrap()
+    {
+        #region Charts_FacetWrap
+        var plot = new Plot { Title = "Monthly temperature", Height = 420, Facets = { Columns = 2 } };
+        plot.Add(new RuleYMark(0));
+        plot.Add(new AreaMark<Reading>(SampleData.Readings, x: reading => reading.Date, y: reading => reading.Temperature)
+        {
+            FacetX = reading => reading.City,
+            FillOpacity = 0.3,
+            StrokeColor = "#4269d0",
+            Curve = Curve.MonotoneX,
+        });
+        #endregion
+
+        ChartAssert.Svg(plot, "FacetWrap");
+    }
+
+    [Fact]
+    public void FacetGrid()
+    {
+        #region Charts_FacetGrid
+        var plot = new Plot { Title = "Efficiency by weight", Height = 420, Clip = true };
+        plot.Add(new DotMark<Car>(SampleData.Cars, x: car => car.Weight, y: car => car.Mpg)
+        {
+            FacetX = car => car.Origin,
+            FacetY = car => car.Horsepower >= 150 ? "Powerful" : "Economical",
+            Fill = car => car.Origin,
+            Radius = 5,
+        });
+        plot.Facets.YDomain = ["Economical", "Powerful"];
+        plot.XAxis.Label = "Weight (kg)";
+        plot.Legend.Visible = false;
+        #endregion
+
+        ChartAssert.Svg(plot, "FacetGrid");
+    }
+
+    [Fact]
+    public void FacetsTransformEachFacet()
+    {
+        // Each facet is stacked and binned on its own
+        var plot = new Plot { Height = 300, Facets = { Gap = 24, XDomain = ["C", "A", "B"] } };
+        plot.Add(new RectMark<Measurement>(SampleData.Measurements) { X = measurement => measurement.Value, FacetX = measurement => measurement.Group, Transform = new BinTransform { Edges = [0, 20, 40, 60, 80, 100] } });
+        plot.Add(new TextMark<string>(["C", "A", "B"], text: group => "group " + group) { FacetX = group => group, OffsetY = -120 });
+        plot.XAxis.TickRotation = 0;
+        var svg = plot.ToSvg();
+        Assert.Contains(">C</text>", svg);
+        ChartAssert.Svg(svg);
+
+        var stacked = new Plot { Height = 260, Coordinates = new CartesianCoordinates { Transposed = true } };
+        stacked.Add(new BarMark<Sale>(SampleData.Sales, x: sale => sale.Region, y: sale => sale.Amount) { FacetY = sale => sale.Year, Fill = sale => sale.Year > 2022 ? "recent" : "old", Transform = new StackTransform() });
+        stacked.YAxis.Label = "Amount";
+        stacked.XAxis.Label = "Region";
+        ChartAssert.Svg(stacked, documentationImage: null, memberName: nameof(FacetsTransformEachFacet) + "_Stacked");
+    }
+
+    [Fact]
     public void Symbols()
     {
         var symbols = Enum.GetValues<DotSymbol>();

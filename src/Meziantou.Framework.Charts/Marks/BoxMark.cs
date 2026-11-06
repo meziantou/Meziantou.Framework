@@ -43,13 +43,13 @@ public sealed class BoxMark<T> : Mark<T>
 
     internal override void Render(RenderContext context, MarkData data, SceneGroup group)
     {
-        if (data.X is null || context.X is null || context.Y is null || data.Extra.Count is 0)
+        if (data.X is null || context.X is null || context.Y is null || data.Extra.Count is 0 || data.Sets is null)
             return;
 
         var q1 = data.Extra[LowerQuartile];
         var median = data.Extra[Median];
         var q3 = data.Extra[UpperQuartile];
-        var outliers = (IReadOnlyList<IReadOnlyList<double>>)data.State!;
+        var outliers = data.Sets!;
         var bandwidth = BarMark<T>.GetBandwidth(context.X, data);
         for (var i = 0; i < data.Count; i++)
         {
@@ -129,7 +129,7 @@ public sealed class BoxMark<T> : Mark<T>
         result.Extra[Median] = ChannelValues.FromNumbers([.. median]);
         result.Extra[UpperQuartile] = ChannelValues.FromNumbers([.. q3]);
         result.ExtraY.Add(ChannelValues.FromNumbers([.. allOutliers]));
-        result.State = outliers;
+        result.Sets = [.. outliers];
         return result;
     }
 }

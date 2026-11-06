@@ -1,0 +1,116 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="260" viewBox="0 0 640 260" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="640" height="260" fill="#ffffff"/>
+<g class="grid">
+<line x1="65.84" y1="33.1" x2="65.84" y2="84.86" stroke="#e3e6ea"/>
+<line x1="134.08" y1="33.1" x2="134.08" y2="84.86" stroke="#e3e6ea"/>
+<line x1="202.31" y1="33.1" x2="202.31" y2="84.86" stroke="#e3e6ea"/>
+<line x1="270.55" y1="33.1" x2="270.55" y2="84.86" stroke="#e3e6ea"/>
+<line x1="338.78" y1="33.1" x2="338.78" y2="84.86" stroke="#e3e6ea"/>
+<line x1="407.02" y1="33.1" x2="407.02" y2="84.86" stroke="#e3e6ea"/>
+<line x1="475.26" y1="33.1" x2="475.26" y2="84.86" stroke="#e3e6ea"/>
+<line x1="543.49" y1="33.1" x2="543.49" y2="84.86" stroke="#e3e6ea"/>
+<line x1="611.73" y1="33.1" x2="611.73" y2="84.86" stroke="#e3e6ea"/>
+<line x1="65.84" y1="97.03" x2="65.84" y2="148.79" stroke="#e3e6ea"/>
+<line x1="134.08" y1="97.03" x2="134.08" y2="148.79" stroke="#e3e6ea"/>
+<line x1="202.31" y1="97.03" x2="202.31" y2="148.79" stroke="#e3e6ea"/>
+<line x1="270.55" y1="97.03" x2="270.55" y2="148.79" stroke="#e3e6ea"/>
+<line x1="338.78" y1="97.03" x2="338.78" y2="148.79" stroke="#e3e6ea"/>
+<line x1="407.02" y1="97.03" x2="407.02" y2="148.79" stroke="#e3e6ea"/>
+<line x1="475.26" y1="97.03" x2="475.26" y2="148.79" stroke="#e3e6ea"/>
+<line x1="543.49" y1="97.03" x2="543.49" y2="148.79" stroke="#e3e6ea"/>
+<line x1="611.73" y1="97.03" x2="611.73" y2="148.79" stroke="#e3e6ea"/>
+<line x1="65.84" y1="160.97" x2="65.84" y2="212.73" stroke="#e3e6ea"/>
+<line x1="134.08" y1="160.97" x2="134.08" y2="212.73" stroke="#e3e6ea"/>
+<line x1="202.31" y1="160.97" x2="202.31" y2="212.73" stroke="#e3e6ea"/>
+<line x1="270.55" y1="160.97" x2="270.55" y2="212.73" stroke="#e3e6ea"/>
+<line x1="338.78" y1="160.97" x2="338.78" y2="212.73" stroke="#e3e6ea"/>
+<line x1="407.02" y1="160.97" x2="407.02" y2="212.73" stroke="#e3e6ea"/>
+<line x1="475.26" y1="160.97" x2="475.26" y2="212.73" stroke="#e3e6ea"/>
+<line x1="543.49" y1="160.97" x2="543.49" y2="212.73" stroke="#e3e6ea"/>
+<line x1="611.73" y1="160.97" x2="611.73" y2="212.73" stroke="#e3e6ea"/>
+</g>
+<g class="marks">
+<g class="facet">
+<g>
+<rect x="65.84" y="34.36" width="409.41" height="11.36" fill="#4269d0"/>
+<rect x="65.84" y="46.99" width="307.06" height="11.36" fill="#4269d0"/>
+<rect x="65.84" y="59.61" width="204.71" height="11.36" fill="#4269d0"/>
+<rect x="65.84" y="72.23" width="477.65" height="11.36" fill="#4269d0"/>
+</g>
+</g>
+<g class="facet">
+<g>
+<rect x="65.84" y="98.3" width="460.59" height="11.36" fill="#efb118"/>
+<rect x="65.84" y="110.92" width="375.29" height="11.36" fill="#efb118"/>
+<rect x="65.84" y="123.54" width="272.94" height="11.36" fill="#efb118"/>
+<rect x="65.84" y="136.17" width="426.47" height="11.36" fill="#efb118"/>
+</g>
+</g>
+<g class="facet">
+<g>
+<rect x="65.84" y="162.23" width="511.77" height="11.36" fill="#efb118"/>
+<rect x="65.84" y="174.85" width="324.12" height="11.36" fill="#efb118"/>
+<rect x="65.84" y="187.48" width="358.24" height="11.36" fill="#efb118"/>
+<rect x="65.84" y="200.1" width="545.88" height="11.36" fill="#efb118"/>
+</g>
+</g>
+</g>
+<g class="axes">
+<line x1="60.84" y1="40.04" x2="65.84" y2="40.04" stroke="#8c959f"/>
+<text x="57.84" y="42.85" text-anchor="end" font-size="11" fill="#59636e">North</text>
+<line x1="60.84" y1="52.67" x2="65.84" y2="52.67" stroke="#8c959f"/>
+<text x="57.84" y="55.48" text-anchor="end" font-size="11" fill="#59636e">South</text>
+<line x1="60.84" y1="65.29" x2="65.84" y2="65.29" stroke="#8c959f"/>
+<text x="57.84" y="68.1" text-anchor="end" font-size="11" fill="#59636e">East</text>
+<line x1="60.84" y1="77.92" x2="65.84" y2="77.92" stroke="#8c959f"/>
+<text x="57.84" y="80.73" text-anchor="end" font-size="11" fill="#59636e">West</text>
+<line x1="65.84" y1="84.86" x2="611.73" y2="84.86" stroke="#8c959f"/>
+<text x="617.73" y="58.98" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2328" transform="rotate(90 617.73 58.98)" class="facet-header">2022</text>
+<line x1="60.84" y1="103.98" x2="65.84" y2="103.98" stroke="#8c959f"/>
+<text x="57.84" y="106.79" text-anchor="end" font-size="11" fill="#59636e">North</text>
+<line x1="60.84" y1="116.6" x2="65.84" y2="116.6" stroke="#8c959f"/>
+<text x="57.84" y="119.41" text-anchor="end" font-size="11" fill="#59636e">South</text>
+<line x1="60.84" y1="129.22" x2="65.84" y2="129.22" stroke="#8c959f"/>
+<text x="57.84" y="132.03" text-anchor="end" font-size="11" fill="#59636e">East</text>
+<line x1="60.84" y1="141.85" x2="65.84" y2="141.85" stroke="#8c959f"/>
+<text x="57.84" y="144.66" text-anchor="end" font-size="11" fill="#59636e">West</text>
+<line x1="65.84" y1="148.79" x2="611.73" y2="148.79" stroke="#8c959f"/>
+<text x="617.73" y="122.91" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2328" transform="rotate(90 617.73 122.91)" class="facet-header">2023</text>
+<line x1="60.84" y1="167.91" x2="65.84" y2="167.91" stroke="#8c959f"/>
+<text x="57.84" y="170.72" text-anchor="end" font-size="11" fill="#59636e">North</text>
+<line x1="60.84" y1="180.53" x2="65.84" y2="180.53" stroke="#8c959f"/>
+<text x="57.84" y="183.34" text-anchor="end" font-size="11" fill="#59636e">South</text>
+<line x1="60.84" y1="193.16" x2="65.84" y2="193.16" stroke="#8c959f"/>
+<text x="57.84" y="195.97" text-anchor="end" font-size="11" fill="#59636e">East</text>
+<line x1="60.84" y1="205.78" x2="65.84" y2="205.78" stroke="#8c959f"/>
+<text x="57.84" y="208.59" text-anchor="end" font-size="11" fill="#59636e">West</text>
+<line x1="65.84" y1="212.73" x2="65.84" y2="217.73" stroke="#8c959f"/>
+<text x="65.84" y="228.62" text-anchor="middle" font-size="11" fill="#59636e">0</text>
+<line x1="134.08" y1="212.73" x2="134.08" y2="217.73" stroke="#8c959f"/>
+<text x="134.08" y="228.62" text-anchor="middle" font-size="11" fill="#59636e">20</text>
+<line x1="202.31" y1="212.73" x2="202.31" y2="217.73" stroke="#8c959f"/>
+<text x="202.31" y="228.62" text-anchor="middle" font-size="11" fill="#59636e">40</text>
+<line x1="270.55" y1="212.73" x2="270.55" y2="217.73" stroke="#8c959f"/>
+<text x="270.55" y="228.62" text-anchor="middle" font-size="11" fill="#59636e">60</text>
+<line x1="338.78" y1="212.73" x2="338.78" y2="217.73" stroke="#8c959f"/>
+<text x="338.78" y="228.62" text-anchor="middle" font-size="11" fill="#59636e">80</text>
+<line x1="407.02" y1="212.73" x2="407.02" y2="217.73" stroke="#8c959f"/>
+<text x="407.02" y="228.62" text-anchor="middle" font-size="11" fill="#59636e">100</text>
+<line x1="475.26" y1="212.73" x2="475.26" y2="217.73" stroke="#8c959f"/>
+<text x="475.26" y="228.62" text-anchor="middle" font-size="11" fill="#59636e">120</text>
+<line x1="543.49" y1="212.73" x2="543.49" y2="217.73" stroke="#8c959f"/>
+<text x="543.49" y="228.62" text-anchor="middle" font-size="11" fill="#59636e">140</text>
+<line x1="611.73" y1="212.73" x2="611.73" y2="217.73" stroke="#8c959f"/>
+<text x="611.73" y="228.62" text-anchor="middle" font-size="11" fill="#59636e">160</text>
+<line x1="65.84" y1="212.73" x2="611.73" y2="212.73" stroke="#8c959f"/>
+<text x="617.73" y="186.85" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2328" transform="rotate(90 617.73 186.85)" class="facet-header">2024</text>
+<text x="18.62" y="122.91" text-anchor="middle" font-size="12" fill="#1f2328" transform="rotate(-90 18.62 122.91)">Region</text>
+<text x="338.78" y="245.52" text-anchor="middle" font-size="12" fill="#1f2328">Amount</text>
+</g>
+<g class="legend">
+<rect x="10" y="10.55" width="10" height="10" rx="2" fill="#4269d0"/>
+<text x="25" y="18.62" font-size="12" fill="#1f2328">old</text>
+<rect x="55.01" y="10.55" width="10" height="10" rx="2" fill="#efb118"/>
+<text x="70.01" y="18.62" font-size="12" fill="#1f2328">recent</text>
+</g>
+</svg>

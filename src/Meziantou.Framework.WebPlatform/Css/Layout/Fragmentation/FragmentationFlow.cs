@@ -2163,7 +2163,7 @@ internal sealed class FragmentationFlow
                 Stretches = stretches,
                 CountsForTrack = childBottom <= ends[endTrack] + Epsilon || structure.Kind != ParallelStructureKind.TableRow,
                 CanBreakBefore = childTop > starts[startTrack] + Epsilon,
-                BreaksBeforeAsLastResort = structure.Kind == ParallelStructureKind.Grid,
+                BreaksBeforeAsLastResort = structure.Kind is ParallelStructureKind.Grid or ParallelStructureKind.GridLanes,
             };
 
             flow.OwnerItem = item;
@@ -2271,6 +2271,10 @@ internal sealed class FragmentationFlow
                     if (!item.CanGrow)
                     {
                         item.LeadingMonolithicEnd = GetLeadingMonolithicEnd(child, childTop);
+                    }
+                    else if (layout.Box.GetMaxSize(horizontal: !_writingDirection.IsHorizontal) is { IsNone: false } maxSize && maxSize.TryResolve(percentageBasis: null) is { } max)
+                    {
+                        item.MaxEnd = childTop + max + (layout.BoxSizing == BoxSizing.BorderBox ? 0 : childEdges.BlockStart + childEdges.BlockEnd);
                     }
 
                     // The empty block size of the box after its in-flow contents, up to its automatic block size, breaks anywhere
@@ -2949,6 +2953,13 @@ internal enum ParallelStructureKind : byte
 
     /// <summary>A table row: the parallel flows are its cells.</summary>
     TableRow,
+
+    /// <summary>
+    /// A grid lanes container whose lanes are columns (stacked in the block axis) and whose items are placed in each fragmentainer
+    /// (see <see cref="GridLayoutAlgorithm.IsPlacedInFragmentainers"/>): each item is a parallel flow in a single track
+    /// ("Each grid axis track is fragmented independently in the stacking axis", https://drafts.csswg.org/css-grid-3/#fragmentation).
+    /// </summary>
+    GridLanes,
 }
 
 /// <summary>
@@ -3130,6 +3141,23 @@ internal sealed class ParallelStructure
                     break;
                 }
 
+            case var _ when box.Box.Display.Inside == DisplayInside.GridLanes && GridLayoutAlgorithm.IsPlacedInFragmentainers(box.Box.Style.Layout):
+                {
+                    // The items are placed in their lanes by the placement (in each fragmentainer, see GridLanesFragmentation): each
+                    // one breaks independently of the items of the other lanes
+                    var edges = box.WritingDirection.ToLogical(box.Border.Add(box.Padding).Add(box.Scrollbars));
+                    result = new ParallelStructure { Kind = ParallelStructureKind.GridLanes, Tracks = [(edges.BlockStart, Math.Max(edges.BlockStart, blockSize - edges.BlockEnd))] };
+                    for (var i = 0; i < inFlowCount; i++)
+                    {
+                        if (children[i] is BoxFragment { Box.IsOutOfFlow: false } child)
+                        {
+                            result.Items.Add((child, 0, 0, false, -1));
+                        }
+                    }
+
+                    break;
+                }
+
             default:
                 if (box.Box.Display.Internal != DisplayInternal.TableRow)
                     return null;
@@ -3304,6 +3332,13 @@ internal sealed class ParallelItem(FragmentationFlow flow)
 
     /// <summary>The block-end edge the border box would have with its automatic block size (a stretched item is taller).</summary>
     public double IntrinsicEnd { get; set; }
+
+    /// <summary>
+    /// The block-end edge of the border box at its maximum block size (<c>max-height</c>), from <see cref="Start"/>, when the item
+    /// grows with its contents (<see cref="CanGrow"/>), else infinity: as in Blink, the fragments of an item that grows when its
+    /// contents are pushed by the breaks are not taller together than its maximum block size (its contents then overflow it).
+    /// </summary>
+    public double MaxEnd { get; set; } = double.PositiveInfinity;
 
     public double MarginEnd { get; init; }
 

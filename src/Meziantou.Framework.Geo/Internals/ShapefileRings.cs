@@ -24,14 +24,46 @@ internal static class ShapefileRings
         var infos = new RingInfo[rings.Count];
         for (var i = 0; i < rings.Count; i++)
         {
-            infos[i] = new RingInfo(rings[i], GetSignedArea(rings[i]), GetBounds(rings[i]));
+            infos[i] = new RingInfo(rings[i], GetSignedArea(rings[i]), GetOrientation(rings[i]), GetBounds(rings[i]));
         }
 
-        var polygons = infos.Any(info => info.SignedArea <= 0) ? AssembleByOrientation(infos) : AssembleByNesting(infos);
+        // A ring whose orientation cannot be computed (NaN, when the coordinates overflow) is an exterior ring, so it is never dropped
+        var polygons = infos.Any(info => !IsHole(info)) ? AssembleByOrientation(infos) : AssembleByNesting(infos);
         if (polygons.Count is 1)
             return new GeoPolygon(polygons[0]);
 
         return new GeoMultiPolygon(polygons.Select(polygon => new GeoPolygon(polygon)));
+    }
+
+    /// <summary>
+    /// Gets the orientation of a ring: negative when it is clockwise, positive when it is counterclockwise, 0 when it is
+    /// flat. It is twice the signed area, adding the terms of the edges in one order then in the other: reversing the ring
+    /// negates each term exactly and swaps the two sums, so it negates the result exactly, and the reader and the writer
+    /// agree on the orientation of a ring whatever the magnitude of its coordinates. The signed area alone does not, as the
+    /// rounding of its sum depends on the order of its terms.
+    /// </summary>
+    public static double GetOrientation(IReadOnlyList<GeoPosition> ring)
+    {
+        var forward = 0.0;
+        for (var i = 0; i < ring.Count; i++)
+        {
+            forward += GetTerm(ring, i);
+        }
+
+        var backward = 0.0;
+        for (var i = ring.Count - 1; i >= 0; i--)
+        {
+            backward += GetTerm(ring, i);
+        }
+
+        return forward + backward;
+
+        static double GetTerm(IReadOnlyList<GeoPosition> ring, int index)
+        {
+            var a = ring[index];
+            var b = ring[(index + 1) % ring.Count];
+            return (a.Longitude * b.Latitude) - (b.Longitude * a.Latitude);
+        }
     }
 
     /// <summary>Gets the signed area of a ring in square degrees: negative when the ring is clockwise.</summary>
@@ -54,7 +86,7 @@ internal static class ShapefileRings
         var exteriors = new List<(RingInfo Ring, List<GeoPosition[]> Polygon)>();
         foreach (var info in infos)
         {
-            if (info.SignedArea <= 0)
+            if (!IsHole(info))
             {
                 var polygon = new List<GeoPosition[]> { info.Positions };
                 polygons.Add(polygon);
@@ -64,7 +96,7 @@ internal static class ShapefileRings
 
         foreach (var info in infos)
         {
-            if (info.SignedArea > 0)
+            if (IsHole(info))
             {
                 List<GeoPosition[]>? best = null;
                 var bestArea = double.PositiveInfinity;
@@ -122,7 +154,8 @@ internal static class ShapefileRings
         if (!outer.Bounds.Contains(new GeoPosition(inner.Bounds.West, inner.Bounds.South)) || !outer.Bounds.Contains(new GeoPosition(inner.Bounds.East, inner.Bounds.North)))
             return false;
 
-        var positions = inner.Positions;
+        // The samples do not depend on the direction of the ring, so neither does the result
+        var positions = inner.Positions.Order(PositionComparer.Instance).ToArray();
         var count = Math.Min(SampleCount, positions.Length);
         var inside = 0;
         for (var i = 0; i < count; i++)
@@ -142,8 +175,8 @@ internal static class ShapefileRings
         var inside = false;
         for (int i = 0, j = ring.Length - 1; i < ring.Length; j = i++)
         {
-            var a = ring[i];
-            var b = ring[j];
+            // Each edge from its lower end, so that the rounding does not depend on the direction of the ring
+            var (a, b) = ring[i].Latitude <= ring[j].Latitude ? (ring[i], ring[j]) : (ring[j], ring[i]);
             if ((a.Latitude > position.Latitude) != (b.Latitude > position.Latitude) &&
                 position.Longitude < ((b.Longitude - a.Longitude) * (position.Latitude - a.Latitude) / (b.Latitude - a.Latitude)) + a.Longitude)
             {
@@ -154,7 +187,20 @@ internal static class ShapefileRings
         return inside;
     }
 
+    private static bool IsHole(RingInfo info) => info.Orientation > 0;
+
     private static GeoBounds GetBounds(GeoPosition[] ring) => GeoBounds.FromPositions(ring) ?? default;
 
-    private readonly record struct RingInfo(GeoPosition[] Positions, double SignedArea, GeoBounds Bounds);
+    private sealed class PositionComparer : IComparer<GeoPosition>
+    {
+        public static PositionComparer Instance { get; } = new();
+
+        public int Compare(GeoPosition x, GeoPosition y)
+        {
+            var result = x.Longitude.CompareTo(y.Longitude);
+            return result is 0 ? x.Latitude.CompareTo(y.Latitude) : result;
+        }
+    }
+
+    private readonly record struct RingInfo(GeoPosition[] Positions, double SignedArea, double Orientation, GeoBounds Bounds);
 }

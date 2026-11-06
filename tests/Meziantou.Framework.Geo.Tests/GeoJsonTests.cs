@@ -84,16 +84,6 @@ public sealed class GeoJsonTests
     }
 
     [Fact]
-    public void Parse_UnpairedSurrogate()
-    {
-        // The text cannot be encoded as UTF-8 to be parsed
-        var surrogate = (char)0xD800;
-        var exception = Assert.Throws<FormatException>(() => GeoJson.Parse("{\"type\":\"Feature\",\"id\":\"" + surrogate + "\",\"geometry\":null}"));
-        Assert.IsType<ArgumentException>(exception.InnerException);
-        Assert.Throws<FormatException>(() => GeoJson.ParseGeometry("{\"type\":\"Point\",\"coordinates\":[1,2]," + surrogate + "}"));
-    }
-
-    [Fact]
     public void Format_RoundTrips()
     {
         var features = GeoJson.Parse(AllTypes);
@@ -174,5 +164,30 @@ public sealed class GeoJsonTests
         #endregion
 
         Assert.Single(GeoJson.Parse(File.ReadAllText("large-countries.geojson")));
+    }
+
+    [Fact]
+    public void Parse_UnpairedSurrogate()
+    {
+        // UTF-8 cannot encode an unpaired surrogate, so JSON cannot represent it
+        Assert.Throws<FormatException>(() => GeoJson.Parse("{\"type\":\"Feature\",\"properties\":{\"name\":\"\uD800\"}}"));
+        Assert.Throws<FormatException>(() => GeoJson.ParseGeometry("{\"type\":\"\uDC00\"}"));
+
+        // The same character, escaped in the JSON text
+        Assert.Throws<FormatException>(() => GeoJson.Parse("""{"type":"Feature","properties":{"name":"\ud800"}}"""));
+        Assert.Throws<FormatException>(() => GeoJson.Read(new MemoryStream(Encoding.UTF8.GetBytes("""{"type":"Point\udc00","coordinates":[1,2]}"""))));
+        Assert.Throws<FormatException>(() => GeoJson.Parse("""{"type":"Feature","properties":{"list":[{"a":"\ud800"}]}}"""));
+        Assert.Throws<FormatException>(() => GeoJson.Parse("""{"type":"Feature","properties":{"object":{"\udc00":1}}}"""));
+    }
+
+    [Fact]
+    public void Parse_CoordinateTooLarge()
+    {
+        Assert.Throws<FormatException>(() => GeoJson.ParseGeometry("""{"type":"Point","coordinates":[1,1e999]}"""));
+        Assert.Throws<FormatException>(() => GeoJson.ParseGeometry("""{"type":"Point","coordinates":[1,2,-1e999]}"""));
+
+        // A property is not a coordinate: the writer writes null for it
+        var feature = Assert.Single(GeoJson.Parse("""{"type":"Feature","properties":{"value":1e999}}"""));
+        Assert.Equal(double.PositiveInfinity, feature.Properties["value"]);
     }
 }

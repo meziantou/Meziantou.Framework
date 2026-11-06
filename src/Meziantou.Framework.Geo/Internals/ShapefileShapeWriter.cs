@@ -314,8 +314,8 @@ internal sealed class ShapefileShapeWriter
                 positions.Add(positions[0]);
             }
 
-            var area = ShapefileRings.GetSignedArea(positions);
-            if ((i is 0 && area > 0) || (i > 0 && area < 0))
+            var orientation = ShapefileRings.GetOrientation(positions);
+            if ((i is 0 && orientation > 0) || (i > 0 && orientation < 0))
             {
                 positions.Reverse();
             }

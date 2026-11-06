@@ -31,12 +31,17 @@ public static class GeoJson
         ArgumentNullException.ThrowIfNull(json);
         try
         {
-            using var document = JsonText.Parse(json);
+            using var document = ParseText(json);
             return ReadFeatures(document.RootElement);
         }
         catch (JsonException ex)
         {
             throw new FormatException("The text is not valid JSON: " + ex.Message, ex);
+        }
+        catch (InvalidOperationException ex)
+        {
+            // A string with an escaped unpaired surrogate ("\ud800"), which a .NET string cannot be read from
+            throw new FormatException("The JSON text contains a string that is not valid UTF-16: " + ex.Message, ex);
         }
     }
 
@@ -56,6 +61,11 @@ public static class GeoJson
         {
             throw new FormatException("The document is not valid JSON: " + ex.Message, ex);
         }
+        catch (InvalidOperationException ex)
+        {
+            // A string with an escaped unpaired surrogate ("\ud800"), which a .NET string cannot be read from
+            throw new FormatException("The JSON text contains a string that is not valid UTF-16: " + ex.Message, ex);
+        }
     }
 
     /// <summary>Reads a GeoJSON geometry, such as <c>{"type":"Point","coordinates":[2.35,48.86]}</c>.</summary>
@@ -67,12 +77,17 @@ public static class GeoJson
         ArgumentNullException.ThrowIfNull(json);
         try
         {
-            using var document = JsonText.Parse(json);
+            using var document = ParseText(json);
             return ReadGeometry(document.RootElement);
         }
         catch (JsonException ex)
         {
             throw new FormatException("The text is not valid JSON: " + ex.Message, ex);
+        }
+        catch (InvalidOperationException ex)
+        {
+            // A string with an escaped unpaired surrogate ("\ud800"), which a .NET string cannot be read from
+            throw new FormatException("The JSON text contains a string that is not valid UTF-16: " + ex.Message, ex);
         }
     }
 
@@ -120,6 +135,19 @@ public static class GeoJson
         }
 
         return Encoding.UTF8.GetString(stream.GetBuffer(), 0, (int)stream.Length);
+    }
+
+    /// <summary>Parses a JSON text; an unpaired surrogate, which UTF-8 cannot encode, makes it invalid.</summary>
+    internal static JsonDocument ParseText(string json)
+    {
+        try
+        {
+            return JsonDocument.Parse(json);
+        }
+        catch (ArgumentException ex) when (ex.InnerException is EncoderFallbackException)
+        {
+            throw new FormatException("The text contains an unpaired surrogate character, which JSON cannot represent.", ex);
+        }
     }
 
     // The text of a file: only the characters JSON requires are escaped, so the names in other scripts stay readable
@@ -183,8 +211,39 @@ public static class GeoJson
         JsonValueKind.True => true,
         JsonValueKind.False => false,
         JsonValueKind.Null or JsonValueKind.Undefined => null,
-        _ => value.Clone(),
+        _ => ValidateStrings(value).Clone(),
     };
+
+    // Reads every string and property name of an object or an array: GetString throws an InvalidOperationException, which
+    // the readers report as a FormatException, for an escaped unpaired surrogate ("\ud800"), as it does for a string property
+    private static JsonElement ValidateStrings(JsonElement value)
+    {
+        switch (value.ValueKind)
+        {
+            case JsonValueKind.Object:
+                foreach (var property in value.EnumerateObject())
+                {
+                    _ = property.Name;
+                    ValidateStrings(property.Value);
+                }
+
+                break;
+
+            case JsonValueKind.Array:
+                foreach (var item in value.EnumerateArray())
+                {
+                    ValidateStrings(item);
+                }
+
+                break;
+
+            case JsonValueKind.String:
+                _ = value.GetString();
+                break;
+        }
+
+        return value;
+    }
 
     /// <summary>Reads a GeoJSON geometry.</summary>
     internal static GeoGeometry ReadGeometry(JsonElement element)
@@ -231,8 +290,18 @@ public static class GeoJson
         if (position.ValueKind is not JsonValueKind.Array || position.GetArrayLength() < 2 || position[0].ValueKind is not JsonValueKind.Number || position[1].ValueKind is not JsonValueKind.Number)
             throw new FormatException("A GeoJSON position must be an array of at least two numbers.");
 
-        double? altitude = position.GetArrayLength() > 2 && position[2].ValueKind is JsonValueKind.Number ? position[2].GetDouble() : null;
-        return new GeoPosition(position[0].GetDouble(), position[1].GetDouble(), altitude);
+        double? altitude = position.GetArrayLength() > 2 && position[2].ValueKind is JsonValueKind.Number ? ReadCoordinate(position[2]) : null;
+        return new GeoPosition(ReadCoordinate(position[0]), ReadCoordinate(position[1]), altitude);
+    }
+
+    /// <summary>Reads a coordinate: a number too large for a <see cref="double"/>, such as <c>1e999</c>, is invalid.</summary>
+    internal static double ReadCoordinate(JsonElement number)
+    {
+        var value = number.GetDouble();
+        if (!double.IsFinite(value))
+            throw new FormatException($"The coordinate {number.GetRawText()} is too large.");
+
+        return value;
     }
 
     private static string GetType(JsonElement element)

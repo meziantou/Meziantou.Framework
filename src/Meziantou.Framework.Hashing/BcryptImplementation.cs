@@ -237,7 +237,7 @@ internal sealed class BcryptImplementation
                 throw new FormatException("Invalid salt characters");
         }
 
-        if (!IsCanonicalFinalChar(saltPayload[^1]))
+        if (!IsCanonicalSaltFinalChar(saltPayload[^1]))
             throw new FormatException("Invalid salt: the last character carries bits that cannot round-trip");
 
 
@@ -416,10 +416,20 @@ internal sealed class BcryptImplementation
     }
 
     /// <summary>
-    /// The last character of an encoded salt or digest carries fewer than 6 significant bits, so only the
-    /// spelling whose trailing bits are zero survives a decode/encode round trip.
+    /// The last character of an encoded salt carries 2 significant bits (16 bytes are 21 characters and 2 bits), so only
+    /// the spelling whose 4 trailing bits are zero survives a decode/encode round trip.
     /// </summary>
-    internal static bool IsCanonicalFinalChar(char character)
+    internal static bool IsCanonicalSaltFinalChar(char character)
+    {
+        var value = Char64(character);
+        return value >= 0 && value % 16 == 0;
+    }
+
+    /// <summary>
+    /// The last character of an encoded digest carries 4 significant bits (23 bytes are 30 characters and 4 bits), so
+    /// only the spelling whose 2 trailing bits are zero survives a decode/encode round trip.
+    /// </summary>
+    internal static bool IsCanonicalDigestFinalChar(char character)
     {
         var value = Char64(character);
         return value >= 0 && value % 4 == 0;

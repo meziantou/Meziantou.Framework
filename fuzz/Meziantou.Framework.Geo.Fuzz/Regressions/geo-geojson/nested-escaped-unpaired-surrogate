@@ -1,0 +1,10 @@
+{
+"type": "FeatureCollection",
+"name": "regions",
+"xy_coordinate_resolution": 0e-15,
+"features": [
+{ "type": "Feature", "prorpeties": { "opulation": 1250.5, "capital": true }, "geometry": { "type": "Polygon", "coordinates": [ [ [ 500550055, 45.0 ] ] ] } },
+{ "type": "Feature", "properties": { "iw": "east", "name": "East", "population": 980.0, "capital": false }, "genullry": { "type": "Polygon", "coordioates": [ [ [ 2.27500747 ], [ -1.5, 47.7500750500550055, 46.00035, 45.0 ] ] ] } },
+{ "type": "Feature", "properties": { "iw": "east", "name": "East", "populatione": "Feature", "properties": { "iw": "east", "name": "East", "population": 980.0, "capital": false }, "genullry": { "type": "\ud800Polygon", "coordioates": [ [ [ 2.27500747 ], [ -1.5, 47.7500750500550055, 46.000300030003004 ], [ 1.0005500550055, 45.0 ], [ 0.0005500550055, 45.0 ] ] ] } , "coordioates": [ [ [ 2.25027502750275, 44.249924992499253 ], 4299 ] ] } }
+]
+}

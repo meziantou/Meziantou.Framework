@@ -68,12 +68,17 @@ public static class TopoJson
         ArgumentNullException.ThrowIfNull(objectName);
         try
         {
-            using var document = JsonText.Parse(json);
+            using var document = GeoJson.ParseText(json);
             return ReadObject(document.RootElement, objectName);
         }
         catch (JsonException ex)
         {
             throw new FormatException("The text is not valid JSON: " + ex.Message, ex);
+        }
+        catch (InvalidOperationException ex)
+        {
+            // A string with an escaped unpaired surrogate ("\ud800"), which a .NET string cannot be read from
+            throw new FormatException("The JSON text contains a string that is not valid UTF-16: " + ex.Message, ex);
         }
     }
 
@@ -96,6 +101,11 @@ public static class TopoJson
         {
             throw new FormatException("The document is not valid JSON: " + ex.Message, ex);
         }
+        catch (InvalidOperationException ex)
+        {
+            // A string with an escaped unpaired surrogate ("\ud800"), which a .NET string cannot be read from
+            throw new FormatException("The JSON text contains a string that is not valid UTF-16: " + ex.Message, ex);
+        }
     }
 
     /// <summary>Reads the objects of a TopoJSON topology, such as the <c>countries</c> and the <c>land</c> of <c>world-atlas</c>.</summary>
@@ -107,12 +117,17 @@ public static class TopoJson
         ArgumentNullException.ThrowIfNull(json);
         try
         {
-            using var document = JsonText.Parse(json);
+            using var document = GeoJson.ParseText(json);
             return ReadObjects(document.RootElement);
         }
         catch (JsonException ex)
         {
             throw new FormatException("The text is not valid JSON: " + ex.Message, ex);
+        }
+        catch (InvalidOperationException ex)
+        {
+            // A string with an escaped unpaired surrogate ("\ud800"), which a .NET string cannot be read from
+            throw new FormatException("The JSON text contains a string that is not valid UTF-16: " + ex.Message, ex);
         }
     }
 
@@ -131,6 +146,11 @@ public static class TopoJson
         catch (JsonException ex)
         {
             throw new FormatException("The document is not valid JSON: " + ex.Message, ex);
+        }
+        catch (InvalidOperationException ex)
+        {
+            // A string with an escaped unpaired surrogate ("\ud800"), which a .NET string cannot be read from
+            throw new FormatException("The JSON text contains a string that is not valid UTF-16: " + ex.Message, ex);
         }
     }
 

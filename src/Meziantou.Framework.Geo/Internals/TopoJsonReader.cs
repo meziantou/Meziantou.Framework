@@ -73,7 +73,7 @@ internal sealed class TopoJsonReader
         if (element.ValueKind is not JsonValueKind.Array || element.GetArrayLength() is not 2 || element[0].ValueKind is not JsonValueKind.Number || element[1].ValueKind is not JsonValueKind.Number)
             throw new FormatException($"The '{name}' of a TopoJSON transform must be an array of two numbers.");
 
-        return (element[0].GetDouble(), element[1].GetDouble());
+        return (GeoJson.ReadCoordinate(element[0]), GeoJson.ReadCoordinate(element[1]));
     }
 
     private static string? GetType(JsonElement element)
@@ -220,7 +220,7 @@ internal sealed class TopoJsonReader
         if (position.ValueKind is not JsonValueKind.Array || position.GetArrayLength() < 2 || position[0].ValueKind is not JsonValueKind.Number || position[1].ValueKind is not JsonValueKind.Number)
             throw new FormatException("A TopoJSON position must be an array of at least two numbers.");
 
-        double? altitude = position.GetArrayLength() > 2 && position[2].ValueKind is JsonValueKind.Number ? position[2].GetDouble() : null;
-        return (position[0].GetDouble(), position[1].GetDouble(), altitude);
+        double? altitude = position.GetArrayLength() > 2 && position[2].ValueKind is JsonValueKind.Number ? GeoJson.ReadCoordinate(position[2]) : null;
+        return (GeoJson.ReadCoordinate(position[0]), GeoJson.ReadCoordinate(position[1]), altitude);
     }
 }

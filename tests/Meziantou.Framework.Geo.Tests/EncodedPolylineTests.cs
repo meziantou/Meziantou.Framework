@@ -98,4 +98,13 @@ public sealed class EncodedPolylineTests
         Assert.Equal("_izlhA~rlgdF_{geC~ywl@_kwzCn`{nI", encoded);
         #endregion
     }
+
+    [Fact]
+    public void Decode_CoordinateTooLargeToEncode()
+    {
+        // Each value is valid, but their sum is a coordinate that Encode cannot write back
+        var part = EncodedPolyline.Encode([new GeoPosition(0, 6e9)]);
+        Assert.Equal(6e9, Assert.Single(EncodedPolyline.Decode(part)).Latitude);
+        Assert.Throws<FormatException>(() => EncodedPolyline.Decode(part + part));
+    }
 }

@@ -874,10 +874,13 @@ the fragment. The contents of the box (the `foreignObject` boxes of an `svg`) ar
   when they are in the content box). The rectangle is also the viewport of the SVG document of an `embed` or `object`
   element (`object-fit` applies to it as to an image, as in Firefox). Null for the form controls.
 - **Form controls** (`FormControlSizing`, the [widgets](https://html.spec.whatwg.org/multipage/rendering.html#widgets) of
-  HTML, from the primary font of the control): text fields `(size-1)×avg + max` (`OS/2.xAvgCharWidth` and the `head` bounding
-  box width, rounded as in Chrome; the advance of `0` without OS/2 table) × the line height; `textarea` `cols×avg` ×
-  `rows` lines; `select` the widest option/optgroup label (list box: the max-content inline size of its rows, which are
-  boxes, × display size rows of the line height, 4 for `multiple`); buttons the
+  HTML, from the primary font of the control): text fields `ceil(size×avg + max(0, max-avg))` × the line height, with the
+  character widths of Chromium on macOS (avg: the advance of `x`, rounded when its fraction is at least 0.5; max: the larger
+  of that advance and the rounded ascent; the advance of `0` for both when `x` is wider than 1.7 times `0`); `textarea`
+  `ceil(cols×avg)` × `rows` lines; `select` the widest option/optgroup label (drop-down box: plus the internal paddings of
+  Chromium, 4px before the label, 1px and a 15px drop-down button after it (none with `appearance: none`), 1px above and
+  below the line; list box: the max-content inline size of its rows, which are boxes with a padding of 2px in the inline axis and 1px at the block end, and a
+  minimum height of 1.2em, × display size rows, 4 for `multiple`); buttons the
   width of their label (the line feeds of the value of an `input` button break its label into lines, as in the browsers,
   whose user agent style sheets have `white-space: pre` for these controls: the block size is the one of the lines and the
   baseline the one of the last line); `checkbox`/`radio` 13x13, a switch (a checkbox with a `switch` attribute,
@@ -5274,15 +5277,17 @@ something asks for the display list (`LayoutEngine.PaintCount` for the tests).
   other than `none`, and no author background or border that
   differs from the user agent style sheet: the widget fallback; any author declaration of the
   [properties that disable the native appearance](https://drafts.csswg.org/css-ui-4/#appearance-disabling-properties) for
-  `progress`, `meter`, the text controls and the drop-down boxes, after the rollback of `revert`, as in the browsers: WPT
+  `progress`, `meter`, the text controls, the `select` elements, the buttons and the color wells, after the rollback of `revert`, as in the browsers: WPT
   `css/css-ui/compute-kind-widget-generated`), a simple
   deterministic look for the checkboxes, the switches (a rounded track, filled with the accent color when checked, and a
   disc at its inline-start side, at its inline-end side when checked; `indeterminate` does not apply), the radio buttons,
-  the sliders, the color wells, the progress bars and the meters, and a thin rounded frame (1px, `#767676`) along the
-  border box of the text fields, the `textarea` elements and the drop-down boxes (`Painter.PaintNativeFrame`: the user agent
-  style sheet of the specification gives them no border, so the frame takes no space; a drop-down box with
-  `appearance: menulist-button` has no frame, its borders are the ones of CSS, and keeps its arrow, as a devolved drop-down
-  box does: "including a drop-down button")
+  the sliders, the color wells, the progress bars and the meters, and, as in Chromium, a thin rounded frame (1px, radius
+  2px) along the border box of the text fields, the `textarea` and `select` elements, the buttons (also
+  `::file-selector-button` and `::scroll-button()`) and the color wells, over their native background in the same shape (`Painter.PaintNativeFrame`:
+  the borders that the user agent style sheet gives them, as Chromium, are the space of the frame and give it its color,
+  their style is not painted; a drop-down box with `appearance: menulist-button` has no frame, its borders are the ones of
+  CSS, and keeps its arrow, as a devolved drop-down box does: "including a drop-down button"; on the other controls,
+  `menulist-button` is an alias of `auto`)
   (`accent-color` replaces the accent color of the checkboxes, the radio buttons, the sliders and the progress bars; a
   transparent one is composed over `Canvas`). The text of a date and time field is clipped at the content edge in the
   inline axis and at the padding edge in the block axis. The value and the placeholder of the text fields and of the

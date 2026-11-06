@@ -63,8 +63,22 @@ public static class Gpx
     public static GeoFeatureCollection Read(Stream stream)
     {
         ArgumentNullException.ThrowIfNull(stream);
-        using var reader = XmlReader.Create(stream, CreateReaderSettings());
-        return ReadDocument(reader);
+
+        // Creating the reader reads the start of the document to detect its encoding, which can fail
+        XmlReader reader;
+        try
+        {
+            reader = XmlReader.Create(stream, CreateReaderSettings());
+        }
+        catch (XmlException ex)
+        {
+            throw new FormatException("The document is not valid XML: " + ex.Message, ex);
+        }
+
+        using (reader)
+        {
+            return ReadDocument(reader);
+        }
     }
 
     /// <summary>Writes features as a GPX 1.1 document.</summary>

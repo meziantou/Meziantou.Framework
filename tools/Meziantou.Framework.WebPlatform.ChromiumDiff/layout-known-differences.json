@@ -1,7 +1,7 @@
 [
   {
-    "selector": "input, button, select, textarea",
-    "reason": "form controls: the user agent style sheet of the library is the one of HTML, which gives the controls no font, paddings, borders nor margins; the browsers give them a font of 13.333px (11px in Safari), and Chromium and Firefox a padding of 1px 2px and a border of 2px inset to the text fields, a padding of 2px to the textarea elements, margins to the checkboxes and the radio buttons (the native frame of the library takes no space)"
+    "selector": "input:is([type=date i], [type=datetime-local i], [type=month i], [type=week i], [type=time i])",
+    "reason": "date and time fields: Chromium lays their value out as fields with their own paddings and a picker icon, in the format of its locale; the library measures the format of the browsers and a picker button of 1em"
   },
   {
     "selector": "wbr",

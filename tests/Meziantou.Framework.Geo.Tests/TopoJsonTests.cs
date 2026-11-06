@@ -197,15 +197,6 @@ public sealed class TopoJsonTests
     }
 
     [Fact]
-    public void Parse_UnpairedSurrogate()
-    {
-        // The text cannot be encoded as UTF-8 to be parsed
-        var json = "{\"type\":\"Topology\",\"objects\":{\"" + (char)0xD800 + "\":{\"type\":\"GeometryCollection\",\"geometries\":[]}},\"arcs\":[]}";
-        Assert.Throws<FormatException>(() => TopoJson.Parse(json));
-        Assert.Throws<FormatException>(() => TopoJson.ParseObjects(json));
-    }
-
-    [Fact]
     public void Format_SharedBorder()
     {
         GeoFeatureCollection features =
@@ -468,5 +459,15 @@ public sealed class TopoJsonTests
             GeoLineString lineString => "LineString:" + lineString.Positions.Count,
             _ => geometry.Type.ToString(),
         };
+    }
+
+    [Fact]
+    public void Parse_UnpairedSurrogate()
+    {
+        const string Json = "{\"type\":\"Topology\",\"objects\":{\"\uD800\":{\"type\":\"Point\",\"coordinates\":[1,2]}},\"arcs\":[]}";
+        Assert.Throws<FormatException>(() => TopoJson.Parse(Json));
+        Assert.Throws<FormatException>(() => TopoJson.ParseObjects(Json));
+        Assert.Throws<FormatException>(() => TopoJson.Parse("""{"type":"Topology","objects":{"\ud800":{"type":"Point","coordinates":[1,2]}},"arcs":[]}"""));
+        Assert.Throws<FormatException>(() => TopoJson.Parse("""{"type":"Topology","objects":{"a":{"type":"Point","coordinates":[1,1e999]}},"arcs":[]}"""));
     }
 }

@@ -32,8 +32,8 @@ public sealed class GeoPolygon : GeoGeometry
         {
             for (int i = 0, j = ring.Count - 1; i < ring.Count; j = i++)
             {
-                var a = ring[i];
-                var b = ring[j];
+                // Each edge from its lower end, so that the rounding does not depend on the direction of the ring
+                var (a, b) = ring[i].Latitude <= ring[j].Latitude ? (ring[i], ring[j]) : (ring[j], ring[i]);
                 if ((a.Latitude > position.Latitude) != (b.Latitude > position.Latitude) &&
                     position.Longitude < ((b.Longitude - a.Longitude) * (position.Latitude - a.Latitude) / (b.Latitude - a.Latitude)) + a.Longitude)
                 {

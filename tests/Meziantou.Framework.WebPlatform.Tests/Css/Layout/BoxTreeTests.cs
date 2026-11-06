@@ -293,7 +293,7 @@ public sealed class BoxTreeTests : IDisposable
           block <ul> block-children
             block list-item <li#c> inline-children
               inline-block <li#c>::marker inline-children outside
-                generated-text "\2022 "
+                replaced inline <li#c>::marker symbol=Disc
               text "c"
           block <ul> block-children
             block list-item <li#d> inline-children
@@ -306,7 +306,7 @@ public sealed class BoxTreeTests : IDisposable
           block <ul> block-children
             block list-item <li#a> block-children
               inline-block <li#a>::marker inline-children outside
-                generated-text "\2022 "
+                replaced inline <li#a>::marker symbol=Disc
               block <p> inline-children
                 text "a"
         """);
@@ -327,7 +327,7 @@ public sealed class BoxTreeTests : IDisposable
           block <div#d> block-children
             block list-item <div#d>::before inline-children
               inline-block <div#d>::before inline-children outside
-                generated-text "\2022 "
+                replaced inline <div#d>::before symbol=Disc
               generated-text "a"
             block anonymous inline-children
               text "b"
@@ -643,7 +643,7 @@ public sealed class BoxTreeTests : IDisposable
           block <details> block-children
             block list-item <summary> inline-children
               inline <summary>::marker
-                generated-text "\25B8 "
+                replaced inline <summary>::marker symbol=DisclosureClosed
               text "s"
             block <details>::details-content inline-children skips-contents
               text "d"
@@ -655,14 +655,14 @@ public sealed class BoxTreeTests : IDisposable
           block <details> block-children
             block list-item <summary> inline-children
               inline <summary>::marker
-                generated-text "\25B8 "
+                replaced inline <summary>::marker symbol=DisclosureClosed
               text "Details"
             block <details>::details-content inline-children skips-contents
               text "d"
           block <details> block-children
             block list-item <summary> inline-children
               inline <summary>::marker
-                generated-text "\25BE "
+                replaced inline <summary>::marker symbol=DisclosureOpen
               text "Details"
             block <details>::details-content inline-children
               text "d"

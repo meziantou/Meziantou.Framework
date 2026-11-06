@@ -42,10 +42,16 @@ internal sealed class PendingOutsideMarker(ContainerBox marker, ContainerBox lis
     /// <summary>
     /// The space between the marker and the content of the list item, in addition to the inline-end margin of the marker: as in
     /// the browsers (Blink's <c>kCMarkerPaddingPx</c>, Gecko, WebKit), an image marker (<c>list-style-image</c>, the
-    /// <c>content</c> of the marker being <c>normal</c>) is 7px away from it (WPT css/css-lists/outside-marker-taller-than-content.html).
-    /// The text markers end with their suffix (a space for the bullets).
+    /// <c>content</c> of the marker being <c>normal</c>) is 7px away from it (WPT css/css-lists/outside-marker-taller-than-content.html),
+    /// a symbol (a bullet or a disclosure triangle) is at the distance of Blink (see <see cref="MarkerSymbols.GetOutsideGap"/>).
+    /// The text markers end with their suffix.
     /// </summary>
-    public double Gap => Marker.FirstChild is ContainerBox { Kind: ContainerBoxKind.Replaced, GeneratedImage: not null } && Marker.Style.GetComputedValue("content") is "normal" or "" ? ImageMarkerGap : 0;
+    public double Gap => Marker.FirstChild switch
+    {
+        ContainerBox { Kind: ContainerBoxKind.Replaced, GeneratedImage: not null } when Marker.Style.GetComputedValue("content") is "normal" or "" => ImageMarkerGap,
+        ContainerBox { Kind: ContainerBoxKind.Replaced, MarkerSymbol: not MarkerSymbol.None and var symbol } symbolBox => MarkerSymbols.GetOutsideGap(symbolBox.Style, symbol),
+        _ => 0,
+    };
 
     private const double ImageMarkerGap = 7;
 

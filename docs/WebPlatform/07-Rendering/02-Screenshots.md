@@ -108,5 +108,8 @@ The painting follows the order of CSS: backgrounds, borders, shadows, text, imag
 clipping, blend modes, the scrollbars and the caret. The positions of the boxes and of the text are snapped to the device
 pixels as in Chromium. See [Limitations](../09-Limitations.md) for what is not painted.
 
+The bullets of the lists (`disc`, `circle`, `square`) and the triangles of the `summary` elements are drawn as shapes, with
+the sizes and the positions of Chromium, not with the glyphs of a font.
+
 A document that is not the active document of a browsing context, such as a document parsed by [HtmlDocumentParser](cref:Meziantou.Framework.WebPlatform.HtmlDocumentParser),
 cannot be painted: load it with [BrowsingContext.Navigate](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContext.Navigate).

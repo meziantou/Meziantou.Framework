@@ -255,6 +255,9 @@ internal sealed class ContainerBox : LayoutBox
     /// <summary>The image of a box of the generated content (<c>content: url(...)</c>, a <c>list-style-image</c> marker): a computed &lt;image&gt; value, or null.</summary>
     public string? GeneratedImage { get => _rareData?.GeneratedImage; internal set => GetRareData().GeneratedImage = value; }
 
+    /// <summary>The symbol drawn by the replaced box of a list marker (see <see cref="Layout.MarkerSymbol"/>), or <see cref="MarkerSymbol.None"/>.</summary>
+    public MarkerSymbol MarkerSymbol { get => _rareData?.MarkerSymbol ?? MarkerSymbol.None; internal set => GetRareData().MarkerSymbol = value; }
+
     /// <summary>
     /// The values of the initial letter when the box is an initial letter box (https://drafts.csswg.org/css-inline-3/#initial-letter-styling):
     /// a <c>::first-letter</c> box whose <c>initial-letter</c> is not <c>normal</c>, placed by the inline layout, or null.
@@ -470,6 +473,7 @@ internal sealed class ContainerBox : LayoutBox
         public ContainerBox? PreviousContinuation;
         public ComputedStyle? FirstLineStyle;
         public string? GeneratedImage;
+        public MarkerSymbol MarkerSymbol;
         public ContainerBox? SplitInlineParent;
         public bool IsContentVisibilityAuto;
         public bool LaysOutSkippedContents;

@@ -30,7 +30,7 @@ public sealed class IncrementalLayoutTests : IDisposable
         var first = BoxTree.Build(document);
         var second = BoxTree.Build(document);
 
-        // The anonymous block box around the text of the div, and the bullet of the list item (not spaced by word-spacing)
+        // The anonymous block box around the text of the div, and the symbol of the bullet of the list item
         var anonymous1 = first.GetPrincipalBox(Find(document, "#d"))!.FirstChild!;
         var anonymous2 = second.GetPrincipalBox(Find(document, "#d"))!.FirstChild!;
         Assert.True(anonymous1.IsAnonymous);
@@ -38,7 +38,7 @@ public sealed class IncrementalLayoutTests : IDisposable
 
         var bullet1 = ((ContainerBox)first.GetPseudoElementBox(Find(document, "#li"), "marker")!).FirstChild!;
         var bullet2 = ((ContainerBox)second.GetPseudoElementBox(Find(document, "#li"), "marker")!).FirstChild!;
-        Assert.NotEqual("2px", bullet1.Style.GetComputedValue("word-spacing"));
+        Assert.Equal(MarkerSymbol.Disc, Assert.IsType<ContainerBox>(bullet1).MarkerSymbol);
         Assert.Same(bullet1.Style, bullet2.Style);
     }
 

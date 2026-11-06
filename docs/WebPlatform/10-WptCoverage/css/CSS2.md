@@ -11,14 +11,14 @@ description: "The results of the web-platform-tests of css/CSS2, and why the tes
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 73 | 73 | 0 | 100% |
 | [Tentative](#tentative-tests) | 2 | 2 | 0 | 100% |
-| [Reftests](#reftests) | 6,225 | 6,285 | 0 | 99% |
-| **All** | **6,300** | **6,360** | **0** | **99%** |
+| [Reftests](#reftests) | 6,224 | 6,285 | 0 | 99% |
+| **All** | **6,299** | **6,360** | **0** | **99%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **TEST BUG**: 44
+- **TEST BUG**: 45
 - **TEST RUNNER**: 16
 
 ## Stable tests
@@ -2141,7 +2141,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`generated-content/content-counter-001.xht`](https://wpt.fyi/results/css/CSS2/generated-content/content-counter-001.xht) | Pass | 1 / 1 |  |  |
 | [`generated-content/content-counter-002.xht`](https://wpt.fyi/results/css/CSS2/generated-content/content-counter-002.xht) | Pass | 1 / 1 |  |  |
 | [`generated-content/content-counter-003.xht`](https://wpt.fyi/results/css/CSS2/generated-content/content-counter-003.xht) | Pass | 1 / 1 |  |  |
-| [`generated-content/content-counter-004.xht`](https://wpt.fyi/results/css/CSS2/generated-content/content-counter-004.xht) | Pass | 1 / 1 |  |  |
+| [`generated-content/content-counter-004.xht`](https://wpt.fyi/results/css/CSS2/generated-content/content-counter-004.xht) | Fail | 0 / 1 | TEST BUG | `content: counter(c, square)` is the glyph of the square of the counter style, the reference has `square` list markers, which the library draws as shapes, as Blink and Gecko do (the reference differs from the test by 648 pixels in Chromium) |
 | [`generated-content/content-counter-005.xht`](https://wpt.fyi/results/css/CSS2/generated-content/content-counter-005.xht) | Pass | 1 / 1 |  |  |
 | [`generated-content/content-counter-006.xht`](https://wpt.fyi/results/css/CSS2/generated-content/content-counter-006.xht) | Pass | 1 / 1 |  |  |
 | [`generated-content/content-counter-007.xht`](https://wpt.fyi/results/css/CSS2/generated-content/content-counter-007.xht) | Pass | 1 / 1 |  |  |

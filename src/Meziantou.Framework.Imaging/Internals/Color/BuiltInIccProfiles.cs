@@ -50,6 +50,12 @@ internal static class BuiltInIccProfiles
     public static IccProfile LinearGray { get; } = Create(gray: true, linear: true, "Linear gray");
 
     /// <summary>
+    /// Gets the Display P3 profile: the DCI-P3 primaries with the D65 white point and the sRGB transfer function
+    /// (https://www.w3.org/TR/css-color-4/#predefined-display-p3).
+    /// </summary>
+    public static IccProfile DisplayP3 { get; } = TryCreate(gray: false, [0.680, 0.320, 0.265, 0.690, 0.150, 0.060], 0.3127, 0.3290, BuiltInIccCurve.Srgb, exponent: 1, renderingIntent: 0, "Display P3")!;
+
+    /// <summary>
     /// Gets the CMYK profile assumed for CMYK samples without profile. Unlike the other profiles it is not built here:
     /// its bytes are third-party data (<see cref="BuiltInCmykProfile"/>).
     /// </summary>

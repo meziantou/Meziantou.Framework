@@ -485,6 +485,44 @@ public sealed class CanvasTests : IDisposable
     }
 
     [Fact]
+    public async Task DisplayP3_SerializationAndImageBitmapsKeepTheColorsOutsideOfSrgb()
+    {
+        var p3 = new CanvasRenderingContext2DSettings { ColorSpace = PredefinedColorSpace.DisplayP3 };
+        var (browsingContext, canvas, context) = Create(2, 2, p3);
+        context.FillStyle = "color(display-p3 1 0 0)";
+        context.FillRect(0, 0, 2, 2);
+
+        // The PNG file is tagged as Display P3 (cICP chunk)
+        var png = Convert.FromBase64String(canvas.ToDataUrl()["data:image/png;base64,".Length..]);
+        Assert.Equal(new Meziantou.Framework.Imaging.Metadata.CicpColorDescription(12, 13, 0, fullRange: true), Image.Identify(png).Metadata.Cicp);
+
+        var window = canvas.OwnerDocument!.DefaultView!;
+        var fromBlob = window.CreateImageBitmap(new Blob([png]));
+        var fromCanvas = window.CreateImageBitmap(canvas);
+        var fromImageData = window.CreateImageBitmap(context.GetImageData(0, 0, 2, 2));
+        browsingContext.EventLoop.RunUntilIdle();
+        foreach (var bitmap in (ImageBitmap[])[await fromBlob, await fromCanvas, await fromImageData])
+        {
+            var (_, _, target) = Create(2, 2, p3);
+            target.DrawImage(bitmap, 0, 0);
+            var pixel = GetPixel(target, 1, 1);
+            Assert.InRange(pixel[0], 254, 255);
+            Assert.InRange(pixel[1], 0, 1);
+            Assert.InRange(pixel[2], 0, 1);
+        }
+
+        // An sRGB canvas of half floats keeps the color outside of its gamut, an sRGB canvas of 8 bits clips it
+        var (_, _, half) = Create(2, 2, new CanvasRenderingContext2DSettings { ColorType = CanvasColorType.Float16 });
+        half.DrawImage(await fromImageData, 0, 0);
+        var halfPixel = half.GetImageData(0, 0, 1, 1, new ImageDataSettings { ColorSpace = PredefinedColorSpace.DisplayP3 }).Data.ToArray();
+        Assert.InRange(halfPixel[0], 254, 255);
+        Assert.InRange(halfPixel[1], 0, 1);
+        var (_, _, srgb) = Create(2, 2);
+        srgb.DrawImage(await fromImageData, 0, 0);
+        Assert.Equal([234, 51, 35, 255], srgb.GetImageData(0, 0, 1, 1, new ImageDataSettings { ColorSpace = PredefinedColorSpace.DisplayP3 }).Data.ToArray());
+    }
+
+    [Fact]
     public async Task Serialization_EncodesThePixels()
     {
         var (context, canvas, context2D) = Create(4, 2);

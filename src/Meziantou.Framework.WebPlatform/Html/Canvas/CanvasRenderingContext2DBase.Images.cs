@@ -607,7 +607,7 @@ public abstract partial class CanvasRenderingContext2DBase
     private PredefinedColorSpace SurfaceColorSpace => Bitmap.Options.ColorSpace == RenderingColorSpace.DisplayP3 ? PredefinedColorSpace.DisplayP3 : PredefinedColorSpace.Srgb;
 
     /// <summary>Converts RGBA bytes (not premultiplied) from a color space to another one, in place.</summary>
-    internal static void ConvertColorSpace(byte[] pixels, PredefinedColorSpace from, PredefinedColorSpace to)
+    internal static void ConvertColorSpace(Span<byte> pixels, PredefinedColorSpace from, PredefinedColorSpace to)
     {
         if (from == to)
             return;

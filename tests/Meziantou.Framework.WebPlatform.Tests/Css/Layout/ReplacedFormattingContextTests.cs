@@ -16,7 +16,7 @@ public sealed class ReplacedFormattingContextTests : IDisposable
     public void Dispose() => _contexts.Dispose();
 
     /// <summary>Parses a no-quirks document whose body has no margin and the 10px/1 Ahem font, in a 800x600 viewport.</summary>
-    private Document Parse(string html, bool quirks = false) => Load((quirks ? "" : "<!DOCTYPE html>") + "<style>body { margin: 0; font: 10px/1 Ahem }</style>" + html);
+    private Document Parse(string html, bool quirks = false) => Load((quirks ? "" : "<!DOCTYPE html>") + "<style>body { margin: 0; font: 10px/1 Ahem } input, select, textarea, button { font: inherit }</style>" + html);
 
     private Document Load(string html)
     {
@@ -427,43 +427,44 @@ public sealed class ReplacedFormattingContextTests : IDisposable
     }
 
     [Theory]
-    [InlineData("<input id=e>", 200, 10)]
-    [InlineData("<input id=e size=5>", 50, 10)]
+    [InlineData("<input id=e>", 208, 16)]
+    [InlineData("<input id=e size=5>", 58, 16)]
     [InlineData("<input id=e type=checkbox>", 13, 13)]
     [InlineData("<input id=e type=range>", 129, 16)]
     [InlineData("<input id=e type=submit value=OK>", 36, 16)]
     [InlineData("<input id=e type=button>", 16, 16)]
     [InlineData("<input id=e type=button value='a&#10;abc'>", 46, 26)]
     [InlineData("<input id=e type=checkbox style='appearance: none'>", 0, 0)]
-    [InlineData("<select id=e size=0><option>ab<option>abcd</select>", 50, 10)]
-    [InlineData("<select id=e style='line-height: 30px'><option>ab</select>", 30, 10)]
-    [InlineData("<select id=e style='line-height: 30px; appearance: none'><option>ab</select>", 30, 30)]
+    [InlineData("<select id=e size=0><option>ab<option>abcd</select>", 62, 14)]
+    [InlineData("<select id=e style='line-height: 30px'><option>ab</select>", 42, 14)]
+    [InlineData("<select id=e style='line-height: 30px; appearance: none'><option>ab</select>", 22, 32)]
     [InlineData("<embed id=e src=1x1.png style='width: 20px; height: 30px'>", 20, 30)]
-    [InlineData("<textarea id=e cols=5 rows=3></textarea>", 65, 30)]
-    [InlineData("<textarea id=e></textarea>", 215, 20)]
-    [InlineData("<select id=e><option>ab<option>abcd</select>", 50, 10)]
-    [InlineData("<select id=e multiple><option>ab</select>", 35, 40)]
-    [InlineData("<select id=e size=2><option>ab</select>", 35, 20)]
-    [InlineData("<select id=e size=2><option>ab<option style='display: none'>abcd<optgroup label=abcdef style='display: none'><option>abcde</select>", 35, 20)]
+    [InlineData("<textarea id=e cols=5 rows=3></textarea>", 71, 36)]
+    [InlineData("<textarea id=e></textarea>", 221, 26)]
+    [InlineData("<select id=e><option>ab<option>abcd</select>", 62, 14)]
+    [InlineData("<select id=e multiple><option>ab</select>", 41, 54)]
+    [InlineData("<select id=e size=2><option>ab</select>", 41, 28)]
+    [InlineData("<select id=e size=2><option>ab<option style='display: none'>abcd<optgroup label=abcdef style='display: none'><option>abcde</select>", 41, 28)]
     [InlineData("<meter id=e></meter>", 50, 10)]
     [InlineData("<progress id=e></progress>", 100, 10)]
-    [InlineData("<input id=e style='field-sizing: content' value=abc>", 31, 10)]
-    [InlineData("<input id=e style='field-sizing: content' placeholder=ab>", 21, 10)]
-    [InlineData("<textarea id=e style='field-sizing: content'>a&#10;abc</textarea>", 31, 20)]
-    [InlineData("<input id=e style='width: 30px; height: 40px'>", 30, 40)]
+    [InlineData("<input id=e style='field-sizing: content' value=abc>", 39, 16)]
+    [InlineData("<input id=e style='field-sizing: content' placeholder=ab>", 29, 16)]
+    [InlineData("<textarea id=e style='field-sizing: content'>a&#10;abc</textarea>", 37, 26)]
+    [InlineData("<input id=e style='width: 30px; height: 40px'>", 38, 46)]
     [InlineData("<input id=e type=checkbox switch>", 26, 13)]
     [InlineData("<input id=e type=checkbox switch style='writing-mode: vertical-rl'>", 13, 26)]
-    [InlineData("<style>#e::placeholder { font-size: 20px }</style><input id=e style='field-sizing: content' placeholder=ab>", 41, 20)]
-    [InlineData("<textarea id=e style='field-sizing: content; width: 30px'>abc abc</textarea>", 30, 20)]
-    [InlineData("<select id=e multiple style='field-sizing: content'></select>", 15, 0)]
-    [InlineData("<select id=e style='contain: size'><option>abcdef</select>", 10, 10)]
-    [InlineData("<select id=e style='contain: size; contain-intrinsic-size: 30px 20px'><option>abcdef</select>", 30, 20)]
+    [InlineData("<style>#e::placeholder { font-size: 20px }</style><input id=e style='field-sizing: content' placeholder=ab>", 49, 26)]
+    [InlineData("<textarea id=e style='field-sizing: content; width: 30px'>abc abc</textarea>", 36, 26)]
+    [InlineData("<select id=e multiple style='field-sizing: content'></select>", 17, 2)]
+    [InlineData("<select id=e style='contain: size'><option>abcdef</select>", 22, 14)]
+    [InlineData("<select id=e style='contain: size; contain-intrinsic-size: 30px 20px'><option>abcdef</select>", 32, 22)]
     public void FormControls_NaturalSizes(string html, double width, double height)
     {
         // The sizes of the rendering section of HTML (https://html.spec.whatwg.org/multipage/rendering.html#widgets), with
-        // Ahem (the average and the maximum character widths are 1em), the 15px classic scrollbars of the multiline controls, the
-        // arrow of the drop-down boxes (1em) and the paddings and borders of the buttons of the user agent style sheet
-        // (1px 6px, 2px)
+        // Ahem (the average and the maximum character widths are 1em), the 15px classic scrollbars of the multiline controls,
+        // the internal paddings of the drop-down boxes (4px and 1px + a 15px arrow, 1px above and below), the rows of the list
+        // boxes (1.2em + 1px) and the paddings and borders of the user agent style sheet of Chromium (text fields: 1px 2px,
+        // 2px; textarea: 2px, 1px; select: 1px; buttons: 1px 6px, 2px)
         var document = Parse(html);
         Assert.Equal((width, height), GetSize(document, "e"));
     }
@@ -495,7 +496,7 @@ public sealed class ReplacedFormattingContextTests : IDisposable
     [InlineData("<input id=i type=checkbox style='margin: 0 0 5px; appearance: none'>", -5)]
     [InlineData("<input id=i type=checkbox style='margin: 0 0 5px; border: 2px solid'>", -5)]
     [InlineData("<input id=i type=color style='margin: 0 0 5px; padding: 0 0 3px; border: 2px solid'>", 5)]
-    [InlineData("<input id=i type=color style='margin: 0 0 5px; appearance: none; padding: 0 0 3px'>", 3)]
+    [InlineData("<input id=i type=color style='margin: 0 0 5px; appearance: none; padding: 0 0 3px'>", 4)]
     public void FormControls_BaselineOfTheCheckboxesAndColorWells(string control, double baselineAboveBottom)
     {
         // As in the browsers (https://github.com/whatwg/html/issues/5065): a checkbox or a radio button with its native
@@ -539,11 +540,12 @@ public sealed class ReplacedFormattingContextTests : IDisposable
         // The baseline of a text field is the baseline of its text, centered in the content box (ascent 0.8em)
         var document = Parse("<div id=d>X<input id=i style='height: 30px; font-size: 20px'></div>");
         var input = GetRect(document, "i");
-        Assert.Equal(30, input.Height);
+        Assert.Equal(36, input.Height);
 
-        // The text of the input (20px, ascent 16px) is centered: its baseline is 5 + 16 = 21px below the top of the input
+        // The text of the input (20px, ascent 16px) is centered in the content box, below the border (2px) and the padding (1px)
+        // of the user agent style sheet: its baseline is 3 + 5 + 16 = 24px below the top of the input
         var x = document.GetLayoutEngine().GetTextFragments((Text)document.GetElementById("d")!.FirstChild!)[0].GetRectInRoot();
-        Assert.Equal(input.Y + 21, x.Y + 8);
+        Assert.Equal(input.Y + 24, x.Y + 8);
     }
 
     [Fact]

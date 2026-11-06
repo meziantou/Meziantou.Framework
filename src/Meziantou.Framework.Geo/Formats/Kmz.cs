@@ -30,6 +30,10 @@ public static class Kmz
         {
             throw new FormatException("The document is not a valid KMZ archive: " + ex.Message, ex);
         }
+        catch (NotSupportedException ex)
+        {
+            throw new FormatException("The KMZ archive has an entry that cannot be read, such as an encrypted entry: " + ex.Message, ex);
+        }
     }
 
     /// <summary>Writes features as a KMZ archive, with a <c>doc.kml</c> entry.</summary>

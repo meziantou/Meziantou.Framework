@@ -1,0 +1,18 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!-- SharpFuzz targets of Meziantou.Framework.Geo. See fuzz/README.md. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The fixtures of the unit tests (files of each format, some written by GDAL) are the seeds -->
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Geo.Tests\TestData\**\*" Exclude="..\..\tests\Meziantou.Framework.Geo.Tests\TestData\**\*.py" LogicalName="TestData/%(RecursiveDir)%(FileName)%(Extension)" Link="Seeds\%(RecursiveDir)%(FileName)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Geo\Meziantou.Framework.Geo.csproj" />
+  </ItemGroup>
+</Project>

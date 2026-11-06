@@ -460,4 +460,14 @@ public sealed class TopoJsonTests
             _ => geometry.Type.ToString(),
         };
     }
+
+    [Fact]
+    public void Parse_UnpairedSurrogate()
+    {
+        const string Json = "{\"type\":\"Topology\",\"objects\":{\"\uD800\":{\"type\":\"Point\",\"coordinates\":[1,2]}},\"arcs\":[]}";
+        Assert.Throws<FormatException>(() => TopoJson.Parse(Json));
+        Assert.Throws<FormatException>(() => TopoJson.ParseObjects(Json));
+        Assert.Throws<FormatException>(() => TopoJson.Parse("""{"type":"Topology","objects":{"\ud800":{"type":"Point","coordinates":[1,2]}},"arcs":[]}"""));
+        Assert.Throws<FormatException>(() => TopoJson.Parse("""{"type":"Topology","objects":{"a":{"type":"Point","coordinates":[1,1e999]}},"arcs":[]}"""));
+    }
 }

@@ -762,4 +762,82 @@ public sealed class ShapefileTests
         result[^1] = 0x1A;
         return result;
     }
+
+    [Fact]
+    public void ReadZip_EncryptedEntry()
+    {
+        // The entry is not a valid .shp file: .NET 10 ignores the flag and reads it, .NET 11 does not support its encryption
+        Assert.Throws<FormatException>(() => Shapefile.ReadZip(new MemoryStream(KmlTests.EncryptEntries(KmlTests.CreateZip("layer.shp", "x")))));
+    }
+
+    [Fact]
+    public void Read_TextPaddedWithNullBytes()
+    {
+        GeoFeatureCollection features =
+        [
+            new GeoFeature(new GeoPoint(new(1, 2)), new Dictionary<string, object?>(StringComparer.Ordinal) { ["name"] = "abcdef" }),
+            new GeoFeature(new GeoPoint(new(3, 4)), new Dictionary<string, object?>(StringComparer.Ordinal) { ["name"] = "x" }),
+        ];
+        using var shp = new MemoryStream();
+        using var shx = new MemoryStream();
+        using var dbf = new MemoryStream();
+        Shapefile.Write(features, shp, shx, dbf);
+
+        // Some writers pad with NUL bytes, after spaces or instead of them: the value ends at the first one
+        var bytes = dbf.ToArray();
+        var index = bytes.AsSpan().IndexOf("x     "u8);
+        "x \0\0\0\0"u8.CopyTo(bytes.AsSpan(index));
+
+        var read = Shapefile.Read(new MemoryStream(shp.ToArray()), new MemoryStream(bytes));
+        Assert.Equal("x", read[1].Properties["name"]);
+    }
+
+    [Fact]
+    public void Write_FieldNameReadsBackAsWritten()
+    {
+        // Trimmed and cut to 10 bytes, the name would end with spaces, which the readers trim
+        GeoFeatureCollection features = [new GeoFeature(new GeoPoint(new(1, 2)), new Dictionary<string, object?>(StringComparer.Ordinal) { [" f         o"] = "x" })];
+        using var shp = new MemoryStream();
+        using var shx = new MemoryStream();
+        using var dbf = new MemoryStream();
+        Shapefile.Write(features, shp, shx, dbf);
+
+        Assert.Equal("f", dbf.ToArray().AsSpan(32, 11).TrimEnd((byte)0).ToArray().Select(b => (char)b).Aggregate("", (text, c) => text + c));
+        var read = Shapefile.Read(new MemoryStream(shp.ToArray()), new MemoryStream(dbf.ToArray()));
+        Assert.Equal("x", read[0].Properties["f"]);
+    }
+
+    [Fact]
+    public void Orientation_ReversingNegatesExactly()
+    {
+        // A ring the fuzzer found: the rounding of its signed area depends on the direction, so the writer reversed it at
+        // each write
+        GeoPosition[] ring =
+        [
+            new(3.16E-322, 5.877471754111521E-39), new(1.288229753919445E-231, 5.877471754111521E-39), new(4.383618698016868E-193, 2.5243548967072737E-29),
+            new(4.383618698016868E-193, 2.5243548967072737E-29), new(1.288230488171005E-231, 5.877471754111521E-39), new(3.16E-322, 5.877471754111521E-39),
+        ];
+        GeoPosition[] reversed = [.. ring.Reverse()];
+        Assert.Equal(-ShapefileRings.GetOrientation(ring), ShapefileRings.GetOrientation(reversed));
+        Assert.Equal(-ShapefileRings.GetOrientation([new(0, 0), new(0, 1), new(1, 1), new(0, 0)]), ShapefileRings.GetOrientation([new(0, 0), new(1, 1), new(0, 1), new(0, 0)]));
+        Assert.True(ShapefileRings.GetOrientation([new(0, 0), new(0, 1), new(1, 1), new(0, 0)]) < 0);
+    }
+
+    [Fact]
+    public void Read_RingWhoseOrientationOverflows()
+    {
+        // The area of the second polygon overflows (infinity minus infinity): its ring is still read, as an exterior ring
+        var polygons = new GeoMultiPolygon(
+        [
+            new GeoPolygon([[new(0, 0), new(0, 1), new(1, 1), new(1, 0), new(0, 0)]]),
+            new GeoPolygon([[new(1e200, 2e200), new(2e200, 1e200), new(2e200, 2e200), new(1e200, 2e200)]]),
+        ]);
+        using var shp = new MemoryStream();
+        using var shx = new MemoryStream();
+        using var dbf = new MemoryStream();
+        Shapefile.Write([new GeoFeature(polygons)], shp, shx, dbf);
+
+        var read = Shapefile.Read(new MemoryStream(shp.ToArray()), new MemoryStream(dbf.ToArray()));
+        Assert.HasCount(2, Assert.IsType<GeoMultiPolygon>(read[0].Geometry).Polygons);
+    }
 }

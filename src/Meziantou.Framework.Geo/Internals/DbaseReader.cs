@@ -107,14 +107,21 @@ internal sealed class DbaseReader
                 return null;
 
             case 'C':
-                var text = value.TrimEnd((byte)' ').TrimEnd((byte)0);
+                var text = CutAtNull(value).TrimEnd((byte)' ');
                 return text.IsEmpty ? null : _decoder.Decode(text);
 
             default:
                 // The other types (memo block numbers, FoxPro types) as their text, as GDAL does, without the padding
-                var other = value.Trim((byte)' ').TrimEnd((byte)0);
+                var other = CutAtNull(value).Trim((byte)' ');
                 return other.IsEmpty ? null : _decoder.Decode(other);
         }
+    }
+
+    // A value ends at its first NUL byte, as shapelib reads it as a C string: the NUL bytes pad it, after its spaces or instead of them
+    private static ReadOnlySpan<byte> CutAtNull(ReadOnlySpan<byte> value)
+    {
+        var end = value.IndexOf((byte)0);
+        return end < 0 ? value : value[..end];
     }
 
     private static string GetUniqueName(HashSet<string> names, string name)

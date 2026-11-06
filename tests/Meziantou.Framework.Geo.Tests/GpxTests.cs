@@ -279,4 +279,11 @@ public sealed class GpxTests
         Assert.Equal("Mont Blanc", copy.Name);
         Assert.Equal(["wpt", "trk"], copy.Select(feature => feature.Properties[Gpx.TypePropertyName]));
     }
+
+    [Fact]
+    public void Read_InvalidCharacterInDetectedEncoding()
+    {
+        // "<" in UTF-32, then a surrogate (U+DB00), which UTF-32 cannot hold: creating the XML reader fails
+        Assert.Throws<FormatException>(() => Gpx.Read(new MemoryStream([0x3C, 0, 0, 0, 0, 0xDB, 0, 0])));
+    }
 }

@@ -19,8 +19,9 @@ public static class EncodedPolyline
 {
     private const int MaxPrecision = 10;
 
-    // Keep the scaled coordinates and their differences far from the limits of a long
-    private const double MaxScaledValue = 1e18;
+    // The largest scaled coordinate: below 2^50, dividing it by the factor and multiplying the result back gives the same
+    // integer, so the decoded positions encode to the same polyline
+    private const double MaxScaledValue = 1e15;
 
     /// <summary>Decodes the positions of an encoded polyline.</summary>
     /// <param name="encoded">The encoded polyline.</param>
@@ -140,7 +141,11 @@ public static class EncodedPolyline
     {
         try
         {
-            return checked(total + value);
+            var sum = checked(total + value);
+            if (Math.Abs((double)sum) > MaxScaledValue)
+                throw new FormatException($"The value at position {position.ToString(CultureInfo.InvariantCulture)} of the encoded polyline makes a coordinate too large.");
+
+            return sum;
         }
         catch (OverflowException ex)
         {

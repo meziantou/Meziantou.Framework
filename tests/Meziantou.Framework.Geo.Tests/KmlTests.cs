@@ -431,4 +431,54 @@ public sealed class KmlTests
         }
         #endregion
     }
+
+    [Fact]
+    public void Kmz_EncryptedEntry()
+    {
+        var zip = EncryptEntries(CreateZip("doc.kml", "<kml/>"));
+#if NET11_0_OR_GREATER
+        // .NET 11 reads encrypted entries, and does not support the encryption of this one
+        Assert.Throws<FormatException>(() => Kmz.Read(new MemoryStream(zip)));
+#else
+        // .NET 10 ignores the flag, and the entry is not encrypted
+        Assert.Empty(Kmz.Read(new MemoryStream(zip)));
+#endif
+    }
+
+    // Sets the "encrypted" flag (bit 0 of the general purpose flags) of every entry, in the local and the central headers
+    internal static byte[] EncryptEntries(byte[] zip)
+    {
+        for (var i = 0; i + 4 <= zip.Length; i++)
+        {
+            if (zip[i] is 0x50 && zip[i + 1] is 0x4B && zip[i + 2] is 0x03 && zip[i + 3] is 0x04)
+            {
+                zip[i + 6] |= 1;
+            }
+            else if (zip[i] is 0x50 && zip[i + 1] is 0x4B && zip[i + 2] is 0x01 && zip[i + 3] is 0x02)
+            {
+                zip[i + 8] |= 1;
+            }
+        }
+
+        return zip;
+    }
+
+    internal static byte[] CreateZip(string name, string content)
+    {
+        using var memory = new MemoryStream();
+        using (var archive = new ZipArchive(memory, ZipArchiveMode.Create, leaveOpen: true))
+        {
+            using var entry = new StreamWriter(archive.CreateEntry(name).Open());
+            entry.Write(content);
+        }
+
+        return memory.ToArray();
+    }
+
+    [Fact]
+    public void Read_InvalidCharacterInDetectedEncoding()
+    {
+        // "<" in UTF-32, then a surrogate (U+DB00), which UTF-32 cannot hold: creating the XML reader fails
+        Assert.Throws<FormatException>(() => Kml.Read(new MemoryStream([0x3C, 0, 0, 0, 0, 0xDB, 0, 0])));
+    }
 }

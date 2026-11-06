@@ -88,12 +88,13 @@ public sealed class SankeyMark<T> : Mark<T>
                 .CubicTo(middle, link.Y0, middle, link.Y1, link.Target.X0, link.Y1)
                 .Build();
             var color = data.Fill is null && FillColor is null ? context.Theme.GetPaletteColor(link.Source.Index) : GetFill(context, data, row);
-            group.Add(new ScenePath(path)
+            var shape = group.Add(new ScenePath(path)
             {
                 Stroke = color.WithOpacity(color.Opacity * LinkOpacity),
                 StrokeWidth = Math.Max(1, link.Width),
                 Tooltip = data.Titles?[row] ?? link.Source.Name + " → " + link.Target.Name + ": " + NumberFormats.Default(link.Value),
             });
+            DataAttributeValues.Apply(shape, data.DataAttributes, row);
         }
 
         var font = context.LabelFont;

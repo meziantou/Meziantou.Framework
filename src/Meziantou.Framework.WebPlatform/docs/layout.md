@@ -2503,12 +2503,15 @@ aliases of `flex-start`/`flex-end`.
   items are placed again after the position of the strip where the next column starts, where the running positions start
   again (after the rest of the broken items, without the gaps after the items that end in the previous column) and the
   auto-placement cursor points to the first line again; the fragmentation of the strip then breaks the items that cross the
-  end of a column. Gecko places the items without the auto-placement cursor (the ties go to the first track): the references of
+  end of a column. The items are parallel flows of a single track (`ParallelStructureKind.GridLanes`: each one breaks at
+  its own possible breaks, independently of the items of the other lanes), and the rest of an item that is broken is as tall
+  as its contents once fragmented (its contents may be pushed by their own breaks, a line box that does not fit): the
+  fragmentation records where each broken item ends (`GridLanesBreaks.ItemEnds`, from the end the breaker placed,
+  `ParallelItem.EndIndex`), and the next items of its lanes follow it in the next placement. Gecko places the items without the auto-placement cursor (the ties go to the first track): the references of
   WPT `css/css-break/grid/grid-lanes/grid-lanes-fragmentation-001.html` and `-002.html` differ where the cursor decides.
 - Not done: the fragmentation in the stacking axis of a container in a parallel flow (an item of a flex or grid container,
   a box with a specified block size) or in a nested multi-column container, with dense packing or `fill-reverse` (the items
-  are placed as in a container that is not fragmented), and the rest of a broken item that is taller than the part after
-  the end of the column (its contents are pushed by their own breaks) overlaps the next item of its track; the baseline
+  are placed as in a container that is not fragmented, and are fragmented with the flow of the container); the baseline
   alignment of the items of a grid lanes subgrid with the items of its parent, the extra margins of an auto-placed subgrid
   nested in a grid lanes subgrid (the ones of its first position).
 
@@ -2780,7 +2783,8 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
     the result is one `FlowMap` per flow (the fragmentainer and the offset of each position of the strip), which the slicer
     uses for the fragments of the flow.
   - The block-end edge of an item follows its contents when its block size is automatic (the item grows when its contents
-    are pushed by its breaks; a stretched item is at least as tall as its track), and is placed by the flow of the container
+    are pushed by its breaks; a stretched item is at least as tall as its track; as in Blink, its fragments are not taller
+    together than its `max-height`, `ParallelItem.MaxEnd`: the item then ends and its contents overflow it), and is placed by the flow of the container
     when its block size is definite (a specified block size, an item stretched in a single-line flex container or a grid
     with a definite block size, a column flex item with a definite flex basis and block size, a stretched item of a grid
     whose rows have a fixed track sizing function, `GridItemRows.HasFixedRows`: as in Blink, a row that is neither
@@ -2992,7 +2996,12 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
     a row of the next outer fragmentainer. The last row of a container whose definite block size ends in the outer
     fragmentainer has overflow columns (also the row where the content box of a container whose block size is not definite
     reaches its `max-height`). A row of a fixed block size (`column-height`) is broken by the end of the outer
-    fragmentainer; when it follows other content of the container in the outer fragmentainer, it starts there only if it fits.
+    fragmentainer. As in Blink, when its columns are filled sequentially (`column-fill: auto`) and it follows other content
+    of the container in the outer fragmentainer, it starts there only if it fits; a balanced row starts in any space that
+    remains, and when it follows a column spanner and is broken by the end of the outer fragmentainer, it starts again with its
+    whole block size in the next one (the rows before the first spanner continue there with the block size they have left).
+    A spanner that does not fit in what remains of the row where the content before it ends starts the next row (in the next
+    outer fragmentainer when that row does not fit, with `column-fill: auto`), and the rows after a spanner are balanced.
     These rows overflow a container with a definite block size (its block-end edge is placed before the end of its content).
   - A column that would break where a rule is violated (`orphans`/`widows`, `avoid`, content that overflows) ends the row
     before it and is placed in the next outer fragmentainer, unless a break that is as bad was already taken in the columns
@@ -3033,9 +3042,13 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
     and whose static position is in its strip is moved to that static position in the inner columns that the breaker placed
     (`ColumnBreaker.TryGetNestedStaticPosition`, `OutOfFlowPlacement.InlineShift`), also when its containing block is an
     inline box of the outer strip or is outside of the outer container.
-  - The floats, the absolutely positioned boxes and the inline-blocks that are multi-column containers are monolithic, as
-    are the containers that extend past the block-end edge of an ancestor that clips its overflow (`overflow: clip`; a
-    container inside such an ancestor is fragmented).
+  - The floats and the absolutely positioned boxes that are multi-column containers are fragmented the same way: a float is
+    a parallel flow at its position in the flow of its containing block (its first row accepts the violations of the rules:
+    the space before a float is its margin, not a possible break, and its first content does not push it to the next
+    fragmentainer, it overflows its column, `FloatExtent.LeadingEnd`), an absolutely positioned box is placed as the other
+    ones (see *Absolutely positioned boxes*) by a cursor of its rows. The inline-blocks that are multi-column containers are
+    monolithic, as are the containers that extend past the block-end edge of an ancestor that clips its overflow
+    (`overflow: clip`; a container inside such an ancestor is fragmented).
 - **Fragments** (`FragmentSlicer`, [§5](https://drafts.csswg.org/css-break-3/#box-splitting)): a fragment whose subtree is in one column
   (and contains no column spanner, which the multi-column container places itself) is moved to it; a box that spans several columns gets one `BoxFragment` per column (`BoxFragment.CreateSlice`:
   `IsFirstFragment`/`IsLastFragment`, `UnfragmentedFragment` is the fragment before the split), whose children are distributed
@@ -3077,8 +3090,7 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
   min-content inline-size contribution of its contents", as in Chrome). The column spanners are measured apart (`LayoutContext.ColumnSpannerSizes`): they are not in
   a column, the container is at least as wide as their contributions. With size containment, the content has no size (the gaps
   remain).
-- Not done: the spanners in the rows of a fixed block size of a nested multi-column container (they are placed after the
-  content, not in the rows), the margins after the last box of the content (they must fit in the last column), the
+- Not done: the margins after the last box of the content (they must fit in the last column), the
   painting of a spanner with the effects of its ancestors inside the container (`opacity`: the spanner is a child of the
   fragment of the container), the containing block of the absolutely positioned boxes of a spanner (a positioned ancestor of
   the spanner inside the container is used), the relayout of the content in
@@ -3169,12 +3181,17 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   of its inline size (its initial containing block is that page area): the pages are segments of strips, one per change of
   inline size. A segment ends before the first page whose page area has another inline size when that page starts before an
   in-flow block-level box of the block flow of the root element (`FindBreakAnchor`: a break between two block boxes, also
-  inside the root element and the body); the next segment lays out the strip again and paginates it from the start of that
-  box (with the margin preserved after a forced break), the content before it being in a virtual first fragmentainer whose
-  fragments are dropped. The pages of a segment followed by another one are copies of the fragments (the next layout may
+  inside the root element and the body), or between two line boxes of a block container of that block flow; the next
+  segment lays out the strip again and paginates it from the start of that box (with the margin preserved after a forced
+  break), or from the content box of the block container, whose line boxes start at the position of its inline content where
+  the line box after the break started (`InlineResume`, recorded by `LineBoxFragment.StartPosition`, given to the inline layout
+  by `LayoutContext.InlineResumes`: none of these lines is the first line, without `::first-line`, `text-indent`, outside
+  marker nor `text-box-trim`), the content before it being in a virtual first fragmentainer whose fragments are dropped. The pages of a segment followed by another one are copies of the fragments (the next layout may
   return and move the fragments of the boxes laid out the same way). The boxes fixed to the viewport are laid out once, in
   the initial containing block of the first page, as in Blink. A page of another inline size that starts inside a line, a
-  flex container... is laid out in the inline size of the strip. Nothing changes (nothing is laid out again) when all the
+  flex container... is laid out in the inline size of the strip. The floats and the absolutely positioned boxes of the inline
+  content before the position of a block container laid out from a position are not in the next segment (a float that
+  starts before the break and continues after it is not continued). Nothing changes (nothing is laid out again) when all the
   pages have the inline size of the first one.
 - **Monolithic content**: as in the browsers, the scroll containers are not monolithic in the pages (their contents are
   printed). The monolithic content (a replaced element, a box with size containment, a line box) that does not fit in an
@@ -3235,7 +3252,8 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   counter of that page only; a page-margin box applies its own counter properties for itself only. The counters are not
   nested (`counters()` shows one value).
 - Not done: the layout of the content of a page whose page area has another inline size than the strip when the page does
-  not start before a block box of the block flow of the root element (it is laid out in the inline size of the strip), the
+  not start before a block box or between two line boxes of the block flow of the root element (it is laid out in the inline
+  size of the strip), the
   nested documents of the `iframe` elements (they are painted as on the screen), `window.print()`,
   `beforeprint` and `afterprint`.
 

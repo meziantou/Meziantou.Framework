@@ -35,6 +35,19 @@ public sealed class HierarchyChartTests
         ChartAssert.Svg(plot, "Treemap");
     }
 
+    [Fact]
+    public void Treemap_DataAttributes()
+    {
+        var root = Hierarchy.FromPaths(SampleData.Files, file => file.Path, value: file => file.Size).SortByValue();
+        var plot = new Plot();
+        plot.Add(new TreemapMark<FileEntry?>(root) { DataAttributes = node => [new("depth", node.Depth), new("path", node.Data?.Path)] });
+
+        var files = SampleData.Files.Select(file => file.Path).ToHashSet(StringComparer.Ordinal);
+        var leaves = ChartAssert.DataAttributes(plot.ToSvg()).Where(item => item.Attributes.Contains(";path=", StringComparison.Ordinal)).ToList();
+        Assert.NotEmpty(leaves);
+        Assert.All(leaves, leaf => files.Contains(leaf.Attributes.Split(';')[1]["path=".Length..]));
+    }
+
     [Theory]
     [InlineData(TreemapTiling.Binary)]
     [InlineData(TreemapTiling.Slice)]

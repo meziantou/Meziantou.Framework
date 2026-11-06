@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Xml.Linq;
 
 namespace Meziantou.Framework.Charts.Tests;
 
@@ -920,6 +921,120 @@ public sealed class CartesianChartTests
         Assert.Contains("<title>North: 150</title>", svg);
         Assert.Contains("role=\"img\"", svg);
         ChartAssert.Svg(svg);
+    }
+
+    [Fact]
+    public void RichTooltip()
+    {
+        #region Charts_RichTooltip
+        var totals = SampleData.Sales.GroupBy(sale => sale.Region).ToDictionary(group => group.Key, group => group.Sum(sale => sale.Amount));
+        var plot = new Plot { Title = "Sales by region, stacked by year" };
+        plot.Add(new BarMark<Sale>(SampleData.Sales, x: sale => sale.Region, y: sale => sale.Amount)
+        {
+            Fill = sale => sale.Year,
+            Transform = new StackTransform(),
+            Title = sale => $"{sale.Region}, {sale.Year}: {sale.Amount}",
+            DataAttributes = sale =>
+            [
+                new("region", sale.Region),
+                new("year", sale.Year),
+                new("amount", sale.Amount),
+                new("share", sale.Amount / totals[sale.Region]),
+            ],
+            CssClass = "sales",
+        });
+        var svg = plot.ToSvg(new SvgRenderOptions { IdPrefix = "sales", IncludeNamespace = false });
+        #endregion
+
+        var bars = XDocument.Parse(svg).Descendants("g").Single(group => (string?)group.Attribute("class") is "sales").Elements("rect").ToList();
+        Assert.HasCount(SampleData.Sales.Length, bars);
+        var north2024 = bars.Single(bar => (string?)bar.Attribute("data-region") is "North" && (string?)bar.Attribute("data-year") is "2024");
+        Assert.Equal("150", (string?)north2024.Attribute("data-amount"));
+        Assert.Equal((150d / 405).ToString(CultureInfo.InvariantCulture), (string?)north2024.Attribute("data-share"));
+        Assert.Equal("North, 2024: 150", north2024.Element("title")?.Value);
+    }
+
+    [Fact]
+    public void DataAttributes_FormatValuesWithTheInvariantCulture()
+    {
+        var plot = new Plot();
+        plot.Add(new DotMark<int>([1], x: i => i, y: i => i)
+        {
+            DataAttributes = _ =>
+            [
+                new("number", 1234567.125),
+                new("integer", 42),
+                new("date", new DateOnly(2024, 1, 2)),
+                new("time", new DateTime(2024, 1, 2, 3, 4, 5, DateTimeKind.Utc)),
+                new("offset", new DateTimeOffset(2024, 1, 2, 3, 4, 5, TimeSpan.FromHours(2))),
+                new("flag", true),
+                new("missing", null),
+                new("nan", double.NaN),
+                new("name", "first"),
+                new("name", "second"),
+            ],
+        });
+
+        var (element, attributes) = Assert.Single(ChartAssert.DataAttributes(plot.ToSvg()));
+        Assert.Equal("circle", element);
+        Assert.Equal("date=2024-01-02;flag=true;integer=42;name=second;number=1234567.125;offset=2024-01-02T03:04:05.0000000+02:00;time=2024-01-02T03:04:05.0000000Z", attributes);
+    }
+
+    [Fact]
+    public void DataAttributes_RejectInvalidNames()
+    {
+        var plot = new Plot();
+        plot.Add(new DotMark<int>([1], x: i => i, y: i => i) { DataAttributes = _ => [new("Region", "North")] });
+        Assert.Throws<ArgumentException>("DataAttributes", () => plot.ToSvg());
+    }
+
+    [Fact]
+    public void DataAttributes_LineUsesTheFirstRowAndMarkersTheirOwn()
+    {
+        Reading[] readings =
+        [
+            new(new DateOnly(2024, 1, 1), "Paris", 5), new(new DateOnly(2024, 1, 2), "Paris", 6),
+            new(new DateOnly(2024, 1, 1), "Oslo", -3), new(new DateOnly(2024, 1, 2), "Oslo", -4),
+        ];
+        var plot = new Plot();
+        plot.Add(new LineMark<Reading>(readings, x: reading => reading.Date, y: reading => reading.Temperature)
+        {
+            Stroke = reading => reading.City,
+            MarkerRadius = 3,
+            DataAttributes = reading => [new("city", reading.City), new("date", reading.Date)],
+        });
+
+        Assert.Equal(
+        [
+            ("path", "city=Paris;date=2024-01-01"),
+            ("circle", "city=Paris;date=2024-01-01"),
+            ("circle", "city=Paris;date=2024-01-02"),
+            ("path", "city=Oslo;date=2024-01-01"),
+            ("circle", "city=Oslo;date=2024-01-01"),
+            ("circle", "city=Oslo;date=2024-01-02"),
+        ], ChartAssert.DataAttributes(plot.ToSvg()));
+    }
+
+    [Fact]
+    public void DataAttributes_BinsHaveNone()
+    {
+        var plot = new Plot();
+        plot.Add(new RectMark<double>([1, 2, 3, 10]) { X = value => value, Transform = new BinTransform(), DataAttributes = value => [new("value", value)] });
+        Assert.Empty(ChartAssert.DataAttributes(plot.ToSvg()));
+    }
+
+    [Fact]
+    public void DataAttributes_FollowTheRowsOfEachFacet()
+    {
+        var plot = new Plot();
+        plot.Add(new BarMark<Sale>(SampleData.Sales, x: sale => sale.Region, y: sale => sale.Amount)
+        {
+            FacetX = sale => sale.Year,
+            DataAttributes = sale => [new("amount", sale.Amount), new("region", sale.Region), new("year", sale.Year)],
+        });
+
+        var expected = SampleData.Sales.Select(sale => string.Create(CultureInfo.InvariantCulture, $"amount={sale.Amount};region={sale.Region};year={sale.Year}")).Order(StringComparer.Ordinal);
+        Assert.Equal(expected, ChartAssert.DataAttributes(plot.ToSvg()).Select(item => item.Attributes).Order(StringComparer.Ordinal));
     }
 
     [Fact]

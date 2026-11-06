@@ -23,6 +23,16 @@ internal static class ChartAssert
     public static void Svg(Plot plot, string? documentationImage = null, [CallerFilePath] string? filePath = null, [CallerLineNumber] int lineNumber = -1, [CallerMemberName] string? memberName = null)
         => Svg(plot.ToSvg(), documentationImage, filePath, lineNumber, memberName);
 
+    /// <summary>Returns the elements of an SVG that have <c>data-*</c> attributes, in document order, with their attributes as <c>name=value</c> joined by <c>;</c>.</summary>
+    public static List<(string Element, string Attributes)> DataAttributes(string svg)
+    {
+        return [.. XDocument.Parse(svg).Descendants()
+            .Select(element => (element.Name.LocalName, Attributes: string.Join(';', element.Attributes()
+                .Where(attribute => attribute.Name.LocalName.StartsWith("data-", StringComparison.Ordinal))
+                .Select(attribute => attribute.Name.LocalName["data-".Length..] + "=" + attribute.Value))))
+            .Where(item => item.Attributes.Length > 0)];
+    }
+
     private static void AssertDocumentationImage(string name, string svg)
     {
         var path = Path.Combine(GetRepositoryRoot(), "docs", "Charts", "images", name + ".svg");

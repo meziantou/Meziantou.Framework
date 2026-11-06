@@ -16,11 +16,18 @@ internal sealed partial class GridLayoutAlgorithm
     /// </summary>
     private GridLanesBreaks? GetLanesBreaks()
     {
-        if (_stackAxis != GridAxis.Rows || FillReverse || _style.Grid.LanesPackDense || _style.Grid.AutoFlow.IsDense)
+        if (_stackAxis != GridAxis.Rows || !IsPlacedInFragmentainers(_style))
             return null;
 
         return _context.GridLanesBreaks is { } breaks && breaks.TryGetValue(_box, out var result) ? result : null;
     }
+
+    /// <summary>
+    /// Returns whether the items of a grid lanes container fragmented in its stacking axis are placed in each fragmentainer (see
+    /// <see cref="GridLanesFragmentation"/>): its lanes are columns, and it has neither dense packing nor <c>fill-reverse</c>.
+    /// </summary>
+    internal static bool IsPlacedInFragmentainers(LayoutStyle style)
+        => GetLaneAxis(style) == GridAxis.Columns && !style.Grid.LanesDirection.FillReverse && !style.Grid.LanesPackDense && !style.Grid.AutoFlow.IsDense;
 
     /// <summary>
     /// The grid lanes placement in a container fragmented in its stacking axis (https://drafts.csswg.org/css-grid-3/#fragmentation):
@@ -76,7 +83,16 @@ internal sealed partial class GridLayoutAlgorithm
                 var advance = Math.Max(0, outer + gap);
                 item.LanesOuterSize = Math.Max(0, outer);
                 item.LanesPosition = position;
-                rangeEnd = Math.Max(rangeEnd, position + item.LanesOuterSize);
+
+                // (an item that is broken ends where its rest ends once its contents are fragmented: the next items of its lanes follow it)
+                var end = position + item.LanesOuterSize;
+                if (position + outer > regionEnd + FragmentationEpsilon && breaks.ItemEnds is { } itemEnds && itemEnds.TryGetValue(item.Box, out var fragmentedEnd) && fragmentedEnd > end)
+                {
+                    advance += fragmentedEnd - end;
+                    end = fragmentedEnd;
+                }
+
+                rangeEnd = Math.Max(rangeEnd, end);
                 for (var i = start; i < start + span; i++)
                 {
                     running[i] = position + advance;

@@ -1083,7 +1083,12 @@ the fragment. The contents of the box (the `foreignObject` boxes of an `svg`) ar
   immediately; the layout is computed again while an initial determination makes an element relevant. A change of the flag
   posts a task that fires `contentvisibilityautostatechange` (`ContentVisibilityAutoStateChangeEvent`; the first determination
   always fires one, as in the browsers; `oncontentvisibilityautostatechange` is added to GlobalEventHandlers by `tools/Meziantou.Framework.WebPlatform.SpecGen`).
-  A non-initial proximity change requests another rendering opportunity (its event is fired by the next one). An element that
+  A non-initial proximity change requests another rendering opportunity (its event is fired by the next one). A painting
+  outside of a rendering update (`LayoutEngine.GetDisplayList`, `PaintScreenshot`, e.g. a screenshot taken before the first
+  frame) runs the initial determinations first (`LayoutEngine.DetermineInitialContentRelevancy`,
+  `ContentRelevancy.DetermineInitialProximities`: only the undetermined elements, the layout is computed again while one
+  becomes relevant), as Blink determines them in the lifecycle that paints: the elements in the viewport are never painted
+  skipped. The proximities already determined are left to the rendering steps. An element that
   loses `content-visibility: auto` or its box forgets its state. `scrollIntoView()` activates the `auto` ancestors that skip the
   contents containing the target (their proximity becomes close until the next determination), as in the browsers. A
   document whose style sheets or style attributes declare `content-visibility` is laid out by the rendering steps even when

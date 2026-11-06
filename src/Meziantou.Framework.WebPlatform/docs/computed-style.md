@@ -526,6 +526,14 @@ like the imported style sheets (`DocumentRequest.Initiator` is null), when the d
   value (`currentcolor` is resolved). The
   relative color syntax is kept as specified. `light-dark()` of images computes to the image of the used color scheme
   (`none` is `image(rgba(0, 0, 0, 0))`).
+- Custom color spaces ([CSS Color 5](https://drafts.csswg.org/css-color-5/#custom-color)): `color(--name ...)` is
+  converted with the ICC profile of the `@color-profile --name` rule (`CSSColorProfileRule`; the last rule of the
+  strongest cascade layer wins) to `color(xyz-d50 ...)`. The profile (the `url()` of its `src` descriptor) is fetched at
+  the rendering update of the document, before its load event, which it delays; the styles are computed again once it is
+  loaded. Until then, and for a name without rule or a profile that is not supported, the color keeps its specified value
+  (it is not painted). Only the RGB display profiles based on a matrix and tone curves are supported (the profiles based
+  on lookup tables are not), and the `rendering-intent` and `components` descriptors and `@color-profile device-cmyk` are
+  parsed but not used.
 - The color conversions follow the sample code of CSS Color 4, except the transfer function of `rec2020`: the piecewise
   function of ITU-R BT.2020 (as in all the browsers and in the reftests), not the pure 2.4 gamma of BT.1886 of the current
   draft (which only the newer testharness tests use). The computed and used colors are not gamut mapped (they keep the

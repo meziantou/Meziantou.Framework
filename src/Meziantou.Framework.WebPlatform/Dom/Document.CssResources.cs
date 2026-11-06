@@ -14,6 +14,15 @@ public partial class Document
     internal bool CueStyleSheetsMayReferenceImages { get; set; }
     private HashSet<(string Url, bool Cors, Css.Values.CssRequestModifiers Modifiers)>? _fetchedCssImages;
 
+    // The ICC profiles of the @color-profile rules by URL (null while they load, or when they are not valid), and the
+    // profiles of the custom color spaces by name
+    private Dictionary<string, Css.Cascade.CssColorProfile?>? _colorProfilesByUrl;
+    private Dictionary<string, Css.Cascade.CssColorProfile>? _colorProfiles;
+    private int _colorProfilesVersion = -1;
+
+    /// <summary>Returns the ICC profile of a custom color space (https://drafts.csswg.org/css-color-5/#at-profile), or null when no @color-profile rule defines it or its profile is not loaded (or not valid).</summary>
+    internal Css.Cascade.CssColorProfile? GetColorProfile(string name) => _colorProfiles?.GetValueOrDefault(name);
+
     /// <summary>
     /// Schedules the fetch of the resources used by the rendering of the document (the images of the computed styles and the
     /// font faces of the text) at the next rendering opportunity, when the document has a browsing context that can fetch them.
@@ -63,6 +72,7 @@ public partial class Document
             return false;
 
         _cssImagesVersion = version;
+        FetchColorProfiles();
         CssImageFetching.FetchUsedImages(this, _fetchedCssImages ??= []);
         return true;
     }
@@ -114,6 +124,97 @@ public partial class Document
     }
 
     /// <summary>
+    /// Fetches the ICC profiles of the @color-profile rules of the document (https://drafts.csswg.org/css-color-5/#at-profile)
+    /// and maps the names of the custom color spaces to the loaded profiles: the styles are computed again when a profile is
+    /// loaded or a name gets another profile. The fetches started before the load event delay it.
+    /// </summary>
+    private void FetchColorProfiles()
+    {
+        if (StyleSheetsVersion == _colorProfilesVersion || BrowsingContext is not { Options.DocumentLoader: not null })
+            return;
+
+        _colorProfilesVersion = StyleSheetsVersion;
+        var rules = GetStyleEngine().GetColorProfileRules();
+        if (rules.Count == 0 && _colorProfiles is null)
+            return;
+
+        foreach (var (_, (rule, baseUrl)) in rules)
+        {
+            if (GetColorProfileUrl(rule, baseUrl) is not { } url || !(_colorProfilesByUrl ??= new(StringComparer.Ordinal)).TryAdd(url.Serialize(), null))
+                continue;
+
+            var key = url.Serialize();
+            var delaysLoadEvent = ReadyState != DocumentReadyState.Complete;
+            if (delaysLoadEvent)
+            {
+                CssImagesDelayingTheLoadEvent++;
+            }
+
+            var request = SubresourceFetching.CreateRequest(this, url, RequestDestination.Empty, cors: false, referrerPolicy: "", initiator: null);
+            var started = SubresourceFetching.Fetch(this, request, resource =>
+            {
+                _colorProfilesByUrl[key] = resource?.ContentBytes is { } bytes ? Css.Cascade.CssColorProfile.Parse(bytes.Span) : null;
+                UpdateColorProfiles();
+                if (delaysLoadEvent)
+                {
+                    CssImagesDelayingTheLoadEvent--;
+                    TryQueueLoadEvent();
+                }
+            }, initiatorType: "css");
+            if (!started && delaysLoadEvent)
+            {
+                CssImagesDelayingTheLoadEvent--;
+            }
+        }
+
+        UpdateColorProfiles();
+    }
+
+    /// <summary>Maps the names of the custom color spaces to their loaded profiles, and computes the styles again when the map changes.</summary>
+    private void UpdateColorProfiles()
+    {
+        var profiles = new Dictionary<string, Css.Cascade.CssColorProfile>(StringComparer.Ordinal);
+        foreach (var (name, (rule, baseUrl)) in GetStyleEngine().GetColorProfileRules())
+        {
+            if (GetColorProfileUrl(rule, baseUrl) is { } url && _colorProfilesByUrl?.GetValueOrDefault(url.Serialize()) is { } profile)
+            {
+                profiles[name] = profile;
+            }
+        }
+
+        var previous = _colorProfiles;
+        if (previous is null ? profiles.Count == 0 : previous.Count == profiles.Count && profiles.All(p => previous.TryGetValue(p.Key, out var other) && ReferenceEquals(other, p.Value)))
+            return;
+
+        _colorProfiles = profiles;
+        IncrementDomVersion();
+    }
+
+    /// <summary>Returns the URL of the <c>src</c> descriptor of a @color-profile rule (a <c>url()</c>), or null.</summary>
+    private Urls.UrlRecord? GetColorProfileUrl(CssColorProfileRule rule, string? baseUrl)
+    {
+        string? value = null;
+        foreach (var component in Css.Syntax.CssParser.ParseListOfComponentValues(rule.Src))
+        {
+            switch (component)
+            {
+                case Css.Syntax.CssPreservedToken { Type: Css.Syntax.CssTokenType.Url } urlToken:
+                    value = urlToken.Token.Value;
+                    break;
+                case Css.Syntax.CssFunction { Name: var functionName } function when Infra.InfraAscii.EqualsIgnoreAsciiCase(functionName, "url") && Css.Values.ValueMatcher.RemoveWhitespace(function.Value) is [Css.Syntax.CssPreservedToken { Type: Css.Syntax.CssTokenType.String } stringToken]:
+                    value = stringToken.Token.Value;
+                    break;
+            }
+        }
+
+        if (value is null)
+            return null;
+
+        var parsedBase = baseUrl is not null ? Urls.UrlParser.Parse(baseUrl, baseUrl: null) : null;
+        return Urls.UrlParser.Parse(value, parsedBase ?? DocumentBaseUrl);
+    }
+
+    /// <summary>
     /// Fetches the resources used by the rendering of the document, as the user agent does when it updates the rendering
     /// (https://html.spec.whatwg.org/multipage/webappapis.html#update-the-rendering): the images referenced by the computed
     /// values of the rendered elements, and, once the document is loaded, the font faces used by its text.
@@ -139,6 +240,7 @@ public partial class Document
         }
 
         _cssResourcesVersion = version;
+        FetchColorProfiles();
         CssImageFetching.FetchUsedImages(this, _fetchedCssImages ??= []);
         if (ContentSecurityPoliciesOrNull is { Count: > 0 })
         {

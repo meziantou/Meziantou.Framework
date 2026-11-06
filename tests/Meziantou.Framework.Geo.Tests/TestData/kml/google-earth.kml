@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2" xmlns:kml="http://www.opengis.net/kml/2.2" xmlns:atom="http://www.w3.org/2005/Atom">
+<Document>
+	<name>Trip to Paris.kml</name>
+	<open>1</open>
+	<Style id="s_ylw-pushpin">
+		<IconStyle>
+			<scale>1.1</scale>
+			<Icon>
+				<href>http://maps.google.com/mapfiles/kml/pushpin/ylw-pushpin.png</href>
+			</Icon>
+		</IconStyle>
+	</Style>
+	<StyleMap id="m_ylw-pushpin">
+		<Pair>
+			<key>normal</key>
+			<styleUrl>#s_ylw-pushpin</styleUrl>
+		</Pair>
+	</StyleMap>
+	<Schema name="Monument" id="MonumentSchema">
+		<SimpleField type="string" name="architect"><displayName>Architect</displayName></SimpleField>
+		<SimpleField type="int" name="height"></SimpleField>
+		<SimpleField type="double" name="visitors"></SimpleField>
+		<SimpleField type="bool" name="unesco"></SimpleField>
+	</Schema>
+	<Folder>
+		<name>Monuments</name>
+		<open>1</open>
+		<Placemark id="eiffel">
+			<name>Eiffel Tower</name>
+			<description><![CDATA[<p>Built for the <b>1889</b> World's Fair.</p><img src="https://example.com/eiffel.jpg"/>]]></description>
+			<LookAt>
+				<longitude>2.2945</longitude>
+				<latitude>48.8584</latitude>
+				<range>1000</range>
+			</LookAt>
+			<styleUrl>#m_ylw-pushpin</styleUrl>
+			<ExtendedData>
+				<SchemaData schemaUrl="#MonumentSchema">
+					<SimpleData name="architect">Gustave Eiffel</SimpleData>
+					<SimpleData name="height">330</SimpleData>
+					<SimpleData name="visitors">5.8e6</SimpleData>
+					<SimpleData name="unesco">0</SimpleData>
+				</SchemaData>
+			</ExtendedData>
+			<Point>
+				<gx:drawOrder>1</gx:drawOrder>
+				<coordinates>
+					2.2945, 48.8584, 0
+				</coordinates>
+			</Point>
+		</Placemark>
+		<Folder>
+			<name>Museums</name>
+			<Placemark>
+				<name>Louvre</name>
+				<description>The world's most-visited museum &amp; a historic monument</description>
+				<ExtendedData>
+					<Data name="opening">
+						<displayName>Opening year</displayName>
+						<value>1793</value>
+					</Data>
+					<Data name="website"><value>https://www.louvre.fr</value></Data>
+					<Data name="closed"/>
+				</ExtendedData>
+				<Polygon>
+					<extrude>1</extrude>
+					<altitudeMode>relativeToGround</altitudeMode>
+					<outerBoundaryIs>
+						<LinearRing>
+							<coordinates>
+								2.3320,48.8600,20 2.3390,48.8620,20
+								2.3400,48.8600,20 2.3330,48.8585,20
+								2.3320,48.8600,20
+							</coordinates>
+						</LinearRing>
+					</outerBoundaryIs>
+					<innerBoundaryIs>
+						<LinearRing>
+							<coordinates>2.3355,48.8605,20 2.3365,48.8605,20 2.3360,48.8610,20 2.3355,48.8605,20</coordinates>
+						</LinearRing>
+					</innerBoundaryIs>
+				</Polygon>
+			</Placemark>
+		</Folder>
+	</Folder>
+	<Folder>
+		<name>Routes</name>
+		<Placemark>
+			<name>Walk</name>
+			<LineString>
+				<tessellate>1</tessellate>
+				<coordinates>2.2945,48.8584,0 2.3009,48.8606,0 2.3360,48.8606,0 </coordinates>
+			</LineString>
+		</Placemark>
+		<Placemark>
+			<name>Run</name>
+			<gx:Track>
+				<altitudeMode>absolute</altitudeMode>
+				<when>2024-05-01T08:00:00Z</when>
+				<when>2024-05-01T08:01:00Z</when>
+				<when>2024-05-01T08:02:00Z</when>
+				<gx:coord>2.2945 48.8584 35</gx:coord>
+				<gx:coord>2.2960 48.8590 36.5</gx:coord>
+				<gx:coord>2.2975 48.8597 38</gx:coord>
+				<ExtendedData>
+					<SchemaData schemaUrl="#TrackSchema">
+						<gx:SimpleArrayData name="heartrate">
+							<gx:value>120</gx:value>
+							<gx:value>125</gx:value>
+							<gx:value>130</gx:value>
+						</gx:SimpleArrayData>
+					</SchemaData>
+				</ExtendedData>
+			</gx:Track>
+		</Placemark>
+		<Placemark>
+			<name>Two runs</name>
+			<gx:MultiTrack>
+				<gx:Track>
+					<gx:coord>1 2 3</gx:coord>
+					<gx:coord>4 5 6</gx:coord>
+				</gx:Track>
+				<gx:Track>
+					<gx:coord>7 8 9</gx:coord>
+					<gx:coord>10 11 12</gx:coord>
+				</gx:Track>
+			</gx:MultiTrack>
+		</Placemark>
+		<Placemark>
+			<name>Ring road</name>
+			<LinearRing>
+				<coordinates>2.25,48.82 2.42,48.82 2.42,48.90 2.25,48.90 2.25,48.82</coordinates>
+			</LinearRing>
+		</Placemark>
+	</Folder>
+	<Placemark>
+		<name>Campus</name>
+		<MultiGeometry>
+			<Point><coordinates>2.34,48.85</coordinates></Point>
+			<Polygon><outerBoundaryIs><LinearRing><coordinates>2.33,48.84 2.35,48.84 2.35,48.86 2.33,48.84</coordinates></LinearRing></outerBoundaryIs></Polygon>
+			<MultiGeometry>
+				<LineString><coordinates>2.33,48.84 2.35,48.86</coordinates></LineString>
+			</MultiGeometry>
+		</MultiGeometry>
+	</Placemark>
+	<Placemark>
+		<name>Statue</name>
+		<Model>
+			<Location><longitude>2.29</longitude><latitude>48.85</latitude><altitude>0</altitude></Location>
+			<Link><href>models/statue.dae</href></Link>
+		</Model>
+	</Placemark>
+	<GroundOverlay>
+		<name>Old map</name>
+		<Icon><href>files/map.jpg</href></Icon>
+		<LatLonBox><north>48.9</north><south>48.8</south><east>2.4</east><west>2.2</west></LatLonBox>
+	</GroundOverlay>
+	<NetworkLink>
+		<name>Live data</name>
+		<Link><href>https://example.com/live.kml</href></Link>
+	</NetworkLink>
+</Document>
+</kml>

@@ -19,4 +19,8 @@
     <ProjectReference Include="../../src/Meziantou.Framework.SnapshotTesting/Meziantou.Framework.SnapshotTesting.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Using Include="Meziantou.Framework.Geo" />
+  </ItemGroup>
+
 </Project>

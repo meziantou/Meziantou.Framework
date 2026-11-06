@@ -1,0 +1,14 @@
+{
+"type": "FeatureCollection",
+"name": "regions",
+"xy_coordinate_resolution": 1e-15,
+"features": [
+{ "type": "Feature", "properties": { "id": "west", "name": "West", "population": 1250.5, "capital": true }, "geometry": { "type": "Polygon", "coordinates": [ [ [ 2.25, 44.25 ], [ 2.25, 47.75 ], [ -1.5, 47.75 ], [ -1.5, 44.25 ], [ 2.25, 44.25 ] ], [ [ 0.0, 45.0 ], [ 0.0, 46.0 ], [ 1.0, 46.0 ], [ 1.0, 45.0 ], [ 0.0, 45.0 ] ] ] } },
+{ "type": "Feature", "properties": { "id": "east", "name": "East", "population": 980.0, "capital": false }, "geometry": { "type": "Polygon", "coordinates": [ [ [ 2.25, 44.25 ], [ 6.125, 44.25 ], [ 6.125, 47.75 ], [ 2.25, 47.75 ], [ 2.25, 44.25 ] ] ] } },
+{ "type": "Feature", "properties": { "id": "7", "name": "Islands" }, "geometry": { "type": "MultiPolygon", "coordinates": [ [ [ [ 8.0, 43.0 ], [ 9.5, 43.0 ], [ 9.5, 44.0 ], [ 8.0, 43.0 ] ] ], [ [ [ 6.125, 44.25 ], [ 7.0, 44.25 ], [ 7.0, 45.0 ], [ 6.125, 44.25 ] ] ] ] } },
+{ "type": "Feature", "properties": { "name": "River" }, "geometry": { "type": "LineString", "coordinates": [ [ -1.5, 46.0 ], [ 0.5, 46.5 ], [ 2.25, 46.25 ], [ 4.0, 46.75 ], [ 6.125, 46.5 ] ] } },
+{ "type": "Feature", "properties": { "name": "Roads" }, "geometry": { "type": "MultiLineString", "coordinates": [ [ [ 2.25, 44.25 ], [ 2.25, 43.0 ] ], [ [ 3.0, 48.0 ], [ 5.0, 49.0 ] ] ] } },
+{ "type": "Feature", "properties": { "name": "Capital" }, "geometry": { "type": "Point", "coordinates": [ 2.3522, 48.8566 ] } },
+{ "type": "Feature", "properties": { "name": "Cities" }, "geometry": { "type": "MultiPoint", "coordinates": [ [ 4.8357, 45.764 ], [ 5.3698, 43.2965 ] ] } }
+]
+}

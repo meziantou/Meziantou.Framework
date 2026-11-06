@@ -23,8 +23,8 @@ The library covers:
 - Hierarchical charts: packed circles, treemaps, sunbursts, icicles, tree diagrams and dendrograms.
 - Flows: Sankey diagrams and chord diagrams.
 - Networks: network graphs with a force-directed layout.
-- Maps: choropleths and points on maps, from GeoJSON, in the equirectangular, Mercator, Equal Earth and Albers
-  projections.
+- Maps: choropleths and points on maps, from GeoJSON, TopoJSON, Shapefile and the other formats of
+  `Meziantou.Framework.Geo`, in the equirectangular, Mercator, Equal Earth and Albers projections.
 - Statistical charts: histograms, box plots, density plots, violin plots, ridgeline plots, hexbin plots, density
   contours, parallel coordinates, trend lines, moving averages, heatmaps, waterfalls, funnels, candlesticks, bullet
   charts, calendar heatmaps, Marimekko charts and sparklines.

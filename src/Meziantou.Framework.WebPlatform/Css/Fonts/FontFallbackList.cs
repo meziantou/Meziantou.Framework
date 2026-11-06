@@ -197,6 +197,15 @@ internal sealed class FontFallbackList
     }
 
     /// <summary>
+    /// The system font fallback (<see cref="InstalledFontCollection.FindSystemFallbackFamily"/>): for a character that no other
+    /// font has, the installed family that has it, matched with the font properties. It is never the first available font.
+    /// </summary>
+    internal sealed class SystemFallbackEntry(FontDescription description) : FamilyEntry
+    {
+        public override MatchedFont? GetFont(FontSelector selector, int codePoint, bool firstAvailable) => firstAvailable ? null : selector.FindSystemFallbackFont(codePoint, description);
+    }
+
+    /// <summary>
     /// A family defined by font faces (@font-face rules or faces added to the font face set): the faces with the descriptors
     /// selected by the font matching, a composite face when their unicode-range differ (the faces are searched in the reverse
     /// order of their definition).

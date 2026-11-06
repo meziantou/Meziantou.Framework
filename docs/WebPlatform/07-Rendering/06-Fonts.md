@@ -21,6 +21,10 @@ names `Arial`, `Helvetica`, `Times New Roman`, `Times`, `Courier New` or `Courie
 font: its text has the same size as with the original font. `cursive` and `fantasy` use the serif font, as on a system
 that has no such font. `emoji` has no bundled font.
 
+By default, the characters that no font of the page and no bundled font has are not drawn: the emoji and the text of the
+other scripts (Chinese, Japanese, Korean, Arabic, Hebrew, Devanagari, Thai...) leave empty space. Give the page a web font
+that has them, or use the fonts of the machine.
+
 ## Web fonts
 
 The `@font-face` rules of the pages load their fonts through the [DocumentLoader](cref:Meziantou.Framework.WebPlatform.Dom.DocumentLoader) (TrueType, OpenType, WOFF and WOFF2),
@@ -46,5 +50,9 @@ using var screenshot = context.TakeScreenshot(); // the pixels depend on the fon
 
 - The bundled fonts keep their names and the generic families: only the families that the bundled fonts do not have come
   from the machine, and the default font does not change.
+- The characters that neither the fonts of the page nor the bundled fonts have are drawn with a font of the machine that
+  has them, as browsers do: the fonts that browsers use for emoji and for the scripts on macOS, Windows and Linux first
+  (such as PingFang SC, Microsoft YaHei, Noto Sans CJK, Geeza Pro, Nirmala UI), then any other installed font. The color
+  emoji font of macOS is too large to be read, so the emoji are not drawn there.
 - The layout and the screenshots then depend on the machine. Keep it off when you compare screenshots, or when the pages
   are untrusted.

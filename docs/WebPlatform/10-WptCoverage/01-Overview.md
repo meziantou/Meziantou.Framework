@@ -607,7 +607,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`css/css-align`](css/css-align.md#reftests) | 62 | 64 | 0 | 97% |
 | [`css/css-anchor-position`](css/css-anchor-position.md#reftests) | 236 | 241 | 0 | 98% |
 | [`css/css-animations`](css/css-animations.md#reftests) | 36 | 36 | 0 | 100% |
-| [`css/css-backgrounds`](css/css-backgrounds.md#reftests) | 707 | 719 | 1 | 98% |
+| [`css/css-backgrounds`](css/css-backgrounds.md#reftests) | 708 | 719 | 1 | 99% |
 | [`css/css-borders`](css/css-borders.md#reftests) | 102 | 114 | 0 | 89% |
 | [`css/css-box`](css/css-box.md#reftests) | 42 | 72 | 0 | 58% |
 | [`css/css-break`](css/css-break.md#reftests) | 1,131 | 1,145 | 0 | 99% |
@@ -700,7 +700,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`html/obsolete`](html/obsolete.md#reftests) | 2 | 2 | 0 | 100% |
 | [`html/rendering`](html/rendering.md#reftests) | 320 | 330 | 0 | 97% |
 | [`html/select`](html/select.md#reftests) | 1 | 1 | 0 | 100% |
-| [`html/semantics`](html/semantics.md#reftests) | 327 | 431 | 66 | 90% |
+| [`html/semantics`](html/semantics.md#reftests) | 326 | 431 | 66 | 89% |
 | [`html/syntax`](html/syntax.md#reftests) | 22 | 22 | 0 | 100% |
 | [`html/the-xhtml-syntax`](html/the-xhtml-syntax.md#reftests) | 2 | 2 | 0 | 100% |
 | [`infrastructure`](infrastructure.md#reftests) | 0 | 61 | 61 | – |

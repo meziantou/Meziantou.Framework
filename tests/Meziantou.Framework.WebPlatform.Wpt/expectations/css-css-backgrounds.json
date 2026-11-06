@@ -537,7 +537,7 @@
     "reftest": "PASS"
   },
   "css/css-backgrounds/background-clip/clip-text-text-decorations.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-backgrounds/background-clip/clip-text-text-emphasis.html": {
     "reftest": "PASS"

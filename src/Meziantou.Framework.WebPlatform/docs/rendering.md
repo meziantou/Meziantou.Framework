@@ -923,7 +923,9 @@ View returns them):
   and the half-leading above the text is floored: `line-height: normal` and the baselines of the integer font sizes are on
   whole pixels (e.g. 18px instead of 18.4px for the 16px default font);
 - the glyph outlines of the other fonts are not hinted: the edges of a glyph that do not fall on a pixel are antialiased,
-  where the browsers on Linux snap them with the FreeType hinting;
+  where the browsers on Linux snap them with the FreeType hinting; the coverage of their antialiased edges is corrected as
+  the glyph masks of Skia for a dark text (`GlyphRunOptions.Contrast` 1, `Gamma` 1.15, the values closest to Chromium on
+  paragraphs of black, gray, green and white text), whatever the color: the text is heavier;
 - the two lines of a `double` side and the two halves of a `groove` or `ridge` side are whole numbers of device pixels
   (when the width of the side is one), as the lines of Blink: each line of a `double` side is `floor((width + 1) / 3)` wide
   (3 + 4 + 3 for 10px, 2 + 1 + 2 for 5px), and the half at the top or at the left of a `groove` or `ridge` side is the

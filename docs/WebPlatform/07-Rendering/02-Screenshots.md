@@ -115,5 +115,8 @@ drawn with a thin rounded frame in the color of their border. A control whose ba
 is drawn with plain CSS instead, as in the browsers. With `appearance: base`, the controls inherit the font of their
 parent.
 
+The text is antialiased with a contrast and a gamma like the ones Chromium (Skia) applies to its glyphs: the text has about
+the weight it has in Chromium. The glyphs are not hinted.
+
 A document that is not the active document of a browsing context, such as a document parsed by [HtmlDocumentParser](cref:Meziantou.Framework.WebPlatform.HtmlDocumentParser),
 cannot be painted: load it with [BrowsingContext.Navigate](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContext.Navigate).

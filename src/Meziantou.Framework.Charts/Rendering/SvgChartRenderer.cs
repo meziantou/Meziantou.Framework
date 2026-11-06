@@ -6,7 +6,8 @@ namespace Meziantou.Framework.Charts;
 /// <remarks>
 /// The output is deterministic: numbers use the invariant culture and <see cref="SvgRenderOptions.Precision"/>
 /// decimals, identifiers are numbered in document order, and each element is on its own line. The root element has
-/// <c>role="img"</c>, and the title and the description of the scene become its <c>title</c> and <c>desc</c>.
+/// <c>role="img"</c>, and the title and the description of the scene become its <c>title</c> and <c>desc</c>. The
+/// <see cref="SceneElement.DataAttributes"/> of an element are written in the order of their names.
 /// </remarks>
 public static class SvgChartRenderer
 {
@@ -339,6 +340,14 @@ public static class SvgChartRenderer
             if (!string.IsNullOrEmpty(element.CssClass))
             {
                 Attribute("class", element.CssClass);
+            }
+
+            if (element.DataAttributes.Count > 0)
+            {
+                foreach (var (name, value) in element.DataAttributes.OrderBy(item => item.Key, StringComparer.Ordinal))
+                {
+                    Attribute("data-" + name, value);
+                }
             }
         }
 

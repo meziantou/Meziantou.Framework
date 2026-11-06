@@ -15,7 +15,7 @@
     "reftest": "PASS"
   },
   "css/css-multicol/abspos-multicol-in-second-outer-clipped.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-multicol/always-balancing-before-column-span.html": {
     "reftest": "PASS"
@@ -240,7 +240,7 @@
     "reftest": "PASS"
   },
   "css/css-multicol/column-height-029.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-multicol/column-height-030.html": {
     "reftest": "PASS"
@@ -1383,7 +1383,7 @@
     "reftest": "PASS"
   },
   "css/css-multicol/nested-floated-multicol-with-monolithic-child.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-multicol/nested-non-auto-inline-size-offset-top.html": {
     "total": 1

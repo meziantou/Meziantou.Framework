@@ -176,34 +176,52 @@ internal static partial class ColumnBreaker
             }
 
             var canPushContents = !fits && !item.IsMonolithic && offset > Epsilon;
-            var cursor = new FlowCursor(item.Flow, itemMap, item.Start, contentEnd, index, item.Flow.NextGeneration(), canPushContents, includesStart: true);
-            cursor.SetOrigin(origin);
-            if (!double.IsNaN(item.LeadingMonolithicEnd) && offset + item.End - item.Start <= firstBlockSize + Epsilon)
+            IItemCursor cursor;
+            if (item.Nested is { } nested)
             {
-                cursor.SetLeadingEnd(item.LeadingMonolithicEnd);
+                // A multi-column container: its rows of columns and its spanners are placed in the fragmentainers (see NestedColumns)
+                item.Map = itemMap;
+                cursor = new NestedColumnsCursor(item, nested, offset);
+            }
+            else
+            {
+                var flowCursor = new FlowCursor(item.Flow, itemMap, item.Start, contentEnd, index, item.Flow.NextGeneration(), canPushContents, includesStart: true);
+                flowCursor.SetOrigin(origin);
+                if (!double.IsNaN(item.LeadingMonolithicEnd) && offset + item.End - item.Start <= firstBlockSize + Epsilon)
+                {
+                    flowCursor.SetLeadingEnd(item.LeadingMonolithicEnd);
+                }
+
+                cursor = flowCursor;
             }
 
             // The contents are placed fragmentainer after fragmentainer. A specified block size of the box does not follow them:
             // the box uses what remains of each fragmentainer (and extends over the monolithic contents that overflow it)
             var boxRemaining = Math.Max(0, Math.Min(item.End, placement.ClipEnd) - item.Start + stretch);
             var isFlowDone = false;
+            (int Index, double Offset)? nestedEnd = null;
             var startOffset = offset;
             while (true)
             {
                 var blockSize = GetBlockSize(index);
                 if (index == allowedEnd || (index > allowedEnd && index == placement.StartIndex))
                 {
-                    overflow += Math.Max(item.IsBoxDone ? 0 : boxRemaining, isFlowDone ? 0 : Math.Max(0, contentEnd - cursor.Position));
+                    overflow += Math.Max(item.IsBoxDone ? 0 : boxRemaining, isFlowDone || cursor is not FlowCursor contentCursor ? 0 : Math.Max(0, contentEnd - contentCursor.Position));
                 }
 
                 var extent = 0d;
                 if (!isFlowDone)
                 {
-                    var result = cursor.Advance(blockSize);
+                    var result = cursor.Advance(blockSize, index);
                     shortage = Math.Min(shortage, result.Shortage);
                     violating |= result.Appeal is BreakAppeal.Avoid or BreakAppeal.OrphansWidows or BreakAppeal.LastResort;
                     isFlowDone = result.IsFinished;
-                    if (result.Appeal == BreakAppeal.LastResort)
+                    if (isFlowDone && item.Nested is not null)
+                    {
+                        // (the block-end edge of the border box of a nested multi-column container is placed by its cursor)
+                        nestedEnd = (index, cursor.GetPlacedOffset(contentEnd));
+                    }
+                    else if (result.Appeal == BreakAppeal.LastResort)
                     {
                         extent = cursor.GetPlacedOffset(result.IsFinished ? contentEnd : item.Flow.GetGapStart(result.Position)) - startOffset;
                     }
@@ -233,7 +251,11 @@ internal static partial class ColumnBreaker
             }
 
             // (a box whose block size is automatic grows with its contents when they are pushed by the breaks)
-            if (!placement.IsDefinite && item.End <= placement.ClipEnd && itemMap.MapEnd(item.End, item.Start) is var contentPlace
+            if (nestedEnd is { } placedEnd)
+            {
+                (item.EndIndex, item.EndOffset) = placedEnd;
+            }
+            else if (!placement.IsDefinite && item.End <= placement.ClipEnd && itemMap.MapEnd(item.End, item.Start) is var contentPlace
                 && (contentPlace.Index > item.EndIndex || (contentPlace.Index == item.EndIndex && contentPlace.Offset > item.EndOffset)))
             {
                 (item.EndIndex, item.EndOffset) = contentPlace;

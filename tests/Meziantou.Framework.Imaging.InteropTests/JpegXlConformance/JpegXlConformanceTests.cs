@@ -1,6 +1,5 @@
 using System.Buffers.Binary;
 using Meziantou.Framework.Imaging.Metadata;
-using Meziantou.Framework.Imaging.TestHarness.Color;
 
 namespace Meziantou.Framework.Imaging.InteropTests.JpegXlConformance;
 
@@ -15,8 +14,14 @@ namespace Meziantou.Framework.Imaging.InteropTests.JpegXlConformance;
 /// that do not return floating-point samples: both images are clamped to [0, 1], then the largest error of a sample and
 /// the largest root mean square error of a channel are compared with the tolerances of each frame. The reference
 /// decoding is in the color space of its <c>reference.icc</c>; the library returns its samples in the color encoding of
-/// the file, which for every case but one is the color space of that profile (the expected label is checked); the other
-/// one is converted with the independent <see cref="ReferenceIccTransform"/>, as the script converts with lcms2.
+/// the file, which is the color space of that profile in every case (the expected label is checked), so no color
+/// conversion is needed.
+/// </para>
+/// <para>
+/// A profile the library writes for an enumerated color encoding is compared with <c>reference.icc</c> by its colorants and
+/// its curves, not by its bytes: the library adapts the white of the image to the illuminant of the connection space
+/// (Z = 0.8249, so that the device white is that illuminant exactly, as ICC.1 defines it), where libjxl adapts it to the
+/// D50 of ASTM E308 (Z = 0.82521). Their colorants differ by up to 4e-4, the tolerance of the comparison.
 /// </para>
 /// <para>
 /// The library rounds every frame to the depth of the image (8 or 16 bits), and the tolerances of the corpus are smaller
@@ -39,22 +44,9 @@ public sealed class JpegXlConformanceTests
         /// <summary>The ICC profile of the file, returned byte for byte: it is <c>original.icc</c> and <c>reference.icc</c>.</summary>
         EmbeddedIcc,
 
-        /// <summary>A profile the library writes for the enumerated color encoding of the file: converted to <c>reference.icc</c>.</summary>
+        /// <summary>A profile the library writes for the enumerated color encoding of the file: equivalent to <c>reference.icc</c>.</summary>
         SynthesizedIcc,
     }
-
-    /// <summary>
-    /// The cases that fail on purpose, and why. The test asserts that they still fail, so that a fix of the library or
-    /// of the corpus shows up as a failure that tells to remove the entry.
-    /// </summary>
-    private static readonly Dictionary<string, string> ExpectedFailures = new(StringComparer.Ordinal)
-    {
-        // The samples equal the reference. The profile the library writes for the enumerated encoding (sRGB primaries,
-        // gamma 0.45455) adapts D65 to the illuminant of the profile connection space, Z = 0.8249 (IccColorimetry.D50Z),
-        // where libjxl, and the XYB path of the library (JpegXlOutputColor), use Z = 0.82521: the colorants differ by 4e-4,
-        // which turns 3 near-black blue samples negative once converted to reference.icc (error 1/255)
-        ["lz77_flower"] = "the synthesized profile uses another D50 white than libjxl",
-    };
 
     public static TheoryData<string, OutputColor> DecodedCases => new()
     {
@@ -112,10 +104,6 @@ public sealed class JpegXlConformanceTests
     {
         var listed = DecodedCases.Select(row => row.Data.Item1).Concat(UnsupportedCases.Select(row => row.Data.Item1)).Order(StringComparer.Ordinal).ToArray();
         Assert.Equal(JpegXlConformanceCorpus.CaseNames.Order(StringComparer.Ordinal).ToArray(), listed);
-        foreach (var name in ExpectedFailures.Keys)
-        {
-            Assert.Contains(name, listed);
-        }
     }
 
     [Theory]
@@ -126,7 +114,6 @@ public sealed class JpegXlConformanceTests
         using var image = Image.Load(testCase.InputPath);
         var referenceIcc = await File.ReadAllBytesAsync(await testCase.GetReferenceIccAsync(XunitCancellationToken), XunitCancellationToken);
         var metadata = image.Metadata;
-        ReferenceIccTransform? transform = null;
         switch (color)
         {
             case OutputColor.Srgb:
@@ -149,7 +136,7 @@ public sealed class JpegXlConformanceTests
 
             case OutputColor.SynthesizedIcc:
                 Assert.NotNull(metadata.IccProfile);
-                transform = ReferenceIccTransform.Create(metadata.IccProfile.Data.Span, referenceIcc);
+                AssertEquivalentProfiles(referenceIcc, metadata.IccProfile.Data.ToArray());
                 break;
 
             default:
@@ -163,17 +150,7 @@ public sealed class JpegXlConformanceTests
         }
 
         var referencePath = await testCase.GetReferenceImageAsync(XunitCancellationToken);
-        var errors = Compare(testCase, image, referencePath, transform);
-        if (ExpectedFailures.TryGetValue(name, out var reason))
-        {
-            Assert.NotEmpty(errors, $"{name} now matches its reference ({reason} no longer applies): remove it from {nameof(ExpectedFailures)}.");
-
-            // The samples themselves are within the tolerance: only the color conversion fails
-            Assert.Empty(Compare(testCase, image, referencePath, transform: null));
-            return;
-        }
-
-        Assert.Empty(errors);
+        Assert.Empty(Compare(testCase, image, referencePath));
     }
 
     [Theory]
@@ -199,7 +176,7 @@ public sealed class JpegXlConformanceTests
 
     /// <summary>Compares every frame with the reference decoding.</summary>
     /// <returns>A description of each frame that exceeds its tolerance; empty when every frame is within it.</returns>
-    private static List<string> Compare(JpegXlConformanceCase testCase, Image image, FullPath referencePath, ReferenceIccTransform? transform)
+    private static List<string> Compare(JpegXlConformanceCase testCase, Image image, FullPath referencePath)
     {
         using var reference = new JpegXlConformanceCase.NpyFrameReader(referencePath);
         Assert.Equal((testCase.Frames.Count, image.Height, image.Width), (reference.FrameCount, reference.Height, reference.Width));
@@ -228,7 +205,6 @@ public sealed class JpegXlConformanceTests
         var raw = new byte[pixelCount * bytesPerPixel];
         var referenceSamples = new float[pixelCount * channels];
         var actual = new float[4];
-        var converted = new Dictionary<(float, float, float), float[]>();
         var errors = new List<string>();
         Span<double> squares = stackalloc double[4];
         for (var frame = 0; frame < testCase.Frames.Count; frame++)
@@ -240,18 +216,6 @@ public sealed class JpegXlConformanceTests
             for (var pixel = 0; pixel < pixelCount; pixel++)
             {
                 ReadPixel(raw.AsSpan(pixel * bytesPerPixel, bytesPerPixel), format, actual);
-                if (transform is not null)
-                {
-                    var key = (actual[0], actual[1], actual[2]);
-                    if (!converted.TryGetValue(key, out var color))
-                    {
-                        var result = transform.Convert([(decimal)actual[0], (decimal)actual[1], (decimal)actual[2]]);
-                        color = [(float)result[0], (float)result[1], (float)result[2]];
-                        converted.Add(key, color);
-                    }
-
-                    color.CopyTo(actual, 0);
-                }
 
                 if (channels == 3 && actual[3] != 1)
                 {
@@ -285,6 +249,103 @@ public sealed class JpegXlConformanceTests
         }
 
         return errors;
+    }
+
+    /// <summary>
+    /// Asserts that two matrix/TRC profiles describe the same color space: the same colorants (or gray), within the
+    /// difference between the two D50 whites, and the same curves, at samples from black to white.
+    /// </summary>
+    private static void AssertEquivalentProfiles(byte[] expected, byte[] actual)
+    {
+        var expectedTags = ReadIccTags(expected);
+        var actualTags = ReadIccTags(actual);
+        Assert.Equal(expected.AsSpan(16, 4).ToArray(), actual.AsSpan(16, 4).ToArray());
+        var isGray = expectedTags.ContainsKey("kTRC");
+        foreach (var signature in isGray ? (string[])["kTRC"] : ["rXYZ", "gXYZ", "bXYZ", "rTRC", "gTRC", "bTRC"])
+        {
+            Assert.Contains(signature, actualTags.Keys);
+            var expectedTag = expectedTags[signature];
+            var actualTag = actualTags[signature];
+            if (signature.EndsWith("XYZ", StringComparison.Ordinal))
+            {
+                for (var i = 0; i < 3; i++)
+                {
+                    var expectedValue = BinaryPrimitives.ReadInt32BigEndian(expectedTag.Span[(8 + (4 * i))..]) / 65536.0;
+                    var actualValue = BinaryPrimitives.ReadInt32BigEndian(actualTag.Span[(8 + (4 * i))..]) / 65536.0;
+                    Assert.True(Math.Abs(expectedValue - actualValue) <= 0.0004, $"{signature}[{i}]: {actualValue} instead of {expectedValue}");
+                }
+            }
+            else
+            {
+                for (var step = 0; step <= 100; step++)
+                {
+                    var x = step / 100.0;
+                    var expectedValue = EvaluateCurve(expectedTag.Span, x);
+                    var actualValue = EvaluateCurve(actualTag.Span, x);
+                    Assert.True(Math.Abs(expectedValue - actualValue) <= 0.0001, $"{signature}({x}): {actualValue} instead of {expectedValue}");
+                }
+            }
+        }
+    }
+
+    private static Dictionary<string, ReadOnlyMemory<byte>> ReadIccTags(byte[] profile)
+    {
+        var tags = new Dictionary<string, ReadOnlyMemory<byte>>(StringComparer.Ordinal);
+        var count = BinaryPrimitives.ReadInt32BigEndian(profile.AsSpan(128));
+        for (var i = 0; i < count; i++)
+        {
+            var entry = profile.AsSpan(132 + (12 * i), 12);
+            var signature = System.Text.Encoding.ASCII.GetString(entry[..4]);
+            tags[signature] = profile.AsMemory(BinaryPrimitives.ReadInt32BigEndian(entry[4..]), BinaryPrimitives.ReadInt32BigEndian(entry[8..]));
+        }
+
+        return tags;
+    }
+
+    /// <summary>Evaluates a <c>curveType</c> or a <c>parametricCurveType</c> of ICC.1:2022 (sections 10.6 and 10.18) at a device value.</summary>
+    private static double EvaluateCurve(ReadOnlySpan<byte> tag, double x)
+    {
+        if (tag[..4].SequenceEqual("curv"u8))
+        {
+            var count = BinaryPrimitives.ReadInt32BigEndian(tag[8..]);
+            if (count == 0)
+                return x;
+
+            if (count == 1)
+                return Math.Pow(x, BinaryPrimitives.ReadUInt16BigEndian(tag[12..]) / 256.0);
+
+            var position = x * (count - 1);
+            var index = Math.Min((int)position, count - 2);
+            var low = BinaryPrimitives.ReadUInt16BigEndian(tag[(12 + (2 * index))..]) / 65535.0;
+            var high = BinaryPrimitives.ReadUInt16BigEndian(tag[(14 + (2 * index))..]) / 65535.0;
+            return low + ((high - low) * (position - index));
+        }
+
+        Assert.True(tag[..4].SequenceEqual("para"u8), "The curve is neither a curveType nor a parametricCurveType.");
+        var function = BinaryPrimitives.ReadUInt16BigEndian(tag[8..]);
+        Span<double> p = stackalloc double[7];
+        var parameterCount = function switch
+        {
+            0 => 1,
+            1 => 3,
+            2 => 4,
+            3 => 5,
+            4 => 7,
+            _ => throw new InvalidOperationException($"Unknown parametric function {function}."),
+        };
+        for (var i = 0; i < parameterCount; i++)
+        {
+            p[i] = BinaryPrimitives.ReadInt32BigEndian(tag[(12 + (4 * i))..]) / 65536.0;
+        }
+
+        return function switch
+        {
+            0 => Math.Pow(x, p[0]),
+            1 => x >= -p[2] / p[1] ? Math.Pow((p[1] * x) + p[2], p[0]) : 0,
+            2 => x >= -p[2] / p[1] ? Math.Pow((p[1] * x) + p[2], p[0]) + p[3] : p[3],
+            3 => x >= p[4] ? Math.Pow((p[1] * x) + p[2], p[0]) : p[3] * x,
+            _ => x >= p[4] ? Math.Pow((p[1] * x) + p[2], p[0]) + p[5] : (p[3] * x) + p[6],
+        };
     }
 
     /// <summary>Reads one pixel as straight RGBA in [0, 1]; a gray level is in the three colors.</summary>

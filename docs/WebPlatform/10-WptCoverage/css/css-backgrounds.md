@@ -19,8 +19,7 @@ description: "The results of the web-platform-tests of css/css-backgrounds, and 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **BUG**: 6
-- **TEST BUG**: 5
-- **NOT IMPLEMENTED**: 1
+- **TEST BUG**: 6
 - **FLAKY**: 1
 
 ## Stable tests
@@ -864,7 +863,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`currentcolor-border-repaint-parent.html`](https://wpt.fyi/results/css/css-backgrounds/currentcolor-border-repaint-parent.html) | Pass | 1 / 1 |  |  |
 | [`document-canvas-remove-body.html`](https://wpt.fyi/results/css/css-backgrounds/document-canvas-remove-body.html) | Pass | 1 / 1 |  |  |
 | [`fieldset-inset-shadow.html`](https://wpt.fyi/results/css/css-backgrounds/fieldset-inset-shadow.html) | Pass | 1 / 1 |  |  |
-| [`first-letter-space-not-selected.html`](https://wpt.fyi/results/css/css-backgrounds/first-letter-space-not-selected.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the backgrounds and the borders of `::first-letter` (the first letter is a text run) |
+| [`first-letter-space-not-selected.html`](https://wpt.fyi/results/css/css-backgrounds/first-letter-space-not-selected.html) | Fail | 0 / 1 | TEST BUG | expects no `::first-letter` when the letter is preceded by a space (no-break space, en space, em space, thin space), as in CSS 2.1; css-pseudo-4 includes the typographic spaces that precede the letter in the first-letter text (https://drafts.csswg.org/css-pseudo-4/#first-letter-pattern), so the red background of `::first-letter` is painted; Chromium 152 paints it too |
 | [`hidpi/simple-bg-color.html`](https://wpt.fyi/results/css/css-backgrounds/hidpi/simple-bg-color.html) | Pass | 1 / 1 |  |  |
 | [`inline-background-rtl-001.html`](https://wpt.fyi/results/css/css-backgrounds/inline-background-rtl-001.html) | Pass | 1 / 1 |  |  |
 | [`inner-border-non-renderable.html`](https://wpt.fyi/results/css/css-backgrounds/inner-border-non-renderable.html) | Pass | 1 / 1 |  |  |

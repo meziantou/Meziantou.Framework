@@ -472,6 +472,12 @@ internal sealed class FragmentSlicer
                             childEnd = contentEnd;
                         }
 
+                        // (a box limited by its maximum block size ends where the breaker placed its block-end edge, its contents overflow it)
+                        if (double.IsFinite(item.MaxEnd) && item.IsBoxDone)
+                        {
+                            childEnd = (item.EndIndex, item.EndOffset);
+                        }
+
                         childOutOfFlowMap = itemMap;
                     }
 

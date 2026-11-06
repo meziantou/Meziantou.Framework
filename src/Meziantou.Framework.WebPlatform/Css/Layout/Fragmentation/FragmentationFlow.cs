@@ -1439,7 +1439,8 @@ internal sealed class FragmentationFlow
                     VisitBox(box, top, bottom, childContext, isInFlow);
                 }
             }
-            else if (!isInFlow || child is not BoxFragment nestedBox || !TryAddNestedColumns(nestedBox, top, bottom, context, siblingBefore))
+            else if (!(isInFlow || (i < inFlowCount && child is BoxFragment { Box.IsOutOfFlow: true } floatChild && !PositionedLayout.IsAbsolutelyPositioned(floatChild.Box)))
+                || child is not BoxFragment nestedBox || !TryAddNestedColumns(nestedBox, top, bottom, context, siblingBefore, isFloat: !isInFlow))
             {
                 AddUnbreakable(top, clippedBottom);
 
@@ -1554,7 +1555,25 @@ internal sealed class FragmentationFlow
         // (as in Blink, an absolutely positioned box is not placed between the edges that the boxes around it repeat)
         context = context with { CloneStart = 0, CloneEnd = 0, Repeated = null, CloneOwner = null };
         ParallelItem item;
-        if (IsMonolithic(box))
+        if (IsMonolithic(box) && TakeNestedColumns(box, bottom, context) is { } nested)
+        {
+            // A multi-column container: the breaker places its rows of columns in the fragmentainers (as the in-flow ones, see
+            // TryAddNestedColumns)
+            item = new ParallelItem(CreateNestedColumnsFlow(nested, top, bottom))
+            {
+                Box = box,
+                Nested = nested,
+                Start = top,
+                End = bottom,
+                IntrinsicEnd = bottom,
+                CanGrow = !HasDefiniteBlockSize(box) || nested.BlockSize is not null,
+                CountsForTrack = true,
+            };
+
+            (_root._nestedItems ??= [])[box] = item;
+            AddNestedOutOfFlow(box, item, top, context);
+        }
+        else if (IsMonolithic(box))
         {
             var flow = new FragmentationFlow(_writingDirection, _spannerBoxes, _root) { ContentEnd = Math.Min(bottom, context.ClipEnd) };
             flow.AddUnbreakable(top, Math.Min(bottom, context.ClipEnd));
@@ -1726,7 +1745,8 @@ internal sealed class FragmentationFlow
     /// Returns false when the container is monolithic (it is not in a strip, or it is monolithic for another reason).
     /// </summary>
     /// <param name="siblingBefore">The in-flow sibling before the container when the flow has a possible break between them, else null.</param>
-    private bool TryAddNestedColumns(BoxFragment box, double top, double bottom, VisitContext context, Fragment? siblingBefore)
+    /// <param name="isFloat">Whether the container is a float: the space before it is its margin, not a possible break (its first row accepts the violations of the rules).</param>
+    private bool TryAddNestedColumns(BoxFragment box, double top, double bottom, VisitContext context, Fragment? siblingBefore, bool isFloat = false)
     {
         if (TakeNestedColumns(box, bottom, context) is not { } nested)
             return false;
@@ -1759,7 +1779,7 @@ internal sealed class FragmentationFlow
             HasMinimumEnd = canGrow && nested.BlockSize is null && !double.IsNaN(box.IntrinsicBlockSize) && box.IntrinsicBlockSize < bottom - top - Epsilon,
 
             // The appeal of a break before the container, instead of a break in its first row
-            BreakBeforeAppeal = siblingBefore is null || context.Avoid || IsAvoidBreak(GetBreakAfter(siblingBefore)) || IsAvoidBreak(GetBreakBefore(box)) ? BreakAppeal.Avoid : BreakAppeal.Perfect,
+            BreakBeforeAppeal = isFloat ? BreakAppeal.LastResort : siblingBefore is null || context.Avoid || IsAvoidBreak(GetBreakAfter(siblingBefore)) || IsAvoidBreak(GetBreakBefore(box)) ? BreakAppeal.Avoid : BreakAppeal.Perfect,
         };
 
         group.Add(item, box);
@@ -1819,18 +1839,17 @@ internal sealed class FragmentationFlow
     /// </summary>
     /// <param name="bottom">The block-end edge of the border box of the container in the strip.</param>
     private NestedColumns? TakeNestedColumns(BoxFragment box, double bottom, VisitContext context)
+        => CanFragmentColumns(box, bottom, context) ? ((MultiColumnState)box.Box.LayoutState!).Take() : null;
+
+    /// <summary>Returns whether a multi-column container of the flow is fragmented by the breaker (see <see cref="TakeNestedColumns"/>).</summary>
+    private bool CanFragmentColumns(BoxFragment box, double bottom, VisitContext context)
     {
         var container = box.Box;
         var layout = container.Style.Layout;
-        if (container.Kind != ContainerBoxKind.Normal || !layout.IsMultiColumnContainer || container.LayoutState is not MultiColumnState state
-            || box.IsScrollContainer || container.IsAtomicInline || layout.WritingMode != _writingDirection.WritingMode
-            || bottom > context.ClipEnd + Epsilon || (_writingDirection.IsHorizontal ? box.ClipsOverflowY : box.ClipsOverflowX)
-            || (IntrinsicSizing.HasSizeContainment(container, inlineAxis: false) && UsedContainment.CanApplySizeContainment(container)))
-        {
-            return null;
-        }
-
-        return state.Take();
+        return container.Kind == ContainerBoxKind.Normal && layout.IsMultiColumnContainer && container.LayoutState is MultiColumnState
+            && !box.IsScrollContainer && !container.IsAtomicInline && layout.WritingMode == _writingDirection.WritingMode
+            && bottom <= context.ClipEnd + Epsilon && !(_writingDirection.IsHorizontal ? box.ClipsOverflowY : box.ClipsOverflowX)
+            && !(IntrinsicSizing.HasSizeContainment(container, inlineAxis: false) && UsedContainment.CanApplySizeContainment(container));
     }
 
     /// <summary>The flow of the parallel item of a nested multi-column container: the columns are at least as tall as the tallest unbreakable content of the container.</summary>
@@ -2163,7 +2182,7 @@ internal sealed class FragmentationFlow
                 Stretches = stretches,
                 CountsForTrack = childBottom <= ends[endTrack] + Epsilon || structure.Kind != ParallelStructureKind.TableRow,
                 CanBreakBefore = childTop > starts[startTrack] + Epsilon,
-                BreaksBeforeAsLastResort = structure.Kind == ParallelStructureKind.Grid,
+                BreaksBeforeAsLastResort = structure.Kind is ParallelStructureKind.Grid or ParallelStructureKind.GridLanes,
             };
 
             flow.OwnerItem = item;
@@ -2271,6 +2290,10 @@ internal sealed class FragmentationFlow
                     if (!item.CanGrow)
                     {
                         item.LeadingMonolithicEnd = GetLeadingMonolithicEnd(child, childTop);
+                    }
+                    else if (layout.Box.GetMaxSize(horizontal: !_writingDirection.IsHorizontal) is { IsNone: false } maxSize && maxSize.TryResolve(percentageBasis: null) is { } max)
+                    {
+                        item.MaxEnd = childTop + max + (layout.BoxSizing == BoxSizing.BorderBox ? 0 : childEdges.BlockStart + childEdges.BlockEnd);
                     }
 
                     // The empty block size of the box after its in-flow contents, up to its automatic block size, breaks anywhere
@@ -2590,7 +2613,9 @@ internal sealed class FragmentationFlow
         if (marginBottom - marginTop <= Epsilon)
             return;
 
-        var isMonolithic = IsMonolithic(box);
+        // (a multi-column container is fragmented by the breaker, see TryAddNestedColumns)
+        var fragmentsColumns = IsMonolithic(box) && CanFragmentColumns(box, bottom, context);
+        var isMonolithic = IsMonolithic(box) && !fragmentsColumns;
         var avoid = context.Avoid || box.Box.Style.Layout.Fragmentation.BreakInside is BreakInside.Avoid or BreakInside.AvoidColumn;
         var isPushed = _root._pushedFloats is { } pushed && pushed.TryGetValue(box.Box, out var push) && !push.IsDeferred;
         HasPushedFloats |= isPushed;
@@ -2602,7 +2627,8 @@ internal sealed class FragmentationFlow
             BorderBoxEnd = bottom,
             IsUnbreakable = isMonolithic || avoid,
             HasForcedBreakBefore = IsForcedBreak(GetBreakBefore(box)),
-            LeadingEnd = isMonolithic ? bottom : GetLeadingMonolithicEnd(box, top),
+            // (the content at the start of a column of a multi-column container does not push it: it overflows the column)
+            LeadingEnd = isMonolithic ? bottom : fragmentsColumns ? double.NaN : GetLeadingMonolithicEnd(box, top),
             LeadingStart = hasContentBefore ? marginTop : context.LeadingStart,
             LeadingEdges = hasContentBefore ? 0 : context.LeadingEdges,
         };
@@ -2949,6 +2975,13 @@ internal enum ParallelStructureKind : byte
 
     /// <summary>A table row: the parallel flows are its cells.</summary>
     TableRow,
+
+    /// <summary>
+    /// A grid lanes container whose lanes are columns (stacked in the block axis) and whose items are placed in each fragmentainer
+    /// (see <see cref="GridLayoutAlgorithm.IsPlacedInFragmentainers"/>): each item is a parallel flow in a single track
+    /// ("Each grid axis track is fragmented independently in the stacking axis", https://drafts.csswg.org/css-grid-3/#fragmentation).
+    /// </summary>
+    GridLanes,
 }
 
 /// <summary>
@@ -3130,6 +3163,23 @@ internal sealed class ParallelStructure
                     break;
                 }
 
+            case var _ when box.Box.Display.Inside == DisplayInside.GridLanes && GridLayoutAlgorithm.IsPlacedInFragmentainers(box.Box.Style.Layout):
+                {
+                    // The items are placed in their lanes by the placement (in each fragmentainer, see GridLanesFragmentation): each
+                    // one breaks independently of the items of the other lanes
+                    var edges = box.WritingDirection.ToLogical(box.Border.Add(box.Padding).Add(box.Scrollbars));
+                    result = new ParallelStructure { Kind = ParallelStructureKind.GridLanes, Tracks = [(edges.BlockStart, Math.Max(edges.BlockStart, blockSize - edges.BlockEnd))] };
+                    for (var i = 0; i < inFlowCount; i++)
+                    {
+                        if (children[i] is BoxFragment { Box.IsOutOfFlow: false } child)
+                        {
+                            result.Items.Add((child, 0, 0, false, -1));
+                        }
+                    }
+
+                    break;
+                }
+
             default:
                 if (box.Box.Display.Internal != DisplayInternal.TableRow)
                     return null;
@@ -3304,6 +3354,13 @@ internal sealed class ParallelItem(FragmentationFlow flow)
 
     /// <summary>The block-end edge the border box would have with its automatic block size (a stretched item is taller).</summary>
     public double IntrinsicEnd { get; set; }
+
+    /// <summary>
+    /// The block-end edge of the border box at its maximum block size (<c>max-height</c>), from <see cref="Start"/>, when the item
+    /// grows with its contents (<see cref="CanGrow"/>), else infinity: as in Blink, the fragments of an item that grows when its
+    /// contents are pushed by the breaks are not taller together than its maximum block size (its contents then overflow it).
+    /// </summary>
+    public double MaxEnd { get; set; } = double.PositiveInfinity;
 
     public double MarginEnd { get; init; }
 

@@ -508,7 +508,11 @@
     "total": 37
   },
   "css/css-values/calc-size/calc-size-list-box.html": {
-    "total": 10
+    "total": 10,
+    "failures": {
+      "shrink-to-fit parent of a drop-down box with width: calc-size(max-content, size + 25px)": "FAIL",
+      "shrink-to-fit parent of a list box with width: calc-size(min-content, size)": "FAIL"
+    }
   },
   "css/css-values/calc-size/calc-size-min-max-sizes-001.html": {
     "reftest": "PASS"

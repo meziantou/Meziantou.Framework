@@ -55,7 +55,14 @@ internal sealed class ReplacedFormattingContext : FormattingContext
             WebVttCueLayout.Layout(context, video, box, fragment);
         }
 
-        if (content.Kind == ReplacedContentKind.Object)
+        if (box.MarkerSymbol != MarkerSymbol.None)
+        {
+            // The baseline of the symbol of a list marker is the one of its font (see MarkerSymbols), from its block-start edge
+            var writingDirection = fragment.WritingDirection;
+            var ascent = MarkerSymbols.GetSize(box.Style, box.MarkerSymbol).Ascent;
+            fragment.FirstBaseline = fragment.LastBaseline = writingDirection.BlockStart == writingDirection.LineOver ? ascent : writingDirection.ToLogical(fragment.Size).Block - ascent;
+        }
+        else if (content.Kind == ReplacedContentKind.Object)
         {
             fragment.ReplacedContentRect = GetObjectRect(layout, content, fragment.ContentBoxRect);
         }

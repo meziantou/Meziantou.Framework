@@ -83,15 +83,16 @@ public sealed class FormControlContentsTests : IDisposable
     [Fact]
     public void ListBox_RowsAreTheBoxesOfTheOptions()
     {
-        // The natural size is the widest row and a line per row of the display size; the rows are stacked in the content box
+        // The natural size is the widest row and a row per row of the display size; the rows are stacked in the content box. As
+        // in Chromium, a row is at least 1.2em tall, with a padding of 2px in the inline axis and 1px at the block end
         var document = Parse("<select id=s size=3><option id=a>aa<option id=b>bbbb<optgroup id=g label=ggg><option id=c>c</optgroup></select>");
-        Assert.Equal((0, 0, 40, 30), Rect(document, "#s"));
-        Assert.Equal((0, 0, 40, 10), Rect(document, "#a"));
-        Assert.Equal((0, 10, 40, 10), Rect(document, "#b"));
+        Assert.Equal((0, 0, 44, 39), Rect(document, "#s"));
+        Assert.Equal((0, 0, 44, 13), Rect(document, "#a"));
+        Assert.Equal((0, 13, 44, 13), Rect(document, "#b"));
 
         // The label of a group is a row, before its options
-        Assert.Equal((0, 20, 40, 20), Rect(document, "#g"));
-        Assert.Equal((0, 30, 40, 10), Rect(document, "#c"));
+        Assert.Equal((0, 26, 44, 23), Rect(document, "#g"));
+        Assert.Equal((0, 36, 44, 13), Rect(document, "#c"));
     }
 
     [Fact]
@@ -99,14 +100,14 @@ public sealed class FormControlContentsTests : IDisposable
     {
         var document = Parse("<select id=s size=2><option>a<option>b<option>c<option id=d>d</select>");
         var select = document.GetElementById("s")!;
-        Assert.Equal(20, select.ClientHeight);
-        Assert.Equal(40, select.ScrollHeight);
+        Assert.Equal(26, select.ClientHeight);
+        Assert.Equal(52, select.ScrollHeight);
 
         // The inline axis does not scroll
         Assert.Equal(select.ClientWidth, select.ScrollWidth);
         select.ScrollTop = 15;
         Assert.Equal(15, select.ScrollTop);
-        Assert.Equal((0, 15, 10, 10), Rect(document, "#d"));
+        Assert.Equal((0, 24, 14, 13), Rect(document, "#d"));
         select.ScrollLeft = 15;
         Assert.Equal(0, select.ScrollLeft);
     }
@@ -116,10 +117,10 @@ public sealed class FormControlContentsTests : IDisposable
     {
         // The scrollbar of the block axis takes its space from the natural size, whether it is displayed or not
         var document = Parse("<select id=s size=2><option>aaa<option>b<option>c</select><select id=t size=2><option>aaa</select>", scrollbarThickness: 15);
-        Assert.Equal((0, 0, 45, 20), Rect(document, "#s"));
-        Assert.Equal(30, document.GetElementById("s")!.ClientWidth);
-        Assert.Equal((45, 0, 45, 20), Rect(document, "#t"));
-        Assert.Equal(45, document.GetElementById("t")!.ClientWidth);
+        Assert.Equal((0, 0, 49, 26), Rect(document, "#s"));
+        Assert.Equal(34, document.GetElementById("s")!.ClientWidth);
+        Assert.Equal((49, 0, 49, 26), Rect(document, "#t"));
+        Assert.Equal(49, document.GetElementById("t")!.ClientWidth);
     }
 
     [Fact]
@@ -127,14 +128,14 @@ public sealed class FormControlContentsTests : IDisposable
     {
         // The rows are stacked along the block axis: from the right in vertical-rl
         var document = Parse("<select id=s size=2 style='writing-mode: vertical-rl'><option id=a>aa<option id=b>b<option id=c>c</select>");
-        Assert.Equal((0, 0, 20, 20), Rect(document, "#s"));
-        Assert.Equal((10, 0, 10, 20), Rect(document, "#a"));
-        Assert.Equal((0, 0, 10, 20), Rect(document, "#b"));
+        Assert.Equal((0, 0, 26, 24), Rect(document, "#s"));
+        Assert.Equal((13, 0, 13, 24), Rect(document, "#a"));
+        Assert.Equal((0, 0, 13, 24), Rect(document, "#b"));
         var select = document.GetElementById("s")!;
-        Assert.Equal(30, select.ScrollWidth);
-        select.ScrollLeft = -10;
-        Assert.Equal(-10, select.ScrollLeft);
-        Assert.Equal((0, 0, 10, 20), Rect(document, "#c"));
+        Assert.Equal(39, select.ScrollWidth);
+        select.ScrollLeft = -13;
+        Assert.Equal(-13, select.ScrollLeft);
+        Assert.Equal((0, 0, 13, 24), Rect(document, "#c"));
     }
 
     [Fact]
@@ -163,7 +164,7 @@ public sealed class FormControlContentsTests : IDisposable
     public void ListBox_AuthorStylesApplyToTheRows()
     {
         var document = Parse("<style>option { background-color: rgb(1, 2, 3); block-size: 15px } option:checked { background-color: rgb(4, 5, 6) }</style><select id=s size=2><option id=a>a<option id=b selected>b</select>");
-        Assert.Equal((0, 15, 10, 15), Rect(document, "#b"));
+        Assert.Equal((0, 16, 14, 16), Rect(document, "#b"));
         var window = document.DefaultView!;
         Assert.Equal("rgb(1, 2, 3)", window.GetComputedStyle(document.GetElementById("a")!).GetPropertyValue("background-color"));
         Assert.Equal("rgb(4, 5, 6)", window.GetComputedStyle(document.GetElementById("b")!).GetPropertyValue("background-color"));
@@ -192,9 +193,9 @@ public sealed class FormControlContentsTests : IDisposable
         Assert.Equal(0, select.ScrollTop);
         Press(document, "ArrowDown");
         Assert.Equal(2, select.SelectedIndex);
-        Assert.Equal(10, select.ScrollTop);
+        Assert.Equal(13, select.ScrollTop);
         Press(document, "End");
-        Assert.Equal(20, select.ScrollTop);
+        Assert.Equal(26, select.ScrollTop);
         Press(document, "Home");
         Assert.Equal(0, select.ScrollTop);
     }
@@ -307,7 +308,7 @@ public sealed class FormControlContentsTests : IDisposable
 
         // The rules do not apply to the controls with native or primitive appearance
         var native = window.GetComputedStyle(document.GetElementById("n")!);
-        Assert.Equal("0px", native.GetPropertyValue("border-top-width"));
+        Assert.Equal("2px", native.GetPropertyValue("border-top-width"));
         Assert.NotEqual("rgba(0, 0, 0, 0)", native.GetPropertyValue("background-color"));
 
         // The pseudo-elements have the appearance of their originating element

@@ -162,8 +162,9 @@ decides when, see [Incremental update](#incremental-update)).
   The computed display is already blockified (root, floats, absolutely positioned boxes, flex and grid items).
 - The children are the flat tree children: the shadow tree of a host, the assigned nodes of a slot (or its fallback).
 - `display: list-item` generates a `::marker` first (its `content`, else `list-style-image` when it is a valid image, else
-  the marker string of `list-style-type`: a string, or the prefix of the counter style, the representation of the
-  `list-item` counter and the suffix of the counter style), then `::before`, the children and `::after` (generated when
+  the symbol of `disc`, `circle`, `square`, `disclosure-open` and `disclosure-closed`, else the marker string of
+  `list-style-type`: a string, or the prefix of the counter style, the representation of the `list-item` counter and the
+  suffix of the counter style), then `::before`, the children and `::after` (generated when
   their `content` is not `none`/`normal`). An image that cannot be loaded is not a valid image
   ([CSS Lists §3.1](https://drafts.csswg.org/css-lists-3/#image-marker)): the boxes are built again when its fetch fails
   (`CssImageFetching.IsInvalidImage`). A `::before` or `::after` pseudo-element that is a list item has a marker too: an
@@ -873,10 +874,13 @@ the fragment. The contents of the box (the `foreignObject` boxes of an `svg`) ar
   when they are in the content box). The rectangle is also the viewport of the SVG document of an `embed` or `object`
   element (`object-fit` applies to it as to an image, as in Firefox). Null for the form controls.
 - **Form controls** (`FormControlSizing`, the [widgets](https://html.spec.whatwg.org/multipage/rendering.html#widgets) of
-  HTML, from the primary font of the control): text fields `(size-1)×avg + max` (`OS/2.xAvgCharWidth` and the `head` bounding
-  box width, rounded as in Chrome; the advance of `0` without OS/2 table) × the line height; `textarea` `cols×avg` ×
-  `rows` lines; `select` the widest option/optgroup label (list box: the max-content inline size of its rows, which are
-  boxes, × display size rows of the line height, 4 for `multiple`); buttons the
+  HTML, from the primary font of the control): text fields `ceil(size×avg + max(0, max-avg))` × the line height, with the
+  character widths of Chromium on macOS (avg: the advance of `x`, rounded when its fraction is at least 0.5; max: the larger
+  of that advance and the rounded ascent; the advance of `0` for both when `x` is wider than 1.7 times `0`); `textarea`
+  `ceil(cols×avg)` × `rows` lines; `select` the widest option/optgroup label (drop-down box: plus the internal paddings of
+  Chromium, 4px before the label, 1px and a 15px drop-down button after it (none with `appearance: none`), 1px above and
+  below the line; list box: the max-content inline size of its rows, which are boxes with a padding of 2px in the inline axis and 1px at the block end, and a
+  minimum height of 1.2em, × display size rows, 4 for `multiple`); buttons the
   width of their label (the line feeds of the value of an `input` button break its label into lines, as in the browsers,
   whose user agent style sheets have `white-space: pre` for these controls: the block size is the one of the lines and the
   baseline the one of the last line); `checkbox`/`radio` 13x13, a switch (a checkbox with a `switch` attribute,
@@ -1946,8 +1950,10 @@ an atomic inline laid out while its parent collects its items rents another inst
   from `::first-line` (`Painter.GetDecorationStyle`: e.g. a `currentcolor` background or border; the widths and the styles
   of the borders are the ones of the box, and a `filter` applies to the box as a whole with the colors of its style). Only the
   inherited properties inherit from `::first-line`: an explicit `inherit` of another property (e.g. `background-color`)
-  takes the value of the non-pseudo parent (`ComputedStyle.GetInheritanceSource`). TODO: the
-  `text-transform` and the `opacity` of `::first-line`, its background
+  takes the value of the non-pseudo parent (`ComputedStyle.GetInheritanceSource`). The `opacity` of `::first-line` applies to
+  the content of the line as a group (as in Gecko): the paint order marks it (`PaintItemMarker.BeginFirstLineGroup`), and the
+  painter paints it in a layer with that opacity (a group of the same stacking context, whose clips are applied again in the
+  layer). TODO: the `text-transform` of `::first-line`, its background
   on the vertical lines, and the borders, paddings and margins of the inline boxes of the first line, which are resolved
   with the font size the boxes have on the other lines. `::first-letter` is a box of the box tree.
 - **Text of `display: contents` elements**: a text run has the style of its parent element, which is not the style of the
@@ -2017,7 +2023,12 @@ an atomic inline laid out while its parent collects its items rents another inst
   in the tree), which may overlap it. A marker placed next to a line of a positioned descendant block that does not
   establish a stacking context belongs to the inline content of the list item: it is painted under the positioned block
   (`PaintOrder.GetListItemPaintingMarker`), as in Blink and Gecko. The bullets of the predefined counter styles (`disc`, `circle`, `square`, the
-  disclosure triangles) are symbols: `letter-spacing` and `word-spacing` do not space them. The marker is not passed to a child that clips
+  disclosure triangles) are symbols, as in Blink and Gecko: a replaced box (`ContainerBox.MarkerSymbol`) with the geometry of
+  Blink (`MarkerSymbols`: from the ascent A of the font rounded to a whole pixel, a bullet of `(⌊2A/3⌋ + 1) / 2` pixels in a
+  box 2px wider, 1px from its start; a disclosure triangle of 0.66em on the baseline; the box is as tall as the line height,
+  with the baseline of the text), 8px plus ⌊2A/3⌋ minus its size before the content when it is outside, with margins of -1px
+  and 1em (0 and 0.4em for a disclosure triangle) when it is inside, painted as a filled ellipse, a 1px stroked ellipse, a
+  filled square or a triangle (`Painter.PaintMarkerSymbol`); `letter-spacing` and `word-spacing` do not apply to them. The marker is not passed to a child that clips
   its overflow, which would clip it. When no line box placed the marker, it is aligned with the first baseline of the
   in-flow children of the list item, if any (the baseline of a flex or grid container, of a table, of a block that
   establishes a formatting context, of a line box of a child that did not get the marker), as in the browsers; a descendant
@@ -2501,12 +2512,15 @@ aliases of `flex-start`/`flex-end`.
   items are placed again after the position of the strip where the next column starts, where the running positions start
   again (after the rest of the broken items, without the gaps after the items that end in the previous column) and the
   auto-placement cursor points to the first line again; the fragmentation of the strip then breaks the items that cross the
-  end of a column. Gecko places the items without the auto-placement cursor (the ties go to the first track): the references of
+  end of a column. The items are parallel flows of a single track (`ParallelStructureKind.GridLanes`: each one breaks at
+  its own possible breaks, independently of the items of the other lanes), and the rest of an item that is broken is as tall
+  as its contents once fragmented (its contents may be pushed by their own breaks, a line box that does not fit): the
+  fragmentation records where each broken item ends (`GridLanesBreaks.ItemEnds`, from the end the breaker placed,
+  `ParallelItem.EndIndex`), and the next items of its lanes follow it in the next placement. Gecko places the items without the auto-placement cursor (the ties go to the first track): the references of
   WPT `css/css-break/grid/grid-lanes/grid-lanes-fragmentation-001.html` and `-002.html` differ where the cursor decides.
 - Not done: the fragmentation in the stacking axis of a container in a parallel flow (an item of a flex or grid container,
   a box with a specified block size) or in a nested multi-column container, with dense packing or `fill-reverse` (the items
-  are placed as in a container that is not fragmented), and the rest of a broken item that is taller than the part after
-  the end of the column (its contents are pushed by their own breaks) overlaps the next item of its track; the baseline
+  are placed as in a container that is not fragmented, and are fragmented with the flow of the container); the baseline
   alignment of the items of a grid lanes subgrid with the items of its parent, the extra margins of an auto-placed subgrid
   nested in a grid lanes subgrid (the ones of its first position).
 
@@ -2778,7 +2792,8 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
     the result is one `FlowMap` per flow (the fragmentainer and the offset of each position of the strip), which the slicer
     uses for the fragments of the flow.
   - The block-end edge of an item follows its contents when its block size is automatic (the item grows when its contents
-    are pushed by its breaks; a stretched item is at least as tall as its track), and is placed by the flow of the container
+    are pushed by its breaks; a stretched item is at least as tall as its track; as in Blink, its fragments are not taller
+    together than its `max-height`, `ParallelItem.MaxEnd`: the item then ends and its contents overflow it), and is placed by the flow of the container
     when its block size is definite (a specified block size, an item stretched in a single-line flex container or a grid
     with a definite block size, a column flex item with a definite flex basis and block size, a stretched item of a grid
     whose rows have a fixed track sizing function, `GridItemRows.HasFixedRows`: as in Blink, a row that is neither
@@ -2990,7 +3005,12 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
     a row of the next outer fragmentainer. The last row of a container whose definite block size ends in the outer
     fragmentainer has overflow columns (also the row where the content box of a container whose block size is not definite
     reaches its `max-height`). A row of a fixed block size (`column-height`) is broken by the end of the outer
-    fragmentainer; when it follows other content of the container in the outer fragmentainer, it starts there only if it fits.
+    fragmentainer. As in Blink, when its columns are filled sequentially (`column-fill: auto`) and it follows other content
+    of the container in the outer fragmentainer, it starts there only if it fits; a balanced row starts in any space that
+    remains, and when it follows a column spanner and is broken by the end of the outer fragmentainer, it starts again with its
+    whole block size in the next one (the rows before the first spanner continue there with the block size they have left).
+    A spanner that does not fit in what remains of the row where the content before it ends starts the next row (in the next
+    outer fragmentainer when that row does not fit, with `column-fill: auto`), and the rows after a spanner are balanced.
     These rows overflow a container with a definite block size (its block-end edge is placed before the end of its content).
   - A column that would break where a rule is violated (`orphans`/`widows`, `avoid`, content that overflows) ends the row
     before it and is placed in the next outer fragmentainer, unless a break that is as bad was already taken in the columns
@@ -3031,9 +3051,13 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
     and whose static position is in its strip is moved to that static position in the inner columns that the breaker placed
     (`ColumnBreaker.TryGetNestedStaticPosition`, `OutOfFlowPlacement.InlineShift`), also when its containing block is an
     inline box of the outer strip or is outside of the outer container.
-  - The floats, the absolutely positioned boxes and the inline-blocks that are multi-column containers are monolithic, as
-    are the containers that extend past the block-end edge of an ancestor that clips its overflow (`overflow: clip`; a
-    container inside such an ancestor is fragmented).
+  - The floats and the absolutely positioned boxes that are multi-column containers are fragmented the same way: a float is
+    a parallel flow at its position in the flow of its containing block (its first row accepts the violations of the rules:
+    the space before a float is its margin, not a possible break, and its first content does not push it to the next
+    fragmentainer, it overflows its column, `FloatExtent.LeadingEnd`), an absolutely positioned box is placed as the other
+    ones (see *Absolutely positioned boxes*) by a cursor of its rows. The inline-blocks that are multi-column containers are
+    monolithic, as are the containers that extend past the block-end edge of an ancestor that clips its overflow
+    (`overflow: clip`; a container inside such an ancestor is fragmented).
 - **Fragments** (`FragmentSlicer`, [§5](https://drafts.csswg.org/css-break-3/#box-splitting)): a fragment whose subtree is in one column
   (and contains no column spanner, which the multi-column container places itself) is moved to it; a box that spans several columns gets one `BoxFragment` per column (`BoxFragment.CreateSlice`:
   `IsFirstFragment`/`IsLastFragment`, `UnfragmentedFragment` is the fragment before the split), whose children are distributed
@@ -3075,8 +3099,7 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
   min-content inline-size contribution of its contents", as in Chrome). The column spanners are measured apart (`LayoutContext.ColumnSpannerSizes`): they are not in
   a column, the container is at least as wide as their contributions. With size containment, the content has no size (the gaps
   remain).
-- Not done: the spanners in the rows of a fixed block size of a nested multi-column container (they are placed after the
-  content, not in the rows), the margins after the last box of the content (they must fit in the last column), the
+- Not done: the margins after the last box of the content (they must fit in the last column), the
   painting of a spanner with the effects of its ancestors inside the container (`opacity`: the spanner is a child of the
   fragment of the container), the containing block of the absolutely positioned boxes of a spanner (a positioned ancestor of
   the spanner inside the container is used), the relayout of the content in
@@ -3167,12 +3190,17 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   of its inline size (its initial containing block is that page area): the pages are segments of strips, one per change of
   inline size. A segment ends before the first page whose page area has another inline size when that page starts before an
   in-flow block-level box of the block flow of the root element (`FindBreakAnchor`: a break between two block boxes, also
-  inside the root element and the body); the next segment lays out the strip again and paginates it from the start of that
-  box (with the margin preserved after a forced break), the content before it being in a virtual first fragmentainer whose
-  fragments are dropped. The pages of a segment followed by another one are copies of the fragments (the next layout may
+  inside the root element and the body), or between two line boxes of a block container of that block flow; the next
+  segment lays out the strip again and paginates it from the start of that box (with the margin preserved after a forced
+  break), or from the content box of the block container, whose line boxes start at the position of its inline content where
+  the line box after the break started (`InlineResume`, recorded by `LineBoxFragment.StartPosition`, given to the inline layout
+  by `LayoutContext.InlineResumes`: none of these lines is the first line, without `::first-line`, `text-indent`, outside
+  marker nor `text-box-trim`), the content before it being in a virtual first fragmentainer whose fragments are dropped. The pages of a segment followed by another one are copies of the fragments (the next layout may
   return and move the fragments of the boxes laid out the same way). The boxes fixed to the viewport are laid out once, in
   the initial containing block of the first page, as in Blink. A page of another inline size that starts inside a line, a
-  flex container... is laid out in the inline size of the strip. Nothing changes (nothing is laid out again) when all the
+  flex container... is laid out in the inline size of the strip. The floats and the absolutely positioned boxes of the inline
+  content before the position of a block container laid out from a position are not in the next segment (a float that
+  starts before the break and continues after it is not continued). Nothing changes (nothing is laid out again) when all the
   pages have the inline size of the first one.
 - **Monolithic content**: as in the browsers, the scroll containers are not monolithic in the pages (their contents are
   printed). The monolithic content (a replaced element, a box with size containment, a line box) that does not fit in an
@@ -3233,7 +3261,8 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   counter of that page only; a page-margin box applies its own counter properties for itself only. The counters are not
   nested (`counters()` shows one value).
 - Not done: the layout of the content of a page whose page area has another inline size than the strip when the page does
-  not start before a block box of the block flow of the root element (it is laid out in the inline size of the strip), the
+  not start before a block box or between two line boxes of the block flow of the root element (it is laid out in the inline
+  size of the strip), the
   nested documents of the `iframe` elements (they are painted as on the screen), `window.print()`,
   `beforeprint` and `afterprint`.
 
@@ -3336,7 +3365,9 @@ with an element child has the default operator properties (its content is not "o
 `math` root are centered with a safe alignment (start-aligned when they are wider than the box).
 
 **Box tree.** The box tree builder (`FixupMathContainer`) keeps the children of the MathML boxes as they are (no anonymous
-block): the text of the non-token boxes is not rendered (dropped), their inline boxes are blockified (box display only), the
+block): the text of the non-token boxes is not rendered (dropped), their inline boxes are blockified (box display only; as in
+Blink, the cascade blockifies the computed `display` of the children of a `math` or `block math` box that are not MathML
+elements, also the HTML children of the token elements, whose `::first-line` and `::first-letter` then apply), the
 children of `mspace` are not rendered; the token elements are block containers (their contents are laid out by the inline
 or the block layout). `msqrt`, `mpadded` (with a math display) and `mtd` (as a table cell) wrap their children in an
 anonymous mrow box ([anonymous mrow boxes](https://w3c.github.io/mathml-core/#anonymous-mrow-boxes)). The cascade does not
@@ -3568,7 +3599,8 @@ its user space to CSS px), by the classes of `Svg/`:
   the start and the end of a text path), `text-anchor` per chunk, and the text paths (the `path` attribute when it has a
   segment, else the shape referenced by `href` with its transform; `startOffset` with the `path-length` of the shape; the middle of each
   character at its distance along the path, hidden beyond the ends of an open path, the `dy` shift along the normal; the
-  inline axis of the text on a path is the distance along the path, in visual order). The first character (in logical
+  inline axis of the text on a path is the distance along the path, in visual order; with `side="right"`, the path is
+  reversed: its subpaths in the reverse order, each one in the opposite direction, `startOffset` measured from its end). The first character (in logical
   order) starts an anchored chunk at the origin when it has no `x` or `y`; a chunk is anchored by its visual extent (its
   line-left edge for `text-anchor: start` in a left-to-right paragraph, its line-right edge in a right-to-left one); the
   spacing of `textLength` is distributed between the typographic characters in visual order.
@@ -3615,7 +3647,7 @@ its user space to CSS px), by the classes of `Svg/`:
 - Not done: the content areas of `shape-inside` and `shape-subtract` (with `shape-padding` and `shape-margin`; the text is
   not wrapped), `text-align`, `text-indent` and the hyphenation in the auto-wrapped texts, the preserved line breaks of the
   texts without `inline-size` (the pre-formatted multi-line text of SVG 2, which no browser implements: one line),
-  `side`/`method`/`spacing` of `textPath`, nested `textPath`, the
+  `method`/`spacing` of `textPath`, nested `textPath`, the
   markers in the bounding boxes, the `clipped` option of `getBBox()`, the masks and the `clip-path` basic shapes in the hit
   testing. The geometry uses the animated values of the SMIL animations (see [animations.md](animations.md#svg-animations-smil)).
   The SVG content is painted by the SVG painting (see [SVG painting](#svg-painting)).
@@ -5245,15 +5277,17 @@ something asks for the display list (`LayoutEngine.PaintCount` for the tests).
   other than `none`, and no author background or border that
   differs from the user agent style sheet: the widget fallback; any author declaration of the
   [properties that disable the native appearance](https://drafts.csswg.org/css-ui-4/#appearance-disabling-properties) for
-  `progress`, `meter`, the text controls and the drop-down boxes, after the rollback of `revert`, as in the browsers: WPT
+  `progress`, `meter`, the text controls, the `select` elements, the buttons and the color wells, after the rollback of `revert`, as in the browsers: WPT
   `css/css-ui/compute-kind-widget-generated`), a simple
   deterministic look for the checkboxes, the switches (a rounded track, filled with the accent color when checked, and a
   disc at its inline-start side, at its inline-end side when checked; `indeterminate` does not apply), the radio buttons,
-  the sliders, the color wells, the progress bars and the meters, and a thin rounded frame (1px, `#767676`) along the
-  border box of the text fields, the `textarea` elements and the drop-down boxes (`Painter.PaintNativeFrame`: the user agent
-  style sheet of the specification gives them no border, so the frame takes no space; a drop-down box with
-  `appearance: menulist-button` has no frame, its borders are the ones of CSS, and keeps its arrow, as a devolved drop-down
-  box does: "including a drop-down button")
+  the sliders, the color wells, the progress bars and the meters, and, as in Chromium, a thin rounded frame (1px, radius
+  2px) along the border box of the text fields, the `textarea` and `select` elements, the buttons (also
+  `::file-selector-button` and `::scroll-button()`) and the color wells, over their native background in the same shape (`Painter.PaintNativeFrame`:
+  the borders that the user agent style sheet gives them, as Chromium, are the space of the frame and give it its color,
+  their style is not painted; a drop-down box with `appearance: menulist-button` has no frame, its borders are the ones of
+  CSS, and keeps its arrow, as a devolved drop-down box does: "including a drop-down button"; on the other controls,
+  `menulist-button` is an alias of `auto`)
   (`accent-color` replaces the accent color of the checkboxes, the radio buttons, the sliders and the progress bars; a
   transparent one is composed over `Canvas`). The text of a date and time field is clipped at the content edge in the
   inline axis and at the padding edge in the block axis. The value and the placeholder of the text fields and of the

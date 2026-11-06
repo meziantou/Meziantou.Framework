@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of service-workers, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 248 | 283 | 4 | 89% |
+| [Stable](#stable-tests) | 248 | 283 | 5 | 89% |
 | [Tentative](#tentative-tests) | 1 | 11 | 0 | 9% |
 | [Reftests](#reftests) | 1 | 1 | 0 | 100% |
-| **All** | **250** | **295** | **4** | **86%** |
+| **All** | **250** | **295** | **5** | **86%** |
 
 ## Failure reasons
 
@@ -20,11 +20,11 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 5
 - **TEST BUG**: 10
-- **NOT IMPLEMENTED**: 24
+- **NOT IMPLEMENTED**: 23
 - **REQUIRES**: 1
   - `service-workers`: 1
 - **TEST RUNNER**: 3
-- **FLAKY**: 3
+- **FLAKY**: 4
 
 ## Stable tests
 
@@ -281,7 +281,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`service-worker/unregister-controller.https.html`](https://wpt.fyi/results/service-workers/service-worker/unregister-controller.https.html) | Pass | 3 / 3 |  |  |
 | [`service-worker/unregister-immediately-before-installed.https.html`](https://wpt.fyi/results/service-workers/service-worker/unregister-immediately-before-installed.https.html) | Disabled | – | NOT IMPLEMENTED | Runs until the maximum duration of the runner (1 minute): Clear-Site-Data is not implemented, so it cannot abort the evaluation of a service worker script that loops forever |
 | [`service-worker/unregister-immediately-during-extendable-events.https.html`](https://wpt.fyi/results/service-workers/service-worker/unregister-immediately-during-extendable-events.https.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | the immediate clearing of the registrations by the `Clear-Site-Data` header (the `storage` type): the registrations are unregistered (https://w3c.github.io/webappsec-clear-site-data/#clear-dom-accessible-storage), so their workers are not terminated and their controlled clients keep them until they are unloaded; the tests expect the behavior of Chromium, which clears the registrations and their workers at once |
-| [`service-worker/unregister-immediately.https.html`](https://wpt.fyi/results/service-workers/service-worker/unregister-immediately.https.html) | Timeout | 0 / 4 | NOT IMPLEMENTED | the immediate clearing of the registrations by the `Clear-Site-Data` header (the `storage` type): the registrations are unregistered (https://w3c.github.io/webappsec-clear-site-data/#clear-dom-accessible-storage), so their workers are not terminated and their controlled clients keep them until they are unloaded; the tests expect the behavior of Chromium, which clears the registrations and their workers at once |
+| [`service-worker/unregister-immediately.https.html`](https://wpt.fyi/results/service-workers/service-worker/unregister-immediately.https.html) | Disabled | – | FLAKY | the result depends on the timing of the service worker jobs: Clear-Site-Data does not clear the registrations immediately (their workers are not terminated and their controlled clients keep them until they are unloaded), so the subtests wait for state changes that happen or not before the timeout. Locally the first subtest (a worker kept in the activating state) times out and the others do not run; on the Linux x64 runners of CI the first two pass and the third times out |
 | [`service-worker/unregister-then-register-new-script.https.html`](https://wpt.fyi/results/service-workers/service-worker/unregister-then-register-new-script.https.html) | Pass | 3 / 3 |  |  |
 | [`service-worker/unregister-then-register.https.html`](https://wpt.fyi/results/service-workers/service-worker/unregister-then-register.https.html) | Pass | 4 / 4 |  |  |
 | [`service-worker/unregister.https.html`](https://wpt.fyi/results/service-workers/service-worker/unregister.https.html) | Pass | 2 / 2 |  |  |

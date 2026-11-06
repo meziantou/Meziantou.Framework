@@ -11,14 +11,14 @@ description: "The results of the web-platform-tests of css/css-break, and why th
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 42 | 42 | 0 | 100% |
 | [Tentative](#tentative-tests) | 6 | 6 | 0 | 100% |
-| [Reftests](#reftests) | 1,131 | 1,145 | 0 | 99% |
-| **All** | **1,179** | **1,193** | **0** | **99%** |
+| [Reftests](#reftests) | 1,139 | 1,145 | 0 | 99% |
+| **All** | **1,187** | **1,193** | **0** | **99%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 9
+- **BUG**: 1
 - **TEST BUG**: 5
 - **NOT IMPLEMENTED**: 1
 
@@ -712,16 +712,16 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`grid/grid-lanes/column-multi-lane-fragmentation-024.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-024.html) | Pass | 1 / 1 |  |  |
 | [`grid/grid-lanes/column-multi-lane-fragmentation-025.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-025.html) | Pass | 1 / 1 |  |  |
 | [`grid/grid-lanes/column-multi-lane-fragmentation-026.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-026.html) | Pass | 1 / 1 |  |  |
-| [`grid/grid-lanes/column-multi-lane-fragmentation-027.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-027.html) | Fail | 0 / 1 | BUG | in a multi-lane grid lanes container fragmented in columns, the items whose content grows by different amounts through fragmentation are not broken at the end of the first column: they overflow it at their unfragmented size, and the next items start at the top of the next column (lanes that grow by the same amount pass, column-multi-lane-fragmentation-031.html) |
-| [`grid/grid-lanes/column-multi-lane-fragmentation-028.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-028.html) | Fail | 0 / 1 | BUG | an item of a multi-lane grid lanes container with a fixed `height` whose second line is pushed to the next column is missing from the first column: it is painted in the second column, above the multi-column container |
-| [`grid/grid-lanes/column-multi-lane-fragmentation-029.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-029.html) | Fail | 0 / 1 | BUG | in a multi-lane grid lanes container fragmented in columns, the items whose content grows by different amounts through fragmentation are not broken at the end of the first column: they overflow it at their unfragmented size, and the next items start at the top of the next column (lanes that grow by the same amount pass, column-multi-lane-fragmentation-031.html) |
-| [`grid/grid-lanes/column-multi-lane-fragmentation-030.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-030.html) | Fail | 0 / 1 | BUG | in a multi-lane grid lanes container fragmented in columns, the items whose content grows by different amounts through fragmentation are not broken at the end of the first column: they overflow it at their unfragmented size, and the next items start at the top of the next column (lanes that grow by the same amount pass, column-multi-lane-fragmentation-031.html) |
+| [`grid/grid-lanes/column-multi-lane-fragmentation-027.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-027.html) | Pass | 1 / 1 |  |  |
+| [`grid/grid-lanes/column-multi-lane-fragmentation-028.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-028.html) | Pass | 1 / 1 |  |  |
+| [`grid/grid-lanes/column-multi-lane-fragmentation-029.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-029.html) | Pass | 1 / 1 |  |  |
+| [`grid/grid-lanes/column-multi-lane-fragmentation-030.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-030.html) | Pass | 1 / 1 |  |  |
 | [`grid/grid-lanes/column-multi-lane-fragmentation-031.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-031.html) | Pass | 1 / 1 |  |  |
 | [`grid/grid-lanes/column-multi-lane-fragmentation-032.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-032.html) | Pass | 1 / 1 |  |  |
 | [`grid/grid-lanes/column-multi-lane-fragmentation-033.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-033.html) | Pass | 1 / 1 |  |  |
-| [`grid/grid-lanes/column-multi-lane-fragmentation-034.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-034.html) | Fail | 0 / 1 | BUG | in a multi-lane grid lanes container fragmented in columns, the items whose content grows by different amounts through fragmentation are not broken at the end of the first column: they overflow it at their unfragmented size, and the next items start at the top of the next column (lanes that grow by the same amount pass, column-multi-lane-fragmentation-031.html) |
-| [`grid/grid-lanes/column-multi-lane-fragmentation-035.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-035.html) | Fail | 0 / 1 | BUG | in a multi-lane grid lanes container fragmented in columns, the items whose content grows by different amounts through fragmentation are not broken at the end of the first column: they overflow it at their unfragmented size, and the next items start at the top of the next column (lanes that grow by the same amount pass, column-multi-lane-fragmentation-031.html) |
-| [`grid/grid-lanes/column-multi-lane-fragmentation-036.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-036.html) | Fail | 0 / 1 | BUG | in a multi-lane grid lanes container fragmented in columns, the items whose content grows by different amounts through fragmentation are not broken at the end of the first column: they overflow it at their unfragmented size, and the next items start at the top of the next column (lanes that grow by the same amount pass, column-multi-lane-fragmentation-031.html) |
+| [`grid/grid-lanes/column-multi-lane-fragmentation-034.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-034.html) | Pass | 1 / 1 |  |  |
+| [`grid/grid-lanes/column-multi-lane-fragmentation-035.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-035.html) | Pass | 1 / 1 |  |  |
+| [`grid/grid-lanes/column-multi-lane-fragmentation-036.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-036.html) | Pass | 1 / 1 |  |  |
 | [`grid/grid-lanes/column-multi-lane-fragmentation-037.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-037.html) | Pass | 1 / 1 |  |  |
 | [`grid/grid-lanes/column-multi-lane-fragmentation-038.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-038.html) | Pass | 1 / 1 |  |  |
 | [`grid/grid-lanes/column-single-lane-fragmentation-001.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/column-single-lane-fragmentation-001.html) | Pass | 1 / 1 |  |  |
@@ -735,7 +735,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`grid/grid-lanes/column-single-lane-fragmentation-009.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/column-single-lane-fragmentation-009.html) | Pass | 1 / 1 |  |  |
 | [`grid/grid-lanes/column-single-lane-fragmentation-010.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/column-single-lane-fragmentation-010.html) | Pass | 1 / 1 |  |  |
 | [`grid/grid-lanes/column-single-lane-fragmentation-011.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/column-single-lane-fragmentation-011.html) | Pass | 1 / 1 |  |  |
-| [`grid/grid-lanes/column-single-lane-fragmentation-012.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/column-single-lane-fragmentation-012.html) | Fail | 0 / 1 | BUG | a grid lanes item that grows through fragmentation is not limited by its `max-height`: its lines pushed to the next column make it taller, so the next item is placed in a third column |
+| [`grid/grid-lanes/column-single-lane-fragmentation-012.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/column-single-lane-fragmentation-012.html) | Pass | 1 / 1 |  |  |
 | [`grid/grid-lanes/grid-lanes-container-fragmentation-001.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/grid-lanes-container-fragmentation-001.html) | Pass | 1 / 1 |  |  |
 | [`grid/grid-lanes/grid-lanes-container-fragmentation-002.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/grid-lanes-container-fragmentation-002.html) | Pass | 1 / 1 |  |  |
 | [`grid/grid-lanes/grid-lanes-container-fragmentation-003.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/grid-lanes-container-fragmentation-003.html) | Pass | 1 / 1 |  |  |

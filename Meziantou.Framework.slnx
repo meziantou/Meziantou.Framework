@@ -464,6 +464,7 @@
     <Project Path="fuzz/Meziantou.Framework.AtlassianDataFormat.Fuzz/Meziantou.Framework.AtlassianDataFormat.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Barcodes.Fuzz/Meziantou.Framework.Barcodes.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Bencode.Fuzz/Meziantou.Framework.Bencode.Fuzz.csproj" />
+    <Project Path="fuzz/Meziantou.Framework.Charts.Fuzz/Meziantou.Framework.Charts.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.CodeOwners.Fuzz/Meziantou.Framework.CodeOwners.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Csv.Fuzz/Meziantou.Framework.Csv.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.DependencyScanning.Fuzz/Meziantou.Framework.DependencyScanning.Fuzz.csproj" />
@@ -473,6 +474,7 @@
     <Project Path="fuzz/Meziantou.Framework.Fuzzing/Meziantou.Framework.Fuzzing.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Geo.Fuzz/Meziantou.Framework.Geo.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Globbing.Fuzz/Meziantou.Framework.Globbing.Fuzz.csproj" />
+    <Project Path="fuzz/Meziantou.Framework.Hashing.Fuzz/Meziantou.Framework.Hashing.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.HtmlSanitizer.Fuzz/Meziantou.Framework.HtmlSanitizer.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Http.Caching.Fuzz/Meziantou.Framework.Http.Caching.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Http.Fuzz/Meziantou.Framework.Http.Fuzz.csproj" />

@@ -19,6 +19,7 @@ on:
           - atlassian-data-format
           - barcodes
           - bencode
+          - charts
           - codeowners
           - csv
           - dependency-scanning
@@ -26,6 +27,7 @@ on:
           - fonts
           - geo
           - globbing
+          - hashing
           - html-sanitizer
           - http-caching
           - http
@@ -90,6 +92,7 @@ env:
       { "project": "Meziantou.Framework.AtlassianDataFormat.Fuzz", "component": "atlassian-data-format", "day": 4 },
       { "project": "Meziantou.Framework.Barcodes.Fuzz",            "component": "barcodes",              "day": 5 },
       { "project": "Meziantou.Framework.Bencode.Fuzz",             "component": "bencode",               "day": 2 },
+      { "project": "Meziantou.Framework.Charts.Fuzz",              "component": "charts",                "day": 1 },
       { "project": "Meziantou.Framework.CodeOwners.Fuzz",          "component": "codeowners",            "day": 1 },
       { "project": "Meziantou.Framework.Csv.Fuzz",                 "component": "csv",                   "day": 3 },
       { "project": "Meziantou.Framework.DependencyScanning.Fuzz",  "component": "dependency-scanning",   "day": 0 },
@@ -97,6 +100,7 @@ env:
       { "project": "Meziantou.Framework.Fonts.Fuzz",               "component": "fonts",                 "day": 2 },
       { "project": "Meziantou.Framework.Geo.Fuzz",                 "component": "geo",                   "day": 1 },
       { "project": "Meziantou.Framework.Globbing.Fuzz",            "component": "globbing",              "day": 0 },
+      { "project": "Meziantou.Framework.Hashing.Fuzz",             "component": "hashing",               "day": 0 },
       { "project": "Meziantou.Framework.HtmlSanitizer.Fuzz",       "component": "html-sanitizer",        "day": 1 },
       { "project": "Meziantou.Framework.Http.Caching.Fuzz",        "component": "http-caching",          "day": 2 },
       { "project": "Meziantou.Framework.Http.Fuzz",                "component": "http",                  "day": 3 },

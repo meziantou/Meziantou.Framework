@@ -11,8 +11,8 @@ description: "The results of the web-platform-tests of svg, and why the tests th
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 716 | 742 | 2 | 97% |
 | [Tentative](#tentative-tests) | 46 | 47 | 0 | 98% |
-| [Reftests](#reftests) | 557 | 629 | 2 | 89% |
-| **All** | **1,319** | **1,418** | **4** | **93%** |
+| [Reftests](#reftests) | 562 | 629 | 2 | 90% |
+| **All** | **1,324** | **1,418** | **4** | **94%** |
 
 ## Failure reasons
 
@@ -20,7 +20,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 5
 - **TEST BUG**: 11
-- **NOT IMPLEMENTED**: 74
+- **NOT IMPLEMENTED**: 69
 - **TEST RUNNER**: 7
 - **FLAKY**: 2
 
@@ -1441,13 +1441,13 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`text/reftests/textpath-pathlength-zero-offset-positive.svg`](https://wpt.fyi/results/svg/text/reftests/textpath-pathlength-zero-offset-positive.svg) | Pass | 1 / 1 |  |  |
 | [`text/reftests/textpath-pathlength-zero-offset-zero.svg`](https://wpt.fyi/results/svg/text/reftests/textpath-pathlength-zero-offset-zero.svg) | Pass | 1 / 1 |  |  |
 | [`text/reftests/textpath-shape-001.svg`](https://wpt.fyi/results/svg/text/reftests/textpath-shape-001.svg) | Pass | 1 / 1 |  |  |
-| [`text/reftests/textpath-side-001.svg`](https://wpt.fyi/results/svg/text/reftests/textpath-side-001.svg) | Fail | 0 / 1 | NOT IMPLEMENTED | `side`, `method` and `spacing` of `textPath` |
+| [`text/reftests/textpath-side-001.svg`](https://wpt.fyi/results/svg/text/reftests/textpath-side-001.svg) | Pass | 1 / 1 |  |  |
 | [`text/reftests/textpath-side-002.svg`](https://wpt.fyi/results/svg/text/reftests/textpath-side-002.svg) | Pass | 1 / 1 |  |  |
-| [`text/reftests/textpath-side-003.svg`](https://wpt.fyi/results/svg/text/reftests/textpath-side-003.svg) | Fail | 0 / 1 | NOT IMPLEMENTED | `side`, `method` and `spacing` of `textPath` |
+| [`text/reftests/textpath-side-003.svg`](https://wpt.fyi/results/svg/text/reftests/textpath-side-003.svg) | Pass | 1 / 1 |  |  |
 | [`text/reftests/textpath-side-004.svg`](https://wpt.fyi/results/svg/text/reftests/textpath-side-004.svg) | Pass | 1 / 1 |  |  |
-| [`text/reftests/textpath-side-005.svg`](https://wpt.fyi/results/svg/text/reftests/textpath-side-005.svg) | Fail | 0 / 1 | NOT IMPLEMENTED | `side`, `method` and `spacing` of `textPath` |
-| [`text/reftests/textpath-side-right-startoffset.svg`](https://wpt.fyi/results/svg/text/reftests/textpath-side-right-startoffset.svg) | Fail | 0 / 1 | NOT IMPLEMENTED | `side`, `method` and `spacing` of `textPath` |
-| [`text/reftests/textpath-side-right-subpaths.svg`](https://wpt.fyi/results/svg/text/reftests/textpath-side-right-subpaths.svg) | Fail | 0 / 1 | NOT IMPLEMENTED | `side`, `method` and `spacing` of `textPath` |
+| [`text/reftests/textpath-side-005.svg`](https://wpt.fyi/results/svg/text/reftests/textpath-side-005.svg) | Pass | 1 / 1 |  |  |
+| [`text/reftests/textpath-side-right-startoffset.svg`](https://wpt.fyi/results/svg/text/reftests/textpath-side-right-startoffset.svg) | Pass | 1 / 1 |  |  |
+| [`text/reftests/textpath-side-right-subpaths.svg`](https://wpt.fyi/results/svg/text/reftests/textpath-side-right-subpaths.svg) | Pass | 1 / 1 |  |  |
 | [`text/reftests/tiny-text-with-scaling.html`](https://wpt.fyi/results/svg/text/reftests/tiny-text-with-scaling.html) | Pass | 1 / 1 |  |  |
 | [`text/reftests/transform-dynamic-change-root.html`](https://wpt.fyi/results/svg/text/reftests/transform-dynamic-change-root.html) | Pass | 1 / 1 |  |  |
 | [`text/reftests/transform-dynamic-change.html`](https://wpt.fyi/results/svg/text/reftests/transform-dynamic-change.html) | Pass | 1 / 1 |  |  |

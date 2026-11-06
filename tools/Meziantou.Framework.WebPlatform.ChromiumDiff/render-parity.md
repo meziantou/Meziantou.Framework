@@ -6,8 +6,8 @@ The fixtures of `render-corpus` exported by Playwright (Chromium 156.0.8078.4) a
 
 | Status | Count |
 |---|---|
-| Pass | 71 |
-| Known | 65 |
+| Pass | 74 |
+| Known | 62 |
 | Unsupported | 0 |
 | Unexpected | 0 |
 | Error | 0 |
@@ -16,9 +16,9 @@ The fixtures of `render-corpus` exported by Playwright (Chromium 156.0.8078.4) a
 
 | Scenario | Playwright options | Unsupported options | Pass | Known | Unsupported | Unexpected | Error |
 |---|---|---|---|---|---|---|---|
-| desktop | viewport 1280x720 |  | 13 | 2 | 0 | 0 | 0 |
-| desktop-dpr2 | Desktop Chrome HiDPI (deviceScaleFactor 2) |  | 6 | 3 | 0 | 0 | 0 |
-| omit-background | omitBackground: true |  | 7 | 3 | 0 | 0 | 0 |
+| desktop | viewport 1280x720 |  | 14 | 1 | 0 | 0 | 0 |
+| desktop-dpr2 | Desktop Chrome HiDPI (deviceScaleFactor 2) |  | 7 | 2 | 0 | 0 | 0 |
+| omit-background | omitBackground: true |  | 8 | 2 | 0 | 0 | 0 |
 | full-page | fullPage: true |  | 1 | 1 | 0 | 0 | 0 |
 | clip | clip: 10,20 300x200 |  | 3 | 0 | 0 | 0 | 0 |
 | clip-full-page | fullPage: true, clip: 0,600 400x400 (beyond the viewport) |  | 1 | 0 | 0 | 0 | 0 |
@@ -45,7 +45,7 @@ The fixtures of `render-corpus` exported by Playwright (Chromium 156.0.8078.4) a
 | Scenario | Fixture | Output | Status | Metrics | Notes |
 |---|---|---|---|---|---|
 | desktop | boxes.html | screenshot | Pass | 1280x720, SSIM 0.9998, 0.00% different, 0.00% alpha different, max 39 |  |
-| desktop | dark-scheme.html | screenshot | Known | 1280x720, SSIM 0.9944, 0.40% different, 0.00% alpha different, max 148 | form controls: Chromium gives them a font of 13.333px (font: -webkit-small-control), the library inherits the font of their parent (the user agent style sheet of the HTML Standard) |
+| desktop | dark-scheme.html | screenshot | Pass | 1280x720, SSIM 0.9997, 0.03% different, 0.00% alpha different, max 41 |  |
 | desktop | gradients.html | screenshot | Pass | 1280x720, SSIM 0.9984, 0.03% different, 0.00% alpha different, max 54 |  |
 | desktop | images.html | screenshot | Pass | 1280x720, SSIM 0.9991, 0.00% different, 0.00% alpha different, max 23 |  |
 | desktop | long-page.html | screenshot | Pass | 1280x720, SSIM 0.9972, 0.02% different, 0.00% alpha different, max 42 |  |
@@ -57,29 +57,29 @@ The fixtures of `render-corpus` exported by Playwright (Chromium 156.0.8078.4) a
 | desktop | print-basic.html | screenshot | Pass | 1280x720, SSIM 0.9940, 0.04% different, 0.00% alpha different, max 40 |  |
 | desktop | svg-sized.svg | screenshot | Pass | 1280x720, SSIM 1.0000, 0.00% different, 0.00% alpha different, max 5 |  |
 | desktop | svg-transparent.svg | screenshot | Pass | 1280x720, SSIM 0.9999, 0.00% different, 0.00% alpha different, max 18 |  |
-| desktop | text.html | screenshot | Known | 1280x720, SSIM 0.9919, 0.66% different, 0.00% alpha different, max 221 | text: Skia renders glyphs at other subpixel positions (and CoreText on macOS makes the stems of the glyphs a little wider), Chromium paints the disc markers of the lists as shapes (Blink's symbol markers) where the library paints the text of the marker, and Blink rounds the font metrics of the line with superscripts and subscripts to whole pixels |
+| desktop | text.html | screenshot | Known | 1280x720, SSIM 0.9923, 0.64% different, 0.00% alpha different, max 163 | text: Skia renders glyphs at other subpixel positions (and CoreText on macOS makes the stems of the glyphs a little wider), and Blink rounds the font metrics of the line with superscripts and subscripts to whole pixels |
 | desktop | transparent-body.html | screenshot | Pass | 1280x720, SSIM 0.9999, 0.00% different, 0.00% alpha different, max 24 |  |
 | desktop-dpr2 | boxes.html | screenshot | Pass | 2560x1440, SSIM 0.9999, 0.00% different, 0.00% alpha different, max 29 |  |
-| desktop-dpr2 | dark-scheme.html | screenshot | Known | 2560x1440, SSIM 0.9954, 0.43% different, 0.00% alpha different, max 229 | form controls: Chromium gives them a font of 13.333px (font: -webkit-small-control), the library inherits the font of their parent (the user agent style sheet of the HTML Standard) |
+| desktop-dpr2 | dark-scheme.html | screenshot | Pass | 2560x1440, SSIM 0.9994, 0.08% different, 0.00% alpha different, max 64 |  |
 | desktop-dpr2 | gradients.html | screenshot | Pass | 2560x1440, SSIM 0.9982, 0.02% different, 0.00% alpha different, max 54 |  |
 | desktop-dpr2 | images.html | screenshot | Known | 2560x1440, SSIM 0.9971, 0.28% different, 0.00% alpha different, max 74 | image resampling: Skia scales the images up with another filter than the library at a device pixel ratio of 2 |
 | desktop-dpr2 | media-features.html | screenshot | Pass | 2560x1440, SSIM 0.9985, 0.05% different, 0.00% alpha different, max 51 |  |
 | desktop-dpr2 | svg-sized.svg | screenshot | Pass | 2560x1440, SSIM 1.0000, 0.00% different, 0.00% alpha different, max 7 |  |
 | desktop-dpr2 | svg-transparent.svg | screenshot | Pass | 2560x1440, SSIM 0.9998, 0.02% different, 0.00% alpha different, max 49 |  |
-| desktop-dpr2 | text.html | screenshot | Known | 2560x1440, SSIM 0.9895, 1.03% different, 0.00% alpha different, max 245 | text: Skia renders glyphs at other subpixel positions (and CoreText on macOS makes the stems of the glyphs a little wider), Chromium paints the disc markers of the lists as shapes (Blink's symbol markers) where the library paints the text of the marker, and Blink rounds the font metrics of the line with superscripts and subscripts to whole pixels |
+| desktop-dpr2 | text.html | screenshot | Known | 2560x1440, SSIM 0.9897, 1.02% different, 0.00% alpha different, max 245 | text: Skia renders glyphs at other subpixel positions (and CoreText on macOS makes the stems of the glyphs a little wider), and Blink rounds the font metrics of the line with superscripts and subscripts to whole pixels |
 | desktop-dpr2 | transparent-body.html | screenshot | Pass | 2560x1440, SSIM 0.9998, 0.02% different, 0.00% alpha different, max 42 |  |
 | omit-background | boxes.html | screenshot | Pass | 1280x720, SSIM 0.9998, 0.00% different, 0.06% alpha different, max 39 |  |
-| omit-background | dark-scheme.html | screenshot | Known | 1280x720, SSIM 0.9937, 0.47% different, 0.41% alpha different, max 224 | form controls: Chromium gives them a font of 13.333px (font: -webkit-small-control), the library inherits the font of their parent (the user agent style sheet of the HTML Standard) |
+| omit-background | dark-scheme.html | screenshot | Pass | 1280x720, SSIM 0.9997, 0.05% different, 0.16% alpha different, max 44 |  |
 | omit-background | gradients.html | screenshot | Known | 1280x720, SSIM 0.9984, 0.04% different, 0.29% alpha different, max 54 | image resampling: since Chromium 156, the edges of the scaled-up tiles of the semi-transparent background image of the multi-layer box have other alpha values |
 | omit-background | images.html | screenshot | Pass | 1280x720, SSIM 0.9991, 0.00% different, 0.00% alpha different, max 23 |  |
 | omit-background | long-page.html | screenshot | Pass | 1280x720, SSIM 0.9972, 0.02% different, 0.00% alpha different, max 42 |  |
 | omit-background | media-features.html | screenshot | Pass | 1280x720, SSIM 0.9996, 0.00% different, 0.00% alpha different, max 42 |  |
 | omit-background | svg-sized.svg | screenshot | Pass | 1280x720, SSIM 1.0000, 0.00% different, 0.00% alpha different, max 5 |  |
 | omit-background | svg-transparent.svg | screenshot | Pass | 1280x720, SSIM 0.9999, 0.00% different, 0.08% alpha different, max 18 |  |
-| omit-background | text.html | screenshot | Known | 1280x720, SSIM 0.9919, 0.69% different, 2.14% alpha different, max 221 | text: Skia renders glyphs at other subpixel positions (and CoreText on macOS makes the stems of the glyphs a little wider), Chromium paints the disc markers of the lists as shapes (Blink's symbol markers) where the library paints the text of the marker, and Blink rounds the font metrics of the line with superscripts and subscripts to whole pixels |
+| omit-background | text.html | screenshot | Known | 1280x720, SSIM 0.9923, 0.67% different, 2.13% alpha different, max 163 | text: Skia renders glyphs at other subpixel positions (and CoreText on macOS makes the stems of the glyphs a little wider), and Blink rounds the font metrics of the line with superscripts and subscripts to whole pixels |
 | omit-background | transparent-body.html | screenshot | Pass | 1280x720, SSIM 0.9999, 0.00% different, 0.07% alpha different, max 24 |  |
 | full-page | long-page.html | screenshot | Pass | 1616x3298, SSIM 0.9995, 0.00% different, 0.00% alpha different, max 42 |  |
-| full-page | text.html | screenshot | Known | 1280x764, SSIM 0.9923, 0.63% different, 0.00% alpha different, max 221 | text: Skia renders glyphs at other subpixel positions (and CoreText on macOS makes the stems of the glyphs a little wider), Chromium paints the disc markers of the lists as shapes (Blink's symbol markers) where the library paints the text of the marker, and Blink rounds the font metrics of the line with superscripts and subscripts to whole pixels |
+| full-page | text.html | screenshot | Known | 1280x764, SSIM 0.9926, 0.62% different, 0.00% alpha different, max 163 | text: Skia renders glyphs at other subpixel positions (and CoreText on macOS makes the stems of the glyphs a little wider), and Blink rounds the font metrics of the line with superscripts and subscripts to whole pixels |
 | clip | boxes.html | screenshot | Pass | 300x200, SSIM 1.0000, 0.00% different, 0.00% alpha different, max 1 |  |
 | clip | gradients.html | screenshot | Pass | 300x200, SSIM 0.9986, 0.00% different, 0.00% alpha different, max 1 |  |
 | clip | svg-transparent.svg | screenshot | Pass | 300x200, SSIM 0.9990, 0.00% different, 0.00% alpha different, max 18 |  |
@@ -96,7 +96,7 @@ The fixtures of `render-corpus` exported by Playwright (Chromium 156.0.8078.4) a
 | iphone-13 | meta-viewport-none.html | screenshot | Pass | 1170x1991, SSIM 0.9985, 0.16% different, 0.00% alpha different, max 46 |  |
 | iphone-13 | meta-viewport-width-600.html | screenshot | Known | 1170x1991, SSIM 0.9987, 0.21% different, 0.00% alpha different, max 42 | fractional page scale and text: Chromium snaps the geometry to the device pixels at the page scale (some edges are one device pixel apart) and renders heavier glyphs; the text autosizing of the mobile emulation of Chromium is not implemented |
 | iphone-13 | svg-transparent.svg | screenshot | Pass | 1170x1991, SSIM 0.9999, 0.00% different, 0.00% alpha different, max 28 |  |
-| iphone-13 | text.html | screenshot | Known | 1170x1991, SSIM 0.9850, 1.18% different, 0.00% alpha different, max 221 | fractional page scale and text: Chromium snaps the geometry to the device pixels at the page scale (some edges are one device pixel apart) and renders heavier glyphs; the text autosizing of the mobile emulation of Chromium is not implemented |
+| iphone-13 | text.html | screenshot | Known | 1170x1991, SSIM 0.9852, 1.17% different, 0.00% alpha different, max 179 | fractional page scale and text: Chromium snaps the geometry to the device pixels at the page scale (some edges are one device pixel apart) and renders heavier glyphs; the text autosizing of the mobile emulation of Chromium is not implemented |
 | iphone-13-landscape | media-features.html | screenshot | Pass | 2250x1024, SSIM 0.9980, 0.12% different, 0.00% alpha different, max 41 |  |
 | iphone-13-landscape | meta-viewport-device-width.html | screenshot | Known | 2250x1026, SSIM 0.9974, 0.45% different, 0.00% alpha different, max 68 | fractional page scale and text: Chromium snaps the geometry to the device pixels at the page scale (some edges are one device pixel apart) and renders heavier glyphs; the text autosizing of the mobile emulation of Chromium is not implemented |
 | pixel-7 | boxes.html | screenshot | Known | size 1081x2202 vs 1082x2202, SSIM 0.9904, 1.14% different, 0.00% alpha different, max 255 | fractional page scale and device pixel ratio (2.625) and text: Chromium snaps the geometry to the device pixels at the page scale (some edges are one device pixel apart) and renders heavier glyphs |
@@ -122,8 +122,8 @@ The fixtures of `render-corpus` exported by Playwright (Chromium 156.0.8078.4) a
 | pdf-default | print-page-rules.html | pages | Pass | 1056x816, SSIM 0.9868, 1.18% different, 0.00% alpha different, max 94 |  |
 | pdf-default | svg-transparent.svg | pdf | Known | 816x1056, SSIM 0.9968, 0.27% different, 0.00% alpha different, max 168 | PDF rasterization: Chromium embeds the fonts as Type 3 fonts and the library as TrueType fonts, which Poppler anti-aliases and positions differently (the dense text of the long documents differs on most of its pixels); the library rasterizes the SVG masks and filters, and the background tiles drift at a fractional print scale |
 | pdf-default | svg-transparent.svg | pages | Pass | 816x1056, SSIM 0.9974, 0.17% different, 0.00% alpha different, max 129 |  |
-| pdf-default | text.html | pdf | Known | 816x1056, SSIM 0.9401, 3.79% different, 0.00% alpha different, max 221 | PDF rasterization: Chromium embeds the fonts as Type 3 fonts and the library as TrueType fonts, which Poppler anti-aliases and positions differently (the dense text of the long documents differs on most of its pixels); the library rasterizes the SVG masks and filters, and the background tiles drift at a fractional print scale |
-| pdf-default | text.html | pages | Known | 816x1056, SSIM 0.9430, 3.04% different, 0.00% alpha different, max 221 | the pages rendered by the library compared with the PDF of Chromium rasterized by Poppler: the two rasterizers anti-alias and position the glyphs of the dense text differently |
+| pdf-default | text.html | pdf | Known | 816x1056, SSIM 0.9405, 3.78% different, 0.00% alpha different, max 164 | PDF rasterization: Chromium embeds the fonts as Type 3 fonts and the library as TrueType fonts, which Poppler anti-aliases and positions differently (the dense text of the long documents differs on most of its pixels); the library rasterizes the SVG masks and filters, and the background tiles drift at a fractional print scale |
+| pdf-default | text.html | pages | Known | 816x1056, SSIM 0.9434, 3.02% different, 0.00% alpha different, max 166 | the pages rendered by the library compared with the PDF of Chromium rasterized by Poppler: the two rasterizers anti-alias and position the glyphs of the dense text differently |
 | pdf-default | transparent-body.html | pdf | Known | 816x1056, SSIM 0.9946, 0.28% different, 0.00% alpha different, max 130 | PDF rasterization: Chromium embeds the fonts as Type 3 fonts and the library as TrueType fonts, which Poppler anti-aliases and positions differently (the dense text of the long documents differs on most of its pixels); the library rasterizes the SVG masks and filters, and the background tiles drift at a fractional print scale |
 | pdf-default | transparent-body.html | pages | Pass | 816x1056, SSIM 0.9955, 0.22% different, 0.00% alpha different, max 138 |  |
 | pdf-background | boxes.html | pdf | Pass | 816x1056, SSIM 0.9972, 0.11% different, 0.00% alpha different, max 49 |  |
@@ -140,8 +140,8 @@ The fixtures of `render-corpus` exported by Playwright (Chromium 156.0.8078.4) a
 | pdf-background | print-page-rules.html | pages | Pass | 794x560, SSIM 0.9850, 1.02% different, 0.00% alpha different, max 133 |  |
 | pdf-background | svg-transparent.svg | pdf | Known | 816x1056, SSIM 0.9968, 0.27% different, 0.00% alpha different, max 168 | PDF rasterization: Chromium embeds the fonts as Type 3 fonts and the library as TrueType fonts, which Poppler anti-aliases and positions differently (the dense text of the long documents differs on most of its pixels); the library rasterizes the SVG masks and filters, and the background tiles drift at a fractional print scale |
 | pdf-background | svg-transparent.svg | pages | Pass | 816x1056, SSIM 0.9974, 0.17% different, 0.00% alpha different, max 129 |  |
-| pdf-background | text.html | pdf | Known | 816x1056, SSIM 0.9388, 3.89% different, 0.00% alpha different, max 221 | PDF rasterization: Chromium embeds the fonts as Type 3 fonts and the library as TrueType fonts, which Poppler anti-aliases and positions differently (the dense text of the long documents differs on most of its pixels); the library rasterizes the SVG masks and filters, and the background tiles drift at a fractional print scale |
-| pdf-background | text.html | pages | Known | 816x1056, SSIM 0.9417, 3.11% different, 0.00% alpha different, max 221 | the pages rendered by the library compared with the PDF of Chromium rasterized by Poppler: the two rasterizers anti-alias and position the glyphs of the dense text differently |
+| pdf-background | text.html | pdf | Known | 816x1056, SSIM 0.9392, 3.87% different, 0.00% alpha different, max 164 | PDF rasterization: Chromium embeds the fonts as Type 3 fonts and the library as TrueType fonts, which Poppler anti-aliases and positions differently (the dense text of the long documents differs on most of its pixels); the library rasterizes the SVG masks and filters, and the background tiles drift at a fractional print scale |
+| pdf-background | text.html | pages | Known | 816x1056, SSIM 0.9421, 3.10% different, 0.00% alpha different, max 166 | the pages rendered by the library compared with the PDF of Chromium rasterized by Poppler: the two rasterizers anti-alias and position the glyphs of the dense text differently |
 | pdf-background | transparent-body.html | pdf | Known | 816x1056, SSIM 0.9947, 0.28% different, 0.00% alpha different, max 130 | PDF rasterization: Chromium embeds the fonts as Type 3 fonts and the library as TrueType fonts, which Poppler anti-aliases and positions differently (the dense text of the long documents differs on most of its pixels); the library rasterizes the SVG masks and filters, and the background tiles drift at a fractional print scale |
 | pdf-background | transparent-body.html | pages | Pass | 816x1056, SSIM 0.9955, 0.23% different, 0.00% alpha different, max 138 |  |
 | pdf-margins | boxes.html | pdf | Pass | 816x1056, SSIM 0.9971, 0.12% different, 0.00% alpha different, max 50 |  |
@@ -152,8 +152,8 @@ The fixtures of `render-corpus` exported by Playwright (Chromium 156.0.8078.4) a
 | pdf-margins | print-long.html | pages | Known | 816x1056, SSIM 0.7874, 10.01% different, 0.00% alpha different, max 134 | the pages rendered by the library compared with the PDF of Chromium rasterized by Poppler: the two rasterizers anti-alias and position the glyphs of the dense text differently |
 | pdf-legal | print-basic.html | pdf | Known | 816x1344, SSIM 0.9844, 0.93% different, 0.00% alpha different, max 123 | PDF rasterization: Chromium embeds the fonts as Type 3 fonts and the library as TrueType fonts, which Poppler anti-aliases and positions differently (the dense text of the long documents differs on most of its pixels); the library rasterizes the SVG masks and filters, and the background tiles drift at a fractional print scale |
 | pdf-legal | print-basic.html | pages | Pass | 816x1344, SSIM 0.9858, 0.76% different, 0.00% alpha different, max 138 |  |
-| pdf-legal | text.html | pdf | Known | 816x1344, SSIM 0.8926, 5.40% different, 0.00% alpha different, max 238 | PDF rasterization: Chromium embeds the fonts as Type 3 fonts and the library as TrueType fonts, which Poppler anti-aliases and positions differently (the dense text of the long documents differs on most of its pixels); the library rasterizes the SVG masks and filters, and the background tiles drift at a fractional print scale |
-| pdf-legal | text.html | pages | Known | 816x1344, SSIM 0.8929, 4.98% different, 0.00% alpha different, max 238 | the pages rendered by the library compared with the PDF of Chromium rasterized by Poppler: the two rasterizers anti-alias and position the glyphs of the dense text differently |
+| pdf-legal | text.html | pdf | Known | 816x1344, SSIM 0.8927, 5.39% different, 0.00% alpha different, max 238 | PDF rasterization: Chromium embeds the fonts as Type 3 fonts and the library as TrueType fonts, which Poppler anti-aliases and positions differently (the dense text of the long documents differs on most of its pixels); the library rasterizes the SVG masks and filters, and the background tiles drift at a fractional print scale |
+| pdf-legal | text.html | pages | Known | 816x1344, SSIM 0.8930, 4.98% different, 0.00% alpha different, max 238 | the pages rendered by the library compared with the PDF of Chromium rasterized by Poppler: the two rasterizers anti-alias and position the glyphs of the dense text differently |
 | pdf-landscape | print-basic.html | pdf | Known | 1056x816, SSIM 0.9791, 1.22% different, 0.00% alpha different, max 123 | PDF rasterization: Chromium embeds the fonts as Type 3 fonts and the library as TrueType fonts, which Poppler anti-aliases and positions differently (the dense text of the long documents differs on most of its pixels); the library rasterizes the SVG masks and filters, and the background tiles drift at a fractional print scale |
 | pdf-landscape | print-basic.html | pages | Pass | 1056x816, SSIM 0.9812, 1.00% different, 0.00% alpha different, max 138 |  |
 | pdf-landscape | print-long.html | pdf | Known | 1056x816, SSIM 0.7301, 14.08% different, 0.00% alpha different, max 130 | PDF rasterization: Chromium embeds the fonts as Type 3 fonts and the library as TrueType fonts, which Poppler anti-aliases and positions differently (the dense text of the long documents differs on most of its pixels); the library rasterizes the SVG masks and filters, and the background tiles drift at a fractional print scale |

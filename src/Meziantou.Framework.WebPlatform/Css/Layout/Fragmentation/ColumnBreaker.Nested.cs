@@ -69,6 +69,9 @@ internal static partial class ColumnBreaker
         /// <summary>The block size of the current row of a fixed block size (column-height) used in the previous outer fragmentainers.</summary>
         private double _rowConsumed;
 
+        /// <summary>The block size of the row of a fixed block size (column-height) where the content of the last row of columns ended.</summary>
+        private double _endedRowConsumed;
+
         /// <summary>The offset of the block-end edge of the border box in the outer fragmentainer where the content ends.</summary>
         private double _endOffset;
 
@@ -228,9 +231,17 @@ internal static partial class ColumnBreaker
                 _rowConsumed = 0;
                 _nested.Fragmentainers.PortionStarts.Add(_nested.Columns.Count);
             }
+            else if (!_nested.FillsSequentially && _set > 0)
+            {
+                // As in Blink, a balanced row of a fixed block size after a column spanner that is broken by the end of the outer
+                // fragmentainer starts again with its whole block size in the next one (WPT css/css-gaps/multicol/multicol-gap-decorations-007.html;
+                // the rows before the first spanner continue, css/css-gaps/multicol/fragmentation/multicol-gap-decorations-fragmentation-004.html)
+                _rowConsumed = 0;
+            }
 
             var columnCount = _nested.ColumnCount;
-            var balances = !(isLastSet && _nested.FillsSequentially);
+            // (as in Blink, the last rows of a fixed block size after a column spanner are balanced, WPT css/css-multicol/column-height-029.html)
+            var balances = !(isLastSet && _nested.FillsSequentially && (_set == 0 || _nested.RowBlockSize is null));
 
             // The absolutely positioned boxes of the strip are placed in the sequence of the columns once the in-flow content
             // is (see PlaceNestedOutOfFlow): as in a container that is not nested, the columns of a row without in-flow
@@ -261,9 +272,10 @@ internal static partial class ColumnBreaker
 
                 if (_nested.RowBlockSize is { } rowBlockSize && !isEmpty)
                 {
-                    // A row of a fixed block size that follows other content of the container in the outer fragmentainer starts in it
-                    // when it fits (the rows overflow a container with a definite block size)
-                    if (_rowConsumed <= Epsilon && _hasContentInFragmentainer && rowBlockSize > available + Epsilon)
+                    // As in Blink, a row of a fixed block size whose columns are filled sequentially and that follows other content of
+                    // the container in the outer fragmentainer starts in it when it fits; a balanced row is broken by the end of the
+                    // outer fragmentainer (the rows overflow a container with a definite block size)
+                    if (_nested.FillsSequentially && _rowConsumed <= Epsilon && _hasContentInFragmentainer && rowBlockSize > available + Epsilon)
                         return false;
 
                     available = Math.Min(available, Math.Max(MinBlockSize, rowBlockSize - _rowConsumed));
@@ -345,7 +357,7 @@ internal static partial class ColumnBreaker
                     used = Math.Min(columnBlockSize, Math.Max(0, _columns.LastExtent));
                 }
 
-                if (isFinished && isLastSet && !isEmpty && _nested.RowBlockSize is { } lastRowBlockSize)
+                if (isFinished && isLastSet && !isEmpty && _nested.FillsSequentially && _nested.RowBlockSize is { } lastRowBlockSize)
                 {
                     // The last row of the container has its whole block size, even when its content is balanced
                     used = Math.Max(used, Math.Min(Math.Max(0, blockSize - offset), lastRowBlockSize - _rowConsumed));
@@ -375,10 +387,12 @@ internal static partial class ColumnBreaker
                 if (isFinished)
                 {
                     _columns = null;
+                    _endedRowConsumed = _rowConsumed + used;
                     return true;
                 }
 
-                // The next row of a fixed block size is in the same outer fragmentainer when it fits
+                // The next row of a fixed block size starts in the same outer fragmentainer when it fits, or when space remains there
+                // and its columns are balanced (see above)
                 if (_nested.RowBlockSize is not { } fixedBlockSize || !_nested.Wraps)
                     return false;
 
@@ -388,7 +402,7 @@ internal static partial class ColumnBreaker
 
                 _rowConsumed = 0;
                 offset += _nested.RowGap;
-                if (blockSize - offset < fixedBlockSize - Epsilon)
+                if (blockSize - offset <= Epsilon || (_nested.FillsSequentially && blockSize - offset < fixedBlockSize - Epsilon))
                     return false;
             }
         }
@@ -422,6 +436,22 @@ internal static partial class ColumnBreaker
                 {
                     var previousEnd = writingDirection.ToLogical(_flow.Spanners[_set - 1].Fragment.Margin).BlockEnd;
                     top -= previousEnd + margin.BlockStart - MarginStrut.FromMargin(previousEnd).Append(margin.BlockStart).Sum;
+                }
+
+                // As in Blink, a spanner that does not fit in what remains of the row of a fixed block size where the content before
+                // it ends starts the next row; it is moved to the next outer fragmentainer when that row does not fit in this one
+                // and its columns are filled sequentially (see PlaceColumns)
+                if (!_isMoved && !isAtStart && _nested.Wraps && _nested.RowBlockSize is { } rowBlockSize && _endedRowConsumed > Epsilon
+                    && rowBlockSize - _endedRowConsumed is var rowRemaining && margin.BlockStart + size + margin.BlockEnd > rowRemaining + Epsilon)
+                {
+                    offset += Math.Max(0, rowRemaining) + _nested.RowGap;
+                    top = offset + margin.BlockStart;
+                    _endedRowConsumed = 0;
+                    if (blockSize - offset <= Epsilon || (_nested.FillsSequentially && blockSize - offset < rowBlockSize - Epsilon))
+                    {
+                        _isMoved = true;
+                        return false;
+                    }
                 }
 
                 // A spanner whose content does not fit (a monolithic spanner, a first line...) is moved to the next outer fragmentainer

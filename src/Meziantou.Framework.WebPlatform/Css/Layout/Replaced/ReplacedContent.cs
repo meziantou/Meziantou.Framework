@@ -102,6 +102,12 @@ internal sealed class ReplacedContent
                 defaultSize = new PhysicalSize(layout.FontSize, layout.FontSize);
             }
         }
+        else if (box.MarkerSymbol != MarkerSymbol.None)
+        {
+            // The symbol of a list marker (see MarkerSymbols), sized in the axes of its line
+            var (inlineSize, blockSize, _) = MarkerSymbols.GetSize(box.Style, box.MarkerSymbol);
+            natural = layout.IsHorizontalWritingMode ? new ImageNaturalSize(inlineSize, blockSize, null) : new ImageNaturalSize(blockSize, inlineSize, null);
+        }
         else if (box.Element is not { } element)
         {
             natural = default;
@@ -116,7 +122,7 @@ internal sealed class ReplacedContent
             // The rows of a list box are boxes: the width of its labels is their max-content inline size
             if (FormControlContents.GetListBoxLabelsInlineSize(context, box) is { } labelsInlineSize)
             {
-                control = control with { InlineSize = (labelsInlineSize + ScrollContainers.GetScrollbarThickness(context, layout)) / zoom };
+                control = control with { InlineSize = (labelsInlineSize + FormControlSizing.GetListBoxScrollbarSpace(box.Style, ScrollContainers.GetScrollbarThickness(context, layout))) / zoom };
             }
 
             var (width, height) = horizontal ? (control.InlineSize, control.BlockSize) : (control.BlockSize, control.InlineSize);

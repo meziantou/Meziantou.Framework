@@ -1,0 +1,18 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!-- SharpFuzz targets of Meziantou.Framework.Hashing. See fuzz/README.md. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The bcrypt hashes of the unit tests are the seeds of the bcrypt targets -->
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Hashing.Tests\BcryptTests.cs" LogicalName="BcryptTests.cs" Link="Seeds\BcryptTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Hashing\Meziantou.Framework.Hashing.csproj" />
+  </ItemGroup>
+</Project>

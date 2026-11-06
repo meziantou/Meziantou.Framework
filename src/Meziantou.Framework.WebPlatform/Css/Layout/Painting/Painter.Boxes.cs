@@ -61,6 +61,13 @@ internal sealed partial class Painter
             return;
         }
 
+        // The borders of a form control with a native frame are the space of its frame
+        if (HasNativeFrame(fragment))
+        {
+            PaintNativeFrame(fragment, GetSnappedBorderBox(fragment, offset));
+            return;
+        }
+
         var style = fragment.Box.Style;
         if (style.GetComputedValue("border-image-source") is not ("none" or "") && PaintBorderImage(fragment, style, GetSnappedBorderBox(fragment, offset)))
             return;

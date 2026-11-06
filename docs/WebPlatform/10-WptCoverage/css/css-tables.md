@@ -18,7 +18,7 @@ description: "The results of the web-platform-tests of css/css-tables, and why t
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 4
+- **BUG**: 5
 - **TEST BUG**: 2
 - **NOT IMPLEMENTED**: 2
 
@@ -64,7 +64,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`height-distribution/computing-row-measure-1.html`](https://wpt.fyi/results/css/css-tables/height-distribution/computing-row-measure-1.html) | Pass | 4 / 4 |  |  |
 | [`height-distribution/extra-height-given-to-all-row-groups-003.html`](https://wpt.fyi/results/css/css-tables/height-distribution/extra-height-given-to-all-row-groups-003.html) | Pass | 1 / 1 |  |  |
 | [`height-distribution/extra-height-given-to-all-row-groups-004.html`](https://wpt.fyi/results/css/css-tables/height-distribution/extra-height-given-to-all-row-groups-004.html) | Pass | 1 / 1 |  |  |
-| [`height-distribution/percentage-sizing-of-table-cell-children.html`](https://wpt.fyi/results/css/css-tables/height-distribution/percentage-sizing-of-table-cell-children.html) | Fail | 9 / 10 | TEST BUG | expects the percentage width of a form control in a zero-width table to resolve as `auto` in the measure of the columns (fails in every browser) |
+| [`height-distribution/percentage-sizing-of-table-cell-children.html`](https://wpt.fyi/results/css/css-tables/height-distribution/percentage-sizing-of-table-cell-children.html) | Fail | 8 / 10 | BUG, TEST BUG | the subtest of the percentage heights of the replaced elements: the library resolves `height: 100%` of the `input` against the height of its cell, which the strut of the 16px font of the cell makes 18px, where Chromium resolves it as `auto` (15px, the height of the `input` of the reference); it passed while the controls inherited the 16px font; expects the percentage width of a form control in a zero-width table to resolve as `auto` in the measure of the columns (fails in every browser) |
 | [`html-to-css-mapping-1.html`](https://wpt.fyi/results/css/css-tables/html-to-css-mapping-1.html) | Pass | 4 / 4 |  |  |
 | [`html-to-css-mapping-2.html`](https://wpt.fyi/results/css/css-tables/html-to-css-mapping-2.html) | Fail | 13 / 25 | BUG | the borders given by the `border`, `frame` and `rules` attributes of a table (the presentational hints of HTML) differ from the mapping of CSS Tables 3 that the test expects (no browser matches it) |
 | [`html5-table-formatting-1.html`](https://wpt.fyi/results/css/css-tables/html5-table-formatting-1.html) | Fail | 5 / 6 | BUG | a table without slot is sized with its rows, as in Chromium (CSS Tables 3 lays out an empty table with its width and height only; WPT css/css-tables/tentative/table-height-redistribution.html expects the height of the row of a table without column) |

@@ -9,15 +9,16 @@ description: "The results of the web-platform-tests of css/css-values, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 255 | 264 | 0 | 97% |
+| [Stable](#stable-tests) | 254 | 264 | 0 | 96% |
 | [Tentative](#tentative-tests) | 21 | 22 | 0 | 95% |
 | [Reftests](#reftests) | 211 | 214 | 0 | 99% |
-| **All** | **487** | **500** | **0** | **97%** |
+| **All** | **486** | **500** | **0** | **97%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
+- **BUG**: 1
 - **TEST BUG**: 10
 - **NOT IMPLEMENTED**: 1
 - **REQUIRES**: 2
@@ -110,7 +111,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`calc-size/calc-size-flex-basis-on-row.html`](https://wpt.fyi/results/css/css-values/calc-size/calc-size-flex-basis-on-row.html) | Pass | 33 / 33 |  |  |
 | [`calc-size/calc-size-height-box-sizing.html`](https://wpt.fyi/results/css/css-values/calc-size/calc-size-height-box-sizing.html) | Pass | 15 / 15 |  |  |
 | [`calc-size/calc-size-height.html`](https://wpt.fyi/results/css/css-values/calc-size/calc-size-height.html) | Pass | 37 / 37 |  |  |
-| [`calc-size/calc-size-list-box.html`](https://wpt.fyi/results/css/css-values/calc-size/calc-size-list-box.html) | Pass | 10 / 10 |  |  |
+| [`calc-size/calc-size-list-box.html`](https://wpt.fyi/results/css/css-values/calc-size/calc-size-list-box.html) | Fail | 8 / 10 | BUG | a rounding error of the order of 1e-14px: the layout of the library uses floating-point coordinates where the browsers use fixed-point units (1/64px), and the 13.333px font of the controls (10pt) gives sizes that are not exact binary fractions, so the label of the list box or of the drop-down box measured for its natural size and for the reference differ in their last bits (the test compares the widths exactly) |
 | [`calc-size/calc-size-out-of-flow.html`](https://wpt.fyi/results/css/css-values/calc-size/calc-size-out-of-flow.html) | Pass | 12 / 12 |  |  |
 | [`calc-size/calc-size-parsing.html`](https://wpt.fyi/results/css/css-values/calc-size/calc-size-parsing.html) | Pass | 94 / 94 |  |  |
 | [`calc-size/calc-size-replaced-element.html`](https://wpt.fyi/results/css/css-values/calc-size/calc-size-replaced-element.html) | Pass | 33 / 33 |  |  |

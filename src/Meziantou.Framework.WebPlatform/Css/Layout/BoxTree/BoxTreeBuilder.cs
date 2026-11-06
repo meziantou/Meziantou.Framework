@@ -1491,19 +1491,18 @@ internal sealed partial class BoxTreeBuilder
             box = new ContainerBox(ContainerBoxKind.Normal, style, display, element, name) { IsOutsideMarker = outside };
             box.AppendChild(new ContainerBox(ContainerBoxKind.Replaced, GetAnonymousStyle(style), Display.Inline, element, name) { GeneratedImage = image });
         }
+        else if (MarkerSymbols.Get(style.GetComputedValue("list-style-type")) is not MarkerSymbol.None and var symbol)
+        {
+            // As in Blink and Gecko, the bullets and the disclosure triangles are shapes, not the glyphs of the marker string: a
+            // replaced box of the size of the symbol (see MarkerSymbols). The margins of an inside marker are the ones of Blink
+            box = new ContainerBox(ContainerBoxKind.Normal, style, display, element, name) { IsOutsideMarker = outside };
+            var symbolStyle = outside ? GetAnonymousStyle(style) : GetInsideMarkerSymbolStyle(style, symbol);
+            box.AppendChild(new ContainerBox(ContainerBoxKind.Replaced, symbolStyle, Display.Inline, element, name) { MarkerSymbol = symbol });
+        }
         else if (GetMarkerString(element, style, originatingPseudoElement) is { Length: > 0 } text)
         {
             box = new ContainerBox(ContainerBoxKind.Normal, style, display, element, name) { IsOutsideMarker = outside };
-
-            // The bullets are symbols, not text (the browsers draw them): as there, letter-spacing and word-spacing do not space them
-            var textStyle = style;
-            if (style.GetComputedValue("list-style-type") is "disc" or "circle" or "square" or "disclosure-open" or "disclosure-closed"
-                && (style.GetComputedValue("letter-spacing") != "normal" || style.GetComputedValue("word-spacing") != "normal"))
-            {
-                textStyle = style.GetDerivedStyle(MarkerSymbolStyleKey, 0, static (style, _) => style.WithOverrides([new CssLonghandValue("letter-spacing", "normal"), new CssLonghandValue("word-spacing", "normal")]));
-            }
-
-            box.AppendChild(new TextRun(textStyle, element, name, TextRunKind.Generated, node: null, text, 0, text.Length));
+            box.AppendChild(new TextRun(style, element, name, TextRunKind.Generated, node: null, text, 0, text.Length));
         }
         else
         {
@@ -1517,6 +1516,22 @@ internal sealed partial class BoxTreeBuilder
         }
 
         FixupContainer(box);
+    }
+
+    private static readonly object InsideMarkerBulletStyleKey = new();
+    private static readonly object InsideMarkerDisclosureStyleKey = new();
+
+    /// <summary>
+    /// Returns the style of the symbol of an inside marker (see <see cref="MarkerSymbols"/>): the anonymous style of the marker
+    /// with the margins of Blink (<c>ListMarker::InlineMarginsForInside</c>), -1px before a bullet and 1em after it, 0.4em after
+    /// a disclosure triangle.
+    /// </summary>
+    private ComputedStyle GetInsideMarkerSymbolStyle(ComputedStyle markerStyle, MarkerSymbol symbol)
+    {
+        var anonymous = GetAnonymousStyle(markerStyle);
+        return symbol is MarkerSymbol.DisclosureOpen or MarkerSymbol.DisclosureClosed
+            ? anonymous.GetDerivedStyle(InsideMarkerDisclosureStyleKey, 0, static (style, _) => style.WithOverrides([new CssLonghandValue("margin-inline-end", "0.4em")]))
+            : anonymous.GetDerivedStyle(InsideMarkerBulletStyleKey, 0, static (style, _) => style.WithOverrides([new CssLonghandValue("margin-inline-start", "-1px"), new CssLonghandValue("margin-inline-end", "1em")]));
     }
 
     /// <summary>The marker string of a list item (https://drafts.csswg.org/css-lists-3/#marker-string), or null when list-style-type is none.</summary>
@@ -2097,9 +2112,6 @@ internal sealed partial class BoxTreeBuilder
 
     /// <summary>The key of the style of the box of the ::placeholder of a text control, derived from the style of the pseudo-element (with the style of the control).</summary>
     private static readonly object PlaceholderBoxStyleKey = new();
-
-    /// <summary>The key of the style of the symbol of a list marker (a bullet), which letter-spacing and word-spacing do not space.</summary>
-    private static readonly object MarkerSymbolStyleKey = new();
 
     /// <summary>The key of the style of the image of a pseudo-element whose content is a single image (see <see cref="GetGeneratedImageStyle"/>).</summary>
     private static readonly object GeneratedImageStyleKey = new();

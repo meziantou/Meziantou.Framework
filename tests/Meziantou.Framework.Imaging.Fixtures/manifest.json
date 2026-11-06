@@ -64753,7 +64753,7 @@
       "format": "jxl",
       "input": {
         "path": "invalid/jxl/xyb-icc.jxl",
-        "sha256": "56836b47965d0e28157fdb5535c806b2c2d9560d69c8cb4d76edeeeef43b2f94",
+        "sha256": "6659a194d5117a6ba072884a90cd7ac11aeeb9b73167010327091a16114e7752",
         "role": "encoded"
       },
       "provenance": {
@@ -64767,13 +64767,13 @@
           ".NET 10.0"
         ],
         "commands": [
-          "cjxl {source}.pam {output}.jxl -d 1 -x icc_pathname={icc/profiles/ProPhoto-v4.icc} --quiet --num_threads=0"
+          "cjxl {source}.pam {output}.jxl -d 1 -x icc_pathname={IccProfileBuilder.MatrixWithLookupTables} --quiet --num_threads=0"
         ]
       },
       "expectedError": {
         "exception": "UnsupportedImageFeatureException",
         "format": "JpegXl",
-        "feature": "XYB image with a color profile other than sRGB"
+        "feature": "XYB image with an ICC profile based on lookup tables"
       },
       "features": [
         "jxl.bits=8",
@@ -64782,7 +64782,7 @@
         "jxl.colorTransform=xyb",
         "jxl.file=codestream"
       ],
-      "notes": "A lossy image whose samples are to be converted from XYB to the color space of an ICC profile that is not sRGB."
+      "notes": "A lossy image whose samples are to be rendered from XYB to the color space of an ICC profile that converts from the profile connection space with a lookup table (BToA0), which takes precedence over its colorants and tone curves."
     },
     {
       "id": "invalid/png/apng-default-fctl-partial",

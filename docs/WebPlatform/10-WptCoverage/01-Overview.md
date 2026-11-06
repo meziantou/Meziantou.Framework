@@ -705,7 +705,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`html/the-xhtml-syntax`](html/the-xhtml-syntax.md#reftests) | 2 | 2 | 0 | 100% |
 | [`infrastructure`](infrastructure.md#reftests) | 0 | 61 | 61 | – |
 | [`intersection-observer`](intersection-observer.md#reftests) | 1 | 1 | 0 | 100% |
-| [`jpegxl`](jpegxl.md#reftests) | 33 | 51 | 0 | 65% |
+| [`jpegxl`](jpegxl.md#reftests) | 34 | 51 | 0 | 67% |
 | [`mathml`](mathml.md#reftests) | 269 | 282 | 1 | 96% |
 | [`page-lifecycle`](page-lifecycle.md#reftests) | 1 | 1 | 0 | 100% |
 | [`permissions-policy`](permissions-policy.md#reftests) | 0 | 1 | 0 | 0% |

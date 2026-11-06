@@ -20,9 +20,11 @@ The library covers:
   bubbles, reference lines, lollipops, dumbbells, combo charts, population pyramids, slope charts, error bars and Gantt
   charts.
 - Radial charts: pies, donuts, polar areas, radial bars, radar charts and gauges.
-- Hierarchical charts: packed circles, treemaps, sunbursts and icicles.
-- Statistical charts: histograms, box plots, heatmaps, waterfalls, funnels, candlesticks, bullet charts, calendar heatmaps,
-  Marimekko charts and sparklines.
+- Hierarchical charts: packed circles, treemaps, sunbursts, icicles, tree diagrams and dendrograms.
+- Flows: Sankey diagrams.
+- Statistical charts: histograms, box plots, density plots, violin plots, trend lines, moving averages, heatmaps,
+  waterfalls, funnels, candlesticks, bullet charts, calendar heatmaps, Marimekko charts and sparklines.
+- Small multiples: grids of charts that share their scales, and charts with two y axes.
 
 The output is deterministic: the same plot gives the same SVG on every machine, so you can compare charts in snapshot
 tests. Texts are measured with the metrics of Helvetica that the library embeds, so no font has to be installed.

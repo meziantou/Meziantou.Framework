@@ -135,7 +135,7 @@ plot.Add(new ArcMark<Share>([new("Used", Value), new("Free", 100 - Value)], valu
 {
     Fill = part => part.Name,
 });
-plot.Add(new RuleXMark(Value) { Y1 = _ => 0, Y2 = _ => 1, StrokeWidth = 3 });
+plot.Add(new RuleXMark(Value / 100) { Y1 = _ => 0, Y2 = _ => 1, StrokeWidth = 3 }); // The slices span 0 to 1
 plot.Add(new TextMark<double>([Value], text: value => value.ToString(CultureInfo.InvariantCulture) + "%") { FontSize = 32, Bold = true, OffsetY = -24 });
 plot.ColorScale = new OrdinalColorScale { Palette = ["#4269d0", "#e3e6ea"] };
 plot.Legend.Visible = false;

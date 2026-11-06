@@ -49,7 +49,7 @@ public sealed class BoxMark<T> : Mark<T>
         var q1 = data.Extra[LowerQuartile];
         var median = data.Extra[Median];
         var q3 = data.Extra[UpperQuartile];
-        var outliers = data.Sets!;
+        var outliers = data.Sets;
         var bandwidth = BarMark<T>.GetBandwidth(context.X, data);
         for (var i = 0; i < data.Count; i++)
         {

@@ -1,6 +1,6 @@
 ---
 title: Cartesian charts
-description: Bar charts (grouped, stacked, normalized, horizontal), lines, steps, areas, streamgraphs, scatter plots, bubbles, reference lines, lollipops, dumbbells, combo charts, population pyramids, slope charts, error bars and Gantt charts.
+description: Bar charts (grouped, stacked, normalized, horizontal), lines, steps, areas, streamgraphs, scatter plots, bubbles, reference lines, lollipops, dumbbells, combo charts, two y axes, population pyramids, slope charts, error bars and Gantt charts.
 ---
 
 ## Bar chart
@@ -236,6 +236,35 @@ plot.SizeScale = new SizeScale { MaxRadius = 20 };
 <!-- endref -->
 
 ![Bubbles whose areas are proportional to the power of the cars](../images/BubbleChart.svg)
+
+## Secondary axis
+
+Marks that set [UseSecondaryYScale](cref:Meziantou.Framework.Charts.Mark.UseSecondaryYScale) use the secondary y scale ([Plot.SecondaryYScale](cref:Meziantou.Framework.Charts.Plot.SecondaryYScale)), whose axis is on the right: two measures of different units in one chart.
+
+<!-- ref:../../../tests/Meziantou.Framework.Charts.Tests/CartesianChartTests.cs;region=Charts_SecondaryAxis;format=md-fenced-code-block;dedent=true -->
+```csharp
+Share[] revenue = [new("Q1", 120), new("Q2", 150), new("Q3", 140), new("Q4", 190)];
+Share[] growth = [new("Q1", 0.04), new("Q2", 0.25), new("Q3", -0.07), new("Q4", 0.36)];
+
+var plot = new Plot
+{
+    Title = "Revenue and growth",
+    SecondaryYScale = new LinearScale { TickFormat = NumberFormats.Percent() },
+};
+plot.Add(new BarMark<Share>(revenue, x: quarter => quarter.Name, y: quarter => quarter.Value) { Fill = _ => "Revenue" });
+plot.Add(new LineMark<Share>(growth, x: quarter => quarter.Name, y: quarter => quarter.Value)
+{
+    UseSecondaryYScale = true,
+    Stroke = _ => "Growth",
+    StrokeWidth = 2.5,
+    MarkerRadius = 4,
+});
+plot.YAxis.Label = "Revenue (k€)";
+plot.SecondaryYAxis.Label = "Growth";
+```
+<!-- endref -->
+
+![Bars of revenue with a line of growth on a percentage axis on the right](../images/SecondaryAxis.svg)
 
 ## Reference lines
 

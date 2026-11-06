@@ -7,11 +7,13 @@ Each chart type is a combination of marks, scales, coordinates and transforms (s
 pages of the gallery show an example of each:
 
 - [Cartesian charts](02-Cartesian.md): bars, lines, areas, scatter plots, bubbles, reference lines, lollipops, dumbbells,
-  combo charts, population pyramids, slope charts, error bars and Gantt charts.
+  combo charts, two y axes, population pyramids, slope charts, error bars and Gantt charts.
 - [Radial charts](03-Radial.md): pies, donuts, polar areas, radial bars, radar charts and gauges.
-- [Hierarchical charts](04-Hierarchical.md): packed circles, treemaps, sunbursts and icicles.
-- [Statistical charts](05-Statistical.md): histograms, box plots, heatmaps, waterfalls, funnels, candlesticks, bullet
-  charts, calendar heatmaps, Marimekko charts and sparklines.
+- [Hierarchical charts](04-Hierarchical.md): packed circles, treemaps, sunbursts, icicles, tree diagrams and dendrograms.
+- [Statistical charts](05-Statistical.md): histograms, box plots, density plots, violin plots, trend lines, moving
+  averages, heatmaps, waterfalls, funnels, candlesticks, bullet charts, calendar heatmaps, Marimekko charts and sparklines.
+- [Small multiples](06-SmallMultiples.md): grids of charts that share their scales, one per facet.
+- [Flows](07-Flows.md): Sankey diagrams.
 
 The examples chart records like these:
 

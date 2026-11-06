@@ -1,6 +1,6 @@
 ---
 title: Statistical charts
-description: Histograms, box plots, heatmaps, waterfalls, funnels, candlesticks, bullet charts, calendar heatmaps, Marimekko charts and sparklines.
+description: Histograms, box plots, density plots, violin plots, trend lines, moving averages, heatmaps, waterfalls, funnels, candlesticks, bullet charts, calendar heatmaps, Marimekko charts and sparklines.
 ---
 
 ## Histogram
@@ -35,6 +35,101 @@ plot.Legend.Visible = false;
 <!-- endref -->
 
 ![Three box plots with whiskers and outliers](../images/BoxPlot.svg)
+
+## Density plot
+
+A [DensityTransform](cref:Meziantou.Framework.Charts.DensityTransform) estimates the density of the x values of each series with a Gaussian kernel. The bandwidth follows Silverman's rule unless it is set. The y channel of the mark is ignored.
+
+<!-- ref:../../../tests/Meziantou.Framework.Charts.Tests/StatisticalChartTests.cs;region=Charts_DensityPlot;format=md-fenced-code-block;dedent=true -->
+```csharp
+var plot = new Plot { Title = "Distribution by group" };
+plot.Add(new AreaMark<Measurement>(SampleData.Measurements, x: measurement => measurement.Value, y: _ => null)
+{
+    Fill = measurement => measurement.Group,
+    FillOpacity = 0.35,
+    Curve = Curve.MonotoneX,
+    Transform = new DensityTransform(),
+});
+plot.YAxis.Label = "Density";
+```
+<!-- endref -->
+
+![Three overlapping smooth densities, one per group](../images/DensityPlot.svg)
+
+## Violin plot
+
+A [ViolinMark\<T\>](cref:Meziantou.Framework.Charts.ViolinMark{T}) mirrors the density of each category, from its smallest value to its largest, with a box of its quartiles and a dot at its median.
+
+<!-- ref:../../../tests/Meziantou.Framework.Charts.Tests/StatisticalChartTests.cs;region=Charts_ViolinPlot;format=md-fenced-code-block;dedent=true -->
+```csharp
+var plot = new Plot { Title = "Distribution by group" };
+plot.Add(new ViolinMark<Measurement>(SampleData.Measurements, x: measurement => measurement.Group, y: measurement => measurement.Value)
+{
+    Fill = measurement => measurement.Group,
+});
+plot.Legend.Visible = false;
+```
+<!-- endref -->
+
+![Three violins with their quartiles and medians](../images/ViolinPlot.svg)
+
+## Trend line
+
+A [RegressionTransform](cref:Meziantou.Framework.Charts.RegressionTransform) replaces each series with the points of a polynomial fitted by least squares: a straight line by default, a curve with a higher [Degree](cref:Meziantou.Framework.Charts.RegressionTransform.Degree). The tooltip of a line is its equation. [Regression.Fit](cref:Meziantou.Framework.Charts.Regression.Fit) gives the coefficients and R²:
+
+<!-- ref:../../../tests/Meziantou.Framework.Charts.Tests/StatisticalChartTests.cs;region=Charts_TrendLine;format=md-fenced-code-block;dedent=true -->
+```csharp
+var plot = new Plot { Title = "Fuel efficiency by weight" };
+plot.Add(new DotMark<Car>(SampleData.Cars, x: car => car.Weight, y: car => car.Mpg) { FillOpacity = 0.7 });
+plot.Add(new LineMark<Car>(SampleData.Cars, x: car => car.Weight, y: car => car.Mpg)
+{
+    Transform = new RegressionTransform(),
+    StrokeColor = "#e5484d",
+    StrokeWidth = 2,
+});
+plot.Add(new LineMark<Car>(SampleData.Cars, x: car => car.Weight, y: car => car.Mpg)
+{
+    Transform = new RegressionTransform { Degree = 2 },
+    StrokeColor = "#8c959f",
+    StrokeDashArray = [4, 4],
+});
+```
+<!-- endref -->
+
+![A scatter plot with a straight red trend line and a dashed curved one](../images/TrendLine.svg)
+
+<!-- ref:../../../tests/Meziantou.Framework.Charts.Tests/TransformTests.cs;region=Charts_RegressionFit;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The textbook example: a slope of 0.6, an intercept of 2.2, and 60% of the variance explained
+var fit = Regression.Fit([(1, 2), (2, 4), (3, 5), (4, 4), (5, 5)]);
+Assert.Equal(2.2, fit.Coefficients[0], 1e-12);
+Assert.Equal(0.6, fit.Coefficients[1], 1e-12);
+Assert.Equal(0.6, fit.RSquared, 1e-12);
+Assert.Equal(5.2, fit.Evaluate(5), 1e-12);
+Assert.Equal("y = 0.6x + 2.2 (R² = 0.6)", fit.ToString());
+```
+<!-- endref -->
+
+## Moving average
+
+A [WindowTransform](cref:Meziantou.Framework.Charts.WindowTransform) reduces the values of a window of rows around each row: here the mean of the last 7 days. The window can be centered, trailing or leading, and reduce with a sum, a median, a minimum...
+
+<!-- ref:../../../tests/Meziantou.Framework.Charts.Tests/StatisticalChartTests.cs;region=Charts_MovingAverage;format=md-fenced-code-block;dedent=true -->
+```csharp
+var start = new DateOnly(2024, 1, 1);
+var visits = Enumerable.Range(0, 90).Select(day => (Date: start.AddDays(day), Count: 200 + day + (60 * Math.Sin(day / 8.0)) + (day % 7 is 5 or 6 ? -70 : 15 * Math.Cos(day * 2.3)))).ToArray();
+
+var plot = new Plot { Title = "Daily visits and their 7-day average", Height = 300 };
+plot.Add(new LineMark<(DateOnly Date, double Count)>(visits, x: day => day.Date, y: day => day.Count) { StrokeColor = "#c3cbd5", StrokeWidth = 1 });
+plot.Add(new LineMark<(DateOnly Date, double Count)>(visits, x: day => day.Date, y: day => day.Count)
+{
+    Transform = new WindowTransform { Size = 7, Anchor = WindowAnchor.End },
+    StrokeWidth = 2.5,
+});
+```
+<!-- endref -->
+
+![A noisy daily line with a smooth 7-day average over it](../images/MovingAverage.svg)
 
 ## Heatmap
 

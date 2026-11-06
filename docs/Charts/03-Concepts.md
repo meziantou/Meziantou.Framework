@@ -23,7 +23,10 @@ the marks are drawn in the order they are added:
 | [CandlestickMark\<T\>](cref:Meziantou.Framework.Charts.CandlestickMark{T}) | a candlestick per row |
 | [FunnelMark\<T\>](cref:Meziantou.Framework.Charts.FunnelMark{T}) | a funnel, a bar per stage |
 | [WaterfallMark\<T\>](cref:Meziantou.Framework.Charts.WaterfallMark{T}) | running totals as floating bars |
+| [ViolinMark\<T\>](cref:Meziantou.Framework.Charts.ViolinMark{T}) | a violin per category: the mirrored density of its values |
 | [PackMark\<T\>](cref:Meziantou.Framework.Charts.PackMark{T}), [TreemapMark\<T\>](cref:Meziantou.Framework.Charts.TreemapMark{T}), [PartitionMark\<T\>](cref:Meziantou.Framework.Charts.PartitionMark{T}) | a tree, as packed circles, a treemap, or a sunburst and an icicle |
+| [TreeMark\<T\>](cref:Meziantou.Framework.Charts.TreeMark{T}) | a tree as a node-link diagram: a tidy tree or a dendrogram |
+| [SankeyMark\<T\>](cref:Meziantou.Framework.Charts.SankeyMark{T}) | the flows between nodes, a row per link |
 
 [RuleXMark](cref:Meziantou.Framework.Charts.RuleXMark) and [RuleYMark](cref:Meziantou.Framework.Charts.RuleYMark) take
 values directly: `new RuleYMark(0)` draws a line at zero.
@@ -99,8 +102,22 @@ A transform derives the rows a mark draws from its data:
 - [GroupTransform](cref:Meziantou.Framework.Charts.GroupTransform) combines the rows of a group with a sum, a mean, a
   count, a minimum, a maximum or a median.
 - [CumulativeTransform](cref:Meziantou.Framework.Charts.CumulativeTransform) computes running totals.
+- [WindowTransform](cref:Meziantou.Framework.Charts.WindowTransform) reduces a window of rows around each row: moving
+  averages.
+- [RegressionTransform](cref:Meziantou.Framework.Charts.RegressionTransform) fits a polynomial to each series: trend lines.
+- [DensityTransform](cref:Meziantou.Framework.Charts.DensityTransform) estimates the density of the x values: density plots.
 
 The series of a stack are given by the `Series` channel of the mark, else by its fill or stroke channel.
+
+## Facets and the secondary axis
+
+The `FacetX` and `FacetY` channels of the marks split a chart into a grid of small charts that share the scales: see
+[Small multiples](04-Gallery/06-SmallMultiples.md). [Plot.Facets](cref:Meziantou.Framework.Charts.Plot.Facets) sets the
+number of columns, the gap between the charts and the order of the facets.
+
+A mark that sets [UseSecondaryYScale](cref:Meziantou.Framework.Charts.Mark.UseSecondaryYScale) maps its y channels with
+the secondary y scale, whose axis is on the right in Cartesian coordinates: see the
+[secondary axis](04-Gallery/02-Cartesian.md#secondary-axis) example.
 
 ## Axes, legends and margins
 

@@ -1,6 +1,6 @@
 ---
 title: Hierarchical charts
-description: Packed circles, treemaps, sunbursts and icicles, from trees built from objects, rows or paths.
+description: Packed circles, treemaps, sunbursts, icicles, tree diagrams and dendrograms, from trees built from objects, rows or paths.
 ---
 
 ## Build a tree
@@ -130,16 +130,54 @@ plot.Legend.Visible = false;
 
 ![Columns of folders and files from left to right](../images/Icicle.svg)
 
+## Tree diagram
+
+A [TreeMark\<T\>](cref:Meziantou.Framework.Charts.TreeMark{T}) draws a node-link diagram with the tidy tree layout. The root is at the top in Cartesian coordinates, and on the left when they are transposed.
+
+<!-- ref:../../../tests/Meziantou.Framework.Charts.Tests/HierarchyChartTests.cs;region=Charts_TreeDiagram;format=md-fenced-code-block;dedent=true -->
+```csharp
+var root = Hierarchy.FromPaths(SampleData.Files, file => file.Path);
+var plot = new Plot { Title = "Files of the repository", Height = 420, Coordinates = new CartesianCoordinates { Transposed = true } };
+plot.Add(new TreeMark<FileEntry?>(root) { Label = node => node.Depth is 0 ? "repository" : node.Name });
+plot.Legend.Visible = false;
+```
+<!-- endref -->
+
+![A tree of folders and files from left to right](../images/TreeDiagram.svg)
+
+## Radial dendrogram
+
+With [TreeLayoutKind.Cluster](cref:Meziantou.Framework.Charts.TreeLayoutKind.Cluster), the leaves are all at the deepest level: a dendrogram. In polar coordinates, the tree is radial.
+
+<!-- ref:../../../tests/Meziantou.Framework.Charts.Tests/HierarchyChartTests.cs;region=Charts_RadialDendrogram;format=md-fenced-code-block;dedent=true -->
+```csharp
+var root = Hierarchy.FromPaths(SampleData.Files, file => file.Path);
+var plot = new Plot { Title = "Files of the repository", Width = 520, Height = 520, Coordinates = new PolarCoordinates() };
+plot.Add(new TreeMark<FileEntry?>(root) { Layout = TreeLayoutKind.Cluster });
+plot.Legend.Visible = false;
+```
+<!-- endref -->
+
+![A radial tree of files whose leaves are on a circle](../images/RadialDendrogram.svg)
+
 ## Layouts
 
 The layouts are public, to draw trees yourself: [PackLayout](cref:Meziantou.Framework.Charts.PackLayout),
 [TreemapLayout](cref:Meziantou.Framework.Charts.TreemapLayout) and [PartitionLayout](cref:Meziantou.Framework.Charts.PartitionLayout)
-return the circle or the rectangle of every node.
+return the circle or the rectangle of every node, [TreeLayout](cref:Meziantou.Framework.Charts.TreeLayout) and
+[ClusterLayout](cref:Meziantou.Framework.Charts.ClusterLayout) its point.
 
 <!-- ref:../../../tests/Meziantou.Framework.Charts.Tests/LayoutTests.cs;region=Charts_TreemapLayout;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var root = Hierarchy.FromPaths(["a/x", "a/y", "b"], path => path, value: path => path.Length).SortByValue();
 var layout = new TreemapLayout { Width = 300, Height = 200, Tiling = tiling };
 var rectangles = layout.Layout(root);
+```
+<!-- endref -->
+
+<!-- ref:../../../tests/Meziantou.Framework.Charts.Tests/LayoutTests.cs;region=Charts_TreeLayout;format=md-fenced-code-block;dedent=true -->
+```csharp
+var root = Hierarchy.FromPaths(["a/1", "a/2", "a/3", "b", "c/1/x", "c/1/y", "c/2"], path => path);
+var points = new TreeLayout { Width = 600, Height = 300 }.Layout(root);
 ```
 <!-- endref -->

@@ -112,6 +112,24 @@ public sealed class ChartImageRendererTests
     }
 
     [Fact]
+    public void FacetsSankeyAndTrees()
+    {
+        var facets = new Plot { Width = 420, Height = 220 };
+        facets.Add(new BarMark<Fruit>(Fruits, x: fruit => fruit.Name, y: fruit => fruit.Count) { FacetX = fruit => fruit.Count > 8 ? "Many" : "Few" });
+        facets.Add(new LineMark<Fruit>(Fruits, x: fruit => fruit.Name, y: fruit => fruit.Count * 3) { FacetX = fruit => fruit.Count > 8 ? "Many" : "Few", UseSecondaryYScale = true, StrokeColor = "#e5484d" });
+        AssertImage(facets, memberName: nameof(FacetsSankeyAndTrees) + "_Facets");
+
+        var sankey = new Plot { Width = 360, Height = 220 };
+        sankey.Add(new SankeyMark<(string Source, string Target, double Value)>([("A", "C", 5), ("B", "C", 3), ("C", "D", 6), ("C", "E", 2)], source: link => link.Source, target: link => link.Target, value: link => link.Value));
+        AssertImage(sankey, memberName: nameof(FacetsSankeyAndTrees) + "_Sankey");
+
+        var tree = new Plot { Width = 300, Height = 300, Coordinates = new PolarCoordinates() };
+        tree.Add(new TreeMark<string?>(Hierarchy.FromPaths(["a/x", "a/y", "b/z", "c"], path => path)) { Layout = TreeLayoutKind.Cluster });
+        tree.Legend.Visible = false;
+        AssertImage(tree, memberName: nameof(FacetsSankeyAndTrees) + "_Tree");
+    }
+
+    [Fact]
     public void Clipping()
     {
         var plot = new Plot { Width = 300, Height = 200, Clip = true, YScale = new LinearScale { Minimum = 0, Maximum = 5 } };

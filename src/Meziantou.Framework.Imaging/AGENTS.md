@@ -443,12 +443,13 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   but for a few bytes, with 2.4 to 3.2 times fewer instructions for the 64x64 and 8x8 transforms. The blocks of a VarDCT
   frame do not predict each other, so the encoder does not reconstruct what it writes; its decisions use float32 in a
   fixed order. `JpegXlEntropyCodeBuilder` clusters the contexts of the streams that share a code. Every Modular
-  sub-stream coded group by group, of a lossless frame below the effort 3 or of a lossy one (LF image, block fields,
-  alpha channel), goes through `JpegXlEntropyEncoder`, which writes the smaller of prefix codes and ANS at every effort
-  (`JpegXlEntropyCoding.Smallest`, decided from the token counts): a prefix code spends one bit per sample at least,
-  which made a constant channel larger than the colors, and the description of an ANS distribution is longer than a
-  small group. The effort only selects what is searched; `jxl-quality` shows the sizes per effort. A change of the
-  encoder is checked by the interop tests (djxl and jxl-oxide must read the file like the decoder of the library does).
+  sub-stream coded group by group, of a lossless frame below the effort 3 or of a lossy one (alpha channel, and the LF
+  image and block fields below the effort 3), goes through `JpegXlEntropyEncoder`, which writes the smaller of prefix
+  codes and ANS at every effort (`JpegXlEntropyCoding.Smallest`, decided from the token counts): a prefix code spends
+  one bit per sample at least, which made a constant channel larger than the colors, and the description of an ANS
+  distribution is longer than a small group. The effort only selects what is searched; `jxl-quality` shows the sizes
+  per effort. A change of the encoder is checked by the interop tests (djxl and jxl-oxide must read the file like the
+  decoder of the library does).
   A lossy image labeled with an sRGB ICC profile keeps the profile, byte for byte, where cjxl replaces it with the
   enumerated sRGB encoding. The reference decoders read such a file differently from an enumerated one, and comparing
   their raw output with the library is wrong on both sides
@@ -462,9 +463,9 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
     `wtpt` and no `chad` as adapted from D65, unlike djxl, the library and its own handling of Apple's real profiles.
     Compare the pixels in gamut only.
 - **Lossless JPEG XL tools** (`JpegXlLosslessFrameEncoder`, from the effort 3; below it, `JpegXlModularEncoder` codes each
-  group with a leaf per channel, as the progressive output, the alpha channel of a lossy frame and its LF image still
-  do). One tree and one entropy code for the whole frame are in `LfGlobal` and every group uses them, so the
-  distributions are written once; the transform (palette or color transform) is declared in the global data, the
+  group with a leaf per channel, as the progressive output and the alpha channel of a lossy frame still do). One tree
+  and one entropy code for the whole frame are in `LfGlobal` and every group uses them, so the distributions are
+  written once; the transform (palette or color transform) is declared in the global data, the
   palette channel is coded there (the tree splits on the sub-bitstream first). The tree is learned per channel from rows
   sampled in every group (`JpegXlTreeLearner`: properties quantized to ranges at sample quantiles plus -1 and 0, the leaf
   that saves the most bits split first, each leaf with the predictor that suits it); `JpegXlTreeCoder` computes the
@@ -536,9 +537,45 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
     not reduce the size of photographs, and what is added to their cost keeps them out of the blocks they suit best (one
     edge in the middle of a block is cheap for the 8x8 DCT too). A cost that measures the three channels is what to
     try before trying them again.
-  - *The block list* is a Modular channel whose first row holds the transforms and whose second row holds the
-    quantization factors: the tree gives each row its own context and predictor (`firstRowChannel`), which made the
-    list 15 % smaller on a photograph.
+  - *The LF image and the block metadata* (`WriteLfGroup`, `JpegXlModularEncoder.EncodeWithLearnedTree`): from the
+    effort 3, each LF group codes them as two Modular sub-bitstreams that hold their own tree, learned per channel by
+    `JpegXlTreeLearner` with the limits of the lossless effort 3 (32 leaves, 16 ranges per property, a split cost of 48
+    bits, 32 clusters, no search of the configurations), at every effort. Measured on 2026-11-05 (main at 6cb2acfcd),
+    five 1024x1024 photographs and ten 356x356 ones, 13 qualities, efforts 3, 5 and 7, djxl output (the same pixels: the
+    coding is lossless): file size at equal SSIMULACRA 2 -4.2 % and -1.4 %, at equal Butteraugli -3.1 % and -1.2 %
+    (-7.1 % at quality 30 and -1.7 % at 90 on the large ones), for about 15 % more encoding time on the large ones and
+    25 % on the small ones (thread CPU time): a sub-bitstream has fixed costs (learning, clustering, the description of
+    the distributions). Before it, `cjxl -d 0 -e 9` coded the same LF values 12 % smaller than we did; now we are 1 %
+    smaller.
+    - The LF image (Y, X, B, quantized LF values): the neighbors and gradients (6, 7, 9 to 12) and the values and
+      gradient residuals of the previous channels (16 to 23, only offered to a channel that has them), with the gradient
+      and left predictors (the zero and top ones were chosen by under 5 % of the leaves, for the same size), from 4,096
+      samples per channel (evenly spaced rows). At quality 50 on the large images it went from 92.5 KB to 80.7 KB
+      (-12.8 %). The previous channels are the joint gain: without them it was 4 % larger, with one 2 %. Every
+      sample instead of 4,096 was 0.9 % smaller for 3 times the learning time; the settings of the lossless efforts 5 and
+      9 (split cost 48) 0.9 % and 2.7 % smaller for 5 and over 30 times the learning time; a split cost below 48 overfits
+      (the tree and the distributions cost more than they save on a small image). From the effort 7, as in the other
+      Modular images, the weighted predictor and its error (property 15) are offered: 0.7 % smaller on photographs for
+      4 % more time (every sample at that effort was another 1 % for 9 %: not kept). The weighted predictor alone gained
+      0.2 % before the tree.
+    - On the synthetic image of `EachTierOfTheEffortChoosesOtherTransformsAndIsCloserToTheSource`, the effort 7 was
+      smaller than the effort 3 at quality 75 only because the old LF coding took the weighted predictor from the effort
+      7 (77 bytes): its transforms cost 35 bytes more than they saved, most of it in the block list. With the trees it
+      is 1 % larger, and the test allows 3 %.
+    - The block metadata (chroma from luma factors of the tiles, the block list, the sharpness): the row (2), which
+      tells the transforms (first row of the block list) from the quantization factors (second row), the column (3),
+      the position in the list, and the neighbors (4, 5, 7 to 10, 14), with the gradient, zero and left predictors, from
+      every sample: sampling rows misses the second row of the list (the metadata were then 20 % larger). A constant
+      channel (the sharpness) is one leaf without learning. 10.8 KB to 8.7 KB on the large images at quality 50 (-19 %),
+      -7 % on the small ones.
+    - Below the effort 3, the old coding stays: one leaf per channel with a searched predictor, and the block list with
+      a context and a predictor per row (`firstRowChannel`), which made the list 15 % smaller on a photograph.
+    - The fixed costs of `JpegXlTreeLearner` were cut for these small images, without changing any tree (the lossless
+      files of five photographs at the efforts 3 to 9 kept their hashes): `Quantize` only covers the values that occur
+      and rents its tables, the split counting derives the ranges of a leaf from the counts of its ranges, and the
+      sweep only visits the tokens a range holds. Lossless encoding got 5 to 18 % faster (the most at the effort 9).
+    - Not tried: a global tree in `LfGlobal` shared by the LF groups and the metadata, which only differs on images
+      with several LF groups (over 2048 pixels on a side).
   - *Gaborish* (`JpegXlInverseGaborish`, `UsesGaborish`): the encoder sharpens with `3 I - 3 S + S^2`, three terms of the
     inverse of the smoothing `S` of the decoder, computed from its weights. It is smaller at equal PSNR, SSIM and XPSNR
     (5 to 8 %) and larger at equal MS-SSIM (3 %) and VMAF (10 %): it stays because it removes block edges, with the

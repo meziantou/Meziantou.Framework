@@ -100,9 +100,11 @@ public sealed class JpegXlEncoder : ImageEncoder
     /// with ANS, whichever is smaller. Lossy output: efforts 0 to 2 only use the 8x8
     /// transform and quantize every block alike; from 3 on, each block has its own quantization steps
     /// (see <see cref="Quality"/>), each area has the 8x8 or the 16x16 transform, whichever costs less, each tile has its own
-    /// factors of the chroma from luma prediction and the predictor of the alpha channel is searched; from 6 on, the
-    /// contexts of the coefficients have more distributions; from 7 on, the 16x8 and 8x16 transforms are tried, and from
-    /// 8 on the transforms of up to 64x64 samples.
+    /// factors of the chroma from luma prediction, the predictor of the alpha channel is searched, and the low-frequency
+    /// image and the description of the blocks are coded with trees learned from their values; from 6 on, the
+    /// contexts of the coefficients have more distributions; from 7 on, the 16x8 and 8x16 transforms are tried and the
+    /// weighted predictor codes the low-frequency image where it suits it, and from 8 on the transforms of up to 64x64
+    /// samples.
     /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException">The value is not between 0 and 9.</exception>
     public int Effort

@@ -53,11 +53,72 @@ public sealed class CssResourceFetchingTests : IDisposable
                 _ when request.Url.EndsWith(".css", StringComparison.Ordinal) => DocumentResource.Create("#target { color: green }", "text/css"),
                 _ when request.Url.EndsWith(".png", StringComparison.Ordinal) => DocumentResource.Create(new byte[] { 0x89, 0x50, 0x4E, 0x47 }, "image/png"),
                 _ when request.Url.EndsWith(".woff", StringComparison.Ordinal) => new DocumentResource(FontData),
+                _ when request.Url.EndsWith(".icc", StringComparison.Ordinal) => new DocumentResource(CreateIdentityColorProfile()),
                 _ => null,
             };
 
             return ValueTask.FromResult(resource);
         }
+    }
+
+    /// <summary>
+    /// Creates an ICC profile (version 2, RGB display) whose colorants are the axes of CIEXYZ and whose tone curves are the
+    /// identity: the components of a color are its CIEXYZ coordinates.
+    /// </summary>
+    private static byte[] CreateIdentityColorProfile()
+    {
+        // Header, tag table of 6 entries, 3 XYZType colorants, then a curveType of one entry (a gamma of 1.0) shared by the
+        // three tone curves
+        const int TableOffset = 128;
+        const int DataOffset = TableOffset + 4 + (6 * 12);
+        var data = new byte[DataOffset + (3 * 20) + 14];
+        var span = data.AsSpan();
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt32BigEndian(span, (uint)data.Length);
+        span[8] = 2;
+        "mntr"u8.CopyTo(span[12..]);
+        "RGB "u8.CopyTo(span[16..]);
+        "XYZ "u8.CopyTo(span[20..]);
+        "acsp"u8.CopyTo(span[36..]);
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt32BigEndian(span[TableOffset..], 6);
+        string[] signatures = ["rXYZ", "gXYZ", "bXYZ", "rTRC", "gTRC", "bTRC"];
+        var curveOffset = DataOffset + (3 * 20);
+        for (var i = 0; i < signatures.Length; i++)
+        {
+            var entry = span[(TableOffset + 4 + (i * 12))..];
+            Encoding.ASCII.GetBytes(signatures[i], entry);
+            System.Buffers.Binary.BinaryPrimitives.WriteUInt32BigEndian(entry[4..], (uint)(i < 3 ? DataOffset + (i * 20) : curveOffset));
+            System.Buffers.Binary.BinaryPrimitives.WriteUInt32BigEndian(entry[8..], i < 3 ? 20u : 14u);
+        }
+
+        for (var i = 0; i < 3; i++)
+        {
+            var colorant = span[(DataOffset + (i * 20))..];
+            "XYZ "u8.CopyTo(colorant);
+            System.Buffers.Binary.BinaryPrimitives.WriteInt32BigEndian(colorant[(8 + (i * 4))..], 0x10000);
+        }
+
+        "curv"u8.CopyTo(span[curveOffset..]);
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt32BigEndian(span[(curveOffset + 8)..], 1);
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt16BigEndian(span[(curveOffset + 12)..], 0x100);
+        return data;
+    }
+
+    [Fact]
+    public void ColorProfile_ConvertsTheColorsOfItsCustomColorSpace()
+    {
+        var document = Load("<style>@color-profile --identity { src: url(identity.icc) } #target { color: color(--identity 0.6 0.2 0.1) } #other { color: color(--unknown 0.6 0.2 0.1) }</style><p id=target>a</p><p id=other>b</p>");
+        RenderFrame();
+
+        var request = GetRequest("https://example.com/dir/identity.icc");
+        Assert.Equal(RequestDestination.Empty, request.Destination);
+        var rule = Assert.IsType<CssColorProfileRule>(Assert.IsType<CssStyleSheet>(document.StyleSheets[0]).CssRules[0]);
+        Assert.Equal("--identity", rule.Name);
+        Assert.Equal("url(\"identity.icc\")", rule.Src);
+
+        // The components of the identity profile are the CIEXYZ coordinates; a color space without profile is kept as specified
+        var window = document.DefaultView!;
+        Assert.Equal("color(xyz-d50 0.6 0.2 0.1)", window.GetComputedStyle(document.GetElementById("target")!, null).GetPropertyValue("color"));
+        Assert.Equal("color(--unknown 0.6 0.2 0.1)", window.GetComputedStyle(document.GetElementById("other")!, null).GetPropertyValue("color"));
     }
 
     private DocumentRequest GetRequest(string url) => Assert.Single(_loader.Requests, request => request.Url == url);

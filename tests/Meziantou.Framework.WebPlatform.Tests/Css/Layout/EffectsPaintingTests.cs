@@ -403,6 +403,16 @@ public sealed class EffectsPaintingTests : IDisposable
     }
 
     [Fact]
+    public void FirstLine_OpacityAppliesToTheContentOfTheLineAsAGroup()
+    {
+        // https://drafts.csswg.org/css-pseudo-4/#first-line-styling: the content of the first line is painted in a layer with the
+        // opacity of ::first-line; the second line is not
+        var document = Parse("<style>#a::first-line { opacity: 0.5 }</style><div id=a>ab<br>cd</div>");
+        var layer = document.GetDisplayList()!.Items.ToArray().OfType<SaveLayerItem>().Single(item => item.Source == Get(document, "a"));
+        Assert.Equal(0.5, layer.Opacity);
+    }
+
+    [Fact]
     public void BackdropFilter_FiltersOfTheElementApplyToTheFilteredBackdrop()
     {
         var document = Parse("<div id=a style='backdrop-filter: blur(4px); filter: invert(1); width: 100px; height: 100px'></div>");

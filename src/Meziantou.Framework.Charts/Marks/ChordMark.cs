@@ -125,11 +125,12 @@ public sealed class ChordMark<T> : Mark<T>
                 tooltip += "\n" + names[target.Index] + " → " + names[source.Index] + ": " + NumberFormats.Default(target.Value);
             }
 
-            group.Add(new ScenePath(ChordLayout.Ribbon(centerX, centerY, innerRadius - 1, source, target))
+            var shape = group.Add(new ScenePath(ChordLayout.Ribbon(centerX, centerY, innerRadius - 1, source, target))
             {
                 Fill = color.WithOpacity(color.Opacity * LinkOpacity),
                 Tooltip = data.Titles?[row] ?? tooltip,
             });
+            DataAttributeValues.Apply(shape, data.DataAttributes, row);
         }
 
         foreach (var node in groups)

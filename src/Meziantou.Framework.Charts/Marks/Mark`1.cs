@@ -37,6 +37,16 @@ public abstract class Mark<T> : Mark
     /// <summary>Gets or sets the channel of the tooltips (an SVG <c>title</c> per shape), or <see langword="null"/> for none.</summary>
     public Func<T, string?>? Title { get; set; }
 
+    /// <summary>
+    /// Gets or sets the channel of the <c>data-*</c> attributes of the shape of each row in the SVG output, or
+    /// <see langword="null"/> for none. The names are without the <c>data-</c> prefix: lowercase ASCII letters, digits,
+    /// hyphens, underscores and dots. The values are formatted with the invariant culture: numbers round-trip, times use
+    /// ISO 8601, and <see langword="null"/> skips the attribute. Scripts of a web page read them with
+    /// <c>element.dataset</c>. The shapes that draw several rows (the line of a series, a box plot...) get the
+    /// attributes of their first row, and the shapes that count rows (the bars of a histogram) get none.
+    /// </summary>
+    public Func<T, IEnumerable<KeyValuePair<string, object?>>?>? DataAttributes { get; set; }
+
     /// <summary>Gets or sets the transform applied to the rows before they are drawn (stack, bin, group...), or <see langword="null"/> for none.</summary>
     public Transform? Transform { get; set; }
 
@@ -93,6 +103,7 @@ public abstract class Mark<T> : Mark
             Fill = Evaluate(rows, Fill),
             Stroke = Evaluate(rows, Stroke),
             Titles = Evaluate(rows, Title),
+            DataAttributes = EvaluateDataAttributes(rows, DataAttributes),
         };
 
         PrepareChannels(rows, data);
@@ -120,6 +131,20 @@ public abstract class Mark<T> : Mark
         return ChannelValues.FromObjects(values);
     }
 
+    private static KeyValuePair<string, string>[]?[]? EvaluateDataAttributes(IReadOnlyList<T> rows, Func<T, IEnumerable<KeyValuePair<string, object?>>?>? channel)
+    {
+        if (channel is null)
+            return null;
+
+        var values = new KeyValuePair<string, string>[]?[rows.Count];
+        for (var i = 0; i < values.Length; i++)
+        {
+            values[i] = DataAttributeValues.Evaluate(channel(rows[i]));
+        }
+
+        return values;
+    }
+
     private protected static string?[]? Evaluate(IReadOnlyList<T> rows, Func<T, string?>? channel)
     {
         if (channel is null)
@@ -138,7 +163,7 @@ public abstract class Mark<T> : Mark
 
     private protected ChartColor GetStroke(RenderContext context, MarkData data, int index) => context.GetColor(data.Stroke, index, StrokeColor);
 
-    /// <summary>Applies the common properties to a shape: the tooltip of the row.</summary>
+    /// <summary>Applies the common properties to a shape: the tooltip and the data attributes of the row.</summary>
     private protected static T2 Decorate<T2>(T2 element, MarkData data, int index)
         where T2 : SceneElement
     {
@@ -147,6 +172,7 @@ public abstract class Mark<T> : Mark
             element.Tooltip = titles[index];
         }
 
+        DataAttributeValues.Apply(element, data.DataAttributes, index);
         return element;
     }
 }

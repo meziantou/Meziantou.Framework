@@ -18,6 +18,7 @@ the marks are drawn in the order they are added:
 | [RuleXMark\<T\>](cref:Meziantou.Framework.Charts.RuleXMark{T}), [RuleYMark\<T\>](cref:Meziantou.Framework.Charts.RuleYMark{T}) | vertical and horizontal lines |
 | [TickMark\<T\>](cref:Meziantou.Framework.Charts.TickMark{T}) | a short line per row, across a band |
 | [TextMark\<T\>](cref:Meziantou.Framework.Charts.TextMark{T}) | a text per row |
+| [AnnotationMark\<T\>](cref:Meziantou.Framework.Charts.AnnotationMark{T}) | a text per row, with an arrow pointing at a point |
 | [ArcMark\<T\>](cref:Meziantou.Framework.Charts.ArcMark{T}) | a slice per row: pies, donuts, polar areas |
 | [BoxMark\<T\>](cref:Meziantou.Framework.Charts.BoxMark{T}) | a box plot per category |
 | [CandlestickMark\<T\>](cref:Meziantou.Framework.Charts.CandlestickMark{T}) | a candlestick per row |

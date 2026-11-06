@@ -6,8 +6,8 @@ description: The chart types, grouped by family, and the data the examples use.
 Each chart type is a combination of marks, scales, coordinates and transforms (see [Concepts](../03-Concepts.md)). The
 pages of the gallery show an example of each:
 
-- [Cartesian charts](02-Cartesian.md): bars, lines, areas, scatter plots, bubbles, reference lines, lollipops, dumbbells,
-  combo charts, two y axes, population pyramids, slope charts, error bars and Gantt charts.
+- [Cartesian charts](02-Cartesian.md): bars, lines, areas, scatter plots, bubbles, reference lines, annotations,
+  lollipops, dumbbells, combo charts, two y axes, population pyramids, slope charts, error bars and Gantt charts.
 - [Radial charts](03-Radial.md): pies, donuts, polar areas, radial bars, radar charts and gauges.
 - [Hierarchical charts](04-Hierarchical.md): packed circles, treemaps, sunbursts, icicles, tree diagrams and dendrograms.
 - [Statistical charts](05-Statistical.md): histograms, box plots, density plots, violin plots, ridgeline plots, hexbin

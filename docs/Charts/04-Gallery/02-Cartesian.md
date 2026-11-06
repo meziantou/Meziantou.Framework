@@ -1,6 +1,6 @@
 ---
 title: Cartesian charts
-description: Bar charts (grouped, stacked, normalized, horizontal), lines, steps, areas, streamgraphs, scatter plots, bubbles and their size legends, reference lines, lollipops, dumbbells, combo charts, two y axes, population pyramids, slope charts, error bars and Gantt charts.
+description: Bar charts (grouped, stacked, normalized, horizontal), lines, steps, areas, streamgraphs, scatter plots, bubbles and their size legends, reference lines, annotations, lollipops, dumbbells, combo charts, two y axes, population pyramids, slope charts, error bars and Gantt charts.
 ---
 
 ## Bar chart
@@ -264,6 +264,41 @@ plot.SizeLegend.Values = [100, 150, 250];
 <!-- endref -->
 
 ![A bubble chart with the legends of the origins and of the horsepower on its right](../images/SizeLegend.svg)
+
+## Annotations
+
+An [AnnotationMark\<T\>](cref:Meziantou.Framework.Charts.AnnotationMark{T}) draws a text at an offset of
+[DX](cref:Meziantou.Framework.Charts.AnnotationMark{T}.DX) and [DY](cref:Meziantou.Framework.Charts.AnnotationMark{T}.DY)
+pixels from a point, and an arrow from the text to the point. The text is anchored on the side of the offset, a line
+break starts a new line, and [Bend](cref:Meziantou.Framework.Charts.AnnotationMark{T}.Bend) curves the arrow.
+
+<!-- ref:../../../tests/Meziantou.Framework.Charts.Tests/CartesianChartTests.cs;region=Charts_Annotations;format=md-fenced-code-block;dedent=true -->
+```csharp
+var plot = new Plot { Title = "Monthly temperatures" };
+plot.Add(new LineMark<Reading>(SampleData.Readings, x: reading => reading.Date, y: reading => reading.Temperature) { Stroke = reading => reading.City });
+plot.Add(new AnnotationMark<Reading>(
+    SampleData.Readings.Where(reading => reading.City == "Madrid").MaxBy(reading => reading.Temperature) is { } hottest ? [hottest] : [],
+    x: reading => reading.Date,
+    y: reading => reading.Temperature,
+    text: reading => "Hottest month\n" + NumberFormats.Default(reading.Temperature) + " °C in Madrid")
+{
+    DX = 60,
+    DY = -5,
+});
+plot.Add(new AnnotationMark<Reading>(
+    SampleData.Readings.Where(reading => reading.City == "Oslo").MinBy(reading => reading.Temperature) is { } coldest ? [coldest] : [],
+    x: reading => reading.Date,
+    y: reading => reading.Temperature,
+    text: reading => "Coldest: " + NumberFormats.Default(reading.Temperature) + " °C in Oslo")
+{
+    DX = 50,
+    DY = -40,
+    Bend = -40,
+});
+```
+<!-- endref -->
+
+![Temperature lines with arrows pointing at the hottest and the coldest months](../images/Annotations.svg)
 
 ## Secondary axis
 

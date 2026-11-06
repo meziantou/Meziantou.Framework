@@ -17,8 +17,8 @@ This approach is called the grammar of graphics; Vega-Lite and Observable Plot u
 The library covers:
 
 - Cartesian charts: bars (grouped, stacked, normalized, horizontal), lines, steps, areas, streamgraphs, scatter plots,
-  bubbles, reference lines, lollipops, dumbbells, combo charts, population pyramids, slope charts, error bars and Gantt
-  charts.
+  bubbles, reference lines, annotations, lollipops, dumbbells, combo charts, population pyramids, slope charts, error
+  bars and Gantt charts.
 - Radial charts: pies, donuts, polar areas, radial bars, radar charts and gauges.
 - Hierarchical charts: packed circles, treemaps, sunbursts, icicles, tree diagrams and dendrograms.
 - Flows: Sankey diagrams and chord diagrams.

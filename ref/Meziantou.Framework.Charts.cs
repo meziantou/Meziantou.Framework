@@ -11,6 +11,19 @@ namespace Meziantou.Framework.Charts
         public Meziantou.Framework.Charts.TextMetrics Measure(string text, Meziantou.Framework.Charts.ChartFont font) => throw null;
     }
 
+    public sealed class AnnotationMark<T> : Meziantou.Framework.Charts.Mark<T>
+    {
+        public double Bend { get => throw null; set { } }
+        public double DX { get => throw null; set { } }
+        public double DY { get => throw null; set { } }
+        public double? FontSize { get => throw null; set { } }
+        public double HeadSize { get => throw null; set { } }
+        public System.Func<T, string?> Text { get => throw null; }
+        public System.Func<T, object?> X { get => throw null; }
+        public System.Func<T, object?> Y { get => throw null; }
+        public AnnotationMark(System.Collections.Generic.IEnumerable<T> data, System.Func<T, object?> x, System.Func<T, object?> y, System.Func<T, string?> text) { }
+    }
+
     public sealed class ArcMark<T> : Meziantou.Framework.Charts.Mark<T>
     {
         public System.Func<T, string?>? Label { get => throw null; set { } }

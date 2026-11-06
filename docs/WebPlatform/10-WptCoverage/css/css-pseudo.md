@@ -11,8 +11,8 @@ description: "The results of the web-platform-tests of css/css-pseudo, and why t
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 45 | 49 | 0 | 92% |
 | [Tentative](#tentative-tests) | 10 | 12 | 0 | 83% |
-| [Reftests](#reftests) | 256 | 275 | 0 | 93% |
-| **All** | **311** | **336** | **0** | **93%** |
+| [Reftests](#reftests) | 257 | 275 | 0 | 93% |
+| **All** | **312** | **336** | **0** | **93%** |
 
 ## Failure reasons
 
@@ -20,7 +20,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 2
 - **TEST BUG**: 9
-- **NOT IMPLEMENTED**: 14
+- **NOT IMPLEMENTED**: 13
 
 ## Stable tests
 
@@ -186,7 +186,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`first-line-on-ancestor-block.html`](https://wpt.fyi/results/css/css-pseudo/first-line-on-ancestor-block.html) | Pass | 1 / 1 |  |  |
 | [`first-line-on-list-item-with-block-children.html`](https://wpt.fyi/results/css/css-pseudo/first-line-on-list-item-with-block-children.html) | Pass | 1 / 1 |  |  |
 | [`first-line-opacity-001-ref.html`](https://wpt.fyi/results/css/css-pseudo/first-line-opacity-001-ref.html) | Pass | 1 / 1 |  |  |
-| [`first-line-opacity-001.html`](https://wpt.fyi/results/css/css-pseudo/first-line-opacity-001.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the `opacity` of `::first-line` (the first line is not painted as a group); only Firefox passes |
+| [`first-line-opacity-001.html`](https://wpt.fyi/results/css/css-pseudo/first-line-opacity-001.html) | Pass | 1 / 1 |  |  |
 | [`first-line-replaced-001.html`](https://wpt.fyi/results/css/css-pseudo/first-line-replaced-001.html) | Pass | 1 / 1 |  |  |
 | [`first-line-with-before-after.html`](https://wpt.fyi/results/css/css-pseudo/first-line-with-before-after.html) | Pass | 1 / 1 |  |  |
 | [`first-line-with-inline-block-before.html`](https://wpt.fyi/results/css/css-pseudo/first-line-with-inline-block-before.html) | Pass | 1 / 1 |  |  |

@@ -1562,7 +1562,10 @@ internal static partial class CssValueComputer
 
             var parentDisplay = parent?.GetComputedValue("display");
             // (https://compat.spec.whatwg.org/#valdef-flex--webkit-box: -webkit-box and -webkit-inline-box are flex containers)
+            // (as in Blink, the children of a box with display: math that are not MathML elements are blockified, also the HTML
+            // children of the token elements; the MathML children keep the display of the user agent style sheet, e.g. inline-table)
             blockify = parentDisplay is "flex" or "inline-flex" or "-webkit-box" or "-webkit-inline-box" or "grid" or "inline-grid" or "grid-lanes" or "inline-grid-lanes" or "inline grid-lanes" or "block flex" or "block grid"
+                || (parentDisplay is "math" or "block math" && style.PseudoElement is null && style.Element.NamespaceUri != Namespaces.MathML)
                 || parentDisplay is not null && BlockifiesLayoutApiChildren(style, parentDisplay);
 
             // https://drafts.csswg.org/css-writing-modes-4/#block-flow: "If a box has a different writing-mode value than its

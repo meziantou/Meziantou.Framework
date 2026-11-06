@@ -215,6 +215,11 @@ public sealed class BcryptTests
         Assert.False(Bcrypt.TryParseHash(nonCanonicalSalt, out _));
         Assert.False(Bcrypt.Verify(Password, nonCanonicalSalt));
 
+        // 'C' (4) sets one of the 4 unused bits of the 22nd salt character, though not one of the 2 unused bits of the digest
+        var nonCanonicalSaltLowBits = string.Concat(hash.AsSpan(0, 28), "C", hash.AsSpan(29));
+        Assert.False(Bcrypt.TryParseHash(nonCanonicalSaltLowBits, out _));
+        Assert.False(Bcrypt.Verify(Password, nonCanonicalSaltLowBits));
+
         // The trailing digest character carries 2 unused bits for the same reason.
         var nonCanonicalDigest = string.Concat(hash.AsSpan(0, hash.Length - 1), "/");
         Assert.False(Bcrypt.TryParseHash(nonCanonicalDigest, out _));
@@ -223,6 +228,7 @@ public sealed class BcryptTests
 
     [Theory]
     [InlineData("$2b$06$DCq7YPn5Rq63x1Lad4cll/")]
+    [InlineData("$2b$06$DCq7YPn5Rq63x1Lad4cllC")]
     [InlineData("$2b$06$DCq7YPn5Rq63x1Lad4c!!.")]
     [InlineData("$2b$06$DCq7YPn5Rq63x1Lad4cl*.")]
     public void HashPassword_MalformedSalt_ThrowsFormatException(string salt)

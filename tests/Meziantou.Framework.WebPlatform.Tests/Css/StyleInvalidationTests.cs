@@ -467,6 +467,25 @@ public sealed class StyleInvalidationTests : IDisposable
     }
 
     [Fact]
+    public void ManyChildrenInsertedAndRemoved_KeepTheOtherStyles()
+    {
+        // The children inserted by innerHTML are recorded one by one: they are one change of the children of their parent
+        var document = Parse("<style>li:nth-child(odd) { color: green }</style><div id=other></div><ul id=list><li>a</ul>");
+        var engine = document.GetStyleEngine();
+        var other = Style(document, "#other");
+        var count = engine.FullInvalidationCount;
+        Find(document, "#list").InnerHtml += string.Concat(Enumerable.Repeat("<li>b", 1499)) + "<li id=last>c";
+        Assert.Equal(Green, Get(document, "#last", "color"));
+        Assert.Equal("rgb(0, 0, 0)", Get(document, "li:nth-child(1000)", "color"));
+        Assert.Same(other, Style(document, "#other"));
+
+        Find(document, "#list").InnerHtml = "<li>a<li id=second>b";
+        Assert.Equal("rgb(0, 0, 0)", Get(document, "#second", "color"));
+        Assert.Same(other, Style(document, "#other"));
+        Assert.Equal(count, engine.FullInvalidationCount);
+    }
+
+    [Fact]
     public void StyleSheetChange_InvalidatesAllTheStyles()
     {
         var document = Parse("<style id=s>div { color: red }</style><div id=a></div>");

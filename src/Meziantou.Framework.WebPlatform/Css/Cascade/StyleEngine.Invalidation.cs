@@ -526,20 +526,29 @@ internal sealed partial class StyleEngine
                 return change.Target is Dom.Document && child is not Element;
             }
 
-            if (child is not (Element or Text))
+            // (the nodes inserted in or removed from the element one after the other, see StyleInvalidationLog.Add)
+            var changed = false;
+            var elementChanged = false;
+            for (var i = -1; i < (change.NextChildren?.Count ?? 0); i++)
+            {
+                var node = i < 0 ? child : change.NextChildren![i];
+                if (node is not (Element or Text))
+                    continue;
+
+                if (IsSensitiveParent(parent) || (node is Element element && SubtreeIsSensitive(element)))
+                    return false;
+
+                // The styles of a removed node are discarded, and so are the styles of an inserted node: it may have been moved from a
+                // node removed before (its removal from the removed node is not recorded)
+                _removed.Add(node);
+                changed = true;
+                elementChanged |= node is Element;
+            }
+
+            if (!changed || !parent.IsConnected)
                 return true;
 
-            if (IsSensitiveParent(parent) || (child is Element element && SubtreeIsSensitive(element)))
-                return false;
-
-            // The styles of a removed node are discarded, and so are the styles of an inserted node: it may have been moved from a
-            // node removed before (its removal from the removed node is not recorded)
-            _removed.Add(child);
-
-            if (!parent.IsConnected)
-                return true;
-
-            return CollectChildren(parent, elementChanged: child is Element);
+            return CollectChildren(parent, elementChanged);
         }
 
         private bool CollectText(StyleInvalidation change)
@@ -553,9 +562,18 @@ internal sealed partial class StyleEngine
             return CollectChildren(parent, elementChanged: false);
         }
 
+        /// <summary>The elements whose changes of children were collected (see <see cref="CollectChildren"/>), and whether an element child changed.</summary>
+        private readonly Dictionary<Element, bool> _childrenChanged = new(ReferenceEqualityComparer.Instance);
+
         /// <summary>Collects the elements affected by a change of the children of an element (an element or a text node inserted or removed, the data of a text changed).</summary>
         private bool CollectChildren(Element parent, bool elementChanged)
         {
+            // The elements affected by a change of the children of an element are the same for all its changes (in the document as
+            // it is now): they are collected once (e.g. for the rows of a table body inserted one by one)
+            if (_childrenChanged.TryGetValue(parent, out var collectedElementChange) && (collectedElementChange || !elementChanged))
+                return true;
+
+            _childrenChanged[parent] = elementChanged;
             // The target element (:target) is looked up by id
             if (elementChanged && _features.Any(static features => features.UsesTarget))
                 return false;
@@ -897,8 +915,13 @@ internal sealed partial class StyleEngine
         /// <summary>Discards the styles of an element, of its pseudo-elements and of its descendants.</summary>
         private void Discard(Element root, bool keepBeforeChange)
         {
-            // (the boxes of the descendants are built again with the boxes of the element)
-            engine.AddBoxTreeChange(root);
+            // (the boxes of the descendants are built again with the boxes of the element). A removed element has no box anymore,
+            // and an element without style (e.g. an inserted element) has no box yet: the boxes of their parent are built again
+            // (its children changed), which may be many (e.g. the rows of a table body inserted by innerHTML)
+            if (root.IsConnected && engine._styles.ContainsKey((root, null)))
+            {
+                engine.AddBoxTreeChange(root);
+            }
             if (keepBeforeChange && root.IsConnected)
             {
                 engine.AddRecalculationRoot(root, subtree: true);

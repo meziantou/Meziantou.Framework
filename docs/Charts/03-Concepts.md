@@ -34,6 +34,7 @@ the marks are drawn in the order they are added:
 | [SankeyMark\<T\>](cref:Meziantou.Framework.Charts.SankeyMark{T}) | the flows between nodes, a row per link |
 | [ChordMark\<T\>](cref:Meziantou.Framework.Charts.ChordMark{T}) | the flows between nodes around a circle, a row per flow |
 | [NetworkMark\<T\>](cref:Meziantou.Framework.Charts.NetworkMark{T}) | a network graph, a row per link, with a force-directed layout |
+| [GeoMark\<T\>](cref:Meziantou.Framework.Charts.GeoMark{T}) | a geometry per row on a map: regions, lines and points, such as the features of a GeoJSON document |
 
 [RuleXMark](cref:Meziantou.Framework.Charts.RuleXMark) and [RuleYMark](cref:Meziantou.Framework.Charts.RuleYMark) take
 values directly: `new RuleYMark(0)` draws a line at zero.
@@ -97,7 +98,13 @@ The coordinates turn the positions of the x and y scales into points:
 - [PolarCoordinates](cref:Meziantou.Framework.Charts.PolarCoordinates): x is the angle and y is the radius. Set the start
   and end angles for a gauge, and an inner radius for a donut. Transposed, y is the angle: bars become radial bars.
 
-Plots that have an [ArcMark\<T\>](cref:Meziantou.Framework.Charts.ArcMark{T}) use polar coordinates by default.
+- [GeoCoordinates](cref:Meziantou.Framework.Charts.GeoCoordinates): x is the longitude and y is the latitude, in degrees,
+  and a [GeoProjection](cref:Meziantou.Framework.Charts.GeoProjection) places them on a map, scaled to fit the plot area.
+  The map has no axes; it can have a graticule and the outline of the globe.
+
+Plots that have an [ArcMark\<T\>](cref:Meziantou.Framework.Charts.ArcMark{T}) use polar coordinates by default, and
+plots that have a [GeoMark\<T\>](cref:Meziantou.Framework.Charts.GeoMark{T}) use geographic coordinates: see the
+[maps](04-Gallery/09-Maps.md).
 
 ## Transforms
 

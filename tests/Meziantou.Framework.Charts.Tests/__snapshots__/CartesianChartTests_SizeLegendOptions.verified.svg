@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="300" viewBox="0 0 200 300" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="200" height="300" fill="#ffffff"/>
+<g class="grid">
+<line x1="32.23" y1="143.8" x2="184.24" y2="143.8" stroke="#e3e6ea"/>
+<line x1="32.23" y1="99.2" x2="184.24" y2="99.2" stroke="#e3e6ea"/>
+<line x1="32.23" y1="54.6" x2="184.24" y2="54.6" stroke="#e3e6ea"/>
+<line x1="32.23" y1="10" x2="184.24" y2="10" stroke="#e3e6ea"/>
+</g>
+<g class="marks">
+<g>
+<circle cx="115.84" cy="143.8" r="12" fill="#a463f2"/>
+<circle cx="100.64" cy="125.96" r="11.04" fill="#6cc5b0"/>
+<circle cx="89.23" cy="112.58" r="10.26" fill="#9498a0"/>
+<circle cx="74.03" cy="99.2" r="9.41" fill="#efb118"/>
+<circle cx="77.83" cy="94.74" r="9.11" fill="#ff725c"/>
+<circle cx="70.23" cy="85.82" r="8.81" fill="#9c6b4e"/>
+<circle cx="66.43" cy="76.9" r="8.49" fill="#ff8ab7"/>
+<circle cx="58.83" cy="63.52" r="7.81" fill="#efb118"/>
+<circle cx="55.03" cy="59.06" r="7.63" fill="#4269d0"/>
+<circle cx="51.23" cy="54.6" r="7.25" fill="#97bbf5"/>
+<circle cx="47.43" cy="45.68" r="7.06" fill="#4269d0"/>
+<circle cx="39.83" cy="32.3" r="6.45" fill="#3ca951"/>
+</g>
+</g>
+<g class="axes">
+<line x1="27.23" y1="143.8" x2="32.23" y2="143.8" stroke="#8c959f"/>
+<text x="24.23" y="146.61" text-anchor="end" font-size="11" fill="#59636e">20</text>
+<line x1="27.23" y1="99.2" x2="32.23" y2="99.2" stroke="#8c959f"/>
+<text x="24.23" y="102.01" text-anchor="end" font-size="11" fill="#59636e">30</text>
+<line x1="27.23" y1="54.6" x2="32.23" y2="54.6" stroke="#8c959f"/>
+<text x="24.23" y="57.41" text-anchor="end" font-size="11" fill="#59636e">40</text>
+<line x1="27.23" y1="10" x2="32.23" y2="10" stroke="#8c959f"/>
+<text x="24.23" y="12.81" text-anchor="end" font-size="11" fill="#59636e">50</text>
+<line x1="32.23" y1="143.8" x2="32.23" y2="148.8" stroke="#8c959f"/>
+<text x="32.23" y="159.7" text-anchor="middle" font-size="11" fill="#59636e">1,000</text>
+<line x1="108.24" y1="143.8" x2="108.24" y2="148.8" stroke="#8c959f"/>
+<text x="108.24" y="159.7" text-anchor="middle" font-size="11" fill="#59636e">2,000</text>
+<line x1="184.24" y1="143.8" x2="184.24" y2="148.8" stroke="#8c959f"/>
+<text x="184.24" y="159.7" text-anchor="middle" font-size="11" fill="#59636e">3,000</text>
+<line x1="32.23" y1="143.8" x2="184.24" y2="143.8" stroke="#8c959f"/>
+</g>
+<g class="legend">
+<rect x="10" y="174.53" width="10" height="10" rx="2" fill="#4269d0"/>
+<text x="25" y="182.59" font-size="12" fill="#1f2328">Aster</text>
+<rect x="67.01" y="174.53" width="10" height="10" rx="2" fill="#efb118"/>
+<text x="82.01" y="182.59" font-size="12" fill="#1f2328">Breeze</text>
+<rect x="133.84" y="174.53" width="10" height="10" rx="2" fill="#ff725c"/>
+<text x="148.84" y="182.59" font-size="12" fill="#1f2328">Cobalt</text>
+<rect x="10" y="189.63" width="10" height="10" rx="2" fill="#6cc5b0"/>
+<text x="25" y="197.69" font-size="12" fill="#1f2328">Dune</text>
+<rect x="67.68" y="189.63" width="10" height="10" rx="2" fill="#3ca951"/>
+<text x="82.68" y="197.69" font-size="12" fill="#1f2328">Ember</text>
+<rect x="132.02" y="189.63" width="10" height="10" rx="2" fill="#ff8ab7"/>
+<text x="147.02" y="197.69" font-size="12" fill="#1f2328">Fjord</text>
+<rect x="10" y="204.73" width="10" height="10" rx="2" fill="#a463f2"/>
+<text x="25" y="212.79" font-size="12" fill="#1f2328">Granite</text>
+<rect x="78.23" y="204.73" width="10" height="10" rx="2" fill="#97bbf5"/>
+<text x="93.23" y="212.79" font-size="12" fill="#1f2328">Harbor</text>
+<rect x="143.9" y="204.73" width="10" height="10" rx="2" fill="#9c6b4e"/>
+<text x="158.9" y="212.79" font-size="12" fill="#1f2328">Iris</text>
+<rect x="10" y="219.83" width="10" height="10" rx="2" fill="#9498a0"/>
+<text x="25" y="227.89" font-size="12" fill="#1f2328">Juniper</text>
+<rect x="78.11" y="219.83" width="10" height="10" rx="2" fill="#4269d0"/>
+<text x="93.11" y="227.89" font-size="12" fill="#1f2328">Kestrel</text>
+<rect x="10" y="234.93" width="10" height="10" rx="2" fill="#efb118"/>
+<text x="25" y="242.99" font-size="12" fill="#1f2328">Lumen</text>
+</g>
+<g class="legend-size">
+<circle cx="21.77" cy="274.33" r="11.77" fill="none" stroke="#8c959f"/>
+<path d="M21.77,262.56 L37.53,262.56 L39.53,262.56" fill="none" stroke="#8c959f" stroke-dasharray="2 2"/>
+<text x="43.53" y="265.37" font-size="11" fill="#59636e">250</text>
+<circle cx="21.77" cy="274.57" r="11.53" fill="none" stroke="#8c959f"/>
+<path d="M21.77,263.04 L37.53,263.04 L39.53,273.74" fill="none" stroke="#8c959f" stroke-dasharray="2 2"/>
+<text x="43.53" y="276.55" font-size="11" fill="#59636e">240</text>
+<circle cx="21.77" cy="278.65" r="7.44" fill="none" stroke="#8c959f"/>
+<path d="M21.77,271.21 L37.53,271.21 L39.53,284.91" fill="none" stroke="#8c959f" stroke-dasharray="2 2"/>
+<text x="43.53" y="287.72" font-size="11" fill="#59636e">100</text>
+</g>
+</svg>

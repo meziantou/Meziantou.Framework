@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200" viewBox="0 0 300 200" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="300" height="200" fill="#ffffff"/>
+<g class="grid">
+<line x1="26.12" y1="169.83" x2="290" y2="169.83" stroke="#e3e6ea"/>
+<line x1="26.12" y1="124.25" x2="290" y2="124.25" stroke="#e3e6ea"/>
+<line x1="26.12" y1="78.68" x2="290" y2="78.68" stroke="#e3e6ea"/>
+<line x1="26.12" y1="33.1" x2="290" y2="33.1" stroke="#e3e6ea"/>
+</g>
+<g class="marks">
+<g>
+<g>
+<path d="M105.67,147.04 L131.67,147.04" fill="none" stroke="#000000" stroke-linecap="round"/>
+<text x="101.67" y="150.1" text-anchor="end" font-size="12" fill="#e5484d">left</text>
+</g>
+</g>
+<g>
+<g>
+<text x="131.67" y="94.56" text-anchor="middle" font-size="14" fill="#1f2328">middle</text>
+</g>
+</g>
+<g>
+<g>
+<title>below</title>
+<path d="M184.45,104.68 Q191.95,91.68 184.45,78.68" fill="none" stroke="#4269d0" stroke-width="2" stroke-linecap="round"/>
+<path d="M189.4,82.05 L184.45,78.68 L184.89,84.66" fill="none" stroke="#4269d0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="184.45" y="117.29" text-anchor="middle" font-size="12" fill="#4269d0">below</text>
+</g>
+</g>
+</g>
+<g class="axes">
+<line x1="21.12" y1="169.83" x2="26.12" y2="169.83" stroke="#8c959f"/>
+<text x="18.12" y="172.64" text-anchor="end" font-size="11" fill="#59636e">1</text>
+<line x1="21.12" y1="124.25" x2="26.12" y2="124.25" stroke="#8c959f"/>
+<text x="18.12" y="127.06" text-anchor="end" font-size="11" fill="#59636e">2</text>
+<line x1="21.12" y1="78.68" x2="26.12" y2="78.68" stroke="#8c959f"/>
+<text x="18.12" y="81.49" text-anchor="end" font-size="11" fill="#59636e">3</text>
+<line x1="21.12" y1="33.1" x2="26.12" y2="33.1" stroke="#8c959f"/>
+<text x="18.12" y="35.91" text-anchor="end" font-size="11" fill="#59636e">4</text>
+<line x1="26.12" y1="169.83" x2="26.12" y2="174.83" stroke="#8c959f"/>
+<text x="26.12" y="185.72" text-anchor="middle" font-size="11" fill="#59636e">0</text>
+<line x1="131.67" y1="169.83" x2="131.67" y2="174.83" stroke="#8c959f"/>
+<text x="131.67" y="185.72" text-anchor="middle" font-size="11" fill="#59636e">2</text>
+<line x1="237.22" y1="169.83" x2="237.22" y2="174.83" stroke="#8c959f"/>
+<text x="237.22" y="185.72" text-anchor="middle" font-size="11" fill="#59636e">4</text>
+<line x1="26.12" y1="169.83" x2="290" y2="169.83" stroke="#8c959f"/>
+</g>
+<g class="legend">
+<rect x="10" y="10.55" width="10" height="10" rx="2" fill="#4269d0"/>
+<text x="25" y="18.62" font-size="12" fill="#1f2328">below</text>
+<rect x="70.16" y="10.55" width="10" height="10" rx="2" fill="#efb118"/>
+<text x="85.16" y="18.62" font-size="12" fill="#1f2328">missing</text>
+</g>
+</svg>

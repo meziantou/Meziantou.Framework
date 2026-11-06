@@ -132,6 +132,213 @@ public sealed class LayoutTests
     }
 
     [Fact]
+    public void Chord_TwoNodes()
+    {
+        // d3.chord: the rows total 2 and 1, so a unit of value is 2π / 3 radians; the chord between the nodes starts on
+        // the arc of A (its flow to B, 2) and ends on the arc of B (its flow to A, 1)
+        var (groups, chords) = ChordLayout.Compute([[0, 2], [1, 0]], padAngle: 0);
+        Assert.Equal([(0, 0, 4 * Math.PI / 3, 2.0), (1, 4 * Math.PI / 3, 2 * Math.PI, 1.0)], groups.Select(group => (group.Index, group.StartAngle, group.EndAngle, group.Value)).ToArray());
+        var chord = Assert.Single(chords);
+        Assert.Equal(new ChordSubgroup(0, 0, 4 * Math.PI / 3, 2), chord.Source);
+        Assert.Equal(new ChordSubgroup(1, 4 * Math.PI / 3, 2 * Math.PI, 1), chord.Target);
+    }
+
+    [Fact]
+    public void Chord_PaddingSwapsAndSelfFlows()
+    {
+        // With a gap of 0.1 after each arc, a unit of value is (2π - 0.2) / 4 radians. The flow from B to A is the
+        // larger one, so the end on B is the source of the chord.
+        var k = ((2 * Math.PI) - 0.2) / 4;
+        var (groups, chords) = ChordLayout.Compute([[0, 1], [3, 0]], padAngle: 0.1);
+        Assert.Equal((0.0, k), (groups[0].StartAngle, groups[0].EndAngle));
+        Assert.Equal((k + 0.1, (4 * k) + 0.1), (groups[1].StartAngle, groups[1].EndAngle));
+        var chord = Assert.Single(chords);
+        Assert.Equal(new ChordSubgroup(1, k + 0.1, (4 * k) + 0.1, 3), chord.Source);
+        Assert.Equal(new ChordSubgroup(0, 0, k, 1), chord.Target);
+
+        // A flow from a node to itself is a chord whose two ends are the same
+        var (_, self) = ChordLayout.Compute([[2]], padAngle: 0);
+        Assert.Same(self[0].Source, self[0].Target);
+        Assert.Equal(new ChordSubgroup(0, 0, 2 * Math.PI, 2), self[0].Source);
+
+        // Without flows, the empty arcs are evenly spaced
+        var (empty, none) = ChordLayout.Compute([[0, 0], [0, 0]], padAngle: 0.1);
+        Assert.Empty(none);
+        Assert.Equal([0, Math.PI], empty.Select(group => group.StartAngle).ToArray());
+
+        // Gaps larger than the circle leave no room for the arcs
+        var (crowded, _) = ChordLayout.Compute([[0, 1], [1, 0]], padAngle: 4);
+        Assert.All(crowded, group => Assert.Equal(group.StartAngle, group.EndAngle));
+    }
+
+    [Fact]
+    public void Chord_Ribbons()
+    {
+        // The arc of the source, a curve through the center, the arc of the target, a curve back
+        var ribbon = ChordLayout.Ribbon(0, 0, 10, new ChordSubgroup(0, 0, Math.PI / 2, 1), new ChordSubgroup(1, Math.PI, 3 * Math.PI / 2, 1));
+        Assert.Equal("M0,-10 A10,10 0 0,1 10,0 Q0,0 0,10 A10,10 0 0,1 -10,0 Q0,0 0,-10 Z", ribbon.ToString());
+
+        var self = new ChordSubgroup(0, 0, Math.PI / 2, 1);
+        Assert.Equal("M0,-10 A10,10 0 0,1 10,0 Q0,0 0,-10 Z", ChordLayout.Ribbon(0, 0, 10, self, self).ToString());
+
+        var full = new ChordSubgroup(0, 0, 2 * Math.PI, 1);
+        Assert.Equal("M0,-10 A10,10 0 0,1 0,10 A10,10 0 0,1 0,-10 Q0,0 0,-10 Z", ChordLayout.Ribbon(0, 0, 10, full, full).ToString());
+
+        var empty = new ChordSubgroup(0, 1, 1, 0);
+        Assert.Equal(4, ChordLayout.Ribbon(0, 0, 10, empty, self).Commands.Count(command => command.Kind is not PathCommandKind.ArcTo));
+    }
+
+    [Fact]
+    public void Force_StartsOnThePhyllotaxisSpiral()
+    {
+        // d3-force: the node i starts at a radius of 10 √(0.5 + i), at an angle of i π (3 - √5)
+        var layout = new ForceLayout(3, []);
+        Assert.Equal((10 * Math.Sqrt(0.5), 0.0), (layout.X[0], layout.Y[0]));
+        var angle = Math.PI * (3 - Math.Sqrt(5));
+        Assert.Equal(10 * Math.Sqrt(1.5) * Math.Cos(angle), layout.X[1], 12);
+        Assert.Equal(10 * Math.Sqrt(1.5) * Math.Sin(angle), layout.Y[1], 12);
+        Assert.Equal(10 * Math.Sqrt(2.5) * Math.Sin(2 * angle), layout.Y[2], 12);
+        Assert.Equal(300, ForceLayout.DefaultTicks);
+    }
+
+    [Fact]
+    public void Force_LinkPullsTowardItsLength()
+    {
+        // Two nodes 50 apart, linked with a length of 30: each end gets half of (50 - 30) / 50 × 50 × alpha, the velocity
+        // keeps 60% of it, alpha is 0.001^(1/300) after the first tick, and the centering moves the middle to the origin
+        var alpha = Math.Pow(0.001, 1.0 / 300);
+        var layout = new ForceLayout(2, [(0, 1)]) { ManyBodyStrength = 0 };
+        (layout.X[0], layout.Y[0], layout.X[1], layout.Y[1]) = (0, 0, 50, 0);
+        layout.Tick();
+        Assert.Equal(alpha, layout.Alpha, 12);
+        Assert.Equal((6 * alpha) - 25, layout.X[0], 5);
+        Assert.Equal(25 - (6 * alpha), layout.X[1], 5);
+        Assert.Equal(0, layout.Y[0], 5);
+    }
+
+    [Fact]
+    public void Force_ManyBodyRepels()
+    {
+        // Two nodes 10 apart: each one gets strength × alpha × distance / distance² = -30 × alpha / 10 away from the other,
+        // 60% of it is kept, then the middle moves to the origin
+        var alpha = Math.Pow(0.001, 1.0 / 300);
+        var layout = new ForceLayout(2, []);
+        (layout.X[0], layout.Y[0], layout.X[1], layout.Y[1]) = (0, 0, 10, 0);
+        layout.Tick();
+        Assert.Equal((-1.8 * alpha) - 5, layout.X[0], 5);
+        Assert.Equal(5 + (1.8 * alpha), layout.X[1], 5);
+
+        // Closer than 1, the squared distance is replaced by the distance: 0.5 × -30 × alpha / 0.5, 60% of it kept
+        var close = new ForceLayout(2, []);
+        (close.X[0], close.Y[0], close.X[1], close.Y[1]) = (0, 0, 0.5, 0);
+        close.Tick();
+        Assert.Equal((-0.6 * 30 * alpha) - 0.25, close.X[0], 5);
+    }
+
+    [Fact]
+    public void Force_CentersTheNodes()
+    {
+        var layout = new ForceLayout(2, []) { ManyBodyStrength = 0 };
+        (layout.X[0], layout.Y[0], layout.X[1], layout.Y[1]) = (10, 4, 20, 8);
+        layout.Tick();
+        Assert.Equal([-5.0, 5.0], layout.X);
+        Assert.Equal([-2.0, 2.0], layout.Y);
+
+        // Coincident nodes are separated by the jiggle of the seeded generator, the same on every run
+        var coincident = new ForceLayout(2, [(0, 1)]);
+        (coincident.X[0], coincident.Y[0], coincident.X[1], coincident.Y[1]) = (0, 0, 0, 0);
+        coincident.Run(ForceLayout.DefaultTicks);
+        var again = new ForceLayout(2, [(0, 1)]);
+        (again.X[0], again.Y[0], again.X[1], again.Y[1]) = (0, 0, 0, 0);
+        again.Run(ForceLayout.DefaultTicks);
+        Assert.Equal(coincident.X, again.X);
+        Assert.True(Math.Abs(coincident.X[0] - coincident.X[1]) + Math.Abs(coincident.Y[0] - coincident.Y[1]) > 1);
+    }
+
+    [Fact]
+    public void Hexbin_MatchesD3()
+    {
+        // d3-hexbin with a radius of 10: the columns are 10√3 apart, the rows 15 apart, and the odd rows are shifted by
+        // half a column
+        var dx = 10 * Math.Sqrt(3);
+        (double, double)[] points = [(0, 0), (2, 3), (dx / 2, 15), (dx, 0), (dx / 2, 7), (dx / 2, 8), (double.NaN, 0)];
+        var bins = Hexbin.Compute(points, radius: 10);
+        Assert.Equal([(0.0, 0.0), (dx / 2, 15.0), (dx, 0.0)], bins.Select(bin => (bin.X, bin.Y)).ToArray());
+
+        // (dx / 2, 7) and (dx / 2, 8) are near the edge between the rows (more than a third of a row from the center of
+        // their nearest row): both go to the hexagon of the odd row, whose center is closer
+        Assert.Equal([0, 1], bins[0].Points);
+        Assert.Equal([2, 4, 5], bins[1].Points);
+        Assert.Equal([3], bins[2].Points);
+
+        // Negative coordinates: the row -1 is odd, so its hexagons are shifted too
+        var negative = Hexbin.Compute([(-dx / 2, -15)], radius: 10);
+        Assert.Equal((-dx / 2, -15.0), (negative[0].X, negative[0].Y));
+    }
+
+    [Fact]
+    public void Hexagon_PointyTop()
+    {
+        var corners = Hexbin.Hexagon(0, 0, 10);
+        Assert.HasCount(6, corners);
+        Assert.Equal(0, corners[0].X, 9);
+        Assert.Equal(-10, corners[0].Y, 9);
+        Assert.Equal(5 * Math.Sqrt(3), corners[1].X, 9);
+        Assert.Equal(-5, corners[1].Y, 9);
+    }
+
+    [Fact]
+    public void Contours_MarchingSquares()
+    {
+        // A single cell above the threshold, at the center of a 3×3 grid: the edges are halfway between the centers of the
+        // cells (x + 0.5) when the threshold is halfway between the values
+        double[] grid = [0, 0, 0, 0, 1, 0, 0, 0, 0];
+        var polygon = Assert.Single(Contours.Compute(grid, 3, 3, 0.5));
+        var ring = Assert.Single(polygon);
+        Assert.Equal([(1.0, 1.5), (1.5, 1.0), (1.5, 2.0), (2.0, 1.5)], ring.Distinct().Order().ToArray());
+        Assert.True(Contours.Area(ring) > 0);
+
+        // Linear interpolation: a threshold of 0.25 is a quarter of the way from 0 to 1, so the edge is 0.25 past the center of the outer cell
+        var smooth = Assert.Single(Assert.Single(Contours.Compute(grid, 3, 3, 0.25)));
+        Assert.Contains((0.75, 1.5), smooth);
+        Assert.Contains((2.25, 1.5), smooth);
+
+        // A ring of cells around a cell below the threshold: a polygon with a hole
+        double[] ringGrid =
+        [
+            0, 0, 0, 0, 0,
+            0, 1, 1, 1, 0,
+            0, 1, 0, 1, 0,
+            0, 1, 1, 1, 0,
+            0, 0, 0, 0, 0,
+        ];
+        var withHole = Assert.Single(Contours.Compute(ringGrid, 5, 5, 0.5));
+        Assert.HasCount(2, withHole);
+        Assert.True(Contours.Area(withHole[0]) > 0);
+        Assert.True(Contours.Area(withHole[1]) < 0);
+
+        // Nothing above the threshold, or everything: no polygon, or the whole grid
+        Assert.Empty(Contours.Compute(grid, 3, 3, 2));
+        var all = Assert.Single(Assert.Single(Contours.Compute(grid, 3, 3, -1)));
+        Assert.True(Contours.Area(all) > 0);
+        Assert.Contains((0.5, 0.0), all);
+        Assert.Contains((0.0, 0.5), all);
+        Assert.Contains((3.0, 2.5), all);
+        Assert.Contains((2.5, 3.0), all);
+    }
+
+    [Fact]
+    public void KernelDensity_TwoDimensions()
+    {
+        // A single point at the origin, bandwidths of 1, a 3×3 grid from -1 to 1: the density is e^(-r²/2) / 2π
+        var (grid, x0, stepX, y0, stepY) = KernelDensity.Evaluate2D([0], [0], 1, 1, size: 3, cut: 1);
+        Assert.Equal((-1.0, 1.0, -1.0, 1.0), (x0, stepX, y0, stepY));
+        Assert.Equal(1 / (2 * Math.PI), grid[4], 12);
+        Assert.Equal(Math.Exp(-0.5) / (2 * Math.PI), grid[1], 12);
+        Assert.Equal(Math.Exp(-1) / (2 * Math.PI), grid[0], 12);
+    }
+
+    [Fact]
     public void Tree_TwoChildren()
     {
         // Siblings 1 apart, half a separation on each side: 0.25 and 0.75, the root centered over them

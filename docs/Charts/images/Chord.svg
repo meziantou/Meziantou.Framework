@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="460" viewBox="0 0 640 460" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Daily commutes between districts</title>
+<rect width="640" height="460" fill="#ffffff"/>
+<g class="marks">
+<g>
+<path d="M320,65.97 A175.43,175.43 0 0,1 451.45,125.23 Q320,241.4 484.4,302.61 A175.43,175.43 0 0,1 416.01,388.22 Q320,241.4 320,65.97 Z" fill="#4269d0" fill-opacity="0.702"><title>Downtown → Harbor: 120
+Harbor → Downtown: 90</title></path>
+<path d="M373.63,408.43 A175.43,175.43 0 0,1 200.67,369.98 Q320,241.4 451.45,125.23 A175.43,175.43 0 0,1 478.61,166.45 Q320,241.4 373.63,408.43 Z" fill="#ff725c" fill-opacity="0.702"><title>Hills → Downtown: 150
+Downtown → Hills: 40</title></path>
+<path d="M478.61,166.45 A175.43,175.43 0 0,1 495.18,250.64 Q320,241.4 145.76,221.04 A175.43,175.43 0 0,1 169.52,151.23 Q320,241.4 478.61,166.45 Z" fill="#4269d0" fill-opacity="0.702"><title>Downtown → University: 70
+University → Downtown: 60</title></path>
+<path d="M222.97,95.25 A175.43,175.43 0 0,1 285.52,69.4 Q320,241.4 495.18,250.64 A175.43,175.43 0 0,1 487.6,293.2 Q320,241.4 222.97,95.25 Z" fill="#3ca951" fill-opacity="0.702"><title>Airport → Downtown: 55
+Downtown → Airport: 35</title></path>
+<path d="M200.67,369.98 A175.43,175.43 0 0,1 166.48,326.28 Q320,241.4 416.01,388.22 A175.43,175.43 0 0,1 383.01,405.12 Q320,241.4 200.67,369.98 Z" fill="#ff725c" fill-opacity="0.702"><title>Hills → Harbor: 45
+Harbor → Hills: 30</title></path>
+<path d="M285.52,69.4 A175.43,175.43 0 0,1 310.06,66.26 Q320,241.4 383.01,405.12 Q320,241.4 285.52,69.4 Z" fill="#3ca951" fill-opacity="0.702"><title>Airport → Harbor: 20</title></path>
+<path d="M166.48,326.28 A175.43,175.43 0 0,1 144.89,230.95 Q320,241.4 169.52,151.23 A175.43,175.43 0 0,1 187.69,126.22 Q320,241.4 166.48,326.28 Z" fill="#ff725c" fill-opacity="0.702"><title>Hills → University: 80
+University → Hills: 25</title></path>
+<path d="M187.69,126.22 A175.43,175.43 0 0,1 214.85,100.98 Q320,241.4 187.69,126.22 Z" fill="#6cc5b0" fill-opacity="0.702"><title>University → University: 30</title></path>
+<path d="M320,52.98 A188.43,188.43 0 0,1 500.02,297.03 L488.56,293.49 A176.43,176.43 0 0,0 320,64.97 Z" fill="#4269d0"><title>Downtown: 265</title></path>
+<text x="476.46" y="125.78" font-size="11" fill="#1f2328">Downtown</text>
+<path d="M496.58,307.14 A188.43,188.43 0 0,1 387.67,417.25 L383.36,406.05 A176.43,176.43 0 0,0 485.34,302.96 Z" fill="#efb118"><title>Harbor: 120</title></path>
+<text x="458.23" y="384.51" font-size="11" fill="#1f2328">Harbor</text>
+<path d="M377.6,420.8 A188.43,188.43 0 0,1 131.91,230.17 L143.89,230.89 A176.43,176.43 0 0,0 373.93,409.38 Z" fill="#ff725c"><title>Hills: 275</title></path>
+<text x="200.81" y="401.84" text-anchor="end" font-size="11" fill="#1f2328">Hills</text>
+<path d="M132.85,219.53 A188.43,188.43 0 0,1 207.06,90.58 L214.25,100.18 A176.43,176.43 0 0,0 144.77,220.93 Z" fill="#6cc5b0"><title>University: 115</title></path>
+<text x="151.48" y="144.7" text-anchor="end" font-size="11" fill="#1f2328">University</text>
+<path d="M215.78,84.42 A188.43,188.43 0 0,1 309.33,53.28 L310.01,65.26 A176.43,176.43 0 0,0 222.42,94.42 Z" fill="#3ca951"><title>Airport: 75</title></path>
+<text x="258.59" y="54.91" text-anchor="end" font-size="11" fill="#1f2328">Airport</text>
+</g>
+</g>
+<text x="10" y="21.49" font-size="16" font-weight="bold" fill="#1f2328">Daily commutes between districts</text>
+</svg>

@@ -306,6 +306,189 @@ public sealed class StatisticalChartTests
     }
 
     [Fact]
+    public void Ridgeline()
+    {
+        #region Charts_Ridgeline
+        string[] months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        var days = months
+            .SelectMany((month, index) => SampleData.Normal(90, mean: 12 - (9 * Math.Cos(index * Math.PI / 6)), deviation: 2.5 + (index % 3), seed: index)
+                .Select(temperature => (Month: month, Temperature: temperature)))
+            .ToArray();
+
+        var plot = new Plot { Title = "Daily temperatures by month", Height = 480 };
+        plot.Add(new RidgelineMark<(string Month, double Temperature)>(days, x: day => day.Temperature, y: day => day.Month) { FillOpacity = 0.85 });
+        plot.XAxis.Label = "Temperature (°C)";
+        #endregion
+
+        ChartAssert.Svg(plot, "Ridgeline");
+    }
+
+    [Fact]
+    public void RidgelineOptions()
+    {
+        var measurements = SampleData.Measurements.Append(new Measurement("D", double.NaN)).Append(new Measurement(null!, 3)).ToArray();
+        var plot = new Plot { Height = 260, Width = 400 };
+        plot.Add(new RidgelineMark<Measurement>(measurements, x: measurement => measurement.Value, y: measurement => measurement.Group)
+        {
+            Bandwidth = 4,
+            Samples = 30,
+            Cut = 1,
+            Overlap = 0.8,
+            Curve = Curve.Linear,
+            StrokeColor = ChartColor.Black,
+            StrokeWidth = 0.5,
+            Title = measurement => measurement.Group,
+        });
+        ChartAssert.Svg(plot);
+
+        // A y scale that is not ordinal draws nothing
+        var linear = new Plot { YScale = new LinearScale() };
+        linear.Add(new RidgelineMark<Measurement>(SampleData.Measurements, x: measurement => measurement.Value, y: measurement => measurement.Group));
+        Assert.DoesNotContain("<path", linear.ToSvg());
+
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => new RidgelineMark<int>([], x: i => i, y: i => i) { Samples = 1 });
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => new RidgelineMark<int>([], x: i => i, y: i => i) { Overlap = 0 });
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => new RidgelineMark<int>([], x: i => i, y: i => i) { Overlap = double.PositiveInfinity });
+    }
+
+    [Fact]
+    public void Hexbin()
+    {
+        #region Charts_Hexbin
+        var xs = SampleData.Normal(2000, mean: 50, deviation: 12, seed: 1);
+        var ys = SampleData.Normal(2000, mean: 30, deviation: 8, seed: 2);
+        var points = xs.Zip(ys, (x, y) => (X: x + (y / 2), Y: y)).ToArray();
+
+        var plot = new Plot { Title = "2,000 points in hexagonal bins" };
+        plot.Add(new HexbinMark<(double X, double Y)>(points, x: point => point.X, y: point => point.Y) { Radius = 8 });
+        plot.Legend.Title = "Points";
+        #endregion
+
+        ChartAssert.Svg(plot, "Hexbin");
+    }
+
+    [Fact]
+    public void HexbinOptions()
+    {
+        // In a facet grid, the hexagons of every chart extend the color scale; a scale that sets its domain keeps it
+        var points = SampleData.Normal(300, mean: 0, deviation: 1, seed: 7).Select((value, index) => (X: value, Y: index % 10, Group: index % 2 is 0 ? "Even" : "Odd")).ToArray();
+        var plot = new Plot { Width = 400, Height = 220 };
+        plot.Add(new HexbinMark<(double X, int Y, string Group)>(points, x: point => point.X, y: point => point.Y)
+        {
+            Radius = 12,
+            FacetX = point => point.Group,
+            StrokeColor = ChartColor.Black,
+            StrokeWidth = 1,
+            Title = point => point.Group,
+        });
+        ChartAssert.Svg(plot);
+
+        var fixedScale = new Plot { ColorScale = new SequentialColorScale { Minimum = 0, Maximum = 100 } };
+        fixedScale.Add(new HexbinMark<(double X, int Y, string Group)>(points, x: point => point.X, y: point => point.Y));
+        Assert.Contains(">100</text>", fixedScale.ToSvg());
+
+        // Without a continuous color scale, the hexagons have the fill color
+        var ordinal = new Plot { ColorScale = new OrdinalColorScale() };
+        ordinal.Add(new HexbinMark<(double X, int Y, string Group)>(points, x: point => point.X, y: point => point.Y) { FillColor = "#123456" });
+        Assert.Contains("#123456", ordinal.ToSvg());
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => new HexbinMark<int>([], x: i => i, y: i => i) { Radius = 0 });
+    }
+
+    [Fact]
+    public void Contour()
+    {
+        #region Charts_Contour
+        var first = SampleData.Normal(300, mean: 2, deviation: 0.8, seed: 3).Zip(SampleData.Normal(300, mean: 3, deviation: 0.6, seed: 4));
+        var second = SampleData.Normal(200, mean: 5, deviation: 1, seed: 5).Zip(SampleData.Normal(200, mean: 6, deviation: 0.9, seed: 6));
+        var points = first.Concat(second).Select(point => (X: point.First, Y: point.Second)).ToArray();
+
+        var plot = new Plot { Title = "Density of two clusters", ColorScale = new SequentialColorScale { Scheme = ColorScheme.Blues } };
+        plot.Add(new ContourMark<(double X, double Y)>(points, x: point => point.X, y: point => point.Y));
+        plot.Add(new DotMark<(double X, double Y)>(points, x: point => point.X, y: point => point.Y) { Radius = 1.2, FillColor = "#1f2328", FillOpacity = 0.5 });
+        plot.Legend.Title = "Density";
+        #endregion
+
+        ChartAssert.Svg(plot, "Contour");
+    }
+
+    [Fact]
+    public void ContourOptions()
+    {
+        var points = SampleData.Normal(100, mean: 0, deviation: 1, seed: 8).Zip(SampleData.Normal(100, mean: 0, deviation: 2, seed: 9)).Append((double.NaN, 1)).ToArray();
+        var plot = new Plot { Width = 300, Height = 300 };
+        plot.Add(new ContourMark<(double First, double Second)>(points, x: point => point.First, y: point => point.Second)
+        {
+            Filled = false,
+            BandwidthX = 0.5,
+            BandwidthY = 1,
+            GridSize = 32,
+            Thresholds = 4,
+            StrokeWidth = 2,
+            Title = _ => "contour",
+        });
+        ChartAssert.Svg(plot);
+
+        var stroked = new Plot { Width = 300, Height = 300 };
+        stroked.Add(new ContourMark<(double First, double Second)>(points, x: point => point.First, y: point => point.Second) { StrokeColor = ChartColor.White, Thresholds = 3 });
+        Assert.Contains("stroke=\"#ffffff\"", stroked.ToSvg());
+
+        // Without points, or with categories, there is nothing to draw
+        var empty = new Plot();
+        empty.Add(new ContourMark<(double, double)>([(double.NaN, 0)], x: point => point.Item1, y: point => point.Item2));
+        empty.Add(new ContourMark<string>(["a"], x: value => value, y: value => value));
+        Assert.DoesNotContain("<path", empty.ToSvg());
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => new ContourMark<int>([], x: i => i, y: i => i) { GridSize = 1 });
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => new ContourMark<int>([], x: i => i, y: i => i) { Thresholds = 0 });
+    }
+
+    [Fact]
+    public void ParallelCoordinates()
+    {
+        #region Charts_ParallelCoordinates
+        var plot = new Plot { Title = "Cars on four dimensions" };
+        plot.Add(new ParallelCoordinatesMark<Car>(SampleData.Cars,
+        [
+            new("Weight (kg)", car => car.Weight),
+            new("Horsepower", car => car.Horsepower),
+            new("MPG", car => car.Mpg),
+            new("Origin", car => car.Origin),
+        ])
+        {
+            Stroke = car => car.Origin,
+        });
+        #endregion
+
+        ChartAssert.Svg(plot, "ParallelCoordinates");
+    }
+
+    [Fact]
+    public void ParallelCoordinatesOptions()
+    {
+        // A scale per axis: a reversed axis and a log axis; a missing value breaks the line
+        Car[] cars = [.. SampleData.Cars.Take(4), new("Gap", double.NaN, 30, 120, "Europe")];
+        var plot = new Plot { Width = 360, Height = 240 };
+        plot.Add(new ParallelCoordinatesMark<Car>(cars,
+        [
+            new("Weight", car => car.Weight),
+            new("MPG", car => car.Mpg) { Scale = new LinearScale { Reverse = true } },
+            new("Power", car => car.Horsepower) { Scale = new LogScale() },
+        ])
+        {
+            LineOpacity = 1,
+            StrokeColor = "#e5484d",
+            StrokeWidth = 1,
+            Title = car => car.Name,
+        });
+        ChartAssert.Svg(plot);
+
+        var single = new Plot { Width = 200, Height = 200 };
+        single.Add(new ParallelCoordinatesMark<Car>(cars, [new("Weight", car => car.Weight)]));
+        Assert.Contains("Weight", single.ToSvg());
+        Assert.Throws<ArgumentException>("dimensions", () => new ParallelCoordinatesMark<Car>(cars, []));
+        Assert.Throws<ArgumentNullException>("name", () => new ParallelDimension<Car>(null!, car => car.Weight));
+    }
+
+    [Fact]
     public void TrendLine()
     {
         #region Charts_TrendLine
@@ -385,6 +568,104 @@ public sealed class StatisticalChartTests
             Title = flow => flow.Source + flow.Target,
         });
         ChartAssert.Svg(plot, documentationImage: null, memberName: nameof(SankeyAlignments) + "_" + alignment);
+    }
+
+    [Fact]
+    public void Chord()
+    {
+        #region Charts_Chord
+        Flow[] commutes =
+        [
+            new("Downtown", "Harbor", 120), new("Harbor", "Downtown", 90), new("Downtown", "Hills", 40), new("Hills", "Downtown", 150),
+            new("Downtown", "University", 70), new("University", "Downtown", 60), new("Harbor", "Hills", 30), new("Hills", "Harbor", 45),
+            new("University", "Hills", 25), new("Hills", "University", 80), new("Airport", "Downtown", 55), new("Downtown", "Airport", 35),
+            new("Airport", "Harbor", 20), new("University", "University", 30),
+        ];
+
+        var plot = new Plot { Title = "Daily commutes between districts", Height = 460 };
+        plot.Add(new ChordMark<Flow>(commutes, source: flow => flow.Source, target: flow => flow.Target, value: flow => flow.Value));
+        #endregion
+
+        ChartAssert.Svg(plot, "Chord");
+    }
+
+    [Fact]
+    public void ChordOptions()
+    {
+        Flow[] flows = [new("A", "B", 10), new("B", "A", 4), new("A", "B", 2), new("B", "C", 6), new("C", "C", double.NaN), new("C", "A", -3), new(null!, "A", 1)];
+        var plot = new Plot { Width = 300, Height = 300 };
+        plot.Add(new ChordMark<Flow>(flows, source: flow => flow.Source, target: flow => flow.Target, value: flow => flow.Value)
+        {
+            ArcWidth = 20,
+            NodePadding = 0,
+            LinkOpacity = 1,
+            ShowLabels = false,
+            Fill = flow => flow.Target,
+            Title = flow => flow.Source + flow.Target,
+        });
+        ChartAssert.Svg(plot);
+
+        var empty = new Plot();
+        empty.Add(new ChordMark<Flow>([], source: flow => flow.Source, target: flow => flow.Target, value: flow => flow.Value));
+        Assert.DoesNotContain("<path", empty.ToSvg());
+    }
+
+    [Fact]
+    public void Network()
+    {
+        #region Charts_Network
+        (string From, string To)[] collaborations =
+        [
+            ("Alice", "Bob"), ("Alice", "Carol"), ("Bob", "Carol"), ("Carol", "Dave"), ("Alice", "Dave"),
+            ("Dave", "Erin"), ("Erin", "Frank"), ("Frank", "Grace"), ("Erin", "Grace"), ("Grace", "Heidi"),
+            ("Heidi", "Ivan"), ("Ivan", "Judy"), ("Heidi", "Judy"), ("Judy", "Mallory"), ("Ivan", "Mallory"),
+            ("Bob", "Niaj"), ("Niaj", "Olivia"), ("Carol", "Olivia"), ("Frank", "Peggy"), ("Mallory", "Trent"),
+        ];
+        var teams = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["Alice"] = "Design", ["Bob"] = "Design", ["Carol"] = "Design", ["Niaj"] = "Design", ["Olivia"] = "Design",
+            ["Dave"] = "Product", ["Erin"] = "Product", ["Frank"] = "Product", ["Grace"] = "Product", ["Peggy"] = "Product",
+            ["Heidi"] = "Engineering", ["Ivan"] = "Engineering", ["Judy"] = "Engineering", ["Mallory"] = "Engineering", ["Trent"] = "Engineering",
+        };
+
+        var plot = new Plot { Title = "Who works with whom", Height = 420 };
+        plot.Add(new NetworkMark<(string From, string To)>(collaborations, source: link => link.From, target: link => link.To)
+        {
+            NodeFill = name => teams[name],
+            NodeRadius = 7,
+        });
+        #endregion
+
+        ChartAssert.Svg(plot, "Network");
+    }
+
+    [Fact]
+    public void NetworkOptions()
+    {
+        (string?, string?)[] links = [("a", "b"), ("b", "c"), ("c", "a"), ("c", "d"), (null, "a"), ("d", "d")];
+        var plot = new Plot { Width = 300, Height = 240 };
+        plot.Add(new NetworkMark<(string?, string?)>(links, source: link => link.Item1, target: link => link.Item2)
+        {
+            LinkDistance = 60,
+            Charge = -100,
+            Iterations = 50,
+            LinkOpacity = 1,
+            ShowLabels = false,
+            FillColor = "#e5484d",
+            Stroke = link => link.Item1,
+            StrokeWidth = 3,
+            Title = link => link.Item1 + link.Item2,
+        });
+        ChartAssert.Svg(plot);
+
+        // A single node, or no node at all
+        var single = new Plot { Width = 200, Height = 200 };
+        single.Add(new NetworkMark<(string, string)>([("x", "x")], source: link => link.Item1, target: link => link.Item2) { Iterations = 0 });
+        Assert.Contains("<circle", single.ToSvg());
+        var empty = new Plot();
+        empty.Add(new NetworkMark<(string, string)>([], source: link => link.Item1, target: link => link.Item2));
+        Assert.DoesNotContain("<circle", empty.ToSvg());
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => new NetworkMark<int>([], source: i => i, target: i => i) { Iterations = -1 });
     }
 
     [Fact]

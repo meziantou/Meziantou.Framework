@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="300" height="300" fill="#ffffff"/>
+<g class="marks">
+<g>
+<path d="M150,14 A136,136 0 1,1 45.21,236.69 L150,150 Z" fill="#4269d0" stroke="#ffffff" stroke-width="2" stroke-linejoin="round"/>
+<text x="223.83" y="187.55" text-anchor="middle" font-size="11" fill="#ffffff">Chrome</text>
+<path d="M45.21,236.69 A136,136 0 0,1 30.82,84.48 L150,150 Z" fill="#efb118" stroke="#ffffff" stroke-width="2" stroke-linejoin="round"/>
+<text x="68.76" y="160.49" text-anchor="middle" font-size="11" fill="#1f2328">Safari</text>
+<path d="M30.82,84.48 A136,136 0 0,1 56.9,50.86 L150,150 Z" fill="#ff725c" stroke="#ffffff" stroke-width="2" stroke-linejoin="round"/>
+<path d="M56.9,50.86 A136,136 0 0,1 77.13,35.17 L150,150 Z" fill="#6cc5b0" stroke="#ffffff" stroke-width="2" stroke-linejoin="round"/>
+<path d="M77.13,35.17 A136,136 0 0,1 150,14 L150,150 Z" fill="#3ca951" stroke="#ffffff" stroke-width="2" stroke-linejoin="round"/>
+<text x="127.23" y="74.45" text-anchor="middle" font-size="11" fill="#1f2328">Other</text>
+</g>
+<g>
+</g>
+</g>
+</svg>

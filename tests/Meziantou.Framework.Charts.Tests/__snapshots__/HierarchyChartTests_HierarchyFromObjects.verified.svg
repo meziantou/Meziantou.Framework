@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="440" viewBox="0 0 400 440" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>People by team</title>
+<rect width="400" height="440" fill="#ffffff"/>
+<g class="marks">
+<g>
+<circle cx="200" cy="242.95" r="187.05" fill="#e3e6ea" fill-opacity="0.4"><title>Company: 63</title></circle>
+<circle cx="115.93" cy="242.95" r="99.33" fill="#4269d0" fill-opacity="0.2" stroke="#4269d0" stroke-opacity="0.6"><title>Company / Engineering: 37</title></circle>
+<circle cx="62.52" cy="238.7" r="42.11" fill="#4269d0"><title>Company / Engineering / Platform: 12</title></circle>
+<circle cx="159.84" cy="238.7" r="51.57" fill="#4269d0"><title>Company / Engineering / Product: 18</title></circle>
+<circle cx="103.14" cy="305.18" r="32.16" fill="#4269d0"><title>Company / Engineering / Data: 7</title></circle>
+<circle cx="301.16" cy="242.95" r="82.25" fill="#efb118" fill-opacity="0.2" stroke="#efb118" stroke-opacity="0.6"><title>Company / Sales: 20</title></circle>
+<circle cx="259.02" cy="242.95" r="36.46" fill="#efb118"><title>Company / Sales / Europe: 9</title></circle>
+<circle cx="339.44" cy="242.95" r="40.31" fill="#efb118"><title>Company / Sales / Americas: 11</title></circle>
+<circle cx="220" cy="325.37" r="29.77" fill="#ff725c"><title>Company / Support: 6</title></circle>
+<text x="62.52" y="241.51" text-anchor="middle" font-size="11" fill="#ffffff">Platform</text>
+<text x="159.84" y="241.51" text-anchor="middle" font-size="11" fill="#ffffff">Product</text>
+<text x="103.14" y="307.99" text-anchor="middle" font-size="11" fill="#ffffff">Data</text>
+<text x="259.02" y="245.76" text-anchor="middle" font-size="11" fill="#1f2328">Europe</text>
+<text x="339.44" y="245.76" text-anchor="middle" font-size="11" fill="#1f2328">Americas</text>
+<text x="220" y="328.18" text-anchor="middle" font-size="11" fill="#1f2328">Support</text>
+</g>
+</g>
+<g class="legend">
+<rect x="10" y="33.35" width="10" height="10" rx="2" fill="#4269d0"/>
+<text x="25" y="41.42" font-size="12" fill="#1f2328">Engineering</text>
+<rect x="103.21" y="33.35" width="10" height="10" rx="2" fill="#efb118"/>
+<text x="118.21" y="41.42" font-size="12" fill="#1f2328">Sales</text>
+<rect x="162.22" y="33.35" width="10" height="10" rx="2" fill="#ff725c"/>
+<text x="177.22" y="41.42" font-size="12" fill="#1f2328">Support</text>
+</g>
+<text x="10" y="21.49" font-size="16" font-weight="bold" fill="#1f2328">People by team</text>
+</svg>

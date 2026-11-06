@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="120" viewBox="0 0 640 120" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="640" height="120" fill="#ffffff"/>
+<g class="marks">
+<g>
+<rect x="10" y="33.1" width="396.8" height="76.9" fill="#4269d0" stroke="#ffffff" stroke-linejoin="round"/>
+<text x="208.4" y="74.36" text-anchor="middle" font-size="11" fill="#ffffff">Chrome</text>
+<rect x="406.8" y="33.1" width="117.8" height="76.9" fill="#efb118" stroke="#ffffff" stroke-linejoin="round"/>
+<text x="465.7" y="74.36" text-anchor="middle" font-size="11" fill="#1f2328">Safari</text>
+<rect x="524.6" y="33.1" width="31" height="76.9" fill="#ff725c" stroke="#ffffff" stroke-linejoin="round"/>
+<text x="540.1" y="74.36" text-anchor="middle" font-size="11" fill="#1f2328">Edge</text>
+<rect x="555.6" y="33.1" width="18.6" height="76.9" fill="#6cc5b0" stroke="#ffffff" stroke-linejoin="round"/>
+<rect x="574.2" y="33.1" width="55.8" height="76.9" fill="#3ca951" stroke="#ffffff" stroke-linejoin="round"/>
+<text x="602.1" y="74.36" text-anchor="middle" font-size="11" fill="#1f2328">Other</text>
+</g>
+</g>
+<g class="legend">
+<rect x="10" y="10.55" width="10" height="10" rx="2" fill="#4269d0"/>
+<text x="25" y="18.62" font-size="12" fill="#1f2328">Chrome</text>
+<rect x="81.67" y="10.55" width="10" height="10" rx="2" fill="#efb118"/>
+<text x="96.67" y="18.62" font-size="12" fill="#1f2328">Safari</text>
+<rect x="141.84" y="10.55" width="10" height="10" rx="2" fill="#ff725c"/>
+<text x="156.84" y="18.62" font-size="12" fill="#1f2328">Edge</text>
+<rect x="198.86" y="10.55" width="10" height="10" rx="2" fill="#6cc5b0"/>
+<text x="213.86" y="18.62" font-size="12" fill="#1f2328">Firefox</text>
+<rect x="263.81" y="10.55" width="10" height="10" rx="2" fill="#3ca951"/>
+<text x="278.81" y="18.62" font-size="12" fill="#1f2328">Other</text>
+</g>
+</svg>

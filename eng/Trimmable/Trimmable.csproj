@@ -24,6 +24,7 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.Bencode\Meziantou.Framework.Bencode.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.BloomFilters\Meziantou.Framework.BloomFilters.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.ByteSize\Meziantou.Framework.ByteSize.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Charts\Meziantou.Framework.Charts.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.ChromiumTracing\Meziantou.Framework.ChromiumTracing.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.CodeDom\Meziantou.Framework.CodeDom.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.CodeOwners\Meziantou.Framework.CodeOwners.csproj" />
@@ -49,6 +50,7 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.HttpArchive\Meziantou.Framework.HttpArchive.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Imaging\Meziantou.Framework.Imaging.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Imaging.Barcodes\Meziantou.Framework.Imaging.Barcodes.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Imaging.Charts\Meziantou.Framework.Imaging.Charts.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.JavaScriptEngine\Meziantou.Framework.JavaScriptEngine.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.JsonPath\Meziantou.Framework.JsonPath.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.LLMContext\Meziantou.Framework.LLMContext.csproj" />
@@ -106,6 +108,7 @@
     <TrimmerRootAssembly Include="Meziantou.Framework.Bencode" />
     <TrimmerRootAssembly Include="Meziantou.Framework.BloomFilters" />
     <TrimmerRootAssembly Include="Meziantou.Framework.ByteSize" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.Charts" />
     <TrimmerRootAssembly Include="Meziantou.Framework.ChromiumTracing" />
     <TrimmerRootAssembly Include="Meziantou.Framework.CodeDom" />
     <TrimmerRootAssembly Include="Meziantou.Framework.CodeOwners" />
@@ -131,6 +134,7 @@
     <TrimmerRootAssembly Include="Meziantou.Framework.HttpArchive" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Imaging" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Imaging.Barcodes" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.Imaging.Charts" />
     <TrimmerRootAssembly Include="Meziantou.Framework.JavaScriptEngine" />
     <TrimmerRootAssembly Include="Meziantou.Framework.JsonPath" />
     <TrimmerRootAssembly Include="Meziantou.Framework.LLMContext" />

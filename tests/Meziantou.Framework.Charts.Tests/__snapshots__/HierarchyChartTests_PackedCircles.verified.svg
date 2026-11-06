@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="520" viewBox="0 0 480 520" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Size of the files</title>
+<rect width="480" height="520" fill="#ffffff"/>
+<g class="marks">
+<g>
+<circle cx="240" cy="282.95" r="227.05" fill="#e3e6ea" fill-opacity="0.4"><title>: 785</title></circle>
+<circle cx="173.12" cy="282.95" r="157.44" fill="#4269d0" fill-opacity="0.2" stroke="#4269d0" stroke-opacity="0.6"><title>src: 535</title></circle>
+<circle cx="96.96" cy="282.95" r="78.56" fill="#4269d0" fill-opacity="0.2" stroke="#4269d0" stroke-opacity="0.6"><title>src / core: 275</title></circle>
+<circle cx="62.46" cy="282.95" r="41.33" fill="#4269d0"><title>src / core / parser.cs: 140</title></circle>
+<circle cx="139.65" cy="282.95" r="33.14" fill="#4269d0"><title>src / core / lexer.cs: 90</title></circle>
+<circle cx="107.79" cy="332.95" r="23.43" fill="#4269d0"><title>src / core / ast.cs: 45</title></circle>
+<circle cx="253.04" cy="282.95" r="74.79" fill="#4269d0" fill-opacity="0.2" stroke="#4269d0" stroke-opacity="0.6"><title>src / app: 260</title></circle>
+<circle cx="220.55" cy="273.63" r="38.26" fill="#4269d0"><title>src / app / main.cs: 120</title></circle>
+<circle cx="292.78" cy="273.63" r="31.24" fill="#4269d0"><title>src / app / view.cs: 80</title></circle>
+<circle cx="262.94" cy="326.86" r="27.06" fill="#4269d0"><title>src / app / model.cs: 60</title></circle>
+<circle cx="398.8" cy="282.95" r="65.52" fill="#efb118" fill-opacity="0.2" stroke="#efb118" stroke-opacity="0.6"><title>tests: 155</title></circle>
+<circle cx="368.22" cy="282.95" r="32.2" fill="#efb118"><title>tests / core.tests.cs: 85</title></circle>
+<circle cx="432.37" cy="282.95" r="29.22" fill="#efb118"><title>tests / app.tests.cs: 70</title></circle>
+<circle cx="353.69" cy="394.51" r="52.09" fill="#ff725c" fill-opacity="0.2" stroke="#ff725c" stroke-opacity="0.6"><title>docs: 95</title></circle>
+<circle cx="330.24" cy="394.51" r="25.9" fill="#ff725c"><title>docs / guide.md: 55</title></circle>
+<circle cx="380.96" cy="394.51" r="22.09" fill="#ff725c"><title>docs / readme.md: 40</title></circle>
+<text x="62.46" y="285.76" text-anchor="middle" font-size="11" fill="#ffffff">parser.cs</text>
+<text x="139.65" y="285.76" text-anchor="middle" font-size="11" fill="#ffffff">lexer.cs</text>
+<text x="107.79" y="335.76" text-anchor="middle" font-size="11" fill="#ffffff">ast.cs</text>
+<text x="220.55" y="276.44" text-anchor="middle" font-size="11" fill="#ffffff">main.cs</text>
+<text x="292.78" y="276.44" text-anchor="middle" font-size="11" fill="#ffffff">view.cs</text>
+<text x="262.94" y="329.67" text-anchor="middle" font-size="11" fill="#ffffff">model.cs</text>
+<text x="330.24" y="397.32" text-anchor="middle" font-size="11" fill="#1f2328">guide.md</text>
+</g>
+</g>
+<g class="legend">
+<rect x="10" y="33.35" width="10" height="10" rx="2" fill="#4269d0"/>
+<text x="25" y="41.42" font-size="12" fill="#1f2328">src</text>
+<rect x="55" y="33.35" width="10" height="10" rx="2" fill="#efb118"/>
+<text x="70" y="41.42" font-size="12" fill="#1f2328">tests</text>
+<rect x="109.34" y="33.35" width="10" height="10" rx="2" fill="#ff725c"/>
+<text x="124.34" y="41.42" font-size="12" fill="#1f2328">docs</text>
+</g>
+<text x="10" y="21.49" font-size="16" font-weight="bold" fill="#1f2328">Size of the files</text>
+</svg>

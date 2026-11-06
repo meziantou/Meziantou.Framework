@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="300" height="300" fill="#ffffff"/>
+<g class="marks">
+<g>
+<path d="M82,14 A136,136 0 0,1 205.06,207.91 L82,150 Z" fill="#4269d0" stroke="#ffffff" stroke-linejoin="round"/>
+<path d="M205.06,207.91 A136,136 0 0,1 151.23,267.06 L82,150 Z" fill="#efb118" stroke="#ffffff" stroke-linejoin="round"/>
+<path d="M151.23,267.06 A136,136 0 0,1 132.06,276.45 L82,150 Z" fill="#ff725c" stroke="#ffffff" stroke-linejoin="round"/>
+<path d="M132.06,276.45 A136,136 0 0,1 119.94,280.6 L82,150 Z" fill="#6cc5b0" stroke="#ffffff" stroke-linejoin="round"/>
+<path d="M119.94,280.6 A136,136 0 0,1 82,286 L82,150 Z" fill="#3ca951" stroke="#ffffff" stroke-linejoin="round"/>
+</g>
+</g>
+</svg>

@@ -1,0 +1,30 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.Imaging.Charts</RootNamespace>
+    <Version>1.0.0</Version>
+    <IsTrimmable>true</IsTrimmable>
+    <Description>Renders the charts of Meziantou.Framework.Charts with Meziantou.Framework.Imaging: images in any format (PNG, WebP, JPEG...), or vector drawing on a canvas, with embedded Liberation Sans fonts.</Description>
+    <PackageTags>chart;charts;plot;image;imaging;png;drawing;canvas;visualization</PackageTags>
+
+    <!-- Every public member must be documented -->
+    <DisableDocumentationWarnings>false</DisableDocumentationWarnings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Liberation Sans 2.1.5 (SIL Open Font License 1.1, see THIRD-PARTY-NOTICES.md), the subsets Meziantou.Framework.Pdf bundles -->
+    <EmbeddedResource Include="../Meziantou.Framework.Pdf/Rendering/Fonts/Substitution/LiberationSans-Regular.woff2" Link="Fonts/LiberationSans-Regular.woff2" LogicalName="Meziantou.Framework.Imaging.Charts.Fonts.LiberationSans-Regular.woff2" />
+    <EmbeddedResource Include="../Meziantou.Framework.Pdf/Rendering/Fonts/Substitution/LiberationSans-Bold.woff2" Link="Fonts/LiberationSans-Bold.woff2" LogicalName="Meziantou.Framework.Imaging.Charts.Fonts.LiberationSans-Bold.woff2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Meziantou.Framework.Charts/Meziantou.Framework.Charts.csproj" />
+    <ProjectReference Include="../Meziantou.Framework.Imaging/Meziantou.Framework.Imaging.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Charts.Tests" />
+  </ItemGroup>
+
+</Project>

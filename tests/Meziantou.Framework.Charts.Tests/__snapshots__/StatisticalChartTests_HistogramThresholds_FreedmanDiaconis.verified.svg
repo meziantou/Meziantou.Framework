@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="250" viewBox="0 0 400 250" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="400" height="250" fill="#ffffff"/>
+<g class="grid">
+<line x1="32.23" y1="219.83" x2="388.83" y2="219.83" stroke="#e3e6ea"/>
+<line x1="32.23" y1="173.14" x2="388.83" y2="173.14" stroke="#e3e6ea"/>
+<line x1="32.23" y1="126.46" x2="388.83" y2="126.46" stroke="#e3e6ea"/>
+<line x1="32.23" y1="79.78" x2="388.83" y2="79.78" stroke="#e3e6ea"/>
+<line x1="32.23" y1="33.1" x2="388.83" y2="33.1" stroke="#e3e6ea"/>
+</g>
+<g class="marks">
+<g opacity="0.6">
+<rect x="61.95" y="219.83" width="29.72" height="0" fill="#4269d0"><title>[-10, 0): 0</title></rect>
+<rect x="91.66" y="219.83" width="29.72" height="0" fill="#4269d0"><title>[0, 10): 0</title></rect>
+<rect x="121.38" y="219.83" width="29.72" height="0" fill="#4269d0"><title>[10, 20): 0</title></rect>
+<rect x="151.6" y="210.99" width="28.72" height="8.34" fill="#4269d0"><title>[20, 30): 2</title></rect>
+<rect x="181.31" y="192.32" width="28.72" height="27.01" fill="#4269d0"><title>[30, 40): 6</title></rect>
+<rect x="211.03" y="126.96" width="28.72" height="92.36" fill="#4269d0"><title>[40, 50): 20</title></rect>
+<rect x="240.75" y="117.63" width="28.72" height="101.7" fill="#4269d0"><title>[50, 60): 22</title></rect>
+<rect x="270.46" y="187.65" width="28.72" height="31.68" fill="#4269d0"><title>[60, 70): 7</title></rect>
+<rect x="300.18" y="206.32" width="28.72" height="13" fill="#4269d0"><title>[70, 80): 3</title></rect>
+<rect x="329.39" y="219.83" width="29.72" height="0" fill="#4269d0"><title>[80, 90): 0</title></rect>
+<rect x="359.11" y="219.83" width="29.72" height="0" fill="#4269d0"><title>[90, 100]: 0</title></rect>
+<rect x="61.95" y="219.83" width="29.72" height="0" fill="#efb118"><title>[-10, 0): 0</title></rect>
+<rect x="91.66" y="219.83" width="29.72" height="0" fill="#efb118"><title>[0, 10): 0</title></rect>
+<rect x="121.38" y="219.83" width="29.72" height="0" fill="#efb118"><title>[10, 20): 0</title></rect>
+<rect x="151.1" y="219.83" width="29.72" height="0" fill="#efb118"><title>[20, 30): 0</title></rect>
+<rect x="181.31" y="215.66" width="28.72" height="3.67" fill="#efb118"><title>[30, 40): 1</title></rect>
+<rect x="210.53" y="219.83" width="29.72" height="0" fill="#efb118"><title>[40, 50): 0</title></rect>
+<rect x="240.75" y="164.31" width="28.72" height="55.02" fill="#efb118"><title>[50, 60): 12</title></rect>
+<rect x="270.46" y="47.6" width="28.72" height="171.72" fill="#efb118"><title>[60, 70): 37</title></rect>
+<rect x="300.18" y="168.98" width="28.72" height="50.35" fill="#efb118"><title>[70, 80): 11</title></rect>
+<rect x="329.39" y="219.83" width="29.72" height="0" fill="#efb118"><title>[80, 90): 0</title></rect>
+<rect x="359.61" y="215.66" width="28.72" height="3.67" fill="#efb118"><title>[90, 100]: 1</title></rect>
+<rect x="62.45" y="215.66" width="28.72" height="3.67" fill="#ff725c"><title>[-10, 0): 1</title></rect>
+<rect x="91.66" y="219.83" width="29.72" height="0" fill="#ff725c"><title>[0, 10): 0</title></rect>
+<rect x="121.88" y="206.32" width="28.72" height="13" fill="#ff725c"><title>[10, 20): 3</title></rect>
+<rect x="151.6" y="164.31" width="28.72" height="55.02" fill="#ff725c"><title>[20, 30): 12</title></rect>
+<rect x="181.31" y="159.64" width="28.72" height="59.69" fill="#ff725c"><title>[30, 40): 13</title></rect>
+<rect x="211.03" y="145.64" width="28.72" height="73.69" fill="#ff725c"><title>[40, 50): 16</title></rect>
+<rect x="240.75" y="178.31" width="28.72" height="41.01" fill="#ff725c"><title>[50, 60): 9</title></rect>
+<rect x="270.46" y="206.32" width="28.72" height="13" fill="#ff725c"><title>[60, 70): 3</title></rect>
+<rect x="300.18" y="215.66" width="28.72" height="3.67" fill="#ff725c"><title>[70, 80): 1</title></rect>
+<rect x="329.89" y="210.99" width="28.72" height="8.34" fill="#ff725c"><title>[80, 90): 2</title></rect>
+<rect x="359.11" y="219.83" width="29.72" height="0" fill="#ff725c"><title>[90, 100]: 0</title></rect>
+</g>
+</g>
+<g class="axes">
+<line x1="27.23" y1="219.83" x2="32.23" y2="219.83" stroke="#8c959f"/>
+<text x="24.23" y="222.64" text-anchor="end" font-size="11" fill="#59636e">0</text>
+<line x1="27.23" y1="173.14" x2="32.23" y2="173.14" stroke="#8c959f"/>
+<text x="24.23" y="175.95" text-anchor="end" font-size="11" fill="#59636e">10</text>
+<line x1="27.23" y1="126.46" x2="32.23" y2="126.46" stroke="#8c959f"/>
+<text x="24.23" y="129.27" text-anchor="end" font-size="11" fill="#59636e">20</text>
+<line x1="27.23" y1="79.78" x2="32.23" y2="79.78" stroke="#8c959f"/>
+<text x="24.23" y="82.59" text-anchor="end" font-size="11" fill="#59636e">30</text>
+<line x1="27.23" y1="33.1" x2="32.23" y2="33.1" stroke="#8c959f"/>
+<text x="24.23" y="35.91" text-anchor="end" font-size="11" fill="#59636e">40</text>
+<line x1="32.23" y1="219.83" x2="32.23" y2="224.83" stroke="#8c959f"/>
+<text x="32.23" y="235.72" text-anchor="middle" font-size="11" fill="#59636e">-20</text>
+<line x1="91.66" y1="219.83" x2="91.66" y2="224.83" stroke="#8c959f"/>
+<text x="91.66" y="235.72" text-anchor="middle" font-size="11" fill="#59636e">0</text>
+<line x1="151.1" y1="219.83" x2="151.1" y2="224.83" stroke="#8c959f"/>
+<text x="151.1" y="235.72" text-anchor="middle" font-size="11" fill="#59636e">20</text>
+<line x1="210.53" y1="219.83" x2="210.53" y2="224.83" stroke="#8c959f"/>
+<text x="210.53" y="235.72" text-anchor="middle" font-size="11" fill="#59636e">40</text>
+<line x1="269.96" y1="219.83" x2="269.96" y2="224.83" stroke="#8c959f"/>
+<text x="269.96" y="235.72" text-anchor="middle" font-size="11" fill="#59636e">60</text>
+<line x1="329.39" y1="219.83" x2="329.39" y2="224.83" stroke="#8c959f"/>
+<text x="329.39" y="235.72" text-anchor="middle" font-size="11" fill="#59636e">80</text>
+<line x1="388.83" y1="219.83" x2="388.83" y2="224.83" stroke="#8c959f"/>
+<text x="388.83" y="235.72" text-anchor="middle" font-size="11" fill="#59636e">100</text>
+<line x1="32.23" y1="219.83" x2="388.83" y2="219.83" stroke="#8c959f"/>
+</g>
+<g class="legend">
+<rect x="10" y="10.55" width="10" height="10" rx="2" fill="#4269d0"/>
+<text x="25" y="18.62" font-size="12" fill="#1f2328">A</text>
+<rect x="47" y="10.55" width="10" height="10" rx="2" fill="#efb118"/>
+<text x="62" y="18.62" font-size="12" fill="#1f2328">B</text>
+<rect x="84.01" y="10.55" width="10" height="10" rx="2" fill="#ff725c"/>
+<text x="99.01" y="18.62" font-size="12" fill="#1f2328">C</text>
+</g>
+</svg>

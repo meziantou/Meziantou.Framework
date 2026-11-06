@@ -50,8 +50,8 @@ The features of `REQUIRES`:
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 26,230 | 29,691 | 2,104 | 95% |
 | [Tentative](#tentative-tests) | 1,370 | 3,074 | 692 | 58% |
-| [Reftests](#reftests) | 27,931 | 29,220 | 170 | 96% |
-| **All** | **55,531** | **61,985** | **2,966** | **94%** |
+| [Reftests](#reftests) | 27,932 | 29,220 | 170 | 96% |
+| **All** | **55,532** | **61,985** | **2,966** | **94%** |
 
 ## Failure reasons
 
@@ -59,7 +59,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 178
 - **TEST BUG**: 1,036
-- **NOT IMPLEMENTED**: 4,270
+- **NOT IMPLEMENTED**: 4,269
 - **REQUIRES**: 762
   - `hardware`: 574
   - `layout`: 20
@@ -705,7 +705,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`html/the-xhtml-syntax`](html/the-xhtml-syntax.md#reftests) | 2 | 2 | 0 | 100% |
 | [`infrastructure`](infrastructure.md#reftests) | 0 | 61 | 61 | – |
 | [`intersection-observer`](intersection-observer.md#reftests) | 1 | 1 | 0 | 100% |
-| [`jpegxl`](jpegxl.md#reftests) | 33 | 51 | 0 | 65% |
+| [`jpegxl`](jpegxl.md#reftests) | 34 | 51 | 0 | 67% |
 | [`mathml`](mathml.md#reftests) | 270 | 282 | 1 | 96% |
 | [`page-lifecycle`](page-lifecycle.md#reftests) | 1 | 1 | 0 | 100% |
 | [`permissions-policy`](permissions-policy.md#reftests) | 0 | 1 | 0 | 0% |
@@ -725,4 +725,4 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`webgl`](webgl.md#reftests) | 0 | 2 | 0 | 0% |
 | [`webvtt`](webvtt.md#reftests) | 182 | 251 | 0 | 73% |
 | [`xml`](xml.md#reftests) | 0 | 3 | 3 | – |
-| **Total (130 sections)** | **27,931** | **29,220** | **170** | **96%** |
+| **Total (130 sections)** | **27,932** | **29,220** | **170** | **96%** |

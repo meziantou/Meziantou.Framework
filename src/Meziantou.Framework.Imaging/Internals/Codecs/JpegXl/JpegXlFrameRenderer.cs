@@ -35,10 +35,11 @@ internal sealed class JpegXlFrameRenderer : IDisposable
     private readonly int _maxDegreeOfParallelism;
 
     /// <param name="image">The image header.</param>
+    /// <param name="iccOutput">The color space of the ICC profile the samples of an XYB image are rendered to, or <see langword="null"/> for the color encoding of the image.</param>
     /// <param name="scope">The scope of the samples and of the working memory.</param>
     /// <param name="cancellationToken">The token checked between rows.</param>
     /// <param name="maxDegreeOfParallelism">The largest number of row bands converted at the same time (<see cref="ImageConfiguration.MaxDegreeOfParallelism"/>): the samples do not depend on it.</param>
-    public JpegXlFrameRenderer(JpegXlImageHeader image, AllocationScope scope, CancellationToken cancellationToken, int maxDegreeOfParallelism = 1)
+    public JpegXlFrameRenderer(JpegXlImageHeader image, JpegXlIccOutput? iccOutput, AllocationScope scope, CancellationToken cancellationToken, int maxDegreeOfParallelism = 1)
     {
         ArgumentNullException.ThrowIfNull(image);
         ArgumentNullException.ThrowIfNull(scope);
@@ -47,7 +48,7 @@ internal sealed class JpegXlFrameRenderer : IDisposable
         _scope = scope;
         _cancellationToken = cancellationToken;
         _extraChannelCount = image.ExtraChannels.Length;
-        _outputColor = image.IsXybEncoded ? JpegXlOutputColor.Create(image) : null;
+        _outputColor = image.IsXybEncoded ? JpegXlOutputColor.Create(image, iccOutput) : null;
     }
 
     /// <summary>Gets the number of color channels of the images that are shown: one for a grayscale image.</summary>

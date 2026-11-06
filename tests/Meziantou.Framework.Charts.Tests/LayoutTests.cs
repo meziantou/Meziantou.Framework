@@ -132,6 +132,63 @@ public sealed class LayoutTests
     }
 
     [Fact]
+    public void Chord_TwoNodes()
+    {
+        // d3.chord: the rows total 2 and 1, so a unit of value is 2π / 3 radians; the chord between the nodes starts on
+        // the arc of A (its flow to B, 2) and ends on the arc of B (its flow to A, 1)
+        var (groups, chords) = ChordLayout.Compute([[0, 2], [1, 0]], padAngle: 0);
+        Assert.Equal([(0, 0, 4 * Math.PI / 3, 2.0), (1, 4 * Math.PI / 3, 2 * Math.PI, 1.0)], groups.Select(group => (group.Index, group.StartAngle, group.EndAngle, group.Value)).ToArray());
+        var chord = Assert.Single(chords);
+        Assert.Equal(new ChordSubgroup(0, 0, 4 * Math.PI / 3, 2), chord.Source);
+        Assert.Equal(new ChordSubgroup(1, 4 * Math.PI / 3, 2 * Math.PI, 1), chord.Target);
+    }
+
+    [Fact]
+    public void Chord_PaddingSwapsAndSelfFlows()
+    {
+        // With a gap of 0.1 after each arc, a unit of value is (2π - 0.2) / 4 radians. The flow from B to A is the
+        // larger one, so the end on B is the source of the chord.
+        var k = ((2 * Math.PI) - 0.2) / 4;
+        var (groups, chords) = ChordLayout.Compute([[0, 1], [3, 0]], padAngle: 0.1);
+        Assert.Equal((0.0, k), (groups[0].StartAngle, groups[0].EndAngle));
+        Assert.Equal((k + 0.1, (4 * k) + 0.1), (groups[1].StartAngle, groups[1].EndAngle));
+        var chord = Assert.Single(chords);
+        Assert.Equal(new ChordSubgroup(1, k + 0.1, (4 * k) + 0.1, 3), chord.Source);
+        Assert.Equal(new ChordSubgroup(0, 0, k, 1), chord.Target);
+
+        // A flow from a node to itself is a chord whose two ends are the same
+        var (_, self) = ChordLayout.Compute([[2]], padAngle: 0);
+        Assert.Same(self[0].Source, self[0].Target);
+        Assert.Equal(new ChordSubgroup(0, 0, 2 * Math.PI, 2), self[0].Source);
+
+        // Without flows, the empty arcs are evenly spaced
+        var (empty, none) = ChordLayout.Compute([[0, 0], [0, 0]], padAngle: 0.1);
+        Assert.Empty(none);
+        Assert.Equal([0, Math.PI], empty.Select(group => group.StartAngle).ToArray());
+
+        // Gaps larger than the circle leave no room for the arcs
+        var (crowded, _) = ChordLayout.Compute([[0, 1], [1, 0]], padAngle: 4);
+        Assert.All(crowded, group => Assert.Equal(group.StartAngle, group.EndAngle));
+    }
+
+    [Fact]
+    public void Chord_Ribbons()
+    {
+        // The arc of the source, a curve through the center, the arc of the target, a curve back
+        var ribbon = ChordLayout.Ribbon(0, 0, 10, new ChordSubgroup(0, 0, Math.PI / 2, 1), new ChordSubgroup(1, Math.PI, 3 * Math.PI / 2, 1));
+        Assert.Equal("M0,-10 A10,10 0 0,1 10,0 Q0,0 0,10 A10,10 0 0,1 -10,0 Q0,0 0,-10 Z", ribbon.ToString());
+
+        var self = new ChordSubgroup(0, 0, Math.PI / 2, 1);
+        Assert.Equal("M0,-10 A10,10 0 0,1 10,0 Q0,0 0,-10 Z", ChordLayout.Ribbon(0, 0, 10, self, self).ToString());
+
+        var full = new ChordSubgroup(0, 0, 2 * Math.PI, 1);
+        Assert.Equal("M0,-10 A10,10 0 0,1 0,10 A10,10 0 0,1 0,-10 Q0,0 0,-10 Z", ChordLayout.Ribbon(0, 0, 10, full, full).ToString());
+
+        var empty = new ChordSubgroup(0, 1, 1, 0);
+        Assert.Equal(4, ChordLayout.Ribbon(0, 0, 10, empty, self).Commands.Count(command => command.Kind is not PathCommandKind.ArcTo));
+    }
+
+    [Fact]
     public void Tree_TwoChildren()
     {
         // Siblings 1 apart, half a separation on each side: 0.25 and 0.75, the root centered over them

@@ -434,6 +434,46 @@ public sealed class StatisticalChartTests
     }
 
     [Fact]
+    public void Chord()
+    {
+        #region Charts_Chord
+        Flow[] commutes =
+        [
+            new("Downtown", "Harbor", 120), new("Harbor", "Downtown", 90), new("Downtown", "Hills", 40), new("Hills", "Downtown", 150),
+            new("Downtown", "University", 70), new("University", "Downtown", 60), new("Harbor", "Hills", 30), new("Hills", "Harbor", 45),
+            new("University", "Hills", 25), new("Hills", "University", 80), new("Airport", "Downtown", 55), new("Downtown", "Airport", 35),
+            new("Airport", "Harbor", 20), new("University", "University", 30),
+        ];
+
+        var plot = new Plot { Title = "Daily commutes between districts", Height = 460 };
+        plot.Add(new ChordMark<Flow>(commutes, source: flow => flow.Source, target: flow => flow.Target, value: flow => flow.Value));
+        #endregion
+
+        ChartAssert.Svg(plot, "Chord");
+    }
+
+    [Fact]
+    public void ChordOptions()
+    {
+        Flow[] flows = [new("A", "B", 10), new("B", "A", 4), new("A", "B", 2), new("B", "C", 6), new("C", "C", double.NaN), new("C", "A", -3), new(null!, "A", 1)];
+        var plot = new Plot { Width = 300, Height = 300 };
+        plot.Add(new ChordMark<Flow>(flows, source: flow => flow.Source, target: flow => flow.Target, value: flow => flow.Value)
+        {
+            ArcWidth = 20,
+            NodePadding = 0,
+            LinkOpacity = 1,
+            ShowLabels = false,
+            Fill = flow => flow.Target,
+            Title = flow => flow.Source + flow.Target,
+        });
+        ChartAssert.Svg(plot);
+
+        var empty = new Plot();
+        empty.Add(new ChordMark<Flow>([], source: flow => flow.Source, target: flow => flow.Target, value: flow => flow.Value));
+        Assert.DoesNotContain("<path", empty.ToSvg());
+    }
+
+    [Fact]
     public void SankeyRejectsCycles()
     {
         var plot = new Plot();

@@ -28,6 +28,7 @@ the marks are drawn in the order they are added:
 | [PackMark\<T\>](cref:Meziantou.Framework.Charts.PackMark{T}), [TreemapMark\<T\>](cref:Meziantou.Framework.Charts.TreemapMark{T}), [PartitionMark\<T\>](cref:Meziantou.Framework.Charts.PartitionMark{T}) | a tree, as packed circles, a treemap, or a sunburst and an icicle |
 | [TreeMark\<T\>](cref:Meziantou.Framework.Charts.TreeMark{T}) | a tree as a node-link diagram: a tidy tree or a dendrogram |
 | [SankeyMark\<T\>](cref:Meziantou.Framework.Charts.SankeyMark{T}) | the flows between nodes, a row per link |
+| [ChordMark\<T\>](cref:Meziantou.Framework.Charts.ChordMark{T}) | the flows between nodes around a circle, a row per flow |
 
 [RuleXMark](cref:Meziantou.Framework.Charts.RuleXMark) and [RuleYMark](cref:Meziantou.Framework.Charts.RuleYMark) take
 values directly: `new RuleYMark(0)` draws a line at zero.

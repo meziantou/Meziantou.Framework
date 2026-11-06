@@ -255,6 +255,18 @@ namespace Meziantou.Framework.Charts
         public static bool operator !=(Meziantou.Framework.Charts.ChartTheme? left, Meziantou.Framework.Charts.ChartTheme? right) => throw null;
     }
 
+    public sealed class ChordMark<T> : Meziantou.Framework.Charts.Mark<T>
+    {
+        public double ArcWidth { get => throw null; set { } }
+        public double LinkOpacity { get => throw null; set { } }
+        public double NodePadding { get => throw null; set { } }
+        public bool ShowLabels { get => throw null; set { } }
+        public System.Func<T, object?> Source { get => throw null; }
+        public System.Func<T, object?> Target { get => throw null; }
+        public System.Func<T, object?> Value { get => throw null; }
+        public ChordMark(System.Collections.Generic.IEnumerable<T> data, System.Func<T, object?> source, System.Func<T, object?> target, System.Func<T, object?> value) { }
+    }
+
     public sealed class ClusterLayout
     {
         public double Height { get => throw null; set { } }

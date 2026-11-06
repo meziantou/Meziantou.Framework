@@ -13,7 +13,7 @@ pages of the gallery show an example of each:
 - [Statistical charts](05-Statistical.md): histograms, box plots, density plots, violin plots, ridgeline plots, trend
   lines, moving averages, heatmaps, waterfalls, funnels, candlesticks, bullet charts, calendar heatmaps, Marimekko charts and sparklines.
 - [Small multiples](06-SmallMultiples.md): grids of charts that share their scales, one per facet.
-- [Flows](07-Flows.md): Sankey diagrams.
+- [Flows](07-Flows.md): Sankey diagrams and chord diagrams.
 
 The examples chart records like these:
 

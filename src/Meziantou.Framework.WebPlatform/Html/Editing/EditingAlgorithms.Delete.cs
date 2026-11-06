@@ -1387,9 +1387,13 @@ internal sealed partial class EditingAlgorithms
     private static bool IsNonEditableUnit(Node? node)
         => node is Element && !IsEditable(node) && !IsEditingHost(node) && IsEditableOrEditingHost(node.ParentNode);
 
+    /// <summary>A block that is not editable in an editable parent or editing host (e.g. <c>&lt;ul contenteditable=false&gt;</c>).</summary>
+    private bool IsNonEditableBlockUnit(Node node) => IsNonEditableUnit(node) && !IsInlineNode(node);
+
     /// <summary>
     /// Whether the node is an element that the deletion commands delete as a whole, as an img: as in the browsers, the
     /// replaced elements and the form controls (their contents are not editable text), and the elements that are not editable.
+    /// An object element without a data attribute represents its fallback content, which is editable text.
     /// </summary>
     private bool IsAtomicElement(Node? node)
     {
@@ -1402,7 +1406,10 @@ internal sealed partial class EditingAlgorithms
         if (!element.IsHtmlNamespace)
             return element.ParentNode is Element { IsHtmlNamespace: true };
 
-        return element.TagId is TagId.Img or TagId.Iframe or TagId.Embed or TagId.Object or TagId.Video or TagId.Audio or TagId.Canvas or TagId.Meter or TagId.Progress
+        if (element.TagId is TagId.Object)
+            return !string.IsNullOrEmpty(element.GetAttributeValue("data"));
+
+        return element.TagId is TagId.Img or TagId.Iframe or TagId.Embed or TagId.Video or TagId.Audio or TagId.Canvas or TagId.Meter or TagId.Progress
             or TagId.Input or TagId.Textarea or TagId.Select or TagId.Button;
     }
 
@@ -1957,18 +1964,44 @@ internal sealed partial class EditingAlgorithms
             return true;
         }
 
-        while (ChildAt(startNode, startOffset - 1) is { } child)
+        var removedNonEditableBlock = false;
+        while (true)
         {
+            if (ChildAt(startNode, startOffset - 1) is not { } child)
+            {
+                // After the removal of the blocks that are not editable, the previous line is before the emptied parent
+                if (!removedNonEditableBlock || !IsEditable(startNode) || startNode.ParentNode is null)
+                    break;
+
+                startOffset = NodeIndex(startNode);
+                startNode = startNode.ParentNode;
+                continue;
+            }
+
             // As in the browsers, an empty block, which has no line, is removed: the line before it is joined
             if ((IsEditable(child) && IsInvisible(child)) || (IsEmptyEditableBlock(child) && child.PreviousSibling is not null))
             {
                 startNode.RemoveChild(child);
                 startOffset--;
             }
+            else if (IsNonEditableBlockUnit(child))
+            {
+                // As in the browsers, a block that is not editable (e.g. a list or a list item) is deleted as a whole: the
+                // line before it is joined
+                if (ReferenceEquals(startNode, node) && offset >= startOffset)
+                {
+                    offset--;
+                }
+
+                startNode.RemoveChild(child);
+                startOffset--;
+                removedNonEditableBlock = true;
+            }
             else
             {
                 startNode = child;
                 startOffset = NodeLength(startNode);
+                removedNonEditableBlock = false;
             }
         }
 
@@ -2228,6 +2261,15 @@ internal sealed partial class EditingAlgorithms
             return true;
         }
 
+        // An element that is deleted as a whole at the end of an inline element (foo<span>bar[]<span contenteditable=false>
+        // baz</span></span>) is deleted, as in the browsers
+        if (IsInlineNode(node) && ChildAt(node, offset) is { } atomicChild && IsAtomicElement(atomicChild) && IsEditableOrEditingHost(node))
+        {
+            SetRange(node, offset, node, offset + 1);
+            DeleteSelectionAndRebalance();
+            return true;
+        }
+
         if (IsInlineNode(node))
             return true;
 
@@ -2288,17 +2330,37 @@ internal sealed partial class EditingAlgorithms
             return true;
         }
 
-        while (ChildAt(endNode, end) is { } child)
+        var removedNonEditableBlock = false;
+        while (true)
         {
+            if (ChildAt(endNode, end) is not { } child)
+            {
+                // After the removal of the blocks that are not editable, the next line is after the emptied parent
+                if (!removedNonEditableBlock || !IsEditable(endNode) || endNode.ParentNode is null)
+                    break;
+
+                end = 1 + NodeIndex(endNode);
+                endNode = endNode.ParentNode;
+                continue;
+            }
+
             // As in the browsers, an empty block, which has no line, is removed: the line after it is joined
             if ((IsEditable(child) && IsInvisible(child)) || (IsEmptyEditableBlock(child) && child.NextSibling is not null))
             {
                 endNode.RemoveChild(child);
             }
+            else if (IsNonEditableBlockUnit(child))
+            {
+                // As in the browsers, a block that is not editable (e.g. a list or a list item) is deleted as a whole: the
+                // line after it is joined
+                endNode.RemoveChild(child);
+                removedNonEditableBlock = true;
+            }
             else
             {
                 endNode = child;
                 end = 0;
+                removedNonEditableBlock = false;
             }
         }
 

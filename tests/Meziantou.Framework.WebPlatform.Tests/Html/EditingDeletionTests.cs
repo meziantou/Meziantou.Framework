@@ -305,4 +305,33 @@ public sealed class EditingDeletionTests : IDisposable
         Assert.NotNull(document.Head);
         Assert.Equal("<br>", document.Body!.InnerHtml);
     }
+
+    // As in the browsers, the spaces around a line feed of white-space: pre-line collapse: they are deleted with it
+    [Theory]
+    [InlineData("<div style=\"white-space:pre-line\">foo\n []bar</div>", "delete", "<div style=\"white-space:pre-line\">foobar</div>")]
+    [InlineData("<div style=\"white-space:pre-line\">foo[] \nbar</div>", "forwardDelete", "<div style=\"white-space:pre-line\">foobar</div>")]
+    [InlineData("<div style=\"white-space:pre-line\">foo[] \n \n bar</div>", "forwardDelete", "<div style=\"white-space:pre-line\">foo\n bar</div>")]
+    public void CollapsedSpacesAroundPreservedLineFeedAreDeletedWithIt(string html, string command, string expected)
+        => Assert.Equal(expected, Run(html, command));
+
+    // As in the browsers, the deletion commands delete a block that is not editable as a whole, and join the lines around it
+    [Theory]
+    [InlineData("<p>abc[]</p><ul contenteditable=\"false\"><li>def</li></ul><p>ghi</p>", "forwardDelete", "<p>abcghi</p>")]
+    [InlineData("<ul><li>abc[]</li><li contenteditable=\"false\">def</li></ul><p>ghi</p>", "forwardDelete", "<ul><li>abcghi</li></ul>")]
+    [InlineData("<p>abc</p><ul contenteditable=\"false\"><li>def</li></ul><p>[]ghi</p>", "delete", "<p>abcghi</p>")]
+    [InlineData("<p>abc</p><ul><li contenteditable=\"false\">def</li></ul><p>[]ghi</p>", "delete", "<p>abcghi</p>")]
+    public void NonEditableBlockIsDeletedAsAWhole(string html, string command, string expected)
+        => Assert.Equal(expected, Run(html, command));
+
+    // As in the browsers, forward delete at the end of the content of the editing host changes nothing: the br that ends
+    // the last block is kept
+    [Fact]
+    public void ForwardDeleteAtTheEndOfTheEditingHostKeepsTheLastLineBreak()
+        => Assert.Equal("<p>abc<br></p>", Run("<p>abc[]<br></p>", "forwardDelete"));
+
+    // As in the browsers, forward delete in an empty child block removes it: the content of the parent that follows it is
+    // not moved into it
+    [Fact]
+    public void ForwardDeleteInEmptyChildBlockRemovesIt()
+        => Assert.Equal("<div>abc</div>", Run("<div><div>[]<br></div>abc</div>", "forwardDelete"));
 }

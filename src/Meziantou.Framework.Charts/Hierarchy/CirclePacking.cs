@@ -144,13 +144,33 @@ internal static class CirclePacking
             }
             else
             {
-                basis = ExtendBasis(basis, p);
+                // Rounding errors may leave no basis that encloses the circles, as with sizes far apart
+                if (ExtendBasis(basis, p) is not { } extended)
+                    return EncloseBounds(shuffled);
+
+                basis = extended;
                 enclosing = EncloseBasis(basis);
+                if (!double.IsFinite(enclosing.X) || !double.IsFinite(enclosing.Y) || !double.IsFinite(enclosing.Radius))
+                    return EncloseBounds(shuffled);
+
                 i = 0;
             }
         }
 
         return enclosing ?? new PackCircle(0, 0, 0);
+    }
+
+    /// <summary>A circle that encloses circles, centered on their bounding box: larger than the smallest one, but always computable.</summary>
+    internal static PackCircle EncloseBounds(IReadOnlyList<PackCircle> circles)
+    {
+        var x0 = circles.Min(circle => circle.X - circle.Radius);
+        var x1 = circles.Max(circle => circle.X + circle.Radius);
+        var y0 = circles.Min(circle => circle.Y - circle.Radius);
+        var y1 = circles.Max(circle => circle.Y + circle.Radius);
+        var x = (x0 / 2) + (x1 / 2);
+        var y = (y0 / 2) + (y1 / 2);
+        var radius = circles.Max(circle => Math.Sqrt(((circle.X - x) * (circle.X - x)) + ((circle.Y - y) * (circle.Y - y))) + circle.Radius);
+        return new PackCircle(x, y, radius);
     }
 
     /// <summary>The linear congruential generator of d3, seeded with 1: values in [0, 1).</summary>
@@ -193,6 +213,11 @@ internal static class CirclePacking
                 c.X = a.X + (x * dx) - (y * dy);
                 c.Y = a.Y + (x * dy) + (y * dx);
             }
+
+            if (!double.IsFinite(c.X) || !double.IsFinite(c.Y))
+            {
+                PlaceStable(b, a, c, d2, a2, b2);
+            }
         }
         else
         {
@@ -201,9 +226,37 @@ internal static class CirclePacking
         }
     }
 
+    /// <summary>
+    /// The same placement, without dividing by the squared distance between a and b, which overflows when the circles
+    /// are much larger than that distance: the distances along and across the line from a to b are computed directly.
+    /// </summary>
+    private static void PlaceStable(PackCircle b, PackCircle a, PackCircle c, double d2, double a2, double b2)
+    {
+        var d = Math.Sqrt(d2);
+        var ux = (b.X - a.X) / d;
+        var uy = (b.Y - a.Y) / d;
+        if (a2 > b2)
+        {
+            var along = (d2 + b2 - a2) / (2 * d);
+            var across = Math.Sqrt(Math.Max(0, b2 - (along * along)));
+            c.X = b.X - (along * ux) - (across * uy);
+            c.Y = b.Y - (along * uy) + (across * ux);
+        }
+        else
+        {
+            var along = (d2 + a2 - b2) / (2 * d);
+            var across = Math.Sqrt(Math.Max(0, a2 - (along * along)));
+            c.X = a.X + (along * ux) - (across * uy);
+            c.Y = a.Y + (along * uy) + (across * ux);
+        }
+    }
+
     private static bool Intersects(PackCircle a, PackCircle b)
     {
-        var dr = a.Radius + b.Radius - 1e-6;
+        // d3's tolerance is 1e-6: for huge circles it is below the precision of their coordinates, so tangent circles
+        // would intersect and the front chain would restart forever. Make it relative to the radii when they are large.
+        var sum = a.Radius + b.Radius;
+        var dr = sum - Math.Max(1e-6, sum * 1e-12);
         var dx = b.X - a.X;
         var dy = b.Y - a.Y;
         return dr > 0 && dr * dr > (dx * dx) + (dy * dy);
@@ -219,7 +272,7 @@ internal static class CirclePacking
         return (dx * dx) + (dy * dy);
     }
 
-    private static List<PackCircle> ExtendBasis(List<PackCircle> basis, PackCircle p)
+    private static List<PackCircle>? ExtendBasis(List<PackCircle> basis, PackCircle p)
     {
         if (EnclosesWeakAll(p, basis))
             return [p];
@@ -245,7 +298,7 @@ internal static class CirclePacking
             }
         }
 
-        throw new InvalidOperationException("The enclosing circle cannot be computed.");
+        return null;
     }
 
     private static bool EnclosesNot(PackCircle a, PackCircle b)

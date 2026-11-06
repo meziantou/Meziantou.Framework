@@ -30,7 +30,8 @@ public sealed class PartitionLayout
             var box = boxes[node];
             if (!node.IsLeaf)
             {
-                var children = TreemapLayout.Dice([.. node.Children.Select(child => child.Value)], node.Value, new TreemapLayout.Box(box.X0, Height * (node.Depth + 1) / layers, box.X1, Height * (node.Depth + 2) / layers));
+                var (values, total) = TreemapLayout.GetChildValues(node);
+                var children = TreemapLayout.Dice(values, total, new TreemapLayout.Box(box.X0, Height * (node.Depth + 1) / layers, box.X1, Height * (node.Depth + 2) / layers));
                 for (var i = 0; i < children.Length; i++)
                 {
                     boxes[node.Children[i]] = children[i];

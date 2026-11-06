@@ -68,7 +68,7 @@ public static class TopoJson
         ArgumentNullException.ThrowIfNull(objectName);
         try
         {
-            using var document = JsonDocument.Parse(json);
+            using var document = JsonText.Parse(json);
             return ReadObject(document.RootElement, objectName);
         }
         catch (JsonException ex)
@@ -107,7 +107,7 @@ public static class TopoJson
         ArgumentNullException.ThrowIfNull(json);
         try
         {
-            using var document = JsonDocument.Parse(json);
+            using var document = JsonText.Parse(json);
             return ReadObjects(document.RootElement);
         }
         catch (JsonException ex)

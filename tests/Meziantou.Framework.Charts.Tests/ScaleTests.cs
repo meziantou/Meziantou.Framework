@@ -204,6 +204,47 @@ public sealed class ScaleTests
     }
 
     [Fact]
+    public void ContinuousScales_ValuesThatMapToInfinityHaveNoPosition()
+    {
+        // 0 raised to a negative power is infinite: it has no position, so its tick is dropped and the bars start at the bottom
+        var inverse = new ResolvedContinuousScale(ContinuousTransformKind.Pow, ChannelKind.Number, -5, 20, new PowScale { Exponent = -2 }, -2, nice: false);
+        inverse.Configure(0, 100, 10);
+        Assert.True(double.IsNaN(inverse.MapNumber(0)));
+        Assert.True(double.IsNaN(inverse.MapNumber(-0.0)));
+        Assert.Equal(inverse.MapNumber(-5), inverse.Baseline);
+        var ticks = inverse.GetTicks();
+        Assert.NotEmpty(ticks);
+        Assert.All(ticks, tick => Assert.True(double.IsFinite(tick.Position), tick.Label));
+        Assert.DoesNotContain("0", ticks.Select(tick => tick.Label));
+
+        var square = new ResolvedContinuousScale(ContinuousTransformKind.Pow, ChannelKind.Number, 0, 1, new PowScale { Exponent = 2 }, 2, nice: false);
+        square.Configure(0, 100, 10);
+        Assert.True(double.IsNaN(square.MapNumber(1e200)));
+
+        var plot = new Plot { YScale = new PowScale { Exponent = -2 } };
+        plot.Add(new BarMark<(string Label, double Value)>([("c", -5), ("d", 15.5)], row => row.Label, row => row.Value));
+        var texts = new List<SceneText>();
+        var groups = new Stack<SceneGroup>([plot.CreateScene().Root]);
+        while (groups.TryPop(out var group))
+        {
+            foreach (var child in group.Children)
+            {
+                if (child is SceneGroup childGroup)
+                {
+                    groups.Push(childGroup);
+                }
+                else if (child is SceneText text)
+                {
+                    texts.Add(text);
+                }
+            }
+        }
+
+        Assert.NotEmpty(texts);
+        Assert.All(texts, text => Assert.True(double.IsFinite(text.X) && double.IsFinite(text.Y), text.Text));
+    }
+
+    [Fact]
     public void ContinuousScales_FormatTicks()
     {
         var custom = new ResolvedContinuousScale(ContinuousTransformKind.Linear, ChannelKind.Number, 0, 1, new LinearScale { Ticks = [0, 0.25, 2], TickFormat = NumberFormats.Percent() }, 0, nice: false);

@@ -6,6 +6,8 @@ namespace Meziantou.Framework.Charts;
 /// </summary>
 public sealed class PackLayout
 {
+    private static readonly double MaxUnscaledValue = Math.ScaleB(1, 128);
+
     /// <summary>Gets or sets the width of the layout. The default is 1.</summary>
     public double Width { get; set; } = 1;
 
@@ -23,7 +25,11 @@ public sealed class PackLayout
     {
         ArgumentNullException.ThrowIfNull(root);
         var nodes = root.Descendants().ToList();
-        var circles = nodes.ToDictionary(node => node, node => new PackCircle(0, 0, node.IsLeaf ? Math.Sqrt(Math.Max(0, node.Value)) : 0));
+        // The layout does not depend on the scale of the values, but the packing squares and multiplies the radii, which
+        // would overflow for huge values: scale them by a power of four, so the radii are scaled exactly by a power of two
+        var maxValue = nodes.Where(node => node.IsLeaf).Select(node => node.Value).DefaultIfEmpty().Max();
+        var exponent = maxValue > MaxUnscaledValue ? -2 * (Math.ILogB(maxValue) / 2) : 0;
+        var circles = nodes.ToDictionary(node => node, node => new PackCircle(0, 0, node.IsLeaf ? Math.Sqrt(Math.Max(0, Math.ScaleB(node.Value, exponent))) : 0));
         var random = CirclePacking.CreateRandom();
 
         // As d3: pack without padding to find the scale of the layout, then pack again with the padding scaled to it

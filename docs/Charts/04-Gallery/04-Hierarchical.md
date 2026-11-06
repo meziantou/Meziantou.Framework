@@ -8,7 +8,8 @@ description: Packed circles, treemaps, sunbursts, icicles, tree diagrams and den
 The hierarchical marks draw a tree of [HierarchyNode\<T\>](cref:Meziantou.Framework.Charts.HierarchyNode{T}).
 [Hierarchy](cref:Meziantou.Framework.Charts.Hierarchy) builds one from nested objects, from rows that give the identifier
 of their parent, or from paths. Pass a value to compute the value of every node: its own value plus the values of its
-descendants. [SortByValue](cref:Meziantou.Framework.Charts.HierarchyNode{T}.SortByValue) sorts the children by
+descendants. NaN, infinite and negative values count as zero, and a sum larger than `double.MaxValue` is
+`double.MaxValue`. [SortByValue](cref:Meziantou.Framework.Charts.HierarchyNode{T}.SortByValue) sorts the children by
 decreasing value, which gives better treemaps and packings.
 
 <!-- ref:../../../tests/Meziantou.Framework.Charts.Tests/Samples/Department.cs;region=Charts_DepartmentRecord;format=md-fenced-code-block;dedent=true -->

@@ -128,7 +128,8 @@ public static class Hierarchy
 
             if (value is not null)
             {
-                values[parent] = values.GetValueOrDefault(parent) + value(row);
+                // Rows that share a path add their values, which may overflow
+                values[parent] = Math.Min(values.GetValueOrDefault(parent) + HierarchyNode<T?>.GetOwnValue(value(row)), double.MaxValue);
             }
         }
 

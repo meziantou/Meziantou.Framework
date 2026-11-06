@@ -69,6 +69,9 @@ is extended to round values, and includes zero when a mark has a baseline, such 
 | [SequentialColorScale](cref:Meziantou.Framework.Charts.SequentialColorScale), [DivergingColorScale](cref:Meziantou.Framework.Charts.DivergingColorScale) | numbers, on a ramp of colors interpolated in OKLab |
 | [SizeScale](cref:Meziantou.Framework.Charts.SizeScale) | numbers, as radii whose areas are proportional to the values |
 
+A value that a scale cannot map is missing too, and gets no tick: zero and negative values on a log scale, and values
+that the transform of the scale makes infinite, such as zero on a power scale with a negative exponent.
+
 Set a scale to change its domain, its ticks or its format. For instance, a percentage axis that starts at zero:
 
 <!-- ref:../../tests/Meziantou.Framework.Charts.Tests/CartesianChartTests.cs;region=Charts_NormalizedStackedBarChart;format=md-fenced-code-block;dedent=true -->

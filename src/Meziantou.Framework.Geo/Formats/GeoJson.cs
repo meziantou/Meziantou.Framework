@@ -31,7 +31,7 @@ public static class GeoJson
         ArgumentNullException.ThrowIfNull(json);
         try
         {
-            using var document = JsonDocument.Parse(json);
+            using var document = JsonText.Parse(json);
             return ReadFeatures(document.RootElement);
         }
         catch (JsonException ex)
@@ -67,7 +67,7 @@ public static class GeoJson
         ArgumentNullException.ThrowIfNull(json);
         try
         {
-            using var document = JsonDocument.Parse(json);
+            using var document = JsonText.Parse(json);
             return ReadGeometry(document.RootElement);
         }
         catch (JsonException ex)

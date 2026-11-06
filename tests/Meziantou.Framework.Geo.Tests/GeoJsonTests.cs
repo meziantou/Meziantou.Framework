@@ -84,6 +84,16 @@ public sealed class GeoJsonTests
     }
 
     [Fact]
+    public void Parse_UnpairedSurrogate()
+    {
+        // The text cannot be encoded as UTF-8 to be parsed
+        var surrogate = (char)0xD800;
+        var exception = Assert.Throws<FormatException>(() => GeoJson.Parse("{\"type\":\"Feature\",\"id\":\"" + surrogate + "\",\"geometry\":null}"));
+        Assert.IsType<ArgumentException>(exception.InnerException);
+        Assert.Throws<FormatException>(() => GeoJson.ParseGeometry("{\"type\":\"Point\",\"coordinates\":[1,2]," + surrogate + "}"));
+    }
+
+    [Fact]
     public void Format_RoundTrips()
     {
         var features = GeoJson.Parse(AllTypes);

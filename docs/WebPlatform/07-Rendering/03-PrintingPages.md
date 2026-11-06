@@ -46,6 +46,9 @@ var pages = context.RenderPages();
   fired.
 - An image or a web font used only by the print styles is fetched by the printing, but drawn only once it is loaded:
   run the event loop, then print again.
+- The pages may have different sizes and margins (`@page :first`, the named pages, `:left` and `:right`): the content of a
+  page whose page area has another width is laid out again in it, also when the page starts in the middle of a paragraph
+  (its lines continue in the width of the new page).
 
 ## Print options
 

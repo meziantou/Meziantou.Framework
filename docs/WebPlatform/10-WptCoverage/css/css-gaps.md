@@ -11,15 +11,14 @@ description: "The results of the web-platform-tests of css/css-gaps, and why the
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 75 | 75 | 0 | 100% |
 | [Tentative](#tentative-tests) | 2 | 2 | 0 | 100% |
-| [Reftests](#reftests) | 539 | 544 | 0 | 99% |
-| **All** | **616** | **621** | **0** | **99%** |
+| [Reftests](#reftests) | 540 | 544 | 0 | 99% |
+| **All** | **617** | **621** | **0** | **99%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **BUG**: 4
-- **NOT IMPLEMENTED**: 1
 
 ## Stable tests
 
@@ -616,7 +615,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`multicol/multicol-gap-decorations-004.html`](https://wpt.fyi/results/css/css-gaps/multicol/multicol-gap-decorations-004.html) | Pass | 1 / 1 |  |  |
 | [`multicol/multicol-gap-decorations-005.html`](https://wpt.fyi/results/css/css-gaps/multicol/multicol-gap-decorations-005.html) | Pass | 1 / 1 |  |  |
 | [`multicol/multicol-gap-decorations-006.html`](https://wpt.fyi/results/css/css-gaps/multicol/multicol-gap-decorations-006.html) | Pass | 1 / 1 |  |  |
-| [`multicol/multicol-gap-decorations-007.html`](https://wpt.fyi/results/css/css-gaps/multicol/multicol-gap-decorations-007.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the column spanners in the rows of a fixed block size (`column-height`) of a nested multi-column container: the spanner and the rows after it are placed after the balanced content, where they are expected at the positions of the rows (the rows and their spanners are at fixed positions only in a container that is not nested) |
+| [`multicol/multicol-gap-decorations-007.html`](https://wpt.fyi/results/css/css-gaps/multicol/multicol-gap-decorations-007.html) | Pass | 1 / 1 |  |  |
 | [`multicol/multicol-gap-decorations-008.html`](https://wpt.fyi/results/css/css-gaps/multicol/multicol-gap-decorations-008.html) | Pass | 1 / 1 |  |  |
 | [`multicol/multicol-gap-decorations-009.html`](https://wpt.fyi/results/css/css-gaps/multicol/multicol-gap-decorations-009.html) | Pass | 1 / 1 |  |  |
 | [`multicol/multicol-gap-decorations-010.html`](https://wpt.fyi/results/css/css-gaps/multicol/multicol-gap-decorations-010.html) | Pass | 1 / 1 |  |  |

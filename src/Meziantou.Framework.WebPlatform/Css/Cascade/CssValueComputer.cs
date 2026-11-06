@@ -2509,12 +2509,29 @@ internal static partial class CssValueComputer
                 }
 
                 var parsed = CssColor.Parse(copy);
+                if (parsed is { Function: var space } && space.StartsWith("--", StringComparison.Ordinal))
+                    return ResolveCustomColor(parsed, style);
+
                 return hasMathFunction && parsed is not null ? ClampLabChannels(parsed) : parsed;
             }
 
             default:
                 return null;
         }
+    }
+
+    /// <summary>
+    /// Converts a color of a custom color space (<c>color(--name ...)</c>) with the ICC profile of its @color-profile rule
+    /// (https://drafts.csswg.org/css-color-5/#custom-color) to the CIEXYZ of the D50 illuminant, or keeps it as specified while
+    /// the profile is not loaded (or not valid) or the color does not have the components of the profile.
+    /// </summary>
+    private static CssColor ResolveCustomColor(CssColor color, ComputedStyle style)
+    {
+        if (style.Engine.Document.GetColorProfile(color.Function) is not { } profile || color.Channels.Length != CssColorProfile.ComponentCount)
+            return color;
+
+        var xyz = profile.ToXyzD50([color.Channels[0] ?? 0, color.Channels[1] ?? 0, color.Channels[2] ?? 0]);
+        return CssColor.Create("xyz-d50", [xyz[0], xyz[1], xyz[2]], color.Alpha);
     }
 
     /// <summary>

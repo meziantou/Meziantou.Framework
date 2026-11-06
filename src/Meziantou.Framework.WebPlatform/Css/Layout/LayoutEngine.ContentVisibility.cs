@@ -41,6 +41,21 @@ internal sealed partial class LayoutEngine
     }
 
     /// <summary>
+    /// Determines the proximity to the viewport of the elements with <c>content-visibility: auto</c> that were never determined,
+    /// before the document is painted (see <see cref="ContentRelevancy.DetermineInitialProximities"/>): the layout is computed
+    /// again while an initial determination makes an element relevant to the user, as by the rendering steps. Without it, a
+    /// document painted before its first rendering update (e.g. a screenshot) would paint skipped the elements in the viewport.
+    /// </summary>
+    private void DetermineInitialContentRelevancy()
+    {
+        // Each element is initially determined once, so the loop ends
+        while (!_inLayout && _printSession is null && _boxTree is { ContentVisibilityAutoBoxes: { Count: > 0 } autoBoxes } && ContentRelevancy.DetermineInitialProximities(this, autoBoxes))
+        {
+            UpdateLayout();
+        }
+    }
+
+    /// <summary>
     /// Updates whether the boxes with <c>content-visibility: auto</c> skip their contents (https://drafts.csswg.org/css-contain-2/#valdef-content-visibility-auto):
     /// "If the element is not relevant to the user, it also skips its contents".
     /// </summary>

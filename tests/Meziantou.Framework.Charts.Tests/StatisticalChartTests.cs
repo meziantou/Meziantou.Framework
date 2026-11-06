@@ -306,6 +306,48 @@ public sealed class StatisticalChartTests
     }
 
     [Fact]
+    public void TrendLine()
+    {
+        #region Charts_TrendLine
+        var plot = new Plot { Title = "Fuel efficiency by weight" };
+        plot.Add(new DotMark<Car>(SampleData.Cars, x: car => car.Weight, y: car => car.Mpg) { FillOpacity = 0.7 });
+        plot.Add(new LineMark<Car>(SampleData.Cars, x: car => car.Weight, y: car => car.Mpg)
+        {
+            Transform = new RegressionTransform(),
+            StrokeColor = "#e5484d",
+            StrokeWidth = 2,
+        });
+        plot.Add(new LineMark<Car>(SampleData.Cars, x: car => car.Weight, y: car => car.Mpg)
+        {
+            Transform = new RegressionTransform { Degree = 2 },
+            StrokeColor = "#8c959f",
+            StrokeDashArray = [4, 4],
+        });
+        #endregion
+
+        ChartAssert.Svg(plot, "TrendLine");
+    }
+
+    [Fact]
+    public void MovingAverage()
+    {
+        #region Charts_MovingAverage
+        var start = new DateOnly(2024, 1, 1);
+        var visits = Enumerable.Range(0, 90).Select(day => (Date: start.AddDays(day), Count: 200 + day + (60 * Math.Sin(day / 8.0)) + (day % 7 is 5 or 6 ? -70 : 15 * Math.Cos(day * 2.3)))).ToArray();
+
+        var plot = new Plot { Title = "Daily visits and their 7-day average", Height = 300 };
+        plot.Add(new LineMark<(DateOnly Date, double Count)>(visits, x: day => day.Date, y: day => day.Count) { StrokeColor = "#c3cbd5", StrokeWidth = 1 });
+        plot.Add(new LineMark<(DateOnly Date, double Count)>(visits, x: day => day.Date, y: day => day.Count)
+        {
+            Transform = new WindowTransform { Size = 7, Anchor = WindowAnchor.End },
+            StrokeWidth = 2.5,
+        });
+        #endregion
+
+        ChartAssert.Svg(plot, "MovingAverage");
+    }
+
+    [Fact]
     public void GroupedAndCumulativeTransforms()
     {
         var plot = new Plot { Height = 260 };

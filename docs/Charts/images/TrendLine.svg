@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="400" viewBox="0 0 640 400" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Fuel efficiency by weight</title>
+<rect width="640" height="400" fill="#ffffff"/>
+<g class="grid">
+<line x1="32.23" y1="369.83" x2="624.24" y2="369.83" stroke="#e3e6ea"/>
+<line x1="32.23" y1="321.68" x2="624.24" y2="321.68" stroke="#e3e6ea"/>
+<line x1="32.23" y1="273.53" x2="624.24" y2="273.53" stroke="#e3e6ea"/>
+<line x1="32.23" y1="225.39" x2="624.24" y2="225.39" stroke="#e3e6ea"/>
+<line x1="32.23" y1="177.24" x2="624.24" y2="177.24" stroke="#e3e6ea"/>
+<line x1="32.23" y1="129.09" x2="624.24" y2="129.09" stroke="#e3e6ea"/>
+<line x1="32.23" y1="80.95" x2="624.24" y2="80.95" stroke="#e3e6ea"/>
+<line x1="32.23" y1="32.8" x2="624.24" y2="32.8" stroke="#e3e6ea"/>
+</g>
+<g class="marks">
+<g>
+<circle cx="130.9" cy="109.83" r="3.5" fill="#4269d0" fill-opacity="0.702"/>
+<circle cx="204.9" cy="148.35" r="3.5" fill="#4269d0" fill-opacity="0.702"/>
+<circle cx="328.24" cy="215.76" r="3.5" fill="#4269d0" fill-opacity="0.702"/>
+<circle cx="476.24" cy="283.16" r="3.5" fill="#4269d0" fill-opacity="0.702"/>
+<circle cx="81.57" cy="80.95" r="3.5" fill="#4269d0" fill-opacity="0.702"/>
+<circle cx="254.23" cy="177.24" r="3.5" fill="#4269d0" fill-opacity="0.702"/>
+<circle cx="574.91" cy="321.68" r="3.5" fill="#4269d0" fill-opacity="0.702"/>
+<circle cx="155.57" cy="129.09" r="3.5" fill="#4269d0" fill-opacity="0.702"/>
+<circle cx="278.9" cy="196.5" r="3.5" fill="#4269d0" fill-opacity="0.702"/>
+<circle cx="402.24" cy="254.27" r="3.5" fill="#4269d0" fill-opacity="0.702"/>
+<circle cx="180.23" cy="138.72" r="3.5" fill="#4269d0" fill-opacity="0.702"/>
+<circle cx="303.57" cy="225.39" r="3.5" fill="#4269d0" fill-opacity="0.702"/>
+</g>
+<g>
+<path d="M81.57,91.68 L574.91,335.14" fill="none" stroke="#e5484d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><title>y = -0.02528x + 71.7 (R² = 0.9824)</title></path>
+</g>
+<g>
+<path d="M81.57,79.05 L91.63,85.65 L101.7,92.18 L111.77,98.64 L121.84,105.04 L131.91,111.36 L141.97,117.61 L152.04,123.79 L162.11,129.91 L172.18,135.95 L182.25,141.93 L192.32,147.83 L202.38,153.67 L212.45,159.43 L222.52,165.13 L232.59,170.76 L242.66,176.32 L252.72,181.81 L262.79,187.23 L272.86,192.58 L282.93,197.86 L293,203.07 L303.07,208.21 L313.13,213.28 L323.2,218.29 L333.27,223.22 L343.34,228.09 L353.41,232.88 L363.47,237.61 L373.54,242.26 L383.61,246.85 L393.68,251.37 L403.75,255.82 L413.81,260.19 L423.88,264.5 L433.95,268.74 L444.02,272.91 L454.09,277.01 L464.16,281.05 L474.22,285.01 L484.29,288.9 L494.36,292.73 L504.43,296.48 L514.5,300.16 L524.56,303.78 L534.63,307.33 L544.7,310.8 L554.77,314.21 L564.84,317.55 L574.91,320.82" fill="none" stroke="#8c959f" stroke-width="1.5" stroke-dasharray="4 4" stroke-linecap="round" stroke-linejoin="round"><title>y = 0.000009x^2 - 0.05279x + 92.8 (R² = 0.993)</title></path>
+</g>
+</g>
+<g class="axes">
+<line x1="27.23" y1="369.83" x2="32.23" y2="369.83" stroke="#8c959f"/>
+<text x="24.23" y="372.64" text-anchor="end" font-size="11" fill="#59636e">15</text>
+<line x1="27.23" y1="321.68" x2="32.23" y2="321.68" stroke="#8c959f"/>
+<text x="24.23" y="324.49" text-anchor="end" font-size="11" fill="#59636e">20</text>
+<line x1="27.23" y1="273.53" x2="32.23" y2="273.53" stroke="#8c959f"/>
+<text x="24.23" y="276.34" text-anchor="end" font-size="11" fill="#59636e">25</text>
+<line x1="27.23" y1="225.39" x2="32.23" y2="225.39" stroke="#8c959f"/>
+<text x="24.23" y="228.2" text-anchor="end" font-size="11" fill="#59636e">30</text>
+<line x1="27.23" y1="177.24" x2="32.23" y2="177.24" stroke="#8c959f"/>
+<text x="24.23" y="180.05" text-anchor="end" font-size="11" fill="#59636e">35</text>
+<line x1="27.23" y1="129.09" x2="32.23" y2="129.09" stroke="#8c959f"/>
+<text x="24.23" y="131.9" text-anchor="end" font-size="11" fill="#59636e">40</text>
+<line x1="27.23" y1="80.95" x2="32.23" y2="80.95" stroke="#8c959f"/>
+<text x="24.23" y="83.76" text-anchor="end" font-size="11" fill="#59636e">45</text>
+<line x1="27.23" y1="32.8" x2="32.23" y2="32.8" stroke="#8c959f"/>
+<text x="24.23" y="35.61" text-anchor="end" font-size="11" fill="#59636e">50</text>
+<line x1="32.23" y1="369.83" x2="32.23" y2="374.83" stroke="#8c959f"/>
+<text x="32.23" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">1,000</text>
+<line x1="130.9" y1="369.83" x2="130.9" y2="374.83" stroke="#8c959f"/>
+<text x="130.9" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">1,200</text>
+<line x1="229.57" y1="369.83" x2="229.57" y2="374.83" stroke="#8c959f"/>
+<text x="229.57" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">1,400</text>
+<line x1="328.24" y1="369.83" x2="328.24" y2="374.83" stroke="#8c959f"/>
+<text x="328.24" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">1,600</text>
+<line x1="426.9" y1="369.83" x2="426.9" y2="374.83" stroke="#8c959f"/>
+<text x="426.9" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">1,800</text>
+<line x1="525.57" y1="369.83" x2="525.57" y2="374.83" stroke="#8c959f"/>
+<text x="525.57" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">2,000</text>
+<line x1="624.24" y1="369.83" x2="624.24" y2="374.83" stroke="#8c959f"/>
+<text x="624.24" y="385.72" text-anchor="middle" font-size="11" fill="#59636e">2,200</text>
+<line x1="32.23" y1="369.83" x2="624.24" y2="369.83" stroke="#8c959f"/>
+</g>
+<text x="10" y="21.49" font-size="16" font-weight="bold" fill="#1f2328">Fuel efficiency by weight</text>
+</svg>

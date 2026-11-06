@@ -695,6 +695,26 @@ namespace Meziantou.Framework.Charts
         public RectMark(System.Collections.Generic.IEnumerable<T> data) { }
     }
 
+    public static class Regression
+    {
+        public static Meziantou.Framework.Charts.RegressionResult Fit(System.Collections.Generic.IEnumerable<(double X, double Y)> points, int degree = 1) => throw null;
+    }
+
+    public sealed class RegressionResult
+    {
+        public System.Collections.Generic.IReadOnlyList<double> Coefficients { get => throw null; }
+        public int Degree { get => throw null; }
+        public double RSquared { get => throw null; }
+        public double Evaluate(double x) => throw null;
+        public override string ToString() => throw null;
+    }
+
+    public sealed class RegressionTransform : Meziantou.Framework.Charts.Transform
+    {
+        public int Degree { get => throw null; set { } }
+        public int Samples { get => throw null; set { } }
+    }
+
     public sealed class RuleXMark : Meziantou.Framework.Charts.RuleXMark<double>
     {
         public RuleXMark(params double[] values) { }
@@ -1043,5 +1063,19 @@ namespace Meziantou.Framework.Charts
         public System.Func<T, object?> X { get => throw null; }
         public System.Func<T, object?> Y { get => throw null; }
         public WaterfallMark(System.Collections.Generic.IEnumerable<T> data, System.Func<T, object?> x, System.Func<T, object?> y) { }
+    }
+
+    public enum WindowAnchor
+    {
+        Middle = 0,
+        End = 1,
+        Start = 2,
+    }
+
+    public sealed class WindowTransform : Meziantou.Framework.Charts.Transform
+    {
+        public Meziantou.Framework.Charts.WindowAnchor Anchor { get => throw null; set { } }
+        public Meziantou.Framework.Charts.GroupReducer Reducer { get => throw null; set { } }
+        public int Size { get => throw null; set { } }
     }
 }

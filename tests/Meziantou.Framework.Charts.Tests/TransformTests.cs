@@ -181,6 +181,95 @@ public sealed class TransformTests
     }
 
     [Fact]
+    public void Regression_Linear()
+    {
+        #region Charts_RegressionFit
+        // The textbook example: a slope of 0.6, an intercept of 2.2, and 60% of the variance explained
+        var fit = Regression.Fit([(1, 2), (2, 4), (3, 5), (4, 4), (5, 5)]);
+        Assert.Equal(2.2, fit.Coefficients[0], 1e-12);
+        Assert.Equal(0.6, fit.Coefficients[1], 1e-12);
+        Assert.Equal(0.6, fit.RSquared, 1e-12);
+        Assert.Equal(5.2, fit.Evaluate(5), 1e-12);
+        Assert.Equal("y = 0.6x + 2.2 (R² = 0.6)", fit.ToString());
+        #endregion
+    }
+
+    [Fact]
+    public void Regression_Polynomials()
+    {
+        var parabola = Regression.Fit([(-1, 1), (0, 0), (1, 1), (2, 4), (double.NaN, 5)], degree: 2);
+        Assert.Equal([0, 0, 1], parabola.Coefficients.Select(value => Math.Round(value, 9, MidpointRounding.AwayFromZero) + 0).ToArray());
+        Assert.Equal(1, parabola.RSquared, 1e-12);
+        Assert.Equal(2, parabola.Degree);
+        Assert.Equal("y = x^2 (R² = 1)", parabola.ToString());
+
+        // Large x values, such as years, stay accurate: the x values are centered before solving
+        var years = Regression.Fit(Enumerable.Range(2000, 11).Select(year => ((double)year, Math.Pow(year - 2000, 2) - 3)), degree: 2);
+        Assert.Equal(97, years.Evaluate(2010), 1e-6);
+
+        var constant = Regression.Fit([(0, 1), (1, 3)], degree: 0);
+        Assert.Equal(2, constant.Coefficients[0], 1e-12);
+        Assert.Equal("y = 2 (R² = 0)", constant.ToString());
+        Assert.Equal("y = -x + 1 (R² = 1)", Regression.Fit([(0, 1), (1, 0)]).ToString());
+        Assert.Equal("y = 0 (R² = 1)", Regression.Fit([(0, 0), (1, 0)], degree: 0).ToString());
+        Assert.Equal(1, Regression.Fit([(0, 5), (1, 5)]).RSquared);
+
+        Assert.Throws<ArgumentException>("points", () => Regression.Fit([(1, 1), (1, 2)]));
+        Assert.Throws<ArgumentOutOfRangeException>("degree", () => Regression.Fit([], degree: 11));
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => new RegressionTransform { Degree = -1 });
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => new RegressionTransform { Samples = 1 });
+    }
+
+    [Fact]
+    public void Regression_Transform()
+    {
+        var data = new MarkData(7)
+        {
+            X = ChannelValues.FromNumbers([0, 1, 2, 0, 1, 2, 5]),
+            Y = ChannelValues.FromNumbers([1, 3, 5, 0, 1, 4, 9]),
+            Stroke = ChannelValues.FromCategories(["a", "a", "a", "b", "b", "b", "c"]),
+        };
+        var lines = new RegressionTransform().Apply(data);
+        Assert.Equal(4, lines.Count);
+        Assert.Equal([1, 5, -0.333333333, 3.666666667], lines.Y!.Numbers.Select(value => Math.Round(value, 9, MidpointRounding.AwayFromZero)).ToArray());
+        Assert.Equal(["a", "a", "b", "b"], lines.Stroke!.Categories);
+        Assert.Equal("y = 2x + 1 (R² = 1)", lines.Titles![0]);
+
+        var curves = new RegressionTransform { Degree = 2, Samples = 5 }.Apply(data);
+        Assert.Equal(10, curves.Count);
+        var categories = new MarkData(1) { X = ChannelValues.FromCategories(["a"]), Y = ChannelValues.FromNumbers([1]) };
+        Assert.Same(categories, new RegressionTransform().Apply(categories));
+    }
+
+    [Theory]
+    [InlineData(WindowAnchor.Middle, 3, new[] { 1.5, 2, 3, 4, 4.5 })]
+    [InlineData(WindowAnchor.End, 3, new[] { 1, 1.5, 2, 3, 4 })]
+    [InlineData(WindowAnchor.Start, 3, new[] { 2, 3, 4, 4.5, 5 })]
+    [InlineData(WindowAnchor.Middle, 2, new[] { 1.5, 2.5, 3.5, 4.5, 5 })]
+    [InlineData(WindowAnchor.Middle, 1, new[] { 1.0, 2, 3, 4, 5 })]
+    public void Window_Anchors(WindowAnchor anchor, int size, double[] expected)
+    {
+        var data = new MarkData(5) { Y = ChannelValues.FromNumbers([1, 2, 3, 4, 5]) };
+        Assert.Equal(expected, new WindowTransform { Anchor = anchor, Size = size }.Apply(data).Y!.Numbers);
+    }
+
+    [Fact]
+    public void Window_SeriesReducersAndMissingValues()
+    {
+        var data = new MarkData(6)
+        {
+            Y = ChannelValues.FromNumbers([1, double.NaN, 3, 10, 20, 30]),
+            Series = ChannelValues.FromCategories(["a", "a", "a", "b", "b", "b"]),
+        };
+        Assert.Equal([1, 2, 3, 15, 20, 25], new WindowTransform().Apply(data).Y!.Numbers);
+        Assert.Equal([1, 4, 3, 30, 60, 50], new WindowTransform { Reducer = GroupReducer.Sum }.Apply(data).Y!.Numbers);
+        Assert.Equal([2, 3, 2, 2, 3, 2], new WindowTransform { Reducer = GroupReducer.Count }.Apply(data).Y!.Numbers);
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => new WindowTransform { Size = 0 });
+        var categories = new MarkData(1) { Y = ChannelValues.FromCategories(["a"]) };
+        Assert.Same(categories, new WindowTransform().Apply(categories));
+    }
+
+    [Fact]
     public void Quantile_R7()
     {
         double[] values = [1, 2, 3, 4];

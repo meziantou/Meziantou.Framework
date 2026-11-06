@@ -22,6 +22,7 @@ The library covers:
 - Radial charts: pies, donuts, polar areas, radial bars, radar charts and gauges.
 - Hierarchical charts: packed circles, treemaps, sunbursts, icicles, tree diagrams and dendrograms.
 - Flows: Sankey diagrams and chord diagrams.
+- Networks: network graphs with a force-directed layout.
 - Statistical charts: histograms, box plots, density plots, violin plots, ridgeline plots, trend lines, moving
   averages, heatmaps, waterfalls, funnels, candlesticks, bullet charts, calendar heatmaps, Marimekko charts and sparklines.
 - Small multiples: grids of charts that share their scales, and charts with two y axes.

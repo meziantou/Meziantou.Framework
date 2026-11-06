@@ -560,6 +560,20 @@ namespace Meziantou.Framework.Charts
         public Meziantou.Framework.Charts.Transform? Transform { get => throw null; set { } }
     }
 
+    public sealed class NetworkMark<T> : Meziantou.Framework.Charts.Mark<T>
+    {
+        public double Charge { get => throw null; set { } }
+        public int Iterations { get => throw null; set { } }
+        public double LinkDistance { get => throw null; set { } }
+        public double LinkOpacity { get => throw null; set { } }
+        public System.Func<string, object?>? NodeFill { get => throw null; set { } }
+        public double NodeRadius { get => throw null; set { } }
+        public bool ShowLabels { get => throw null; set { } }
+        public System.Func<T, object?> Source { get => throw null; }
+        public System.Func<T, object?> Target { get => throw null; }
+        public NetworkMark(System.Collections.Generic.IEnumerable<T> data, System.Func<T, object?> source, System.Func<T, object?> target) { }
+    }
+
     public static class NumberFormats
     {
         public static string Default(double value) => throw null;

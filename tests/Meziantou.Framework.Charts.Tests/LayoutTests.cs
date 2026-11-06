@@ -189,6 +189,73 @@ public sealed class LayoutTests
     }
 
     [Fact]
+    public void Force_StartsOnThePhyllotaxisSpiral()
+    {
+        // d3-force: the node i starts at a radius of 10 √(0.5 + i), at an angle of i π (3 - √5)
+        var layout = new ForceLayout(3, []);
+        Assert.Equal((10 * Math.Sqrt(0.5), 0.0), (layout.X[0], layout.Y[0]));
+        var angle = Math.PI * (3 - Math.Sqrt(5));
+        Assert.Equal(10 * Math.Sqrt(1.5) * Math.Cos(angle), layout.X[1], 12);
+        Assert.Equal(10 * Math.Sqrt(1.5) * Math.Sin(angle), layout.Y[1], 12);
+        Assert.Equal(10 * Math.Sqrt(2.5) * Math.Sin(2 * angle), layout.Y[2], 12);
+        Assert.Equal(300, ForceLayout.DefaultTicks);
+    }
+
+    [Fact]
+    public void Force_LinkPullsTowardItsLength()
+    {
+        // Two nodes 50 apart, linked with a length of 30: each end gets half of (50 - 30) / 50 × 50 × alpha, the velocity
+        // keeps 60% of it, alpha is 0.001^(1/300) after the first tick, and the centering moves the middle to the origin
+        var alpha = Math.Pow(0.001, 1.0 / 300);
+        var layout = new ForceLayout(2, [(0, 1)]) { ManyBodyStrength = 0 };
+        (layout.X[0], layout.Y[0], layout.X[1], layout.Y[1]) = (0, 0, 50, 0);
+        layout.Tick();
+        Assert.Equal(alpha, layout.Alpha, 12);
+        Assert.Equal((6 * alpha) - 25, layout.X[0], 5);
+        Assert.Equal(25 - (6 * alpha), layout.X[1], 5);
+        Assert.Equal(0, layout.Y[0], 5);
+    }
+
+    [Fact]
+    public void Force_ManyBodyRepels()
+    {
+        // Two nodes 10 apart: each one gets strength × alpha × distance / distance² = -30 × alpha / 10 away from the other,
+        // 60% of it is kept, then the middle moves to the origin
+        var alpha = Math.Pow(0.001, 1.0 / 300);
+        var layout = new ForceLayout(2, []);
+        (layout.X[0], layout.Y[0], layout.X[1], layout.Y[1]) = (0, 0, 10, 0);
+        layout.Tick();
+        Assert.Equal((-1.8 * alpha) - 5, layout.X[0], 5);
+        Assert.Equal(5 + (1.8 * alpha), layout.X[1], 5);
+
+        // Closer than 1, the squared distance is replaced by the distance: 0.5 × -30 × alpha / 0.5, 60% of it kept
+        var close = new ForceLayout(2, []);
+        (close.X[0], close.Y[0], close.X[1], close.Y[1]) = (0, 0, 0.5, 0);
+        close.Tick();
+        Assert.Equal((-0.6 * 30 * alpha) - 0.25, close.X[0], 5);
+    }
+
+    [Fact]
+    public void Force_CentersTheNodes()
+    {
+        var layout = new ForceLayout(2, []) { ManyBodyStrength = 0 };
+        (layout.X[0], layout.Y[0], layout.X[1], layout.Y[1]) = (10, 4, 20, 8);
+        layout.Tick();
+        Assert.Equal([-5.0, 5.0], layout.X);
+        Assert.Equal([-2.0, 2.0], layout.Y);
+
+        // Coincident nodes are separated by the jiggle of the seeded generator, the same on every run
+        var coincident = new ForceLayout(2, [(0, 1)]);
+        (coincident.X[0], coincident.Y[0], coincident.X[1], coincident.Y[1]) = (0, 0, 0, 0);
+        coincident.Run(ForceLayout.DefaultTicks);
+        var again = new ForceLayout(2, [(0, 1)]);
+        (again.X[0], again.Y[0], again.X[1], again.Y[1]) = (0, 0, 0, 0);
+        again.Run(ForceLayout.DefaultTicks);
+        Assert.Equal(coincident.X, again.X);
+        Assert.True(Math.Abs(coincident.X[0] - coincident.X[1]) + Math.Abs(coincident.Y[0] - coincident.Y[1]) > 1);
+    }
+
+    [Fact]
     public void Tree_TwoChildren()
     {
         // Siblings 1 apart, half a separation on each side: 0.25 and 0.75, the root centered over them

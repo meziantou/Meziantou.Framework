@@ -474,6 +474,64 @@ public sealed class StatisticalChartTests
     }
 
     [Fact]
+    public void Network()
+    {
+        #region Charts_Network
+        (string From, string To)[] collaborations =
+        [
+            ("Alice", "Bob"), ("Alice", "Carol"), ("Bob", "Carol"), ("Carol", "Dave"), ("Alice", "Dave"),
+            ("Dave", "Erin"), ("Erin", "Frank"), ("Frank", "Grace"), ("Erin", "Grace"), ("Grace", "Heidi"),
+            ("Heidi", "Ivan"), ("Ivan", "Judy"), ("Heidi", "Judy"), ("Judy", "Mallory"), ("Ivan", "Mallory"),
+            ("Bob", "Niaj"), ("Niaj", "Olivia"), ("Carol", "Olivia"), ("Frank", "Peggy"), ("Mallory", "Trent"),
+        ];
+        var teams = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["Alice"] = "Design", ["Bob"] = "Design", ["Carol"] = "Design", ["Niaj"] = "Design", ["Olivia"] = "Design",
+            ["Dave"] = "Product", ["Erin"] = "Product", ["Frank"] = "Product", ["Grace"] = "Product", ["Peggy"] = "Product",
+            ["Heidi"] = "Engineering", ["Ivan"] = "Engineering", ["Judy"] = "Engineering", ["Mallory"] = "Engineering", ["Trent"] = "Engineering",
+        };
+
+        var plot = new Plot { Title = "Who works with whom", Height = 420 };
+        plot.Add(new NetworkMark<(string From, string To)>(collaborations, source: link => link.From, target: link => link.To)
+        {
+            NodeFill = name => teams[name],
+            NodeRadius = 7,
+        });
+        #endregion
+
+        ChartAssert.Svg(plot, "Network");
+    }
+
+    [Fact]
+    public void NetworkOptions()
+    {
+        (string?, string?)[] links = [("a", "b"), ("b", "c"), ("c", "a"), ("c", "d"), (null, "a"), ("d", "d")];
+        var plot = new Plot { Width = 300, Height = 240 };
+        plot.Add(new NetworkMark<(string?, string?)>(links, source: link => link.Item1, target: link => link.Item2)
+        {
+            LinkDistance = 60,
+            Charge = -100,
+            Iterations = 50,
+            LinkOpacity = 1,
+            ShowLabels = false,
+            FillColor = "#e5484d",
+            Stroke = link => link.Item1,
+            StrokeWidth = 3,
+            Title = link => link.Item1 + link.Item2,
+        });
+        ChartAssert.Svg(plot);
+
+        // A single node, or no node at all
+        var single = new Plot { Width = 200, Height = 200 };
+        single.Add(new NetworkMark<(string, string)>([("x", "x")], source: link => link.Item1, target: link => link.Item2) { Iterations = 0 });
+        Assert.Contains("<circle", single.ToSvg());
+        var empty = new Plot();
+        empty.Add(new NetworkMark<(string, string)>([], source: link => link.Item1, target: link => link.Item2));
+        Assert.DoesNotContain("<circle", empty.ToSvg());
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => new NetworkMark<int>([], source: i => i, target: i => i) { Iterations = -1 });
+    }
+
+    [Fact]
     public void SankeyRejectsCycles()
     {
         var plot = new Plot();

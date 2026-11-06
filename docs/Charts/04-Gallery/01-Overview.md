@@ -14,6 +14,7 @@ pages of the gallery show an example of each:
   lines, moving averages, heatmaps, waterfalls, funnels, candlesticks, bullet charts, calendar heatmaps, Marimekko charts and sparklines.
 - [Small multiples](06-SmallMultiples.md): grids of charts that share their scales, one per facet.
 - [Flows](07-Flows.md): Sankey diagrams and chord diagrams.
+- [Networks](08-Networks.md): network graphs with a force-directed layout.
 
 The examples chart records like these:
 

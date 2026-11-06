@@ -2118,13 +2118,30 @@ internal sealed partial class EditingAlgorithms
         if (!GetChildren(block).TrueForAll(child => IsInvisible(child) || IsCollapsedBlockProp(child)))
             return null;
 
-        var next = block.NextSibling;
+        return GetNextVisibleSibling(block) is { } next && IsInlineNode(next) && IsEditable(next) ? block : null;
+    }
+
+    /// <summary>Whether the node has a descendant that is rendered content (text that is not only white space, or an element deleted as a whole).</summary>
+    private bool HasRenderedContent(Node node)
+    {
+        for (var child = node.FirstChild; child is not null; child = child.NextSibling)
+        {
+            if ((child is Text && !IsWhitespaceNode(child)) || IsAtomicElement(child) || HasRenderedContent(child))
+                return true;
+        }
+
+        return false;
+    }
+
+    private Node? GetNextVisibleSibling(Node node)
+    {
+        var next = node.NextSibling;
         while (next is not null && IsInvisible(next))
         {
             next = next.NextSibling;
         }
 
-        return next is not null && IsInlineNode(next) && IsEditable(next) ? block : null;
+        return next;
     }
 
     private static bool HasIndentationAncestor(Node node)
@@ -2240,6 +2257,16 @@ internal sealed partial class EditingAlgorithms
             RemoveNode(emptyBlock);
             CollapseTo(parent, index);
             RebalanceWhiteSpaceAtCaret(acrossSiblings: false);
+            return true;
+        }
+
+        // As in the browsers, an empty flex or grid container that is followed by a block is removed (its items are not a
+        // line the next block can be joined to): the caret is at the start of the block
+        if (GetFlexOrGridItem(node) is { ParentNode: Element container } && IsEditable(container) && !HasRenderedContent(container)
+            && GetNextVisibleSibling(container) is { } blockAfterContainer && IsBlockNode(blockAfterContainer) && IsEditable(blockAfterContainer))
+        {
+            RemoveNode(container);
+            CollapseTo(blockAfterContainer, 0);
             return true;
         }
 

@@ -260,4 +260,19 @@ public sealed class RubyLayoutTests : IDisposable
         Assert.Equal(40, GetRect(document, "r2").Y);
     }
 
+    [Fact]
+    public void Bidi_BaseContainerOrdersItsColumnsByItsDirection()
+    {
+        // https://drafts.csswg.org/css-ruby-1/#bidi: a base container (rbc) is a bidi isolate: the columns of its segment are ordered
+        // by its direction, and the annotations follow their bases; the segments are ordered by the direction of the ruby container
+        var document = Parse("""
+            <style>rb { margin: 0 5px }</style>
+            <p style='margin: 0'><ruby><rb id=b1>A</rb><rb id=b2>B</rb><rt>a</rt><rt>b</rt><rbc dir=rtl><rb id=b3>C</rb><rb id=b4>D</rb></rbc><rt id=t3>c</rt><rt id=t4>d</rt></ruby></p>
+            <p style='margin: 0'><ruby dir=rtl><rb id=b5>E</rb><rb id=b6>F</rb><rt>e</rt><rt>f</rt><rbc dir=ltr><rb id=b7>G</rb><rb id=b8>H</rb></rbc><rt>g</rt><rt>h</rt></ruby></p>
+            """);
+        Assert.Equal([5, 35, 95, 65], [GetRect(document, "b1").X, GetRect(document, "b2").X, GetRect(document, "b3").X, GetRect(document, "b4").X]);
+        Assert.Equal(new PhysicalRect(90, 0, 30, 10), GetRect(document, "t3"));
+        Assert.Equal(new PhysicalRect(60, 0, 30, 10), GetRect(document, "t4"));
+        Assert.Equal([95, 65, 5, 35], [GetRect(document, "b5").X, GetRect(document, "b6").X, GetRect(document, "b7").X, GetRect(document, "b8").X]);
+    }
 }

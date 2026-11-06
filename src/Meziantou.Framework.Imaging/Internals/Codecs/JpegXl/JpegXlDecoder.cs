@@ -104,7 +104,7 @@ internal sealed class JpegXlDecoder : JpegXlDecodeObserver
             }
             else
             {
-                _renderer ??= new JpegXlFrameRenderer(header, _context.Scope, _context.CancellationToken, _context.Configuration.MaxDegreeOfParallelism);
+                _renderer ??= new JpegXlFrameRenderer(header, structure.XybIccOutput, _context.Scope, _context.CancellationToken, _context.Configuration.MaxDegreeOfParallelism);
                 using var canvas = _renderer.Render(decoded, frame, isDisplayed, _visibleFrameIndex, _invisibleFrameIndex);
                 if (canvas is null)
                     return true;
@@ -205,7 +205,7 @@ internal sealed class JpegXlDecoder : JpegXlDecodeObserver
         }
         else
         {
-            _renderer ??= new JpegXlFrameRenderer(header, _context.Scope, _context.CancellationToken, _context.Configuration.MaxDegreeOfParallelism);
+            _renderer ??= new JpegXlFrameRenderer(header, structure.XybIccOutput, _context.Scope, _context.CancellationToken, _context.Configuration.MaxDegreeOfParallelism);
             using var canvas = _renderer.Render(decoded, frame, isDisplayed: true, _visibleFrameIndex + 1, invisibleFrameIndex: 0, isIntermediate: true);
             if (canvas is null)
                 return;

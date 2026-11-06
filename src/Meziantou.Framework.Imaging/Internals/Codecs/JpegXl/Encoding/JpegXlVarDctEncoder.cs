@@ -30,8 +30,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </description></item>
 /// <item><description>
 /// The sections are written in the order of the table of contents: <c>LfGlobal</c>, the LF groups (the LF image and the
-/// transform, the quantization factor and the filter sharpness of each block), <c>HfGlobal</c> (the entropy code of each
-/// pass), then the groups of each pass. The coefficients of a group are given to the entropy coder twice: to build the
+/// transform, the quantization factor and the filter sharpness of each block, each with a tree learned from its samples
+/// from the effort 3), <c>HfGlobal</c> (the entropy code of each pass), then the groups of each pass. The coefficients of a group are given to the entropy coder twice: to build the
 /// code of the pass, then to write the group.
 /// </description></item>
 /// <item><description>
@@ -63,6 +63,9 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
     /// encoding at the default effort, and more of a faster one.
     /// </summary>
     private const int AdaptiveQuantizationEffort = 3;
+
+    /// <summary>The effort from which the LF image and the block metadata are coded with learned trees.</summary>
+    private const int LearnedTreeEffort = 3;
 
     /// <summary>The effort from which the transform of each block is chosen.</summary>
     private const int TransformSelectionEffort = 3;
@@ -1855,7 +1858,9 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
     /// <summary>
     /// Writes an LF group: the LF values of its blocks, as a Modular image of three channels (Y, X, B); then the factors of
     /// the chroma from luma prediction of its tiles, the transform and the quantization factor of each block that starts a
-    /// transform, and the sharpness of each block, as a Modular image of four channels.
+    /// transform, and the sharpness of each block, as a Modular image of four channels. From <see cref="LearnedTreeEffort"/>,
+    /// each image has a tree learned from its samples (<see cref="JpegXlModularEncoder.EncodeWithLearnedTree"/>): the LF
+    /// values of X and B are coded in contexts of the values of the channels before them.
     /// </summary>
     private void WriteLfGroup(LsbBitWriter writer, int lfGroup)
     {
@@ -1883,7 +1888,16 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
                 }
             }
 
-            JpegXlModularEncoder.Encode(writer, image, colorChannelCount: 0, _effort, _scope, _cancellationToken);
+            if (_effort >= LearnedTreeEffort)
+            {
+                // From the effort 7, as in the other Modular images, the weighted predictor is one of the predictors
+                var settings = _effort >= JpegXlModularEncoder.WeightedPredictorEffort ? JpegXlModularEncoder.LfImageTreeWithWeightedPredictor : JpegXlModularEncoder.LfImageTree;
+                JpegXlModularEncoder.EncodeWithLearnedTree(writer, image, 1 + lfGroup, settings, _scope, _cancellationToken);
+            }
+            else
+            {
+                JpegXlModularEncoder.Encode(writer, image, colorChannelCount: 0, _effort, _scope, _cancellationToken);
+            }
         }
 
         var blockInfo = _blockInfo!.Span;
@@ -1946,7 +1960,14 @@ internal sealed class JpegXlVarDctEncoder : IDisposable
         }
 
         // The block list holds the transforms on its first row and the quantization factors on its second one
-        JpegXlModularEncoder.Encode(writer, metadata, colorChannelCount: 0, _effort, _scope, _cancellationToken, firstRowChannel: 2);
+        if (_effort >= LearnedTreeEffort)
+        {
+            JpegXlModularEncoder.EncodeWithLearnedTree(writer, metadata, 1 + (2 * _lfGroupCount) + lfGroup, JpegXlModularEncoder.BlockMetadataTree, _scope, _cancellationToken);
+        }
+        else
+        {
+            JpegXlModularEncoder.Encode(writer, metadata, colorChannelCount: 0, _effort, _scope, _cancellationToken, firstRowChannel: 2);
+        }
     }
 
     /// <summary>

@@ -153,7 +153,7 @@
     "reftest": "PASS"
   },
   "jpegxl/patches-reftest.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "jpegxl/premultiplied-alpha-grid-reftest.html": {
     "reftest": "FAIL"

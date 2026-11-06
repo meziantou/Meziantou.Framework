@@ -2922,7 +2922,7 @@ internal sealed partial class StyleEngine
     /// of the suggested yellow and black) and of the form controls, the dark gray color of the placeholders of the browsers
     /// (https://drafts.csswg.org/css-pseudo-4/#placeholder-pseudo), the <c>overflow-wrap: break-word</c> of the textarea of
     /// the browsers (the words that overflow its inner editor are broken), and the ruby rules of the default style sheet of CSS Ruby
-    /// (https://drafts.csswg.org/css-ruby-1/#default-stylesheet) that the HTML one does not have (the bases, the annotation
+    /// (https://drafts.csswg.org/css-ruby-1/#default-stylesheet) that the HTML one does not have (the base containers, the bases, the annotation
     /// containers, the size and the line height of the annotations; <c>font-variant-east-asian: ruby</c> is not applied),
     /// and the <c>text-autospace: no-autospace</c> of the preformatted and monospace elements of the current HTML Standard
     /// (https://html.spec.whatwg.org/multipage/rendering.html#phrasing-content-3), which the pinned one does not have.
@@ -3023,6 +3023,7 @@ internal sealed partial class StyleEngine
         ::file-selector-button { display: inline-block; white-space: nowrap; margin-inline-end: 4px; }
         ::slider-track, ::slider-fill, ::slider-thumb, ::color-swatch { display: block; }
         meter::slider-thumb, progress::slider-thumb { display: none; }
+        rbc { display: ruby-base-container; }
         rb { display: ruby-base; white-space-collapse: collapse; }
         rtc { display: ruby-text-container; }
         rtc, rt { text-emphasis: none; white-space: nowrap; line-height: 1; }

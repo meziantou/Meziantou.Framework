@@ -11,6 +11,13 @@ namespace Meziantou.Framework.Charts
         public Meziantou.Framework.Charts.TextMetrics Measure(string text, Meziantou.Framework.Charts.ChartFont font) => throw null;
     }
 
+    public sealed class AlbersProjection : Meziantou.Framework.Charts.GeoProjection
+    {
+        public double CentralMeridian { get => throw null; set { } }
+        public double Parallel1 { get => throw null; set { } }
+        public double Parallel2 { get => throw null; set { } }
+    }
+
     public sealed class AnnotationMark<T> : Meziantou.Framework.Charts.Mark<T>
     {
         public double Bend { get => throw null; set { } }
@@ -389,6 +396,14 @@ namespace Meziantou.Framework.Charts
         Cross = 4,
     }
 
+    public sealed class EqualEarthProjection : Meziantou.Framework.Charts.GeoProjection
+    {
+    }
+
+    public sealed class EquirectangularProjection : Meziantou.Framework.Charts.GeoProjection
+    {
+    }
+
     public sealed class FacetOptions
     {
         public int? Columns { get => throw null; set { } }
@@ -410,6 +425,92 @@ namespace Meziantou.Framework.Charts
         public System.Func<T, object?> Stage { get => throw null; }
         public System.Func<T, object?> Value { get => throw null; }
         public FunnelMark(System.Collections.Generic.IEnumerable<T> data, System.Func<T, object?> stage, System.Func<T, object?> value) { }
+    }
+
+    public readonly struct GeoBounds : System.IEquatable<Meziantou.Framework.Charts.GeoBounds>
+    {
+        public double East { get => throw null; init { } }
+        public double North { get => throw null; init { } }
+        public double South { get => throw null; init { } }
+        public double West { get => throw null; init { } }
+        public GeoBounds(double West, double South, double East, double North) { }
+        public void Deconstruct(out double West, out double South, out double East, out double North) => throw null;
+        public bool Equals(Meziantou.Framework.Charts.GeoBounds other) => throw null;
+        #nullable disable
+        public override bool Equals(object obj) => throw null;
+        #nullable restore
+        public override int GetHashCode() => throw null;
+        #nullable disable
+        public override string ToString() => throw null;
+        #nullable restore
+        public static bool operator ==(Meziantou.Framework.Charts.GeoBounds left, Meziantou.Framework.Charts.GeoBounds right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Charts.GeoBounds left, Meziantou.Framework.Charts.GeoBounds right) => throw null;
+    }
+
+    public sealed class GeoCoordinates : Meziantou.Framework.Charts.Coordinates
+    {
+        public Meziantou.Framework.Charts.GeoBounds? Extent { get => throw null; set { } }
+        public double? GraticuleStep { get => throw null; set { } }
+        public bool Outline { get => throw null; set { } }
+        public Meziantou.Framework.Charts.GeoProjection Projection { get => throw null; set { } }
+    }
+
+    public sealed class GeoFeature
+    {
+        public Meziantou.Framework.Charts.GeoGeometry? Geometry { get => throw null; }
+        public string? Id { get => throw null; }
+        public System.Collections.Generic.IReadOnlyDictionary<string, object?> Properties { get => throw null; }
+        public GeoFeature(Meziantou.Framework.Charts.GeoGeometry? geometry, System.Collections.Generic.IReadOnlyDictionary<string, object?>? properties = null, string? id = null) { }
+    }
+
+    public sealed class GeoGeometry
+    {
+        public Meziantou.Framework.Charts.GeoPosition? Centroid { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Charts.GeoPosition>> Lines { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Charts.GeoPosition> Points { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Charts.GeoPolygon> Polygons { get => throw null; }
+        public GeoGeometry(System.Collections.Generic.IEnumerable<Meziantou.Framework.Charts.GeoPolygon>? polygons = null, System.Collections.Generic.IEnumerable<System.Collections.Generic.IEnumerable<Meziantou.Framework.Charts.GeoPosition>>? lines = null, System.Collections.Generic.IEnumerable<Meziantou.Framework.Charts.GeoPosition>? points = null) { }
+    }
+
+    public static class GeoJson
+    {
+        public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Charts.GeoFeature> ParseFeatures(System.IO.Stream utf8Json) => throw null;
+        public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Charts.GeoFeature> ParseFeatures(string json) => throw null;
+    }
+
+    public sealed class GeoMark<T> : Meziantou.Framework.Charts.Mark<T>
+    {
+        public System.Func<T, Meziantou.Framework.Charts.GeoGeometry?> Geometry { get => throw null; }
+        public double PointRadius { get => throw null; set { } }
+        public GeoMark(System.Collections.Generic.IEnumerable<T> data, System.Func<T, Meziantou.Framework.Charts.GeoGeometry?> geometry) { }
+    }
+
+    public sealed class GeoPolygon
+    {
+        public System.Collections.Generic.IReadOnlyList<System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Charts.GeoPosition>> Rings { get => throw null; }
+        public GeoPolygon(System.Collections.Generic.IEnumerable<System.Collections.Generic.IEnumerable<Meziantou.Framework.Charts.GeoPosition>> rings) { }
+    }
+
+    public readonly struct GeoPosition : System.IEquatable<Meziantou.Framework.Charts.GeoPosition>
+    {
+        public double Latitude { get => throw null; init { } }
+        public double Longitude { get => throw null; init { } }
+        public GeoPosition(double Longitude, double Latitude) { }
+        public void Deconstruct(out double Longitude, out double Latitude) => throw null;
+        public bool Equals(Meziantou.Framework.Charts.GeoPosition other) => throw null;
+        #nullable disable
+        public override bool Equals(object obj) => throw null;
+        #nullable restore
+        public override int GetHashCode() => throw null;
+        #nullable disable
+        public override string ToString() => throw null;
+        #nullable restore
+        public static bool operator ==(Meziantou.Framework.Charts.GeoPosition left, Meziantou.Framework.Charts.GeoPosition right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Charts.GeoPosition left, Meziantou.Framework.Charts.GeoPosition right) => throw null;
+    }
+
+    public abstract class GeoProjection
+    {
     }
 
     public enum GroupReducer
@@ -592,6 +693,10 @@ namespace Meziantou.Framework.Charts
         public double? StrokeWidth { get => throw null; set { } }
         public System.Func<T, string?>? Title { get => throw null; set { } }
         public Meziantou.Framework.Charts.Transform? Transform { get => throw null; set { } }
+    }
+
+    public sealed class MercatorProjection : Meziantou.Framework.Charts.GeoProjection
+    {
     }
 
     public sealed class NetworkMark<T> : Meziantou.Framework.Charts.Mark<T>

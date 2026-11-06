@@ -12,7 +12,8 @@ internal sealed partial class DisplayListRasterizer
     /// <summary>
     /// Draws a glyph run: the glyphs of the font file of the layout, by id, at the positions computed by the text shaping. The
     /// glyphs are not hinted and are filled each on its own (the glyphs of a translucent text that overlap are composited one
-    /// over the other); the glyphs a font draws with its own colors (COLR, sbix, CBDT) are drawn with them.
+    /// over the other), with the coverage correction of Skia (<see cref="GlyphContrast"/>); the glyphs a font draws with its
+    /// own colors (COLR, sbix, CBDT) are drawn with them.
     /// </summary>
     private void DrawGlyphs(D.DrawingCanvas canvas, DrawGlyphsItem draw)
     {
@@ -71,6 +72,8 @@ internal sealed partial class DisplayListRasterizer
                 BoldWidth = boldWidth > 0 ? boldWidth : null,
                 ObliqueShear = shear != 0 ? shear : null,
                 Cache = _backend.GlyphCache,
+                Contrast = GlyphContrast,
+                Gamma = GlyphGamma,
             };
 
             var pen = stroke is null ? null : CreatePen(brush, boldWidth > 0 ? stroke with { Width = stroke.Width + boldWidth } : stroke);
@@ -89,6 +92,17 @@ internal sealed partial class DisplayListRasterizer
             ArrayPool<T.PositionedGlyph>.Shared.Return(glyphs);
         }
     }
+
+    /// <summary>
+    /// The correction of the coverage of the antialiased glyphs (see <see cref="T.GlyphRunOptions.Contrast"/>): as Skia does
+    /// with its glyph masks, the text is made heavier. The values are the ones that make the text closest to the one of
+    /// Chromium (fitted on paragraphs of black, gray, green and white text from 12px to 24px; the correction does not depend on
+    /// the color, as the masks of the text clipping a background are the masks of the text).
+    /// </summary>
+    private const double GlyphContrast = 1;
+
+    /// <summary>The gamma of the correction of the coverage of the antialiased glyphs (see <see cref="GlyphContrast"/>).</summary>
+    private const double GlyphGamma = 1.15;
 
     private static double GetBoldRatio(double size)
     {

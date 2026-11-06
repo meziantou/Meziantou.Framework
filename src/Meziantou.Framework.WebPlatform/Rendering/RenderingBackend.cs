@@ -68,13 +68,13 @@ public abstract class RenderingBackend
     }
 
     /// <summary>
-    /// Creates an image from pixels in the format of <see cref="RenderingSurface.ReadPixels"/> (RGBA, not premultiplied, sRGB),
-    /// e.g. the bitmap of an <c>ImageBitmap</c>.
+    /// Creates an image from pixels in the format of <see cref="RenderingSurface.ReadPixels"/> (RGBA, not premultiplied, in a
+    /// color space), e.g. the bitmap of an <c>ImageBitmap</c>.
     /// </summary>
     /// <returns>The image, or null when it cannot be created (e.g. it is too large).</returns>
-    internal virtual RenderingImage? CreateImage(int width, int height, ReadOnlySpan<byte> pixels, ImageDataPixelFormat pixelFormat = ImageDataPixelFormat.RgbaUnorm8)
+    internal virtual RenderingImage? CreateImage(int width, int height, ReadOnlySpan<byte> pixels, ImageDataPixelFormat pixelFormat = ImageDataPixelFormat.RgbaUnorm8, RenderingColorSpace colorSpace = RenderingColorSpace.Srgb)
     {
-        using var surface = CreateSurface(width, height, RenderingSurfaceOptions.Default with { IsCanvasBitmap = true, ColorType = pixelFormat == ImageDataPixelFormat.RgbaFloat16 ? CanvasColorType.Float16 : CanvasColorType.Unorm8 });
+        using var surface = CreateSurface(width, height, RenderingSurfaceOptions.Default with { IsCanvasBitmap = true, ColorSpace = colorSpace, ColorType = pixelFormat == ImageDataPixelFormat.RgbaFloat16 ? CanvasColorType.Float16 : CanvasColorType.Unorm8 });
         if (surface is null)
             return null;
 
@@ -90,11 +90,12 @@ public abstract class RenderingBackend
     /// </summary>
     /// <param name="width">The width in pixels (at least 1).</param>
     /// <param name="height">The height in pixels (at least 1).</param>
-    /// <param name="pixels">The pixels (RGBA, not premultiplied, sRGB).</param>
+    /// <param name="pixels">The pixels (RGBA, not premultiplied, in <paramref name="colorSpace"/>).</param>
     /// <param name="mimeType">The MIME type of the image file (lowercase).</param>
     /// <param name="quality">The quality from 0 to 1 of a lossy format, or null for the default quality of the backend.</param>
+    /// <param name="colorSpace">The color space of the pixels: the file is tagged with its color profile when it is not sRGB.</param>
     /// <returns>The bytes of the file, or null when the backend does not support the type (the image is then encoded as PNG).</returns>
-    internal virtual byte[]? EncodeImage(int width, int height, ReadOnlySpan<byte> pixels, string mimeType, double? quality) => null;
+    internal virtual byte[]? EncodeImage(int width, int height, ReadOnlySpan<byte> pixels, string mimeType, double? quality, RenderingColorSpace colorSpace = RenderingColorSpace.Srgb) => null;
 }
 
 /// <summary>The properties of a <see cref="RenderingSurface"/>.</summary>
@@ -195,6 +196,32 @@ internal abstract class RenderingImage : IDisposable
     /// <summary>The component format that preserves the precision of the decoded pixels.</summary>
     public virtual ImageDataPixelFormat PixelFormat => ImageDataPixelFormat.RgbaUnorm8;
 
+    /// <summary>
+    /// The color space that, with <see cref="PixelFormat"/>, keeps the colors of the image (e.g. the color space of the
+    /// bitmap of a canvas; the colors of a decoded image outside of the gamut of sRGB are read as sRGB half floats).
+    /// </summary>
+    public virtual RenderingColorSpace ColorSpace => RenderingColorSpace.Srgb;
+
+    /// <summary>
+    /// Copies the pixels in the requested component format and color space (the colors outside of the gamut of the color
+    /// space are clipped, unless they are floating-point).
+    /// </summary>
+    public virtual void ReadPixels(Span<byte> destination, ImageDataPixelFormat pixelFormat, RenderingColorSpace colorSpace)
+    {
+        ReadPixels(destination, pixelFormat);
+        if (colorSpace == RenderingColorSpace.Srgb)
+            return;
+
+        var length = checked(Width * Height * (pixelFormat == ImageDataPixelFormat.RgbaFloat16 ? 8 : 4));
+        if (pixelFormat == ImageDataPixelFormat.RgbaFloat16)
+        {
+            CanvasRenderingContext2DBase.ConvertColorSpace(unsafe(System.Runtime.InteropServices.MemoryMarshal.Cast<byte, Half>(destination[..length])), PredefinedColorSpace.Srgb, PredefinedColorSpace.DisplayP3);
+            return;
+        }
+
+        CanvasRenderingContext2DBase.ConvertColorSpace(destination[..length], PredefinedColorSpace.Srgb, PredefinedColorSpace.DisplayP3);
+    }
+
     /// <summary>Copies the sRGB pixels in the requested component format.</summary>
     public virtual void ReadPixels(Span<byte> destination, ImageDataPixelFormat pixelFormat)
     {
@@ -252,8 +279,9 @@ internal abstract class RenderingImageDecoder : IDisposable
     /// <param name="index">The index of the frame (0 for a still image).</param>
     /// <param name="orientation">The orientation applied to the pixels (<see cref="ExifOrientation.TopLeft"/> keeps them as encoded).</param>
     /// <param name="convertToSrgb">
-    /// Whether the colors are converted from the color profile of the image to sRGB (the default); otherwise the encoded values
-    /// are kept (<c>colorSpaceConversion: "none"</c> of <c>createImageBitmap()</c>).
+    /// Whether the colors are converted from the color profile of the image to sRGB (the default; a backend may keep the
+    /// colors outside of the gamut of sRGB for the bitmaps of a wider gamut, see <see cref="RenderingImage.ColorSpace"/>);
+    /// otherwise the encoded values are kept (<c>colorSpaceConversion: "none"</c> of <c>createImageBitmap()</c>).
     /// </param>
     /// <returns>The pixels of the frame, or null when the frame cannot be decoded (the data is corrupted). An incomplete frame is decoded up to its last complete row.</returns>
     public abstract RenderingImage? DecodeFrame(int index, ExifOrientation orientation, bool convertToSrgb);

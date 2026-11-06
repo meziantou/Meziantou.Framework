@@ -41,7 +41,9 @@ fails.
 - **Images are decoded by the rendering backend.** Without a backend, only the natural dimensions of the images are read
   from their header: `decode()` resolves once the image is available, and `createImageBitmap()` rejects the images and the
   blobs. The Imaging backend decodes PNG (including animated PNG), JPEG (including CMYK), GIF, WebP, AVIF, JPEG XL, BMP and
-  ICO images, with their EXIF orientation and resolution and their color profile.
+  ICO images, with their EXIF orientation and resolution and their color profile. The pages are sRGB: the colors of an
+  image outside of the gamut of sRGB are clipped, and only the Display P3 and half-float canvases keep them (the images
+  whose color profile has lookup tables and the `cICP` descriptions other than Display P3 are clipped to sRGB there too).
 - **Audio and video are not decoded.** The media elements run on a media backend that your application provides
   ([BrowsingContextOptions.MediaBackend](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.MediaBackend)); without it, they have no media. The Media Source Extensions parse the segments
   with the backend but do not decode the frames. The media controls and Encrypted Media are not implemented.

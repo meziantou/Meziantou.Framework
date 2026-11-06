@@ -242,20 +242,21 @@ internal sealed class DbaseWriter
         return Kind.Text;
     }
 
-    // As GDAL: the UTF-8 name, cut to 10 bytes, then "name_1" to "name_99", "nam_100"... when another field has the same name, ignoring the case
+    // As GDAL: the UTF-8 name, cut to 10 bytes, then "name_1" to "name_99", "nam_100"... when another field has the same name, ignoring the case.
+    // The readers trim the names, so the name is trimmed after it is cut: it reads back as it is written.
     private static byte[] GetUniqueName(HashSet<string> names, string key)
     {
-        var name = key.Replace("\0", "", StringComparison.Ordinal);
+        var name = key.Replace("\0", "", StringComparison.Ordinal).Trim();
         if (name.Length is 0)
         {
             name = "FIELD";
         }
 
-        var candidate = Truncate(name, MaxNameLength);
+        var candidate = Truncate(name, MaxNameLength).TrimEnd();
         for (var i = 1; !names.Add(candidate); i++)
         {
             var suffix = "_" + i.ToString(CultureInfo.InvariantCulture);
-            candidate = Truncate(name, MaxNameLength - suffix.Length) + suffix;
+            candidate = Truncate(name, MaxNameLength - suffix.Length).TrimEnd() + suffix;
         }
 
         return Encoding.UTF8.GetBytes(candidate);

@@ -471,6 +471,7 @@
     <Project Path="fuzz/Meziantou.Framework.Fonts.Fuzz/Meziantou.Framework.Fonts.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Fuzzing.Tests/Meziantou.Framework.Fuzzing.Tests.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Fuzzing/Meziantou.Framework.Fuzzing.csproj" />
+    <Project Path="fuzz/Meziantou.Framework.Geo.Fuzz/Meziantou.Framework.Geo.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Globbing.Fuzz/Meziantou.Framework.Globbing.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.HtmlSanitizer.Fuzz/Meziantou.Framework.HtmlSanitizer.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Http.Caching.Fuzz/Meziantou.Framework.Http.Caching.Fuzz.csproj" />

@@ -287,6 +287,10 @@ public static class Shapefile
         {
             throw new FormatException("The archive is not a valid zip file: " + ex.Message, ex);
         }
+        catch (NotSupportedException ex)
+        {
+            throw new FormatException("The zip archive has an entry that cannot be read, such as an encrypted entry: " + ex.Message, ex);
+        }
     }
 
     private static ZipArchiveEntry? FindEntry(ZipArchive archive, string fullName) =>

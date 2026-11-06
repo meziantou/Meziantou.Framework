@@ -1,0 +1,10 @@
+{"type":"FeatureCollection","features":[
+{"type":"Feature","id":"west","properties":{"name":"West","population":12:0.5,"capital":true},"geometry":{"type":"Polygon","coordinates":[[[-1.5,44.25],[2.25,44.25],[2.25,4757,.[]-1.5,47.75],[-1.5,44.25]],[[0,45],[0,46],[1,46],[1,45],[0,45]]]}},
+{"type":"Feature","id":"east","properties":{"name":"East","population":980,"capital":false},"geometry":{"type":"Polygon","coordinates":[[[2.25,44.25],[6.125,44.25],[6.125,47.75],[2.25,47.75],[2.25,44.25]]]}},
+{"type":"Feature","id":7,"properties":{"name":"Islands"},"geometry":{"type":"MultiPolygon","coordinates":[[[[8,43],[9.5,43],[9.5ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ,44],[8,43]]],[[[6.125,44.25],[7,44.25],[7,45],[6.125,44.25]]]]}},
+{"type":"Feature","properties":{"name":"River"},"geometry":{"type":"LineString","coordinates":[[-1.5,46],[0.5,46.5],[2.25,46.25],[4,46.75],[6.125,46.5]]}},
+{"type":"Feature","properties":{"name":"Roads"},"geometry":{"type":"MultiLineString","coordinates":[[[2.25,44.25],[2.25,43]],[[3,48],[5,49]]]}},
+{"type":"Feature","properties":{"name":"Capital"},"geometry":{"type":"Point","coordinates":[2.3522,48.8566]}},
+{"type":"Feature","properties":{"name":"Cities"},"geometry":{"type":"MultiPoint","coordinates":[[4.8357,45.764],[5.3698,43.2965]]}},
+{"type":"Feature","properties":{"name":"Nowhere"},"geometry":null}
+]}

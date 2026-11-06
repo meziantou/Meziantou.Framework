@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of html/canvas, and why the 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 3,079 | 3,165 | 0 | 97% |
+| [Stable](#stable-tests) | 3,088 | 3,165 | 0 | 98% |
 | [Tentative](#tentative-tests) | 7 | 259 | 0 | 3% |
 | [Reftests](#reftests) | 214 | 552 | 0 | 39% |
-| **All** | **3,300** | **3,976** | **0** | **83%** |
+| **All** | **3,309** | **3,976** | **0** | **83%** |
 
 ## Failure reasons
 
@@ -20,9 +20,9 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 10
 - **TEST BUG**: 4
-- **NOT IMPLEMENTED**: 658
-- **REQUIRES**: 3
-  - `media`: 3
+- **NOT IMPLEMENTED**: 646
+- **REQUIRES**: 5
+  - `media`: 5
 - **TEST RUNNER**: 2
 
 ## Stable tests
@@ -641,17 +641,17 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`element/manual/transformations/2d.transformation.getTransform.html`](https://wpt.fyi/results/html/canvas/element/manual/transformations/2d.transformation.getTransform.html) | Pass | 1 / 1 |  |  |
 | [`element/manual/wide-gamut-canvas/ImageData-fidelity.html`](https://wpt.fyi/results/html/canvas/element/manual/wide-gamut-canvas/ImageData-fidelity.html) | Pass | 4 / 4 |  |  |
 | [`element/manual/wide-gamut-canvas/canvas-color-space-settings.html`](https://wpt.fyi/results/html/canvas/element/manual/wide-gamut-canvas/canvas-color-space-settings.html) | Pass | 25 / 25 |  |  |
-| [`element/manual/wide-gamut-canvas/canvas-display-p3-drawImage-ImageBitmap-Blob.html`](https://wpt.fyi/results/html/canvas/element/manual/wide-gamut-canvas/canvas-display-p3-drawImage-ImageBitmap-Blob.html) | Fail | 172 / 208 | NOT IMPLEMENTED | the wide-gamut images: the images are decoded to sRGB (their colors outside of sRGB are clamped), and the bitmaps are sRGB |
+| [`element/manual/wide-gamut-canvas/canvas-display-p3-drawImage-ImageBitmap-Blob.html`](https://wpt.fyi/results/html/canvas/element/manual/wide-gamut-canvas/canvas-display-p3-drawImage-ImageBitmap-Blob.html) | Pass | 208 / 208 |  |  |
 | [`element/manual/wide-gamut-canvas/canvas-display-p3-drawImage-ImageBitmap-ImageBitmap.html`](https://wpt.fyi/results/html/canvas/element/manual/wide-gamut-canvas/canvas-display-p3-drawImage-ImageBitmap-ImageBitmap.html) | Pass | 208 / 208 |  |  |
 | [`element/manual/wide-gamut-canvas/canvas-display-p3-drawImage-ImageBitmap-ImageData.html`](https://wpt.fyi/results/html/canvas/element/manual/wide-gamut-canvas/canvas-display-p3-drawImage-ImageBitmap-ImageData.html) | Pass | 16 / 16 |  |  |
 | [`element/manual/wide-gamut-canvas/canvas-display-p3-drawImage-ImageBitmap-canvas.html`](https://wpt.fyi/results/html/canvas/element/manual/wide-gamut-canvas/canvas-display-p3-drawImage-ImageBitmap-canvas.html) | Pass | 16 / 16 |  |  |
-| [`element/manual/wide-gamut-canvas/canvas-display-p3-drawImage-ImageBitmap-cloned.html`](https://wpt.fyi/results/html/canvas/element/manual/wide-gamut-canvas/canvas-display-p3-drawImage-ImageBitmap-cloned.html) | Fail | 172 / 208 | NOT IMPLEMENTED | the wide-gamut images: the images are decoded to sRGB (their colors outside of sRGB are clamped), and the bitmaps are sRGB |
-| [`element/manual/wide-gamut-canvas/canvas-display-p3-drawImage-ImageBitmap-image.html`](https://wpt.fyi/results/html/canvas/element/manual/wide-gamut-canvas/canvas-display-p3-drawImage-ImageBitmap-image.html) | Fail | 172 / 208 | NOT IMPLEMENTED | the wide-gamut images: the images are decoded to sRGB (their colors outside of sRGB are clamped), and the bitmaps are sRGB |
-| [`element/manual/wide-gamut-canvas/canvas-display-p3-drawImage-ImageBitmap-video.html`](https://wpt.fyi/results/html/canvas/element/manual/wide-gamut-canvas/canvas-display-p3-drawImage-ImageBitmap-video.html) | Fail | 0 / 32 | NOT IMPLEMENTED | the wide-gamut images: the images are decoded to sRGB (their colors outside of sRGB are clamped), and the bitmaps are sRGB |
-| [`element/manual/wide-gamut-canvas/canvas-display-p3-drawImage-video.html`](https://wpt.fyi/results/html/canvas/element/manual/wide-gamut-canvas/canvas-display-p3-drawImage-video.html) | Fail | 0 / 32 | NOT IMPLEMENTED | the wide-gamut images: the images are decoded to sRGB (their colors outside of sRGB are clamped), and the bitmaps are sRGB |
-| [`element/manual/wide-gamut-canvas/canvas-display-p3-drawImage.https.html`](https://wpt.fyi/results/html/canvas/element/manual/wide-gamut-canvas/canvas-display-p3-drawImage.https.html) | Fail | 188 / 240 | TEST BUG, NOT IMPLEMENTED | the SVG images filled with `color(display-p3 1 0 0)` and `color(display-p3 0.7333 0 0)` expect the color clipped to the gamut of the canvas (as the browsers do), while the library CSS gamut maps the CSS colors (https://drafts.csswg.org/css-color-4/#css-gamut-mapping: the OkLCh chroma is reduced at constant lightness), so `color(display-p3 1 0 0)` is painted (255,52,40) on an sRGB canvas instead of (255,0,0); the wide-gamut images: the images are decoded to sRGB (their colors outside of sRGB are clamped), and the bitmaps are sRGB |
+| [`element/manual/wide-gamut-canvas/canvas-display-p3-drawImage-ImageBitmap-cloned.html`](https://wpt.fyi/results/html/canvas/element/manual/wide-gamut-canvas/canvas-display-p3-drawImage-ImageBitmap-cloned.html) | Pass | 208 / 208 |  |  |
+| [`element/manual/wide-gamut-canvas/canvas-display-p3-drawImage-ImageBitmap-image.html`](https://wpt.fyi/results/html/canvas/element/manual/wide-gamut-canvas/canvas-display-p3-drawImage-ImageBitmap-image.html) | Pass | 208 / 208 |  |  |
+| [`element/manual/wide-gamut-canvas/canvas-display-p3-drawImage-ImageBitmap-video.html`](https://wpt.fyi/results/html/canvas/element/manual/wide-gamut-canvas/canvas-display-p3-drawImage-ImageBitmap-video.html) | Fail | 0 / 32 | REQUIRES(media) | the frames of the videos are not decoded: the media backend of the tests gives opaque black frames, where the subtests of the `video` source expect the colors of the decoded frame |
+| [`element/manual/wide-gamut-canvas/canvas-display-p3-drawImage-video.html`](https://wpt.fyi/results/html/canvas/element/manual/wide-gamut-canvas/canvas-display-p3-drawImage-video.html) | Fail | 0 / 32 | REQUIRES(media) | the frames of the videos are not decoded: the media backend of the tests gives opaque black frames, where the subtests of the `video` source expect the colors of the decoded frame |
+| [`element/manual/wide-gamut-canvas/canvas-display-p3-drawImage.https.html`](https://wpt.fyi/results/html/canvas/element/manual/wide-gamut-canvas/canvas-display-p3-drawImage.https.html) | Fail | 224 / 240 | TEST BUG | the SVG images filled with `color(display-p3 1 0 0)` and `color(display-p3 0.7333 0 0)` expect the color clipped to the gamut of the canvas (as the browsers do), while the library CSS gamut maps the CSS colors (https://drafts.csswg.org/css-color-4/#css-gamut-mapping: the OkLCh chroma is reduced at constant lightness), so `color(display-p3 1 0 0)` is painted (255,52,40) on an sRGB canvas instead of (255,0,0) |
 | [`element/manual/wide-gamut-canvas/canvas-display-p3-pattern-canvas.html`](https://wpt.fyi/results/html/canvas/element/manual/wide-gamut-canvas/canvas-display-p3-pattern-canvas.html) | Pass | 8 / 8 |  |  |
-| [`element/manual/wide-gamut-canvas/canvas-display-p3-pattern-image.html`](https://wpt.fyi/results/html/canvas/element/manual/wide-gamut-canvas/canvas-display-p3-pattern-image.html) | Fail | 86 / 104 | NOT IMPLEMENTED | the wide-gamut images: the images are decoded to sRGB (their colors outside of sRGB are clamped), and the bitmaps are sRGB |
+| [`element/manual/wide-gamut-canvas/canvas-display-p3-pattern-image.html`](https://wpt.fyi/results/html/canvas/element/manual/wide-gamut-canvas/canvas-display-p3-pattern-image.html) | Pass | 104 / 104 |  |  |
 | [`element/manual/wide-gamut-canvas/encode-hdr.html`](https://wpt.fyi/results/html/canvas/element/manual/wide-gamut-canvas/encode-hdr.html) | Fail | 0 / 18 | NOT IMPLEMENTED | the HDR settings of the canvases (`toneMapping` in `CanvasRenderingContext2DSettings`) |
 | [`element/path-objects/2d.path.arc.angle.1.html`](https://wpt.fyi/results/html/canvas/element/path-objects/2d.path.arc.angle.1.html) | Pass | 1 / 1 |  |  |
 | [`element/path-objects/2d.path.arc.angle.2.html`](https://wpt.fyi/results/html/canvas/element/path-objects/2d.path.arc.angle.2.html) | Pass | 1 / 1 |  |  |
@@ -879,7 +879,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`element/pixel-manipulation/2d.imageData.create2.this.html`](https://wpt.fyi/results/html/canvas/element/pixel-manipulation/2d.imageData.create2.this.html) | Pass | 1 / 1 |  |  |
 | [`element/pixel-manipulation/2d.imageData.create2.type.html`](https://wpt.fyi/results/html/canvas/element/pixel-manipulation/2d.imageData.create2.type.html) | Pass | 1 / 1 |  |  |
 | [`element/pixel-manipulation/2d.imageData.create2.zero.html`](https://wpt.fyi/results/html/canvas/element/pixel-manipulation/2d.imageData.create2.zero.html) | Pass | 1 / 1 |  |  |
-| [`element/pixel-manipulation/2d.imageData.createImageBitmap.p3.rgba.unorm8.html`](https://wpt.fyi/results/html/canvas/element/pixel-manipulation/2d.imageData.createImageBitmap.p3.rgba.unorm8.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the wide-gamut images: the images are decoded to sRGB (their colors outside of sRGB are clamped), and the bitmaps are sRGB |
+| [`element/pixel-manipulation/2d.imageData.createImageBitmap.p3.rgba.unorm8.html`](https://wpt.fyi/results/html/canvas/element/pixel-manipulation/2d.imageData.createImageBitmap.p3.rgba.unorm8.html) | Pass | 1 / 1 |  |  |
 | [`element/pixel-manipulation/2d.imageData.createImageBitmap.srgb.rgba.float16.html`](https://wpt.fyi/results/html/canvas/element/pixel-manipulation/2d.imageData.createImageBitmap.srgb.rgba.float16.html) | Pass | 1 / 1 |  |  |
 | [`element/pixel-manipulation/2d.imageData.createImageBitmap.srgb.rgba.unorm8.html`](https://wpt.fyi/results/html/canvas/element/pixel-manipulation/2d.imageData.createImageBitmap.srgb.rgba.unorm8.html) | Pass | 1 / 1 |  |  |
 | [`element/pixel-manipulation/2d.imageData.get.basic.html`](https://wpt.fyi/results/html/canvas/element/pixel-manipulation/2d.imageData.get.basic.html) | Pass | 1 / 1 |  |  |
@@ -1166,10 +1166,10 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`element/wide-gamut-canvas/2d.color.space.p3.fillText.html`](https://wpt.fyi/results/html/canvas/element/wide-gamut-canvas/2d.color.space.p3.fillText.html) | Pass | 1 / 1 |  |  |
 | [`element/wide-gamut-canvas/2d.color.space.p3.fillText.shadow.html`](https://wpt.fyi/results/html/canvas/element/wide-gamut-canvas/2d.color.space.p3.fillText.shadow.html) | Pass | 1 / 1 |  |  |
 | [`element/wide-gamut-canvas/2d.color.space.p3.strokeText.html`](https://wpt.fyi/results/html/canvas/element/wide-gamut-canvas/2d.color.space.p3.strokeText.html) | Pass | 1 / 1 |  |  |
-| [`element/wide-gamut-canvas/2d.color.space.toBlob.convert.html`](https://wpt.fyi/results/html/canvas/element/wide-gamut-canvas/2d.color.space.toBlob.convert.html) | Fail | 2 / 4 | NOT IMPLEMENTED | the wide-gamut images: the images are decoded to sRGB (their colors outside of sRGB are clamped), and the bitmaps are sRGB |
+| [`element/wide-gamut-canvas/2d.color.space.toBlob.convert.html`](https://wpt.fyi/results/html/canvas/element/wide-gamut-canvas/2d.color.space.toBlob.convert.html) | Pass | 4 / 4 |  |  |
 | [`element/wide-gamut-canvas/2d.color.space.toBlob.toDataURL.jpeg.linear.float.html`](https://wpt.fyi/results/html/canvas/element/wide-gamut-canvas/2d.color.space.toBlob.toDataURL.jpeg.linear.float.html) | Pass | 4 / 4 |  |  |
 | [`element/wide-gamut-canvas/2d.color.space.toBlob.toDataURL.png.linear.float.html`](https://wpt.fyi/results/html/canvas/element/wide-gamut-canvas/2d.color.space.toBlob.toDataURL.png.linear.float.html) | Pass | 4 / 4 |  |  |
-| [`element/wide-gamut-canvas/2d.color.space.toDataURL.convert.html`](https://wpt.fyi/results/html/canvas/element/wide-gamut-canvas/2d.color.space.toDataURL.convert.html) | Fail | 2 / 4 | NOT IMPLEMENTED | the wide-gamut images: the images are decoded to sRGB (their colors outside of sRGB are clamped), and the bitmaps are sRGB |
+| [`element/wide-gamut-canvas/2d.color.space.toDataURL.convert.html`](https://wpt.fyi/results/html/canvas/element/wide-gamut-canvas/2d.color.space.toDataURL.convert.html) | Pass | 4 / 4 |  |  |
 | [`historical.any.js`](https://wpt.fyi/results/html/canvas/historical.any.js) | Pass | 2 / 2 |  |  |
 | [`historical.window.js`](https://wpt.fyi/results/html/canvas/historical.window.js) | Pass | 1 / 1 |  |  |
 | [`offscreen/2d.conformance.requirements.basics.html`](https://wpt.fyi/results/html/canvas/offscreen/2d.conformance.requirements.basics.html) | Pass | 1 / 1 |  |  |
@@ -2665,8 +2665,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`offscreen/pixel-manipulation/2d.imageData.create2.round.worker.js`](https://wpt.fyi/results/html/canvas/offscreen/pixel-manipulation/2d.imageData.create2.round.worker.js) | Pass | 1 / 1 |  |  |
 | [`offscreen/pixel-manipulation/2d.imageData.create2.zero.html`](https://wpt.fyi/results/html/canvas/offscreen/pixel-manipulation/2d.imageData.create2.zero.html) | Pass | 1 / 1 |  |  |
 | [`offscreen/pixel-manipulation/2d.imageData.create2.zero.worker.js`](https://wpt.fyi/results/html/canvas/offscreen/pixel-manipulation/2d.imageData.create2.zero.worker.js) | Pass | 1 / 1 |  |  |
-| [`offscreen/pixel-manipulation/2d.imageData.createImageBitmap.p3.rgba.unorm8.html`](https://wpt.fyi/results/html/canvas/offscreen/pixel-manipulation/2d.imageData.createImageBitmap.p3.rgba.unorm8.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the wide-gamut images: the images are decoded to sRGB (their colors outside of sRGB are clamped), and the bitmaps are sRGB |
-| [`offscreen/pixel-manipulation/2d.imageData.createImageBitmap.p3.rgba.unorm8.worker.js`](https://wpt.fyi/results/html/canvas/offscreen/pixel-manipulation/2d.imageData.createImageBitmap.p3.rgba.unorm8.worker.js) | Fail | 0 / 1 | NOT IMPLEMENTED | the wide-gamut images: the images are decoded to sRGB (their colors outside of sRGB are clamped), and the bitmaps are sRGB |
+| [`offscreen/pixel-manipulation/2d.imageData.createImageBitmap.p3.rgba.unorm8.html`](https://wpt.fyi/results/html/canvas/offscreen/pixel-manipulation/2d.imageData.createImageBitmap.p3.rgba.unorm8.html) | Pass | 1 / 1 |  |  |
+| [`offscreen/pixel-manipulation/2d.imageData.createImageBitmap.p3.rgba.unorm8.worker.js`](https://wpt.fyi/results/html/canvas/offscreen/pixel-manipulation/2d.imageData.createImageBitmap.p3.rgba.unorm8.worker.js) | Pass | 1 / 1 |  |  |
 | [`offscreen/pixel-manipulation/2d.imageData.createImageBitmap.srgb.rgba.float16.html`](https://wpt.fyi/results/html/canvas/offscreen/pixel-manipulation/2d.imageData.createImageBitmap.srgb.rgba.float16.html) | Pass | 1 / 1 |  |  |
 | [`offscreen/pixel-manipulation/2d.imageData.createImageBitmap.srgb.rgba.float16.worker.js`](https://wpt.fyi/results/html/canvas/offscreen/pixel-manipulation/2d.imageData.createImageBitmap.srgb.rgba.float16.worker.js) | Pass | 1 / 1 |  |  |
 | [`offscreen/pixel-manipulation/2d.imageData.createImageBitmap.srgb.rgba.unorm8.html`](https://wpt.fyi/results/html/canvas/offscreen/pixel-manipulation/2d.imageData.createImageBitmap.srgb.rgba.unorm8.html) | Pass | 1 / 1 |  |  |

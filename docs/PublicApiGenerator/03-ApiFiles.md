@@ -81,6 +81,63 @@ namespace Demo
 The `new` modifier is not stored in the assembly: the generator adds it to the members that hide an inherited member,
 using the rules of the C# compiler. See [The `new` modifier](06-Library/03-ReadingTheApiModel.md#the-new-modifier).
 
+## Extension members
+
+The members of C# 14 extension blocks are written in `extension` blocks, as in the source code. For this code:
+
+<!-- ref:../../tests/Meziantou.Framework.PublicApiGenerator.Tests/PublicApiGeneratorTests.cs;region=PublicApi_ExtensionBlocksInput;format=md-fenced-code-block;dedent=true -->
+```csharp
+namespace Demo;
+
+public static class StringExtensions
+{
+    extension(string value)
+    {
+        public bool IsBlank => string.IsNullOrWhiteSpace(value);
+        public string Repeat(int count) => string.Concat(Enumerable.Repeat(value, count));
+    }
+
+    extension(string)
+    {
+        public static string Concatenate(params IEnumerable<string> values) => string.Concat(values);
+    }
+}
+```
+<!-- endref -->
+
+The generator writes:
+
+<!-- ref:../../tests/Meziantou.Framework.PublicApiGenerator.Tests/PublicApiGeneratorTests.cs;region=PublicApi_ExtensionBlocksOutput;format=md-fenced-code-block;dedent=true -->
+```csharp
+// Target Frameworks: net10.0
+#nullable enable
+
+namespace Demo
+{
+    public static class StringExtensions
+    {
+        public static string Repeat(this string value, int count) => throw null;
+        extension(string value)
+        {
+            public bool IsBlank { get => throw null; }
+        }
+        extension(string)
+        {
+            public static string Concatenate(params System.Collections.Generic.IEnumerable<string> values) => throw null;
+        }
+    }
+}
+```
+<!-- endref -->
+
+- **Each member has its own block**, after the other members of the class, so that the output does not depend on how
+  you group the members in your code. The blocks are sorted by the type of the receiver, then as the other members.
+- **Static members, properties and operators** are in their block, with the receiver as declared (`extension(string)`
+  for a block that only has static members). The methods the compiler generates for them, such as
+  `get_IsBlank(string)`, are not in the file.
+- **Instance methods** are written as classic extension methods, with a `this` parameter: the compiler generates this
+  method for them, and it declares the same API.
+
 ## File layouts
 
 The API can be written to one file or split into several files. The layout is an option of the

@@ -1227,21 +1227,28 @@ internal sealed partial class InlineLayoutAlgorithm
 
     /// <summary>
     /// Collects in <see cref="_rubyPositions"/> the justification opportunities of the text of a base (the annotations of the ruby
-    /// columns in it excluded) or of an annotation: as in Gecko, after each typographic character unit (as <c>text-justify:
-    /// inter-character</c>, the <c>ruby</c> value of the UA style sheet), except after the last one.
+    /// columns in it excluded) or of an annotation (https://drafts.csswg.org/css-ruby-1/#ruby-align-property: "the ruby content
+    /// expands as defined for normal text justification"): as in Gecko, the space is added at each boundary between two
+    /// typographic character units of which one is justifiable by the <c>text-justify</c> of its text (a word separator, a CJK
+    /// character, or any character with <c>inter-character</c>), so a word separator expands on both sides, and the text without
+    /// justifiable character (e.g. Latin letters) is centered.
     /// </summary>
     private void CollectRubyJustificationOpportunities(int startItem, int endItem, bool annotation, bool isFirstLine)
     {
         _rubyPositions.Clear();
         var items = Items;
+        var characters = _text.AsSpan(0, _length);
         var lastEnd = -1;
-        var lastCollectedEnd = -1;
+        var lastVisibleEnd = -1;
+        var previousPosition = -1;
+        var previousJustifiable = false;
         for (var i = startItem; i < endItem; i++)
         {
             ref readonly var item = ref items[i];
             if (item.Kind != InlineItemKind.Text || item.HasFlag(InlineItemFlags.Tab) || item.HasFlag(InlineItemFlags.RubyAnnotation) != annotation)
                 continue;
 
+            var textJustify = item.Style.Layout.Text.TextJustify;
             var shaped = GetShaped(i, isFirstLine);
             var glyphs = shaped.Glyphs;
             var g = 0;
@@ -1249,6 +1256,7 @@ internal sealed partial class InlineLayoutAlgorithm
             {
                 var cluster = glyphs[g].Cluster;
                 var invisible = glyphs[g].IsInvisible;
+                var isSeparator = (glyphs[g].Flags & ShapedGlyphFlags.WordSeparator) != ShapedGlyphFlags.None;
                 g++;
                 while (g < glyphs.Length && glyphs[g].Cluster == cluster)
                 {
@@ -1256,18 +1264,33 @@ internal sealed partial class InlineLayoutAlgorithm
                 }
 
                 lastEnd = (g < glyphs.Length ? glyphs[g].Cluster : shaped.Length) + item.Start;
-                if (!invisible)
+                if (invisible)
+                    continue;
+
+                var position = item.Start + cluster;
+                var justifiable = textJustify switch
                 {
-                    _rubyPositions.Add(item.Start + cluster);
-                    lastCollectedEnd = lastEnd;
+                    TextJustify.None => false,
+                    TextJustify.InterWord => isSeparator,
+                    TextJustify.InterCharacter => !IsCursiveLetter(GetCodePointAt(characters, position)),
+                    _ => isSeparator || TextSpacingClasses.IsCjkJustificationCharacter(GetCodePointAt(characters, position)),
+                };
+
+                if (previousPosition >= 0 && (previousJustifiable || justifiable))
+                {
+                    _rubyPositions.Add(previousPosition);
                 }
+
+                previousPosition = position;
+                previousJustifiable = justifiable;
+                lastVisibleEnd = lastEnd;
             }
         }
 
-        // No opportunity after the last character
-        if (_rubyPositions.Count > 0 && lastCollectedEnd >= lastEnd)
+        // No opportunity after the last character, unless invisible characters follow it
+        if (previousJustifiable && lastVisibleEnd < lastEnd)
         {
-            _rubyPositions.RemoveAt(_rubyPositions.Count - 1);
+            _rubyPositions.Add(previousPosition);
         }
     }
 

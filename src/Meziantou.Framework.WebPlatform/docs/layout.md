@@ -1799,8 +1799,10 @@ an atomic inline laid out while its parent collects its items rents another inst
   - *Inline axis* (`LayoutRubyColumnsOnLine`, `AlignRubyColumn`): the bases are laid out on the line like the other inline
     content; the space of a slot that the content of its base (or of an annotation, in the slots it spans) does not fill is
     distributed by `ruby-align`: at the end for `start`, on both sides for `center`, to the justification opportunities of the
-    text for `space-between` and `space-around` (as in Gecko, after each typographic character unit except the last one, with
-    half an opportunity at each edge for `space-around`; centered without opportunity). The space at the edges is added inside
+    text for `space-between` and `space-around` (as in Gecko, at each boundary between two typographic character units of
+    which one is justifiable by the `text-justify` of its text: a word separator, a CJK character, or any character with
+    `inter-character`, so a word separator expands on both sides; half an opportunity at each edge for `space-around`;
+    centered without opportunity, e.g. Latin letters, as "Non-CJK ruby text ... are centered" in css-ruby). The space at the edges is added inside
     the base and annotation boxes (their fragments span their slots), the space between the characters to the glyphs (as the
     justification). When building the fragments (`PlaceLeaves`), the annotations jump back to the start of the slots of their
     bases (the position in the base row is restored after them; an annotation container spans its annotations); on a

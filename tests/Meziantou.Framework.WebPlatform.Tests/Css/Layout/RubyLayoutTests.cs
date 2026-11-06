@@ -42,13 +42,23 @@ public sealed class RubyLayoutTests : IDisposable
     public void Annotation_OverTheBase_ExtendsTheFirstLine()
     {
         // The column is as wide as the annotation (60px); ruby-align: space-around distributes the 20px of extra space of the base:
-        // 10px after its first character, 5px at its edges. The annotation (10px) overflows the line box (line-height: 1): the line
-        // is moved down by its overflow
+        // the Latin letters are not justification opportunities, so the base is centered. The annotation (10px) overflows the line
+        // box (line-height: 1): the line is moved down by its overflow
         var document = Parse("<div id=d><ruby id=r>XX<rt id=t>XXXXXX</rt></ruby></div>");
         Assert.Equal(new PhysicalRect(0, 0, 60, 10), GetRect(document, "t"));
         Assert.Equal(new PhysicalRect(0, 10, 60, 20), GetRect(document, "r"));
         Assert.Equal(30, GetRect(document, "d").Height);
-        Assert.Equal(new PhysicalRect(5, 10, 50, 20), GetTextFragments(document, "r")[0].GetRectInRoot());
+        Assert.Equal(new PhysicalRect(10, 10, 40, 20), GetTextFragments(document, "r")[0].GetRectInRoot());
+    }
+
+    [Fact]
+    public void Annotation_SpaceAround_WordSeparatorsExpandOnBothSides()
+    {
+        // ruby-align: space-around distributes the 120px of extra space of the base "X X" to the boundaries around its word
+        // separator (2 opportunities) and half an opportunity at each edge: 40px per opportunity, 20px at the edges
+        var document = Parse("<div id=d><ruby id=r>X X<rt id=t>XXXXXXXXXXXXXXXXXX</rt></ruby></div>");
+        Assert.Equal(new PhysicalRect(0, 0, 180, 10), GetRect(document, "t"));
+        Assert.Equal(new PhysicalRect(20, 10, 140, 20), GetTextFragments(document, "r")[0].GetRectInRoot());
     }
 
     [Fact]
@@ -110,15 +120,16 @@ public sealed class RubyLayoutTests : IDisposable
     [InlineData("space-around", 15)]
     public void RubyAlign(string align, double x)
     {
-        var document = Parse($"<ruby style='ruby-align: {align}'>XXXX<rt id=t>XX</rt></ruby>");
+        var document = Parse($"<ruby style='ruby-align: {align}; text-justify: inter-character'>XXXX<rt id=t>XX</rt></ruby>");
         Assert.Equal(x, GetTextFragments(document, "t")[0].GetRectInRoot().X);
     }
 
     [Fact]
     public void RubyAlign_SpaceAround_JustifiesTheContent()
     {
-        // 130px of extra space, 2 opportunities between the 3 characters: 130 / 3 between them, half of it at the edges
-        var document = Parse("<ruby>XXXXXXXX<rt id=t>XXX</rt></ruby>");
+        // 130px of extra space, 2 opportunities between the 3 characters (text-justify: inter-character): 130 / 3 between them, half
+        // of it at the edges
+        var document = Parse("<ruby>XXXXXXXX<rt id=t style='text-justify: inter-character'>XXX</rt></ruby>");
         var text = GetTextFragments(document, "t")[0];
         Assert.Equal(130 / 6d, text.GetRectInRoot().X, 6);
         Assert.Equal(30 + (2 * 130 / 3d), text.GetRectInRoot().Width, 6);
@@ -248,4 +259,5 @@ public sealed class RubyLayoutTests : IDisposable
         Assert.Equal(new PhysicalRect(0, 10, 40, 20), GetRect(document, "r1"));
         Assert.Equal(40, GetRect(document, "r2").Y);
     }
+
 }

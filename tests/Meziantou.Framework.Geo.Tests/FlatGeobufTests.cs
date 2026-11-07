@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Text.Json;
 
 namespace Meziantou.Framework.Geo.Tests;
@@ -83,6 +84,12 @@ public sealed class FlatGeobufTests
         // A file the fuzzer of the reference implementation found, and data that is not FlatGeobuf
         Assert.Throws<FormatException>(() => FlatGeobuf.Read(GetPath("fuzz-4642513358553088.fgb")));
         Assert.Throws<FormatException>(() => FlatGeobuf.Read(new ReadOnlyMemory<byte>([1, 2, 3])));
+
+        // A feature whose table is at an offset above int.MaxValue: the signature, the size-prefixed header, then the size of the feature
+        var data = FlatGeobuf.Write([new GeoFeature(new GeoPoint(new(1, 2)))], new FlatGeobufWriterOptions { IncludeSpatialIndex = false });
+        var feature = 12 + (int)BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(8)) + 4;
+        BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(feature), uint.MaxValue);
+        Assert.Throws<FormatException>(() => FlatGeobuf.Read(data));
     }
 
     [Fact]
@@ -189,6 +196,23 @@ public sealed class FlatGeobufTests
         // The positions without altitude get 0 when another one has an altitude
         var line = Assert.IsType<GeoLineString>(read.Single(feature => feature.Geometry is GeoLineString).Geometry);
         Assert.Equal([new GeoPosition(1, 1, 100), new(2, 2, 0)], line.Positions);
+    }
+
+    [Fact]
+    public void Write_ColumnsInIndexOrder()
+    {
+        // The index reorders the features: the columns follow the written order, so writing what is read gives the same bytes
+        foreach (var (first, second) in new[] { (0.0, 50.0), (50.0, 0.0) })
+        {
+            var features = new GeoFeatureCollection
+            {
+                new GeoFeature(new GeoPoint(new(first, first)), new Dictionary<string, object?>(StringComparer.Ordinal) { ["a"] = 1 }),
+                new GeoFeature(new GeoPoint(new(second, second)), new Dictionary<string, object?>(StringComparer.Ordinal) { ["b"] = "text" }),
+            };
+
+            var data = FlatGeobuf.Write(features);
+            Assert.Equal(data, FlatGeobuf.Write(FlatGeobuf.Read(data)));
+        }
     }
 
     [Fact]

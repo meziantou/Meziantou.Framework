@@ -170,7 +170,7 @@ public abstract class MapFormat
     /// <param name="region">The name of the region, used when the JSON has no <c>region</c>.</param>
     /// <param name="json">The JSON.</param>
     /// <returns>The description of the map.</returns>
-    /// <exception cref="FormatException">The JSON is not valid.</exception>
+    /// <exception cref="FormatException">The JSON is not valid, or its bounds are not finite numbers.</exception>
     protected static MapMetadata ParseMetadata(string region, string json)
     {
         ArgumentNullException.ThrowIfNull(json);
@@ -185,6 +185,10 @@ public abstract class MapFormat
             if (root.TryGetProperty("bounds", out var box) && box.ValueKind is JsonValueKind.Array && box.GetArrayLength() == 4)
             {
                 bounds = new GeoBounds(box[0].GetDouble(), box[1].GetDouble(), box[2].GetDouble(), box[3].GetDouble());
+
+                // A number out of the range of a double, such as 1e400, reads as an infinity
+                if (!double.IsFinite(bounds.Value.West) || !double.IsFinite(bounds.Value.South) || !double.IsFinite(bounds.Value.East) || !double.IsFinite(bounds.Value.North))
+                    throw new FormatException("The bounds of the map must be finite numbers.");
             }
 
             DateTimeOffset? lastModified = null;

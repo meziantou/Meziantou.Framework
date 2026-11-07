@@ -10,7 +10,6 @@ internal static class FlatGeobufWriter
 {
     public static void Write(GeoFeatureCollection features, Stream stream, FlatGeobufWriterOptions options)
     {
-        var columns = GetColumns(features);
         var geometryTypes = features
             .Where(feature => feature.Geometry is { IsEmpty: false })
             .Select(feature => GetGeometryType(feature.Geometry!))
@@ -23,6 +22,9 @@ internal static class FlatGeobufWriter
         var boxes = features.Select(feature => feature.Geometry is { IsEmpty: false } geometry ? geometry.GetBounds() : null).ToArray();
         var hasIndex = options.IncludeSpatialIndex && features.Count > 0 && boxes.All(box => box is not null);
         int[] order = hasIndex ? PackedRTree.GetHilbertOrder([.. boxes.Select(box => box!.Value)]) : [.. Enumerable.Range(0, features.Count)];
+
+        // The columns in the order the written features have them, so that writing what is read gives the same columns
+        var columns = GetColumns(order.Select(i => features[i]));
 
         var buffers = new byte[features.Count][];
         var offsets = new long[features.Count];
@@ -294,7 +296,7 @@ internal static class FlatGeobufWriter
     }
 
     /// <summary>Gets the columns: the property names in the order they are first seen, each typed by its non-null values.</summary>
-    private static List<Column> GetColumns(GeoFeatureCollection features)
+    private static List<Column> GetColumns(IEnumerable<GeoFeature> features)
     {
         var kinds = new Dictionary<string, byte?>(StringComparer.Ordinal);
         var names = new List<string>();

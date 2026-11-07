@@ -52,6 +52,12 @@ public static partial class GeoFuzzTargets
         "\u000F\u0000\u0000\u0000", "\u001F\u0000\u0000\u0000", "ÿÿÿ\u007F", "\u0003", "\u000D", "\u001A", "*", " ", "C", "N", "F", "L", "D", "M", "?", "T", "19991231", "00000000",
     ];
 
+    private static readonly string[] FlatGeobufTokens =
+    [
+        "fgb\u0003fgb\u0000", "fgb\u0003fgb\u0001", "\u0000\u0000\u0000\u0000", "\u0001\u0000\u0000\u0000", "\u0010\u0000", "\u0002\u0000", "ÿÿÿÿ", "ÿÿÿ\u007F", "\u0000\u0000\u0000\u0000\u0000\u0000ð?", "\u0000\u0000\u0000\u0000\u0000\u0000ø\u007F",
+        "\u0001", "\u0002", "\u0003", "\u0004", "\u0005", "\u0006", "\u0007", "\u000B", "\u000C", "\u000D", "\u000E", "{}", "[1]", "2024-02-29T13:45:00Z", "EPSG", "WGS 84",
+    ];
+
     public static IReadOnlyList<FuzzTarget> All { get; } =
     [
         new("geo-geojson", GeoJsonTarget) { Seeds = GetGeoJsonSeeds, Dictionary = JsonTokens },
@@ -62,6 +68,9 @@ public static partial class GeoFuzzTargets
         new("geo-kml", KmlTarget) { Seeds = GetKmlSeeds, Dictionary = XmlTokens },
         new("geo-gpx", GpxTarget) { Seeds = GetGpxSeeds, Dictionary = XmlTokens },
         new("geo-shapefile", ShapefileTarget) { Seeds = GetShapefileSeeds, Dictionary = ShapefileTokens },
+        new("geo-flatgeobuf", FlatGeobufTarget) { Seeds = GetFlatGeobufSeeds, Dictionary = FlatGeobufTokens },
+        new("geo-operations", OperationsTarget) { Seeds = GetOperationsSeeds },
+        new("geo-projection", ProjectionTarget) { Seeds = GetProjectionSeeds },
     ];
 
     /// <summary>
@@ -481,7 +490,7 @@ public static partial class GeoFuzzTargets
             builder.Append("Feature ").Append(feature.Id).Append(": ").Append(Describe(feature.Geometry)).Append('\n');
             foreach (var (name, value) in feature.Properties)
             {
-                builder.Append("  ").Append(name).Append(" = ").Append(FuzzAssert.Format(value is IFormattable formattable ? formattable.ToString(format: null, CultureInfo.InvariantCulture) : value?.ToString())).Append('\n');
+                builder.Append("  ").Append(name).Append(" = ").Append(FuzzAssert.Format(value is byte[] binary ? Convert.ToHexString(binary) : value is IFormattable formattable ? formattable.ToString(format: null, CultureInfo.InvariantCulture) : value?.ToString())).Append('\n');
             }
         }
 

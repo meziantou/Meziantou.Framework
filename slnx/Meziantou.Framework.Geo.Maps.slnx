@@ -1,4 +1,8 @@
 <Solution>
+  <Folder Name="/fuzz/">
+    <Project Path="../fuzz/Meziantou.Framework.Fuzzing/Meziantou.Framework.Fuzzing.csproj" />
+    <Project Path="../fuzz/Meziantou.Framework.Geo.Maps.Fuzz/Meziantou.Framework.Geo.Maps.Fuzz.csproj" />
+  </Folder>
   <Folder Name="/src/">
     <Project Path="../src/Meziantou.Framework.Charts/Meziantou.Framework.Charts.csproj" />
     <Project Path="../src/Meziantou.Framework.DiffEngine/Meziantou.Framework.DiffEngine.csproj" />
@@ -6,6 +10,7 @@
     <Project Path="../src/Meziantou.Framework.FullPath.Analyzer/Meziantou.Framework.FullPath.Analyzer.csproj" />
     <Project Path="../src/Meziantou.Framework.FullPath.CodeFix/Meziantou.Framework.FullPath.CodeFix.csproj" />
     <Project Path="../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
+    <Project Path="../src/Meziantou.Framework.Geo.Maps.GeoPackage/Meziantou.Framework.Geo.Maps.GeoPackage.csproj" />
     <Project Path="../src/Meziantou.Framework.Geo.Maps/Meziantou.Framework.Geo.Maps.csproj" />
     <Project Path="../src/Meziantou.Framework.Geo/Meziantou.Framework.Geo.csproj" />
     <Project Path="../src/Meziantou.Framework.Hashing/Meziantou.Framework.Hashing.csproj" />

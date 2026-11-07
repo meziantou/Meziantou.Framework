@@ -33,7 +33,11 @@ internal readonly struct FlatBufferTable
     public static FlatBufferTable GetRoot(ReadOnlyMemory<byte> buffer)
     {
         CheckRange(buffer.Span, 0, 4);
-        return new FlatBufferTable(buffer, checked((int)BinaryPrimitives.ReadUInt32LittleEndian(buffer.Span)));
+        var offset = BinaryPrimitives.ReadUInt32LittleEndian(buffer.Span);
+        if (offset > (uint)(buffer.Length - 4))
+            throw InvalidData();
+
+        return new FlatBufferTable(buffer, (int)offset);
     }
 
     public bool Has(int field) => GetFieldPosition(field) != 0;

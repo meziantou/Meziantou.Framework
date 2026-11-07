@@ -57,7 +57,8 @@ names it in the message of the `KeyNotFoundException` of [GetMap](cref:Meziantou
 
 A layer is the table named after the layer with underscores, such as `states_provinces`, and the metadata of the map,
 the JSON of `metadata.json`, is in the metadata extension of the file. Its columns have the GeoPackage types of the
-properties: `rank` is a `MEDIUMINT`, `population` an `INTEGER` and `capital` a `BOOLEAN`.
+properties: `rank` is a `MEDIUMINT`, `population` an `INTEGER` and `capital` a `BOOLEAN`. SQLite does not store NaN: a
+`NaN` value is written as `NULL`, so the feature does not have the property once read.
 
 ## Convert a bundle
 

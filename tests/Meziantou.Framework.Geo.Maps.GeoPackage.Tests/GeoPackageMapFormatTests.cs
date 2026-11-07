@@ -1,7 +1,9 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using Meziantou.Framework.Geo;
 using Meziantou.Framework.Geo.Maps;
 using Meziantou.Framework.Geo.Maps.GeoPackage;
+using Microsoft.Data.Sqlite;
 
 namespace Meziantou.Framework.Geo.Maps.GeoPackage.Tests;
 
@@ -92,6 +94,7 @@ public sealed class GeoPackageMapFormatTests : IDisposable
                 ["int"] = 1,
                 ["long"] = 5_000_000_000L,
                 ["double"] = 1.5,
+                ["nan"] = double.NaN,
                 ["date"] = date,
                 ["bytes"] = new byte[] { 1, 2, 3 },
                 ["json"] = json.RootElement.GetProperty("a"),
@@ -123,8 +126,9 @@ public sealed class GeoPackageMapFormatTests : IDisposable
         Assert.Equal("1", first["mixed"]);
         Assert.Equal("b", cities[1].Properties["mixed"]);
 
-        // A null value, or a property a feature does not have, is not there
+        // A null value, or a property a feature does not have, is not there; SQLite stores NaN as NULL
         Assert.False(first.ContainsKey("absent"));
+        Assert.False(first.ContainsKey("nan"));
         Assert.False(cities[1].Properties.ContainsKey("text"));
     }
 
@@ -168,6 +172,30 @@ public sealed class GeoPackageMapFormatTests : IDisposable
         // SQLite compares the names of the columns without case
         var duplicate = new GeoFeatureCollection { new GeoFeature(new GeoPoint(new(1, 1)), new Dictionary<string, object?>(StringComparer.Ordinal) { ["name"] = "a", ["Name"] = "b" }) };
         Assert.Throws<ArgumentException>("features", () => WriteAndOpen(new() { [MapLayer.Cities] = duplicate }));
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "The statements are built from the names of the triggers of the test file")]
+    public void Load_GeometryIsNotBlob()
+    {
+        var path = Path.Combine(_directory, "Region.gpkg");
+        var features = new GeoFeatureCollection { new GeoFeature(new GeoPoint(new(1, 1))) };
+        GeoPackageMapFormat.Instance.Write(path, new MapMetadata("Region"), new Dictionary<MapLayer, GeoFeatureCollection> { [MapLayer.Cities] = features });
+
+        // A file of another tool can store any value in the geometry column; the triggers of the R-tree call functions of
+        // GeoPackage that SQLite does not have
+        using (var connection = new SqliteConnection(new SqliteConnectionStringBuilder { DataSource = path, Pooling = false }.ToString()))
+        {
+            connection.Open();
+            using var command = connection.CreateCommand();
+            command.CommandText = "SELECT group_concat('DROP TRIGGER \"' || name || '\";', ' ') FROM sqlite_master WHERE type = 'trigger'";
+            var dropTriggers = (string)command.ExecuteScalar()!;
+            command.CommandText = dropTriggers + " UPDATE cities SET geom = 'POINT (1 1)'";
+            command.ExecuteNonQuery();
+        }
+
+        var map = GeoPackageMapFormat.Instance.Open(path);
+        Assert.Throws<FormatException>(() => map.Load(MapLayer.Cities));
     }
 
     [Fact]

@@ -108,6 +108,10 @@ public sealed class MapCatalogTests : IDisposable
         Assert.Throws<FormatException>(() => new MapCatalog(_directory).GetMap("Invalid"));
         File.WriteAllText(Path.Combine(_directory, "Invalid", "metadata.json"), "[]");
         Assert.Throws<FormatException>(() => new MapCatalog(_directory).GetMap("Invalid"));
+
+        // A number out of the range of a double reads as an infinity, which the metadata cannot be written back with
+        File.WriteAllText(Path.Combine(_directory, "Invalid", "metadata.json"), """{"bounds":[1e400,0,1,1]}""");
+        Assert.Throws<FormatException>(() => new MapCatalog(_directory).GetMap("Invalid"));
     }
 
     [Theory]

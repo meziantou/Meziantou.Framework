@@ -2,8 +2,8 @@
 
 A .NET tool that generates the offline map bundles `Meziantou.Framework.Geo.Maps` reads: for the world, each continent
 and each country or territory, the borders, subdivisions, cities, rivers, lakes, coastline, land, ocean, seas and
-physical regions, as folders of FlatGeobuf or GeoJSON files, GeoPackage files, or NuGet packages that copy them next to
-an application.
+physical regions, as folders of FlatGeobuf or GeoJSON files, GeoPackage files, or NuGet packages of assemblies that
+embed them.
 
 ```bash
 dotnet tool install --global Meziantou.Framework.Geo.Maps.Tool
@@ -14,7 +14,11 @@ Meziantou.Framework.Geo.Maps.Tool list
 
 `build` writes the bundles to `./maps`, where `MapCatalog` reads them when they are next to the application. `pack` also
 writes a NuGet package per region to `./packages`, named after the prefix and the key of the region
-(`Contoso.Maps.Europe`), for your own feed. `list` lists the regions: the world, the continents, and every country and
+(`Contoso.Maps.Europe`), for your own feed: an assembly, built with the .NET SDK, that embeds the map and opens it with
+`Map.Region_Europe` (a C# 14 extension member, in the `Contoso.Maps` namespace). `--package-target-framework`,
+`--package-sdk` and `--package-project-output` build the assemblies as the projects of your repository, such as with
+`$(LatestTargetFrameworks)` and `Meziantou.NET.Sdk`. `--package-content files` makes packages that copy the map to the
+`maps` folder next to the application instead, as GeoPackage bundles need. `list` lists the regions: the world, the continents, and every country and
 territory, by their English name in lowercase words joined by hyphens, their key or their ISO code.
 
 The first run downloads the sources, about 160 MB, to the application data folder of the user (`--cache` to choose
@@ -75,7 +79,7 @@ Options:
 
 Commands:
   build        Builds the bundles of regions
-  pack         Builds the bundles of regions, and a NuGet package per bundle that copies it to the maps folder of the applications that reference it
+  pack         Builds the bundles of regions, and a NuGet package per bundle: by default, an assembly built by the .NET SDK that embeds the map and opens it with Map.Region_<Key>
   list         Lists the regions: their identifier, their key (the name of their bundle), their ISO 3166-1 code and their continent
   update-pins  Downloads the latest versions of the sources, and pins them in a file to use with --pins
 ```
@@ -120,25 +124,29 @@ Options:
 
 ```
 Description:
-  Builds the bundles of regions, and a NuGet package per bundle that copies it to the maps folder of the applications that reference it
+  Builds the bundles of regions, and a NuGet package per bundle: by default, an assembly built by the .NET SDK that embeds the map and opens it with Map.Region_<Key>
 
 Usage:
   Meziantou.Framework.Geo.Maps.Tool pack [options]
 
 Options:
-  --region <region>                        The regions to build, separated by commas. A region is world, a continent (africa, antarctica, asia, europe, north-america, oceania, south-america), or a country or territory: its English name in lowercase words joined by hyphens (switzerland, united-states, cote-divoire), its key (Switzerland, UnitedStates) or its ISO 3166-1 alpha-2 code (CH, US). The list command lists them.
-  --all                                    Builds every region: the world, the continents, and every country and territory
-  --output <output>                        The folder of the bundles [default: maps]
-  --format <format>                        The format of the bundles: fgb (a folder of FlatGeobuf files per region), geojson (a folder of GeoJSON files per region) or gpkg (a GeoPackage file per region) [default: fgb]
-  --layers <layers>                        The layers to write, separated by commas: borders, states-provinces, cities, rivers, lakes, coastline, land, ocean, marine-areas, physical-regions (default: all of them)
-  --previews <previews>                    A folder to render a preview of each bundle to, as SVG and PNG
-  --pins <pins>                            A file of pins to use instead of the pins of the tool, as the update-pins command writes it
-  --cache <cache>                          The folder of the downloaded sources (default: the application data folder of the user)
-  --package-output <package-output>        The folder of the packages [default: packages]
-  --package-id-prefix <package-id-prefix>  The prefix of the identifiers of the packages, followed by the key of the region, such as GeoMaps.France [default: GeoMaps]
-  --package-version <package-version>      The version of the packages [default: 1.0.0]
-  --authors <authors>                      The authors of the packages (default: the prefix of their identifiers)
-  -?, -h, --help                           Show help and usage information
+  --region <region>                                      The regions to build, separated by commas. A region is world, a continent (africa, antarctica, asia, europe, north-america, oceania, south-america), or a country or territory: its English name in lowercase words joined by hyphens (switzerland, united-states, cote-divoire), its key (Switzerland, UnitedStates) or its ISO 3166-1 alpha-2 code (CH, US). The list command lists them.
+  --all                                                  Builds every region: the world, the continents, and every country and territory
+  --output <output>                                      The folder of the bundles [default: maps]
+  --format <format>                                      The format of the bundles: fgb (a folder of FlatGeobuf files per region), geojson (a folder of GeoJSON files per region) or gpkg (a GeoPackage file per region) [default: fgb]
+  --layers <layers>                                      The layers to write, separated by commas: borders, states-provinces, cities, rivers, lakes, coastline, land, ocean, marine-areas, physical-regions (default: all of them)
+  --previews <previews>                                  A folder to render a preview of each bundle to, as SVG and PNG
+  --pins <pins>                                          A file of pins to use instead of the pins of the tool, as the update-pins command writes it
+  --cache <cache>                                        The folder of the downloaded sources (default: the application data folder of the user)
+  --package-output <package-output>                      The folder of the packages [default: packages]
+  --package-id-prefix <package-id-prefix>                The prefix of the identifiers of the packages, followed by the key of the region, such as GeoMaps.France [default: GeoMaps]
+  --package-version <package-version>                    The version of the packages [default: 1.0.0]
+  --authors <authors>                                    The authors of the packages (default: the prefix of their identifiers)
+  --package-content <package-content>                    How the packages ship the maps: assembly (an assembly that embeds the map, built with the .NET SDK, opened with Map.Region_<Key>) or files (files copied to the maps folder next to the application, read by MapCatalog.Default; required for gpkg) [default: assembly]
+  --package-sdk <package-sdk>                            The MSBuild SDK of the projects of the assemblies, such as Meziantou.NET.Sdk; the folders above the projects give its version, in a global.json file [default: Microsoft.NET.Sdk]
+  --package-target-framework <package-target-framework>  The target frameworks of the assemblies, separated by semicolons (net10.0 or later), or an MSBuild property that gives them, such as $(LatestTargetFrameworks), defined in a Directory.Build.props file above --package-project-output [default: net10.0]
+  --package-project-output <package-project-output>      A folder to write the projects of the assemblies to and keep them: the projects import the MSBuild files of the folders above them, such as Directory.Build.props (default: a temporary folder, where they import none)
+  -?, -h, --help                                         Show help and usage information
 ```
 
 ### update-pins

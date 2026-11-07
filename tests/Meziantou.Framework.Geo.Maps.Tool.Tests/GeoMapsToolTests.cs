@@ -81,7 +81,60 @@ public sealed class GeoMapsToolTests(ITestOutputHelper testOutputHelper)
         await using var temp = TemporaryDirectory.Create();
         var (pins, cache) = TestSources.Create(temp.FullPath);
         var packages = temp.FullPath / "packages";
-        var (exitCode, _) = await RunAsync("pack", "--region", "switzerland", "--package-id-prefix", "Contoso.Maps.", "--package-version", "2.0.0", "--authors", "Contoso", "--package-output", packages, "--pins", pins, "--cache", cache, "--output", temp.FullPath / "maps");
+        var (exitCode, console) = await RunAsync("pack", "--region", "switzerland", "--package-id-prefix", "Contoso.Maps.", "--package-version", "2.0.0", "--authors", "Contoso", "--package-output", packages, "--pins", pins, "--cache", cache, "--output", temp.FullPath / "maps");
+        Assert.Equal(0, exitCode);
+        Assert.Contains("Packed 1 packages", console.Output);
+
+        // An assembly that embeds the map: no file to copy next to the application
+        using var zip = ZipFile.OpenRead(packages / "Contoso.Maps.Switzerland.2.0.0.nupkg");
+        var entries = zip.Entries.Select(entry => entry.FullName).ToList();
+        Assert.Contains("lib/net10.0/Contoso.Maps.Switzerland.dll", entries);
+        Assert.Contains("lib/net10.0/Contoso.Maps.Switzerland.xml", entries);
+        Assert.DoesNotContain(entries, entry => entry.StartsWith("data/", StringComparison.Ordinal) || entry.StartsWith("buildTransitive/", StringComparison.Ordinal));
+        using var reader = new StreamReader(zip.GetEntry("Contoso.Maps.Switzerland.nuspec")!.Open());
+        var nuspec = await reader.ReadToEndAsync();
+        Assert.Contains("<id>Contoso.Maps.Switzerland</id>", nuspec);
+        Assert.Contains("<authors>Contoso</authors>", nuspec);
+        Assert.Contains("ODbL-1.0", nuspec);
+        Assert.Contains("<dependency id=\"Meziantou.Framework.Geo.Maps\"", nuspec);
+        Assert.Contains("borders, states and provinces, cities, rivers, lakes and physical regions", nuspec);
+        Assert.Contains("Map.Region_Switzerland", nuspec);
+    }
+
+    [Fact]
+    public async Task Pack_ProjectOutput()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var (pins, cache) = TestSources.Create(temp.FullPath);
+        var packages = temp.FullPath / "packages";
+
+        // The projects import the Directory.Build.props file above their folder, which gives the target frameworks
+        var repository = temp.FullPath / "repository";
+        Directory.CreateDirectory(repository);
+        File.WriteAllText(repository / "Directory.Build.props", "<Project><PropertyGroup><MapTargetFrameworks>net11.0;net10.0</MapTargetFrameworks></PropertyGroup></Project>");
+        var (exitCode, console) = await RunAsync("pack", "--region", "switzerland", "--package-id-prefix", "Contoso.Maps", "--package-target-framework", "$(MapTargetFrameworks)", "--package-sdk", "Microsoft.NET.Sdk", "--package-project-output", repository / "maps", "--package-output", packages, "--pins", pins, "--cache", cache, "--output", temp.FullPath / "maps");
+        Assert.Equal(0, exitCode);
+        Assert.Contains("Packed 1 packages", console.Output);
+        Assert.True(File.Exists(repository / "maps" / "Contoso.Maps.Switzerland" / "Contoso.Maps.Switzerland.csproj"));
+        Assert.False(File.Exists(repository / "maps" / "Contoso.Maps.Switzerland" / "Directory.Build.props"));
+
+        using var zip = ZipFile.OpenRead(packages / "Contoso.Maps.Switzerland.1.0.0.nupkg");
+        var entries = zip.Entries.Select(entry => entry.FullName).ToList();
+        Assert.Contains("lib/net10.0/Contoso.Maps.Switzerland.dll", entries);
+        Assert.Contains("lib/net11.0/Contoso.Maps.Switzerland.dll", entries);
+        using var reader = new StreamReader(zip.GetEntry("Contoso.Maps.Switzerland.nuspec")!.Open());
+        var nuspec = await reader.ReadToEndAsync();
+        Assert.Contains("<group targetFramework=\"net10.0\">", nuspec);
+        Assert.Contains("<group targetFramework=\"net11.0\">", nuspec);
+    }
+
+    [Fact]
+    public async Task Pack_Files()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var (pins, cache) = TestSources.Create(temp.FullPath);
+        var packages = temp.FullPath / "packages";
+        var (exitCode, _) = await RunAsync("pack", "--region", "switzerland", "--package-content", "files", "--package-id-prefix", "Contoso.Maps.", "--package-version", "2.0.0", "--authors", "Contoso", "--package-output", packages, "--pins", pins, "--cache", cache, "--output", temp.FullPath / "maps");
         Assert.Equal(0, exitCode);
 
         using var zip = ZipFile.OpenRead(packages / "Contoso.Maps.Switzerland.2.0.0.nupkg");
@@ -134,6 +187,18 @@ public sealed class GeoMapsToolTests(ITestOutputHelper testOutputHelper)
         (exitCode, console) = await RunAsync("pack", "--region", "ch", "--package-id-prefix", "Contoso Maps");
         Assert.Equal(1, exitCode);
         Assert.Contains("not a valid prefix", console.Error);
+
+        (exitCode, console) = await RunAsync("pack", "--region", "ch", "--package-content", "sources");
+        Assert.Equal(1, exitCode);
+        Assert.Contains("Unknown package content: sources", console.Error);
+
+        (exitCode, console) = await RunAsync("pack", "--region", "ch", "--package-target-framework", " ");
+        Assert.Equal(1, exitCode);
+        Assert.Contains("cannot be empty", console.Error);
+
+        (exitCode, console) = await RunAsync("pack", "--region", "ch", "--format", "gpkg");
+        Assert.Equal(1, exitCode);
+        Assert.Contains("--package-content files", console.Error);
     }
 
     [Fact]

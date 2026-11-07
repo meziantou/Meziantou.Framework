@@ -52,7 +52,7 @@ Assert.HasCount(26, map.Load(MapLayer.StatesProvinces));
 
 [MapCatalog.Default](cref:Meziantou.Framework.Geo.Maps.MapCatalog.Default) reads only the folder formats: create a
 catalog of its [Directory](cref:Meziantou.Framework.Geo.Maps.MapCatalog.Directory) with the GeoPackage format to read
-the GeoPackage bundles that packages copy to the `maps` folder. A catalog that finds a map in a format it does not read
+the GeoPackage bundles that packages copy to the `maps` folder (`pack --package-content files`). A catalog that finds a map in a format it does not read
 names it in the message of the `KeyNotFoundException` of [GetMap](cref:Meziantou.Framework.Geo.Maps.MapCatalog.GetMap).
 
 A layer is the table named after the layer with underscores, such as `states_provinces`, and the metadata of the map,

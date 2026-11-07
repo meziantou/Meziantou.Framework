@@ -6,7 +6,7 @@
     <IsTrimmable>false</IsTrimmable>
 
     <Version>1.0.0</Version>
-    <Description>CLI to generate the offline map bundles of Meziantou.Framework.Geo.Maps: the borders, subdivisions, cities, rivers, lakes, coastline, land, ocean, seas and physical regions of the world, a continent or a country, from OpenStreetMap and Natural Earth, as folders of FlatGeobuf or GeoJSON files, GeoPackage files, or NuGet packages.</Description>
+    <Description>CLI to generate the offline map bundles of Meziantou.Framework.Geo.Maps: the borders, subdivisions, cities, rivers, lakes, coastline, land, ocean, seas and physical regions of the world, a continent or a country, from OpenStreetMap and Natural Earth, as folders of FlatGeobuf or GeoJSON files, GeoPackage files, or NuGet packages of assemblies that embed them.</Description>
     <PackageTags>geo, gis, map, maps, offline, openstreetmap, natural-earth, flatgeobuf, geopackage, cli, dotnet-tool</PackageTags>
 
     <IncludeSharedHttpClient>true</IncludeSharedHttpClient>
@@ -31,5 +31,22 @@
     <ProjectReference Include="../Meziantou.Framework.Charts/Meziantou.Framework.Charts.csproj" />
     <ProjectReference Include="../Meziantou.Framework.Imaging.Charts/Meziantou.Framework.Imaging.Charts.csproj" />
   </ItemGroup>
+
+  <!--
+    The assemblies the packages of the bundles are compiled against: the builds of their target framework, net10.0, which
+    the tool embeds, as the tool may run on a later framework. A NoBuild pack reads the paths of the built assemblies
+  -->
+  <Target Name="EmbedPackageReferenceAssemblies" BeforeTargets="AssignTargetPaths">
+    <PropertyGroup>
+      <_PackageReferenceAssemblyTargets>Build</_PackageReferenceAssemblyTargets>
+      <_PackageReferenceAssemblyTargets Condition="'$(NoBuild)' == 'true'">GetTargetPath</_PackageReferenceAssemblyTargets>
+    </PropertyGroup>
+    <MSBuild Projects="../Meziantou.Framework.Geo/Meziantou.Framework.Geo.csproj;../Meziantou.Framework.Geo.Maps/Meziantou.Framework.Geo.Maps.csproj" Targets="$(_PackageReferenceAssemblyTargets)" Properties="TargetFramework=net10.0" BuildInParallel="$(BuildInParallel)">
+      <Output TaskParameter="TargetOutputs" ItemName="_PackageReferenceAssembly" />
+    </MSBuild>
+    <ItemGroup>
+      <EmbeddedResource Include="@(_PackageReferenceAssembly)" LogicalName="References.%(Filename)%(Extension)" WithCulture="false" Type="Non-Resx" />
+    </ItemGroup>
+  </Target>
 
 </Project>

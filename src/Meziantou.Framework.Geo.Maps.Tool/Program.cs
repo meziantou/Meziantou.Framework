@@ -49,7 +49,7 @@ internal static partial class Program
         var cacheOption = CreateCacheOption();
 
         var command = pack
-            ? new Command("pack", "Builds the bundles of regions, and a NuGet package per bundle that copies it to the maps folder of the applications that reference it")
+            ? new Command("pack", "Builds the bundles of regions, and a NuGet package per bundle: by default, an assembly built by the .NET SDK that embeds the map and opens it with Map.Region_<Key>")
             : new Command("build", "Builds the bundles of regions");
         command.Options.Add(regionOption);
         command.Options.Add(allOption);
@@ -64,12 +64,20 @@ internal static partial class Program
         var packageIdPrefixOption = new Option<string>("--package-id-prefix") { Description = "The prefix of the identifiers of the packages, followed by the key of the region, such as GeoMaps.France", DefaultValueFactory = _ => "GeoMaps" };
         var packageVersionOption = new Option<string>("--package-version") { Description = "The version of the packages", DefaultValueFactory = _ => "1.0.0" };
         var authorsOption = new Option<string?>("--authors") { Description = "The authors of the packages (default: the prefix of their identifiers)" };
+        var packageSdkOption = new Option<string>("--package-sdk") { Description = "The MSBuild SDK of the projects of the assemblies, such as Meziantou.NET.Sdk; the folders above the projects give its version, in a global.json file", DefaultValueFactory = _ => MapProjectWriter.DefaultSdk };
+        var packageTargetFrameworkOption = new Option<string>("--package-target-framework") { Description = "The target frameworks of the assemblies, separated by semicolons (net10.0 or later), or an MSBuild property that gives them, such as $(LatestTargetFrameworks), defined in a Directory.Build.props file above --package-project-output", DefaultValueFactory = _ => MapProjectWriter.DefaultTargetFramework };
+        var packageProjectOutputOption = new Option<string?>("--package-project-output") { Description = "A folder to write the projects of the assemblies to and keep them: the projects import the MSBuild files of the folders above them, such as Directory.Build.props (default: a temporary folder, where they import none)" };
+        var packageContentOption = new Option<string>("--package-content") { Description = "How the packages ship the maps: assembly (an assembly that embeds the map, built with the .NET SDK, opened with Map.Region_<Key>) or files (files copied to the maps folder next to the application, read by MapCatalog.Default; required for gpkg)", DefaultValueFactory = _ => "assembly" };
         if (pack)
         {
             command.Options.Add(packageOutputOption);
             command.Options.Add(packageIdPrefixOption);
             command.Options.Add(packageVersionOption);
             command.Options.Add(authorsOption);
+            command.Options.Add(packageContentOption);
+            command.Options.Add(packageSdkOption);
+            command.Options.Add(packageTargetFrameworkOption);
+            command.Options.Add(packageProjectOutputOption);
         }
 
         command.SetAction(async (parseResult, cancellationToken) =>
@@ -106,7 +114,39 @@ internal static partial class Program
                     return 1;
                 }
 
-                packageOptions = new PackageOptions(FullPath.FromPath(parseResult.GetRequiredValue(packageOutputOption)), prefix, parseResult.GetRequiredValue(packageVersionOption), parseResult.GetValue(authorsOption) ?? prefix);
+                PackageContent content;
+                switch (parseResult.GetRequiredValue(packageContentOption).ToLowerInvariant())
+                {
+                    case "assembly":
+                        content = PackageContent.Assembly;
+                        break;
+                    case "files":
+                        content = PackageContent.Files;
+                        break;
+                    default:
+                        await error.WriteLineAsync($"Unknown package content: {parseResult.GetValue(packageContentOption)}. The package contents are assembly and files.".AsMemory(), cancellationToken).ConfigureAwait(false);
+                        return 1;
+                }
+
+                // SQLite reads a GeoPackage from a file: it cannot be read from the memory of an assembly
+                if (content is PackageContent.Assembly && format is GeoPackageMapFormat)
+                {
+                    await error.WriteLineAsync("A GeoPackage map needs a file: use --package-content files to pack gpkg bundles.".AsMemory(), cancellationToken).ConfigureAwait(false);
+                    return 1;
+                }
+
+                if (string.IsNullOrWhiteSpace(parseResult.GetValue(packageTargetFrameworkOption)) || string.IsNullOrWhiteSpace(parseResult.GetValue(packageSdkOption)))
+                {
+                    await error.WriteLineAsync("--package-target-framework and --package-sdk cannot be empty.".AsMemory(), cancellationToken).ConfigureAwait(false);
+                    return 1;
+                }
+
+                packageOptions = new PackageOptions(FullPath.FromPath(parseResult.GetRequiredValue(packageOutputOption)), prefix, parseResult.GetRequiredValue(packageVersionOption), parseResult.GetValue(authorsOption) ?? prefix, content)
+                {
+                    Sdk = parseResult.GetRequiredValue(packageSdkOption),
+                    TargetFrameworks = parseResult.GetRequiredValue(packageTargetFrameworkOption),
+                    ProjectDirectory = parseResult.GetValue(packageProjectOutputOption) is { } projectOutput ? FullPath.FromPath(projectOutput) : null,
+                };
             }
 
             var downloader = await CreateDownloaderAsync(parseResult.GetValue(pinsOption), parseResult.GetValue(cacheOption), update: false, output, cancellationToken).ConfigureAwait(false);
@@ -139,6 +179,10 @@ internal static partial class Program
         var watch = Stopwatch.StartNew();
         var failures = new List<string>();
         var built = 0;
+        var projects = new List<FullPath>();
+        // The projects of the assemblies are in a temporary folder, deleted once packed, unless the options give their folder
+        var projectsDirectory = packageOptions is { Content: PackageContent.Assembly } ? packageOptions.ProjectDirectory ?? FullPath.GetTempPath() / "Meziantou.Framework.Geo.Maps.Tool" / Guid.NewGuid().ToString("N") : FullPath.Empty;
+        var temporaryProjects = packageOptions is { ProjectDirectory: null };
         foreach (var region in selected)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -158,9 +202,13 @@ internal static partial class Program
                     PreviewRenderer.Render(region, regionLayers, extent, previewsDirectory);
                 }
 
-                if (packageOptions is not null)
+                if (packageOptions is { Content: PackageContent.Files })
                 {
                     NuGetPackageWriter.Write(region, format, path, regionLayers.Keys, packageOptions);
+                }
+                else if (packageOptions is { Content: PackageContent.Assembly })
+                {
+                    projects.Add(MapProjectWriter.Write(region, format, path, packageOptions, projectsDirectory, isolated: temporaryProjects));
                 }
 
                 built++;
@@ -175,6 +223,28 @@ internal static partial class Program
         }
 
         await output.WriteLineAsync($"Built {built} regions ({format.Name}) in {watch.Elapsed.TotalSeconds:F1}s, to {outputDirectory}".AsMemory(), cancellationToken).ConfigureAwait(false);
+
+        // The assemblies of the packages are built at the end, in one build of the .NET SDK
+        if (projects.Count > 0)
+        {
+            var packWatch = Stopwatch.StartNew();
+            await output.WriteLineAsync($"Packing {projects.Count} assemblies with the .NET SDK...".AsMemory(), cancellationToken).ConfigureAwait(false);
+            var (exitCode, packOutput) = await DotNetCli.PackAsync(projects, projectsDirectory, cancellationToken).ConfigureAwait(false);
+            if (exitCode != 0)
+            {
+                await output.WriteLineAsync(packOutput.AsMemory(), cancellationToken).ConfigureAwait(false);
+                await output.WriteLineAsync($"The .NET SDK failed to pack the assemblies (exit code {exitCode}). The projects are in {projectsDirectory}".AsMemory(), cancellationToken).ConfigureAwait(false);
+                return 1;
+            }
+
+            if (temporaryProjects)
+            {
+                Directory.Delete(projectsDirectory, recursive: true);
+            }
+
+            await output.WriteLineAsync($"Packed {projects.Count} packages in {packWatch.Elapsed.TotalSeconds:F1}s, to {packageOptions!.OutputDirectory}".AsMemory(), cancellationToken).ConfigureAwait(false);
+        }
+
         if (failures.Count > 0)
         {
             await output.WriteLineAsync(("Failed: " + string.Join(", ", failures)).AsMemory(), cancellationToken).ConfigureAwait(false);

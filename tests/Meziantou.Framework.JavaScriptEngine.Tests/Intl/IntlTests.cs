@@ -37,11 +37,22 @@ public sealed class IntlTests
     [InlineData("und-u-rg-cn71", "und-u-rg-twzzzz")]
     [InlineData("DE-T-M0-DIN-K0-QWERTZ", "de-t-k0-qwertz-m0-din")]
     [InlineData("en-t-iw", "en-t-he")]
+    [InlineData("en-t-m0-xxx-a2-yyy-m0-aaa", "en-t-a2-yyy-m0-aaa-m0-xxx")]
     [InlineData("en-x-u-foo-a-bar", "en-x-u-foo-a-bar")]
     [InlineData("en-b-ccc-a-bbb", "en-a-bbb-b-ccc")]
     public void GetCanonicalLocales(string tag, string expected)
     {
         Assert.Equal(expected, Evaluate($"Intl.getCanonicalLocales('{tag}')[0]"));
+    }
+
+    [Fact]
+    public void GetCanonicalLocales_DuplicateTransformedFields()
+    {
+        // More fields than the insertion sort of List.Sort handles: the fields with the same key are sorted by value
+        const string Tag = "en-t-a2-MY1mo-phh23lkf-j2-MYt-a2-MY1mo-phh23lkf-j2-MY1mkf-j2-MY1monco-hph23lkf-troaa-eto-phh23lkf-j2-MY1mkf-j2-MY1monco-hph23lkf-troaa-etr-a2-MY1monco-phonco-hph23lkf-troaa-etr-a2-MY1monco-1mkf-j2-MY1monco-hph23lkf-troaa-etr-a2-MY1monco-phonco-hph23lkf-troaa-etr-a2-MY1monco-phh24lkr-a2-MY1monco-phonco-hph23lkf-troaa-etr-a2-MY1monco-1mkf-j2-MY1monco-hph23lkf-troaa-etr-a2-MY1monco-phonco-hph23lkf-troaa-etr-a2-MY1monco-phh24lkf-j2-MY1mooa";
+        const string Expected = "en-t-a2-my1mo-phh23lkf-a2-my1mo-phh23lkf-a2-my1monco-1mkf-a2-my1monco-1mkf-a2-my1monco-phh24lkf-a2-my1monco-phh24lkr-a2-my1monco-phonco-hph23lkf-troaa-etr-a2-my1monco-phonco-hph23lkf-troaa-etr-a2-my1monco-phonco-hph23lkf-troaa-etr-a2-my1monco-phonco-hph23lkf-troaa-etr-j2-my1mkf-j2-my1mkf-j2-my1monco-hph23lkf-troaa-eto-phh23lkf-j2-my1monco-hph23lkf-troaa-etr-j2-my1monco-hph23lkf-troaa-etr-j2-my1monco-hph23lkf-troaa-etr-j2-my1mooa-j2-myt";
+        Assert.Equal(Expected, Evaluate($"Intl.getCanonicalLocales('{Tag}')[0]"));
+        Assert.Equal(Expected, Evaluate($"new Intl.Locale('{Expected}').toString()"));
     }
 
     [Theory]

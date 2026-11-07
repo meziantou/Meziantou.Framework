@@ -1,0 +1,6 @@
+title: Geo.Maps
+description: Load offline map bundles, the borders, subdivisions, cities, rivers, lakes, coastline, land, ocean, seas and physical regions of a region, and generate them with a .NET tool.
+packageIds:
+- Meziantou.Framework.Geo.Maps
+- Meziantou.Framework.Geo.Maps.GeoPackage
+- Meziantou.Framework.Geo.Maps.Tool

@@ -70,12 +70,49 @@ public sealed class ProjectionTests
         Assert.Equal(0.5 / Math.Cos(Math.PI / 6), y, 1e-12);
     }
 
+    [Fact]
+    public void Projection_AzimuthalEquidistant()
+    {
+        // The North Pole is the center; the distance from it is true, and the central meridian points down
+        var north = new AzimuthalEquidistantProjection();
+        Assert.Equal((0.0, 0.0), north.Project(0, 90));
+        AssertPoint((0, -Math.PI / 2), north.Project(0, 0));
+        AssertPoint((Math.PI / 2, 0), north.Project(90, 0));
+        AssertPoint((0, Math.PI / 3), north.Project(180, 30));
+        foreach (var longitude in new[] { -170.0, -45, 0, 60, 135 })
+        {
+            var (x, y) = north.Project(longitude, 20);
+            Assert.Equal(70 * Math.PI / 180, Math.Sqrt((x * x) + (y * y)), 1e-12);
+        }
+
+        // The opposite pole is the edge of the map, a circle of radius π
+        var (edgeX, edgeY) = north.Project(45, -90);
+        Assert.Equal(Math.PI, Math.Sqrt((edgeX * edgeX) + (edgeY * edgeY)), 1e-12);
+
+        // The South Pole is the center, and the central meridian points up
+        var south = new AzimuthalEquidistantProjection { SouthPole = true };
+        Assert.Equal((0.0, 0.0), south.Project(0, -90));
+        AssertPoint((0, Math.PI / 2), south.Project(0, 0));
+        AssertPoint((Math.PI / 6, 0), south.Project(90, -60));
+
+        // The angles are measured from the central meridian
+        var centered = new AzimuthalEquidistantProjection { SouthPole = true, CentralMeridian = 100 };
+        AssertPoint((0, Math.PI / 2), centered.Project(100, 0));
+        AssertPoint(south.Project(-60, -70), centered.Project(40, -70));
+        Assert.Equal(100, centered.CenterLongitude);
+        Assert.True(centered.HasStraightMeridians);
+        Assert.False(centered.HasStraightParallels);
+        Assert.Equal(90, centered.MaxLatitude);
+    }
+
     [Theory]
     [InlineData("Equirectangular")]
     [InlineData("Mercator")]
     [InlineData("EqualEarth")]
     [InlineData("Albers")]
     [InlineData("AlbersCylindrical")]
+    [InlineData("AzimuthalNorth")]
+    [InlineData("AzimuthalSouth")]
     public void Invert_RoundTrips(string name)
     {
         GeoProjection projection = name switch
@@ -84,6 +121,8 @@ public sealed class ProjectionTests
             "Mercator" => new MercatorProjection(),
             "EqualEarth" => new EqualEarthProjection(),
             "Albers" => new AlbersProjection(),
+            "AzimuthalNorth" => new AzimuthalEquidistantProjection(),
+            "AzimuthalSouth" => new AzimuthalEquidistantProjection { SouthPole = true, CentralMeridian = 30 },
             _ => new AlbersProjection { Parallel1 = -30, Parallel2 = 30, CentralMeridian = 20 },
         };
         var longitudes = projection is AlbersProjection albers ? new[] { albers.CentralMeridian - 60, albers.CentralMeridian, albers.CentralMeridian + 45 } : [-179.0, -100, 0, 45.5, 179];
@@ -107,6 +146,8 @@ public sealed class ProjectionTests
         Assert.Null(new EqualEarthProjection().Invert(0, 2));
         Assert.Null(new MercatorProjection().Invert(double.NaN, 0));
         Assert.Null(new AlbersProjection().Invert(0, 100));
+        Assert.Null(new AzimuthalEquidistantProjection().Invert(3, 2));
+        Assert.Equal(new GeoPosition(0, 90), new AzimuthalEquidistantProjection().Invert(0, 0));
         Assert.Null(new CustomProjection().Invert(0, 0));
     }
 
@@ -167,5 +208,11 @@ public sealed class ProjectionTests
     private sealed class CustomProjection : GeoProjection
     {
         protected override (double X, double Y) ProjectRadians(double lambda, double phi) => (2 * lambda, phi);
+    }
+
+    private static void AssertPoint((double X, double Y) expected, (double X, double Y) actual)
+    {
+        Assert.Equal(expected.X, actual.X, 1e-12);
+        Assert.Equal(expected.Y, actual.Y, 1e-12);
     }
 }

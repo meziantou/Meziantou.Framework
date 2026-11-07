@@ -13,6 +13,7 @@ src/Meziantou.Framework.WebPlatform/Unicode/Hyphenation/*.hyph
 src/Meziantou.Framework.WebPlatform.Playwright/Scripts/*.js
 tests/Meziantou.Framework.AtlassianDataFormat.Tests/TestData/third-party/
 tests/Meziantou.Framework.Charts.Tests/TestData/countries-110m.geojson
+tests/Meziantou.Framework.Geo.Tests/TestData/flatgeobuf/
 tests/Meziantou.Framework.HtmlToMarkdown.Tests/TestData/Specs/
 tests/Meziantou.Framework.Imaging.Fixtures/font-suites/
 tests/Meziantou.Framework.JavaScriptEngine.Tests/Intl/TestData/

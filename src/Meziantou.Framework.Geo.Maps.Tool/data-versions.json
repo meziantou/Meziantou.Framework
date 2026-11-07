@@ -1,0 +1,29 @@
+{
+  "date": "2026-11-06",
+  "naturalEarthCommit": "ca96624a56bd078437bca8184e78163e5039ad19",
+  "cldrVersion": "49.0.0",
+  "files": {
+    "https://github.com/hyperknot/country-levels/releases/download/v2.2.0/export_high.tgz": "ffa0e2a9c7e35eee22134d999a21e2cae4f9d5f8e1a804cd3f87ca1a3ca28ccc",
+    "https://github.com/hyperknot/country-levels/releases/download/v2.2.0/export_medium.tgz": "3ca368b9ceca794ec3453469e43c87c808bb30c828e74c590c44f00528749eec",
+    "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/ca96624a56bd078437bca8184e78163e5039ad19/10m_cultural/ne_10m_populated_places.dbf": "eff834a8727e06f28fc52b04393c462d074aecf9a7acd1b870e766240a995b6c",
+    "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/ca96624a56bd078437bca8184e78163e5039ad19/10m_cultural/ne_10m_populated_places.shp": "f4073365d248dfe35a44cca6715bf5b4812fa723294ed6a37043d7a3e09cc998",
+    "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/ca96624a56bd078437bca8184e78163e5039ad19/10m_physical/ne_10m_coastline.dbf": "9ccc214342fe400bf8c7d91d7a5b276b0457b0ada03e8d4be16ac5ba13037f3b",
+    "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/ca96624a56bd078437bca8184e78163e5039ad19/10m_physical/ne_10m_coastline.shp": "459a4a97c09db19aadf5244026612de9d43748be27f83a360242b99f7fabb3c1",
+    "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/ca96624a56bd078437bca8184e78163e5039ad19/10m_physical/ne_10m_geography_marine_polys.dbf": "018b5009a9680eaa981829c63c305c965d707bb1fa3ccb2523e31c0f4713b4a4",
+    "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/ca96624a56bd078437bca8184e78163e5039ad19/10m_physical/ne_10m_geography_marine_polys.shp": "1e13163173508efce208992df42c69b62ad0e16594257f14509d29188ea6439a",
+    "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/ca96624a56bd078437bca8184e78163e5039ad19/10m_physical/ne_10m_geography_regions_points.dbf": "bab26393d8dbf0be54b9b36934f7b47b6f256bd7cb1b21b5129f3fd8e5587cba",
+    "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/ca96624a56bd078437bca8184e78163e5039ad19/10m_physical/ne_10m_geography_regions_points.shp": "b8ee6de39baf354fd0f7c6cd02613ee6e8afe68c615acf8f1b850c5b34690cfc",
+    "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/ca96624a56bd078437bca8184e78163e5039ad19/10m_physical/ne_10m_geography_regions_polys.dbf": "142d853c15315e6c553ac9ca7665e65be80a1cbc821774688b143d4d4acf8801",
+    "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/ca96624a56bd078437bca8184e78163e5039ad19/10m_physical/ne_10m_geography_regions_polys.shp": "d7468f7967368ae2180a9d4cd4ed5de302ee53fb3615268a212ffeb3a33bf042",
+    "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/ca96624a56bd078437bca8184e78163e5039ad19/10m_physical/ne_10m_lakes.dbf": "0edaa87f76c2221c986f0796ce0b54b1c418e9032afba46f8e302edc41193495",
+    "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/ca96624a56bd078437bca8184e78163e5039ad19/10m_physical/ne_10m_lakes.shp": "11064fa55ed91b56a0d86733643c1a5bfcc137fdf044e83f471978a5b86617e1",
+    "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/ca96624a56bd078437bca8184e78163e5039ad19/10m_physical/ne_10m_land.dbf": "343c496132db574a3d39d49fa30a4cf1565198e0c108f3c3e0c55b76ba1fdfd0",
+    "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/ca96624a56bd078437bca8184e78163e5039ad19/10m_physical/ne_10m_land.shp": "4cad3a49bc75c1a4c2f3d7efae04f2f8e63151c96764b2658effabf524331fa6",
+    "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/ca96624a56bd078437bca8184e78163e5039ad19/10m_physical/ne_10m_ocean.dbf": "caa0b431172d7a09b308628822bb9256cbc2a85bcee8246839ece3ca56d0d482",
+    "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/ca96624a56bd078437bca8184e78163e5039ad19/10m_physical/ne_10m_ocean.shp": "bb5ae1e0922b02e61e14f6d562fc2299db4bef5ca36c1008b1a8e7ddf9da6410",
+    "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/ca96624a56bd078437bca8184e78163e5039ad19/10m_physical/ne_10m_rivers_lake_centerlines.dbf": "68079fde5fde6167d0c7c4f03e498164badcc3b687a93c436278ade83882b564",
+    "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/ca96624a56bd078437bca8184e78163e5039ad19/10m_physical/ne_10m_rivers_lake_centerlines.shp": "f9a1cf6d9f58c0a6f182a7f25771a03e0a48026253d4484aab782b2586354d78",
+    "https://raw.githubusercontent.com/unicode-org/cldr-json/49.0.0/cldr-json/cldr-core/supplemental/territoryContainment.json": "9d124223e0005038b3ce0b9c2b80f8f30f221658373768aaa98bc28b3cdd9beb",
+    "https://raw.githubusercontent.com/unicode-org/cldr-json/49.0.0/cldr-json/cldr-localenames-full/main/en/territories.json": "1326fb3bcdf8b8cf63df73ea02ea7f8bf7a8362cbb60bd12bcdb53f3ad22bf04"
+  }
+}

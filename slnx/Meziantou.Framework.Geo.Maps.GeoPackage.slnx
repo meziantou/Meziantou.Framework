@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.Geo.Maps.GeoPackage/Meziantou.Framework.Geo.Maps.GeoPackage.csproj" />
+    <Project Path="../src/Meziantou.Framework.Geo.Maps/Meziantou.Framework.Geo.Maps.csproj" />
+    <Project Path="../src/Meziantou.Framework.Geo/Meziantou.Framework.Geo.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.Framework.Geo.Maps.GeoPackage.Tests/Meziantou.Framework.Geo.Maps.GeoPackage.Tests.csproj" />
+  </Folder>
+</Solution>

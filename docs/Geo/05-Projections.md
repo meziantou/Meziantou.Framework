@@ -36,6 +36,7 @@ the position under the mouse. It returns `null` for a point outside of the map.
 | [MercatorProjection](cref:Meziantou.Framework.Geo.MercatorProjection) | the maps of web sites: it keeps the shapes, and enlarges the areas far from the equator |
 | [EqualEarthProjection](cref:Meziantou.Framework.Geo.EqualEarthProjection) | world maps that compare areas: the areas are in proportion to the areas of the regions |
 | [AlbersProjection](cref:Meziantou.Framework.Geo.AlbersProjection) | the maps of a country or a continent: equal-area, centered on its [CentralMeridian](cref:Meziantou.Framework.Geo.AlbersProjection.CentralMeridian) |
+| [AzimuthalEquidistantProjection](cref:Meziantou.Framework.Geo.AzimuthalEquidistantProjection) | the maps of a polar region, such as Antarctica or the Arctic: centered on the North Pole, or on the South Pole with [SouthPole](cref:Meziantou.Framework.Geo.AzimuthalEquidistantProjection.SouthPole) |
 
 - The Mercator projection cannot show the poles: it limits the latitudes to
   [MaxLatitude](cref:Meziantou.Framework.Geo.GeoProjection.MaxLatitude), about 85.05°, where the world map is a square,
@@ -43,6 +44,11 @@ the position under the mouse. It returns `null` for a point outside of the map.
 - The Albers projection measures the longitudes from its central meridian and does not cut the shapes that cross the
   opposite meridian: give it the regions of the map, not the whole world. Its defaults are those of the maps of the
   contiguous United States.
+- The azimuthal equidistant projection keeps the distances from the pole: the meridians are lines from the pole and
+  the parallels circles around it. The whole world is a disc whose edge is the opposite pole, so the regions far from
+  the pole are stretched: use it for the regions around a pole. On the map of the South Pole, its
+  [CentralMeridian](cref:Meziantou.Framework.Geo.AzimuthalEquidistantProjection.CentralMeridian) points up; on the
+  map of the North Pole, it points down.
 - [HasStraightMeridians](cref:Meziantou.Framework.Geo.GeoProjection.HasStraightMeridians) and
   [HasStraightParallels](cref:Meziantou.Framework.Geo.GeoProjection.HasStraightParallels) tell whether a line along a
   meridian or a parallel stays straight on the map. When it does not, add intermediate positions to draw it as a curve.

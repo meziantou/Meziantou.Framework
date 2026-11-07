@@ -37,6 +37,8 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.Fonts\Meziantou.Framework.Fonts.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.FullPath\Meziantou.Framework.FullPath.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Geo\Meziantou.Framework.Geo.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Geo.Maps\Meziantou.Framework.Geo.Maps.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Geo.Maps.GeoPackage\Meziantou.Framework.Geo.Maps.GeoPackage.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Globbing\Meziantou.Framework.Globbing.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Hashing\Meziantou.Framework.Hashing.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Http\Meziantou.Framework.Http.csproj" />
@@ -123,6 +125,8 @@
     <TrimmerRootAssembly Include="Meziantou.Framework.Fonts" />
     <TrimmerRootAssembly Include="Meziantou.Framework.FullPath" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Geo" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.Geo.Maps" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.Geo.Maps.GeoPackage" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Globbing" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Hashing" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Http" />

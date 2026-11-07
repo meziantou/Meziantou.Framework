@@ -5,8 +5,8 @@
     <RootNamespace>Meziantou.Framework.Geo</RootNamespace>
     <Version>1.0.0</Version>
     <IsTrimmable>true</IsTrimmable>
-    <Description>Geographic features and geometries, map projections, and readers and writers for GeoJSON, TopoJSON, WKT, WKB, KML, KMZ, GPX and Shapefile, with no dependency outside .NET.</Description>
-    <PackageTags>geo;gis;geojson;topojson;wkt;wkb;kml;kmz;gpx;shapefile;map;projection;mercator</PackageTags>
+    <Description>Geographic features and geometries, geometry operations (repair, clip, simplify, union, intersection, difference), map projections, and readers and writers for GeoJSON, TopoJSON, WKT, WKB, KML, KMZ, GPX, Shapefile and FlatGeobuf, with no dependency outside .NET.</Description>
+    <PackageTags>geo;gis;geojson;topojson;wkt;wkb;kml;kmz;gpx;shapefile;flatgeobuf;map;projection;mercator;clip;simplify;make-valid</PackageTags>
 
     <!-- Every public member must be documented -->
     <DisableDocumentationWarnings>false</DisableDocumentationWarnings>

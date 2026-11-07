@@ -1,4 +1,4 @@
 title: Geo
-description: Read and write maps in GeoJSON, TopoJSON, Shapefile, KML, GPX, WKT and WKB, work with features and geometries, and project positions onto a plane.
+description: Read and write maps in GeoJSON, TopoJSON, Shapefile, KML, GPX, WKT, WKB and FlatGeobuf, work with features and geometries, and project positions onto a plane.
 packageIds:
 - Meziantou.Framework.Geo

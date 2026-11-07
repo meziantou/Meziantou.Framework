@@ -1,7 +1,8 @@
 # Meziantou.Framework.Geo
 
-Reads and writes maps in GeoJSON, TopoJSON, Shapefile, KML, KMZ, GPX, WKT, WKB and encoded polylines, with features,
-geometries and map projections. No dependency outside .NET.
+Reads and writes maps in GeoJSON, TopoJSON, Shapefile, KML, KMZ, GPX, WKT, WKB, encoded polylines and FlatGeobuf, with
+features, geometries, geometry operations (repair, clip, simplify, union, intersection, difference) and map projections.
+No dependency outside .NET.
 
 ## Usage
 
@@ -76,6 +77,7 @@ Assert.Equal(48.86, position!.Value.Latitude, 1e-9);
 | GPX | `Gpx` | ✓ | ✓ |
 | WKT / WKB (and PostGIS EWKT / EWKB) | `WellKnownText`, `WellKnownBinary` | ✓ | ✓ |
 | Encoded polyline | `EncodedPolyline` | ✓ | ✓ |
+| FlatGeobuf (with its spatial index) | `FlatGeobuf` | ✓ | ✓ |
 
 The positions are longitudes and latitudes in degrees (WGS 84): the library does not convert between coordinate
 reference systems.

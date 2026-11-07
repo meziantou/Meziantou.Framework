@@ -8,14 +8,17 @@ dependency outside .NET, and it supports trimming.
 
 ## What you can do with it
 
-- **Read and write the common formats**: GeoJSON, TopoJSON, Shapefile, KML and KMZ, GPX, WKT and WKB, and encoded
-  polylines. Every reader returns the same model, so converting a file is a read and a write. See
+- **Read and write the common formats**: GeoJSON, TopoJSON, Shapefile, KML and KMZ, GPX, WKT and WKB, encoded
+  polylines, and FlatGeobuf. Every reader returns the same model, so converting a file is a read and a write. See
   [formats](04-Formats/01-Overview.md).
 - **Work with features and geometries**: points, lines, polygons and their collections, with their properties; get
   their bounds, a position to label them, distances, and whether a position is inside an area. See
   [features and geometries](03-FeaturesAndGeometries.md).
-- **Project positions** onto a plane to draw a map, with the equirectangular, Mercator, Equal Earth and Albers
-  projections. See [projections](05-Projections.md).
+- **Project positions** onto a plane to draw a map, with the equirectangular, Mercator, Equal Earth, Albers and
+  azimuthal equidistant projections. See [projections](05-Projections.md).
+- **Transform geometries**: repair invalid polygons, clip to a box, simplify, combine polygons (union, intersection,
+  difference), and convert positions from another coordinate system. See
+  [geometry operations](06-GeometryOperations.md).
 - **Draw maps**: `Meziantou.Framework.Charts` draws the features as choropleths and points on maps. See
   [maps](../Charts/04-Gallery/09-Maps.md).
 
@@ -29,4 +32,4 @@ Every type is in the [Meziantou.Framework.Geo](cref:Meziantou.Framework.Geo) nam
 ## Next steps
 
 - [Getting started](02-GettingStarted.md): install the package, read a file and write one.
-- [Limitations](06-Limitations.md): what the library does not do.
+- [Limitations](07-Limitations.md): what the library does not do.

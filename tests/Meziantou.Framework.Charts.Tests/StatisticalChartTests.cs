@@ -1,4 +1,5 @@
 using System.Globalization;
+using Meziantou.Framework.Geo.Maps;
 
 namespace Meziantou.Framework.Charts.Tests;
 
@@ -777,11 +778,84 @@ public sealed class StatisticalChartTests
         ChartAssert.Svg(plot, "MapPoints");
     }
 
+    [Fact]
+    public void RegionMap()
+    {
+        #region Charts_RegionMap
+        // The map bundle of Switzerland, in the maps folder next to the application
+        var map = MapCatalog.Default.GetMap("Switzerland");
+        var cantons = map.Load(MapLayer.StatesProvinces);
+        var lakes = map.Load(MapLayer.Lakes);
+        var rivers = map.Load(MapLayer.Rivers);
+        var borders = map.Load(MapLayer.Borders);
+
+        // The largest cities: the rank (0 to 14) orders the places, then their population
+        var cities = map.Load(MapLayer.Cities)
+            .OrderByDescending(city => (int)city.Properties["rank"]!)
+            .ThenByDescending(city => (long)city.Properties["population"]!)
+            .Take(8)
+            .Select(city => (Name: (string)city.Properties["name"]!, Position: ((GeoPoint)city.Geometry!).Position))
+            .ToList();
+
+        var plot = new Plot
+        {
+            Title = map.Name,
+            Subtitle = "© OpenStreetMap contributors, Natural Earth",
+            Height = 420,
+            Clip = true,
+            Coordinates = new GeoCoordinates { Projection = new MercatorProjection(), Extent = map.Bounds },
+        };
+
+        // The layers from the bottom: the cantons, the lakes and rivers, then the border of the country
+        plot.Add(new GeoMark<GeoFeature>(cantons, canton => canton.Geometry)
+        {
+            FillColor = "#ebe6da",
+            StrokeColor = "#ffffff",
+            Title = canton => (string?)canton.Properties["name"],
+        });
+        plot.Add(new GeoMark<GeoFeature>(lakes, lake => lake.Geometry) { FillColor = "#a9cbe8", StrokeColor = ChartColor.Transparent });
+        plot.Add(new GeoMark<GeoFeature>(rivers, river => river.Geometry) { StrokeColor = "#6fa5d6" });
+        plot.Add(new GeoMark<GeoFeature>(borders, border => border.Geometry) { FillColor = ChartColor.Transparent, StrokeColor = "#6b6255", StrokeWidth = 1 });
+        plot.Add(new DotMark<(string Name, GeoPosition Position)>(cities, x: city => city.Position.Longitude, y: city => city.Position.Latitude) { FillColor = "#2b2b2b", Radius = 3 });
+        plot.Add(new TextMark<(string Name, GeoPosition Position)>(cities, text: city => city.Name, x: city => city.Position.Longitude, y: city => city.Position.Latitude) { OffsetY = -10 });
+        #endregion
+
+        ChartAssert.Svg(plot, "RegionMap");
+    }
+
+    [Fact]
+    public void PolarMap()
+    {
+        #region Charts_PolarMap
+        var path = Path.Combine(AppContext.BaseDirectory, "TestData", "countries-110m.geojson");
+        var countries = GeoJson.Parse(File.ReadAllText(path));
+
+        var plot = new Plot
+        {
+            Title = "Antarctica and the Southern Ocean",
+            Width = 480,
+            Height = 520,
+            Clip = true,
+            Coordinates = new GeoCoordinates
+            {
+                // Centered on the South Pole: the meridians are lines from the pole and the parallels circles around it
+                Projection = new AzimuthalEquidistantProjection { SouthPole = true },
+                Extent = new GeoBounds(West: -180, South: -90, East: 180, North: -40),
+                GraticuleStep = 15,
+            },
+        };
+        plot.Add(new GeoMark<GeoFeature>(countries, country => country.Geometry) { Fill = country => country.Properties["continent"] });
+        #endregion
+
+        ChartAssert.Svg(plot, "PolarMap");
+    }
+
     [Theory]
     [InlineData("Equirectangular")]
     [InlineData("Mercator")]
     [InlineData("EqualEarth")]
     [InlineData("Albers")]
+    [InlineData("AzimuthalEquidistant")]
     public void MapProjections(string name)
     {
         GeoProjection projection = name switch
@@ -789,6 +863,7 @@ public sealed class StatisticalChartTests
             "Equirectangular" => new EquirectangularProjection(),
             "Mercator" => new MercatorProjection(),
             "EqualEarth" => new EqualEarthProjection(),
+            "AzimuthalEquidistant" => new AzimuthalEquidistantProjection { SouthPole = true },
             _ => new AlbersProjection(),
         };
         IEnumerable<GeoFeature> countries = GeoJson.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "TestData", "countries-110m.geojson")));

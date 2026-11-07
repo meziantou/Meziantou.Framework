@@ -15,6 +15,16 @@ namespace Meziantou.Framework.Geo
         protected override (double X, double Y) ProjectRadians(double lambda, double phi) => throw null;
     }
 
+    public sealed class AzimuthalEquidistantProjection : Meziantou.Framework.Geo.GeoProjection
+    {
+        public override double CenterLongitude { get => throw null; }
+        public double CentralMeridian { get => throw null; set { } }
+        public override bool HasStraightParallels { get => throw null; }
+        public bool SouthPole { get => throw null; set { } }
+        protected override (double Lambda, double Phi)? InvertRadians(double x, double y) => throw null;
+        protected override (double X, double Y) ProjectRadians(double lambda, double phi) => throw null;
+    }
+
     public static class EncodedPolyline
     {
         public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Geo.GeoPosition> Decode(string encoded, int precision = 5) => throw null;
@@ -32,6 +42,30 @@ namespace Meziantou.Framework.Geo
     {
         protected override (double Lambda, double Phi)? InvertRadians(double x, double y) => throw null;
         protected override (double X, double Y) ProjectRadians(double lambda, double phi) => throw null;
+    }
+
+    public static class FlatGeobuf
+    {
+        public static Meziantou.Framework.Geo.GeoFeatureCollection Read(System.IO.Stream stream, Meziantou.Framework.Geo.FlatGeobufReaderOptions? options = null) => throw null;
+        public static Meziantou.Framework.Geo.GeoFeatureCollection Read(System.ReadOnlyMemory<byte> data, Meziantou.Framework.Geo.FlatGeobufReaderOptions? options = null) => throw null;
+        public static Meziantou.Framework.Geo.GeoFeatureCollection Read(string path, Meziantou.Framework.Geo.FlatGeobufReaderOptions? options = null) => throw null;
+        public static byte[] Write(Meziantou.Framework.Geo.GeoFeatureCollection features, Meziantou.Framework.Geo.FlatGeobufWriterOptions? options = null) => throw null;
+        public static void Write(Meziantou.Framework.Geo.GeoFeatureCollection features, System.IO.Stream stream, Meziantou.Framework.Geo.FlatGeobufWriterOptions? options = null) { }
+        public static void Write(Meziantou.Framework.Geo.GeoFeatureCollection features, string path, Meziantou.Framework.Geo.FlatGeobufWriterOptions? options = null) { }
+    }
+
+    public sealed class FlatGeobufReaderOptions
+    {
+        public Meziantou.Framework.Geo.GeoBounds? Bounds { get => throw null; set { } }
+    }
+
+    public sealed class FlatGeobufWriterOptions
+    {
+        public string? Description { get => throw null; set { } }
+        public bool IncludeSpatialIndex { get => throw null; set { } }
+        public ushort IndexNodeSize { get => throw null; set { } }
+        public string? Name { get => throw null; set { } }
+        public string? Title { get => throw null; set { } }
     }
 
     public readonly struct GeoBounds : System.IEquatable<Meziantou.Framework.Geo.GeoBounds>
@@ -79,9 +113,17 @@ namespace Meziantou.Framework.Geo
         public bool IsEmpty { get => throw null; }
         public Meziantou.Framework.Geo.GeoPosition? LabelPosition { get => throw null; }
         public abstract Meziantou.Framework.Geo.GeoGeometryType Type { get; }
+        public Meziantou.Framework.Geo.GeoGeometry? Clip(Meziantou.Framework.Geo.GeoBounds bounds) => throw null;
+        public Meziantou.Framework.Geo.GeoGeometry? Difference(Meziantou.Framework.Geo.GeoGeometry other) => throw null;
+        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Geo.GeoLineString> GetBoundaryLines() => throw null;
         public Meziantou.Framework.Geo.GeoBounds? GetBounds() => throw null;
         public abstract System.Collections.Generic.IEnumerable<Meziantou.Framework.Geo.GeoPosition> GetPositions();
         public System.Collections.Generic.IEnumerable<Meziantou.Framework.Geo.GeoGeometry> GetSimpleGeometries() => throw null;
+        public Meziantou.Framework.Geo.GeoGeometry? Intersection(Meziantou.Framework.Geo.GeoGeometry other) => throw null;
+        public Meziantou.Framework.Geo.GeoGeometry MakeValid() => throw null;
+        public Meziantou.Framework.Geo.GeoGeometry? Simplify(double tolerance) => throw null;
+        public Meziantou.Framework.Geo.GeoGeometry Transform(System.Func<Meziantou.Framework.Geo.GeoPosition, Meziantou.Framework.Geo.GeoPosition> transform) => throw null;
+        public Meziantou.Framework.Geo.GeoGeometry? Union(Meziantou.Framework.Geo.GeoGeometry other) => throw null;
     }
 
     public sealed class GeoGeometryCollection : Meziantou.Framework.Geo.GeoGeometry

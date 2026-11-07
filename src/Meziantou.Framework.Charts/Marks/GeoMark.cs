@@ -69,17 +69,22 @@ public sealed class GeoMark<T> : Mark<T>
         if (data.Sets is null || context.Coordinates is not GeoSystem system)
             return;
 
+        // On the map of a pole, the meridians 180°W and 180°E are the same line: the edges of the shapes the data cuts along
+        // the antimeridian are filled but not outlined
+        var joinsAntimeridian = system.JoinsMeridians(-180, 180);
         for (var i = 0; i < data.Count; i++)
         {
             var areas = new PathBuilder();
             var lines = new PathBuilder();
             var points = new List<GeoPosition>();
+            List<IReadOnlyList<GeoPosition>>? rings = joinsAntimeridian ? [] : null;
             foreach (var (code, positions) in Decode(data.Sets[i]))
             {
                 switch (code)
                 {
                     case RingCode:
                         system.AddPolyline(areas, positions, close: true);
+                        rings?.Add(positions);
                         break;
                     case LineCode:
                         system.AddPolyline(lines, positions, close: false);
@@ -93,14 +98,34 @@ public sealed class GeoMark<T> : Mark<T>
             if (!areas.IsEmpty)
             {
                 var fill = data.Fill is null ? FillColor ?? context.Theme.GridColor : data.Fill.IsMissing(i) ? context.Theme.GridColor : GetFill(context, data, i);
-                group.Add(Decorate(new ScenePath(areas.Build())
+                var stroke = data.Stroke is null && StrokeColor is null ? context.Theme.MarkStrokeColor : GetStroke(context, data, i);
+                var cut = rings is not null && rings.Exists(ring => GeoSystem.HasEdgeAlong(ring, -180, 180));
+                var area = new ScenePath(areas.Build())
                 {
                     Fill = fill,
                     FillRule = SceneFillRule.EvenOdd,
-                    Stroke = data.Stroke is null && StrokeColor is null ? context.Theme.MarkStrokeColor : GetStroke(context, data, i),
                     StrokeWidth = StrokeWidth ?? 0.5,
                     LineJoin = SceneLineJoin.Round,
-                }, data, i));
+                };
+                if (!cut)
+                {
+                    area.Stroke = stroke;
+                }
+
+                group.Add(Decorate(area, data, i));
+                if (cut)
+                {
+                    var outline = new PathBuilder();
+                    foreach (var ring in rings!)
+                    {
+                        system.AddRingOutline(outline, ring, -180, 180);
+                    }
+
+                    if (!outline.IsEmpty)
+                    {
+                        group.Add(new ScenePath(outline.Build()) { Stroke = stroke, StrokeWidth = StrokeWidth ?? 0.5, LineJoin = SceneLineJoin.Round });
+                    }
+                }
             }
 
             if (!lines.IsEmpty)

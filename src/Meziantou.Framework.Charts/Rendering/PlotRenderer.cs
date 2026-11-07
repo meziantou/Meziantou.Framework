@@ -776,7 +776,22 @@ internal sealed class PlotRenderer
 
         if (geo.Outline)
         {
-            group.Add(new ScenePath(system.Polyline(SampleWorld(projection), close: true)) { Stroke = _theme.AxisColor, LineJoin = SceneLineJoin.Round });
+            // On the map of a pole, the west and east edges of the world are the same line, inside the map: the outline is the opposite pole
+            var west = projection.CenterLongitude - 180;
+            var east = projection.CenterLongitude + 180;
+            PathData outline;
+            if (system.JoinsMeridians(west, east))
+            {
+                var builder = new PathBuilder();
+                system.AddRingOutline(builder, SampleWorld(projection), west, east);
+                outline = builder.Build();
+            }
+            else
+            {
+                outline = system.Polyline(SampleWorld(projection), close: true);
+            }
+
+            group.Add(new ScenePath(outline) { Stroke = _theme.AxisColor, LineJoin = SceneLineJoin.Round });
         }
 
         if (group.Children.Count > 0)

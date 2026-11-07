@@ -1,0 +1,35 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IsTrimmable>false</IsTrimmable>
+
+    <Version>1.0.0</Version>
+    <Description>CLI to generate the offline map bundles of Meziantou.Framework.Geo.Maps: the borders, subdivisions, cities, rivers, lakes, coastline, land, ocean, seas and physical regions of the world, a continent or a country, from OpenStreetMap and Natural Earth, as folders of FlatGeobuf or GeoJSON files, GeoPackage files, or NuGet packages.</Description>
+    <PackageTags>geo, gis, map, maps, offline, openstreetmap, natural-earth, flatgeobuf, geopackage, cli, dotnet-tool</PackageTags>
+
+    <IncludeSharedHttpClient>true</IncludeSharedHttpClient>
+    <ServerGarbageCollection>true</ServerGarbageCollection>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The versions of the sources, and the OpenStreetMap boundaries country-levels misses -->
+    <EmbeddedResource Include="data-versions.json" LogicalName="data-versions.json" />
+    <EmbeddedResource Include="Resources/Boundaries/*.geojson" LogicalName="Boundaries.%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" Version="2.0.13" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
+    <ProjectReference Include="../Meziantou.Framework.Geo/Meziantou.Framework.Geo.csproj" />
+    <ProjectReference Include="../Meziantou.Framework.Geo.Maps/Meziantou.Framework.Geo.Maps.csproj" />
+    <ProjectReference Include="../Meziantou.Framework.Geo.Maps.GeoPackage/Meziantou.Framework.Geo.Maps.GeoPackage.csproj" />
+    <ProjectReference Include="../Meziantou.Framework.Charts/Meziantou.Framework.Charts.csproj" />
+    <ProjectReference Include="../Meziantou.Framework.Imaging.Charts/Meziantou.Framework.Imaging.Charts.csproj" />
+  </ItemGroup>
+
+</Project>

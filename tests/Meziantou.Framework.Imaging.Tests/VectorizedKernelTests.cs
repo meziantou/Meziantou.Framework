@@ -992,8 +992,29 @@ public sealed class VectorizedKernelTests
                         actual = block.ToArray();
                         JpegIdct.TransformReducedVector128(actual, width, height, sparse);
                         AssertRows(expected, actual, width, height);
+                        if (width == height && width is 2 or 4)
+                        {
+                            AssertSquareSamples(expected, block, width, sparse);
+                        }
                     }
                 }
+            }
+        }
+
+        // The samples of the square kernel are the rounded values of the reference, and nothing else of the plane is written
+        static void AssertSquareSamples(double[] expected, double[] block, int size, bool sparse)
+        {
+            const int Stride = 11;
+            var samples = new byte[(Stride * size) + 3];
+            samples.AsSpan().Fill(0xA5);
+            var coefficients = block.ToArray();
+            JpegIdct.TransformReducedSquareVector128(coefficients, samples, Stride, size, sparse);
+            Assert.Equal(block, coefficients);
+            for (var i = 0; i < samples.Length; i++)
+            {
+                var (y, x) = Math.DivRem(i, Stride);
+                var value = y < size && x < size ? (byte)Math.Clamp(Math.Floor(expected[(y * 8) + x] + 128.5), 0, 255) : (byte)0xA5;
+                Assert.Equal(value, samples[i]);
             }
         }
 

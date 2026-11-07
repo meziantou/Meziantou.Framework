@@ -7,8 +7,9 @@ namespace Meziantou.Framework.Geo.Maps;
 /// By default, a catalog reads the folder formats, <see cref="MapFormat.FlatGeobuf"/> and <see cref="MapFormat.GeoJson"/>:
 /// a region is a folder with a file per layer and a <c>metadata.json</c> file. Pass the formats to read other formats,
 /// such as the <c>GeoPackageMapFormat</c> of <c>Meziantou.Framework.Geo.Maps.GeoPackage</c>. The
-/// Meziantou.Framework.Geo.Maps.Tool .NET tool writes the maps; the packages of map bundles copy them to a <c>maps</c> folder
-/// next to the application.
+/// Meziantou.Framework.Geo.Maps.Tool .NET tool writes the maps; the packages it makes with <c>--package-content files</c> copy
+/// them to a <c>maps</c> folder next to the application. Its default packages embed the map in an assembly instead, opened
+/// with a static extension property of <see cref="Map"/>, such as <c>Map.Region_France</c>.
 /// </remarks>
 public sealed class MapCatalog
 {
@@ -38,7 +39,7 @@ public sealed class MapCatalog
     /// <summary>Gets the formats a catalog reads by default: <see cref="MapFormat.FlatGeobuf"/>, then <see cref="MapFormat.GeoJson"/>.</summary>
     public static IReadOnlyList<MapFormat> DefaultFormats { get; } = [MapFormat.FlatGeobuf, MapFormat.GeoJson];
 
-    /// <summary>Gets the catalog of the <c>maps</c> folder next to the application, where the packages of map bundles copy their regions, with the default formats.</summary>
+    /// <summary>Gets the catalog of the <c>maps</c> folder next to the application, where the packages of map bundles made with <c>--package-content files</c> copy their regions, with the default formats.</summary>
     public static MapCatalog Default { get; } = new(Path.Combine(AppContext.BaseDirectory, "maps"));
 
     /// <summary>Gets the full path of the folder of the catalog.</summary>

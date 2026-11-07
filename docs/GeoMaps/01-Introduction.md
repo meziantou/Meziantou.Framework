@@ -3,8 +3,9 @@ title: Introduction
 description: What map bundles are, the layers they hold, and where their data comes from.
 ---
 
-`Meziantou.Framework.Geo.Maps` loads map bundles: the map of a region, the world, a continent or a country, stored next
-to the application, so that an application draws maps without a map server or a network connection.
+`Meziantou.Framework.Geo.Maps` loads map bundles: the map of a region, the world, a continent or a country, embedded in
+an assembly of the application or stored next to it, so that an application draws maps without a map server or a
+network connection.
 
 ## What a bundle holds
 

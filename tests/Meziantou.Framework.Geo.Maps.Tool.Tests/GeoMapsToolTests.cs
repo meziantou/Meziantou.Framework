@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using System.Runtime.Loader;
 using Meziantou.Framework.Geo.Maps.GeoPackage;
 using Meziantou.Framework.Geo.Maps.Tool;
 
@@ -81,7 +82,57 @@ public sealed class GeoMapsToolTests(ITestOutputHelper testOutputHelper)
         await using var temp = TemporaryDirectory.Create();
         var (pins, cache) = TestSources.Create(temp.FullPath);
         var packages = temp.FullPath / "packages";
-        var (exitCode, _) = await RunAsync("pack", "--region", "switzerland", "--package-id-prefix", "Contoso.Maps.", "--package-version", "2.0.0", "--authors", "Contoso", "--package-output", packages, "--pins", pins, "--cache", cache, "--output", temp.FullPath / "maps");
+        var (exitCode, console) = await RunAsync("pack", "--region", "switzerland", "--package-id-prefix", "Contoso.Maps.", "--package-version", "2.0.0", "--authors", "Contoso", "--package-output", packages, "--pins", pins, "--cache", cache, "--output", temp.FullPath / "maps");
+        Assert.Equal(0, exitCode);
+        Assert.Contains("Packed 1 packages", console.Output);
+
+        // An assembly that embeds the map: no file to copy next to the application
+        using var zip = ZipFile.OpenRead(packages / "Contoso.Maps.Switzerland.2.0.0.nupkg");
+        var entries = zip.Entries.Select(entry => entry.FullName).ToList();
+        Assert.Contains("lib/net10.0/Contoso.Maps.Switzerland.dll", entries);
+        Assert.Contains("lib/net10.0/Contoso.Maps.Switzerland.xml", entries);
+        Assert.DoesNotContain(entries, entry => entry.StartsWith("data/", StringComparison.Ordinal) || entry.StartsWith("buildTransitive/", StringComparison.Ordinal));
+        using (var reader = new StreamReader(zip.GetEntry("Contoso.Maps.Switzerland.nuspec")!.Open()))
+        {
+            var nuspec = await reader.ReadToEndAsync();
+            Assert.Contains("<id>Contoso.Maps.Switzerland</id>", nuspec);
+            Assert.Contains("<authors>Contoso</authors>", nuspec);
+            Assert.Contains("ODbL-1.0", nuspec);
+            Assert.Contains("<dependency id=\"Meziantou.Framework.Geo.Maps\"", nuspec);
+            Assert.Contains("borders, states and provinces, cities, rivers, lakes and physical regions", nuspec);
+            Assert.Contains("Map.Region_Switzerland", nuspec);
+        }
+
+        // Map.Region_Switzerland opens the map, from the memory of the assembly
+        var assemblyPath = temp.FullPath / "lib" / "Contoso.Maps.Switzerland.dll";
+        Directory.CreateDirectory(assemblyPath.Parent);
+        zip.GetEntry("lib/net10.0/Contoso.Maps.Switzerland.dll")!.ExtractToFile(assemblyPath);
+        var assembly = new AssemblyLoadContext("Contoso.Maps.Switzerland").LoadFromAssemblyPath(assemblyPath);
+        Assert.DoesNotContain(assembly.GetManifestResourceNames(), name => name.EndsWith(".json", StringComparison.Ordinal));
+        var property = assembly.GetType("Contoso.Maps.SwitzerlandMapExtensions", throwOnError: true)!.GetMethod("get_Region_Switzerland")!;
+        var map = (Map)property.Invoke(obj: null, parameters: null)!;
+        Assert.Same(map, property.Invoke(obj: null, parameters: null));
+        Assert.Equal("Switzerland", map.Region);
+        Assert.Equal("Switzerland", map.Name);
+        Assert.StartsWith("© OpenStreetMap contributors", map.Attribution);
+        Assert.Equal(new GeoBounds(6, 45, 10, 48), map.Bounds);
+        Assert.Equal(new DateTimeOffset(2026, 1, 2, 0, 0, 0, TimeSpan.Zero), map.Metadata.LastModified);
+        Assert.Equal(["country-levels", "Nominatim", "Natural Earth"], map.Metadata.Sources.Select(source => source.Name));
+        Assert.Equal([MapLayer.Borders, MapLayer.StatesProvinces, MapLayer.Cities, MapLayer.Rivers, MapLayer.Lakes, MapLayer.PhysicalRegions], map.Layers);
+        Assert.False(map.HasLayer(MapLayer.Coastline));
+        Assert.Equal(["CH-BE", "CH-ZH"], map.Load(MapLayer.StatesProvinces).Select(state => (string)state.Properties["iso"]!).Order(StringComparer.Ordinal));
+        var bern = Assert.Single(map.Load(MapLayer.Cities));
+        Assert.Equal(true, bern.Properties["capital"]);
+        Assert.Empty(map.Load(MapLayer.Cities, new GeoBounds(0, 0, 1, 1)));
+    }
+
+    [Fact]
+    public async Task Pack_Files()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var (pins, cache) = TestSources.Create(temp.FullPath);
+        var packages = temp.FullPath / "packages";
+        var (exitCode, _) = await RunAsync("pack", "--region", "switzerland", "--package-content", "files", "--package-id-prefix", "Contoso.Maps.", "--package-version", "2.0.0", "--authors", "Contoso", "--package-output", packages, "--pins", pins, "--cache", cache, "--output", temp.FullPath / "maps");
         Assert.Equal(0, exitCode);
 
         using var zip = ZipFile.OpenRead(packages / "Contoso.Maps.Switzerland.2.0.0.nupkg");
@@ -134,6 +185,14 @@ public sealed class GeoMapsToolTests(ITestOutputHelper testOutputHelper)
         (exitCode, console) = await RunAsync("pack", "--region", "ch", "--package-id-prefix", "Contoso Maps");
         Assert.Equal(1, exitCode);
         Assert.Contains("not a valid prefix", console.Error);
+
+        (exitCode, console) = await RunAsync("pack", "--region", "ch", "--package-content", "sources");
+        Assert.Equal(1, exitCode);
+        Assert.Contains("Unknown package content: sources", console.Error);
+
+        (exitCode, console) = await RunAsync("pack", "--region", "ch", "--format", "gpkg");
+        Assert.Equal(1, exitCode);
+        Assert.Contains("--package-content files", console.Error);
     }
 
     [Fact]

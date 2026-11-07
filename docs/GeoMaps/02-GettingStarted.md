@@ -42,6 +42,10 @@ Assert.False(map.HasLayer(MapLayer.Coastline));
 ```
 <!-- endref -->
 
+A package of a bundle that `pack` builds by default embeds the map in an assembly instead: the map is a static
+property of `Map` named after the region, such as `Map.Region_Switzerland`, with the same API as the maps of a catalog.
+See [ship the bundles](03-GeneratingBundles.md#ship-the-bundles).
+
 The layers are read when they are loaded: keep the collections you use more than once.
 [Layers](cref:Meziantou.Framework.Geo.Maps.Map.Layers) lists the layers of the map, and
 [HasLayer](cref:Meziantou.Framework.Geo.Maps.Map.HasLayer) tells whether it has one: a country without sea has no

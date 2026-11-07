@@ -104,10 +104,15 @@ public sealed class GeoMapsToolTests(ITestOutputHelper testOutputHelper)
         }
 
         // Map.Region_Switzerland opens the map, from the memory of the assembly
-        var assemblyPath = temp.FullPath / "lib" / "Contoso.Maps.Switzerland.dll";
-        Directory.CreateDirectory(assemblyPath.Parent);
-        zip.GetEntry("lib/net10.0/Contoso.Maps.Switzerland.dll")!.ExtractToFile(assemblyPath);
-        var assembly = new AssemblyLoadContext("Contoso.Maps.Switzerland").LoadFromAssemblyPath(assemblyPath);
+        // The assembly is loaded from memory: Windows would not delete a loaded assembly file with the temporary folder
+        using var assemblyStream = new MemoryStream();
+        using (var entryStream = zip.GetEntry("lib/net10.0/Contoso.Maps.Switzerland.dll")!.Open())
+        {
+            await entryStream.CopyToAsync(assemblyStream);
+        }
+
+        assemblyStream.Position = 0;
+        var assembly = new AssemblyLoadContext("Contoso.Maps.Switzerland").LoadFromStream(assemblyStream);
         Assert.DoesNotContain(assembly.GetManifestResourceNames(), name => name.EndsWith(".json", StringComparison.Ordinal));
         var property = assembly.GetType("Contoso.Maps.SwitzerlandMapExtensions", throwOnError: true)!.GetMethod("get_Region_Switzerland")!;
         var map = (Map)property.Invoke(obj: null, parameters: null)!;

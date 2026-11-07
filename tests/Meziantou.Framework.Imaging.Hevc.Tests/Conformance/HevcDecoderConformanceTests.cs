@@ -86,6 +86,36 @@ public sealed class HevcDecoderConformanceTests
         }
     }
 
+    /// <summary>
+    /// Every vector by 3 workers, whatever the size of its pictures (<see cref="HevcDecoder.TestIgnoreMinimumSize"/>): the
+    /// deblocking filter and the sample adaptive offset of each picture process bands of rows at the same time. The planes
+    /// must still have the digests of the reference decoders.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(SupportedVectors))]
+    public void VectorsDecodeToThePlanesOfTheReferenceDecodersWithBandsOfInLoopFilters(string id)
+    {
+        var corpus = GoldenCorpus.Default;
+        var vector = corpus.GetHevcVector(id);
+        HevcDecoder.TestIgnoreMinimumSize = true;
+        try
+        {
+            var pictures = Decode(corpus, vector, out _, maxDegreeOfParallelism: 3);
+            Assert.HasCount(vector.Frames.Count, pictures, $"{id}: 3 workers do not output the pictures of the reference decoders.");
+            for (var i = 0; i < pictures.Count; i++)
+            {
+                for (var plane = 0; plane < pictures[i].Planes.Length; plane++)
+                {
+                    Assert.Equal(vector.Frames[i].Planes[plane], GetPlaneDigest(pictures[i], plane), ignoreCase: true, message: $"{id}: the plane {plane} of the output picture {i} filtered by bands is not the plane of the reference decoders.");
+                }
+            }
+        }
+        finally
+        {
+            HevcDecoder.TestIgnoreMinimumSize = false;
+        }
+    }
+
     [Theory]
     [MemberData(nameof(UnsupportedVectors))]
     public void VectorsOfUnsupportedFeaturesAreRejected(string id)

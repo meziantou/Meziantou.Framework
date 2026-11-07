@@ -456,7 +456,13 @@ internal sealed class LanguageTag
                 fields.Add(new(field.Key, LocaleCanonicalizer.CanonicalizeTransformedValue(field.Key, field.Value)));
             }
 
-            fields.Sort(static (a, b) => string.CompareOrdinal(a.Key, b.Key));
+            // Duplicate tfields are kept, and sorted by value (as ICU does): List.Sort is not stable, so a sort by key
+            // only would put them in an arbitrary order, which a second canonicalization could change
+            fields.Sort(static (a, b) => string.CompareOrdinal(a.Key, b.Key) switch
+            {
+                0 => string.CompareOrdinal(a.Value, b.Value),
+                var result => result,
+            });
             TransformedFields.Clear();
             TransformedFields.AddRange(fields);
         }

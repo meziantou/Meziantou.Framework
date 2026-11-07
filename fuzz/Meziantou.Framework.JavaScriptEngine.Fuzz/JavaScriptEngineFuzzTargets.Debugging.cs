@@ -18,6 +18,10 @@ public static partial class JavaScriptEngineFuzzTargets
     // Run by the callbacks of the Inspect mode: a loop and a call, which count in the limits of the callback, not the script's
     private const string DebuggerCallbackCode = "(() => { let s = 0; for (let i = 0; i < 100; i++) s += i; return s; })()";
 
+    // The Inspect mode inspects the first events only: inspecting each of the events of a script that reaches the
+    // statement limit takes seconds, as the callback runs more statements than the event
+    private const int MaxInspectedEvents = 1_000;
+
     private enum DebuggerMode
     {
         // Records the events
@@ -246,7 +250,10 @@ public static partial class JavaScriptEngineFuzzTargets
 
                 if (_mode is DebuggerMode.Inspect)
                 {
-                    Inspect(debugEvent);
+                    if (_eventCount < MaxInspectedEvents)
+                    {
+                        Inspect(debugEvent);
+                    }
                 }
                 else if (_mode is DebuggerMode.Terminate or DebuggerMode.Throw && _eventCount == _stopAt && ThrownInScript is null && ThrownInJobs is null)
                 {

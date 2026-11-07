@@ -1,3 +1,4 @@
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 
@@ -348,6 +349,11 @@ internal ref partial struct HevcSliceCoder
         var samples = plane.Samples;
         var stride = plane.Stride;
         var corner = nTbS * 2;
+        if (!_pps.ConstrainedIntraPredFlag)
+        {
+            GetIntraReferencesByPart(samples, stride, xTb, yTb, xTbY, yTbY, nTbS, subWidth, subHeight, p);
+            return;
+        }
 
         // The samples that are not available are substituted before they are read: only the availability is cleared
         Span<bool> availableBuffer = unsafe(stackalloc bool[HevcIntraPredictor.MaxNeighbourCount]);
@@ -391,6 +397,164 @@ internal ref partial struct HevcSliceCoder
         {
             _tools |= HevcTools.IntraReferenceSubstitution | (constrainedIntraPred ? HevcTools.ConstrainedIntraPred : HevcTools.None);
         }
+    }
+
+    // GetIntraReferences without constrained intra prediction. The samples of the left column, of the corner and of the row
+    // above that are next to the block are each in one coding tree block, and when it is the one of the block, they precede
+    // the block in z-scan order: each of these three parts is available as a whole (clause 6.4.1). Only the units of the
+    // samples below the left column and right of the row above are checked one by one, and the samples are only substituted
+    // when one is missing
+    private void GetIntraReferencesByPart(ReadOnlySpan<ushort> samples, int stride, int xTb, int yTb, int xTbY, int yTbY, int nTbS, int subWidth, int subHeight, scoped Span<ushort> p)
+    {
+        var unitWidth = 4 / subWidth;
+        var unitHeight = 4 / subHeight;
+        var corner = nTbS * 2;
+        var zCurr = GetZScanIndexInCtb(xTbY, yTbY);
+
+        // The bit k of belowLeft and aboveRight is set when the unit k of the part is available: a part has at most 8 units
+        var leftAvailable = IsAvailable(zCurr, xTbY - 1, yTbY);
+        var cornerAvailable = IsAvailable(zCurr, xTbY - 1, yTbY - 1);
+        var aboveAvailable = IsAvailable(zCurr, xTbY, yTbY - 1);
+        var belowLeft = 0;
+        var aboveRight = 0;
+        var units = nTbS / unitHeight;
+        for (var k = 0; k < units; k++)
+        {
+            if (IsAvailable(zCurr, xTbY - 1, yTbY + ((nTbS + (k * unitHeight)) * subHeight)))
+            {
+                belowLeft |= 1 << k;
+            }
+        }
+
+        var aboveRightUnits = nTbS / unitWidth;
+        for (var k = 0; k < aboveRightUnits; k++)
+        {
+            if (IsAvailable(zCurr, xTbY + ((nTbS + (k * unitWidth)) * subWidth), yTbY - 1))
+            {
+                aboveRight |= 1 << k;
+            }
+        }
+
+        // The left column, p[ -1 ][ y ]: the samples of the available units only. The samples left of the block and above it
+        // are not in the plane when they are not available
+        var origin = (yTb * stride) + xTb;
+        if (leftAvailable)
+        {
+            for (var y = 0; y < nTbS; y++)
+            {
+                p[corner - 1 - y] = samples[origin - 1 + (y * stride)];
+            }
+        }
+
+        for (var k = 0; k < units; k++)
+        {
+            if ((belowLeft & (1 << k)) is 0)
+                continue;
+
+            for (var y = nTbS + (k * unitHeight); y < nTbS + ((k + 1) * unitHeight); y++)
+            {
+                p[corner - 1 - y] = samples[origin - 1 + (y * stride)];
+            }
+        }
+
+        // The corner, p[ -1 ][ -1 ], and the row above, p[ x ][ -1 ]: in one copy when they are all available
+        var allAboveRight = (1 << aboveRightUnits) - 1;
+        if (cornerAvailable && aboveAvailable && aboveRight == allAboveRight)
+        {
+            samples.Slice(origin - stride - 1, (2 * nTbS) + 1).CopyTo(p[corner..]);
+        }
+        else
+        {
+            if (cornerAvailable)
+            {
+                p[corner] = samples[origin - stride - 1];
+            }
+
+            if (aboveAvailable)
+            {
+                samples.Slice(origin - stride, nTbS).CopyTo(p[(corner + 1)..]);
+            }
+
+            for (var k = 0; k < aboveRightUnits; k++)
+            {
+                if ((aboveRight & (1 << k)) is not 0)
+                {
+                    samples.Slice(origin - stride + nTbS + (k * unitWidth), unitWidth).CopyTo(p[(corner + 1 + nTbS + (k * unitWidth))..]);
+                }
+            }
+        }
+
+        if (leftAvailable && cornerAvailable && aboveAvailable && belowLeft == (1 << units) - 1 && aboveRight == allAboveRight)
+            return;
+
+        // Clause 8.4.4.2.2 "Reference sample substitution process", by runs of samples: the search order is the order of p,
+        // from p[ -1 ][ nTbS * 2 - 1 ] to p[ nTbS * 2 - 1 ][ -1 ]. The samples before the first available one take its value,
+        // and the samples of a run that is not available after it take the value of the sample before the run
+        _tools |= HevcTools.IntraReferenceSubstitution;
+        var first = GetFirstAvailableReference(nTbS, unitWidth, unitHeight, leftAvailable, cornerAvailable, aboveAvailable, belowLeft, aboveRight);
+        if (first < 0)
+        {
+            p.Fill((ushort)(1 << (_bitDepth - 1)));
+            return;
+        }
+
+        p[..first].Fill(p[first]);
+        for (var k = units - 1; k >= 0; k--)
+        {
+            var start = corner - nTbS - ((k + 1) * unitHeight);
+            if ((belowLeft & (1 << k)) is 0 && start > first)
+            {
+                p.Slice(start, unitHeight).Fill(p[start - 1]);
+            }
+        }
+
+        if (!leftAvailable && corner - nTbS > first)
+        {
+            p.Slice(corner - nTbS, nTbS).Fill(p[corner - nTbS - 1]);
+        }
+
+        if (!cornerAvailable && corner > first)
+        {
+            p[corner] = p[corner - 1];
+        }
+
+        if (!aboveAvailable && corner + 1 > first)
+        {
+            p.Slice(corner + 1, nTbS).Fill(p[corner]);
+        }
+
+        for (var k = 0; k < aboveRightUnits; k++)
+        {
+            var start = corner + 1 + nTbS + (k * unitWidth);
+            if ((aboveRight & (1 << k)) is 0 && start > first)
+            {
+                p.Slice(start, unitWidth).Fill(p[start - 1]);
+            }
+        }
+    }
+
+    // The index in p of the first available neighbouring sample of GetIntraReferencesByPart, in the search order of the
+    // substitution process; -1 when none is available
+    private static int GetFirstAvailableReference(int nTbS, int unitWidth, int unitHeight, bool leftAvailable, bool cornerAvailable, bool aboveAvailable, int belowLeft, int aboveRight)
+    {
+        var corner = nTbS * 2;
+        if (belowLeft is not 0)
+        {
+            // The units below the left column are in p from the bottom: the unit k ends where the unit k - 1 starts
+            var k = 31 - BitOperations.LeadingZeroCount((uint)belowLeft);
+            return corner - nTbS - ((k + 1) * unitHeight);
+        }
+
+        if (leftAvailable)
+            return corner - nTbS;
+
+        if (cornerAvailable)
+            return corner;
+
+        if (aboveAvailable)
+            return corner + 1;
+
+        return aboveRight is 0 ? -1 : corner + 1 + nTbS + (BitOperations.TrailingZeroCount(aboveRight) * unitWidth);
     }
 
     // Whether the neighbouring samples of a block are filtered for a prediction mode (clause 8.4.4.2.3)

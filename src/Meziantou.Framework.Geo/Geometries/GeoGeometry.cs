@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using Meziantou.Framework.Geo.Internals;
 
 namespace Meziantou.Framework.Geo;
 
@@ -47,6 +48,94 @@ public abstract class GeoGeometry
         GeoGeometryCollection collection => collection.Geometries.SelectMany(geometry => geometry.GetSimpleGeometries()),
         _ => [this],
     };
+
+    /// <summary>
+    /// Repairs the polygons of the geometry: a ring that crosses itself or another ring of its polygon, a hole outside its
+    /// exterior ring, rings in the wrong direction or repeated positions. Each polygon becomes the area its rings enclose
+    /// an odd number of times (a bow-tie becomes two triangles), and a multi-polygon the union of the areas of its polygons.
+    /// The exterior rings of the result turn counter-clockwise and its holes clockwise, as RFC 7946 wants them.
+    /// </summary>
+    /// <returns>
+    /// The repaired geometry: a polygon becomes a <see cref="GeoPolygon"/>, or a <see cref="GeoMultiPolygon"/> when it is
+    /// cut in several parts. The positions of the polygons move to the nearest ten-millionth of a degree (about a centimeter),
+    /// and lose their altitude. The consecutive repeated positions of the lines are removed; the points are unchanged.
+    /// </returns>
+    /// <exception cref="InvalidOperationException">A coordinate of a polygon is not a number between -100,000 and 100,000.</exception>
+    /// <remarks>The computation is exact on the grid of ten-millionths of a degree, as on an equirectangular map: the edges are straight in degrees.</remarks>
+    public GeoGeometry MakeValid() => GeoOperations.MakeValid(this);
+
+    /// <summary>Cuts the geometry to a box: the parts of the points, lines and polygons that are inside it.</summary>
+    /// <param name="bounds">The box.</param>
+    /// <returns>
+    /// The part of the geometry that is inside the box, or <see langword="null"/> when nothing is. The geometry itself when
+    /// it is entirely inside. A line that leaves the box and comes back becomes a <see cref="GeoMultiLineString"/>. The
+    /// polygons are cut as by <see cref="Intersection"/>.
+    /// </returns>
+    /// <exception cref="ArgumentException">The box is empty: its west side is east of its east side, or its south side north of its north side.</exception>
+    public GeoGeometry? Clip(GeoBounds bounds) => GeoOperations.Clip(this, bounds);
+
+    /// <summary>
+    /// Simplifies the lines and the rings of the geometry with the Douglas–Peucker algorithm: the positions that are closer
+    /// than the tolerance to the line between the positions kept around them are removed. The simplified polygons are
+    /// repaired with <see cref="MakeValid"/>, since removing positions can make a ring cross itself or another one.
+    /// </summary>
+    /// <param name="tolerance">The largest distance between the geometry and its simplification, in degrees: 0.001° is about 100 meters.</param>
+    /// <returns>The simplified geometry, or <see langword="null"/> when every line and ring collapses. The points are unchanged.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="tolerance"/> is negative, infinite or not a number.</exception>
+    public GeoGeometry? Simplify(double tolerance) => GeoOperations.Simplify(this, tolerance);
+
+    /// <summary>Gets the union of the area of this geometry and of the area of another one.</summary>
+    /// <param name="other">The other geometry: a polygon, a multi-polygon or a collection of polygons.</param>
+    /// <returns>The union, or <see langword="null"/> when it is empty.</returns>
+    /// <exception cref="InvalidOperationException">This geometry is not a polygon, a multi-polygon or a collection of polygons.</exception>
+    /// <exception cref="ArgumentException"><paramref name="other"/> is not a polygon, a multi-polygon or a collection of polygons.</exception>
+    /// <remarks>
+    /// The exterior ring of each polygon adds its area, and its holes remove theirs, whatever their direction: call
+    /// <see cref="MakeValid"/> first on polygons whose rings cross. The result is a <see cref="GeoPolygon"/> or a
+    /// <see cref="GeoMultiPolygon"/> whose positions are on the grid of ten-millionths of a degree.
+    /// </remarks>
+    public GeoGeometry? Union(GeoGeometry other)
+    {
+        ArgumentNullException.ThrowIfNull(other);
+        return GeoOperations.Combine(this, other, PolygonCombineMode.Union, nameof(other));
+    }
+
+    /// <summary>Gets the area that this geometry and another one have in common.</summary>
+    /// <param name="other">The other geometry: a polygon, a multi-polygon or a collection of polygons.</param>
+    /// <returns>The intersection, or <see langword="null"/> when it is empty.</returns>
+    /// <exception cref="InvalidOperationException">This geometry is not a polygon, a multi-polygon or a collection of polygons.</exception>
+    /// <exception cref="ArgumentException"><paramref name="other"/> is not a polygon, a multi-polygon or a collection of polygons.</exception>
+    /// <remarks>See <see cref="Union"/> for how the rings are read and what the result is made of.</remarks>
+    public GeoGeometry? Intersection(GeoGeometry other)
+    {
+        ArgumentNullException.ThrowIfNull(other);
+        return GeoOperations.Combine(this, other, PolygonCombineMode.Intersect, nameof(other));
+    }
+
+    /// <summary>Gets the area of this geometry that is outside another one.</summary>
+    /// <param name="other">The other geometry: a polygon, a multi-polygon or a collection of polygons.</param>
+    /// <returns>The difference, or <see langword="null"/> when it is empty.</returns>
+    /// <exception cref="InvalidOperationException">This geometry is not a polygon, a multi-polygon or a collection of polygons.</exception>
+    /// <exception cref="ArgumentException"><paramref name="other"/> is not a polygon, a multi-polygon or a collection of polygons.</exception>
+    /// <remarks>See <see cref="Union"/> for how the rings are read and what the result is made of.</remarks>
+    public GeoGeometry? Difference(GeoGeometry other)
+    {
+        ArgumentNullException.ThrowIfNull(other);
+        return GeoOperations.Combine(this, other, PolygonCombineMode.Exclude, nameof(other));
+    }
+
+    /// <summary>Gets a geometry of the same type whose positions are transformed, such as positions in another coordinate system converted to longitudes and latitudes.</summary>
+    /// <param name="transform">The function that transforms each position.</param>
+    /// <returns>The transformed geometry.</returns>
+    public GeoGeometry Transform(Func<GeoPosition, GeoPosition> transform)
+    {
+        ArgumentNullException.ThrowIfNull(transform);
+        return GeoOperations.Transform(this, transform);
+    }
+
+    /// <summary>Gets the rings of the polygons of the geometry as closed lines, such as the coastlines of land polygons.</summary>
+    /// <returns>A line for each ring of each polygon, exterior rings and holes, in order. Nothing for points and lines.</returns>
+    public IEnumerable<GeoLineString> GetBoundaryLines() => GeoOperations.GetBoundaryLines(this);
 
     private GeoPosition? ComputeLabelPosition()
     {

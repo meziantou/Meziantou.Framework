@@ -79,9 +79,17 @@ namespace Meziantou.Framework.Geo
         public bool IsEmpty { get => throw null; }
         public Meziantou.Framework.Geo.GeoPosition? LabelPosition { get => throw null; }
         public abstract Meziantou.Framework.Geo.GeoGeometryType Type { get; }
+        public Meziantou.Framework.Geo.GeoGeometry? Clip(Meziantou.Framework.Geo.GeoBounds bounds) => throw null;
+        public Meziantou.Framework.Geo.GeoGeometry? Difference(Meziantou.Framework.Geo.GeoGeometry other) => throw null;
+        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Geo.GeoLineString> GetBoundaryLines() => throw null;
         public Meziantou.Framework.Geo.GeoBounds? GetBounds() => throw null;
         public abstract System.Collections.Generic.IEnumerable<Meziantou.Framework.Geo.GeoPosition> GetPositions();
         public System.Collections.Generic.IEnumerable<Meziantou.Framework.Geo.GeoGeometry> GetSimpleGeometries() => throw null;
+        public Meziantou.Framework.Geo.GeoGeometry? Intersection(Meziantou.Framework.Geo.GeoGeometry other) => throw null;
+        public Meziantou.Framework.Geo.GeoGeometry MakeValid() => throw null;
+        public Meziantou.Framework.Geo.GeoGeometry? Simplify(double tolerance) => throw null;
+        public Meziantou.Framework.Geo.GeoGeometry Transform(System.Func<Meziantou.Framework.Geo.GeoPosition, Meziantou.Framework.Geo.GeoPosition> transform) => throw null;
+        public Meziantou.Framework.Geo.GeoGeometry? Union(Meziantou.Framework.Geo.GeoGeometry other) => throw null;
     }
 
     public sealed class GeoGeometryCollection : Meziantou.Framework.Geo.GeoGeometry

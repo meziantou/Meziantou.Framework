@@ -1,18 +1,22 @@
 ---
 title: Limitations
-description: What the library does not do: coordinate systems, curved edges, per-point data and other formats.
+description: What the library does not do: coordinate systems, curved edges, buffers, per-point data and other formats.
 ---
 
 ## Coordinates
 
 - **WGS 84 only.** The positions are longitudes and latitudes in degrees. The library does not convert between
-  coordinate reference systems: the SRID of EWKT and EWKB and the `.prj` file of a shapefile are not used. Convert
-  projected data, such as a shapefile in Lambert 93 or UTM, with another tool first.
+  coordinate reference systems: the SRID of EWKT and EWKB and the `.prj` file of a shapefile are not used.
+  [Transform](cref:Meziantou.Framework.Geo.GeoGeometry.Transform) applies a conversion you provide, such as the inverse
+  of the Mercator projection for Web Mercator data; convert other projected data, such as a shapefile in Lambert 93 or
+  UTM, with another tool first.
 - **Straight edges in degrees.** [GeoPolygon.Contains](cref:Meziantou.Framework.Geo.GeoPolygon.Contains),
-  [GetBounds](cref:Meziantou.Framework.Geo.GeoGeometry.GetBounds) and
-  [LabelPosition](cref:Meziantou.Framework.Geo.GeoGeometry.LabelPosition) treat the edges as straight lines on an
-  equirectangular map, not as great circles, and do not handle the shapes that cross the 180th meridian.
-- **No geometry operations.** There is no union, intersection, buffer, simplification or validation of the geometries.
+  [GetBounds](cref:Meziantou.Framework.Geo.GeoGeometry.GetBounds),
+  [LabelPosition](cref:Meziantou.Framework.Geo.GeoGeometry.LabelPosition) and the
+  [geometry operations](06-GeometryOperations.md) treat the edges as straight lines on an equirectangular map, not as
+  great circles, and do not handle the shapes that cross the 180th meridian.
+- **No buffers.** The [geometry operations](06-GeometryOperations.md) repair, clip, simplify and combine polygons,
+  but do not compute buffers, distances between geometries or convex hulls.
 
 ## Data that the model does not keep
 

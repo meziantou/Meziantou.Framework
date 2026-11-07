@@ -16,6 +16,9 @@ dependency outside .NET, and it supports trimming.
   [features and geometries](03-FeaturesAndGeometries.md).
 - **Project positions** onto a plane to draw a map, with the equirectangular, Mercator, Equal Earth and Albers
   projections. See [projections](05-Projections.md).
+- **Transform geometries**: repair invalid polygons, clip to a box, simplify, combine polygons (union, intersection,
+  difference), and convert positions from another coordinate system. See
+  [geometry operations](06-GeometryOperations.md).
 - **Draw maps**: `Meziantou.Framework.Charts` draws the features as choropleths and points on maps. See
   [maps](../Charts/04-Gallery/09-Maps.md).
 
@@ -29,4 +32,4 @@ Every type is in the [Meziantou.Framework.Geo](cref:Meziantou.Framework.Geo) nam
 ## Next steps
 
 - [Getting started](02-GettingStarted.md): install the package, read a file and write one.
-- [Limitations](06-Limitations.md): what the library does not do.
+- [Limitations](07-Limitations.md): what the library does not do.

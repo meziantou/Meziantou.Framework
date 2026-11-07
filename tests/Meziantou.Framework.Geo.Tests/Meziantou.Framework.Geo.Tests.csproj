@@ -7,6 +7,8 @@
   <ItemGroup>
     <!-- Small files of each format, some written by GDAL (ogr2ogr) to check the readers against another implementation -->
     <None Update="TestData/**" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The countries of Natural Earth (public domain), at 1:110m: real-world polygons for the geometry operations -->
+    <None Include="../Meziantou.Framework.Charts.Tests/TestData/countries-110m.geojson" Link="TestData/countries-110m.geojson" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

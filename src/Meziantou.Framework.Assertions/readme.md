@@ -115,6 +115,109 @@ using (Assert.UseFormatterOptions(new FormatterOptions { MaxFormattedItems = 100
 
 The stack trace of an `AssertionException` starts at the method that called the assertion, not inside the assertion library. The runtime cannot hide the frames of asynchronous methods, so the stack trace of an awaited assertion still contains them.
 
+## Architecture assertions
+
+`Assert.Architecture` checks the architecture of an application: the dependencies between namespaces, layers and
+modules, and the members the code must not use. It reads the compiled assemblies with `System.Reflection.Metadata`
+(declarations, IL and portable PDBs). A failed assertion lists each type that breaks it, with the source location of the
+statements. The model and the assertions are in the `Meziantou.Framework.Assertions.Architecture` namespace.
+
+### Check the dependencies of a namespace
+
+<!-- ref:../../tests/Meziantou.Framework.Assertions.Tests/Architecture/DocumentationTests.cs;region=Architecture_DoesNotDependOn;format=md-fenced-code-block;dedent=true -->
+```csharp
+var architecture = ArchitectureModel.FromAssemblyContaining<Order>();
+var domain = architecture.Types.Where(t => t.IsInNamespaceOrChildren("SampleApp.Domain"));
+var infrastructure = architecture.Types.Where(t => t.IsInNamespaceOrChildren("SampleApp.Infrastructure"));
+
+Assert.Architecture.DoesNotDependOn(domain, infrastructure, "the domain stays persistence-ignorant");
+Assert.Architecture.DoesNotDependOn(domain, t => t.IsInNamespaceOrChildren("Microsoft.EntityFrameworkCore"));
+Assert.Architecture.DoesNotDependOn<HttpClient>(domain);
+```
+<!-- endref -->
+
+### Check the dependencies between layers
+
+<!-- ref:../../tests/Meziantou.Framework.Assertions.Tests/Architecture/DocumentationTests.cs;region=Architecture_Layers;format=md-fenced-code-block;dedent=true -->
+```csharp
+var architecture = ArchitectureModel.FromAssemblyContaining<Order>();
+var web = architecture.Types.Where(t => t.IsInNamespaceOrChildren("SampleApp.Web"));
+var application = architecture.Types.Where(t => t.IsInNamespaceOrChildren("SampleApp.Application"));
+var domain = architecture.Types.Where(t => t.IsInNamespaceOrChildren("SampleApp.Domain"));
+var infrastructure = architecture.Types.Where(t => t.IsInNamespaceOrChildren("SampleApp.Infrastructure"));
+
+Assert.Architecture.DoesNotDependOn(domain, [.. application, .. web, .. infrastructure]);
+Assert.Architecture.DoesNotDependOn(application, [.. web, .. infrastructure]);
+Assert.Architecture.DoesNotDependOn(infrastructure, [.. application, .. web]);
+
+// OrdersController creates the repository itself
+var exception = Assert.Throws<AssertionException>(() => Assert.Architecture.DoesNotDependOn(web, infrastructure, "the web layer gets the repository by injection"));
+Assert.StartsWith("""
+    Assert.Architecture.DoesNotDependOn() assertion failed: 1 type depends on a forbidden type.
+    Message: the web layer gets the repository by injection
+    Types expression:     web
+    Forbidden expression: infrastructure
+    - SampleApp.Web.OrdersController depends on SampleApp.Infrastructure.SqlOrderRepository
+        SampleApp.Web.OrdersController.CreateRepository creates SampleApp.Infrastructure.SqlOrderRepository..ctor
+    """.ReplaceLineEndings("\n"), exception.Message);
+```
+<!-- endref -->
+
+### Forbid cycles between modules
+
+<!-- ref:../../tests/Meziantou.Framework.Assertions.Tests/Architecture/DocumentationTests.cs;region=Architecture_Slices;format=md-fenced-code-block;dedent=true -->
+```csharp
+var architecture = ArchitectureModel.FromAssemblyContaining<Order>();
+var modules = architecture.Types.SliceByNamespace("SampleApp.Modules.{slice}");
+
+var exception = Assert.Throws<AssertionException>(() => Assert.Architecture.DoesNotHaveCycles(modules));
+Assert.StartsWith("""
+    Assert.Architecture.DoesNotHaveCycles() assertion failed: 1 cycle between slices.
+    Slices expression: modules
+    - Billing -> Shipping -> Billing
+        SampleApp.Modules.Billing.Invoice.Shipment has a property of type SampleApp.Modules.Shipping.Shipment
+    """.ReplaceLineEndings("\n"), exception.Message);
+```
+<!-- endref -->
+
+### Check the names and the shape of types
+
+<!-- ref:../../tests/Meziantou.Framework.Assertions.Tests/Architecture/DocumentationTests.cs;region=Architecture_ShapeRules;format=md-fenced-code-block;dedent=true -->
+```csharp
+var architecture = ArchitectureModel.FromAssemblyContaining<Order>();
+var repositories = architecture.Types.Where(t => t.IsClass && t.Implements<IOrderRepository>());
+
+Assert.NotEmpty(repositories);
+Assert.All(repositories, t => t.Name.EndsWith("Repository", StringComparison.Ordinal));
+Assert.All(repositories, t => t.IsSealed);
+Assert.All(architecture.Types.Where(t => t.IsInNamespaceOrChildren("SampleApp.Domain") && !t.IsInterface), t => t.IsImmutable);
+```
+<!-- endref -->
+
+### Query the model
+
+The types, members, attributes and dependencies of the assemblies form a model you can query with LINQ:
+
+<!-- ref:../../tests/Meziantou.Framework.Assertions.Tests/Architecture/DocumentationTests.cs;region=Architecture_Model;format=md-fenced-code-block;dedent=true -->
+```csharp
+var architecture = ArchitectureModel.FromAssemblyContaining<Order>();
+var controller = architecture.GetTypeElement(typeof(OrdersController));
+
+var usedTypes = controller.Dependencies
+    .Select(dependency => dependency.Target.FullName)
+    .Where(name => name.StartsWith("SampleApp.", StringComparison.Ordinal))
+    .Distinct()
+    .Order(StringComparer.Ordinal)
+    .ToList();
+
+string[] expected = ["SampleApp.Application.PlaceOrderHandler", "SampleApp.Domain.IOrderRepository", "SampleApp.Domain.OrderLine", "SampleApp.Infrastructure.SqlOrderRepository"];
+Assert.Equal(expected, usedTypes);
+```
+<!-- endref -->
+
+The code of lambdas, local functions, iterators and async methods belongs to the method that declares them, and the
+types the compiler generates are not part of the model.
+
 ## Analyzer rules
 
 The package ships analyzers and code fixes to help write clearer assertions.

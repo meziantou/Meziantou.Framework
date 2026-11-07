@@ -21,6 +21,13 @@
     <PackageTags>geo;gis;map;maps;offline;borders;cities;flatgeobuf;openstreetmap;natural-earth</PackageTags>
     <_PackageReadmeFilePath>$(MSBuildThisFileDirectory)readme.md</_PackageReadmeFilePath>
 
+    <!--
+      NU5123: the path of a file in the package folder (id/version/lib/net10.0/<id>.dll) is long for the longest region
+      names, such as SouthGeorgiaAndSouthSandwichIslands. It exceeds the limit only with the -build-<commit> suffix CI
+      adds to the versions of pull requests; a published version, 1.0.x, is about 45 characters below it
+    -->
+    <NoWarn>$(NoWarn);NU5123</NoWarn>
+
     <!-- The layers of the regions: data/<Key>/<layer>.fgb -->
     <MapDataDirectory>$(MSBuildThisFileDirectory)data/</MapDataDirectory>
   </PropertyGroup>

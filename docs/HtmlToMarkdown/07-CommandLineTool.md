@@ -6,6 +6,8 @@ description: Convert an HTML file or the standard input to Markdown from the com
 `Meziantou.Framework.HtmlToMarkdown.Tool` converts HTML to Markdown without writing code: use it in scripts, or to
 convert pages saved from a browser.
 
+The [command reference](09-CommandReference.md) lists every option of the tool.
+
 ## Install the tool
 
 Install it as a global tool:

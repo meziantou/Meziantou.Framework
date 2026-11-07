@@ -1253,12 +1253,15 @@ async Task RunUpdateReadmeStep(FullPath rootPath)
         var generationStopwatch = Stopwatch.StartNew();
         var helpSectionPattern = new Regex("(?<=<!-- help -->)(.*?)(?=<!-- help -->)", RegexOptions.Singleline | RegexOptions.ExplicitCapture, Timeout.InfiniteTimeSpan);
         var readmeUpdates = new ToolReadmeUpdate?[orderedToolProjects.Length];
+        var commandReferences = new Dictionary<string, string>?[orderedToolProjects.Length];
         Parallel.For(0, orderedToolProjects.Length, index =>
         {
             var project = orderedToolProjects[index];
             WriteIfNotLlm($"[update-tool-readme] [{index + 1}/{orderedToolProjects.Length}] Generating help output for tool project: {project.Csproj}");
 
-            var helpMarkdown = BuildToolHelpMarkdown(project.Csproj, tools.Commands[FullPath.FromPath(project.Csproj)], project.ToolName);
+            var helpSections = GetToolHelpSections(project.Csproj, tools.Commands[FullPath.FromPath(project.Csproj)], project.ToolName);
+            var helpMarkdown = BuildToolHelpMarkdown(helpSections);
+            commandReferences[index] = BuildToolCommandReference(project.Csproj, helpSections);
 
             var toolReadmeContent = File.ReadAllText(project.ToolReadme);
             var newToolReadmeContent = helpSectionPattern.Replace(toolReadmeContent, $"\n{helpMarkdown}\n");
@@ -1278,8 +1281,117 @@ async Task RunUpdateReadmeStep(FullPath rootPath)
                 updatedFiles.Enqueue(FullPath.FromPath(update.ToolReadme).MakePathRelativeTo(rootPath));
                 WriteIfNotLlm($"WARNING: {update.ToolReadme} was not up-to-date");
             }
+
+            var commandReference = commandReferences[i] ?? throw new InvalidOperationException($"Internal error: missing command reference for index {i}.");
+            UpdateToolCommandReference(orderedToolProjects[i].Csproj, commandReference);
         }
     }
+
+    // The command reference of a tool goes to the slot an author created in the docs folder of the tool (the deepest
+    // folder whose _folder.yml lists the package): a "<nn>-CommandReference" folder with a _folder.yml when the tool has
+    // subcommands, a "<nn>-CommandReference.md" page otherwise. The pages of the slot are generated.
+    void UpdateToolCommandReference(string csproj, Dictionary<string, string> files)
+    {
+        var packageId = Path.GetFileNameWithoutExtension(csproj);
+        var docsRootPath = rootPath / "docs";
+        var isFolder = !files.ContainsKey("");
+        var expectedSlot = isFolder ? "a '<nn>-CommandReference' folder with a _folder.yml file" : "a '<nn>-CommandReference.md' page";
+
+        var docsFolders = Directory.EnumerateFiles(docsRootPath, "_folder.yml", SearchOption.AllDirectories)
+            .Where(path => ReadDocumentationPackageIds(File.ReadAllLines(path)).Contains(packageId, StringComparer.Ordinal))
+            .Select(path => FullPath.FromPath(path).Parent)
+            .ToArray();
+        var csprojRelativePath = FullPath.FromPath(csproj).MakePathRelativeTo(rootPath).Replace('\\', '/');
+        if (docsFolders.Length is 0)
+        {
+            ReportCommandReferenceError(csprojRelativePath, $"no _folder.yml of docs/ lists the package '{packageId}'");
+            return;
+        }
+
+        var depth = docsFolders.Max(GetDepth);
+        var deepestFolders = docsFolders.Where(folder => GetDepth(folder) == depth).ToArray();
+        if (deepestFolders.Length > 1)
+        {
+            ReportCommandReferenceError(csprojRelativePath, $"several docs folders list the package '{packageId}' at the same level ({string.Join(", ", deepestFolders.Select(GetRelativePath))}); the command reference needs a single folder");
+            return;
+        }
+
+        var docsFolder = deepestFolders[0];
+        var slots = Directory.EnumerateFileSystemEntries(docsFolder)
+            .Where(path => Regex.IsMatch(Path.GetFileName(path), @"^[0-9]{2}-CommandReference(\.md)?$", RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, Timeout.InfiniteTimeSpan))
+            .Select(FullPath.FromPath)
+            .ToArray();
+        if (slots.Length is not 1)
+        {
+            ReportCommandReferenceError(GetRelativePath(docsFolder), slots.Length is 0
+                ? $"the command reference of '{packageId}' needs {expectedSlot} in this folder, numbered after its last page"
+                : $"the command reference of '{packageId}' needs a single slot, found {string.Join(", ", slots.Select(GetRelativePath))}");
+            return;
+        }
+
+        var slot = slots[0];
+        if (Directory.Exists(slot) != isFolder)
+        {
+            ReportCommandReferenceError(GetRelativePath(slot), $"the tool {(isFolder ? "has" : "has no")} subcommands, so its command reference needs {expectedSlot} instead");
+            return;
+        }
+
+        if (!isFolder)
+        {
+            WriteFileIfChanged(slot, files[""]);
+            return;
+        }
+
+        if (!File.Exists(slot / "_folder.yml"))
+        {
+            ReportCommandReferenceError(GetRelativePath(slot), "add a _folder.yml file with the title of the command reference");
+            return;
+        }
+
+        foreach (var (path, content) in files)
+        {
+            WriteFileIfChanged(slot / path, content);
+        }
+
+        // Pages of commands that no longer exist. The _folder.yml of the slot is the one file that is not generated.
+        foreach (var path in Directory.EnumerateFiles(slot, "*", SearchOption.AllDirectories).Select(FullPath.FromPath))
+        {
+            var relativePath = path.MakePathRelativeTo(slot).Replace('\\', '/');
+            if (relativePath is "_folder.yml" || files.ContainsKey(relativePath))
+                continue;
+
+            File.Delete(path);
+            updatedFiles.Enqueue(path.MakePathRelativeTo(rootPath));
+            WriteIfNotLlm($"WARNING: {GetRelativePath(path)} was removed: the command no longer exists");
+        }
+
+        foreach (var directory in Directory.EnumerateDirectories(slot, "*", SearchOption.AllDirectories).OrderByDescending(path => path.Length))
+        {
+            if (!Directory.EnumerateFileSystemEntries(directory).Any())
+            {
+                Directory.Delete(directory);
+            }
+        }
+
+        int GetDepth(FullPath folder) => folder.MakePathRelativeTo(docsRootPath).Count(c => c is '/' or '\\');
+        string GetRelativePath(FullPath path) => path.MakePathRelativeTo(rootPath).Replace('\\', '/');
+    }
+
+    void ReportCommandReferenceError(string relativePath, string message)
+    {
+        Console.Error.WriteLine($"ERROR: {relativePath}: {message}");
+        updatedFiles.Enqueue(relativePath);
+    }
+}
+
+// The 'packageIds:' block list of a _folder.yml file of docs/. RunValidateDocumentationPackageIdsStep checks its format.
+static string[] ReadDocumentationPackageIds(string[] lines)
+{
+    var index = Array.FindIndex(lines, line => line.TrimEnd() is "packageIds:");
+    if (index < 0)
+        return [];
+
+    return [.. lines.Skip(index + 1).TakeWhile(line => line.StartsWith("- ", StringComparison.Ordinal)).Select(line => line[2..].Trim())];
 }
 
 void UpdateAnalyzerDocumentation(FullPath srcRootPath)
@@ -1596,7 +1708,7 @@ static int GetUpdateReadmeMaxDegreeOfParallelism()
     throw new InvalidOperationException($"Environment variable UPDATE_README_MAX_PARALLELISM must be a positive integer. Current value: '{value}'.");
 }
 
-static string BuildToolHelpMarkdown(string csproj, ToolCommand tool, string? toolName)
+static List<(string[] CommandPath, string HelpText)> GetToolHelpSections(string csproj, ToolCommand tool, string? toolName)
 {
     var sections = new List<(string[] CommandPath, string HelpText)>();
     var visitedCommandPaths = new HashSet<string>(StringComparer.Ordinal);
@@ -1623,6 +1735,11 @@ static string BuildToolHelpMarkdown(string csproj, ToolCommand tool, string? too
         throw new InvalidOperationException($"Tool '{csproj}' did not produce a root help section.");
     }
 
+    return sections;
+}
+
+static string BuildToolHelpMarkdown(List<(string[] CommandPath, string HelpText)> sections)
+{
     var sb = new StringBuilder();
     sb.AppendLine("## Help");
     sb.AppendLine();
@@ -1648,6 +1765,309 @@ static string BuildToolHelpMarkdown(string csproj, ToolCommand tool, string? too
     }
 
     return sb.ToString().TrimEnd('\r', '\n');
+}
+
+// Renders the command reference of a tool for docs/, laid out like the reference of the .NET CLI: a page per command,
+// with its synopsis and the tables of its arguments, options and subcommands. The keys are the paths of the files
+// relative to the slot of the tool: a folder when the tool has subcommands ("01-Overview.md", "02-Build.md"), or the
+// slot page itself ("") when it has none.
+static Dictionary<string, string> BuildToolCommandReference(string csproj, List<(string[] CommandPath, string HelpText)> sections)
+{
+    var helps = sections.ToDictionary(section => string.Join(' ', section.CommandPath), section => ParseCommandHelp(csproj, section.CommandPath, section.HelpText), StringComparer.Ordinal);
+    var files = new Dictionary<string, string>(StringComparer.Ordinal);
+    if (sections.Count is 1)
+    {
+        files[""] = BuildCommandReferencePage("Command reference", helps[""], []);
+        return files;
+    }
+
+    AppendFolder([], "");
+    return files;
+
+    void AppendFolder(string[] commandPath, string folder)
+    {
+        var commands = new List<(string Name, string Description, string Link)>();
+        var children = GetChildren(commandPath);
+        for (var i = 0; i < children.Count; i++)
+        {
+            var child = children[i];
+            var childHelp = helps[string.Join(' ', child)];
+            var name = $"{i + 2:00}-{ToPascalCase(csproj, child[^1])}";
+            string link;
+            if (GetChildren(child).Count > 0)
+            {
+                link = name + "/01-Overview.md";
+                files[folder + name + "/_folder.yml"] = BuildFolderYaml(child[^1], childHelp.Description);
+                AppendFolder(child, folder + name + "/");
+            }
+            else
+            {
+                link = name + ".md";
+                files[folder + link] = BuildCommandReferencePage(child[^1], childHelp, []);
+            }
+
+            commands.Add((child[^1], childHelp.Description, link));
+        }
+
+        var help = helps[string.Join(' ', commandPath)];
+        var title = commandPath.Length is 0 ? help.CommandName : commandPath[^1];
+        files[folder + "01-Overview.md"] = BuildCommandReferencePage(title, help, commands);
+    }
+
+    // The subcommands, in the order of the Commands section of their parent
+    List<string[]> GetChildren(string[] commandPath)
+    {
+        var children = sections
+            .Select(section => section.CommandPath)
+            .Where(path => path.Length == commandPath.Length + 1 && path.AsSpan(0, commandPath.Length).SequenceEqual(commandPath))
+            .ToList();
+        var order = helps[string.Join(' ', commandPath)].Commands.Select(command => command.Name.Split(' ')[0]).ToList();
+        return [.. children.OrderBy(path => order.IndexOf(path[^1]) is var index and >= 0 ? index : int.MaxValue)];
+    }
+}
+
+static string BuildFolderYaml(string title, string description)
+{
+    var sb = new StringBuilder();
+    sb.Append("title: ").AppendLine(FormatYamlScalar(title));
+    if (description is not "")
+    {
+        sb.Append("description: ").AppendLine(FormatYamlScalar(description.ReplaceLineEndings(" ")));
+    }
+
+    return sb.ToString();
+}
+
+static string BuildCommandReferencePage(string title, CommandHelp help, IReadOnlyList<(string Name, string Description, string Link)> commands)
+{
+    var sb = new StringBuilder();
+    sb.AppendLine("---");
+    sb.Append("title: ").AppendLine(FormatYamlScalar(title));
+    sb.Append("description: ").AppendLine(FormatYamlScalar(help.Description is "" ? $"The usage and the options of {help.CommandName}." : help.Description.ReplaceLineEndings(" ")));
+    sb.AppendLine("---");
+    sb.AppendLine();
+    sb.AppendLine("<!-- Generated by eng/update-all.cs from the --help output of the tool. Do not edit. -->");
+    sb.AppendLine();
+    sb.AppendLine("## Synopsis");
+    sb.AppendLine();
+    sb.AppendLine("```text");
+    foreach (var usage in help.Usage)
+    {
+        sb.AppendLine(usage);
+    }
+
+    sb.AppendLine("```");
+
+    if (help.Description is not "")
+    {
+        sb.AppendLine();
+        sb.AppendLine("## Description");
+        sb.AppendLine();
+        sb.AppendLine(EscapeMarkdownText(help.Description));
+    }
+
+    AppendItems("Arguments", "Argument", help.Arguments);
+    AppendItems("Options", "Option", help.Options);
+
+    if (commands.Count > 0)
+    {
+        sb.AppendLine();
+        sb.AppendLine("## Commands");
+        sb.AppendLine();
+        sb.AppendLine("| Command | Description |");
+        sb.AppendLine("| --- | --- |");
+        foreach (var command in commands)
+        {
+            sb.Append("| [").Append(EscapeMarkdownText(command.Name)).Append("](").Append(command.Link).Append(") | ")
+                .Append(EscapeMarkdownTableText(command.Description))
+                .AppendLine(" |");
+        }
+    }
+
+    return sb.ToString();
+
+    void AppendItems(string heading, string column, IReadOnlyList<CommandHelpItem> items)
+    {
+        if (items.Count is 0)
+            return;
+
+        var parsedItems = items.Select(ParseItemDescription).ToArray();
+        var hasDefault = parsedItems.Any(item => item.Default is not null);
+        sb.AppendLine();
+        sb.Append("## ").AppendLine(heading);
+        sb.AppendLine();
+        sb.Append("| ").Append(column).AppendLine(hasDefault ? " | Description | Default |" : " | Description |");
+        sb.AppendLine(hasDefault ? "| --- | --- | --- |" : "| --- | --- |");
+        for (var i = 0; i < items.Count; i++)
+        {
+            var (description, defaultValue, isRequired) = parsedItems[i];
+            sb.Append("| ")
+                .Append(string.Join(", ", items[i].Name.Split(", ").Select(alias => FormatMarkdownCodeSpan(alias).Replace("|", "\\|", StringComparison.Ordinal))))
+                .Append(" | ");
+            if (isRequired)
+            {
+                sb.Append("Required. ");
+            }
+
+            sb.Append(EscapeMarkdownTableText(description));
+            if (hasDefault)
+            {
+                sb.Append(" | ").Append(defaultValue is null ? "" : FormatMarkdownCodeSpan(defaultValue).Replace("|", "\\|", StringComparison.Ordinal));
+            }
+
+            sb.AppendLine(" |");
+        }
+    }
+
+    // System.CommandLine appends "[default: <value>]" and "[required]" to the description of an argument or an option
+    static (string Description, string? Default, bool IsRequired) ParseItemDescription(CommandHelpItem item)
+    {
+        var description = item.Description;
+        var isRequired = false;
+        string? defaultValue = null;
+        if (description.EndsWith("[required]", StringComparison.Ordinal))
+        {
+            isRequired = true;
+            description = description[..^"[required]".Length].TrimEnd();
+        }
+
+        var match = Regex.Match(description, @"^(?<text>.*?)\s*\[default: (?<value>.*)\]$", RegexOptions.Singleline | RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, Timeout.InfiniteTimeSpan);
+        if (match.Success)
+        {
+            description = match.Groups["text"].Value;
+            defaultValue = match.Groups["value"].Value;
+        }
+
+        return (description, defaultValue, isRequired);
+    }
+}
+
+// Parses the --help output of System.CommandLine: sections start with an unindented "<Name>:" line, and the items of
+// the Arguments, Options and Commands sections are "  <name>  <description>" lines, aligned on a column. The output is
+// not wrapped when it is redirected, so a description takes a single line.
+static CommandHelp ParseCommandHelp(string csproj, string[] commandPath, string helpText)
+{
+    string? section = null;
+    var description = new List<string>();
+    var usage = new List<string>();
+    var items = new Dictionary<string, List<CommandHelpItem>>(StringComparer.Ordinal)
+    {
+        ["Arguments"] = [],
+        ["Options"] = [],
+        ["Commands"] = [],
+    };
+
+    foreach (var line in helpText.ReplaceLineEndings("\n").Split('\n'))
+    {
+        if (string.IsNullOrWhiteSpace(line))
+            continue;
+
+        if (!line.StartsWith(' ', StringComparison.Ordinal))
+        {
+            section = line.EndsWith(':', StringComparison.Ordinal) ? line[..^1] : null;
+            if (section is not ("Description" or "Usage" or "Arguments" or "Options" or "Commands"))
+                throw new InvalidOperationException($"Tool '{csproj}' command '{FormatCommandPath(commandPath)}': unexpected line '{line}' in the --help output. Update the parser of eng/update-all.cs.");
+
+            continue;
+        }
+
+        switch (section)
+        {
+            case null:
+                throw new InvalidOperationException($"Tool '{csproj}' command '{FormatCommandPath(commandPath)}': the --help output does not start with a section.");
+
+            case "Description":
+                description.Add(line.Trim());
+                break;
+
+            case "Usage":
+                usage.Add(line.Trim());
+                break;
+
+            default:
+                var sectionItems = items[section];
+                var match = Regex.Match(line, @"^  (?<name>\S(?:.*?\S)?)(?:\s{2,}(?<description>\S.*))?$", RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, Timeout.InfiniteTimeSpan);
+                if (line.StartsWith("   ", StringComparison.Ordinal) && sectionItems.Count > 0)
+                {
+                    // A description that contains a line break continues on the next lines, indented to its column
+                    var last = sectionItems[^1];
+                    sectionItems[^1] = last with { Description = (last.Description + " " + line.Trim()).Trim() };
+                }
+                else if (match.Success)
+                {
+                    sectionItems.Add(new CommandHelpItem(match.Groups["name"].Value, match.Groups["description"].Value));
+                }
+                else
+                {
+                    throw new InvalidOperationException($"Tool '{csproj}' command '{FormatCommandPath(commandPath)}': cannot parse the line '{line}' of the {section} section.");
+                }
+
+                break;
+        }
+    }
+
+    if (usage.Count is 0)
+        throw new InvalidOperationException($"Tool '{csproj}' command '{FormatCommandPath(commandPath)}': the --help output has no Usage section.");
+
+    var commandName = usage[0].Split(' ')[0];
+    return new CommandHelp(commandName, string.Join('\n', description), [.. usage], items["Arguments"], items["Options"], items["Commands"]);
+}
+
+static string ToPascalCase(string csproj, string commandName)
+{
+    var result = string.Concat(commandName.Split(['-', '_', '.'], StringSplitOptions.RemoveEmptyEntries).Select(part => char.ToUpperInvariant(part[0]) + part[1..]));
+    if (!Regex.IsMatch(result, "^[A-Z][A-Za-z0-9]*$", RegexOptions.CultureInvariant, Timeout.InfiniteTimeSpan))
+        throw new InvalidOperationException($"Tool '{csproj}': the command '{commandName}' cannot be turned into a page name.");
+
+    return result;
+}
+
+static string FormatYamlScalar(string value)
+{
+    var needsQuotes = value is "" ||
+        value.Contains(": ", StringComparison.Ordinal) ||
+        value.Contains(" #", StringComparison.Ordinal) ||
+        value.EndsWith(':', StringComparison.Ordinal) ||
+        value != value.Trim() ||
+        "-?:,[]{}#&*!|>'\"%@`".Contains(value[0], StringComparison.Ordinal);
+    return needsQuotes ? "\"" + value.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal) + "\"" : value;
+}
+
+static string EscapeMarkdownText(string value)
+{
+    var sb = new StringBuilder(value.Length);
+    foreach (var c in value)
+    {
+        if (c is '\\' or '`' or '*' or '_' or '[' or ']' or '<' or '>')
+        {
+            sb.Append('\\');
+        }
+
+        sb.Append(c);
+    }
+
+    return sb.ToString();
+}
+
+static string EscapeMarkdownTableText(string value)
+{
+    return EscapeMarkdownText(value.ReplaceLineEndings(" ")).Replace("|", "\\|", StringComparison.Ordinal);
+}
+
+// A code span whose delimiter is longer than the longest run of backticks of the value
+static string FormatMarkdownCodeSpan(string value)
+{
+    var longestRun = 0;
+    var run = 0;
+    foreach (var c in value)
+    {
+        run = c is '`' ? run + 1 : 0;
+        longestRun = Math.Max(longestRun, run);
+    }
+
+    var delimiter = new string('`', longestRun + 1);
+    var padding = longestRun > 0 || value.StartsWith(' ', StringComparison.Ordinal) || value.EndsWith(' ', StringComparison.Ordinal) ? " " : "";
+    return delimiter + padding + value + padding + delimiter;
 }
 
 static void AppendToolHelpSection(
@@ -2005,6 +2425,16 @@ internal readonly record struct ToolProject(string Csproj, string? ToolName, str
 internal sealed record ToolCommand(string FileName, string[] Arguments);
 
 internal sealed record ToolSet(IReadOnlyList<ToolProject> CommandLineTools, IReadOnlyDictionary<FullPath, ToolCommand> Commands);
+
+internal readonly record struct CommandHelpItem(string Name, string Description);
+
+internal sealed record CommandHelp(
+    string CommandName,
+    string Description,
+    string[] Usage,
+    IReadOnlyList<CommandHelpItem> Arguments,
+    IReadOnlyList<CommandHelpItem> Options,
+    IReadOnlyList<CommandHelpItem> Commands);
 
 internal readonly record struct ToolReadmeUpdate(string ToolReadme, string OriginalContent, string NewContent)
 {

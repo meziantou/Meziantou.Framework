@@ -6,6 +6,8 @@ description: Convert ADF documents to Markdown from the command line, from a fil
 `Meziantou.Framework.AtlassianDataFormat.Tool` converts ADF documents to Markdown without writing code: use it in
 scripts, for instance to export the description of a Jira issue.
 
+The [command reference](07-CommandReference.md) lists every option of the tool.
+
 ## Install the tool
 
 Install it as a global tool:

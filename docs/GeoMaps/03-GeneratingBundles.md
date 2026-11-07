@@ -6,6 +6,8 @@ description: Build the bundles of the world, a continent or a country with the M
 The bundles are built by the `Meziantou.Framework.Geo.Maps.Tool` .NET tool: it downloads the sources, cuts them to each
 region and writes the bundles.
 
+The [command reference](05-CommandReference/01-Overview.md) lists every command and its options.
+
 ## Install the tool
 
 ```bash

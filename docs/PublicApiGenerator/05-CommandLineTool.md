@@ -7,6 +7,8 @@ The `Meziantou.Framework.PublicApiGenerator.Tool` command-line tool generates th
 is already built. Use it when you cannot or do not want to change the project, for instance to look at the API of a
 third-party assembly, or in a build script.
 
+The [command reference](08-CommandReference.md) lists every option of the tool.
+
 ## Install the tool
 
 <InstallDotnetTool Id="Meziantou.Framework.PublicApiGenerator.Tool" />

@@ -12,12 +12,17 @@ namespace Meziantou.Framework.Geo.Maps.Tool;
 /// The layers are read in place, from the memory of the loaded assembly: no file is copied next to the application, and
 /// no layer is copied to read it. The metadata of the map is written as C# code, so nothing is parsed when the map is
 /// opened. The project references the builds of Meziantou.Framework.Geo.Maps that the tool embeds, so that the build needs no
-/// package feed, and its .nuspec file declares the dependency on the package.
+/// package feed, and its .nuspec file declares the dependency on the package. Its SDK and target frameworks are options, and
+/// a project that is not isolated imports the MSBuild files of the folders above it, such as a <c>Directory.Build.props</c>
+/// file that sets the target frameworks.
 /// </remarks>
 internal static class MapProjectWriter
 {
-    /// <summary>The target framework of the assemblies: the oldest one of Meziantou.Framework.Geo.Maps.</summary>
-    public const string TargetFramework = "net10.0";
+    /// <summary>The target framework of the assemblies by default: the oldest one of Meziantou.Framework.Geo.Maps, whose build the tool embeds.</summary>
+    public const string DefaultTargetFramework = "net10.0";
+
+    /// <summary>The SDK of the projects by default.</summary>
+    public const string DefaultSdk = "Microsoft.NET.Sdk";
 
     /// <summary>Writes the project of a region, and returns the path of its project file.</summary>
     /// <param name="region">The region.</param>
@@ -25,7 +30,8 @@ internal static class MapProjectWriter
     /// <param name="mapPath">The folder of the map, as <see cref="RegionBuilder.Write"/> wrote it.</param>
     /// <param name="options">The options of the packages.</param>
     /// <param name="directory">The folder of the projects.</param>
-    public static FullPath Write(Region region, MapFormat format, string mapPath, PackageOptions options, FullPath directory)
+    /// <param name="isolated">Whether the project ignores the MSBuild files of the folders above it, such as a <c>Directory.Build.props</c> file.</param>
+    public static FullPath Write(Region region, MapFormat format, string mapPath, PackageOptions options, FullPath directory, bool isolated)
     {
         var id = options.IdPrefix + "." + region.Key;
         var map = format.Open(mapPath);
@@ -39,19 +45,23 @@ internal static class MapProjectWriter
         var projectDirectory = directory / id;
         Directory.CreateDirectory(projectDirectory);
 
-        // The project does not import the files of the folders above it, such as the Directory.Build.props of a repository
-        File.WriteAllText(projectDirectory / "Directory.Build.props", "<Project />\n");
-        File.WriteAllText(projectDirectory / "Directory.Build.targets", "<Project />\n");
-        File.WriteAllText(projectDirectory / "Directory.Packages.props", "<Project />\n");
+        // An isolated project does not import the files of the folders above it, such as the Directory.Build.props of a repository
+        if (isolated)
+        {
+            File.WriteAllText(projectDirectory / "Directory.Build.props", "<Project />\n");
+            File.WriteAllText(projectDirectory / "Directory.Build.targets", "<Project />\n");
+            File.WriteAllText(projectDirectory / "Directory.Packages.props", "<Project />\n");
+        }
 
-        // The assemblies of the target framework of the package, that the tool embeds: the tool may run on a later framework
+        // The builds of Meziantou.Framework.Geo.Maps that the tool embeds, for the oldest target framework: the tool may run
+        // on a later framework, and a later target framework can reference them
         var references = new StringBuilder();
         foreach (var assembly in new[] { typeof(GeoFeature).Assembly, mapAssembly })
         {
             var fileName = assembly.GetName().Name + ".dll";
             var referencePath = projectDirectory / "references" / fileName;
             Directory.CreateDirectory(referencePath.Parent);
-            using (var resource = typeof(MapProjectWriter).Assembly.GetManifestResourceStream("References." + fileName) ?? throw new InvalidOperationException($"The tool does not embed the {TargetFramework} build of {fileName}."))
+            using (var resource = typeof(MapProjectWriter).Assembly.GetManifestResourceStream("References." + fileName) ?? throw new InvalidOperationException($"The tool does not embed the {DefaultTargetFramework} build of {fileName}."))
             using (var file = File.Create(referencePath))
             {
                 resource.CopyTo(file);
@@ -67,12 +77,15 @@ internal static class MapProjectWriter
             resources.Append(CultureInfo.InvariantCulture, $"""    <EmbeddedResource Include="{Escape(file)}" LogicalName="{GetResourceName(format, layer)}" />""").Append('\n');
         }
 
+        // The target frameworks and the SDK are written as they are given: the target frameworks can be an MSBuild
+        // property, such as $(LatestTargetFrameworks), that a Directory.Build.props file above the project defines
         File.WriteAllText(projectDirectory / (id + ".csproj"), $"""
-            <Project Sdk="Microsoft.NET.Sdk">
+            <Project Sdk="{Escape(options.Sdk)}">
 
               <PropertyGroup>
-                <TargetFramework>{TargetFramework}</TargetFramework>
+                <TargetFrameworks>{Escape(options.TargetFrameworks)}</TargetFrameworks>
                 <AssemblyName>{Escape(id)}</AssemblyName>
+                <PackageId>{Escape(id)}</PackageId>
                 <RootNamespace>{Escape(options.IdPrefix)}</RootNamespace>
                 <LangVersion>14.0</LangVersion>
                 <Nullable>enable</Nullable>
@@ -83,12 +96,11 @@ internal static class MapProjectWriter
                 <Deterministic>true</Deterministic>
                 <DebugType>none</DebugType>
                 <GenerateDocumentationFile>true</GenerateDocumentationFile>
-                <OutputPath>bin/</OutputPath>
-                <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+                <IsPackable>true</IsPackable>
                 <Version>{Escape(options.Version)}</Version>
                 <Authors>{Escape(options.Authors)}</Authors>
                 <Description>{Escape(description)}</Description>
-                <NuspecFile>{Escape(id)}.nuspec</NuspecFile>
+                <NuspecFile>$(MSBuildProjectDirectory)/{Escape(id)}.nuspec</NuspecFile>
                 <PackageOutputPath>{Escape(options.OutputDirectory)}</PackageOutputPath>
               </PropertyGroup>
 
@@ -98,11 +110,42 @@ internal static class MapProjectWriter
               <ItemGroup>
             {resources}  </ItemGroup>
 
+              <!--
+                The project references the assemblies the tool embeds, not the package: the .nuspec file declares the dependency on
+                the package. It is written when the project is packed, with the assembly of each target framework, wherever the
+                SDK writes them
+              -->
+              <Target Name="WriteMapNuspec" BeforeTargets="GenerateNuspec">
+                <ItemGroup>
+                  <_MapTargetFramework Include="$(TargetFrameworks)" />
+                </ItemGroup>
+                <MSBuild Projects="$(MSBuildProjectFullPath)" Targets="GetMapPackageFiles" Properties="TargetFramework=%(_MapTargetFramework.Identity)">
+                  <Output TaskParameter="TargetOutputs" ItemName="_MapPackageFile" />
+                </MSBuild>
+                <ReadLinesFromFile File="$(MSBuildProjectDirectory)/nuspec-metadata.xml">
+                  <Output TaskParameter="Lines" ItemName="_MapNuspecLine" />
+                </ReadLinesFromFile>
+                <ItemGroup>
+                  <_MapNuspecLine Include="@(_MapTargetFramework->'&lt;group targetFramework=&quot;%(Identity)&quot;&gt;&lt;dependency id=&quot;{dependencyId}&quot; version=&quot;{dependencyVersion}&quot; exclude=&quot;Build,Analyzers&quot; /&gt;&lt;/group&gt;')" />
+                  <_MapNuspecLine Include="&lt;/dependencies&gt;;&lt;/metadata&gt;;&lt;files&gt;" />
+                  <_MapNuspecLine Include="@(_MapPackageFile->'&lt;file src=&quot;%(FullPath)&quot; target=&quot;lib/%(TargetFramework)&quot; /&gt;')" />
+                  <_MapNuspecLine Include="&lt;/files&gt;;&lt;/package&gt;" />
+                </ItemGroup>
+                <WriteLinesToFile File="$(NuspecFile)" Lines="@(_MapNuspecLine)" Overwrite="true" />
+              </Target>
+
+              <Target Name="GetMapPackageFiles" Returns="@(_MapPackageFile)">
+                <ItemGroup>
+                  <_MapPackageFile Include="$(TargetPath);$(TargetDir)$(TargetName).xml" TargetFramework="$(TargetFramework)" />
+                </ItemGroup>
+              </Target>
+
             </Project>
 
             """);
 
-        File.WriteAllText(projectDirectory / (id + ".nuspec"), $"""
+        // The metadata of the .nuspec file, up to its dependencies, that the project completes when it is packed
+        File.WriteAllText(projectDirectory / "nuspec-metadata.xml", $"""
             <?xml version="1.0" encoding="utf-8"?>
             <package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
               <metadata>
@@ -114,16 +157,6 @@ internal static class MapProjectWriter
                 <projectUrl>https://github.com/meziantou/Meziantou.Framework</projectUrl>
                 <tags>map maps geo gis offline borders cities {format.Name.ToLowerInvariant()} openstreetmap natural-earth</tags>
                 <dependencies>
-                  <group targetFramework="{TargetFramework}">
-                    <dependency id="{dependencyId}" version="{dependencyVersion}" exclude="Build,Analyzers" />
-                  </group>
-                </dependencies>
-              </metadata>
-              <files>
-                <file src="bin/{Escape(id)}.dll" target="lib/{TargetFramework}" />
-                <file src="bin/{Escape(id)}.xml" target="lib/{TargetFramework}" />
-              </files>
-            </package>
 
             """);
 

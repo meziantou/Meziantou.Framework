@@ -73,6 +73,18 @@ single-file or a Native AOT application, and in tests whatever their folder. The
 loaded assembly, without copying them first, and a [Load](cref:Meziantou.Framework.Geo.Maps.Map.Load) with a box still
 uses the spatial index of the FlatGeobuf layers.
 
+The assemblies target `net10.0` and are built with `Microsoft.NET.Sdk`, in a temporary folder that ignores the MSBuild
+files of the folders above it. To build them as the projects of your repository:
+
+- `--package-target-framework` sets the target frameworks, `net10.0` or later, separated by semicolons. It can be an
+  MSBuild property, such as `--package-target-framework '$(LatestTargetFrameworks)'`, that a `Directory.Build.props`
+  file defines. The package has an assembly per target framework.
+- `--package-sdk` sets the MSBuild SDK of the projects, such as `Meziantou.NET.Sdk`. The `global.json` file of the
+  folders above the projects gives the version of an SDK that is a NuGet package.
+- `--package-project-output` writes the projects to a folder, such as a folder of your repository, and keeps them: they
+  import the `Directory.Build.props`, `Directory.Build.targets` and `Directory.Packages.props` files of the folders
+  above them.
+
 `--package-content files` makes the packages of the previous versions instead: their targets copy the region to the
 `maps` folder of the output of the projects that reference them, where
 [MapCatalog.Default](cref:Meziantou.Framework.Geo.Maps.MapCatalog.Default) reads it. A GeoPackage bundle needs these

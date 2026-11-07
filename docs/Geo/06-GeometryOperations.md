@@ -124,7 +124,8 @@ closed lines, for instance the coastlines of land polygons.
 ## Precision
 
 The operations on polygons are exact on a grid of ten-millionths of a degree, about a centimeter: the positions of the
-polygons they return are on that grid, and lose their altitude. The edges are straight lines in degrees, as on an
-equirectangular map, and the shapes that cross the 180th meridian are not handled. The coordinates of the polygons must
-be between -100,000 and 100,000: convert projected coordinates to degrees with
-[Transform](cref:Meziantou.Framework.Geo.GeoGeometry.Transform) first.
+polygons they return are on that grid, and lose their altitude. An edge that passes within about a unit and a half of a
+vertex is cut at that vertex, so a part only a few units wide, a few centimeters, can move by a few units or
+disappear. The edges are straight lines in degrees, as on an equirectangular map, and the shapes that cross the 180th
+meridian are not handled. The coordinates of the polygons must be between -100,000 and 100,000: convert projected
+coordinates to degrees with [Transform](cref:Meziantou.Framework.Geo.GeoGeometry.Transform) first.

@@ -206,7 +206,8 @@ internal static class GeoPackageWriter
     {
         ColumnType.Boolean => (bool)value ? 1L : 0L,
         ColumnType.Int32 or ColumnType.Int64 => Convert.ToInt64(value, CultureInfo.InvariantCulture),
-        ColumnType.Double => Convert.ToDouble(value, CultureInfo.InvariantCulture),
+        // SQLite stores NaN as NULL, which Microsoft.Data.Sqlite refuses to do
+        ColumnType.Double => Convert.ToDouble(value, CultureInfo.InvariantCulture) is var number && double.IsNaN(number) ? DBNull.Value : number,
         ColumnType.DateTime => value switch
         {
             DateTimeOffset date => GeoPackageMapFormat.FormatDateTime(date),

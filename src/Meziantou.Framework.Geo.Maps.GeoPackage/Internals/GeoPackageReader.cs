@@ -107,7 +107,12 @@ internal static class GeoPackageReader
         using var rows = query.ExecuteReader();
         while (rows.Read())
         {
-            var geometry = rows.IsDBNull(0) ? null : GeoPackageGeometry.Read(((byte[])rows.GetValue(0)).AsSpan());
+            var geometry = rows.GetValue(0) switch
+            {
+                DBNull => null,
+                byte[] bytes => GeoPackageGeometry.Read(bytes),
+                _ => throw new FormatException($"A geometry of the table '{table}' is not a blob."),
+            };
             var properties = new Dictionary<string, object?>(StringComparer.Ordinal);
             for (var i = 0; i < columns.Count; i++)
             {

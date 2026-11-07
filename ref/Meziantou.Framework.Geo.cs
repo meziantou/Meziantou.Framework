@@ -15,6 +15,16 @@ namespace Meziantou.Framework.Geo
         protected override (double X, double Y) ProjectRadians(double lambda, double phi) => throw null;
     }
 
+    public sealed class AzimuthalEquidistantProjection : Meziantou.Framework.Geo.GeoProjection
+    {
+        public override double CenterLongitude { get => throw null; }
+        public double CentralMeridian { get => throw null; set { } }
+        public override bool HasStraightParallels { get => throw null; }
+        public bool SouthPole { get => throw null; set { } }
+        protected override (double Lambda, double Phi)? InvertRadians(double x, double y) => throw null;
+        protected override (double X, double Y) ProjectRadians(double lambda, double phi) => throw null;
+    }
+
     public static class EncodedPolyline
     {
         public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Geo.GeoPosition> Decode(string encoded, int precision = 5) => throw null;

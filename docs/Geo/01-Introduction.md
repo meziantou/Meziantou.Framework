@@ -14,8 +14,8 @@ dependency outside .NET, and it supports trimming.
 - **Work with features and geometries**: points, lines, polygons and their collections, with their properties; get
   their bounds, a position to label them, distances, and whether a position is inside an area. See
   [features and geometries](03-FeaturesAndGeometries.md).
-- **Project positions** onto a plane to draw a map, with the equirectangular, Mercator, Equal Earth and Albers
-  projections. See [projections](05-Projections.md).
+- **Project positions** onto a plane to draw a map, with the equirectangular, Mercator, Equal Earth, Albers and
+  azimuthal equidistant projections. See [projections](05-Projections.md).
 - **Transform geometries**: repair invalid polygons, clip to a box, simplify, combine polygons (union, intersection,
   difference), and convert positions from another coordinate system. See
   [geometry operations](06-GeometryOperations.md).

@@ -29,8 +29,9 @@ country. The `rank` of the cities goes the other way, from 0 to 14 for the large
 
 A layer is missing when its source has nothing in the region: a country without sea has no coastline, land or ocean.
 Antarctica has no borders or subdivisions: its map has the research stations as cities, and the land, coastline, ocean,
-seas and physical regions south of 60°S. The projections of `Meziantou.Framework.Geo` are not centered on a pole, so
-they draw Antarctica as a wide strip along the bottom of the map.
+seas and physical regions south of 60°S. Draw it with a projection centered on the South Pole, such as
+[AzimuthalEquidistantProjection](cref:Meziantou.Framework.Geo.AzimuthalEquidistantProjection): see
+[map of a polar region](../Charts/04-Gallery/09-Maps.md#map-of-a-polar-region).
 The metadata of the map holds the name of the region, its bounds, the date of its data and the attribution of its
 sources. The positions are longitudes and latitudes (WGS 84), and the layers are read as the features of
 [Meziantou.Framework.Geo](../Geo/01-Introduction.md).

@@ -13,11 +13,26 @@ internal static class PreviewRenderer
         if (extent is not { } bounds)
             return;
 
-        // The world and the regions near the poles, such as Antarctica, do not fit Mercator, which stops at 85°
-        GeoProjection projection = bounds.North - bounds.South > 100 || bounds.South < -80 || bounds.North > 80 ? new EqualEarthProjection() : new MercatorProjection();
-        var (x0, y0) = projection.Project(new GeoPosition(bounds.West, Math.Max(bounds.South, -projection.MaxLatitude)));
-        var (x1, y1) = projection.Project(new GeoPosition(bounds.East, Math.Min(bounds.North, projection.MaxLatitude)));
-        var height = Math.Clamp(Width * Math.Abs(y1 - y0) / Math.Max(Math.Abs(x1 - x0), 1e-9), 256, 2048);
+        // A polar region, such as Antarctica, is centered on its pole; the world and the regions that reach a pole do not fit
+        // Mercator, which stops at 85°
+        GeoProjection projection = bounds switch
+        {
+            { North: < -50 } => new AzimuthalEquidistantProjection { SouthPole = true },
+            { South: > 50 } => new AzimuthalEquidistantProjection(),
+            _ when bounds.North - bounds.South > 100 || bounds.South < -80 || bounds.North > 80 => new EqualEarthProjection(),
+            _ => new MercatorProjection(),
+        };
+        // The aspect ratio of the projected box, from positions along its edges: on the map of a pole, the box is a disc
+        var edges = Enumerable.Range(0, 101).Select(i => i / 100.0).SelectMany(t => new[]
+        {
+            new GeoPosition(bounds.West + ((bounds.East - bounds.West) * t), bounds.South),
+            new GeoPosition(bounds.West + ((bounds.East - bounds.West) * t), bounds.North),
+            new GeoPosition(bounds.West, bounds.South + ((bounds.North - bounds.South) * t)),
+            new GeoPosition(bounds.East, bounds.South + ((bounds.North - bounds.South) * t)),
+        }).Select(projection.Project).ToList();
+        var projectedWidth = edges.Max(point => point.X) - edges.Min(point => point.X);
+        var projectedHeight = edges.Max(point => point.Y) - edges.Min(point => point.Y);
+        var height = Math.Clamp(Width * projectedHeight / Math.Max(projectedWidth, 1e-9), 256, 2048);
 
         // Half a pixel of the preview: smaller details are not visible, and would make the SVG files very large
         var tolerance = (bounds.East - bounds.West) / Width / 2;

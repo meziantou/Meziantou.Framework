@@ -1,6 +1,6 @@
 ---
 title: Maps
-description: Choropleths, points on maps and the map of a region, from GeoJSON, TopoJSON, Shapefile, map bundles and other formats, in geographic projections.
+description: Choropleths, points on maps, the map of a region and of a polar region, from GeoJSON, TopoJSON, Shapefile, map bundles and other formats, in geographic projections.
 ---
 
 ## Choropleth
@@ -169,6 +169,7 @@ plot.Add(new TextMark<(string Name, GeoPosition Position)>(cities, text: city =>
   neighbors of a continent, are cut at the edge of the map.
 - **Choose the projection**: Mercator keeps the shapes of a country. For a continent, an equal-area projection such as
   [AlbersProjection](cref:Meziantou.Framework.Geo.AlbersProjection), centered on the region, keeps the areas comparable.
+  For Antarctica or the Arctic, use a [map of a polar region](#map-of-a-polar-region).
 - **Style each layer**: [FillColor](cref:Meziantou.Framework.Charts.Mark{T}.FillColor) and
   [StrokeColor](cref:Meziantou.Framework.Charts.Mark{T}.StrokeColor) set the colors of a geo mark;
   `ChartColor.Transparent` draws a border without fill, or a lake without outline. A
@@ -185,6 +186,47 @@ Without a bundle, filter the features of any file to the region, and use the bou
 draw the whole world outside of it. Render the map as an image with
 [ToImage](../07-ImageRendering.md).
 
+## Map of a polar region
+
+[AzimuthalEquidistantProjection](cref:Meziantou.Framework.Geo.AzimuthalEquidistantProjection) centers the map on a
+pole: Antarctica, which the other projections stretch along the bottom of the map, is drawn as it is on a globe. Set
+[SouthPole](cref:Meziantou.Framework.Geo.AzimuthalEquidistantProjection.SouthPole) for the South Pole, and an
+[Extent](cref:Meziantou.Framework.Charts.GeoCoordinates.Extent) from the pole to the latitude the map stops at:
+
+<!-- ref:../../../tests/Meziantou.Framework.Charts.Tests/StatisticalChartTests.cs;region=Charts_PolarMap;format=md-fenced-code-block;dedent=true -->
+```csharp
+var path = Path.Combine(AppContext.BaseDirectory, "TestData", "countries-110m.geojson");
+var countries = GeoJson.Parse(File.ReadAllText(path));
+
+var plot = new Plot
+{
+    Title = "Antarctica and the Southern Ocean",
+    Width = 480,
+    Height = 520,
+    Clip = true,
+    Coordinates = new GeoCoordinates
+    {
+        // Centered on the South Pole: the meridians are lines from the pole and the parallels circles around it
+        Projection = new AzimuthalEquidistantProjection { SouthPole = true },
+        Extent = new GeoBounds(West: -180, South: -90, East: 180, North: -40),
+        GraticuleStep = 15,
+    },
+};
+plot.Add(new GeoMark<GeoFeature>(countries, country => country.Geometry) { Fill = country => country.Properties["continent"] });
+```
+<!-- endref -->
+
+![Antarctica in green at the center of a disc of parallels and meridians, with the tips of South America, Africa and Australia at the edges](../images/PolarMap.svg)
+
+- The meridians are lines from the pole and the parallels are circles around it, so a box of longitudes and latitudes
+  from the pole is a disc: the frame of the plot shows the parts of the neighbors in its corners, which
+  [Plot.Clip](cref:Meziantou.Framework.Charts.Plot.Clip) cuts at the edge of the frame.
+- The data cuts the shapes that cross the antimeridian, such as Antarctica, along 180°. On the map of a pole, 180°W and
+  180°E are the same line: the mark fills the two sides as one shape, and does not outline the cut.
+- The map of the Antarctica bundle of [Meziantou.Framework.Geo.Maps](../../GeoMaps/01-Introduction.md) has the land,
+  coastline, seas and physical regions south of 60°S: use its
+  [Bounds](cref:Meziantou.Framework.Geo.Maps.Map.Bounds) as the extent.
+
 ## Projections
 
 [Projection](cref:Meziantou.Framework.Charts.GeoCoordinates.Projection) sets how the globe is flattened:
@@ -195,6 +237,7 @@ draw the whole world outside of it. Render the map as an image with
 | [MercatorProjection](cref:Meziantou.Framework.Geo.MercatorProjection) | the maps of web sites: it keeps the shapes, and enlarges the areas far from the equator |
 | [EqualEarthProjection](cref:Meziantou.Framework.Geo.EqualEarthProjection) | world choropleths: the areas are in proportion to the areas of the regions |
 | [AlbersProjection](cref:Meziantou.Framework.Geo.AlbersProjection) | the choropleths of a country or a continent: equal-area, centered on its [CentralMeridian](cref:Meziantou.Framework.Geo.AlbersProjection.CentralMeridian) |
+| [AzimuthalEquidistantProjection](cref:Meziantou.Framework.Geo.AzimuthalEquidistantProjection) | the maps of a polar region: centered on a pole, see [map of a polar region](#map-of-a-polar-region) |
 
 The Albers projection measures the longitudes from its central meridian, and does not cut the shapes that cross the
 opposite meridian: give it the regions of the map, not the whole world. The projections are part of the

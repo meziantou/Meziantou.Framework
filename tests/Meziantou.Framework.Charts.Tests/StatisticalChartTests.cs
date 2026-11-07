@@ -823,11 +823,39 @@ public sealed class StatisticalChartTests
         ChartAssert.Svg(plot, "RegionMap");
     }
 
+    [Fact]
+    public void PolarMap()
+    {
+        #region Charts_PolarMap
+        var path = Path.Combine(AppContext.BaseDirectory, "TestData", "countries-110m.geojson");
+        var countries = GeoJson.Parse(File.ReadAllText(path));
+
+        var plot = new Plot
+        {
+            Title = "Antarctica and the Southern Ocean",
+            Width = 480,
+            Height = 520,
+            Clip = true,
+            Coordinates = new GeoCoordinates
+            {
+                // Centered on the South Pole: the meridians are lines from the pole and the parallels circles around it
+                Projection = new AzimuthalEquidistantProjection { SouthPole = true },
+                Extent = new GeoBounds(West: -180, South: -90, East: 180, North: -40),
+                GraticuleStep = 15,
+            },
+        };
+        plot.Add(new GeoMark<GeoFeature>(countries, country => country.Geometry) { Fill = country => country.Properties["continent"] });
+        #endregion
+
+        ChartAssert.Svg(plot, "PolarMap");
+    }
+
     [Theory]
     [InlineData("Equirectangular")]
     [InlineData("Mercator")]
     [InlineData("EqualEarth")]
     [InlineData("Albers")]
+    [InlineData("AzimuthalEquidistant")]
     public void MapProjections(string name)
     {
         GeoProjection projection = name switch
@@ -835,6 +863,7 @@ public sealed class StatisticalChartTests
             "Equirectangular" => new EquirectangularProjection(),
             "Mercator" => new MercatorProjection(),
             "EqualEarth" => new EqualEarthProjection(),
+            "AzimuthalEquidistant" => new AzimuthalEquidistantProjection { SouthPole = true },
             _ => new AlbersProjection(),
         };
         IEnumerable<GeoFeature> countries = GeoJson.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "TestData", "countries-110m.geojson")));

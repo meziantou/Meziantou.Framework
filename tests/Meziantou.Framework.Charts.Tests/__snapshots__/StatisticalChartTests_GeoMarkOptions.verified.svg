@@ -13,11 +13,11 @@
 <path d="M253.61,195.71 L276.81,194.58 L300,193.28 L297.21,146.61 L274.37,147.89 L251.51,149 L253.61,195.71 Z" fill="#ffd33d"/>
 </g>
 <g>
-<path d="M67.82,198.48 L160.73,198.48 L159.33,104.63 L69.22,104.63 L67.82,198.48 Z M95.86,170.78 L132.69,170.78 L132.47,133.2 L96.09,133.2 Z" fill-rule="evenodd" fill="#4269d0" stroke="#6cc5b0" stroke-width="2" stroke-linejoin="round"><title>square</title></path>
+<path d="M67.82,198.48 L91.05,198.74 L114.28,198.83 L137.51,198.74 L160.73,198.48 L159.33,104.63 L136.81,104.88 L114.28,104.97 L91.75,104.88 L69.22,104.63 L67.82,198.48 Z M95.86,170.78 L114.28,170.84 L132.69,170.78 L132.47,133.2 L114.28,133.26 L96.09,133.2 Z" fill-rule="evenodd" fill="#4269d0" stroke="#6cc5b0" stroke-width="2" stroke-linejoin="round"><title>square</title></path>
 <path d="M20,243.48 L202.97,56.52" fill="none" stroke="#3ca951" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
 <circle cx="24.74" cy="84.76" r="5" fill="#ff725c" stroke="#ff8ab7" stroke-width="2"/>
 <circle cx="198.88" cy="234.61" r="5" fill="#ff725c" stroke="#ff8ab7" stroke-width="2"/>
-<path d="M179.31,198.15 L216.47,197.15 L215.24,159.81 Z" fill-rule="evenodd" fill="#e3e6ea" stroke="#4269d0" stroke-width="2" stroke-linejoin="round"/>
+<path d="M179.31,198.15 L197.89,197.7 L216.47,197.15 L215.24,159.81 Z" fill-rule="evenodd" fill="#e3e6ea" stroke="#4269d0" stroke-width="2" stroke-linejoin="round"/>
 </g>
 </g>
 <g class="legend">

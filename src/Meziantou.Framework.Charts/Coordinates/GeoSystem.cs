@@ -106,30 +106,123 @@ internal sealed class GeoSystem : CoordinateSystem
         return builder.Build();
     }
 
-    /// <summary>Adds a path through projected positions; the positions that do not project are skipped.</summary>
+    /// <summary>
+    /// Adds a path through projected positions; the positions that do not project are skipped. A segment along a parallel
+    /// or a meridian that the projection curves gets intermediate points, such as the edge of a shape cut to a box on the
+    /// map of a pole.
+    /// </summary>
     public void AddPolyline(PathBuilder builder, IReadOnlyList<GeoPosition> positions, bool close)
     {
         var started = false;
-        foreach (var position in positions)
+        for (var i = 0; i < positions.Count; i++)
         {
-            var (x, y) = Project(position.Longitude, position.Latitude);
-            if (!double.IsFinite(x) || !double.IsFinite(y))
-                continue;
+            if (i > 0)
+            {
+                AddIntermediatePoints(builder, positions[i - 1], positions[i], ref started);
+            }
 
-            if (started)
-            {
-                builder.LineTo(x, y);
-            }
-            else
-            {
-                builder.MoveTo(x, y);
-                started = true;
-            }
+            AddPoint(builder, positions[i], ref started);
         }
 
         if (started && close)
         {
+            if (positions.Count > 1 && positions[^1] != positions[0])
+            {
+                AddIntermediatePoints(builder, positions[^1], positions[0], ref started);
+            }
+
             builder.Close();
+        }
+    }
+
+    /// <summary>
+    /// Gets a value that indicates whether two meridians are drawn as the same line, such as the meridians 180°W and 180°E
+    /// on the map of a pole: the shapes cut along one of them, as the data cuts the shapes that cross the antimeridian,
+    /// have an edge there that is not an edge of the region.
+    /// </summary>
+    public bool JoinsMeridians(double longitude1, double longitude2)
+    {
+        foreach (var latitude in (ReadOnlySpan<double>)[-45, 0, 45])
+        {
+            var (x1, y1) = Projection.Project(longitude1, latitude);
+            var (x2, y2) = Projection.Project(longitude2, latitude);
+            if (!(Math.Abs(x1 - x2) < 1e-9 && Math.Abs(y1 - y2) < 1e-9))
+                return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>Gets a value that indicates whether a ring has an edge along one of two meridians.</summary>
+    public static bool HasEdgeAlong(IReadOnlyList<GeoPosition> positions, double longitude1, double longitude2)
+    {
+        for (var i = 0; i < positions.Count; i++)
+        {
+            if (IsEdgeAlong(positions[i], positions[(i + 1) % positions.Count], longitude1, longitude2))
+                return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>Adds the outline of a ring, without its edges along two meridians that the map joins: the outline is open where they are.</summary>
+    public void AddRingOutline(PathBuilder builder, IReadOnlyList<GeoPosition> positions, double longitude1, double longitude2)
+    {
+        var count = positions.Count;
+        var edges = count > 1 && positions[^1] == positions[0] ? count - 1 : count;
+        var started = false;
+        for (var i = 0; i < edges; i++)
+        {
+            var from = positions[i];
+            var to = positions[(i + 1) % count];
+            if (IsEdgeAlong(from, to, longitude1, longitude2))
+            {
+                started = false;
+                continue;
+            }
+
+            if (!started)
+            {
+                AddPoint(builder, from, ref started);
+            }
+
+            AddIntermediatePoints(builder, from, to, ref started);
+            AddPoint(builder, to, ref started);
+        }
+    }
+
+    private static bool IsEdgeAlong(GeoPosition from, GeoPosition to, double longitude1, double longitude2) =>
+        from.Longitude == to.Longitude && from.Latitude != to.Latitude && (from.Longitude == longitude1 || from.Longitude == longitude2);
+
+    private void AddIntermediatePoints(PathBuilder builder, GeoPosition from, GeoPosition to, ref bool started)
+    {
+        var alongParallel = from.Latitude == to.Latitude && from.Longitude != to.Longitude && !Projection.HasStraightParallels;
+        var alongMeridian = from.Longitude == to.Longitude && from.Latitude != to.Latitude && !Projection.HasStraightMeridians;
+        if (!alongParallel && !alongMeridian)
+            return;
+
+        var steps = (int)Math.Ceiling(Math.Max(Math.Abs(to.Longitude - from.Longitude), Math.Abs(to.Latitude - from.Latitude)) / Precision);
+        for (var i = 1; i < steps; i++)
+        {
+            var t = (double)i / steps;
+            AddPoint(builder, new GeoPosition(from.Longitude + ((to.Longitude - from.Longitude) * t), from.Latitude + ((to.Latitude - from.Latitude) * t)), ref started);
+        }
+    }
+
+    private void AddPoint(PathBuilder builder, GeoPosition position, ref bool started)
+    {
+        var (x, y) = Project(position.Longitude, position.Latitude);
+        if (!double.IsFinite(x) || !double.IsFinite(y))
+            return;
+
+        if (started)
+        {
+            builder.LineTo(x, y);
+        }
+        else
+        {
+            builder.MoveTo(x, y);
+            started = true;
         }
     }
 }

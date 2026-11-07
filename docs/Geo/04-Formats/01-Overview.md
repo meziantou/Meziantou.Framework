@@ -16,6 +16,7 @@ stream, `Parse` reads a string, `Write` writes to a stream and `Format` returns 
 | [GPX](06-Gpx.md) | [Gpx](cref:Meziantou.Framework.Geo.Gpx) | GPS devices and sport apps: waypoints, routes and tracks |
 | [WKT and WKB](07-WktAndWkb.md) | [WellKnownText](cref:Meziantou.Framework.Geo.WellKnownText), [WellKnownBinary](cref:Meziantou.Framework.Geo.WellKnownBinary) | a single geometry, in a database (PostGIS, SQL Server, SQLite) or a CSV file |
 | [Encoded polyline](08-EncodedPolyline.md) | [EncodedPolyline](cref:Meziantou.Framework.Geo.EncodedPolyline) | the routes of Google Maps, OSRM and Valhalla |
+| [FlatGeobuf](09-FlatGeobuf.md) | [FlatGeobuf](cref:Meziantou.Framework.Geo.FlatGeobuf) | large datasets: compact, fast to read, with a spatial index to read a region |
 
 ## Convert a file
 

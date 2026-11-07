@@ -8,8 +8,8 @@ dependency outside .NET, and it supports trimming.
 
 ## What you can do with it
 
-- **Read and write the common formats**: GeoJSON, TopoJSON, Shapefile, KML and KMZ, GPX, WKT and WKB, and encoded
-  polylines. Every reader returns the same model, so converting a file is a read and a write. See
+- **Read and write the common formats**: GeoJSON, TopoJSON, Shapefile, KML and KMZ, GPX, WKT and WKB, encoded
+  polylines, and FlatGeobuf. Every reader returns the same model, so converting a file is a read and a write. See
   [formats](04-Formats/01-Overview.md).
 - **Work with features and geometries**: points, lines, polygons and their collections, with their properties; get
   their bounds, a position to label them, distances, and whether a position is inside an area. See

@@ -34,6 +34,30 @@ namespace Meziantou.Framework.Geo
         protected override (double X, double Y) ProjectRadians(double lambda, double phi) => throw null;
     }
 
+    public static class FlatGeobuf
+    {
+        public static Meziantou.Framework.Geo.GeoFeatureCollection Read(System.IO.Stream stream, Meziantou.Framework.Geo.FlatGeobufReaderOptions? options = null) => throw null;
+        public static Meziantou.Framework.Geo.GeoFeatureCollection Read(System.ReadOnlyMemory<byte> data, Meziantou.Framework.Geo.FlatGeobufReaderOptions? options = null) => throw null;
+        public static Meziantou.Framework.Geo.GeoFeatureCollection Read(string path, Meziantou.Framework.Geo.FlatGeobufReaderOptions? options = null) => throw null;
+        public static byte[] Write(Meziantou.Framework.Geo.GeoFeatureCollection features, Meziantou.Framework.Geo.FlatGeobufWriterOptions? options = null) => throw null;
+        public static void Write(Meziantou.Framework.Geo.GeoFeatureCollection features, System.IO.Stream stream, Meziantou.Framework.Geo.FlatGeobufWriterOptions? options = null) { }
+        public static void Write(Meziantou.Framework.Geo.GeoFeatureCollection features, string path, Meziantou.Framework.Geo.FlatGeobufWriterOptions? options = null) { }
+    }
+
+    public sealed class FlatGeobufReaderOptions
+    {
+        public Meziantou.Framework.Geo.GeoBounds? Bounds { get => throw null; set { } }
+    }
+
+    public sealed class FlatGeobufWriterOptions
+    {
+        public string? Description { get => throw null; set { } }
+        public bool IncludeSpatialIndex { get => throw null; set { } }
+        public ushort IndexNodeSize { get => throw null; set { } }
+        public string? Name { get => throw null; set { } }
+        public string? Title { get => throw null; set { } }
+    }
+
     public readonly struct GeoBounds : System.IEquatable<Meziantou.Framework.Geo.GeoBounds>
     {
         public double East { get => throw null; init { } }

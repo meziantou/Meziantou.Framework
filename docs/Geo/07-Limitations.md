@@ -28,7 +28,8 @@ description: What the library does not do: coordinate systems, curved edges, buf
 
 ## Formats
 
-The library does not read FlatGeobuf, GeoParquet, GeoPackage, MapInfo, GML or CSV files. A CSV file whose column holds
+The library does not read GeoParquet, GeoPackage, MapInfo, GML or CSV files. A CSV file whose column holds
 WKT can be read with `Meziantou.Framework.Csv` and [WellKnownText](cref:Meziantou.Framework.Geo.WellKnownText).
 
-The readers load the whole document in memory: they do not stream the features of large files.
+The readers load the whole document in memory: they do not stream the features of large files. The FlatGeobuf reader
+only decodes the features of a region when the file has a spatial index, but reads the whole file.

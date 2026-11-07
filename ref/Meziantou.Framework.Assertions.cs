@@ -7,6 +7,7 @@ namespace Meziantou.Framework.Assertions
     [System.Diagnostics.StackTraceHidden]
     public static class Assert
     {
+        public static Meziantou.Framework.Assertions.Architecture.ArchitectureAssert Architecture { get => throw null; }
         public static Meziantou.Framework.Assertions.FormatterOptions FormatterOptions { get => throw null; set { } }
         public static void All([System.Diagnostics.CodeAnalysis.NotNull] System.Collections.IEnumerable? actual, System.Action<object?, int> assertion, string? message = null, [System.Runtime.CompilerServices.CallerArgumentExpression("actual")] string? actualExpression = null, [System.Runtime.CompilerServices.CallerArgumentExpression("assertion")] string? assertionExpression = null) { }
         public static void All([System.Diagnostics.CodeAnalysis.NotNull] System.Collections.IEnumerable? actual, System.Action<object?> assertion, string? message = null, [System.Runtime.CompilerServices.CallerArgumentExpression("actual")] string? actualExpression = null, [System.Runtime.CompilerServices.CallerArgumentExpression("assertion")] string? assertionExpression = null) { }
@@ -569,5 +570,311 @@ namespace Meziantou.Framework.Assertions
         public TEventArgs Arguments { get => throw null; }
         public object? Sender { get => throw null; }
         public RaisedEvent(object? sender, TEventArgs arguments) { }
+    }
+}
+namespace Meziantou.Framework.Assertions.Architecture
+{
+    [System.Diagnostics.StackTraceHidden]
+    public sealed class ArchitectureAssert
+    {
+        public void DependsOnlyOn(System.Collections.Generic.IEnumerable<Meziantou.Framework.Assertions.Architecture.TypeElement> types, System.Collections.Generic.IEnumerable<Meziantou.Framework.Assertions.Architecture.TypeElement> allowedTypes, string? message = null, [System.Runtime.CompilerServices.CallerArgumentExpression("types")] string? typesExpression = null, [System.Runtime.CompilerServices.CallerArgumentExpression("allowedTypes")] string? allowedTypesExpression = null) { }
+        public void DependsOnlyOn(System.Collections.Generic.IEnumerable<Meziantou.Framework.Assertions.Architecture.TypeElement> types, System.Func<Meziantou.Framework.Assertions.Architecture.TypeReference, bool> predicate, string? message = null, [System.Runtime.CompilerServices.CallerArgumentExpression("types")] string? typesExpression = null, [System.Runtime.CompilerServices.CallerArgumentExpression("predicate")] string? predicateExpression = null) { }
+        public void DoesNotAccessMember(System.Collections.Generic.IEnumerable<Meziantou.Framework.Assertions.Architecture.TypeElement> types, System.Type type, string memberName, string? message = null, [System.Runtime.CompilerServices.CallerArgumentExpression("types")] string? typesExpression = null) { }
+        public void DoesNotAccessMember<T>(System.Collections.Generic.IEnumerable<Meziantou.Framework.Assertions.Architecture.TypeElement> types, string memberName, string? message = null, [System.Runtime.CompilerServices.CallerArgumentExpression("types")] string? typesExpression = null) { }
+        public void DoesNotDependOn(System.Collections.Generic.IEnumerable<Meziantou.Framework.Assertions.Architecture.TypeElement> types, System.Type type, string? message = null, [System.Runtime.CompilerServices.CallerArgumentExpression("types")] string? typesExpression = null) { }
+        public void DoesNotDependOn(System.Collections.Generic.IEnumerable<Meziantou.Framework.Assertions.Architecture.TypeElement> types, System.Collections.Generic.IEnumerable<Meziantou.Framework.Assertions.Architecture.TypeElement> forbiddenTypes, string? message = null, [System.Runtime.CompilerServices.CallerArgumentExpression("types")] string? typesExpression = null, [System.Runtime.CompilerServices.CallerArgumentExpression("forbiddenTypes")] string? forbiddenTypesExpression = null) { }
+        public void DoesNotDependOn(System.Collections.Generic.IEnumerable<Meziantou.Framework.Assertions.Architecture.TypeElement> types, System.Func<Meziantou.Framework.Assertions.Architecture.TypeReference, bool> predicate, string? message = null, [System.Runtime.CompilerServices.CallerArgumentExpression("types")] string? typesExpression = null, [System.Runtime.CompilerServices.CallerArgumentExpression("predicate")] string? predicateExpression = null) { }
+        public void DoesNotDependOn<T>(System.Collections.Generic.IEnumerable<Meziantou.Framework.Assertions.Architecture.TypeElement> types, string? message = null, [System.Runtime.CompilerServices.CallerArgumentExpression("types")] string? typesExpression = null) { }
+        public void DoesNotDependOnEachOther(System.Collections.Generic.IEnumerable<System.Linq.IGrouping<string, Meziantou.Framework.Assertions.Architecture.TypeElement>> slices, string? message = null, [System.Runtime.CompilerServices.CallerArgumentExpression("slices")] string? slicesExpression = null) { }
+        public void DoesNotHaveCycles(System.Collections.Generic.IEnumerable<System.Linq.IGrouping<string, Meziantou.Framework.Assertions.Architecture.TypeElement>> slices, string? message = null, [System.Runtime.CompilerServices.CallerArgumentExpression("slices")] string? slicesExpression = null) { }
+    }
+
+    public sealed class ArchitectureLoadOptions
+    {
+        public System.Collections.Generic.IList<System.ReadOnlyMemory<byte>> AssemblyImages { get => throw null; }
+        public System.Collections.Generic.IList<string> AssemblyPaths { get => throw null; }
+        public bool ReadSourceLocations { get => throw null; set { } }
+        public System.Collections.Generic.IList<string> ReferenceSearchDirectories { get => throw null; }
+    }
+
+    public sealed class ArchitectureModel
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Assertions.Architecture.AssemblyElement> Assemblies { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Assertions.Architecture.TypeElement> Types { get => throw null; }
+        public Meziantou.Framework.Assertions.Architecture.TypeElement? FindType(System.Type type) => throw null;
+        public Meziantou.Framework.Assertions.Architecture.TypeElement? FindType(string fullName) => throw null;
+        public static Meziantou.Framework.Assertions.Architecture.ArchitectureModel FromAssemblies(params System.Collections.Generic.IEnumerable<System.Reflection.Assembly> assemblies) => throw null;
+        public static Meziantou.Framework.Assertions.Architecture.ArchitectureModel FromAssemblyContaining<T>() => throw null;
+        public static Meziantou.Framework.Assertions.Architecture.ArchitectureModel FromBytes(params System.Collections.Generic.IEnumerable<System.ReadOnlyMemory<byte>> images) => throw null;
+        public static Meziantou.Framework.Assertions.Architecture.ArchitectureModel FromFiles(params System.Collections.Generic.IEnumerable<string> paths) => throw null;
+        public Meziantou.Framework.Assertions.Architecture.TypeElement GetTypeElement(System.Type type) => throw null;
+        public static Meziantou.Framework.Assertions.Architecture.ArchitectureModel Load(Meziantou.Framework.Assertions.Architecture.ArchitectureLoadOptions options) => throw null;
+    }
+
+    public sealed class AssemblyElement
+    {
+        public Meziantou.Framework.Assertions.Architecture.ArchitectureModel Architecture { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Assertions.Architecture.AttributeElement> Attributes { get => throw null; }
+        public string? FilePath { get => throw null; }
+        public string Name { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<System.Reflection.AssemblyName> References { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Assertions.Architecture.TypeElement> Types { get => throw null; }
+        public System.Version Version { get => throw null; }
+        public override string ToString() => throw null;
+    }
+
+    public sealed class AttributeElement
+    {
+        public System.Collections.Generic.IReadOnlyList<object?> ConstructorArguments { get => throw null; }
+        public System.Collections.Generic.IReadOnlyDictionary<string, object?> NamedArguments { get => throw null; }
+        public Meziantou.Framework.Assertions.Architecture.TypeReference Type { get => throw null; }
+        public override string ToString() => throw null;
+    }
+
+    public sealed class Dependency
+    {
+        public Meziantou.Framework.Assertions.Architecture.DependencyKind Kind { get => throw null; }
+        public Meziantou.Framework.Assertions.Architecture.SourceLocation? Location { get => throw null; }
+        public Meziantou.Framework.Assertions.Architecture.TypeElement Source { get => throw null; }
+        public Meziantou.Framework.Assertions.Architecture.MemberElement? SourceMember { get => throw null; }
+        public Meziantou.Framework.Assertions.Architecture.TypeReference Target { get => throw null; }
+        public Meziantou.Framework.Assertions.Architecture.MemberReference? TargetMember { get => throw null; }
+        public override string ToString() => throw null;
+    }
+
+    public enum DependencyKind
+    {
+        BaseType = 0,
+        Interface = 1,
+        Attribute = 2,
+        GenericConstraint = 3,
+        FieldType = 4,
+        PropertyType = 5,
+        EventType = 6,
+        ParameterType = 7,
+        ReturnType = 8,
+        LocalVariable = 9,
+        MethodCall = 10,
+        FieldAccess = 11,
+        ObjectCreation = 12,
+        TypeUsage = 13,
+        CatchClause = 14,
+    }
+
+    public enum ElementAccessibility
+    {
+        Private = 0,
+        PrivateProtected = 1,
+        Internal = 2,
+        Protected = 3,
+        ProtectedInternal = 4,
+        Public = 5,
+    }
+
+    public sealed class EventElement : Meziantou.Framework.Assertions.Architecture.MemberElement
+    {
+        public override Meziantou.Framework.Assertions.Architecture.ElementAccessibility Accessibility { get => throw null; }
+        public Meziantou.Framework.Assertions.Architecture.MethodElement? Adder { get => throw null; }
+        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Assertions.Architecture.AttributeElement> Attributes { get => throw null; }
+        public override bool IsStatic { get => throw null; }
+        public override Meziantou.Framework.Assertions.Architecture.SourceLocation? Location { get => throw null; }
+        public Meziantou.Framework.Assertions.Architecture.MethodElement? Remover { get => throw null; }
+        public Meziantou.Framework.Assertions.Architecture.TypeReference Type { get => throw null; }
+    }
+
+    public sealed class FieldElement : Meziantou.Framework.Assertions.Architecture.MemberElement
+    {
+        public override Meziantou.Framework.Assertions.Architecture.ElementAccessibility Accessibility { get => throw null; }
+        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Assertions.Architecture.AttributeElement> Attributes { get => throw null; }
+        public bool IsConstant { get => throw null; }
+        public bool IsReadOnly { get => throw null; }
+        public override bool IsStatic { get => throw null; }
+        public override Meziantou.Framework.Assertions.Architecture.SourceLocation? Location { get => throw null; }
+        public Meziantou.Framework.Assertions.Architecture.TypeReference Type { get => throw null; }
+    }
+
+    public abstract class MemberElement
+    {
+        public abstract Meziantou.Framework.Assertions.Architecture.ElementAccessibility Accessibility { get; }
+        public abstract System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Assertions.Architecture.AttributeElement> Attributes { get; }
+        public Meziantou.Framework.Assertions.Architecture.TypeElement DeclaringType { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Assertions.Architecture.Dependency> Dependencies { get => throw null; }
+        public abstract bool IsStatic { get; }
+        public abstract Meziantou.Framework.Assertions.Architecture.SourceLocation? Location { get; }
+        public string Name { get => throw null; }
+        public bool HasAttribute(System.Type attributeType) => throw null;
+        public override string ToString() => throw null;
+    }
+
+    public sealed class MemberReference
+    {
+        public Meziantou.Framework.Assertions.Architecture.TypeReference DeclaringType { get => throw null; }
+        public Meziantou.Framework.Assertions.Architecture.MemberReferenceKind Kind { get => throw null; }
+        public string Name { get => throw null; }
+        public override string ToString() => throw null;
+    }
+
+    public enum MemberReferenceKind
+    {
+        Method = 0,
+        Field = 1,
+    }
+
+    public sealed class MethodElement : Meziantou.Framework.Assertions.Architecture.MemberElement
+    {
+        public override Meziantou.Framework.Assertions.Architecture.ElementAccessibility Accessibility { get => throw null; }
+        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Assertions.Architecture.AttributeElement> Attributes { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<string> GenericParameters { get => throw null; }
+        public bool IsAbstract { get => throw null; }
+        public bool IsAsync { get => throw null; }
+        public bool IsConstructor { get => throw null; }
+        public bool IsExtension { get => throw null; }
+        public override bool IsStatic { get => throw null; }
+        public bool IsVirtual { get => throw null; }
+        public override Meziantou.Framework.Assertions.Architecture.SourceLocation? Location { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Assertions.Architecture.ParameterElement> Parameters { get => throw null; }
+        public Meziantou.Framework.Assertions.Architecture.TypeReference ReturnType { get => throw null; }
+        public override string ToString() => throw null;
+    }
+
+    public sealed class ParameterElement
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Assertions.Architecture.AttributeElement> Attributes { get => throw null; }
+        public Meziantou.Framework.Assertions.Architecture.MethodElement Method { get => throw null; }
+        public string Name { get => throw null; }
+        public int Position { get => throw null; }
+        public Meziantou.Framework.Assertions.Architecture.TypeReference Type { get => throw null; }
+        public override string ToString() => throw null;
+    }
+
+    public sealed class PropertyElement : Meziantou.Framework.Assertions.Architecture.MemberElement
+    {
+        public override Meziantou.Framework.Assertions.Architecture.ElementAccessibility Accessibility { get => throw null; }
+        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Assertions.Architecture.AttributeElement> Attributes { get => throw null; }
+        public Meziantou.Framework.Assertions.Architecture.MethodElement? Getter { get => throw null; }
+        public bool IsInitOnly { get => throw null; }
+        public bool IsRequired { get => throw null; }
+        public override bool IsStatic { get => throw null; }
+        public override Meziantou.Framework.Assertions.Architecture.SourceLocation? Location { get => throw null; }
+        public Meziantou.Framework.Assertions.Architecture.MethodElement? Setter { get => throw null; }
+        public Meziantou.Framework.Assertions.Architecture.TypeReference Type { get => throw null; }
+    }
+
+    public readonly struct SourceLocation : System.IEquatable<Meziantou.Framework.Assertions.Architecture.SourceLocation>
+    {
+        public int Column { get => throw null; init { } }
+        public string FilePath { get => throw null; init { } }
+        public int Line { get => throw null; init { } }
+        public SourceLocation(string FilePath, int Line, int Column) { }
+        public void Deconstruct(out string FilePath, out int Line, out int Column) => throw null;
+        public bool Equals(Meziantou.Framework.Assertions.Architecture.SourceLocation other) => throw null;
+        #nullable disable
+        public override bool Equals(object obj) => throw null;
+        #nullable restore
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Assertions.Architecture.SourceLocation left, Meziantou.Framework.Assertions.Architecture.SourceLocation right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Assertions.Architecture.SourceLocation left, Meziantou.Framework.Assertions.Architecture.SourceLocation right) => throw null;
+    }
+
+    public sealed class TypeElement
+    {
+        public Meziantou.Framework.Assertions.Architecture.ElementAccessibility Accessibility { get => throw null; }
+        public Meziantou.Framework.Assertions.Architecture.ArchitectureModel Architecture { get => throw null; }
+        public Meziantou.Framework.Assertions.Architecture.AssemblyElement Assembly { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Assertions.Architecture.AttributeElement> Attributes { get => throw null; }
+        public Meziantou.Framework.Assertions.Architecture.TypeReference? BaseType { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Assertions.Architecture.MethodElement> Constructors { get => throw null; }
+        public Meziantou.Framework.Assertions.Architecture.TypeElement? DeclaringType { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Assertions.Architecture.Dependency> Dependencies { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Assertions.Architecture.EventElement> Events { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Assertions.Architecture.FieldElement> Fields { get => throw null; }
+        public string FullName { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<string> GenericParameters { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Assertions.Architecture.TypeReference> Interfaces { get => throw null; }
+        public bool IsAbstract { get => throw null; }
+        public bool IsClass { get => throw null; }
+        public bool IsDelegate { get => throw null; }
+        public bool IsEnum { get => throw null; }
+        public bool IsGeneric { get => throw null; }
+        public bool IsImmutable { get => throw null; }
+        public bool IsInterface { get => throw null; }
+        public bool IsNested { get => throw null; }
+        public bool IsPublic { get => throw null; }
+        public bool IsRecord { get => throw null; }
+        public bool IsSealed { get => throw null; }
+        public bool IsStatic { get => throw null; }
+        public bool IsStruct { get => throw null; }
+        public Meziantou.Framework.Assertions.Architecture.TypeElementKind Kind { get => throw null; }
+        public Meziantou.Framework.Assertions.Architecture.SourceLocation? Location { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Assertions.Architecture.MemberElement> Members { get => throw null; }
+        public string MetadataName { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Assertions.Architecture.MethodElement> Methods { get => throw null; }
+        public string Name { get => throw null; }
+        public string Namespace { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Assertions.Architecture.TypeElement> NestedTypes { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Assertions.Architecture.PropertyElement> Properties { get => throw null; }
+        public bool HasAttribute(System.Type attributeType) => throw null;
+        public bool HasAttribute<T>() where T : System.Attribute => throw null;
+        public bool Implements(System.Type interfaceType) => throw null;
+        public bool Implements(string fullName) => throw null;
+        public bool Implements<T>() => throw null;
+        public bool InheritsFrom(System.Type baseType) => throw null;
+        public bool InheritsFrom(string fullName) => throw null;
+        public bool InheritsFrom<T>() => throw null;
+        public bool Is(System.Type type) => throw null;
+        public bool IsAssignableTo(System.Type type) => throw null;
+        public bool IsAssignableTo(string fullName) => throw null;
+        public bool IsAssignableTo<T>() => throw null;
+        public bool IsInNamespace(string @namespace) => throw null;
+        public bool IsInNamespaceOrChildren(string @namespace) => throw null;
+        public override string ToString() => throw null;
+    }
+
+    public static class TypeElementExtensions
+    {
+        public static System.Collections.Generic.IReadOnlyList<System.Linq.IGrouping<string, Meziantou.Framework.Assertions.Architecture.TypeElement>> SliceByNamespace(this System.Collections.Generic.IEnumerable<Meziantou.Framework.Assertions.Architecture.TypeElement> types, string pattern) => throw null;
+    }
+
+    public enum TypeElementKind
+    {
+        Class = 0,
+        Struct = 1,
+        Interface = 2,
+        Enum = 3,
+        Delegate = 4,
+    }
+
+    public sealed class TypeReference
+    {
+        public int ArrayRank { get => throw null; }
+        public string? AssemblyName { get => throw null; }
+        public Meziantou.Framework.Assertions.Architecture.TypeReference? DeclaringType { get => throw null; }
+        public Meziantou.Framework.Assertions.Architecture.TypeElement? Definition { get => throw null; }
+        public Meziantou.Framework.Assertions.Architecture.TypeReference? ElementType { get => throw null; }
+        public string FullName { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Assertions.Architecture.TypeReference> GenericArguments { get => throw null; }
+        public Meziantou.Framework.Assertions.Architecture.TypeReference? GenericTypeDefinition { get => throw null; }
+        public bool IsGenericInstance { get => throw null; }
+        public Meziantou.Framework.Assertions.Architecture.TypeReferenceKind Kind { get => throw null; }
+        public string MetadataName { get => throw null; }
+        public string Name { get => throw null; }
+        public string Namespace { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Assertions.Architecture.TypeReference> SignatureTypes { get => throw null; }
+        public bool Is(System.Type type) => throw null;
+        public bool Is<T>() => throw null;
+        public bool IsInNamespace(string @namespace) => throw null;
+        public bool IsInNamespaceOrChildren(string @namespace) => throw null;
+        public override string ToString() => throw null;
+    }
+
+    public enum TypeReferenceKind
+    {
+        Named = 0,
+        Array = 1,
+        UnmanagedPointer = 2,
+        ByReference = 3,
+        GenericParameter = 4,
+        FunctionPointer = 5,
     }
 }

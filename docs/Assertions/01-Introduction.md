@@ -46,6 +46,8 @@ To use this [Assert](cref:Meziantou.Framework.Assertions.Assert) class when you 
 - **Read the failure messages** and control how much of a value they show. See
   [Failure messages](10-FailureMessages.md).
 - **Write better assertions** with the help of the analyzers. See [Analyzer rules](11-AnalyzerRules.md).
+- **Check the architecture** of an application, such as the dependencies between layers and namespaces, with
+  `Assert.Architecture`. See [Architecture](12-Architecture/01-Overview.md).
 
 ## Namespace
 

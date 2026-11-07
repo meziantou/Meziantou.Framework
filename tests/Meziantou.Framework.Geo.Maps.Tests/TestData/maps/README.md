@@ -1,6 +1,6 @@
 # Map bundle fixtures
 
-`Switzerland/` is a map bundle built by `src/Meziantou.Framework.Geo.Maps.Tool`
+`Switzerland/` is a map bundle built by `tools/Meziantou.Framework.Geo.Maps.Tool`
 (`build --region switzerland`), used by the tests of `Meziantou.Framework.Geo.Maps` and `Meziantou.Framework.Charts`.
 
 - The borders and the cantons are derived from OpenStreetMap through country-levels: © OpenStreetMap contributors,

@@ -1,7 +1,7 @@
 <Project Sdk="Meziantou.NET.Sdk.Test">
 
   <PropertyGroup>
-    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <TargetFramework>$(LatestTargetFramework)</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
@@ -10,7 +10,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../src/Meziantou.Framework.Geo.Maps.Tool/Meziantou.Framework.Geo.Maps.Tool.csproj" />
+    <ProjectReference Include="../../tools/Meziantou.Framework.Geo.Maps.Tool/Meziantou.Framework.Geo.Maps.Tool.csproj" />
     <ProjectReference Include="../../src/Meziantou.Framework.ProcessWrapper/Meziantou.Framework.ProcessWrapper.csproj" />
     <ProjectReference Include="../../src/Meziantou.Framework.TemporaryDirectory/Meziantou.Framework.TemporaryDirectory.csproj" />
   </ItemGroup>

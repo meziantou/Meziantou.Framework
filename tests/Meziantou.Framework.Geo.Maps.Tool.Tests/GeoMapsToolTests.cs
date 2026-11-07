@@ -1,4 +1,7 @@
+using System.Globalization;
 using System.IO.Compression;
+using System.Security.Cryptography;
+using System.Xml.Linq;
 using Meziantou.Framework.Geo.Maps.GeoPackage;
 using Meziantou.Framework.Geo.Maps.Tool;
 
@@ -254,6 +257,80 @@ public sealed class GeoMapsToolTests(ITestOutputHelper testOutputHelper)
 
         var exception = Assert.Throws<InvalidOperationException>(() => Regions.Build(tree, names, ["CH", "XX"]));
         Assert.Contains("XX", exception.Message);
+    }
+
+    [Fact]
+    public async Task RepositoryProjects_Update()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var (pins, cache) = TestSources.Create(temp.FullPath);
+        var directory = temp.FullPath / "Meziantou.Framework.Geo.Maps.Data";
+        var switzerland = directory / "Meziantou.Framework.Geo.Maps.Data.Switzerland";
+        var switzerlandProject = switzerland / "Meziantou.Framework.Geo.Maps.Data.Switzerland.csproj";
+        var franceProject = directory / "Meziantou.Framework.Geo.Maps.Data.France" / "Meziantou.Framework.Geo.Maps.Data.France.csproj";
+
+        // A project per region that has data, with the first version, the date of the pins, and the hashes of its layers
+        var result = await UpdateRepositoryProjectsAsync(pins, cache, directory);
+        Assert.Equal(["Europe", "France", "Switzerland", "World"], result.Added);
+        var project = XDocument.Load(switzerlandProject);
+        Assert.Equal("1.0.0", project.Descendants("Version").Single().Value);
+        Assert.Equal("2026-01-02", project.Descendants("MapDataDate").Single().Value);
+        Assert.Equal("$(MinimumTargetFramework)", project.Descendants("TargetFrameworks").Single().Value);
+        var layer = project.Descendants("MapLayer").Single(element => (string?)element.Attribute("Include") == "borders.fgb");
+        Assert.Equal(Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(directory / "data" / "Switzerland" / "borders.fgb"))), (string?)layer.Attribute("Sha256"));
+        Assert.Equal(["Meziantou.Framework.Geo.Maps.Data.Switzerland.csproj", "SwitzerlandMap.g.cs"], Directory.EnumerateFiles(switzerland).Select(Path.GetFileName).Order(StringComparer.Ordinal));
+        Assert.Contains("LastModified = new global::System.DateTimeOffset(" + new DateTimeOffset(2026, 1, 2, 0, 0, 0, TimeSpan.Zero).UtcTicks.ToString(CultureInfo.InvariantCulture) + "L", File.ReadAllText(switzerland / "SwitzerlandMap.g.cs"));
+
+        // Newer pins with the same data: the projects keep their version and the date of their data
+        File.WriteAllText(pins, File.ReadAllText(pins).Replace("2026-01-02", "2026-02-03", StringComparison.Ordinal));
+        var projectText = File.ReadAllText(switzerlandProject);
+        var codeText = File.ReadAllText(switzerland / "SwitzerlandMap.g.cs");
+        result = await UpdateRepositoryProjectsAsync(pins, cache, directory);
+        Assert.Equal(["Europe", "France", "Switzerland", "World"], result.Unchanged);
+        Assert.Equal(projectText, File.ReadAllText(switzerlandProject));
+        Assert.Equal(codeText, File.ReadAllText(switzerland / "SwitzerlandMap.g.cs"));
+
+        // A layer that changed: only its region gets a new version and the date of the pins
+        File.WriteAllText(switzerlandProject, projectText.Replace((string)layer.Attribute("Sha256")!, new string('0', 64), StringComparison.Ordinal));
+        result = await UpdateRepositoryProjectsAsync(pins, cache, directory);
+        Assert.Equal(["Switzerland"], result.Updated);
+        project = XDocument.Load(switzerlandProject);
+        Assert.Equal("1.0.1", project.Descendants("Version").Single().Value);
+        Assert.Equal("2026-02-03", project.Descendants("MapDataDate").Single().Value);
+        Assert.Equal("1.0.0", XDocument.Load(franceProject).Descendants("Version").Single().Value);
+
+        // The code changed with the same pins: a new version, and the date of the data does not change
+        File.AppendAllText(switzerland / "SwitzerlandMap.g.cs", "// edited\n");
+        File.WriteAllText(switzerland / "notes.txt", "");
+        result = await UpdateRepositoryProjectsAsync(pins, cache, directory);
+        Assert.Equal(["Switzerland"], result.Updated);
+        project = XDocument.Load(switzerlandProject);
+        Assert.Equal("1.0.2", project.Descendants("Version").Single().Value);
+        Assert.Equal("2026-02-03", project.Descendants("MapDataDate").Single().Value);
+        Assert.False(File.Exists(switzerland / "notes.txt"));
+
+        // The project of a region that no longer exists is removed
+        Directory.CreateDirectory(directory / "Meziantou.Framework.Geo.Maps.Data.Atlantis");
+        result = await UpdateRepositoryProjectsAsync(pins, cache, directory);
+        Assert.Equal(["Atlantis"], result.Removed);
+        Assert.False(Directory.Exists(directory / "Meziantou.Framework.Geo.Maps.Data.Atlantis"));
+    }
+
+    [Theory]
+    [InlineData("1.0.0", "1.0.1")]
+    [InlineData("1.0.9", "1.0.10")]
+    [InlineData("1.2.3", "1.2.4")]
+    [InlineData("2.0", "2.0.1")]
+    public void RepositoryProjects_GetNextVersion(string previous, string expected)
+    {
+        Assert.Equal(expected, RepositoryProjects.GetNextVersion(previous));
+    }
+
+    private static async Task<RepositoryProjectsResult> UpdateRepositoryProjectsAsync(FullPath pins, FullPath cache, FullPath directory)
+    {
+        var downloader = Downloader.Create(await File.ReadAllTextAsync(pins), pins.Value, cache, update: false, TextWriter.Null);
+        var sources = await SourceSet.LoadAsync(downloader, TextWriter.Null, CancellationToken.None);
+        return await RepositoryProjects.UpdateAsync(sources, downloader.Date!.Value, directory, TextWriter.Null, CancellationToken.None);
     }
 
     private async Task<(int ExitCode, ConsoleHelper Console)> RunAsync(params string[] args)

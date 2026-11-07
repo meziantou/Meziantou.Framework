@@ -312,3 +312,6 @@ artifacts/
 /tests/Meziantou.Framework.Imaging.External/
 # The marker of an update of the WPT expectations that is running or was interrupted (see src/Meziantou.Framework.WebPlatform/docs/web-platform-tests.md)
 /tests/Meziantou.Framework.WebPlatform.Wpt/expectations/.incomplete-update-*
+
+# The layers of the map bundles, written by the tool before packing
+/src/Meziantou.Framework.Geo.Maps.Data/data/

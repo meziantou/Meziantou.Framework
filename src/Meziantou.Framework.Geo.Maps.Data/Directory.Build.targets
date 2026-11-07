@@ -1,0 +1,66 @@
+<Project>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.targets', '$(MSBuildThisFileDirectory)../'))" />
+
+  <!--
+    The projects compile against the code of the repository, and a change of Meziantou.Framework.Geo.Maps packs them again:
+    when the change modifies their layers, the pack fails until the projects are generated again, in the same change
+  -->
+  <ItemGroup>
+    <ProjectReference Include="$(MSBuildThisFileDirectory)../Meziantou.Framework.Geo.Maps/Meziantou.Framework.Geo.Maps.csproj" />
+  </ItemGroup>
+
+  <!-- The code that reads the embedded layers, shared by the generated code of the maps -->
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)EmbeddedMapLayer.cs" Link="EmbeddedMapLayer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)../../common/UnmanagedMemoryManager.cs" Link="UnmanagedMemoryManager.cs" />
+  </ItemGroup>
+
+  <!--
+    Each MapLayer of a project is a file of data/<MapRegion>/, with the SHA-256 update-projects computed. The layers that
+    exist are embedded, named after their file, where the generated code reads them; the others are left out, so that the
+    project compiles without its data. With UseMapPlaceholderData=true (documentation.yml), each missing layer is an empty
+    file instead, so that the project can be packed without the data: such a package has no map, and must not be published
+  -->
+  <ItemGroup>
+    <_MapLayerFile Include="@(MapLayer->'$(MapDataDirectory)$(MapRegion)/%(Identity)')" />
+  </ItemGroup>
+
+  <Target Name="EmbedMapLayers" BeforeTargets="AssignTargetPaths">
+    <ItemGroup>
+      <_MapLayerExistingFile Include="@(_MapLayerFile)" Condition="Exists('%(FullPath)')" />
+      <_MapLayerMissingFile Include="@(_MapLayerFile)" Exclude="@(_MapLayerExistingFile)" />
+      <_MapLayerPlaceholderFile Include="@(_MapLayerMissingFile->'$(IntermediateOutputPath)map-placeholders/%(Filename)%(Extension)')" Condition="'$(UseMapPlaceholderData)' == 'true'" />
+      <EmbeddedResource Include="@(_MapLayerExistingFile);@(_MapLayerPlaceholderFile)" LogicalName="%(Filename)%(Extension)" WithCulture="false" Type="Non-Resx" />
+    </ItemGroup>
+    <MakeDir Directories="$(IntermediateOutputPath)map-placeholders" Condition="'@(_MapLayerPlaceholderFile)' != ''" />
+    <Touch Files="@(_MapLayerPlaceholderFile)" AlwaysCreate="true" Condition="'@(_MapLayerPlaceholderFile)' != ''" />
+  </Target>
+
+  <!--
+    A package is the map that was reviewed: every layer, with the hash of its project. With UseMapPlaceholderData, the
+    missing layers are empty placeholders (see above) and only the layers that exist are checked
+  -->
+  <Target Name="VerifyMapData" BeforeTargets="GenerateNuspec" DependsOnTargets="EmbedMapLayers">
+    <Error Condition="'$(MapRegion)' == '' OR '@(MapLayer)' == ''" Text="The project has no MapRegion or no MapLayer." />
+    <Error Condition="'$(UseMapPlaceholderData)' != 'true' AND '@(_MapLayerMissingFile)' != ''" Text="The layers @(_MapLayerMissingFile->'%(FullPath)', ', ') are missing: build the data of the maps first, with the build or update-projects command of tools/Meziantou.Framework.Geo.Maps.Tool, or set UseMapPlaceholderData to true to pack a package without its map." />
+    <Message Importance="high" Condition="'@(_MapLayerPlaceholderFile)' != ''" Text="$(MSBuildProjectName): @(_MapLayerPlaceholderFile->Count()) layers are empty placeholders (UseMapPlaceholderData)" />
+    <GetFileHash Files="@(_MapLayerExistingFile)" Algorithm="SHA256" HashEncoding="hex" Condition="'@(_MapLayerExistingFile)' != ''">
+      <Output TaskParameter="Items" ItemName="_MapLayerFileHash" />
+    </GetFileHash>
+    <ItemGroup>
+      <!-- GetFileHash writes uppercase hexadecimal, as update-projects does -->
+      <_MapLayerExpectedHash Include="@(_MapLayerExistingFile->'%(Filename)%(Extension)=%(Sha256)')" />
+      <_MapLayerActualHash Include="@(_MapLayerFileHash->'%(Filename)%(Extension)=%(FileHash)')" />
+      <_MapLayerMismatch Include="@(_MapLayerExpectedHash)" Exclude="@(_MapLayerActualHash)" />
+    </ItemGroup>
+    <Error Condition="'@(_MapLayerMismatch)' != ''" Text="The layers of $(MapRegion) differ from the hashes of the project: @(_MapLayerMismatch->'%(Identity)', ', '). Regenerate the projects with the update-projects command of tools/Meziantou.Framework.Geo.Maps.Tool." />
+  </Target>
+
+  <!-- The LICENSE.txt of the repository is the MIT license of the code: the maps are under the ODbL -->
+  <Target Name="RemoveRepositoryLicenseFromMapPackage" BeforeTargets="_GetPackageFiles">
+    <ItemGroup>
+      <None Remove="@(None)" Condition="'%(Filename)%(Extension)' == 'LICENSE.txt'" />
+    </ItemGroup>
+  </Target>
+
+</Project>

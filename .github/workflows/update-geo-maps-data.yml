@@ -1,0 +1,154 @@
+# Moves the sources of the maps (tools/Meziantou.Framework.Geo.Maps.Tool/data-versions.json) to their latest versions,
+# generates the projects of the map packages again (src/Meziantou.Framework.Geo.Maps.Data), and opens a pull request
+# with what changed. A project gets a new version only when its map changes; merging the pull request publishes these
+# packages, through the create_nuget job of publish.yml.
+on:
+  workflow_dispatch:
+  schedule:
+  - cron: '0 0 * * 0' # once a week
+  push:
+    branches:
+      - main
+    # The code that builds the layers and writes the projects: a change regenerates them
+    paths:
+      - '.github/workflows/update-geo-maps-data.yml'
+      - 'src/Meziantou.Framework.Geo/**'
+      - 'src/Meziantou.Framework.Geo.Maps/**'
+      - 'tools/Meziantou.Framework.Geo.Maps.Tool/**'
+
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+  DOTNET_NOLOGO: true
+  PinsPath: tools/Meziantou.Framework.Geo.Maps.Tool/data-versions.json
+  ToolProject: tools/Meziantou.Framework.Geo.Maps.Tool
+  MapsDirectory: src/Meziantou.Framework.Geo.Maps.Data
+  SourcesCache: ${{ github.workspace }}/../geo-maps-sources
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  update_file:
+    runs-on: ubuntu-26.04
+    # Loads about 160 MB of sources, builds about 250 maps, then builds and packs their projects
+    timeout-minutes: 45
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Setup .NET
+        uses: $/.github/actions/setup-dotnet
+      # The files are named by their SHA-256, so an older cache only misses the files whose pins changed
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ${{ env.SourcesCache }}
+          key: geo-maps-sources-${{ hashFiles('tools/Meziantou.Framework.Geo.Maps.Tool/data-versions.json') }}
+          restore-keys: geo-maps-sources-
+      - run: |
+          $before = Get-Content $env:PinsPath -Raw | ConvertFrom-Json
+
+          # Built first and run with --no-build, so that a build failure is not mistaken for a failure of the tool
+          dotnet build $env:ToolProject --configuration Release
+          if ($LASTEXITCODE -ne 0) { throw "Meziantou.Framework.Geo.Maps.Tool failed to build (exit code $LASTEXITCODE)" }
+
+          # update-pins exits 0 whether or not the pins changed: git tells whether they did
+          dotnet run --project $env:ToolProject --configuration Release --no-build -- update-pins --pins $env:PinsPath --cache $env:SourcesCache
+          if ($LASTEXITCODE -ne 0) { throw "update-pins failed with exit code $LASTEXITCODE" }
+
+          # The tool embeds the pins it was built with: --pins gives it the new ones. update-projects runs even when the
+          # pins did not change: a change of the code that builds the layers or writes the projects changes them too
+          $updateOutput = dotnet run --project $env:ToolProject --configuration Release --no-build -- update-projects --pins $env:PinsPath --cache $env:SourcesCache
+          $updateExitCode = $LASTEXITCODE
+          $updateOutput | Write-Host
+          if ($updateExitCode -ne 0) { throw "update-projects failed with exit code $updateExitCode" }
+
+          if (-not (git status --porcelain -- $env:PinsPath $env:MapsDirectory)) {
+            Write-Host "The sources and the projects of the maps are up to date"
+            exit 0
+          }
+
+          $after = Get-Content $env:PinsPath -Raw | ConvertFrom-Json
+          $branch = "update-geo-maps-data"
+          $title = "Update the map packages"
+
+          # The public API of the projects of the regions that no longer exist
+          foreach ($file in Get-ChildItem ref -Filter "Meziantou.Framework.Geo.Maps.Data.*.cs") {
+            if (-not (Test-Path (Join-Path $env:MapsDirectory $file.BaseName))) {
+              Remove-Item $file.FullName
+            }
+          }
+
+          # Pull requests created with GITHUB_TOKEN run no workflow, so this is the only check the projects get before
+          # they are merged and published: they are built, which also writes their public API to ref/, then packed, with
+          # the layers update-projects wrote, which checks their hashes. The pull request is a draft when this or the tests fail.
+          $projects = Get-ChildItem $env:MapsDirectory -Filter *.csproj -Recurse -Depth 1 | Sort-Object FullName
+          $solution = Join-Path $env:RUNNER_TEMP "maps.slnx"
+          (@("<Solution>") + ($projects | ForEach-Object { "  <Project Path=`"$($_.FullName)`" />" }) + @("</Solution>")) -join "`n" | Set-Content $solution
+          dotnet build $solution --configuration Release /p:PublicApiGeneratorGenerateOnBuild=true
+          $buildPassed = $LASTEXITCODE -eq 0
+          if ($buildPassed) {
+            dotnet pack $solution --configuration Release --no-build --output (Join-Path $env:RUNNER_TEMP "map-packages")
+            $buildPassed = $LASTEXITCODE -eq 0
+          }
+
+          # The projects are part of eng/Trimmable and of the solution files
+          dotnet run ./eng/update-all.cs -- --step trimmable --step slnx --step bom
+          if ($LASTEXITCODE -ne 0) { throw "update-all failed with exit code $LASTEXITCODE" }
+
+          dotnet test --project "$PWD/tests/Meziantou.Framework.Geo.Maps.Tool.Tests/Meziantou.Framework.Geo.Maps.Tool.Tests.csproj" --configuration Release
+          $testsPassed = $LASTEXITCODE -eq 0
+          $passed = $buildPassed -and $testsPassed
+
+          git config --global user.email "git@meziantou.net"
+          git config --global user.name "meziantou"
+          git checkout -b $branch
+          git add --all -- $env:PinsPath $env:MapsDirectory ref slnx eng/Trimmable Meziantou.Framework.slnx
+          # An unchanged tree must never reach the force-push below: it would reset the shared branch and wipe
+          # the diff of a pull request that is already open
+          git diff --cached --quiet
+          if ($LASTEXITCODE -eq 0) { throw "git reported a change of the maps but nothing is staged" }
+          git commit -m $title
+          git push origin $branch --force
+
+          $runUrl = "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          $changes = @()
+          if ($before.date -ne $after.date) {
+            $changes += @(
+              "- Date of the sources: $($before.date) → $($after.date)"
+              "- Natural Earth: $($before.naturalEarthCommit) → $($after.naturalEarthCommit)"
+              "- Unicode CLDR: $($before.cldrVersion) → $($after.cldrVersion)"
+            )
+          }
+
+          # update-projects writes "  add  <id> <version>", "  update  <id> <version>" and "  remove  <id>"
+          $projectChanges = @($updateOutput | Where-Object { $_ -match '^\s+(add|update|remove)\s+\S+' } | ForEach-Object { "- $($_.Trim() -replace '\s+', ' ')" })
+          $summary = @($updateOutput | Where-Object { $_ -like "Map projects:*" })
+          $changes += $summary
+          $status = if ($passed) {
+            "The projects build and pack, and the Meziantou.Framework.Geo.Maps.Tool tests pass. Merging this pull request publishes the packages whose version changed."
+          } elseif (-not $buildPassed) {
+            "**Some projects fail to build or pack**. See the output of the run."
+          } else {
+            "**The Meziantou.Framework.Geo.Maps.Tool tests fail**. See the test output of the run."
+          }
+          $details = if ($projectChanges.Count -gt 0) { "<details><summary>Projects</summary>`n`n$($projectChanges -join "`n")`n`n</details>" } else { "" }
+          $body = "$title`n`n$($changes -join "`n")`n`n$details`n`n$status`n`nCreated by: $runUrl"
+
+          # The branch is reused every week, so update the pull request when one is already open
+          $openPr = gh pr list --head $branch --state open --json number --jq '.[0].number // empty'
+          if ($openPr) {
+            gh pr edit $openPr --title $title --body $body
+            if ($passed) {
+              gh pr ready $openPr
+            } else {
+              gh pr ready $openPr --undo
+            }
+          } elseif ($passed) {
+            gh pr create --title $title --body $body --base main --head $branch
+          } else {
+            gh pr create --title $title --body $body --base main --head $branch --draft
+          }
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

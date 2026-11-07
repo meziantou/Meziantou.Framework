@@ -12,7 +12,7 @@ them the same way. The format decides how the bundle is stored, and which tools 
 | [MapFormat.GeoJson](cref:Meziantou.Framework.Geo.Maps.MapFormat.GeoJson) | a folder per region, a `.geojson` file per layer and a `metadata.json` file | text that web libraries (Leaflet, D3) load as they are, and that diffs well; larger, and without spatial index |
 | [GeoPackageMapFormat](cref:Meziantou.Framework.Geo.Maps.GeoPackage.GeoPackageMapFormat) | one `.gpkg` file per region, with a table and a spatial index per layer | one file per region that QGIS, GDAL and ArcGIS open with all its layers; needs the native SQLite library |
 
-The [Meziantou.Framework.Geo.Maps.Tool .NET tool](03-GeneratingBundles.md) writes the format of its `--format` option. The layer files are named after
+The [tool of the repository](03-GeneratingBundles.md#run-the-tool) writes the format of its `--format` option. The layer files are named after
 [GetLayerName](cref:Meziantou.Framework.Geo.Maps.MapFormat.GetLayerName), such as `borders` or `states-provinces`.
 
 ## Read the folder formats

@@ -28,7 +28,8 @@ defaults:
 jobs:
   create_nuget:
     runs-on: ubuntu-26.04
-    timeout-minutes: 20
+    # The map packages need their layers, built in about two minutes, and are about 250 packages
+    timeout-minutes: 40
     outputs:
       has-project: ${{ steps.package-project.outputs.has-project }}
     env:
@@ -52,7 +53,25 @@ jobs:
           full-rebuild-triggers: |
             .github/workflows/publish.yml
             .github/actions/pack/**
+            .github/actions/nuget-push/**
+            .github/actions/geo-maps-data/**
             eng/**/*.proj
+
+      # The map packages of src/Meziantou.Framework.Geo.Maps.Data embed layers that are not committed: they are built
+      # when one of them is packed, and the pack checks their hashes. A full pack (a manual run) packs them all
+      - name: Check whether map packages are packed
+        id: map-data
+        if: steps.package-project.outputs.has-project == 'true'
+        env:
+          PROJECT: ${{ steps.package-project.outputs.project }}
+        run: |
+          $content = Get-Content $env:PROJECT -Raw
+          $needed = $env:PROJECT -like "*eng/packages.proj" -or $content -match "Meziantou\.Framework\.Geo\.Maps\.Data\."
+          Write-Host "Build the layers of the maps: $needed"
+          "needed=$($needed.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+      - name: Build the data of the map packages
+        if: steps.map-data.outputs.needed == 'true'
+        uses: $/.github/actions/geo-maps-data
 
       - name: Prepare NuGet artifact directory
         run: |
@@ -124,77 +143,8 @@ jobs:
             with:
               name: nuget
               path: ${{ env.NuGetDirectory }}
-      - name: NuGet login (OIDC → temp API key)
-        uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1
-        id: login
-        with:
-          user: meziantou
-
       - name: Publish NuGet packages
-        env:
-          NUGETAPIKEY: ${{steps.login.outputs.NUGET_API_KEY}}
-        run: |
-          Write-Host "Searching nupkg in folder: $env:NuGetDirectory"
-          $files = Get-ChildItem (Join-Path $env:NuGetDirectory "*") -Include *.nupkg
-          $apiKey = $env:NUGETAPIKEY
-          $source = $env:NuGetSource
-
-          if ($files.Count -eq 0) {
-            Write-Host "No NuGet package found to push."
-          }
-          else {
-            $maxAttempts = 3
-            $baseDelaySeconds = 2
-            $results = $files | ForEach-Object -Parallel {
-              $packagePath = $_.FullName
-              $apiKey = $using:apiKey
-              $source = $using:source
-              $maxAttempts = $using:maxAttempts
-              $baseDelaySeconds = $using:baseDelaySeconds
-
-              for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
-                Write-Host "Pushing NuGet package: $packagePath (attempt $attempt/$maxAttempts)"
-                & dotnet nuget push "$packagePath" --api-key "$apiKey" --source "$source" --force-english-output --skip-duplicate
-                $exitCode = $LASTEXITCODE
-
-                if ($exitCode -eq 0) {
-                  return [pscustomobject]@{
-                    PackagePath = $packagePath
-                    Succeeded = $true
-                    Attempts = $attempt
-                  }
-                }
-
-                if ($attempt -lt $maxAttempts) {
-                  $delaySeconds = [int]($baseDelaySeconds * [math]::Pow(2, $attempt - 1))
-                  Write-Host "Retrying NuGet push for $packagePath in $delaySeconds second(s)."
-                  Start-Sleep -Seconds $delaySeconds
-                }
-              }
-
-              return [pscustomobject]@{
-                PackagePath = $packagePath
-                Succeeded = $false
-                Attempts = $maxAttempts
-              }
-            } -ThrottleLimit 8
-
-            $pushResults = @(
-              $results
-              | Where-Object { $_.PSObject.Properties.Name -contains "Succeeded" }
-            )
-            $failedPackages = @($pushResults | Where-Object { -not $_.Succeeded })
-            $succeededPackages = @($pushResults | Where-Object { $_.Succeeded })
-            foreach ($item in $succeededPackages) {
-              Write-Host "Successfully pushed NuGet package: $($item.PackagePath) (attempts: $($item.Attempts))"
-            }
-
-            if ($failedPackages.Count -gt 0) {
-              foreach ($item in $failedPackages) {
-                Write-Host "::error::Failed to push NuGet package after retries: $($item.PackagePath)"
-              }
-
-              Write-Host "::error::Failed to push NuGet packages after retries: $($failedPackages.PackagePath -join ', ')"
-              throw "Failed to push NuGet packages after retries: $($failedPackages.PackagePath -join ', ')"
-            }
-          }
+        uses: $/.github/actions/nuget-push
+        with:
+          directory: ${{ env.NuGetDirectory }}
+          source: ${{ env.NuGetSource }}

@@ -57,7 +57,9 @@ packageIds:
 ```
 
 - A section requires it. Every package of `src/` (the projects that are not `IsPackable=false`; the id is the project
-  file name) is listed by exactly one section, so a new package is added to the list of its section.
+  file name) is listed by exactly one section, so a new package is added to the list of its section. The generated
+  projects whose file sets `IncludeInRepositoryReadme=false`, the map packages of `src/Meziantou.Framework.Geo.Maps.Data`,
+  are not listed: `GeoMaps` documents them as a family.
 - A group may have it when its pages are about some of the packages of its section, for instance
   `Dns/03-DnsClient/` lists `Meziantou.Framework.DnsClient`. It can only list packages of its parent. Without it,
   the group covers the packages of its parent.

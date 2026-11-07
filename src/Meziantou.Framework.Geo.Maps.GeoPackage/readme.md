@@ -22,5 +22,5 @@ Assert.HasCount(26, map.Load(MapLayer.StatesProvinces));
 ```
 <!-- endref -->
 
-The `Meziantou.Framework.Geo.Maps.Tool` .NET tool writes GeoPackage bundles with `--format gpkg`. The package uses `Microsoft.Data.Sqlite`
+The `tools/Meziantou.Framework.Geo.Maps.Tool` tool of the repository writes GeoPackage bundles with `--format gpkg`. The package uses `Microsoft.Data.Sqlite`
 and its native SQLite library.

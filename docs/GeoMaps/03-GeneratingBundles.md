@@ -1,29 +1,58 @@
 ---
 title: Generating bundles
-description: Build the bundles of the world, a continent or a country with the Meziantou.Framework.Geo.Maps.Tool .NET tool, and ship them with an application or as NuGet packages.
+description: Use the published bundles of the world, a continent or a country, or build them with the tool of the repository, and ship them with an application or as NuGet packages.
 ---
 
-The bundles are built by the `Meziantou.Framework.Geo.Maps.Tool` .NET tool: it downloads the sources, cuts them to each
-region and writes the bundles.
+The bundles are built by `Meziantou.Framework.Geo.Maps.Tool`, a command-line tool of the repository: it downloads the
+sources, cuts them to each region and writes the bundles. The bundle of every region is published on nuget.org, built by
+this tool; run it yourself for another format, fewer layers, other data or your own feed.
 
-## Install the tool
+## Use the published bundles
+
+The bundle of every region is published on nuget.org, as a package named after the key of the region:
+`Meziantou.Framework.Geo.Maps.Data.World`, `Meziantou.Framework.Geo.Maps.Data.Europe`,
+`Meziantou.Framework.Geo.Maps.Data.France`... The `list` command of the tool lists the keys. A package holds an
+assembly that embeds the map, and opens it with a static property of [Map](cref:Meziantou.Framework.Geo.Maps.Map)
+named after the key of the region, in the `Meziantou.Framework.Geo.Maps.Data` namespace: with
+`using Meziantou.Framework.Geo.Maps.Data;`, `Map.Region_Switzerland` is the map of Switzerland, whose layers
+[Load](cref:Meziantou.Framework.Geo.Maps.Map.Load) reads as with any other map.
+
+<InstallNuGetPackage Id="Meziantou.Framework.Geo.Maps.Data.Switzerland" />
+
+`Map.Region_Switzerland` is a C# 14 extension member: the project needs C# 14, the default of .NET 10. The published
+bundles have every layer, in the FlatGeobuf format, and target the oldest .NET version the libraries support,
+`net10.0` today. The sources are checked every week, and a new version of a bundle is published only when its map
+changes: its version starts at `1.0.0` and its last number is incremented on each change, so the bundles of two regions
+can have different versions. The date of the data of a map is
+[Metadata.LastModified](cref:Meziantou.Framework.Geo.Maps.MapMetadata.LastModified). The projects of the packages are in the repository, in
+[src/Meziantou.Framework.Geo.Maps.Data](https://github.com/meziantou/Meziantou.Framework/tree/main/src/Meziantou.Framework.Geo.Maps.Data),
+with the SHA-256 of each layer. Build the bundles yourself for another format, fewer layers, other data or your own
+feed.
+
+## Run the tool
+
+The tool is not published: run it from a clone of the repository, with the .NET SDK of its `global.json` file.
 
 ```bash
-dotnet tool install --global Meziantou.Framework.Geo.Maps.Tool
+git clone https://github.com/meziantou/Meziantou.Framework.git
+cd Meziantou.Framework
+dotnet run --project tools/Meziantou.Framework.Geo.Maps.Tool -- list
 ```
+
+The commands below run from the root of the clone. `--output`, `--previews` and the other paths are relative to it.
 
 ## Build the bundles
 
 Run `build` with the regions to build:
 
 ```bash
-Meziantou.Framework.Geo.Maps.Tool build --region switzerland,france --previews previews
+dotnet run --project tools/Meziantou.Framework.Geo.Maps.Tool -- build --region switzerland,france --previews previews
 ```
 
 A region is `world`, a continent (`africa`, `antarctica`, `asia`, `europe`, `north-america`, `oceania` or
 `south-america`), or a country or territory, named by its English name in lowercase words joined by hyphens
-(`switzerland`, `united-states`, `cote-divoire`) or by its ISO 3166-1 code (`CH`, `US`). `Meziantou.Framework.Geo.Maps.Tool list`
-lists them. The continents and the names come from the regions of [Unicode CLDR](https://cldr.unicode.org/), the UN M49
+(`switzerland`, `united-states`, `cote-divoire`) or by its ISO 3166-1 code (`CH`, `US`). The `list` command lists
+them. The continents and the names come from the regions of [Unicode CLDR](https://cldr.unicode.org/), the UN M49
 regions. `--all` builds every region: the world, the continents, and every country and territory that has a border,
 overseas territories included.
 
@@ -40,7 +69,7 @@ The first run downloads the sources, about 160 MB, to the application data folde
 another folder), and loading them takes about a minute, even for a single region: build the regions you need in one run.
 
 The sources are pinned by SHA-256 in the tool, with the date they were pinned, which is the date of the data of the
-maps: a version of the tool builds the same bundles, byte for byte. To build with newer data, `update-pins --pins
+maps: a commit of the repository builds the same bundles, byte for byte. To build with newer data, `update-pins --pins
 pins.json` pins the latest version of every source in a file, and `--pins pins.json` builds with it.
 
 ## Ship the bundles
@@ -57,12 +86,11 @@ Copy the map of each region, its folder or its GeoPackage file, to a `maps` fold
 Or make a NuGet package per region, for your own feed:
 
 ```bash
-Meziantou.Framework.Geo.Maps.Tool pack --region europe,france --package-id-prefix Contoso.Maps --package-version 1.0.0
+dotnet run --project tools/Meziantou.Framework.Geo.Maps.Tool -- pack --region europe,france --package-id-prefix Contoso.Maps --package-version 1.0.0
 ```
 
 `pack` takes the options of `build`, and writes the packages to `./packages` (`--package-output`). A package is named
-after the prefix and the key of the region, such as `Contoso.Maps.France`, and `--authors` sets its authors. The bundles
-are not published on nuget.org.
+after the prefix and the key of the region, such as `Contoso.Maps.France`, and `--authors` sets its authors.
 
 By default, a package holds an assembly that embeds the map, built by the .NET SDK: `pack` needs the .NET SDK, and
 builds the assemblies of all the regions at the end, in one build. A project that references the package opens the map

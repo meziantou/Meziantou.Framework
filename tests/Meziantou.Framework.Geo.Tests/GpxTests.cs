@@ -286,4 +286,13 @@ public sealed class GpxTests
         // "<" in UTF-32, then a surrogate (U+DB00), which UTF-32 cannot hold: creating the XML reader fails
         Assert.Throws<FormatException>(() => Gpx.Read(new MemoryStream([0x3C, 0, 0, 0, 0, 0xDB, 0, 0])));
     }
+
+    [Fact]
+    public void Read_NonAsciiBytesInDeclaration()
+    {
+        // A byte above 0x7F is not valid in an XML declaration; when switching to the declared encoding, .NET 10 counts each
+        // one as several bytes, past the bytes read so far
+        var document = "<?xml version=\"1.0"u8.ToArray().Concat(Enumerable.Repeat((byte)0xFF, 141)).Concat("\" encoding=\"UTF-8\"?>\n<a>"u8.ToArray()).Concat(Enumerable.Repeat((byte)'a', 80)).ToArray();
+        Assert.Throws<FormatException>(() => Gpx.Read(new MemoryStream(document)));
+    }
 }

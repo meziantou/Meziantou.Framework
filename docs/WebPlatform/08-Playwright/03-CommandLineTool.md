@@ -31,6 +31,8 @@ help shows.
 | `--browser-name` | `chromium` | The name of the browser reported to the clients (`chromium`, `firefox` or `webkit`) |
 | `--allow-any-client-version` | off | Accepts the clients of another version of Playwright |
 
+The [command reference](04-CommandReference.md) lists them with the help of the tool.
+
 Without `--allow-network`, the pages only use the content of `page.setContent()` and the responses of the routes
 (`page.route()`). The scripts of the pages run in the process of the server: connect trusted clients only, and load
 trusted pages only.

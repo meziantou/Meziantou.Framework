@@ -7,6 +7,8 @@ description: Dump the syntax tree of a CSS, INI, JSON, TOML, XML, regular expres
 diagnostics as JSON. Use it to see how a document is parsed before you write code against its tree, to check a file in a
 script, or to compare two parses.
 
+The [command reference](13-CommandReference/01-Overview.md) lists every command and its options.
+
 ## Install the tool
 
 Install it as a global tool:

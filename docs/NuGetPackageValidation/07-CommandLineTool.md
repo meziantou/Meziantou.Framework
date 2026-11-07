@@ -6,6 +6,8 @@ description: Validate packages from a terminal or a script, choose the rules, ig
 `Meziantou.Framework.NuGetPackageValidation.Tool` runs the [rules](03-Rules.md) of the library on the packages you give
 it.
 
+The [command reference](09-CommandReference.md) lists every option of the tool.
+
 ## Install the tool
 
 Install or update it as a global tool:

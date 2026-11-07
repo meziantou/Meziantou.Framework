@@ -6,6 +6,8 @@ description: Render a template file from the command line, to the console or to 
 `Meziantou.Framework.Templating.Tool` renders a template file without writing code: use it in scripts and builds to
 generate source code or configuration files.
 
+The [command reference](11-CommandReference.md) lists every option of the tool.
+
 ## Install the tool
 
 Install it as a global tool:

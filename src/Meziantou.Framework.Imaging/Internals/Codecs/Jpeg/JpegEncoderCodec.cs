@@ -106,14 +106,18 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
     /// a pixel, a luma of 128 or a gray pixel, are converted by the double-precision path.
     /// </para>
     /// </remarks>
-    internal static void ConvertRgbToYCbCr(ReadOnlySpan<byte> source, Span<float> luma, Span<float> blue, Span<float> red)
+    internal static void ConvertRgbToYCbCr(ReadOnlySpan<byte> source, Span<float> luma, Span<float> blue, Span<float> red) => ConvertRgbToYCbCr<JpegRgbLayout>(source, luma, blue, red);
+
+    /// <summary>Converts 8-bit pixels of the layout <typeparamref name="TLayout"/> like <see cref="ConvertRgbToYCbCr(ReadOnlySpan{byte}, Span{float}, Span{float}, Span{float})"/> (the alpha samples of a 4-byte layout are ignored).</summary>
+    internal static void ConvertRgbToYCbCr<TLayout>(ReadOnlySpan<byte> source, Span<float> luma, Span<float> blue, Span<float> red)
+        where TLayout : struct, IJpegSourceLayout
     {
-        var done = Vector512.IsHardwareAccelerated && Avx512F.IsSupported ? ConvertRgbToYCbCrRationalAvx512(source, luma, blue, red)
-            : Avx2.IsSupported ? ConvertRgbToYCbCrRationalAvx2(source, luma, blue, red)
-            : AdvSimd.Arm64.IsSupported ? ConvertRgbToYCbCrRationalArm64(source, luma, blue, red)
-            : Vector128.IsHardwareAccelerated && BitConverter.IsLittleEndian ? ConvertRgbToYCbCrVector(source, luma, blue, red)
+        var done = Vector512.IsHardwareAccelerated && Avx512F.IsSupported ? ConvertRgbToYCbCrRationalAvx512<TLayout>(source, luma, blue, red)
+            : Avx2.IsSupported ? ConvertRgbToYCbCrRationalAvx2<TLayout>(source, luma, blue, red)
+            : AdvSimd.Arm64.IsSupported ? ConvertRgbToYCbCrRationalArm64<TLayout>(source, luma, blue, red)
+            : Vector128.IsHardwareAccelerated && BitConverter.IsLittleEndian ? ConvertRgbToYCbCrVector<TLayout>(source, luma, blue, red)
             : 0;
-        ConvertRgbToYCbCrScalar(source[(3 * done)..], luma[done..], blue[done..], red[done..]);
+        ConvertRgbToYCbCrScalar<TLayout>(source[(TLayout.PixelSize * done)..], luma[done..], blue[done..], red[done..]);
     }
 
     /// <summary>
@@ -122,9 +126,12 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
     /// divisions; the groups with a luma of 128 or a gray pixel are converted by <see cref="ConvertRgbToYCbCrVector"/>.
     /// </summary>
     /// <returns>The number of pixels converted.</returns>
-    internal static int ConvertRgbToYCbCrRationalArm64(ReadOnlySpan<byte> source, Span<float> luma, Span<float> blue, Span<float> red)
+    internal static int ConvertRgbToYCbCrRationalArm64(ReadOnlySpan<byte> source, Span<float> luma, Span<float> blue, Span<float> red) => ConvertRgbToYCbCrRationalArm64<JpegRgbLayout>(source, luma, blue, red);
+
+    internal static int ConvertRgbToYCbCrRationalArm64<TLayout>(ReadOnlySpan<byte> source, Span<float> luma, Span<float> blue, Span<float> red)
+        where TLayout : struct, IJpegSourceLayout
     {
-        var count = Math.Min(Math.Min(luma.Length, Math.Min(blue.Length, red.Length)), source.Length / 3);
+        var count = Math.Min(Math.Min(luma.Length, Math.Min(blue.Length, red.Length)), source.Length / TLayout.PixelSize);
         ref var lumaStart = ref unsafe(MemoryMarshal.GetReference(luma));
         ref var blueStart = ref unsafe(MemoryMarshal.GetReference(blue));
         ref var redStart = ref unsafe(MemoryMarshal.GetReference(red));
@@ -135,7 +142,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             {
                 for (; x + 16 <= count; x += 16)
                 {
-                    var (r, g, b) = AdvSimd.Arm64.Load3xVector128AndUnzip(pixels + (3 * x));
+                    var (r, g, b) = LoadArm64<TLayout>(pixels + (TLayout.PixelSize * x));
                     ref var lumaGroup = ref Unsafe.Add(ref lumaStart, x);
                     ref var blueGroup = ref Unsafe.Add(ref blueStart, x);
                     ref var redGroup = ref Unsafe.Add(ref redStart, x);
@@ -198,9 +205,12 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
     /// luma of 128 or a gray pixel are converted by <see cref="ConvertRgbToYCbCrAvx2"/>.
     /// </summary>
     /// <returns>The number of pixels converted.</returns>
-    internal static int ConvertRgbToYCbCrRationalAvx2(ReadOnlySpan<byte> source, Span<float> luma, Span<float> blue, Span<float> red)
+    internal static int ConvertRgbToYCbCrRationalAvx2(ReadOnlySpan<byte> source, Span<float> luma, Span<float> blue, Span<float> red) => ConvertRgbToYCbCrRationalAvx2<JpegRgbLayout>(source, luma, blue, red);
+
+    internal static int ConvertRgbToYCbCrRationalAvx2<TLayout>(ReadOnlySpan<byte> source, Span<float> luma, Span<float> blue, Span<float> red)
+        where TLayout : struct, IJpegSourceLayout
     {
-        var count = Math.Min(Math.Min(luma.Length, Math.Min(blue.Length, red.Length)), source.Length / 3);
+        var count = Math.Min(Math.Min(luma.Length, Math.Min(blue.Length, red.Length)), source.Length / TLayout.PixelSize);
         ref var sourceStart = ref unsafe(MemoryMarshal.GetReference(source));
         ref var lumaStart = ref unsafe(MemoryMarshal.GetReference(luma));
         ref var blueStart = ref unsafe(MemoryMarshal.GetReference(blue));
@@ -208,7 +218,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         var x = 0;
         for (; x + 16 <= count; x += 16)
         {
-            var (r, g, b) = Deinterleave(ref unsafe(Unsafe.Add(ref sourceStart, 3 * x)));
+            var (r, g, b) = Deinterleave<TLayout>(ref unsafe(Unsafe.Add(ref sourceStart, TLayout.PixelSize * x)));
             ref var lumaGroup = ref unsafe(Unsafe.Add(ref lumaStart, x));
             ref var blueGroup = ref unsafe(Unsafe.Add(ref blueStart, x));
             ref var redGroup = ref unsafe(Unsafe.Add(ref redStart, x));
@@ -252,9 +262,12 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
     /// <see cref="ConvertRgbToYCbCrAvx512"/>.
     /// </summary>
     /// <returns>The number of pixels converted.</returns>
-    internal static int ConvertRgbToYCbCrRationalAvx512(ReadOnlySpan<byte> source, Span<float> luma, Span<float> blue, Span<float> red)
+    internal static int ConvertRgbToYCbCrRationalAvx512(ReadOnlySpan<byte> source, Span<float> luma, Span<float> blue, Span<float> red) => ConvertRgbToYCbCrRationalAvx512<JpegRgbLayout>(source, luma, blue, red);
+
+    internal static int ConvertRgbToYCbCrRationalAvx512<TLayout>(ReadOnlySpan<byte> source, Span<float> luma, Span<float> blue, Span<float> red)
+        where TLayout : struct, IJpegSourceLayout
     {
-        var count = Math.Min(Math.Min(luma.Length, Math.Min(blue.Length, red.Length)), source.Length / 3);
+        var count = Math.Min(Math.Min(luma.Length, Math.Min(blue.Length, red.Length)), source.Length / TLayout.PixelSize);
         ref var sourceStart = ref unsafe(MemoryMarshal.GetReference(source));
         ref var lumaStart = ref unsafe(MemoryMarshal.GetReference(luma));
         ref var blueStart = ref unsafe(MemoryMarshal.GetReference(blue));
@@ -265,7 +278,16 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             Vector512<int> r;
             Vector512<int> g;
             Vector512<int> b;
-            if (Avx512Vbmi.IsSupported && (3 * x) + 64 <= source.Length)
+            if (TLayout.PixelSize == 4)
+            {
+                // 16 pixels of 4 bytes: each sample is a byte of the 32-bit lanes
+                var pixels = unsafe(Vector512.LoadUnsafe(ref sourceStart, (nuint)(4 * x))).AsInt32();
+                var low = Vector512.Create(0xFF);
+                r = pixels & low;
+                g = (pixels >>> 8) & low;
+                b = (pixels >>> 16) & low;
+            }
+            else if (Avx512Vbmi.IsSupported && (3 * x) + 64 <= source.Length)
             {
                 // The byte 3 k + c of the pixels in the low byte of the 32-bit lane k
                 var pixels = unsafe(Vector512.LoadUnsafe(ref sourceStart, (nuint)(3 * x)));
@@ -280,6 +302,11 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
                 r = Avx512F.ConvertToVector512Int32(r8);
                 g = Avx512F.ConvertToVector512Int32(g8);
                 b = Avx512F.ConvertToVector512Int32(b8);
+            }
+
+            if (TLayout.IsBgr)
+            {
+                (r, b) = (b, r);
             }
 
             var rs = Avx512F.ConvertToVector512Single(r);
@@ -302,13 +329,18 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
     }
 
     /// <summary>The scalar reference of <see cref="ConvertRgbToYCbCr"/>.</summary>
-    internal static void ConvertRgbToYCbCrScalar(ReadOnlySpan<byte> source, Span<float> luma, Span<float> blue, Span<float> red)
+    internal static void ConvertRgbToYCbCrScalar(ReadOnlySpan<byte> source, Span<float> luma, Span<float> blue, Span<float> red) => ConvertRgbToYCbCrScalar<JpegRgbLayout>(source, luma, blue, red);
+
+    /// <summary>The scalar reference of <see cref="ConvertRgbToYCbCr{TLayout}"/>.</summary>
+    internal static void ConvertRgbToYCbCrScalar<TLayout>(ReadOnlySpan<byte> source, Span<float> luma, Span<float> blue, Span<float> red)
+        where TLayout : struct, IJpegSourceLayout
     {
         for (var x = 0; x < luma.Length; x++)
         {
-            double r = source[3 * x];
-            double g = source[(3 * x) + 1];
-            double b = source[(3 * x) + 2];
+            var pixel = source.Slice(TLayout.PixelSize * x, 3);
+            double r = pixel[TLayout.IsBgr ? 2 : 0];
+            double g = pixel[1];
+            double b = pixel[TLayout.IsBgr ? 0 : 2];
             var y = (0.299 * r) + (0.587 * g) + (0.114 * b);
             luma[x] = (float)(y - 128);
             blue[x] = (float)((b - y) * BlueScale);
@@ -318,9 +350,12 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
 
     /// <summary>Converts the pixels of whole 16-pixel groups.</summary>
     /// <returns>The number of pixels converted.</returns>
-    internal static int ConvertRgbToYCbCrVector(ReadOnlySpan<byte> source, Span<float> luma, Span<float> blue, Span<float> red)
+    internal static int ConvertRgbToYCbCrVector(ReadOnlySpan<byte> source, Span<float> luma, Span<float> blue, Span<float> red) => ConvertRgbToYCbCrVector<JpegRgbLayout>(source, luma, blue, red);
+
+    internal static int ConvertRgbToYCbCrVector<TLayout>(ReadOnlySpan<byte> source, Span<float> luma, Span<float> blue, Span<float> red)
+        where TLayout : struct, IJpegSourceLayout
     {
-        var count = Math.Min(Math.Min(luma.Length, Math.Min(blue.Length, red.Length)), source.Length / 3);
+        var count = Math.Min(Math.Min(luma.Length, Math.Min(blue.Length, red.Length)), source.Length / TLayout.PixelSize);
         ref var sourceStart = ref unsafe(MemoryMarshal.GetReference(source));
         ref var lumaStart = ref unsafe(MemoryMarshal.GetReference(luma));
         ref var blueStart = ref unsafe(MemoryMarshal.GetReference(blue));
@@ -328,14 +363,14 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         var x = 0;
         if (AdvSimd.Arm64.IsSupported)
         {
-            // LD3 loads and deinterleaves 16 pixels
+            // LD3 (LD4) loads and deinterleaves 16 pixels
             unsafe
             {
                 fixed (byte* pixels = source)
                 {
                     for (; x + 16 <= count; x += 16)
                     {
-                        var (r, g, b) = AdvSimd.Arm64.Load3xVector128AndUnzip(pixels + (3 * x));
+                        var (r, g, b) = LoadArm64<TLayout>(pixels + (TLayout.PixelSize * x));
                         ConvertGroupVector(r, g, b, ref Unsafe.Add(ref lumaStart, x), ref Unsafe.Add(ref blueStart, x), ref Unsafe.Add(ref redStart, x));
                     }
                 }
@@ -346,7 +381,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
 
         for (; x + 16 <= count; x += 16)
         {
-            var (r, g, b) = Deinterleave(ref unsafe(Unsafe.Add(ref sourceStart, 3 * x)));
+            var (r, g, b) = Deinterleave<TLayout>(ref unsafe(Unsafe.Add(ref sourceStart, TLayout.PixelSize * x)));
             ConvertGroupVector(r, g, b, ref unsafe(Unsafe.Add(ref lumaStart, x)), ref unsafe(Unsafe.Add(ref blueStart, x)), ref unsafe(Unsafe.Add(ref redStart, x)));
         }
 
@@ -503,6 +538,62 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             unsafe { Avx512F.ConvertToVector256Single((b - y) * Vector512.Create(BlueScale)).StoreUnsafe(ref blue); }
             unsafe { Avx512F.ConvertToVector256Single((r - y) * Vector512.Create(RedScale)).StoreUnsafe(ref red); }
         }
+    }
+
+    /// <summary>Loads and deinterleaves 16 pixels of the layout <typeparamref name="TLayout"/> with Arm64 (LD3 or LD4).</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static (Vector128<byte> R, Vector128<byte> G, Vector128<byte> B) LoadArm64<TLayout>(byte* pixels)
+        where TLayout : struct, IJpegSourceLayout
+    {
+        Vector128<byte> first;
+        Vector128<byte> green;
+        Vector128<byte> third;
+        if (TLayout.PixelSize == 4)
+        {
+            (first, green, third, _) = unsafe(AdvSimd.Arm64.Load4xVector128AndUnzip(pixels));
+        }
+        else
+        {
+            (first, green, third) = unsafe(AdvSimd.Arm64.Load3xVector128AndUnzip(pixels));
+        }
+
+        return TLayout.IsBgr ? (third, green, first) : (first, green, third);
+    }
+
+    /// <summary>Deinterleaves 16 pixels of the layout <typeparamref name="TLayout"/>.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static (Vector128<byte> R, Vector128<byte> G, Vector128<byte> B) Deinterleave<TLayout>(ref byte source)
+        where TLayout : struct, IJpegSourceLayout
+    {
+        var (first, green, third) = TLayout.PixelSize == 4 ? Deinterleave4(ref source) : Deinterleave(ref source);
+        return TLayout.IsBgr ? (third, green, first) : (first, green, third);
+    }
+
+    /// <summary>
+    /// Deinterleaves the first three samples of 16 pixels of 4 bytes: each vector of 4 pixels is shuffled into its four
+    /// samples of each channel (one 32-bit lane per channel), then the lanes are gathered by interleaving.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static (Vector128<byte> First, Vector128<byte> Second, Vector128<byte> Third) Deinterleave4(ref byte source)
+    {
+        var order = Vector128.Create((byte)0, 4, 8, 12, 1, 5, 9, 13, 2, 6, 10, 14, 3, 7, 11, 15);
+        var v0 = Vector128.Shuffle(unsafe(Vector128.LoadUnsafe(ref source)), order).AsUInt32();
+        var v1 = Vector128.Shuffle(unsafe(Vector128.LoadUnsafe(ref source, 16)), order).AsUInt32();
+        var v2 = Vector128.Shuffle(unsafe(Vector128.LoadUnsafe(ref source, 32)), order).AsUInt32();
+        var v3 = Vector128.Shuffle(unsafe(Vector128.LoadUnsafe(ref source, 48)), order).AsUInt32();
+        if (Sse2.IsSupported)
+        {
+            var low01 = Sse2.UnpackLow(v0, v1).AsUInt64();
+            var low23 = Sse2.UnpackLow(v2, v3).AsUInt64();
+            var high01 = Sse2.UnpackHigh(v0, v1).AsUInt64();
+            var high23 = Sse2.UnpackHigh(v2, v3).AsUInt64();
+            return (Sse2.UnpackLow(low01, low23).AsByte(), Sse2.UnpackHigh(low01, low23).AsByte(), Sse2.UnpackLow(high01, high23).AsByte());
+        }
+
+        return (
+            Vector128.Create(v0.GetElement(0), v1.GetElement(0), v2.GetElement(0), v3.GetElement(0)).AsByte(),
+            Vector128.Create(v0.GetElement(1), v1.GetElement(1), v2.GetElement(1), v3.GetElement(1)).AsByte(),
+            Vector128.Create(v0.GetElement(2), v1.GetElement(2), v2.GetElement(2), v3.GetElement(2)).AsByte());
     }
 
     /// <summary>Deinterleaves 16 RGB pixels: each byte comes from one of three vectors (an index of 0xFF selects zero).</summary>
@@ -1028,8 +1119,13 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
                 throw new UnsupportedImageFeatureException($"JPEG output stores 8-bit samples, so encoding {_sourceFormat} pixels would discard precision. Set JpegEncoder.AllowBitDepthReduction to reduce the samples to 8 bits (nearest rounding), or convert the image explicitly with CloneAs.", ImageFormat.Jpeg, "Bit depth reduction");
 
             (_grayscale, _h, _v) = GetSampling(_sourceFormat, _encoder.ChromaSubsampling);
-            _workFormat = _grayscale ? PixelFormat.Gray8 : PixelFormat.Rgb24;
             _background = PixelFormats.HasAlpha(_sourceFormat) ? _encoder.BackgroundColor : null;
+
+            // Without a background every pixel is opaque (ValidateFrame): RGBA and BGRA rows are read as they are stored,
+            // their alpha ignored, instead of being converted to RGB first
+            _workFormat = _grayscale ? PixelFormat.Gray8
+                : _sourceFormat is PixelFormat.Rgba32 or PixelFormat.Bgra32 && _background is null ? _sourceFormat
+                : PixelFormat.Rgb24;
             _width = options.CanvasSize.Width;
             _height = options.CanvasSize.Height;
             _mcusX = (_width + (8 * _h) - 1) / (8 * _h);
@@ -1815,7 +1911,19 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         /// </summary>
         private void ConvertColorRow(ReadOnlySpan<byte> source, Span<float> luma, Span<float> blue, Span<float> red)
         {
-            ConvertRgbToYCbCr(source, luma[.._width], blue[.._width], red[.._width]);
+            switch (_workFormat)
+            {
+                case PixelFormat.Rgba32:
+                    ConvertRgbToYCbCr<JpegRgbaLayout>(source, luma[.._width], blue[.._width], red[.._width]);
+                    break;
+                case PixelFormat.Bgra32:
+                    ConvertRgbToYCbCr<JpegBgraLayout>(source, luma[.._width], blue[.._width], red[.._width]);
+                    break;
+                default:
+                    ConvertRgbToYCbCr<JpegRgbLayout>(source, luma[.._width], blue[.._width], red[.._width]);
+                    break;
+            }
+
             luma[_width..].Fill(luma[_width - 1]);
             blue[_width..].Fill(blue[_width - 1]);
             red[_width..].Fill(red[_width - 1]);

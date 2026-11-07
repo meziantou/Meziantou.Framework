@@ -759,7 +759,19 @@ internal static partial class PixelConverter
     {
         ref var start = ref unsafe(MemoryMarshal.GetReference(bytes));
         var count = 0;
-        for (; ((count + 1) * Vector128<byte>.Count) <= bytes.Length; count++)
+        var length = bytes.Length / Vector128<byte>.Count;
+
+        // Four vectors at a time while they are all opaque (the alpha bytes of their AND are 0xFF only if all of them are),
+        // then one at a time up to the first vector with a pixel that is not
+        for (; count + 4 <= length; count += 4)
+        {
+            var offset = (nuint)(count * Vector128<byte>.Count);
+            var pixels = unsafe(Vector128.LoadUnsafe(ref start, offset) & Vector128.LoadUnsafe(ref start, offset + 16) & Vector128.LoadUnsafe(ref start, offset + 32) & Vector128.LoadUnsafe(ref start, offset + 48));
+            if ((pixels | colorMask) != Vector128<byte>.AllBitsSet)
+                break;
+        }
+
+        for (; count < length; count++)
         {
             var pixels = unsafe(Vector128.LoadUnsafe(ref start, (nuint)(count * Vector128<byte>.Count)));
             if ((pixels | colorMask) != Vector128<byte>.AllBitsSet)

@@ -1508,6 +1508,7 @@ public sealed class VectorizedKernelTests
             }
 
             AssertRationalPaths(source, expected);
+            AssertFourByteLayouts(source, expected);
         }
 
         static void AssertPath(byte[] source, float[][] expected, ConvertRgbToYCbCr convert)
@@ -1591,6 +1592,75 @@ public sealed class VectorizedKernelTests
             JpegEncoderCodec.ConvertRgbToYCbCr(source, luma, blue, red);
             return luma.Length;
         });
+    }
+
+    // The same pixels as RGBA and BGRA with any alpha (it is ignored), through each path that reads them
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    private static void AssertFourByteLayouts(byte[] source, float[][] expected)
+    {
+        var random = new Random(source.Length);
+        var count = source.Length / 3;
+        var rgba = new byte[4 * count];
+        var bgra = new byte[4 * count];
+        for (var x = 0; x < count; x++)
+        {
+            var alpha = (byte)random.Next(256);
+            rgba[4 * x] = source[3 * x];
+            rgba[(4 * x) + 1] = source[(3 * x) + 1];
+            rgba[(4 * x) + 2] = source[(3 * x) + 2];
+            rgba[(4 * x) + 3] = alpha;
+            bgra[4 * x] = source[(3 * x) + 2];
+            bgra[(4 * x) + 1] = source[(3 * x) + 1];
+            bgra[(4 * x) + 2] = source[3 * x];
+            bgra[(4 * x) + 3] = alpha;
+        }
+
+        AssertLayout<JpegRgbaLayout>(rgba, expected);
+        AssertLayout<JpegBgraLayout>(bgra, expected);
+
+        static void AssertLayout<TLayout>(byte[] pixels, float[][] expected)
+            where TLayout : struct, IJpegSourceLayout
+        {
+            AssertLayoutPath<TLayout>(pixels, expected, (source, luma, blue, red) =>
+            {
+                JpegEncoderCodec.ConvertRgbToYCbCr<TLayout>(source, luma, blue, red);
+                return luma.Length;
+            });
+            AssertLayoutPath<TLayout>(pixels, expected, (source, luma, blue, red) => 0);
+            if (Vector128.IsHardwareAccelerated && BitConverter.IsLittleEndian)
+            {
+                AssertLayoutPath<TLayout>(pixels, expected, JpegEncoderCodec.ConvertRgbToYCbCrVector<TLayout>);
+            }
+
+            if (System.Runtime.Intrinsics.Arm.AdvSimd.Arm64.IsSupported)
+            {
+                AssertLayoutPath<TLayout>(pixels, expected, JpegEncoderCodec.ConvertRgbToYCbCrRationalArm64<TLayout>);
+            }
+
+            if (Avx2.IsSupported)
+            {
+                AssertLayoutPath<TLayout>(pixels, expected, JpegEncoderCodec.ConvertRgbToYCbCrRationalAvx2<TLayout>);
+            }
+
+            if (Avx512F.IsSupported)
+            {
+                AssertLayoutPath<TLayout>(pixels, expected, JpegEncoderCodec.ConvertRgbToYCbCrRationalAvx512<TLayout>);
+            }
+        }
+
+        static void AssertLayoutPath<TLayout>(byte[] pixels, float[][] expected, ConvertRgbToYCbCrGroups convert)
+            where TLayout : struct, IJpegSourceLayout
+        {
+            var length = expected[0].Length;
+            var luma = new float[length];
+            var blue = new float[length];
+            var red = new float[length];
+            var done = convert(pixels, luma, blue, red);
+            JpegEncoderCodec.ConvertRgbToYCbCrScalar<TLayout>(pixels.AsSpan(4 * done), luma.AsSpan(done), blue.AsSpan(done), red.AsSpan(done));
+            Assert.Equal(expected[0], luma);
+            Assert.Equal(expected[1], blue);
+            Assert.Equal(expected[2], red);
+        }
     }
 
     private static void AssertConversionPath(byte[] source, float[][] expected, ConvertRgbToYCbCrGroups convert)

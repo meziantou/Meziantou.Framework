@@ -660,15 +660,21 @@ public sealed class JpegEncoderTests
     [Fact]
     public void ChannelOrderAndPrecisionDoNotChangeTheOutput()
     {
-        // The same opaque pixels as RGB, RGBA and BGRA give identical files; 16-bit sources whose samples are exact
-        // expansions of 8-bit values (v * 257) also do once reduced
+        // The same opaque pixels as RGB, RGBA and BGRA give identical files (RGBA and BGRA rows are read as they are
+        // stored, in groups of 16 pixels, then the rest); 16-bit sources whose samples are exact expansions of 8-bit
+        // values (v * 257) also do once reduced
         var source = JpegTestPatterns.PhotoLike(29, 19, seed: 3);
         var encoder = new JpegEncoder { Quality = 83, ChromaSubsampling = JpegChromaSubsampling.Ratio422, AllowBitDepthReduction = true };
-        using var rgb = Rgb(source);
-        var expected = Encode(rgb, encoder);
-        foreach (var format in new[] { PixelFormat.Rgba32, PixelFormat.Bgra32, PixelFormat.Rgba64 })
+        foreach (var (width, subsampling) in new[] { (29, JpegChromaSubsampling.Ratio422), (83, JpegChromaSubsampling.Ratio420), (83, JpegChromaSubsampling.Ratio444) })
         {
-            Assert.Equal(expected, Encode(JpegTestPatterns.ToFormat(source, format), format, encoder));
+            var pixels = JpegTestPatterns.PhotoLike(width, 19, seed: 3);
+            var options = new JpegEncoder { Quality = 83, ChromaSubsampling = subsampling, AllowBitDepthReduction = true };
+            using var rgb = Rgb(pixels);
+            var expected = Encode(rgb, options);
+            foreach (var format in new[] { PixelFormat.Rgba32, PixelFormat.Bgra32, PixelFormat.Rgba64 })
+            {
+                Assert.Equal(expected, Encode(JpegTestPatterns.ToFormat(pixels, format), format, options));
+            }
         }
 
         using var gray8 = EncoderSources.CreateImage(JpegTestPatterns.ToFormat(source, PixelFormat.Gray8), PixelFormat.Gray8);

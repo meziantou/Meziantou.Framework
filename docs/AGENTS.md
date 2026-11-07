@@ -31,6 +31,15 @@ docs/
 - `WebPlatform/10-WptCoverage/` is generated, `_folder.yml` files included: never edit it, run the `wpt-coverage`
   command of `tools/Meziantou.Framework.WebPlatform.SpecUpdate`. Its section pages keep the names of the WPT
   directories (`css/css-align.md`), so they are not numbered.
+- The command reference of a .NET tool (a project of `src/` that references `System.CommandLine`) is generated from its
+  `--help` output by `dotnet run ./eng/update-all.cs` (or `-- --step readme`): one page per command, with its synopsis
+  and the tables of its arguments, options and subcommands. Never edit these pages. For a new tool, create its slot as
+  the last entry of the deepest folder whose `_folder.yml` lists the package, and run the script:
+  - a tool with subcommands: a `<nn>-CommandReference/` folder with a `_folder.yml` (`title: Command reference` and a
+    `description`, no `packageIds`). The script writes `01-Overview.md` for the root command and a page per subcommand.
+  - a tool without subcommands: a `<nn>-CommandReference.md` page, which the script overwrites.
+
+  The hand-written page of the tool links to its command reference.
 
 ## Folder names
 

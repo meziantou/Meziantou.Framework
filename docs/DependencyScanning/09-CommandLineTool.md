@@ -6,6 +6,8 @@ description: List the dependencies of a repository, find the ones that can be up
 `Meziantou.Framework.DependencyScanning.Tool` scans a folder with the library, then asks the registries for newer
 versions and writes them in the files.
 
+The [command reference](11-CommandReference/01-Overview.md) lists every command and its options.
+
 ## Install the tool
 
 Install it as a global tool:

@@ -6,6 +6,8 @@ description: Approve the actual snapshot files from the command line, all at onc
 `Meziantou.Framework.SnapshotTesting.Tool` approves snapshots after a test run: it renames each `*.actual.*` file to the
 matching `*.verified.*` file, replacing the old snapshot.
 
+The [command reference](06-CommandReference/01-Overview.md) lists every command and its options.
+
 ## Install the tool
 
 Install it as a global .NET tool:

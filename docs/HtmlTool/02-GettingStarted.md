@@ -46,3 +46,4 @@ gives a message on the standard error and a non-zero exit code.
 
 - [Selecting files](03-SelectingFiles.md): update one file or all the files of a folder.
 - [Output format and encoding](07-OutputFormatAndEncoding.md): what changes in the files the tool writes.
+- [Command reference](08-CommandReference/01-Overview.md): every command and its options.

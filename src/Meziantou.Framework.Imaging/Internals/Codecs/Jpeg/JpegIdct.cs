@@ -171,6 +171,12 @@ internal static class JpegIdct
     public static void TransformReduced(Span<double> coefficients, Span<byte> destination, int stride, int width, int height, bool sparse = false)
     {
         var block = coefficients[..64];
+        if (width == height && width is 2 or 4 && Vector128.IsHardwareAccelerated)
+        {
+            TransformReducedSquareVector128(block, destination, stride, width, sparse);
+            return;
+        }
+
         TransformReduced(block, width, height, sparse);
         if (width >= 2 && Vector128.IsHardwareAccelerated)
         {
@@ -408,6 +414,185 @@ internal static class JpegIdct
         }
     }
 
+    /// <summary>
+    /// The square reduced transforms of a scaled decoding at 1/2 (4x4 samples) and 1/4 (2x2 samples), with their samples:
+    /// what <see cref="TransformReducedVector128"/> and the rounding of
+    /// <see cref="TransformReduced(Span{double}, Span{byte}, int, int, int, bool)"/> compute, with the same operations in the
+    /// same order, but the columns stay in registers between the two passes and the samples are packed to bytes at once.
+    /// </summary>
+    /// <param name="coefficients">64 dequantized coefficients, natural order; read only.</param>
+    /// <param name="destination">The first sample of the block.</param>
+    /// <param name="stride">The distance between two sample rows.</param>
+    /// <param name="size">The number of samples of a row and of a column of the block: 2 or 4.</param>
+    /// <param name="sparse">Whether every coefficient outside the top-left 4x4 corner is zero: the columns 4 to 7 are zero.</param>
+    internal static void TransformReducedSquareVector128(Span<double> coefficients, Span<byte> destination, int stride, int size, bool sparse = false)
+    {
+        // Bounds are checked once here; the code below uses unchecked references
+        ArgumentOutOfRangeException.ThrowIfLessThan(coefficients.Length, 64);
+        ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, ((size - 1) * stride) + size);
+        ref var block = ref unsafe(MemoryMarshal.GetReference(coefficients));
+        ref var output = ref unsafe(MemoryMarshal.GetReference(destination));
+        if (size == 4)
+        {
+            if (sparse)
+            {
+                TransformReduced4x4(ref block, ref output, stride, sparse: true);
+            }
+            else
+            {
+                TransformReduced4x4(ref block, ref output, stride, sparse: false);
+            }
+        }
+        else
+        {
+            Debug.Assert(size == 2);
+            if (sparse)
+            {
+                TransformReduced2x2(ref block, ref output, stride, sparse: true);
+            }
+            else
+            {
+                TransformReduced2x2(ref block, ref output, stride, sparse: false);
+            }
+        }
+    }
+
+    /// <summary>
+    /// The 4x4 kernel of <see cref="TransformReducedSquareVector128"/>, inlined with a constant <paramref name="sparse"/>: a
+    /// sparse block skips the columns 4 to 7 and drops the inputs 4 to 7, which are zero, from both passes (exact, like
+    /// the sparse 8x8 transform).
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void TransformReduced4x4(ref double block, ref byte output, int stride, bool sparse)
+    {
+        // Columns: a, b, c and d hold the columns (0, 1), (2, 3), (4, 5) and (6, 7) of the rows 0 to 3
+        ReduceColumns4(ref block, 0, sparse, out var a0, out var a1, out var a2, out var a3);
+        ReduceColumns4(ref block, 2, sparse, out var b0, out var b1, out var b2, out var b3);
+        Vector128<double> e0, e1, e2, e3, f0, f1, f2, f3;
+        if (sparse)
+        {
+            // Rows, two at a time: lane 0 is the first row, lane 1 the second one
+            Reduce4(InterleaveLower(a0, a1), InterleaveUpper(a0, a1), InterleaveLower(b0, b1), InterleaveUpper(b0, b1), out e0, out e1, out e2, out e3);
+            Reduce4(InterleaveLower(a2, a3), InterleaveUpper(a2, a3), InterleaveLower(b2, b3), InterleaveUpper(b2, b3), out f0, out f1, out f2, out f3);
+        }
+        else
+        {
+            ReduceColumns4(ref block, 4, sparse, out var c0, out var c1, out var c2, out var c3);
+            ReduceColumns4(ref block, 6, sparse, out var d0, out var d1, out var d2, out var d3);
+            Reduce4(InterleaveLower(a0, a1), InterleaveUpper(a0, a1), InterleaveLower(b0, b1), InterleaveUpper(b0, b1), InterleaveUpper(c0, c1), InterleaveLower(d0, d1), InterleaveUpper(d0, d1),
+                out e0, out e1, out e2, out e3);
+            Reduce4(InterleaveLower(a2, a3), InterleaveUpper(a2, a3), InterleaveLower(b2, b3), InterleaveUpper(b2, b3), InterleaveUpper(c2, c3), InterleaveLower(d2, d3), InterleaveUpper(d2, d3),
+                out f0, out f1, out f2, out f3);
+        }
+
+        var samples = PackSamples(
+            PackSamples(InterleaveLower(e0, e1), InterleaveLower(e2, e3), InterleaveUpper(e0, e1), InterleaveUpper(e2, e3)),
+            PackSamples(InterleaveLower(f0, f1), InterleaveLower(f2, f3), InterleaveUpper(f0, f1), InterleaveUpper(f2, f3))).AsUInt32();
+        unsafe { Unsafe.WriteUnaligned(ref output, samples.ToScalar()); }
+        unsafe { Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, stride), samples.GetElement(1)); }
+        unsafe { Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, 2 * stride), samples.GetElement(2)); }
+        unsafe { Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, 3 * stride), samples.GetElement(3)); }
+
+        // The column pass of Reduce4 on the columns u and u + 1: the rows 0 to 3
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static void ReduceColumns4(ref double block, int u, bool sparse, out Vector128<double> o0, out Vector128<double> o1, out Vector128<double> o2, out Vector128<double> o3)
+        {
+            if (sparse)
+            {
+                Reduce4(LoadReduced(ref block, u), LoadReduced(ref block, 8 + u), LoadReduced(ref block, 16 + u), LoadReduced(ref block, 24 + u), out o0, out o1, out o2, out o3);
+            }
+            else
+            {
+                Reduce4(LoadReduced(ref block, u), LoadReduced(ref block, 8 + u), LoadReduced(ref block, 16 + u), LoadReduced(ref block, 24 + u), LoadReduced(ref block, 40 + u), LoadReduced(ref block, 48 + u), LoadReduced(ref block, 56 + u), out o0, out o1, out o2, out o3);
+            }
+        }
+    }
+
+    /// <summary>The 2x2 kernel of <see cref="TransformReducedSquareVector128"/>, like <see cref="TransformReduced4x4"/>.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void TransformReduced2x2(ref double block, ref byte output, int stride, bool sparse)
+    {
+        // Columns: a, b, c and d hold the columns (0, 1), (2, 3), (4, 5) and (6, 7) of the rows 0 and 1
+        ReduceColumns2(ref block, 0, sparse, out var a0, out var a1);
+        ReduceColumns2(ref block, 2, sparse, out var b0, out var b1);
+        Vector128<double> e0, e1;
+        if (sparse)
+        {
+            Reduce2(InterleaveLower(a0, a1), InterleaveUpper(a0, a1), InterleaveUpper(b0, b1), out e0, out e1);
+        }
+        else
+        {
+            ReduceColumns2(ref block, 4, sparse, out var c0, out var c1);
+            ReduceColumns2(ref block, 6, sparse, out var d0, out var d1);
+            Reduce2(InterleaveLower(a0, a1), InterleaveUpper(a0, a1), InterleaveUpper(b0, b1), InterleaveUpper(c0, c1), InterleaveUpper(d0, d1), out e0, out e1);
+        }
+
+        var packed = PackSamples(InterleaveLower(e0, e1), InterleaveUpper(e0, e1), Vector128<double>.Zero, Vector128<double>.Zero);
+        var samples = PackSamples(packed, packed).AsUInt16();
+        unsafe { Unsafe.WriteUnaligned(ref output, samples.ToScalar()); }
+        unsafe { Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, stride), samples.GetElement(1)); }
+
+        // The column pass of Reduce2 on the columns u and u + 1: the rows 0 and 1
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static void ReduceColumns2(ref double block, int u, bool sparse, out Vector128<double> o0, out Vector128<double> o1)
+        {
+            if (sparse)
+            {
+                Reduce2(LoadReduced(ref block, u), LoadReduced(ref block, 8 + u), LoadReduced(ref block, 24 + u), out o0, out o1);
+            }
+            else
+            {
+                Reduce2(LoadReduced(ref block, u), LoadReduced(ref block, 8 + u), LoadReduced(ref block, 24 + u), LoadReduced(ref block, 40 + u), LoadReduced(ref block, 56 + u), out o0, out o1);
+            }
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<double> LoadReduced(ref double block, int index) => unsafe(Vector128.LoadUnsafe(ref block, (nuint)index));
+
+    /// <summary>
+    /// Rounds and clamps eight samples before their level shift, two per vector, as <see cref="ToSample"/> does, and gives
+    /// them in order as 16-bit integers in 0..255.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<short> PackSamples(Vector128<double> v0, Vector128<double> v1, Vector128<double> v2, Vector128<double> v3)
+    {
+        if (Sse2.IsSupported)
+            return Sse2.PackSignedSaturate(ConvertPairsSse2(RoundSse2(v0), RoundSse2(v1)), ConvertPairsSse2(RoundSse2(v2), RoundSse2(v3)));
+
+        return Vector128.Narrow(
+            Vector128.Narrow(ToUInt64(RoundAndClamp(v0)), ToUInt64(RoundAndClamp(v1))),
+            Vector128.Narrow(ToUInt64(RoundAndClamp(v2)), ToUInt64(RoundAndClamp(v3)))).AsInt16();
+    }
+
+    /// <summary>Gets the bytes of the samples of <see cref="PackSamples(Vector128{double}, Vector128{double}, Vector128{double}, Vector128{double})"/>, in order.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<byte> PackSamples(Vector128<short> first, Vector128<short> second)
+    {
+        if (Sse2.IsSupported)
+            return Sse2.PackUnsignedSaturate(first, second);
+
+        return Vector128.Narrow(first.AsUInt16(), second.AsUInt16());
+    }
+
+    // Rounds a sample before its level shift and clamps it to 0..255, as ToSample does
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<double> RoundAndClamp(Vector128<double> value) => Vector128.Min(Vector128.Max(Vector128.Floor(value + Vector128.Create(128.5)), Vector128<double>.Zero), Vector128.Create(255.0));
+
+    // The values are integers in 0..255: the conversion is exact
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<ulong> ToUInt64(Vector128<double> value) => Vector128.ConvertToInt64(value).AsUInt64();
+
+    // Rounds a sample before its level shift and clamps it to 255 only: the saturating packs that follow clamp the negative ones to 0
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<double> RoundSse2(Vector128<double> value) => Sse2.Min(Vector128.Floor(value + Vector128.Create(128.5)), Vector128.Create(255.0));
+
+    // The four integers of two pairs: CVTTPD2DQ writes its two results in the lower half (a value below the range of
+    // 32-bit integers becomes int.MinValue)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<int> ConvertPairsSse2(Vector128<double> low, Vector128<double> high) =>
+        Sse2.UnpackLow(Sse2.ConvertToVector128Int32WithTruncation(low).AsInt64(), Sse2.ConvertToVector128Int32WithTruncation(high).AsInt64()).AsInt32();
+
     /// <summary>The row pass of the scalar reduced transform on one row.</summary>
     private static void TransformReducedScalarRow(Span<double> row, int width)
     {
@@ -441,6 +626,7 @@ internal static class JpegIdct
     }
 
     /// <summary>The <see cref="Vector128{T}"/> form of the scalar <c>Reduce4</c>: the same expressions, lane by lane.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void Reduce4(Vector128<double> x0, Vector128<double> x1, Vector128<double> x2, Vector128<double> x3, Vector128<double> x5, Vector128<double> x6, Vector128<double> x7,
         out Vector128<double> o0, out Vector128<double> o1, out Vector128<double> o2, out Vector128<double> o3)
     {
@@ -457,10 +643,37 @@ internal static class JpegIdct
     }
 
     /// <summary>The <see cref="Vector128{T}"/> form of the scalar <c>Reduce2</c>: the same expressions, lane by lane.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void Reduce2(Vector128<double> x0, Vector128<double> x1, Vector128<double> x3, Vector128<double> x5, Vector128<double> x7, out Vector128<double> o0, out Vector128<double> o1)
     {
         var dc = Vector128.Create(C0) * x0;
         var odd = (Vector128.Create(0.3203644309676883) * x1) - (Vector128.Create(0.11249702789205196) * x3) + (Vector128.Create(0.07516811086688067) * x5) - (Vector128.Create(0.0637244473880199) * x7);
+        o0 = dc + odd;
+        o1 = dc - odd;
+    }
+
+    /// <summary>The <see cref="Vector128{T}"/> <c>Reduce4</c> of inputs whose terms 4 to 7 are zero: the same expressions without them.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void Reduce4(Vector128<double> x0, Vector128<double> x1, Vector128<double> x2, Vector128<double> x3, out Vector128<double> o0, out Vector128<double> o1, out Vector128<double> o2, out Vector128<double> o3)
+    {
+        var dc = Vector128.Create(C0) * x0;
+        var t = Vector128.Create(0.32664074121909414) * x2;
+        var e0 = dc + t;
+        var e1 = dc - t;
+        var d0 = (Vector128.Create(0.4530637231764439) * x1) + (Vector128.Create(0.15909482257160426) * x3);
+        var d1 = (Vector128.Create(0.18766513875893265) * x1) - (Vector128.Create(0.3840888783557082) * x3);
+        o0 = e0 + d0;
+        o1 = e1 + d1;
+        o2 = e1 - d1;
+        o3 = e0 - d0;
+    }
+
+    /// <summary>The <see cref="Vector128{T}"/> <c>Reduce2</c> of inputs whose terms 4 to 7 are zero: the same expressions without them.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void Reduce2(Vector128<double> x0, Vector128<double> x1, Vector128<double> x3, out Vector128<double> o0, out Vector128<double> o1)
+    {
+        var dc = Vector128.Create(C0) * x0;
+        var odd = (Vector128.Create(0.3203644309676883) * x1) - (Vector128.Create(0.11249702789205196) * x3);
         o0 = dc + odd;
         o1 = dc - odd;
     }
@@ -908,11 +1121,6 @@ internal static class JpegIdct
         var rows = Vector128.Narrow(first, second).AsUInt64();
         unsafe { Unsafe.WriteUnaligned(ref destination, rows.ToScalar()); }
         unsafe { Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, stride), rows.GetElement(1)); }
-
-        static Vector128<double> RoundAndClamp(Vector128<double> value) => Vector128.Min(Vector128.Max(Vector128.Floor(value + Vector128.Create(128.5)), Vector128<double>.Zero), Vector128.Create(255.0));
-
-        // The values are integers in 0..255: the conversion is exact
-        static Vector128<ulong> ToUInt64(Vector128<double> value) => Vector128.ConvertToInt64(value).AsUInt64();
     }
 
     /// <summary>
@@ -923,29 +1131,23 @@ internal static class JpegIdct
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void StoreSamplesSse2(Vector128<double> o0, Vector128<double> o1, Vector128<double> o2, Vector128<double> o3, Vector128<double> o4, Vector128<double> o5, Vector128<double> o6, Vector128<double> o7, ref byte destination, int stride)
     {
-        var r0 = Round(o0);
-        var r1 = Round(o1);
-        var r2 = Round(o2);
-        var r3 = Round(o3);
-        var r4 = Round(o4);
-        var r5 = Round(o5);
-        var r6 = Round(o6);
-        var r7 = Round(o7);
+        var r0 = RoundSse2(o0);
+        var r1 = RoundSse2(o1);
+        var r2 = RoundSse2(o2);
+        var r3 = RoundSse2(o3);
+        var r4 = RoundSse2(o4);
+        var r5 = RoundSse2(o5);
+        var r6 = RoundSse2(o6);
+        var r7 = RoundSse2(o7);
         var first = Sse2.PackSignedSaturate(
-            Combine(Sse2.UnpackLow(r0, r1), Sse2.UnpackLow(r2, r3)),
-            Combine(Sse2.UnpackLow(r4, r5), Sse2.UnpackLow(r6, r7)));
+            ConvertPairsSse2(Sse2.UnpackLow(r0, r1), Sse2.UnpackLow(r2, r3)),
+            ConvertPairsSse2(Sse2.UnpackLow(r4, r5), Sse2.UnpackLow(r6, r7)));
         var second = Sse2.PackSignedSaturate(
-            Combine(Sse2.UnpackHigh(r0, r1), Sse2.UnpackHigh(r2, r3)),
-            Combine(Sse2.UnpackHigh(r4, r5), Sse2.UnpackHigh(r6, r7)));
+            ConvertPairsSse2(Sse2.UnpackHigh(r0, r1), Sse2.UnpackHigh(r2, r3)),
+            ConvertPairsSse2(Sse2.UnpackHigh(r4, r5), Sse2.UnpackHigh(r6, r7)));
         var rows = Sse2.PackUnsignedSaturate(first, second).AsUInt64();
         unsafe { Unsafe.WriteUnaligned(ref destination, rows.ToScalar()); }
         unsafe { Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, stride), rows.GetElement(1)); }
-
-        static Vector128<double> Round(Vector128<double> value) => Sse2.Min(Vector128.Floor(value + Vector128.Create(128.5)), Vector128.Create(255.0));
-
-        // The four integers of two pairs: CVTTPD2DQ writes its two results in the lower half
-        static Vector128<int> Combine(Vector128<double> low, Vector128<double> high) =>
-            Sse2.UnpackLow(Sse2.ConvertToVector128Int32WithTruncation(low).AsInt64(), Sse2.ConvertToVector128Int32WithTruncation(high).AsInt64()).AsInt32();
     }
 
     /// <summary>Gets the lanes 0 of two vectors: <c>(a[0], b[0])</c>.</summary>

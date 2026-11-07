@@ -7,6 +7,7 @@
     <Project Path="../src/Meziantou.Framework.AtlassianDataFormat.Tool/Meziantou.Framework.AtlassianDataFormat.Tool.csproj" />
     <Project Path="../src/Meziantou.Framework.AtlassianDataFormat/Meziantou.Framework.AtlassianDataFormat.csproj" />
     <Project Path="../src/Meziantou.Framework.Barcodes/Meziantou.Framework.Barcodes.csproj" />
+    <Project Path="../src/Meziantou.Framework.Charts/Meziantou.Framework.Charts.csproj" />
     <Project Path="../src/Meziantou.Framework.DependencyScanning.Tool/Meziantou.Framework.DependencyScanning.Tool.csproj" />
     <Project Path="../src/Meziantou.Framework.DependencyScanning/Meziantou.Framework.DependencyScanning.csproj" />
     <Project Path="../src/Meziantou.Framework.Diagnostics.MemoryDump/Meziantou.Framework.Diagnostics.MemoryDump.csproj" />
@@ -18,6 +19,10 @@
     <Project Path="../src/Meziantou.Framework.FullPath.Analyzer/Meziantou.Framework.FullPath.Analyzer.csproj" />
     <Project Path="../src/Meziantou.Framework.FullPath.CodeFix/Meziantou.Framework.FullPath.CodeFix.csproj" />
     <Project Path="../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
+    <Project Path="../src/Meziantou.Framework.Geo.Maps.GeoPackage/Meziantou.Framework.Geo.Maps.GeoPackage.csproj" />
+    <Project Path="../src/Meziantou.Framework.Geo.Maps.Tool/Meziantou.Framework.Geo.Maps.Tool.csproj" />
+    <Project Path="../src/Meziantou.Framework.Geo.Maps/Meziantou.Framework.Geo.Maps.csproj" />
+    <Project Path="../src/Meziantou.Framework.Geo/Meziantou.Framework.Geo.csproj" />
     <Project Path="../src/Meziantou.Framework.Globbing/Meziantou.Framework.Globbing.csproj" />
     <Project Path="../src/Meziantou.Framework.Hashing/Meziantou.Framework.Hashing.csproj" />
     <Project Path="../src/Meziantou.Framework.Html.Tool/Meziantou.Framework.Html.Tool.csproj" />
@@ -27,6 +32,7 @@
     <Project Path="../src/Meziantou.Framework.HttpArchive/Meziantou.Framework.HttpArchive.csproj" />
     <Project Path="../src/Meziantou.Framework.HumanReadableSerializer/Meziantou.Framework.HumanReadableSerializer.csproj" />
     <Project Path="../src/Meziantou.Framework.Imaging.Barcodes/Meziantou.Framework.Imaging.Barcodes.csproj" />
+    <Project Path="../src/Meziantou.Framework.Imaging.Charts/Meziantou.Framework.Imaging.Charts.csproj" />
     <Project Path="../src/Meziantou.Framework.Imaging/Meziantou.Framework.Imaging.csproj" />
     <Project Path="../src/Meziantou.Framework.InlineSnapshotTesting/Meziantou.Framework.InlineSnapshotTesting.csproj" />
     <Project Path="../src/Meziantou.Framework.JsonPath/Meziantou.Framework.JsonPath.csproj" />
@@ -79,6 +85,7 @@
     <Project Path="../tests/Meziantou.Framework.DnsProxy.Tests/Meziantou.Framework.DnsProxy.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.EmbeddedConstantsGenerator.Tests/Meziantou.Framework.EmbeddedConstantsGenerator.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.FullPath.Tests/Meziantou.Framework.FullPath.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.Geo.Maps.Tool.Tests/Meziantou.Framework.Geo.Maps.Tool.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Globbing.Tests/Meziantou.Framework.Globbing.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Html.Tool.Tests/Meziantou.Framework.Html.Tool.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.HtmlToMarkdown.Tool.Tests/Meziantou.Framework.HtmlToMarkdown.Tool.Tests.csproj" />

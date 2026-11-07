@@ -1,0 +1,37 @@
+{
+  "region": "Switzerland",
+  "name": "Switzerland",
+  "attribution": "© OpenStreetMap contributors (ODbL): borders and subdivisions via country-levels. Cities, rivers, lakes, land, ocean, coastline, marine areas and physical regions: Natural Earth (public domain).",
+  "bounds": [
+    5.956,
+    45.818,
+    10.492,
+    47.808
+  ],
+  "lastModified": "2026-11-06T00:00:00.000Z",
+  "layers": {
+    "Borders": 1,
+    "StatesProvinces": 26,
+    "Cities": 28,
+    "Rivers": 9,
+    "Lakes": 3,
+    "PhysicalRegions": 3
+  },
+  "sources": [
+    {
+      "name": "country-levels",
+      "url": "https://github.com/hyperknot/country-levels",
+      "license": "ODbL-1.0"
+    },
+    {
+      "name": "Nominatim",
+      "url": "https://nominatim.openstreetmap.org/",
+      "license": "ODbL-1.0"
+    },
+    {
+      "name": "Natural Earth",
+      "url": "https://www.naturalearthdata.com/",
+      "license": "public domain"
+    }
+  ]
+}

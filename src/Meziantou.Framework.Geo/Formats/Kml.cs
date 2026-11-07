@@ -68,18 +68,7 @@ public static class Kml
     {
         ArgumentNullException.ThrowIfNull(stream);
 
-        // Creating the reader reads the start of the document to detect its encoding, which can fail
-        XmlReader reader;
-        try
-        {
-            reader = XmlReader.Create(stream, CreateReaderSettings());
-        }
-        catch (XmlException ex)
-        {
-            throw new FormatException("The document is not well-formed XML: " + ex.Message, ex);
-        }
-
-        using (reader)
+        using (var reader = XmlStreamReader.Open(stream, CreateReaderSettings(), "The document is not well-formed XML: "))
         {
             return Read(reader);
         }

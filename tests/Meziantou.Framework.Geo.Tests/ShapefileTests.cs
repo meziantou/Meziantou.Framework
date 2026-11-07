@@ -793,6 +793,30 @@ public sealed class ShapefileTests
     }
 
     [Fact]
+    public void Write_TextTooLongCutBeforeUtf8Sequence()
+    {
+        // 255 bytes: cut to 254 bytes, the value would end in the middle of "€", so it is cut to 252 bytes, the width of the field
+        var value = new string('a', 252) + "€";
+        GeoFeatureCollection features = [new GeoFeature(new GeoPoint(new(1, 2)), new Dictionary<string, object?>(StringComparer.Ordinal) { ["name"] = value })];
+        using var shp = new MemoryStream();
+        using var shx = new MemoryStream();
+        using var dbf = new MemoryStream();
+        Shapefile.Write(features, shp, shx, dbf);
+
+        var bytes = dbf.ToArray();
+        Assert.Equal(252, bytes[32 + 16]);
+        Assert.Equal((ushort)(1 + 252), BinaryPrimitives.ReadUInt16LittleEndian(bytes.AsSpan(10)));
+        var read = Shapefile.Read(new MemoryStream(shp.ToArray()), new MemoryStream(bytes));
+        Assert.Equal(new string('a', 252), read[0].Properties["name"]);
+
+        using var shp2 = new MemoryStream();
+        using var shx2 = new MemoryStream();
+        using var dbf2 = new MemoryStream();
+        Shapefile.Write(read, shp2, shx2, dbf2);
+        Assert.Equal(bytes, dbf2.ToArray());
+    }
+
+    [Fact]
     public void Write_FieldNameReadsBackAsWritten()
     {
         // Trimmed and cut to 10 bytes, the name would end with spaces, which the readers trim

@@ -83,7 +83,7 @@ Shapefile.WriteZip(features, zip, "cities");
   each type to its own shapefile.
 - When a position has an altitude, every position is written with one, and 0 for those that have none.
 - The fields are the properties of the features. Their names are cut to 10 characters and made unique, as GDAL does.
-  The text values are cut to 254 bytes. A field whose values have different types is written as text.
+  The text values are cut to 254 bytes, before a UTF-8 sequence that does not fit whole. A field whose values have different types is written as text.
 - The identifiers are not written: shapefiles have none.
 - The overload that writes to streams does not write the `.cpg` file: write `UTF-8` to it yourself, so other programs
   read the attributes with the right encoding.

@@ -271,7 +271,7 @@ internal sealed class HevcEncoder : IDisposable
 
             case Phase.Filter:
                 // The sample adaptive offset is decided from the deblocked picture
-                HevcDeblockingFilter.Apply(_pictures[_current]!, _layout!, _state!, cancellationToken);
+                HevcDeblockingFilter.Apply(_pictures[_current]!, _layout!, _state!, workers: 1, cancellationToken);
                 _contexts.InitializeContexts(_header!.InitType, _header.SliceQpY);
                 _sink.Encoder.Initialize(_rbsp!);
                 _workspace!.RecordPosition = 0;
@@ -491,11 +491,11 @@ internal sealed class HevcEncoder : IDisposable
         Debug.Assert(!_sink.Encoder.IsActive, "The slice segment data end with end_of_slice_segment_flag.");
         if (_deferred)
         {
-            HevcSampleAdaptiveOffset.Apply(_scope, picture, layout, state, cancellationToken);
+            HevcSampleAdaptiveOffset.Apply(_scope, picture, layout, state, workers: 1, cancellationToken);
         }
         else
         {
-            HevcDeblockingFilter.Apply(picture, layout, state, cancellationToken);
+            HevcDeblockingFilter.Apply(picture, layout, state, workers: 1, cancellationToken);
         }
 
         if (_sps.SpsTemporalMvpEnabledFlag)

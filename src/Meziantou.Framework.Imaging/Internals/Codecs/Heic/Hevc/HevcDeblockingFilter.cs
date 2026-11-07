@@ -46,7 +46,16 @@ internal ref struct HevcDeblockingFilter
     }
 
     /// <summary>Filters the picture, whose slices are all decoded.</summary>
-    public static void Apply(HevcPicture picture, HevcPictureLayout layout, HevcPictureState state, CancellationToken cancellationToken)
+    /// <param name="picture">The picture.</param>
+    /// <param name="layout">The parameter sets of the picture.</param>
+    /// <param name="state">The values of the blocks of the picture.</param>
+    /// <param name="workers">
+    /// The largest number of workers: the edges of each direction are split in that many bands of rows of 8 luma samples at
+    /// most, which are filtered at the same time. The edges of a direction do not share any sample that they read or
+    /// modify, so the samples do not depend on the number of bands.
+    /// </param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    public static void Apply(HevcPicture picture, HevcPictureLayout layout, HevcPictureState state, int workers, CancellationToken cancellationToken)
     {
         var enabled = false;
         foreach (var slice in state.Slices)
@@ -57,16 +66,42 @@ internal ref struct HevcDeblockingFilter
         if (!enabled)
             return;
 
-        var filter = new HevcDeblockingFilter(picture, layout, state);
-        filter.FilterEdges(vertical: true, cancellationToken);
-        filter.FilterEdges(vertical: false, cancellationToken);
-        state.Tools = filter._tools;
+        // The bands are made of pairs of rows of 4x4 luma blocks: the horizontal edges are on the rows of even index
+        var height4 = layout.Sps.PicHeightInLumaSamples >> 2;
+        var pairs = (height4 + 1) >> 1;
+        var bands = Math.Clamp(workers, 1, pairs);
+        if (bands is 1)
+        {
+            var filter = new HevcDeblockingFilter(picture, layout, state);
+            filter.FilterEdges(vertical: true, 0, height4, cancellationToken);
+            filter.FilterEdges(vertical: false, 0, height4, cancellationToken);
+            state.Tools = filter._tools;
+            return;
+        }
+
+        var tools = new HevcTools[bands];
+        foreach (var vertical in (ReadOnlySpan<bool>)[true, false])
+        {
+            RowBands.RunParallel(bands, band =>
+            {
+                var filter = new HevcDeblockingFilter(picture, layout, state);
+                var start = 2 * RowBands.GetBandStart(pairs, band, bands);
+                var end = Math.Min(height4, 2 * RowBands.GetBandStart(pairs, band + 1, bands));
+                filter.FilterEdges(vertical, start, end, cancellationToken);
+                tools[band] |= filter._tools;
+            });
+        }
+
+        foreach (var bandTools in tools)
+        {
+            state.Tools |= bandTools;
+        }
     }
 
-    private void FilterEdges(bool vertical, CancellationToken cancellationToken)
+    // The edges of a direction on the rows of 4x4 luma blocks start to end (excluded)
+    private void FilterEdges(bool vertical, int start, int end, CancellationToken cancellationToken)
     {
         var width4 = _sps.PicWidthInLumaSamples >> 2;
-        var height4 = _sps.PicHeightInLumaSamples >> 2;
         var stride4 = _state.WidthIn4x4;
         var mask = vertical
             ? HevcPictureState.EdgeLeftTransform | HevcPictureState.EdgeLeftPrediction
@@ -74,7 +109,7 @@ internal ref struct HevcDeblockingFilter
         var transformMask = vertical ? HevcPictureState.EdgeLeftTransform : HevcPictureState.EdgeTopTransform;
         var ctbLog2SizeY = _sps.CtbLog2SizeY;
         var slices = _state.Slices;
-        for (var by = 0; by < height4; by++)
+        for (var by = start; by < end; by++)
         {
             if ((by & 15) is 0)
             {

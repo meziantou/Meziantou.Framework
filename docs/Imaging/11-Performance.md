@@ -83,14 +83,15 @@ public static void ResizeWithAllCores(string inputPath, string outputPath)
   | JPEG 2000 | Code-blocks and wavelet transforms |
   | JPEG XL | Groups of 256x256 pixels |
   | TIFF | LZW and Deflate strips and tiles (and CCITT ones when decoding) |
-  | HEIC | Grid tiles; tiles and wavefront rows of a picture (decoding only) |
-  | AVIF | Grid tiles; tiles of a frame that has several |
+  | HEIC | Grid tiles; when decoding, the tiles, wavefront rows, in-loop filters and color conversion of a picture |
+  | AVIF | Grid tiles; tiles of a frame that has several; when decoding, the filters and color conversion of a frame |
   | JPEG | Transforms and color conversion of MCU rows |
 
   The gain depends on the share of the work that stays on one thread. OpenEXR, JPEG 2000 and TIFF scale well. JPEG
-  gains the least: its entropy decoding, a third to half of the time, stays on one thread. The files of the AVIF and
-  HEIC encoders have a single tile and no wavefront, unless they are grids, AVIF frames wider than 4,096 pixels or AVIF
-  files encoded with `AvifEncoder.AutoTiling`, so they decode with less parallelism than files with several tiles.
+  gains the least: its entropy decoding, a third to half of the time, stays on one thread. The files of the AVIF encoder
+  have a single tile, unless they are grids, frames wider than 4,096 pixels or files encoded with
+  `AvifEncoder.AutoTiling`, so they decode with less parallelism than files with several tiles. The HEIC encoder writes
+  the rows of a large still image as wavefront rows, which the decoder decodes concurrently.
 - The other decoders and encoders, drawing and the other operations run on one thread.
 - The result does not depend on the number of threads: the pixels and the encoded bytes are the same.
 - Each worker needs its own working memory, which counts against the memory limit of the image.

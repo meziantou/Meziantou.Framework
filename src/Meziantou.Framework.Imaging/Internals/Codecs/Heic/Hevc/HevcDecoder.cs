@@ -18,7 +18,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// With <see cref="MaxDegreeOfParallelism"/> above 1, the substreams of a slice segment of a picture of at least
 /// <see cref="RowBands.MinPixelsForParallelism"/> samples that start at an entry point (its tiles, and its rows of coding
 /// tree blocks of the wavefront) are decoded by that many workers at once (<see cref="HevcSubstreamWorkers"/>): the
-/// pictures and the errors are those of the decoding on the calling thread. The in-loop filters run on the calling thread.
+/// pictures and the errors are those of the decoding on the calling thread. The in-loop filters of such a picture, whatever
+/// its substreams, filter bands of rows at the same time; their samples do not depend on the number of bands.
 /// </para>
 /// <para>After an exception the state of the decoder is undefined: it must be disposed.</para>
 /// <para>
@@ -86,7 +87,8 @@ internal sealed class HevcDecoder : IDisposable
 
     /// <summary>
     /// Gets or sets the largest number of workers that decode the substreams of a slice segment (tiles and rows of the
-    /// wavefront that start at an entry point); 1, the default, decodes them on the calling thread.
+    /// wavefront that start at an entry point), and the bands of rows of the in-loop filters of a large picture; 1, the
+    /// default, decodes and filters on the calling thread.
     /// </summary>
     public int MaxDegreeOfParallelism { get; set; } = 1;
 
@@ -404,6 +406,19 @@ internal sealed class HevcDecoder : IDisposable
         return _substreamWorkers ??= new HevcSubstreamWorkers(_scope);
     }
 
+    // The workers of the in-loop filters of a picture: the rows of a picture of at least RowBands.MinPixelsForParallelism
+    // samples are filtered by bands
+    private int GetFilterWorkerCount(HevcSequenceParameterSet sps)
+    {
+        if (MaxDegreeOfParallelism <= 1)
+            return 1;
+
+        if (TestIgnoreMinimumSize)
+            return MaxDegreeOfParallelism;
+
+        return RowBands.GetWorkerCount(new Size(sps.PicWidthInLumaSamples, sps.PicHeightInLumaSamples), MaxDegreeOfParallelism);
+    }
+
     // Clause 8.3.4 "Decoding process for reference picture lists construction"
     private HevcReferencePictureLists ConstructReferencePictureLists(HevcSliceSegmentHeader header)
     {
@@ -612,14 +627,15 @@ internal sealed class HevcDecoder : IDisposable
         if (state.NextCtbAddrInTs != layout.Sps.PicSizeInCtbsY)
             throw HevcErrors.Invalid("a picture is incomplete.");
 
+        var workers = GetFilterWorkerCount(layout.Sps);
         if (InLoopFilters.HasFlag(HevcInLoopFilters.Deblocking))
         {
-            HevcDeblockingFilter.Apply(picture, layout, state, cancellationToken);
+            HevcDeblockingFilter.Apply(picture, layout, state, workers, cancellationToken);
         }
 
         if (InLoopFilters.HasFlag(HevcInLoopFilters.Sao))
         {
-            HevcSampleAdaptiveOffset.Apply(_scope, picture, layout, state, cancellationToken);
+            HevcSampleAdaptiveOffset.Apply(_scope, picture, layout, state, workers, cancellationToken);
         }
 
         if (layout.Sps.SpsTemporalMvpEnabledFlag)

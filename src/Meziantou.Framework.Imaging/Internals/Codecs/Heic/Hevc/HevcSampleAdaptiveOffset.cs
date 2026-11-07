@@ -20,13 +20,23 @@ internal static class HevcSampleAdaptiveOffset
     internal static ReadOnlySpan<sbyte> VPos => [0, 0, -1, 1, -1, 1, -1, 1];
 
     /// <summary>Applies the process to the picture, whose slices are all decoded and deblocked.</summary>
+    /// <param name="scope">The allocation scope of the copies of the deblocked samples.</param>
+    /// <param name="picture">The picture.</param>
+    /// <param name="layout">The parameter sets of the picture.</param>
+    /// <param name="state">The values of the blocks of the picture.</param>
+    /// <param name="workers">
+    /// The largest number of workers: the rows of coding tree blocks are split in that many bands at most, which are modified
+    /// at the same time. The samples do not depend on the number of bands.
+    /// </param>
+    /// <param name="cancellationToken">The cancellation token.</param>
     /// <exception cref="ImageResourceLimitException">The copies of the deblocked samples exceed the live-allocation limit.</exception>
-    public static void Apply(AllocationScope scope, HevcPicture picture, HevcPictureLayout layout, HevcPictureState state, CancellationToken cancellationToken)
+    public static void Apply(AllocationScope scope, HevcPicture picture, HevcPictureLayout layout, HevcPictureState state, int workers, CancellationToken cancellationToken)
     {
         var sps = layout.Sps;
         if (!sps.SampleAdaptiveOffsetEnabledFlag)
             return;
 
+        var tools = HevcTools.None;
         for (var cIdx = 0; cIdx < picture.PlaneCount; cIdx++)
         {
             var used = false;
@@ -38,53 +48,103 @@ internal static class HevcSampleAdaptiveOffset
             if (!used)
                 continue;
 
-            // The process reads the deblocked samples of the neighbours of a sample (recPicture): the copies of the rows above
-            // the coding tree blocks (the current one and the next one), of the columns on their left (the current one and
-            // the next one), and three rows of a coding tree block with a sample on each side
+            // The process reads the deblocked samples of the neighbours of a sample (recPicture). Each band has the copies of
+            // the rows above the coding tree blocks (the current one and the next one), of the columns on their left (the
+            // current one and the next one), and three rows of a coding tree block with a sample on each side. A band but
+            // the last one also reads the first row of the next band, which is copied before the bands start, with the row
+            // above each band but the first one
             var plane = picture.GetPlane(cIdx);
             var nCtbSw = sps.CtbSizeY / (cIdx is 0 ? 1 : sps.SubWidthC);
             var nCtbSh = sps.CtbSizeY / (cIdx is 0 ? 1 : sps.SubHeightC);
             var lineLength = nCtbSw + 2;
-            using var buffers = Av1PooledArray<ushort>.Rent(scope, (2L * plane.Width) + (2L * nCtbSh) + (3L * lineLength), clear: false);
-            var span = buffers.Span;
-            var above = span[..plane.Width];
-            var nextAbove = span.Slice(plane.Width, plane.Width);
-            var left = span.Slice(2 * plane.Width, nCtbSh);
-            var nextLeft = span.Slice((2 * plane.Width) + nCtbSh, nCtbSh);
-            var lines = span.Slice((2 * plane.Width) + (2 * nCtbSh), 3 * lineLength);
-            for (var ry = 0; ry < sps.PicHeightInCtbsY; ry++)
+            var ctbRows = sps.PicHeightInCtbsY;
+            var bands = Math.Clamp(workers, 1, ctbRows);
+            var bandLength = (2 * plane.Width) + (2 * nCtbSh) + (3 * lineLength);
+            using var buffers = Av1PooledArray<ushort>.Rent(scope, ((long)bands * bandLength) + ((bands - 1L) * plane.Width), clear: false);
+            for (var band = 1; band < bands; band++)
             {
-                cancellationToken.ThrowIfCancellationRequested();
-                var yCtb = ry * nCtbSh;
-                var height = Math.Min(nCtbSh, plane.Height - yCtb);
-                plane.GetRow(yCtb + height - 1).CopyTo(nextAbove);
-                for (var rx = 0; rx < sps.PicWidthInCtbsY; rx++)
-                {
-                    var xCtb = rx * nCtbSw;
-                    var width = Math.Min(nCtbSw, plane.Width - xCtb);
-                    var samples = plane.Samples;
-                    for (var j = 0; j < height; j++)
-                    {
-                        nextLeft[j] = samples[((yCtb + j) * plane.Stride) + xCtb + width - 1];
-                    }
+                var y = RowBands.GetBandStart(ctbRows, band, bands) * nCtbSh;
+                plane.GetRow(y - 1).CopyTo(buffers.Span.Slice(band * bandLength, plane.Width));
+                plane.GetRow(y).CopyTo(GetBelow(buffers.Span, band - 1));
+            }
 
-                    ModifyCtb(plane, above, left, lines, layout, state, cIdx, rx, ry);
-                    var swap = left;
-                    left = nextLeft;
-                    nextLeft = swap;
+            if (bands is 1)
+            {
+                tools |= ModifyRows(plane, buffers.Span[..bandLength], below: default, layout, state, cIdx, 0, ctbRows, cancellationToken);
+                continue;
+            }
+
+            var bandTools = new HevcTools[bands];
+            RowBands.RunParallel(bands, band =>
+            {
+                var below = band < bands - 1 ? GetBelow(buffers.Span, band) : default;
+                var start = RowBands.GetBandStart(ctbRows, band, bands);
+                var end = RowBands.GetBandStart(ctbRows, band + 1, bands);
+                bandTools[band] = ModifyRows(plane, buffers.Span.Slice(band * bandLength, bandLength), below, layout, state, cIdx, start, end, cancellationToken);
+            });
+
+            foreach (var bandTool in bandTools)
+            {
+                tools |= bandTool;
+            }
+
+            // The copy of the first row of the band after the band
+            Span<ushort> GetBelow(Span<ushort> span, int band) => span.Slice((bands * bandLength) + (band * plane.Width), plane.Width);
+        }
+
+        state.Tools |= tools;
+    }
+
+    // The rows of coding tree blocks start to end (excluded) of a plane, in raster order. buffer holds the copies of the
+    // deblocked samples, starting with the row above the first coding tree blocks; below is the copy of the row below the
+    // last ones, or empty when that row is read in the plane. Returns the coding tools that the rows use
+    private static HevcTools ModifyRows(Av1Plane plane, Span<ushort> buffer, ReadOnlySpan<ushort> below, HevcPictureLayout layout, HevcPictureState state, int cIdx, int start, int end, CancellationToken cancellationToken)
+    {
+        var sps = layout.Sps;
+        var nCtbSw = sps.CtbSizeY / (cIdx is 0 ? 1 : sps.SubWidthC);
+        var nCtbSh = sps.CtbSizeY / (cIdx is 0 ? 1 : sps.SubHeightC);
+        var lineLength = nCtbSw + 2;
+        var above = buffer[..plane.Width];
+        var nextAbove = buffer.Slice(plane.Width, plane.Width);
+        var left = buffer.Slice(2 * plane.Width, nCtbSh);
+        var nextLeft = buffer.Slice((2 * plane.Width) + nCtbSh, nCtbSh);
+        var lines = buffer.Slice((2 * plane.Width) + (2 * nCtbSh), 3 * lineLength);
+        var tools = HevcTools.None;
+        for (var ry = start; ry < end; ry++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var yCtb = ry * nCtbSh;
+            var height = Math.Min(nCtbSh, plane.Height - yCtb);
+            var rowBelow = ry == end - 1 ? below : default;
+            plane.GetRow(yCtb + height - 1).CopyTo(nextAbove);
+            for (var rx = 0; rx < sps.PicWidthInCtbsY; rx++)
+            {
+                var xCtb = rx * nCtbSw;
+                var width = Math.Min(nCtbSw, plane.Width - xCtb);
+                var samples = plane.Samples;
+                for (var j = 0; j < height; j++)
+                {
+                    nextLeft[j] = samples[((yCtb + j) * plane.Stride) + xCtb + width - 1];
                 }
 
-                var swapAbove = above;
-                above = nextAbove;
-                nextAbove = swapAbove;
+                ModifyCtb(plane, above, left, rowBelow, lines, layout, state, cIdx, rx, ry, ref tools);
+                var swap = left;
+                left = nextLeft;
+                nextLeft = swap;
             }
+
+            var swapAbove = above;
+            above = nextAbove;
+            nextAbove = swapAbove;
         }
+
+        return tools;
     }
 
     // Clause 8.7.3.2 "CTB modification process". above holds the deblocked samples of the row above the coding tree block,
-    // left the ones of the column on its left; the samples of the coding tree block itself, and the ones below it and on
-    // its right, are not modified yet.
-    private static void ModifyCtb(Av1Plane plane, ReadOnlySpan<ushort> above, ReadOnlySpan<ushort> left, Span<ushort> lines, HevcPictureLayout layout, HevcPictureState state, int cIdx, int rx, int ry)
+    // left the ones of the column on its left, below the ones of the row below it when it is not read in the plane; the
+    // samples of the coding tree block itself, and the ones below it and on its right, are not modified yet.
+    private static void ModifyCtb(Av1Plane plane, ReadOnlySpan<ushort> above, ReadOnlySpan<ushort> left, ReadOnlySpan<ushort> below, Span<ushort> lines, HevcPictureLayout layout, HevcPictureState state, int cIdx, int rx, int ry, ref HevcTools tools)
     {
         var sps = layout.Sps;
         var pps = layout.Pps;
@@ -121,7 +181,7 @@ internal static class HevcSampleAdaptiveOffset
 
         if (log2OffsetScale is not 0)
         {
-            state.Tools |= HevcTools.SaoOffsetScale;
+            tools |= HevcTools.SaoOffsetScale;
         }
 
         // The samples of the coding units that the in-loop filters leave as they are
@@ -186,7 +246,7 @@ internal static class HevcSampleAdaptiveOffset
             CopyLine(above, previous, xCtb, width, plane.Width);
         }
 
-        CopyRow(plane, left, current, xCtb, yCtb, 0, width, height);
+        CopyRow(plane, left, below, current, xCtb, yCtb, 0, width, height);
         var firstUsable = false;
         var lastUsable = false;
         var middleUsable = false;
@@ -194,7 +254,7 @@ internal static class HevcSampleAdaptiveOffset
         {
             if (vertical && yCtb + j + 1 < plane.Height)
             {
-                CopyRow(plane, left, next, xCtb, yCtb, j + 1, width, height);
+                CopyRow(plane, left, below, next, xCtb, yCtb, j + 1, width, height);
             }
 
             // The first column, the last one, and the other ones, whose neighbours are in the same coding tree blocks; the
@@ -253,7 +313,7 @@ internal static class HevcSampleAdaptiveOffset
             next = swap;
             if (!vertical && j + 1 < height)
             {
-                CopyRow(plane, left, current, xCtb, yCtb, j + 1, width, height);
+                CopyRow(plane, left, below, current, xCtb, yCtb, j + 1, width, height);
             }
         }
 
@@ -267,10 +327,10 @@ internal static class HevcSampleAdaptiveOffset
 
     // The deblocked samples of the row j of a coding tree block (or of the row below it, j = height), and of the samples on
     // each side that are in the picture: the column on the left is modified once its coding tree block is, unless it is
-    // below the coding tree block
-    private static void CopyRow(Av1Plane plane, ReadOnlySpan<ushort> left, Span<ushort> line, int xCtb, int yCtb, int j, int width, int height)
+    // below the coding tree block. below is the copy of the row below the coding tree block, when it is not read in the plane
+    private static void CopyRow(Av1Plane plane, ReadOnlySpan<ushort> left, ReadOnlySpan<ushort> below, Span<ushort> line, int xCtb, int yCtb, int j, int width, int height)
     {
-        var row = plane.GetRow(yCtb + j);
+        ReadOnlySpan<ushort> row = j < height || below.IsEmpty ? plane.GetRow(yCtb + j) : below;
         if (xCtb > 0)
         {
             line[0] = j < height ? left[j] : row[xCtb - 1];

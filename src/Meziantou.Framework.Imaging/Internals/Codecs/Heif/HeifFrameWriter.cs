@@ -76,7 +76,7 @@ internal sealed class HeifFrameWriter : IDisposable
     public static void WriteFrame(ImageCodecContext context, DecodedFrameSink sink, HeifStructureParser structure, HeifPlanarImage color, HeifPlanarImage? alpha, Size codedSize, Rectangle crop)
     {
         using var writer = new HeifFrameWriter(context, structure, color.Format, alpha?.Format, codedSize, crop, sink.SourcePixelFormat);
-        writer.WriteRows(sink, color, alpha, 0, crop.Height);
+        writer.WriteRows(sink, color, alpha, 0, crop.Height, context.Configuration.MaxDegreeOfParallelism);
     }
 
     /// <summary>
@@ -88,47 +88,76 @@ internal sealed class HeifFrameWriter : IDisposable
     /// <param name="alpha">The planes of the alpha plane, or <see langword="null"/> for an opaque image.</param>
     /// <param name="start">The first row of the clean aperture to write.</param>
     /// <param name="end">The row of the clean aperture after the last one to write.</param>
-    public void WriteRows(DecodedFrameSink sink, HeifPlanarImage color, HeifPlanarImage? alpha, int start, int end)
+    /// <param name="maxDegreeOfParallelism">
+    /// The largest number of workers that convert bands of the rows at the same time, when there are enough of them and the
+    /// sink stores them as they are converted; 1 converts them on the calling thread.
+    /// </param>
+    /// <exception cref="ImageResourceLimitException">The rows of the workers exceed the live-allocation limit.</exception>
+    public void WriteRows(DecodedFrameSink sink, HeifPlanarImage color, HeifPlanarImage? alpha, int start, int end, int maxDegreeOfParallelism = 1)
     {
         var width = _width;
-        var u = _rows.Span[..width];
-        var v = _rows.Span.Slice(width, width);
         var pixelRow = _pixels.RawBuffer.AsSpan(0, width * _converter.BytesPerPixel);
-        var hasChroma = color.PlaneCount > 1;
         var whole = _crop.X is 0 && _crop.Width == width;
         using var target = sink.LeaseCurrentFrame();
+
+        // The rows that the sink stores without conversion are converted in place when the clean aperture keeps them whole:
+        // a large image is converted by bands of rows, each with chroma rows of its own
+        var direct = whole && end > start && !sink.GetDirectRow(target, start).IsEmpty;
+        var workers = direct ? RowBands.GetWorkerCount(new Size(width, end - start), maxDegreeOfParallelism) : 1;
+        if (workers > 1)
+        {
+            using var chroma = Av1PooledArray<ushort>.Rent(_context.Scope, 2L * width * workers, clear: false);
+            var storage = target.Storage;
+            RowBands.RunParallelInBandOrder(workers, band =>
+            {
+                var rows = chroma.Span.Slice(2 * width * band, 2 * width);
+                var bandEnd = start + RowBands.GetBandStart(end - start, band + 1, workers);
+                for (var y = start + RowBands.GetBandStart(end - start, band, workers); y < bandEnd; y++)
+                {
+                    ConvertRow(color, alpha, y, rows, storage.GetRowSpanCore(y));
+                }
+            });
+
+            return;
+        }
+
         for (var y = start; y < end; y++)
         {
-            if ((y & 31) is 0)
-                _context.CancellationToken.ThrowIfCancellationRequested();
-
-            var sourceY = _crop.Y + y;
-            ReadOnlySpan<ushort> uRow = u;
-            ReadOnlySpan<ushort> vRow = v;
-            if (hasChroma && _converter.HasFullResolutionChroma)
+            var row = direct ? sink.GetDirectRow(target, y) : pixelRow;
+            ConvertRow(color, alpha, y, _rows.Span, row);
+            if (!direct)
             {
-                uRow = color.GetRow(1, sourceY)[..width];
-                vRow = color.GetRow(2, sourceY)[..width];
+                sink.WriteRow(target, y, pixelRow.Slice(_crop.X * _converter.BytesPerPixel, _crop.Width * _converter.BytesPerPixel));
             }
-            else if (hasChroma)
-            {
-                _converter.UpsampleChromaRow(color, 1, sourceY, width, _height, u);
-                _converter.UpsampleChromaRow(color, 2, sourceY, width, _height, v);
-            }
-
-            var alphaRow = alpha is null ? default : alpha.GetRow(0, sourceY)[..width];
-
-            // The rows that the sink stores without conversion are converted in place when the clean aperture keeps them whole
-            var direct = whole ? sink.GetDirectRow(target, y) : default;
-            if (!direct.IsEmpty)
-            {
-                _converter.ConvertRow(color.GetRow(0, sourceY)[..width], uRow, vRow, alphaRow, direct);
-                continue;
-            }
-
-            _converter.ConvertRow(color.GetRow(0, sourceY)[..width], uRow, vRow, alphaRow, pixelRow);
-            sink.WriteRow(target, y, pixelRow.Slice(_crop.X * _converter.BytesPerPixel, _crop.Width * _converter.BytesPerPixel));
         }
+    }
+
+    // Converts the row y of the clean aperture to pixels of the coded width; rows receives the two rows of chroma samples
+    private void ConvertRow(HeifPlanarImage color, HeifPlanarImage? alpha, int y, Span<ushort> rows, Span<byte> destination)
+    {
+        if ((y & 31) is 0)
+            _context.CancellationToken.ThrowIfCancellationRequested();
+
+        var width = _width;
+        var u = rows[..width];
+        var v = rows.Slice(width, width);
+        var sourceY = _crop.Y + y;
+        ReadOnlySpan<ushort> uRow = u;
+        ReadOnlySpan<ushort> vRow = v;
+        var hasChroma = color.PlaneCount > 1;
+        if (hasChroma && _converter.HasFullResolutionChroma)
+        {
+            uRow = color.GetRow(1, sourceY)[..width];
+            vRow = color.GetRow(2, sourceY)[..width];
+        }
+        else if (hasChroma)
+        {
+            _converter.UpsampleChromaRow(color, 1, sourceY, width, _height, u);
+            _converter.UpsampleChromaRow(color, 2, sourceY, width, _height, v);
+        }
+
+        var alphaRow = alpha is null ? default : alpha.GetRow(0, sourceY)[..width];
+        _converter.ConvertRow(color.GetRow(0, sourceY)[..width], uRow, vRow, alphaRow, destination);
     }
 
     public void Dispose()

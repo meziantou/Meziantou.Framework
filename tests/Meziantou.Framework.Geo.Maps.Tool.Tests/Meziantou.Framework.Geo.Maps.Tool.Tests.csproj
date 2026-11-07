@@ -6,10 +6,12 @@
 
   <ItemGroup>
     <Compile Include="../../common/ConsoleHelper.cs" Link="ConsoleHelper.cs" />
+    <Compile Include="../../common/NuGetPackageFixture.cs" Link="NuGetPackageFixture.cs" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="../../src/Meziantou.Framework.Geo.Maps.Tool/Meziantou.Framework.Geo.Maps.Tool.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.ProcessWrapper/Meziantou.Framework.ProcessWrapper.csproj" />
     <ProjectReference Include="../../src/Meziantou.Framework.TemporaryDirectory/Meziantou.Framework.TemporaryDirectory.csproj" />
   </ItemGroup>
 
